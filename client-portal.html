@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Portal de Acceso | V&M Business Systems</title>
+
+  <meta
+    name="description"
+    content="Portal privado de V&M Business Systems para clientes, representantes autorizados y administración central."
+  />
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+  <header class="site-header">
+    <nav class="navbar container">
+      <a href="index.html" class="logo">
+        <span class="logo-mark">V&M</span>
+        <span>V&M Business Systems</span>
+      </a>
+
+      <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">
+        ☰
+      </button>
+
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="solutions.html">Soluciones</a></li>
+        <li><a href="services.html">Servicios</a></li>
+        <li><a href="client-portal.html" class="active">Portal</a></li>
+        <li><a href="plans.html">Planes</a></li>
+        <li><a href="contact.html" class="nav-cta">Contacto</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <!-- PORTAL HERO -->
+    <section class="portal-entry-hero">
+      <div class="container portal-entry-grid">
+        <div>
+          <span class="eyebrow">Portal privado</span>
+
+          <h1>Acceso privado para clientes, representantes y administración V&M.</h1>
+
+          <p>
+            El portal será el punto de entrada para que cada usuario acceda únicamente
+            a la información que le corresponde: clientes a sus soluciones contratadas,
+            representantes a sus clientes asignados y V&M al control completo del sistema.
+          </p>
+
+          <p>
+            Esta sección está en preparación. El acceso real con usuario, contraseña,
+            licencias, datos de clientes y backups se activará en una fase posterior.
+          </p>
+
+          <div class="hero-actions">
+            <a href="contact.html" class="btn btn-primary">Solicitar acceso</a>
+            <a href="services.html#solutions-in-action" class="btn btn-secondary">Ver vistas preliminares</a>
+          </div>
+        </div>
+
+        <div class="portal-login-preview">
+          <span class="preview-label">Acceso privado</span>
+          <h3>Entrar al portal</h3>
+
+          <label>Email</label>
+          <input type="email" placeholder="usuario@empresa.com" disabled />
+
+          <label>Contraseña</label>
+          <input type="password" placeholder="••••••••" disabled />
+
+          <button type="button" disabled>Acceso próximamente</button>
+
+          <p>
+            El login real se habilitará cuando el portal esté conectado a usuarios,
+            licencias y servicios contratados.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHAT EACH USER SEES -->
+    <section class="section">
+      <div class="container">
+        <div class="section-heading compact-heading">
+          <span class="eyebrow">Acceso por tipo de usuario</span>
+          <h2>Cada usuario verá información diferente según su rol.</h2>
+          <p>
+            El portal no será una vista única para todos. Cada acceso estará filtrado por
+            cliente, representante, licencia, servicio contratado y permisos.
+          </p>
+        </div>
+
+        <div class="access-grid">
+          <article class="access-card">
+            <div class="icon-box">CLI</div>
+            <h3>Cliente</h3>
+            <p>
+              El cliente entra para ver únicamente su empresa, su programa contratado,
+              su licencia, sus usuarios, sus dispositivos, soporte y actualizaciones.
+            </p>
+
+            <ul class="clean-list">
+              <li>Mis aplicaciones contratadas</li>
+              <li>Mi licencia y plan</li>
+              <li>Mis usuarios</li>
+              <li>Mis dispositivos</li>
+              <li>Mis reportes disponibles</li>
+              <li>Mis backups cuando estén habilitados</li>
+              <li>Mis solicitudes de soporte</li>
+            </ul>
+          </article>
+
+          <article class="access-card">
+            <div class="icon-box">REP</div>
+            <h3>Representante</h3>
+            <p>
+              El representante entra para ver solo sus clientes asignados, registrar
+              prospectos, reportar pagos y solicitar activaciones.
+            </p>
+
+            <ul class="clean-list">
+              <li>Mis clientes asignados</li>
+              <li>Prospectos</li>
+              <li>Solicitudes de activación</li>
+              <li>Pagos reportados</li>
+              <li>Estado de clientes</li>
+              <li>Solicitudes de soporte</li>
+            </ul>
+          </article>
+
+          <article class="access-card">
+            <div class="icon-box">ADM</div>
+            <h3>Administración V&M</h3>
+            <p>
+              V&M entra para controlar todo el ecosistema: clientes, representantes,
+              licencias, pagos, apps contratadas, backups, soporte y auditoría.
+            </p>
+
+            <ul class="clean-list">
+              <li>Todos los clientes</li>
+              <li>Todos los representantes</li>
+              <li>Licencias y planes</li>
+              <li>Pagos aprobados</li>
+              <li>Apps contratadas</li>
+              <li>Backups y restauraciones</li>
+              <li>Auditoría del sistema</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLIENT ACCESS EXPLANATION -->
+    <section class="section alt-section">
+      <div class="container split-grid">
+        <div>
+          <span class="eyebrow">Portal cliente</span>
+          <h2>El cliente accederá a su programa contratado, no a una página genérica.</h2>
+          <p>
+            Cuando un cliente inicie sesión, el sistema deberá identificar su empresa,
+            sus servicios contratados y su licencia activa. A partir de eso, el portal
+            mostrará únicamente lo que ese cliente tiene permitido ver.
+          </p>
+          <p>
+            Por ejemplo, un cliente con FLOW POS verá su POS, licencia, soporte,
+            actualizaciones y datos disponibles. Un cliente con una app operativa verá
+            únicamente esa app y sus módulos contratados.
+          </p>
+        </div>
+
+        <div class="portal-access-example">
+          <div class="portal-access-row">
+            <strong>Cliente A</strong>
+            <span>FLOW POS</span>
+          </div>
+
+          <div class="portal-access-row">
+            <strong>Cliente B</strong>
+            <span>Control Comercial</span>
+          </div>
+
+          <div class="portal-access-row">
+            <strong>Cliente C</strong>
+            <span>Sistema Personalizado</span>
+          </div>
+
+          <div class="portal-access-row">
+            <strong>Representante</strong>
+            <span>Clientes asignados</span>
+          </div>
+
+          <div class="portal-access-row">
+            <strong>Admin V&M</strong>
+            <span>Control completo</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FUTURE CLIENT MODULES -->
+    <section class="section">
+      <div class="container">
+        <div class="section-heading compact-heading">
+          <span class="eyebrow">Módulos futuros del portal cliente</span>
+          <h2>Funciones que se activarán por fases.</h2>
+          <p>
+            No todo debe estar disponible desde el primer día. El portal real debe crecer
+            por etapas según el avance de las apps y la estructura comercial.
+          </p>
+        </div>
+
+        <div class="portal-grid">
+          <div class="portal-item">
+            <strong>Mis aplicaciones</strong>
+            <span>Programas contratados por el cliente: FLOW POS, Control Comercial u otros.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Mi licencia</strong>
+            <span>Plan, estado, vencimiento, servicios incluidos y período de gracia.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Mis usuarios</strong>
+            <span>Dueño, administradores, cajeros, operadores o usuarios internos.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Mis dispositivos</strong>
+            <span>Equipos autorizados, reemplazados, revocados o pendientes.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Mis reportes</strong>
+            <span>Información sincronizada desde el programa contratado.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Mis backups</strong>
+            <span>Historial de respaldos y restauración cuando esté habilitado.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Soporte</strong>
+            <span>Tickets, solicitudes técnicas, seguimiento e implementación.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Actualizaciones</strong>
+            <span>Versiones, mejoras disponibles y mantenimiento del sistema.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BACKUPS FOUNDATION -->
+    <section class="section alt-section">
+      <div class="container split-grid">
+        <div>
+          <span class="eyebrow">Backups y restauración</span>
+          <h2>La recuperación de información debe ser parte del portal real.</h2>
+          <p>
+            Cuando el portal esté conectado a las apps reales, cada cliente podrá tener
+            historial de backups y solicitudes de restauración. Esto será clave si una PC
+            se daña o necesita reemplazarse.
+          </p>
+          <p>
+            La restauración debe ser controlada: el cliente o representante puede solicitarla,
+            pero V&M debe aprobar y registrar la acción.
+          </p>
+        </div>
+
+        <div class="feature-list">
+          <div class="feature-item">
+            <strong>Backup registrado</strong>
+            <span>Archivo, cliente, app, dispositivo, fecha y estado.</span>
+          </div>
+
+          <div class="feature-item">
+            <strong>Verificación</strong>
+            <span>Hash, integridad y confirmación del respaldo.</span>
+          </div>
+
+          <div class="feature-item">
+            <strong>Solicitud de restauración</strong>
+            <span>Cliente o representante solicita recuperación por daño o cambio de equipo.</span>
+          </div>
+
+          <div class="feature-item">
+            <strong>Aprobación V&M</strong>
+            <span>La restauración se revisa, autoriza y registra centralmente.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PORTAL PHASES -->
+    <section class="section">
+      <div class="container">
+        <div class="section-heading compact-heading">
+          <span class="eyebrow">Fases de construcción</span>
+          <h2>Cómo debe construirse el portal real.</h2>
+        </div>
+
+        <div class="portal-grid">
+          <div class="portal-item">
+            <strong>Fase 1</strong>
+            <span>Diseño visual y estructura de acceso. Fase actual.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Fase 2</strong>
+            <span>Login real, usuarios, roles, clientes y representantes.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Fase 3</strong>
+            <span>Licencias, apps contratadas, dispositivos y servicios activos.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Fase 4</strong>
+            <span>Datos sincronizados desde las apps reales hacia el portal.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Fase 5</strong>
+            <span>Backups, historial, verificación y solicitudes de restauración.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Fase 6</strong>
+            <span>Dashboard real por cliente y funciones web avanzadas.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Fase 7</strong>
+            <span>Portal representante con clientes asignados, pagos y solicitudes.</span>
+          </div>
+
+          <div class="portal-item">
+            <strong>Fase 8</strong>
+            <span>Admin V&M completo con auditoría, reportes y control central.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECURITY NOTICE -->
+    <section class="section">
+      <div class="container notice-box">
+        <h2>Regla principal del portal</h2>
+        <p>
+          El portal real debe mostrar información según usuario y permisos. Un cliente
+          nunca debe ver datos de otro cliente. Un representante nunca debe ver clientes
+          fuera de su asignación. V&M debe tener control central de licencias, accesos,
+          pagos, backups, soporte y auditoría.
+        </p>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+      <div class="container cta-box">
+        <div>
+          <h2>El portal será la entrada privada a cada servicio contratado.</h2>
+          <p>
+            Primero queda definida la estructura. Después se conectarán usuarios, clientes,
+            apps, licencias, backups y soporte real.
+          </p>
+        </div>
+
+        <a href="services.html#solutions-in-action" class="btn btn-light">Ver vistas preliminares</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <a href="index.html" class="logo footer-logo">
+          <span class="logo-mark">V&M</span>
+          <span>V&M Business Systems</span>
+        </a>
+
+        <p>
+          Soluciones digitales para comercios, operaciones, soporte, actualizaciones y
+          sistemas personalizados.
+        </p>
+      </div>
+
+      <div>
+        <h4>Soluciones</h4>
+        <a href="solutions.html">Soluciones</a>
+        <a href="services.html#solutions-in-action">Vistas preliminares</a>
+        <a href="client-portal.html">Portal de acceso</a>
+      </div>
+
+      <div>
+        <h4>Empresa</h4>
+        <a href="services.html">Servicios</a>
+        <a href="plans.html">Planes</a>
+        <a href="contact.html">Contacto</a>
+      </div>
+
+      <div>
+        <h4>Acceso</h4>
+        <a href="client-portal.html">Portal cliente</a>
+        <a href="services.html">Soporte</a>
+        <a href="contact.html">Representantes autorizados</a>
+      </div>
+    </div>
+
+    <div class="container footer-bottom">
+      <span>© 2026 V&M Global LLC. Todos los derechos reservados.</span>
+      <span>V&M Business Systems es una marca operada por V&M Global LLC.</span>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
