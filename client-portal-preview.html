@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Portal Preview Interno | V&M Business Systems</title>
+
+  <meta
+    name="description"
+    content="Vista interna de integración para validar el portal cliente, equipos, respaldos y ficha imprimible."
+  />
+
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="js/client-portal-preview-access.js"></script>
+</head>
+
+<body>
+  <header class="site-header">
+    <nav class="navbar container">
+      <a href="index.html" class="logo">
+        <span class="logo-mark">V&M</span>
+        <span>V&M Business Systems</span>
+      </a>
+
+      <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">
+        ☰
+      </button>
+
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="solutions.html">Soluciones</a></li>
+        <li><a href="services.html">Servicios</a></li>
+        <li><a href="client-portal.html">Portal</a></li>
+        <li><a href="plans.html">Planes</a></li>
+        <li><a href="contact.html" class="nav-cta">Contacto</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="portal-dashboard-hero">
+      <div class="container portal-dashboard-header">
+        <div>
+          <span class="eyebrow">Portal interno validado</span>
+          <h1 id="portalDashboardTitle">Panel del cliente</h1>
+          <p id="portalDashboardSubtitle">
+            Vista interna para validar software, licencias, equipos y respaldos antes de activar el portal final.
+          </p>
+          <div class="portal-session-strip">
+            <span class="portal-session-badge" id="portalSessionRoleBadge">Sesion temporal</span>
+            <span class="portal-session-meta" id="portalSessionIdentity">Sin identidad cargada todavia.</span>
+          </div>
+        </div>
+
+        <div class="portal-dashboard-actions">
+          <button type="button" class="btn btn-primary" id="portalOpenFlowButtonHero">Abrir FLOW Web</button>
+          <button type="button" class="btn btn-secondary" id="portalDownloadInstallerButtonHero">Descargar instalador</button>
+          <button type="button" class="btn btn-secondary" id="portalLogoutButton">Cerrar sesión</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section portal-live-section">
+      <div class="container">
+        <div class="section-heading compact-heading">
+          <span class="eyebrow">Ficha viva del cliente</span>
+          <h2>Resumen operativo listo para consultar.</h2>
+          <p>
+            Esta es la base de la ficha del cliente: qué software tiene, cuántos equipos
+            usa, cuál fue su último respaldo y dónde se ubica exactamente en la nube.
+          </p>
+        </div>
+
+        <div class="portal-summary-grid">
+          <article class="portal-summary-card">
+            <span>Cliente</span>
+            <strong id="portalClientMetric">-</strong>
+            <p id="portalLicenseMetric">Sin datos cargados todavía.</p>
+          </article>
+
+          <article class="portal-summary-card">
+            <span>Equipos</span>
+            <strong id="portalDevicesMetric">0</strong>
+            <p id="portalDevicesCaption">Sin señales registradas aún.</p>
+          </article>
+
+          <article class="portal-summary-card">
+            <span>Respaldos</span>
+            <strong id="portalBackupsMetric">0</strong>
+            <p id="portalBackupsCaption">Sin respaldo resumido todavía.</p>
+          </article>
+
+          <article class="portal-summary-card">
+            <span>Release Windows</span>
+            <strong id="portalReleaseMetric">-</strong>
+            <p id="portalReleaseCaption">Sin release publicado cargado.</p>
+          </article>
+        </div>
+
+        <div class="portal-rate-panel">
+          <div class="portal-rate-copy">
+            <span class="eyebrow">Referencia cambiaria central</span>
+            <h3 id="portalRateTitle">BCV USD/VES</h3>
+            <p id="portalRateCaption">
+              La referencia central aparecerá aquí para validar tasa oficial, hora de consulta y estado del servicio.
+            </p>
+          </div>
+
+          <div class="portal-rate-metric">
+            <strong id="portalRateValue">--</strong>
+            <span id="portalRateMeta">Sin consulta todavía.</span>
+          </div>
+        </div>
+
+        <div class="portal-software-launcher">
+          <div class="portal-software-copy">
+            <span class="eyebrow">Acceso al software</span>
+            <h3>Abre FLOW directamente desde el portal.</h3>
+            <p>
+              Desde aquí el cliente, representante o administración puede entrar a FLOW Web
+              con su contexto tenant cargado. La instalación Windows sigue siendo la base
+              operativa principal para control fiscal y trabajo local.
+            </p>
+          </div>
+
+          <div class="portal-software-actions">
+            <button type="button" class="btn btn-primary" id="portalOpenFlowButtonCard">Abrir FLOW Web</button>
+            <button type="button" class="btn btn-secondary" id="portalDownloadInstallerButtonCard">Descargar instalador Windows</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt-section">
+      <div class="container portal-overview-grid">
+        <article class="portal-sheet-card">
+          <div class="portal-sheet-header">
+            <div>
+              <span class="eyebrow">Contexto del cliente</span>
+              <h2>Empresas y sucursales activas</h2>
+            </div>
+            <span class="portal-mini-badge">Tenant</span>
+          </div>
+
+          <div class="portal-list" id="portalTenantContexts">
+            <div class="portal-empty-box">
+              Carga un cliente para ver sus contextos tenant detectados por equipos y respaldos.
+            </div>
+          </div>
+        </article>
+
+        <article class="portal-sheet-card portal-highlight-card">
+          <div class="portal-sheet-header">
+            <div>
+              <span class="eyebrow">Último respaldo válido</span>
+              <h2>Ubicación y recuperación</h2>
+            </div>
+            <span class="portal-mini-badge">Cloud</span>
+          </div>
+
+          <div id="portalLatestBackup" class="portal-empty-box">
+            Aún no se ha cargado el respaldo más reciente.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container portal-overview-grid">
+        <article class="portal-sheet-card">
+          <div class="portal-sheet-header">
+            <div>
+              <span class="eyebrow">Equipos registrados</span>
+              <h2>Instalaciones activas del cliente</h2>
+            </div>
+            <span class="portal-mini-badge">Devices</span>
+          </div>
+
+          <div class="portal-list" id="portalDevicesList">
+            <div class="portal-empty-box">
+              Aquí aparecerán los equipos cuando se cargue un cliente real.
+            </div>
+          </div>
+        </article>
+
+        <article class="portal-sheet-card">
+          <div class="portal-sheet-header">
+            <div>
+              <span class="eyebrow">Respaldos recientes</span>
+              <h2>Historial listo para ubicar y archivar</h2>
+            </div>
+            <span class="portal-mini-badge">Backups</span>
+          </div>
+
+          <div class="portal-list" id="portalBackupsList">
+            <div class="portal-empty-box">
+              Aquí aparecerán los respaldos cloud cuando se cargue un cliente real.
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section alt-section">
+      <div class="container">
+        <details class="portal-advanced-panel">
+          <summary>Herramientas internas de validación</summary>
+
+          <div class="portal-dashboard-tools">
+            <div class="portal-demo-callout">
+              <strong>Cliente demo sugerido</strong>
+              <p>
+                Comercial Los Andes, C.A. con FLOW POS activo, dos cajas registradas,
+                respaldo cloud reciente y descarga Windows lista para portal.
+              </p>
+            </div>
+
+            <div class="portal-connection-actions">
+              <button type="button" id="portalDemoButtonCard">Cargar demo</button>
+              <button type="button" class="portal-light-action" id="portalLoadButtonCard">Cargar tenant demo real</button>
+              <button type="button" class="portal-light-action" id="portalPrintButtonCard">Imprimir ficha</button>
+            </div>
+
+            <div class="portal-form-grid">
+              <label>
+                Gateway
+                <input id="gatewayUrl" type="text" placeholder="http://localhost:8788" />
+              </label>
+
+              <label>
+                URL FLOW Web
+                <input id="flowWebUrl" type="text" placeholder="http://localhost:7357" />
+              </label>
+
+              <label>
+                Client ID
+                <input id="clientId" type="text" placeholder="4f71..." />
+              </label>
+
+              <label>
+                Empresa
+                <input id="businessId" type="text" placeholder="default-business" />
+              </label>
+
+              <label>
+                Sucursal
+                <input id="branchCode" type="text" placeholder="main" />
+              </label>
+            </div>
+
+            <label class="portal-token-label">
+              Token interno temporal del portal
+              <input id="portalToken" type="password" placeholder="Bearer token de lectura" />
+            </label>
+
+            <div class="portal-connection-actions">
+              <button type="button" id="portalLoadButtonHero">Actualizar vista real</button>
+              <button type="button" class="portal-light-action" id="portalClearButton">Limpiar</button>
+              <button type="button" class="portal-light-action" id="portalPrintButtonCard">Imprimir ficha</button>
+            </div>
+
+            <div class="notice-box portal-status-box compact">
+              <h2>Diagnóstico interno</h2>
+              <p>
+                Este bloque queda escondido para pruebas y no debe verse en el portal final del cliente.
+              </p>
+              <pre id="portalDiagnosticBox">Sin cargar.</pre>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <a href="index.html" class="logo footer-logo">
+          <span class="logo-mark">V&M</span>
+          <span>V&M Business Systems</span>
+        </a>
+
+        <p>
+          Soluciones digitales para comercios, operaciones, soporte, actualizaciones y
+          sistemas personalizados.
+        </p>
+      </div>
+
+      <div>
+        <h4>Soluciones</h4>
+        <a href="solutions.html">Soluciones</a>
+        <a href="services.html#solutions-in-action">Vistas preliminares</a>
+        <a href="client-portal.html">Portal de acceso</a>
+      </div>
+
+      <div>
+        <h4>Empresa</h4>
+        <a href="services.html">Servicios</a>
+        <a href="plans.html">Planes</a>
+        <a href="contact.html">Contacto</a>
+      </div>
+
+      <div>
+        <h4>Acceso</h4>
+        <a href="client-portal.html">Portal cliente</a>
+        <a href="services.html">Soporte</a>
+        <a href="contact.html">Representantes autorizados</a>
+      </div>
+    </div>
+
+    <div class="container footer-bottom">
+      <span>© 2026 V&M Global LLC. Todos los derechos reservados.</span>
+      <span>V&M Business Systems es una marca operada por V&M Global LLC.</span>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script src="js/client-portal.js"></script>
+</body>
+</html>
