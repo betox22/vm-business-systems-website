@@ -748,23 +748,21 @@ async function downloadInstaller() {
       );
     }
 
-    const anchor = document.createElement("a");
-    anchor.href = target;
-    anchor.target = "_blank";
-    anchor.rel = "noopener";
-    anchor.style.display = "none";
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
-
     setPortalDiagnostic({
       action: "download-installer",
       target,
       release: payload.release || null,
       expires_in_seconds: payload.download?.expires_in_seconds || null,
       message:
-        "Se abrió una URL firmada corta del instalador Windows desde el portal.",
+        "Se preparó la URL firmada del instalador Windows. Si la descarga no abre sola, el portal forzará la navegación directa.",
     });
+
+    const popup = window.open(target, "_blank", "noopener");
+    if (popup) {
+      return;
+    }
+
+    window.location.assign(target);
   } catch (error) {
     setPortalDiagnostic({
       success: false,
