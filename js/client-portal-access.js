@@ -11,6 +11,23 @@ const portalPreviewSession = {
   infoKey: "vm_portal_preview_info",
 };
 
+function resolvePortalGatewayUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const queryGateway = params.get("gateway") || params.get("gateway_url");
+  if (queryGateway && /^https?:\/\//i.test(queryGateway.trim())) {
+    const normalized = queryGateway.trim().replace(/\/$/, "");
+    localStorage.setItem(portalPreviewSession.gatewayUrlKey, normalized);
+    return normalized;
+  }
+
+  const storedGateway = localStorage.getItem(portalPreviewSession.gatewayUrlKey);
+  if (storedGateway && /^https?:\/\//i.test(storedGateway.trim())) {
+    return storedGateway.trim().replace(/\/$/, "");
+  }
+
+  return "http://localhost:8788";
+}
+
 function setPortalAccessMessage(message, isError = false) {
   if (!portalAccessForm.message) {
     return;
@@ -22,9 +39,7 @@ function setPortalAccessMessage(message, isError = false) {
 }
 
 async function requestPortalPreviewAccess() {
-  const gatewayUrl =
-    localStorage.getItem(portalPreviewSession.gatewayUrlKey) ||
-    "http://localhost:8788";
+  const gatewayUrl = resolvePortalGatewayUrl();
   const email = portalAccessForm.email.value.trim();
   const password = portalAccessForm.password.value;
 
@@ -65,9 +80,13 @@ async function requestPortalPreviewAccess() {
     );
     window.location.href = payload.redirect_to || "client-portal-preview.html";
   } catch (error) {
+    const fallbackHint =
+      /localhost:8788/i.test(gatewayUrl) && window.location.hostname !== "localhost"
+        ? " El portal público sigue apuntando al gateway local. Use la URL del portal con ?gateway=https://tu-backend para validación remota."
+        : "";
     setPortalAccessMessage(
       error instanceof Error
-        ? error.message
+        ? `${error.message}${fallbackHint}`
         : "No se pudo abrir la vista interna del portal.",
       true,
     );
