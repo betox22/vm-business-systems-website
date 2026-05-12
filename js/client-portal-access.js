@@ -7,6 +7,7 @@ const portalAccessForm = {
 
 const portalPreviewSession = {
   gatewayUrlKey: "vm_portal_gateway_url",
+  flowWebUrlKey: "vm_portal_flow_web_url",
   tokenKey: "vm_portal_preview_token",
   infoKey: "vm_portal_preview_info",
 };
@@ -14,6 +15,15 @@ const portalPreviewSession = {
 function resolvePortalGatewayUrl() {
   const params = new URLSearchParams(window.location.search);
   const queryGateway = params.get("gateway") || params.get("gateway_url");
+  const queryFlowWebUrl = params.get("flow_web_url");
+
+  if (queryFlowWebUrl && /^https?:\/\//i.test(queryFlowWebUrl.trim())) {
+    localStorage.setItem(
+      portalPreviewSession.flowWebUrlKey,
+      queryFlowWebUrl.trim().replace(/\/$/, ""),
+    );
+  }
+
   if (queryGateway && /^https?:\/\//i.test(queryGateway.trim())) {
     const normalized = queryGateway.trim().replace(/\/$/, "");
     localStorage.setItem(portalPreviewSession.gatewayUrlKey, normalized);
@@ -36,6 +46,16 @@ function setPortalAccessMessage(message, isError = false) {
   portalAccessForm.message.textContent = message;
   portalAccessForm.message.classList.toggle("error", isError);
   portalAccessForm.message.classList.toggle("success", !isError);
+}
+
+function persistPreviewSession(payload) {
+  const previewToken = payload?.preview_token || "";
+  const previewInfo = JSON.stringify(payload?.session || {});
+
+  sessionStorage.setItem(portalPreviewSession.tokenKey, previewToken);
+  sessionStorage.setItem(portalPreviewSession.infoKey, previewInfo);
+  localStorage.setItem(portalPreviewSession.tokenKey, previewToken);
+  localStorage.setItem(portalPreviewSession.infoKey, previewInfo);
 }
 
 async function requestPortalPreviewAccess() {
@@ -69,11 +89,7 @@ async function requestPortalPreviewAccess() {
       throw new Error(payload.message || "No se pudo validar el acceso temporal.");
     }
 
-    sessionStorage.setItem(portalPreviewSession.tokenKey, payload.preview_token);
-    sessionStorage.setItem(
-      portalPreviewSession.infoKey,
-      JSON.stringify(payload.session || {}),
-    );
+    persistPreviewSession(payload);
     setPortalAccessMessage(
       "Acceso temporal concedido. Abriendo la vista interna...",
       false,

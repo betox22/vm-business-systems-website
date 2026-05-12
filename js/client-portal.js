@@ -246,7 +246,9 @@ function currentPreviewSession() {
 
   try {
     return JSON.parse(
-      sessionStorage.getItem(portalStorageKeys.previewInfo) || "{}",
+      sessionStorage.getItem(portalStorageKeys.previewInfo) ||
+        localStorage.getItem(portalStorageKeys.previewInfo) ||
+        "{}",
     );
   } catch {
     return {};
@@ -299,7 +301,10 @@ function useDemoDefaults() {
 }
 
 function portalHeaders() {
-  const previewToken = sessionStorage.getItem(portalStorageKeys.previewToken) || "";
+  const previewToken =
+    sessionStorage.getItem(portalStorageKeys.previewToken) ||
+    localStorage.getItem(portalStorageKeys.previewToken) ||
+    "";
   if (previewToken) {
     return { Authorization: `Bearer ${previewToken}` };
   }
@@ -732,13 +737,8 @@ function openFlowWeb() {
 }
 
 async function downloadInstaller() {
-  let pendingWindow = null;
   try {
     savePortalState();
-    pendingWindow = openPendingWindow(
-      "Preparando instalador",
-      "Validando la sesión del portal y generando una URL firmada corta para Windows...",
-    );
     setPortalDiagnostic("Preparando descarga protegida del instalador...");
     const payload = await fetchPortalJson("/portal/releases/windows/download");
     const target = payload?.download?.download_url || "";
@@ -748,11 +748,15 @@ async function downloadInstaller() {
       );
     }
 
-    if (pendingWindow) {
-      pendingWindow.location.replace(target);
-    } else {
-      window.open(target, "_blank", "noopener");
-    }
+    const anchor = document.createElement("a");
+    anchor.href = target;
+    anchor.target = "_blank";
+    anchor.rel = "noopener";
+    anchor.style.display = "none";
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+
     setPortalDiagnostic({
       action: "download-installer",
       target,
@@ -762,9 +766,6 @@ async function downloadInstaller() {
         "Se abrió una URL firmada corta del instalador Windows desde el portal.",
     });
   } catch (error) {
-    if (pendingWindow && !pendingWindow.closed) {
-      pendingWindow.close();
-    }
     setPortalDiagnostic({
       success: false,
       action: "download-installer",
@@ -889,13 +890,18 @@ if (portalElements.logoutButton) {
   portalElements.logoutButton.addEventListener("click", () => {
     sessionStorage.removeItem(portalStorageKeys.previewToken);
     sessionStorage.removeItem(portalStorageKeys.previewInfo);
+    localStorage.removeItem(portalStorageKeys.previewToken);
+    localStorage.removeItem(portalStorageKeys.previewInfo);
     window.location.replace("client-portal.html");
   });
 }
 
 applySessionChrome();
 
-if (sessionStorage.getItem(portalStorageKeys.previewToken)) {
+if (
+  sessionStorage.getItem(portalStorageKeys.previewToken) ||
+  localStorage.getItem(portalStorageKeys.previewToken)
+) {
   loadSeededDemoPortal();
 } else {
   loadDemoPortal();
