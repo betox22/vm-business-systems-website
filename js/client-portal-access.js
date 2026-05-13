@@ -12,6 +12,8 @@ const portalPreviewSession = {
   infoKey: "vm_portal_preview_info",
 };
 
+const defaultPortalGatewayUrl = "https://api.vmbusinesssystems.com";
+
 function resolvePortalGatewayUrl() {
   const params = new URLSearchParams(window.location.search);
   const queryGateway = params.get("gateway") || params.get("gateway_url");
@@ -35,7 +37,7 @@ function resolvePortalGatewayUrl() {
     return storedGateway.trim().replace(/\/$/, "");
   }
 
-  return "http://localhost:8788";
+  return defaultPortalGatewayUrl;
 }
 
 function setPortalAccessMessage(message, isError = false) {
@@ -97,8 +99,8 @@ async function requestPortalPreviewAccess() {
     window.location.href = payload.redirect_to || "client-portal-preview.html";
   } catch (error) {
     const fallbackHint =
-      /localhost:8788/i.test(gatewayUrl) && window.location.hostname !== "localhost"
-        ? " El portal público sigue apuntando al gateway local. Use la URL del portal con ?gateway=https://tu-backend para validación remota."
+      gatewayUrl === defaultPortalGatewayUrl
+        ? " Si acabas de cambiar infraestructura, recarga el portal en unos segundos e inténtalo otra vez."
         : "";
     setPortalAccessMessage(
       error instanceof Error

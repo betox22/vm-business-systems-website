@@ -183,6 +183,9 @@ const portalStorageKeys = {
   previewInfo: "vm_portal_preview_info",
 };
 
+const defaultPortalGatewayUrl = "https://api.vmbusinesssystems.com";
+const defaultFlowWebUrl = "http://localhost:7357";
+
 const seededDemoTenant = {
   clientId: demoPortalPayload.overview.client.client_id,
   businessId: demoPortalPayload.overview.client.business_id,
@@ -220,11 +223,11 @@ function loadPortalState() {
   portalElements.gatewayUrl.value =
     params.get("gateway") ||
     localStorage.getItem(portalStorageKeys.gatewayUrl) ||
-    "http://localhost:8788";
+    defaultPortalGatewayUrl;
   portalElements.flowWebUrl.value =
     params.get("flow_web_url") ||
     localStorage.getItem(portalStorageKeys.flowWebUrl) ||
-    "http://localhost:7357";
+    defaultFlowWebUrl;
   portalElements.clientId.value =
     params.get("client_id") ||
     localStorage.getItem(portalStorageKeys.clientId) ||
@@ -823,7 +826,7 @@ function loadDemoPortal() {
 
 function clearPortal() {
   portalElements.flowWebUrl.value =
-    localStorage.getItem(portalStorageKeys.flowWebUrl) || "http://localhost:7357";
+    localStorage.getItem(portalStorageKeys.flowWebUrl) || defaultFlowWebUrl;
   portalElements.clientId.value = "";
   portalElements.businessId.value = "";
   portalElements.branchCode.value = "";
