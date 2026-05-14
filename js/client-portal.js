@@ -6,9 +6,14 @@ const demoPortalPayload = {
       client_id: "demo-client-los-andes",
       business_id: "los-andes-central",
       branch_code: "principal",
-      license_ids: ["LIC-FLOW-POS-2026-001"],
+      license_ids: ["LISTO-DEV-001"],
       display_name: "Comercial Los Andes, C.A.",
-      software_name: "FLOW POS",
+      software_name: "Listo",
+      product_family: "listo",
+      country_code: "US",
+      base_currency_code: "USD",
+      plan_code: "demo",
+      allowed_devices: 5,
     },
     summary: {
       devices_total: 2,
@@ -45,8 +50,51 @@ const demoPortalPayload = {
       },
     },
     latest_release: {
-      version: "0.4.1",
-      storage_path: "windows/stable/0.4.1/FLOW-Setup-0.4.1.exe",
+      version: "0.1.0",
+      storage_path: "listo/windows/preview/Listo-Setup-0.1.0.exe",
+      platforms: [
+        {
+          platform: "web",
+          label: "Abrir Web",
+          url: "https://app.vmbusinesssystems.com/listo",
+          status: "preview",
+        },
+        {
+          platform: "windows",
+          label: "Windows",
+          storage_path: "listo/windows/preview/Listo-Setup-0.1.0.exe",
+          status: "preview",
+        },
+        {
+          platform: "android",
+          label: "Android APK",
+          storage_path: "listo/android/preview/listo-0.1.0.apk",
+          status: "preparado",
+        },
+        {
+          platform: "ios",
+          label: "iOS",
+          status: "pendiente",
+        },
+      ],
+    },
+    activation: {
+      activation_code: "LISTO-DEV-001",
+      qr_payload:
+        "LISTO:ACTIVATE:LISTO-DEV-001:demo-client-los-andes:los-andes-central",
+      expires_in_minutes: 30,
+      allowed_devices: 5,
+      offline_grace_days: 7,
+    },
+    business_profile: {
+      country_code: "US",
+      country_name: "United States",
+      base_currency_code: "USD",
+      primary_tax_label: "Sales tax",
+      primary_tax_rate: 0,
+      secondary_tax_label: "Additional tax",
+      secondary_tax_rate: 0,
+      compliance_profile: "generic",
     },
     current_exchange_rate: {
       currency_code: "USD",
@@ -64,7 +112,7 @@ const demoPortalPayload = {
     devices: [
       {
         device_display_name: "Caja principal",
-        device_identifier: "FLOW-WINDOWS-DEMO-001",
+      device_identifier: "LISTO-WINDOWS-DEMO-001",
         platform: "windows-x64",
         status: "active",
         business_id: "los-andes-central",
@@ -73,8 +121,8 @@ const demoPortalPayload = {
       },
       {
         device_display_name: "Servidor de respaldo",
-        device_identifier: "FLOW-WINDOWS-DEMO-002",
-        platform: "windows-x64",
+        device_identifier: "LISTO-ANDROID-DEMO-002",
+        platform: "android",
         status: "active",
         business_id: "los-andes-central",
         branch_code: "deposito",
@@ -163,6 +211,11 @@ const portalElements = {
   backupsCaption: document.getElementById("portalBackupsCaption"),
   releaseMetric: document.getElementById("portalReleaseMetric"),
   releaseCaption: document.getElementById("portalReleaseCaption"),
+  activationCode: document.getElementById("portalActivationCode"),
+  activationQrPayload: document.getElementById("portalActivationQrPayload"),
+  activationMeta: document.getElementById("portalActivationMeta"),
+  businessProfile: document.getElementById("portalBusinessProfile"),
+  platformsList: document.getElementById("portalPlatformsList"),
   rateTitle: document.getElementById("portalRateTitle"),
   rateValue: document.getElementById("portalRateValue"),
   rateMeta: document.getElementById("portalRateMeta"),
@@ -470,7 +523,7 @@ function renderLatestBackup(item) {
 
 function renderCurrentExchangeRate(rate, errorMessage) {
   if (!rate) {
-    setPortalText(portalElements.rateTitle, "BCV USD/VES");
+    setPortalText(portalElements.rateTitle, "Tasa de cambio");
     setPortalText(portalElements.rateValue, "--");
     setPortalText(
       portalElements.rateMeta,
@@ -479,14 +532,14 @@ function renderCurrentExchangeRate(rate, errorMessage) {
     setPortalText(
       portalElements.rateCaption,
       errorMessage
-        ? "La consulta central no respondió; revise gateway, conectividad o fuente BCV."
-        : "La referencia central aparecerá aquí para validar tasa oficial, hora de consulta y estado del servicio.",
+        ? "La consulta central no respondió; revise gateway, conectividad o fuente configurada."
+        : "La referencia central aparecerá aquí para validar tasa, hora de consulta y estado del servicio.",
     );
     return;
   }
 
   const pair = `${rate.currency_code || "USD"}/${rate.quote_currency_code || "VES"}`;
-  setPortalText(portalElements.rateTitle, `BCV ${pair}`);
+  setPortalText(portalElements.rateTitle, `Tasa ${pair}`);
   setPortalText(
     portalElements.rateValue,
     typeof rate.rate_value === "number"
@@ -536,7 +589,7 @@ function renderPortalPayload(overview, devices, backups, sourceLabel) {
   const softwareName =
     overview.client?.software_name ||
     (overview.latest_release?.version
-      ? `FLOW ${overview.latest_release.version}`
+      ? `Listo ${overview.latest_release.version}`
       : "Sin software resumido");
 
   setPortalText(
@@ -585,6 +638,7 @@ function renderPortalPayload(overview, devices, backups, sourceLabel) {
     portalElements.releaseCaption,
     overview.latest_release?.storage_path || "Sin release publicado todavía.",
   );
+  renderListoActivation(overview);
   renderCurrentExchangeRate(
     overview.current_exchange_rate || null,
     overview.current_exchange_rate_error || "",
@@ -618,7 +672,7 @@ function buildFlowWebUrl() {
   const gatewayBase = portalElements.gatewayUrl.value.trim();
   if (!flowWebBase) {
     throw new Error(
-      "Falta la URL base de FLOW Web. Configúrala en herramientas internas.",
+      "Falta la URL base de Listo Web. Configúrala en herramientas internas.",
     );
   }
 
@@ -707,8 +761,8 @@ function openFlowWeb() {
     savePortalState();
     const targetUrl = buildFlowWebUrl();
     const pendingWindow = openPendingWindow(
-      "Abriendo FLOW Web",
-      "Preparando la app web con el tenant y el rol del portal...",
+      "Abriendo Listo Web",
+      "Preparando Listo Web con el negocio y el rol del portal...",
     );
     if (pendingWindow) {
       pendingWindow.location.replace(targetUrl);
@@ -725,10 +779,10 @@ function openFlowWeb() {
       target: targetUrl,
       local_runtime_expected: isLocalFlowWeb,
       reminder: isLocalFlowWeb
-        ? 'Si la nueva pestaña da error, levanta FLOW Web con: flutter run -d chrome --web-port 7357 --dart-define=FLOW_DEMO_MODE=true'
+        ? "Si la nueva pestaña da error, levanta Listo Web con Flutter en el puerto configurado."
         : null,
       message:
-        "FLOW Web se abrió en una nueva pestaña con rol y tenant cargados desde el portal.",
+        "Listo Web se abrió en una nueva pestaña con rol y negocio cargados desde el portal.",
     });
   } catch (error) {
     setPortalDiagnostic({
@@ -895,6 +949,51 @@ if (portalElements.logoutButton) {
     localStorage.removeItem(portalStorageKeys.previewInfo);
     window.location.replace("client-portal.html");
   });
+}
+
+function renderListoActivation(overview) {
+  const activation = overview.activation || {};
+  const profile = overview.business_profile || {};
+  const platforms = overview.latest_release?.platforms || [];
+
+  setPortalText(
+    portalElements.activationCode,
+    activation.activation_code || "Sin código emitido",
+  );
+  setPortalText(
+    portalElements.activationQrPayload,
+    activation.qr_payload || "Sin QR de activación generado.",
+  );
+  setPortalText(
+    portalElements.activationMeta,
+    activation.activation_code
+      ? `Vence en ${activation.expires_in_minutes || 30} min · ${activation.allowed_devices || 1} equipo(s) · gracia offline ${activation.offline_grace_days || 7} días`
+      : "El QR se emitirá desde el gateway cuando la licencia esté aprobada.",
+  );
+
+  if (portalElements.businessProfile) {
+    portalElements.businessProfile.innerHTML = `
+      <div class="portal-key-value"><span>País</span><strong>${portalEscaped(profile.country_name || profile.country_code || "-")}</strong></div>
+      <div class="portal-key-value"><span>Moneda base</span><strong>${portalEscaped(profile.base_currency_code || "-")}</strong></div>
+      <div class="portal-key-value"><span>Impuesto principal</span><strong>${portalEscaped(profile.primary_tax_label || "Configurable")}</strong></div>
+      <div class="portal-key-value"><span>Cumplimiento</span><strong>${portalEscaped(profile.compliance_profile || "generic")}</strong></div>
+    `;
+  }
+
+  if (portalElements.platformsList) {
+    portalElements.platformsList.innerHTML = platforms.length
+      ? platforms
+          .map(
+            (item) => `
+              <div class="portal-platform-pill">
+                <strong>${portalEscaped(item.label || item.platform)}</strong>
+                <span>${portalEscaped(item.status || "preparado")}</span>
+              </div>
+            `,
+          )
+          .join("")
+      : portalEmptyBox("Sin plataformas configuradas todavía.");
+  }
 }
 
 applySessionChrome();

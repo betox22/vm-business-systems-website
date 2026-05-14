@@ -54,7 +54,7 @@
         </div>
 
         <div class="portal-dashboard-actions">
-          <button type="button" class="btn btn-primary" id="portalOpenFlowButtonHero">Abrir FLOW Web</button>
+          <button type="button" class="btn btn-primary" id="portalOpenFlowButtonHero">Abrir Listo Web</button>
           <button type="button" class="btn btn-secondary" id="portalDownloadInstallerButtonHero">Descargar instalador</button>
           <button type="button" class="btn btn-secondary" id="portalLogoutButton">Cerrar sesión</button>
         </div>
@@ -101,7 +101,7 @@
         <div class="portal-rate-panel">
           <div class="portal-rate-copy">
             <span class="eyebrow">Referencia cambiaria central</span>
-            <h3 id="portalRateTitle">BCV USD/VES</h3>
+            <h3 id="portalRateTitle">Tasa de cambio</h3>
             <p id="portalRateCaption">
               La referencia central aparecerá aquí para validar tasa oficial, hora de consulta y estado del servicio.
             </p>
@@ -116,18 +116,43 @@
         <div class="portal-software-launcher">
           <div class="portal-software-copy">
             <span class="eyebrow">Acceso al software</span>
-            <h3>Abre FLOW directamente desde el portal.</h3>
+            <h3>Abre Listo directamente desde el portal.</h3>
             <p>
-              Desde aquí el cliente, representante o administración puede entrar a FLOW Web
-              con su contexto tenant cargado. La instalación Windows sigue siendo la base
-              operativa principal para control fiscal y trabajo local.
+              Desde aquí el cliente, representante o administración puede entrar a Listo Web
+              con su contexto de negocio cargado. Windows, Android, web e iOS comparten
+              licencia, backup y perfil de país.
             </p>
           </div>
 
           <div class="portal-software-actions">
-            <button type="button" class="btn btn-primary" id="portalOpenFlowButtonCard">Abrir FLOW Web</button>
+            <button type="button" class="btn btn-primary" id="portalOpenFlowButtonCard">Abrir Listo Web</button>
             <button type="button" class="btn btn-secondary" id="portalDownloadInstallerButtonCard">Descargar instalador Windows</button>
           </div>
+        </div>
+
+        <div class="portal-activation-grid">
+          <article class="portal-activation-card">
+            <span class="eyebrow">Activación por QR</span>
+            <h3>Licencia Listo lista para vincular dispositivos.</h3>
+            <p>
+              El QR será temporal y de uso controlado. La app lo escanea, valida la licencia,
+              registra el dispositivo y guarda permiso local para operar offline.
+            </p>
+            <div class="portal-code-box" id="portalActivationCode">Sin código emitido</div>
+            <small id="portalActivationMeta">Sin licencia cargada todavía.</small>
+            <pre id="portalActivationQrPayload">Sin QR de activación generado.</pre>
+          </article>
+
+          <article class="portal-activation-card">
+            <span class="eyebrow">Perfil del negocio</span>
+            <h3>País, moneda e impuestos configurables.</h3>
+            <div id="portalBusinessProfile" class="portal-profile-grid">
+              <div class="portal-empty-box">Sin perfil cargado.</div>
+            </div>
+            <div class="portal-platforms" id="portalPlatformsList">
+              <div class="portal-empty-box">Sin plataformas configuradas todavía.</div>
+            </div>
+          </article>
         </div>
       </div>
     </section>
@@ -211,8 +236,8 @@
             <div class="portal-demo-callout">
               <strong>Cliente demo sugerido</strong>
               <p>
-                Comercial Los Andes, C.A. con FLOW POS activo, dos cajas registradas,
-                respaldo cloud reciente y descarga Windows lista para portal.
+                Comercial Los Andes, C.A. con Listo activo, equipos autorizados,
+                respaldo cloud reciente y activación QR lista para portal.
               </p>
             </div>
 
@@ -229,7 +254,7 @@
               </label>
 
               <label>
-                URL FLOW Web
+                URL Listo Web
                 <input id="flowWebUrl" type="text" placeholder="http://localhost:7357" />
               </label>
 
