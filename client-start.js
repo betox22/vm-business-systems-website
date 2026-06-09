@@ -3,14 +3,13 @@ const PUBLIC_BACKEND_URL = "";
 
 const LANDING_COPY = {
   en: {
-    title: "Build your business website with AI",
+    title: "Create your online store or business website by talking to AI",
     kicker: "AI guided website setup",
     subtitle:
-      "Talk to Luma, your AI website assistant. Answer a few simple questions, upload your logo or photos if you have them, and get a professional editable website draft in minutes.",
+      "Tell Luma what kind of site you want — marketplace, restaurant menu, booking page, service business, digital products, or online store — and get an editable draft built around your brand.",
     start: "Start with Luma",
-    how: "Use manual form",
+    how: "Choose a template",
     language: "Language",
-    adminAccess: "Admin panel",
     trustVoice: "Type or use voice",
     trustAssets: "Upload logo and photos",
     trustEditable: "Review and edit before generating",
@@ -25,14 +24,13 @@ const LANDING_COPY = {
     step3Text: "Review and adjust everything before your site goes live.",
   },
   es: {
-    title: "Crea la página de tu negocio con IA",
+    title: "Crea tu tienda online o pagina de negocio hablando con IA",
     kicker: "Configuración guiada con IA",
     subtitle:
-      "Habla con Luma, tu asistente de creación web. Responde unas preguntas simples, sube tu logo o fotos si tienes, y genera una primera versión profesional y editable en minutos.",
+      "Dile a Luma que tipo de sitio quieres: marketplace, menu de restaurante, pagina de reservas, servicios, productos digitales o tienda online, y recibe un borrador editable alrededor de tu marca.",
     start: "Empezar con Luma",
-    how: "Usar formulario manual",
+    how: "Elegir template",
     language: "Idioma",
-    adminAccess: "Panel admin",
     trustVoice: "Escribe o usa voz",
     trustAssets: "Sube logo y fotos",
     trustEditable: "Revisa y edita antes de generar",
@@ -47,14 +45,13 @@ const LANDING_COPY = {
     step3Text: "Revisa y ajusta todo antes de publicar.",
   },
   fr: {
-    title: "Créez le site de votre entreprise avec l'IA",
+    title: "Créez votre boutique ou site professionnel en parlant à l'IA",
     kicker: "Configuration guidée par IA",
     subtitle:
-      "Parlez à Luma, votre assistante web IA. Répondez à quelques questions simples, ajoutez votre logo ou vos photos si vous en avez, et obtenez une première version professionnelle et modifiable en quelques minutes.",
+      "Dites à Luma quel type de site vous voulez: marketplace, menu restaurant, réservation, services, produits numériques ou boutique, et obtenez un brouillon modifiable autour de votre marque.",
     start: "Commencer avec Luma",
-    how: "Utiliser le formulaire",
+    how: "Choisir un template",
     language: "Langue",
-    adminAccess: "Admin",
     trustVoice: "Écrire ou utiliser la voix",
     trustAssets: "Ajouter logo et photos",
     trustEditable: "Relire et modifier avant de générer",
@@ -69,14 +66,13 @@ const LANDING_COPY = {
     step3Text: "Relisez et ajustez tout avant la mise en ligne.",
   },
   pt: {
-    title: "Crie o site do seu negócio com IA",
+    title: "Crie sua loja online ou site de negócio conversando com IA",
     kicker: "Configuração guiada por IA",
     subtitle:
-      "Converse com a Luma, sua assistente web com IA. Responda algumas perguntas simples, envie seu logo ou fotos se tiver, e receba uma primeira versão profissional e editável em minutos.",
+      "Diga à Luma que tipo de site você quer: marketplace, menu de restaurante, agendamentos, serviços, produtos digitais ou loja online, e receba um rascunho editável para sua marca.",
     start: "Começar com Luma",
-    how: "Usar formulário manual",
+    how: "Escolher template",
     language: "Idioma",
-    adminAccess: "Painel admin",
     trustVoice: "Digite ou use voz",
     trustAssets: "Envie logo e fotos",
     trustEditable: "Revise e edite antes de gerar",
@@ -108,6 +104,7 @@ let selectedLanguage = initialLanguage();
 const languageSelect = document.querySelector("#clientLanguage");
 const startButton = document.querySelector("#startWithGnuDev");
 const manualButton = document.querySelector("#useManualForm");
+const chooseTemplateButton = document.querySelector("#chooseTemplateButton");
 const chatModal = document.querySelector("#clientChatModal");
 const chatFrame = document.querySelector("#clientChatFrame");
 const closeChatButton = document.querySelector("#closeClientChat");
@@ -133,9 +130,23 @@ startButton.addEventListener("click", (event) => {
   event.preventDefault();
   openLumaChat();
 });
-manualButton.addEventListener("click", (event) => {
+manualButton?.addEventListener("click", (event) => {
   event.preventDefault();
   openLumaChat(true);
+});
+chooseTemplateButton?.addEventListener("click", (event) => {
+  event.preventDefault();
+  document.querySelector("#intentCards")?.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+document.querySelectorAll("[data-intent-prompt]").forEach((card) => {
+  card.querySelector("button")?.addEventListener("click", () => {
+    openLumaChat(false, {
+      prompt: card.dataset.intentPrompt || "",
+      templateId: card.dataset.templateId || "",
+      catalogType: card.dataset.catalogType || "",
+      intent: card.querySelector("strong")?.textContent || "",
+    });
+  });
 });
 
 closeChatButton.addEventListener("click", closeLumaChat);
@@ -147,9 +158,15 @@ window.addEventListener("message", (event) => {
   }
 });
 
-function openLumaChat(manual = false) {
+function openLumaChat(manual = false, intent = {}) {
   const apiQuery = PUBLIC_BACKEND_URL ? `&api=${encodeURIComponent(PUBLIC_BACKEND_URL)}` : "";
-  const nextSrc = `/client/setup/?lang=${selectedLanguage}&embedded=1${apiQuery}${manual ? "&manual=1" : ""}`;
+  const intentQuery = [
+    intent.prompt ? `prompt=${encodeURIComponent(intent.prompt)}` : "",
+    intent.templateId ? `templateId=${encodeURIComponent(intent.templateId)}` : "",
+    intent.catalogType ? `catalogType=${encodeURIComponent(intent.catalogType)}` : "",
+    intent.intent ? `intent=${encodeURIComponent(intent.intent)}` : "",
+  ].filter(Boolean).join("&");
+  const nextSrc = `/client/setup/?lang=${selectedLanguage}&embedded=1${apiQuery}${manual ? "&manual=1" : ""}${intentQuery ? `&${intentQuery}` : ""}`;
   if (chatFrame.getAttribute("src") !== nextSrc) {
     chatFrame.src = nextSrc;
   }

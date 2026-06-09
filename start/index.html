@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Luma AI Website Builder</title>
-    <link rel="stylesheet" href="/client.css?v=4">
+    <link rel="stylesheet" href="/client.css?v=5">
   </head>
   <body class="client-landing-body">
     <main class="client-landing">
@@ -22,21 +22,19 @@
             <option value="pt">Português</option>
           </select>
         </label>
-        <a class="client-admin-link" href="/template-test/">Ver templates</a>
-        <a class="client-admin-link" href="/admin/" data-client-i18n="adminAccess">Admin panel</a>
       </nav>
 
       <section class="client-hero">
         <div class="client-hero-copy">
           <span class="client-kicker" data-client-i18n="kicker">AI guided website setup</span>
-          <h1 data-client-i18n="title">Build your business website with AI</h1>
-          <p data-client-i18n="subtitle">Talk to Luma, your AI website assistant. Answer a few simple questions, upload your logo or photos if you have them, and get a professional editable website draft in minutes.</p>
+          <h1 data-client-i18n="title">Create your online store or business website by talking to AI</h1>
+          <p data-client-i18n="subtitle">Tell Luma what kind of site you want — marketplace, restaurant menu, booking page, service business, digital products, or online store — and get an editable draft built around your brand.</p>
           <div class="client-actions">
             <a id="startWithGnuDev" class="client-button primary" href="/client/setup/">
               <span data-client-i18n="start">Start with Luma</span>
             </a>
-            <a id="useManualForm" class="client-button secondary" href="/client/setup/?manual=1">
-              <span data-client-i18n="how">Use manual form</span>
+            <a id="chooseTemplateButton" class="client-button secondary" href="#intentCards">
+              <span data-client-i18n="how">Choose a template</span>
             </a>
           </div>
           <div class="client-trust-row" aria-label="Highlights">
@@ -54,6 +52,64 @@
             <strong data-client-i18n="bubbleTitle">Luma is ready</strong>
             <p data-client-i18n="bubbleText">A friendly chat collects the details and turns them into a website draft.</p>
           </div>
+        </div>
+      </section>
+
+      <section id="intentCards" class="intent-section">
+        <div class="intent-heading">
+          <span class="client-kicker">Template intelligence</span>
+          <h2>Choose a starting style or let Luma decide</h2>
+          <p>Each style uses a different catalog model, so a marketplace, menu, booking page, or premium store does not render like the same generic grid.</p>
+        </div>
+        <div class="intent-grid">
+          <article class="intent-card" data-intent-prompt="I want something like Amazon with many categories, search, filters, deals, and many products" data-template-id="marketplace-style" data-catalog-type="dense_marketplace_catalog">
+            <strong>Mega Marketplace</strong>
+            <p>Amazon-style product discovery with categories, search, filters, ratings, and deals.</p>
+            <span>dense_marketplace_catalog</span>
+            <button type="button">Use this style</button>
+          </article>
+          <article class="intent-card" data-intent-prompt="I want something like eBay with seller listings, used products, condition labels, and offers" data-template-id="classified-marketplace" data-catalog-type="listing_marketplace_catalog">
+            <strong>Listing Marketplace</strong>
+            <p>eBay-style listings with sellers, product condition, location, and offer CTAs.</p>
+            <span>listing_marketplace_catalog</span>
+            <button type="button">Use this style</button>
+          </article>
+          <article class="intent-card" data-intent-prompt="I want a restaurant website with a menu, categories, food items, and ordering calls to action" data-template-id="restaurant-food-business" data-catalog-type="menu_catalog">
+            <strong>Restaurant Menu</strong>
+            <p>Menu categories, featured dishes, dietary tags, and food ordering flow.</p>
+            <span>menu_catalog</span>
+            <button type="button">Use this style</button>
+          </article>
+          <article class="intent-card" data-intent-prompt="I want a booking site for a barbershop, salon, spa, or appointment-based business" data-template-id="appointment-booking" data-catalog-type="booking_menu_catalog">
+            <strong>Appointment Booking</strong>
+            <p>Services with durations, prices, staff cues, and appointment CTAs.</p>
+            <span>booking_menu_catalog</span>
+            <button type="button">Use this style</button>
+          </article>
+          <article class="intent-card" data-intent-prompt="I want a local services website for cleaning, repairs, quote requests, and service areas" data-template-id="local-business-pro" data-catalog-type="service_area_catalog">
+            <strong>Local Services</strong>
+            <p>Service areas, quote requests, trust sections, and local conversion flow.</p>
+            <span>service_area_catalog</span>
+            <button type="button">Use this style</button>
+          </article>
+          <article class="intent-card" data-intent-prompt="I want to sell digital products like courses, ebooks, templates, software, or memberships" data-template-id="digital-products-store" data-catalog-type="digital_offer_catalog">
+            <strong>Digital Products</strong>
+            <p>Offer cards for courses, downloads, bundles, previews, and instant access.</p>
+            <span>digital_offer_catalog</span>
+            <button type="button">Use this style</button>
+          </article>
+          <article class="intent-card" data-intent-prompt="I want a premium minimal store like Apple or a luxury clean ecommerce brand" data-template-id="minimal-store" data-catalog-type="editorial_minimal_grid">
+            <strong>Premium Store</strong>
+            <p>Minimal, polished shopping with whitespace, strong product focus, and clean hierarchy.</p>
+            <span>editorial_minimal_grid</span>
+            <button type="button">Use this style</button>
+          </article>
+          <article class="intent-card" data-intent-prompt="I want a fashion drop store, boutique, streetwear, sneakers, or a cyberpunk neon store" data-template-id="bold-fashion-store" data-catalog-type="lookbook_collection_catalog">
+            <strong>Fashion Drop</strong>
+            <p>Lookbook collections, drop energy, lifestyle cards, and bold visual merchandising.</p>
+            <span>lookbook_collection_catalog</span>
+            <button type="button">Use this style</button>
+          </article>
         </div>
       </section>
 
@@ -86,6 +142,6 @@
         <iframe id="clientChatFrame" title="Luma AI website assistant"></iframe>
       </div>
     </div>
-    <script src="/client-start.js?v=9"></script>
+    <script src="/client-start.js?v=10"></script>
   </body>
 </html>

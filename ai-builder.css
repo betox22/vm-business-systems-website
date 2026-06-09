@@ -564,6 +564,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   line-height: 1.45;
 }
 
+.chat-message span {
+  white-space: pre-line;
+}
+
 .chat-message.user {
   display: block;
   justify-self: end;

@@ -46,6 +46,9 @@ const I18N = {
     assistantSubtitle: "AI website assistant",
     onlineStatus: "Online",
     assistantIntro: "Hi, I’m Luma. I’ll help you create your website or store step by step. You can type or use your voice.",
+    intentDetected: "Great. I detected this direction:",
+    selectedTemplate: "Selected template",
+    catalogType: "Catalog type",
     currentInfo: "A few details collected so far.",
     finalReviewTitle: "Your website brief",
     generateMyWebsite: "Generate my website",
@@ -75,6 +78,7 @@ const I18N = {
     uploadPhotos: "Upload photos optional",
     salesMode: "Sales flow",
     hasLogoPhotos: "Logo/photos",
+    websiteIntent: "Website type",
     reply: "Reply",
     pageTitle: "AI Website Builder",
     liveSummary: "Live summary",
@@ -122,6 +126,9 @@ const I18N = {
     assistantSubtitle: "Asistente web con IA",
     onlineStatus: "En linea",
     assistantIntro: "Hola, soy Luma. Te ayudare a crear tu pagina o tienda paso a paso. Puedes escribir o usar tu voz.",
+    intentDetected: "Perfecto. Detecte esta direccion:",
+    selectedTemplate: "Template seleccionado",
+    catalogType: "Tipo de catalogo",
     currentInfo: "Algunos detalles recopilados hasta ahora.",
     finalReviewTitle: "Resumen de tu pagina",
     generateMyWebsite: "Generar mi pagina",
@@ -151,6 +158,7 @@ const I18N = {
     uploadPhotos: "Subir fotos opcional",
     salesMode: "Flujo de venta",
     hasLogoPhotos: "Logo/fotos",
+    websiteIntent: "Tipo de sitio",
     reply: "Respuesta",
     pageTitle: "Constructor de paginas con IA",
     liveSummary: "Resumen en vivo",
@@ -227,6 +235,7 @@ const I18N = {
     uploadPhotos: "Importer des photos optionnelles",
     salesMode: "Parcours de vente",
     hasLogoPhotos: "Logo/photos",
+    websiteIntent: "Type de site",
     reply: "Réponse",
     pageTitle: "Générateur de site IA",
     liveSummary: "Résumé en direct",
@@ -302,6 +311,7 @@ const I18N = {
     uploadPhotos: "Enviar fotos opcionais",
     salesMode: "Fluxo de venda",
     hasLogoPhotos: "Logo/fotos",
+    websiteIntent: "Tipo de site",
     reply: "Resposta",
     pageTitle: "Criador de sites com IA",
     liveSummary: "Resumo ao vivo",
@@ -345,6 +355,7 @@ const I18N = {
 
 const GUIDED_QUESTIONS = {
   en: {
+    websiteIntent: "What kind of website do you want to create?",
     businessName: "First, what is the name of your business?",
     businessDescription: "Tell me in one sentence what it sells or does.",
     industry: "What industry or category best fits it?",
@@ -359,6 +370,7 @@ const GUIDED_QUESTIONS = {
     review: "Review the summary. If it looks right, generate the site.",
   },
   es: {
+    websiteIntent: "Que tipo de pagina quieres crear?",
     businessName: "Primero, ¿cómo se llama tu negocio?",
     businessDescription: "Perfecto. ¿Qué vende o qué ofrece tu negocio?",
     industry: "En que industria o categoria lo pondrias?",
@@ -373,6 +385,7 @@ const GUIDED_QUESTIONS = {
     review: "Revisa el resumen. Si esta bien, genera el sitio.",
   },
   fr: {
+    websiteIntent: "Quel type de site voulez-vous creer?",
     businessName: "Quel est le nom de l'entreprise?",
     businessDescription: "Décrivez en une phrase ce qu'elle vend ou propose.",
     industry: "Dans quel secteur ou catégorie la placeriez-vous?",
@@ -387,6 +400,7 @@ const GUIDED_QUESTIONS = {
     review: "Vérifiez le résumé. Si tout est bon, générez le site.",
   },
   pt: {
+    websiteIntent: "Que tipo de site voce quer criar?",
     businessName: "Qual é o nome do negócio?",
     businessDescription: "Conte em uma frase o que ele vende ou faz.",
     industry: "Em qual setor ou categoria ele se encaixa?",
@@ -412,12 +426,13 @@ let currentBusinessId = null;
 let currentGenerationId = null;
 let currentRequestId = null;
 let currentCatalogItems = [];
-let guidedStep = "businessName";
+let guidedStep = "websiteIntent";
 let guidedHistory = [];
 let assistantState = "neutral";
 let assistantVoiceEnabled = localStorage.getItem("gnuDevAssistantVoice") === "on";
 let forcedTemplateSelection = null;
 let guidedState = {
+  websiteIntent: "",
   businessName: "",
   businessDescription: "",
   industry: "",
@@ -438,6 +453,7 @@ let guidedState = {
 };
 
 const GUIDED_STEPS = [
+  "websiteIntent",
   "businessName",
   "businessDescription",
   "industry",
@@ -782,6 +798,7 @@ function applyPromptFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const prompt = params.get("prompt") || params.get("description") || "";
   if (!prompt.trim()) return;
+  guidedState.websiteIntent = prompt.trim();
   guidedState.businessDescription = prompt.trim();
   guidedState.preferredTone = guidedState.preferredTone || extractStyleHint(prompt);
   guidedState.industry = guidedState.industry || inferIndustryFromPrompt(prompt);
@@ -793,6 +810,7 @@ function applyPromptFromQuery() {
       reason: "Template selected from customer template gallery",
     };
   }
+  guidedStep = "businessName";
   applyGuidedStateToForm();
 }
 
@@ -816,7 +834,24 @@ function resetAssistantConversation() {
   guidedChat.innerHTML = "";
   guidedHistory = [];
   setAssistantState("happy");
-  appendChatMessage("assistant", `${t("assistantIntro")} ${guidedQuestion(guidedStep)}`, "happy");
+  appendChatMessage("assistant", guidedQuestion(guidedStep), "happy");
+  if (guidedStep === "websiteIntent") {
+    appendChatMessage(
+      "assistant",
+      selectedLanguage === "es"
+        ? "Puedes escribir algo como: quiero algo tipo Amazon, quiero un menu de restaurante, una barberia con citas, o una tienda cyberpunk super cool."
+        : "You can type examples like: I want something like Amazon, I want a restaurant menu, a booking site for a barbershop, or a cyberpunk online store.",
+      "speaking",
+    );
+  } else if (forcedTemplateSelection?.templateId && guidedState.websiteIntent) {
+    appendTemplateDetectionMessage({
+      templateId: forcedTemplateSelection.templateId,
+      template: forcedTemplateSelection.template || null,
+      intent: forcedTemplateSelection.intent || "manual_template",
+      catalogType: forcedTemplateSelection.catalogType || "",
+      reason: forcedTemplateSelection.reason || "Template selected from landing page",
+    });
+  }
 }
 
 function setIntakeMode(mode) {
@@ -938,6 +973,10 @@ async function sendGuidedReply() {
   if (!message) return;
   appendChatMessage("user", message);
   guidedReply.value = "";
+  if (guidedStep === "websiteIntent") {
+    await handleWebsiteIntentAnswer(message);
+    return;
+  }
   guidedStatusText.textContent = t("sendingAssistant");
   setThinking(true);
 
@@ -988,6 +1027,58 @@ async function sendGuidedReply() {
   refreshQuickChips();
 }
 
+async function handleWebsiteIntentAnswer(message) {
+  guidedStatusText.textContent = selectedLanguage === "es" ? "Detectando el mejor template..." : "Detecting the best template...";
+  setThinking(true);
+  try {
+    const selection = await selectTemplateFromFreeText(message);
+    forcedTemplateSelection = selection;
+    guidedState.websiteIntent = message;
+    if (!guidedState.businessDescription) guidedState.businessDescription = message;
+    if (!guidedState.industry) guidedState.industry = inferIndustryFromPrompt(message);
+    if (!guidedState.preferredTone) guidedState.preferredTone = extractStyleHint(message);
+    appendTemplateDetectionMessage(selection);
+    guidedStep = "businessName";
+    appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
+    guidedStatusText.textContent = selectedLanguage === "es" ? "Template detectado. Sigamos con los datos del negocio." : "Template detected. Let us continue with the business details.";
+  } catch (error) {
+    guidedState.websiteIntent = message;
+    guidedState.businessDescription = guidedState.businessDescription || message;
+    guidedStep = "businessName";
+    appendChatMessage("assistant", `${t("localFallbackMessage")} ${shortError(error.message)}`, "alert");
+    appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
+    guidedStatusText.textContent = t("localFallback");
+  }
+  setThinking(false);
+  renderGuidedSummary();
+  refreshQuickChips();
+}
+
+async function selectTemplateFromFreeText(message) {
+  if (!window.TemplateRouter?.selectTemplateFromPrompt) {
+    return {
+      templateId: "minimal-store",
+      template: null,
+      intent: "default_minimal",
+      catalogType: "editorial_minimal_grid",
+      reason: "Template router unavailable; using default template",
+    };
+  }
+  return window.TemplateRouter.selectTemplateFromPrompt(message);
+}
+
+function appendTemplateDetectionMessage(selection) {
+  const templateName = selection.template?.name || selection.templateId;
+  const explanation = selection.template?.catalogModel?.customerFeeling || selection.template?.visualDifference || selection.reason;
+  const lines = [
+    t("intentDetected"),
+    `${t("selectedTemplate")}: ${templateName}`,
+    `${t("catalogType")}: ${selection.catalogType}`,
+    explanation,
+  ];
+  appendChatMessage("assistant", lines.join("\n"), "success");
+}
+
 function skipGuidedQuestion() {
   appendChatMessage("user", t("skipMessage"));
   guidedStep = nextGuidedStep(guidedStep);
@@ -1018,6 +1109,7 @@ function insertQuickChip(value) {
 
 function refreshQuickChips() {
   const chipsByStep = {
+    websiteIntent: ["Online store", "Marketplace", "Restaurant", "Services", "Booking", "Digital products"],
     preferredTone: ["Elegant", "Modern", "Premium", "Warm", "Professional", "Let AI decide"],
     preferredColors: ["Let AI choose", "Use my logo colors", "I have specific colors"],
     salesMode: ["Sell online", "Request quotes", "Calls/messages", "All of the above", "Not sure"],
@@ -1044,6 +1136,12 @@ function translateChip(value) {
       Professional: "Profesional",
       "Let AI decide": "Que IA decida",
       "Let AI choose": "Que IA elija",
+      "Online store": "Tienda online",
+      Marketplace: "Marketplace",
+      Restaurant: "Restaurante",
+      Services: "Servicios",
+      Booking: "Reservas",
+      "Digital products": "Productos digitales",
       "Use my logo colors": "Usar colores de mi logo",
       "I have specific colors": "Tengo colores especificos",
       "Sell online": "Vender online",
@@ -1315,6 +1413,7 @@ function displayStepIndex(step) {
 
 function completedFieldCount() {
   return [
+    guidedState.websiteIntent,
     guidedState.businessName,
     guidedState.businessDescription,
     guidedState.industry,
@@ -1330,6 +1429,7 @@ function completedFieldCount() {
 
 function compactCollectedPreview() {
   const parts = [
+    forcedTemplateSelection?.templateId,
     guidedState.businessName,
     guidedState.industry,
     guidedState.location,
@@ -1442,6 +1542,7 @@ function inferGuidedUpdates(step, message) {
   if (step === "preferredColors") return { preferredColors: splitCommaOrLines(message) };
   if (step === "contactInfo") return { contactInfo: parseKeyValueLines(message.includes(":") ? message : `notes: ${message}`) };
   const keyByStep = {
+    websiteIntent: "websiteIntent",
     businessName: "businessName",
     businessDescription: "businessDescription",
     industry: "industry",

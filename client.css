@@ -100,6 +100,88 @@ a {
   background: #ffffff;
 }
 
+.intent-section {
+  width: min(1160px, calc(100% - 36px));
+  margin: -28px auto 76px;
+  display: grid;
+  gap: 22px;
+}
+
+.intent-heading {
+  max-width: 760px;
+  display: grid;
+  gap: 12px;
+}
+
+.intent-heading h2 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.04;
+}
+
+.intent-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.intent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.intent-card {
+  min-height: 250px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 16px 48px rgba(31, 41, 55, 0.08);
+}
+
+.intent-card strong {
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.intent-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.intent-card span {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: var(--primary-dark);
+  background: rgba(13, 148, 136, 0.1);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.intent-card button {
+  align-self: end;
+  min-height: 42px;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #ffffff;
+  background: var(--ink);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.intent-card button:hover {
+  background: var(--primary-dark);
+}
+
 .client-hero {
   width: min(1160px, calc(100% - 36px));
   margin: 0 auto;
@@ -392,7 +474,8 @@ a {
   }
 
   .client-hero,
-  .how-inner {
+  .how-inner,
+  .intent-section {
     width: min(100% - 24px, 1160px);
   }
 
