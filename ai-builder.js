@@ -30,6 +30,7 @@ function resolveApiBaseUrl() {
     return apiFromQuery.replace(/\/$/, "");
   }
   if (window.LUMA_API_BASE_URL) {
+    localStorage.removeItem("lumaApiBaseUrl");
     return String(window.LUMA_API_BASE_URL).replace(/\/$/, "");
   }
   if (window.location.hostname.endsWith("trycloudflare.com")) return window.location.origin;
@@ -1481,12 +1482,203 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     renderPreview();
     showGeneratedClientPreview();
   } catch (error) {
-    statusText.textContent = `${t("generateError")}: ${error.message}`;
-    guidedStatusText.textContent = `${t("generateError")}: ${shortError(error.message)}`;
+    const fallbackResult = buildInstantTemplateResult(payload, error);
+    applyGenerationResult(fallbackResult);
+    const message = `${t("generateError")}: ${shortError(error.message)}. Showing a fast editable draft instead.`;
+    statusText.textContent = message;
+    guidedStatusText.textContent = message;
   } finally {
     button.disabled = false;
     button.textContent = button.id === "guidedGenerateButton" ? t("reviewGenerate") : t("generateButton");
   }
+}
+
+function applyGenerationResult(result) {
+  currentSchema = result.schema;
+  currentSiteId = result.site_id || null;
+  currentBusinessId = result.business_id || null;
+  currentGenerationId = result.generation_id || null;
+  currentCatalogItems = catalogItemsFromSchema(currentSchema);
+  selectedPageKey = currentSchema.pages[0]?.page_key || "home";
+  selectedVariantId = currentSchema.design_variants?.[0]?.id || "";
+  saveGeneratedSite(result);
+  siteTitle.textContent = currentSchema.business.name;
+  storageStatus.textContent = storageLabel(result.storage_status, result.used_dev_mock);
+  renderEditor();
+  renderPreview();
+  showGeneratedClientPreview();
+}
+
+function buildInstantTemplateResult(payload, error) {
+  const schema = buildInstantTemplateSchema(payload);
+  return {
+    business_id: null,
+    site_id: null,
+    generation_id: null,
+    storage_status: "instant_template_fallback",
+    schema,
+    used_dev_mock: false,
+    error: String(error?.message || error || ""),
+  };
+}
+
+function buildInstantTemplateSchema(payload) {
+  const language = payload.selectedLanguage || selectedLanguage || "en";
+  const isSpanish = language === "es";
+  const name = payload.business_name || (isSpanish ? "Nueva tienda" : "New store");
+  const description = payload.business_description || (isSpanish ? "Una marca preparada para vender en linea." : "A brand ready to sell online.");
+  const products = arrayValue(payload.services_products).length
+    ? arrayValue(payload.services_products)
+    : isSpanish
+      ? ["Producto destacado", "Servicio principal", "Oferta especial"]
+      : ["Featured product", "Main service", "Special offer"];
+  const colors = chooseInstantPalette(payload);
+  const catalogItems = products.map((item, index) => ({
+    id: `instant_${index + 1}`,
+    name: item,
+    description: isSpanish
+      ? `Una opcion destacada de ${name}, lista para presentar al cliente con detalles, beneficios y llamada a la accion.`
+      : `A featured option from ${name}, ready to present with details, benefits, and a clear call to action.`,
+    price_label: isSpanish ? "Consultar precio" : "Ask for price",
+    button_label: isSpanish ? "Solicitar" : "Request",
+    image_url: "",
+    is_active: true,
+    is_featured: index < 3,
+    sort_order: index,
+  }));
+  return {
+    schema_version: "1.0",
+    site_type: "online_store",
+    business: {
+      name,
+      description,
+      industry: payload.industry || (isSpanish ? "Tienda online" : "Online store"),
+      location: payload.location || "",
+      target_audience: payload.target_audience || "",
+      tone: payload.preferred_tone || (isSpanish ? "Profesional y cercano" : "Professional and friendly"),
+      selectedLanguage: language,
+    },
+    theme: {
+      colors,
+      fonts: { heading: "Inter", body: "Inter" },
+      buttons: {
+        primary_label: isSpanish ? "Comprar ahora" : "Shop now",
+        secondary_label: isSpanish ? "Ver catalogo" : "View catalog",
+      },
+      radius: 10,
+    },
+    layout_mode: {
+      id: "instant_storefront",
+      navigation: { show_cart: true, show_header: true, sticky_header: true },
+      checkout: { mode: "quote_or_cart", primary_action: isSpanish ? "Solicitar pedido" : "Request order" },
+    },
+    integrations: { contact: { whatsapp_enabled: true, email_enabled: true }, analytics: { enabled: false, provider: "" }, payments: { enabled: false, mode: "setup_required" } },
+    custom_logic: { enabled: false, risk_level: "restricted", automations: "" },
+    navigation: [
+      { label: isSpanish ? "Inicio" : "Home", page_key: "home" },
+      { label: isSpanish ? "Tienda" : "Shop", page_key: "catalog" },
+      { label: isSpanish ? "Nosotros" : "About", page_key: "about" },
+      { label: isSpanish ? "Contacto" : "Contact", page_key: "contact" },
+    ],
+    pages: [
+      {
+        page_key: "home",
+        title: isSpanish ? "Inicio" : "Home",
+        slug: "/",
+        order: 1,
+        sections: [
+          {
+            id: "hero",
+            type: "Hero",
+            order: 1,
+            editable: {
+              headline: name,
+              subtitle: description,
+              primary_button: isSpanish ? "Ver tienda" : "View shop",
+              secondary_button: isSpanish ? "Contactar" : "Contact",
+              image_url: payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "",
+              images: [],
+            },
+            settings: { layout: "split_showcase" },
+          },
+          {
+            id: "featured",
+            type: "ProductGrid",
+            order: 2,
+            editable: {
+              title: isSpanish ? "Productos destacados" : "Featured products",
+              text: isSpanish ? "Una seleccion inicial para mostrar la oferta del negocio." : "An initial selection to show the business offer.",
+              images: [],
+            },
+            settings: { layout: "featured", columns: 3 },
+          },
+        ],
+      },
+      {
+        page_key: "catalog",
+        title: isSpanish ? "Tienda" : "Shop",
+        slug: isSpanish ? "/tienda" : "/shop",
+        order: 2,
+        sections: [
+          {
+            id: "catalog_grid",
+            type: "ProductGrid",
+            order: 1,
+            editable: {
+              title: isSpanish ? "Catalogo" : "Catalog",
+              text: isSpanish ? "Productos y servicios listos para editar, activar y publicar." : "Products and services ready to edit, activate, and publish.",
+              images: [],
+            },
+            settings: { layout: "grid", columns: 3 },
+          },
+        ],
+      },
+      {
+        page_key: "about",
+        title: isSpanish ? "Nosotros" : "About",
+        slug: isSpanish ? "/nosotros" : "/about",
+        order: 3,
+        sections: [{ id: "about", type: "About", order: 1, editable: { title: isSpanish ? "Sobre la marca" : "About the brand", text: description }, settings: { layout: "feature" } }],
+      },
+      {
+        page_key: "contact",
+        title: isSpanish ? "Contacto" : "Contact",
+        slug: isSpanish ? "/contacto" : "/contact",
+        order: 4,
+        sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: isSpanish ? "Hablemos" : "Let us talk", text: isSpanish ? "Contacta al negocio para comprar, cotizar o solicitar informacion." : "Contact the business to buy, quote, or request information." }, settings: { layout: "simple" } }],
+      },
+    ],
+    global_components: {
+      logo_url: payload.assets?.find((asset) => asset.asset_type === "logo")?.url || "",
+      footer_text: isSpanish ? `${name} - Pagina generada como borrador editable.` : `${name} - Editable draft website.`,
+    },
+    design_variants: [
+      {
+        id: "instant-modern",
+        name: isSpanish ? "Moderno comercial" : "Modern commercial",
+        description: isSpanish ? "Base rapida, limpia y editable para validar la tienda." : "Fast, clean, editable base to validate the store.",
+        theme: { colors, fonts: { heading: "Inter", body: "Inter" }, buttons: { primary_label: isSpanish ? "Comprar ahora" : "Shop now", secondary_label: isSpanish ? "Contactar" : "Contact" }, radius: 10 },
+        layout_mode_id: "instant_storefront",
+        hero_layout: "split_showcase",
+        product_layout: "grid",
+      },
+    ],
+    products_services: catalogItems,
+    catalog_items: catalogItems,
+    contact: payload.contact_info || {},
+    editable_fields: ["headline", "subtitle", "title", "text", "primary_button", "secondary_button", "image_url", "images"],
+  };
+}
+
+function chooseInstantPalette(payload) {
+  const preferred = arrayValue(payload.preferred_colors).join(" ").toLowerCase();
+  if (/pink|rosa|boutique|fashion|moda|beauty|belleza/.test(preferred + " " + (payload.industry || "").toLowerCase())) {
+    return { background: "#fff7fb", surface: "#ffffff", primary: "#c0266c", secondary: "#fde7f1", text: "#1f1720", muted: "#7a6670" };
+  }
+  if (/tech|tecnologia|technology|software|digital/.test(preferred + " " + (payload.industry || "").toLowerCase())) {
+    return { background: "#f5fbff", surface: "#ffffff", primary: "#155eef", secondary: "#e0f2fe", text: "#111827", muted: "#64748b" };
+  }
+  return { background: "#f8fafc", surface: "#ffffff", primary: "#0e7c66", secondary: "#e3f3ee", text: "#101828", muted: "#667085" };
 }
 
 function showGeneratedClientPreview() {
@@ -1584,6 +1776,7 @@ function storageLabel(status, usedDevMock) {
   const mockLabel = usedDevMock ? " · development mock" : "";
   if (status === "stored") return `Saved draft to database${mockLabel}`;
   if (status === "supabase_not_configured") return `Generated, database not configured${mockLabel}`;
+  if (status === "instant_template_fallback") return "Fast editable draft shown while AI generation is unavailable";
   return `${status}${mockLabel}`;
 }
 
