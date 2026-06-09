@@ -22,6 +22,67 @@
         color: #667085;
         font-family: Inter, ui-sans-serif, system-ui, sans-serif;
       }
+
+      .lead-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgba(15, 23, 42, 0.58);
+      }
+
+      .lead-modal-card {
+        width: min(460px, 100%);
+        display: grid;
+        gap: 12px;
+        padding: 18px;
+        border-radius: 14px;
+        background: #fff;
+        color: #111827;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.26);
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .lead-modal-card > div {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .lead-modal-card label {
+        display: grid;
+        gap: 6px;
+        color: #475467;
+        font-size: 13px;
+      }
+
+      .lead-modal-card input,
+      .lead-modal-card textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #d0d5dd;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font: inherit;
+        color: #101828;
+      }
+
+      .lead-modal-card [data-close-lead] {
+        border: 0;
+        background: transparent;
+        color: #475467;
+        font-size: 24px;
+        cursor: pointer;
+      }
+
+      .lead-status {
+        min-height: 18px;
+        color: #0e7c66;
+        font-size: 13px;
+      }
     </style>
   </head>
   <body>
@@ -29,6 +90,6 @@
       <div class="public-empty">Loading published site...</div>
     </main>
     <script src="luma-config.js?v=1"></script>
-    <script src="site-viewer.js?v=1"></script>
+    <script src="site-viewer.js?v=2"></script>
   </body>
 </html>

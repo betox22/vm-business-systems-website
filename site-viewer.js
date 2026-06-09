@@ -1,5 +1,6 @@
 const API_BASE_URL = resolveApiBaseUrl();
 const publicSite = document.querySelector("#publicSite");
+let currentPublicSite = null;
 
 loadPublicSite();
 
@@ -17,7 +18,9 @@ async function loadPublicSite() {
       throw new Error(await response.text());
     }
     const site = await response.json();
+    currentPublicSite = site;
     publicSite.innerHTML = renderWebsite({ ...site.schema, catalog_items: site.catalog_items || [] });
+    bindPublicSiteActions();
   } catch (error) {
     publicSite.innerHTML = `<div class="public-empty">Could not load published site.</div>`;
   }
@@ -65,7 +68,7 @@ function renderHero(section, schema) {
       <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
       <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#contact">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || "Contact")}</a>
+        <button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || "Contact")}</button>
       </div>
     </div>
     <div class="rendered-visual">${image ? `<img src="${escapeAttribute(image)}" alt="">` : visualPlaceholder(schema)}</div>
@@ -90,7 +93,7 @@ function renderProductGrid(section, schema) {
           <h3>${escapeHtml(item.name)}</h3>
           <p>${escapeHtml(item.description)}</p>
           <strong>${escapeHtml(item.price_label)}</strong>
-          <br><a class="rendered-button" href="#contact">${escapeHtml(item.button_label || "Request info")}</a>
+          <br><button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || "Request info")}</button>
         </div>
       </article>`).join("")}
     </div>
@@ -117,8 +120,87 @@ function renderContact(section, schema) {
     <div class="contact-list">${Object.entries(schema.contact || {})
       .filter(([, value]) => value)
       .map(([key, value]) => `<p><strong>${escapeHtml(key)}</strong><span>${escapeHtml(value)}</span></p>`)
-      .join("")}</div>
+      .join("")}
+      <button class="rendered-button" data-open-lead type="button">Send request</button>
+    </div>
   </section>`;
+}
+
+function bindPublicSiteActions() {
+  publicSite.querySelectorAll("[data-open-lead]").forEach((button) => {
+    button.addEventListener("click", () => openLeadModal({
+      catalogItemId: button.dataset.itemId || "",
+      catalogItemName: button.dataset.itemName || "",
+    }));
+  });
+}
+
+function openLeadModal(context = {}) {
+  const existing = document.querySelector(".lead-modal");
+  if (existing) existing.remove();
+  const businessName = currentPublicSite?.schema?.business?.name || "this business";
+  const itemText = context.catalogItemName ? ` about ${context.catalogItemName}` : "";
+  document.body.insertAdjacentHTML("beforeend", `<div class="lead-modal" role="dialog" aria-modal="true">
+    <form class="lead-modal-card">
+      <div>
+        <strong>Contact ${escapeHtml(businessName)}</strong>
+        <button data-close-lead type="button" aria-label="Close">×</button>
+      </div>
+      <p>Send a quick request${escapeHtml(itemText)}. The business will receive it in their admin panel.</p>
+      <label>Name<input name="customerName" autocomplete="name" placeholder="Your name"></label>
+      <label>Email<input name="email" type="email" autocomplete="email" placeholder="you@example.com"></label>
+      <label>Phone<input name="phone" autocomplete="tel" placeholder="Phone or WhatsApp"></label>
+      <label>Message<textarea name="message" rows="4" required>${context.catalogItemName ? `I am interested in ${context.catalogItemName}.` : ""}</textarea></label>
+      <input name="catalogItemId" type="hidden" value="${escapeAttribute(context.catalogItemId || "")}">
+      <input name="catalogItemName" type="hidden" value="${escapeAttribute(context.catalogItemName || "")}">
+      <span class="lead-status"></span>
+      <button class="rendered-button" type="submit">Send request</button>
+    </form>
+  </div>`);
+  const modal = document.querySelector(".lead-modal");
+  modal.querySelector("[data-close-lead]").addEventListener("click", () => modal.remove());
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) modal.remove();
+  });
+  modal.querySelector("form").addEventListener("submit", submitLeadForm);
+  modal.querySelector("input, textarea")?.focus();
+}
+
+async function submitLeadForm(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const status = form.querySelector(".lead-status");
+  const data = new FormData(form);
+  const message = data.get("message")?.toString().trim() || "";
+  const customerName = data.get("customerName")?.toString().trim() || "";
+  const email = data.get("email")?.toString().trim() || "";
+  const phone = data.get("phone")?.toString().trim() || "";
+  if (!message || (!customerName && !email && !phone)) {
+    status.textContent = "Add a message and at least one contact detail.";
+    return;
+  }
+  status.textContent = "Sending...";
+  const response = await fetch(`${API_BASE_URL}/public/leads`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      siteId: currentPublicSite?.site_id,
+      businessId: currentPublicSite?.business_id,
+      customerName,
+      email,
+      phone,
+      message,
+      catalogItemId: data.get("catalogItemId")?.toString() || "",
+      catalogItemName: data.get("catalogItemName")?.toString() || "",
+    }),
+  });
+  if (!response.ok) {
+    status.textContent = "Could not send. Please try again.";
+    return;
+  }
+  status.textContent = "Sent. Thank you.";
+  form.reset();
+  setTimeout(() => document.querySelector(".lead-modal")?.remove(), 900);
 }
 
 function renderLogoMark(schema) {

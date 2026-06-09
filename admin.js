@@ -89,6 +89,7 @@ let cloudBusinesses = [];
 let cloudSites = [];
 let cloudCatalogItems = [];
 let cloudGenerations = [];
+let cloudLeads = [];
 let selectedBusinessId = "";
 let lastPublishedUrl = "";
 
@@ -311,10 +312,12 @@ function applyCloudOverview(overview) {
   const sites = overview.sites || [];
   const catalogItems = overview.catalog_items || [];
   const generations = overview.ai_generations || [];
+  const leads = overview.leads || [];
   cloudBusinesses = businesses;
   cloudSites = sites;
   cloudCatalogItems = catalogItems;
   cloudGenerations = generations;
+  cloudLeads = leads;
   domains = overview.domains || [];
   planLimits = overview.plan_limits || [];
   subscriptions = overview.subscriptions || [];
@@ -377,7 +380,18 @@ function applyCloudOverview(overview) {
     }));
   }
 
-  orders = [];
+  orders = leads.map((lead) => ({
+    id: lead.id,
+    storeId: lead.business_id || "",
+    customer: lead.customer_name || lead.email || lead.phone || "Lead sin nombre",
+    total: 0,
+    status: lead.status || "new",
+    items: lead.metadata?.catalog_item_name || lead.message || "Solicitud desde web",
+    date: formatDate(lead.created_at),
+    email: lead.email || "",
+    phone: lead.phone || "",
+    message: lead.message || "",
+  }));
   stores.forEach((store) => {
     store.catalogCount = catalogItems.filter((item) => item.business_id === store.id || item.site_id === store.siteId).length;
     store.generationCount = generations.filter((item) => item.business_id === store.id || item.site_id === store.siteId).length;
@@ -692,7 +706,7 @@ function renderOrders() {
         const groupOrders = visibleOrders.filter((order) => order.status === status);
         return `<article class="kanban-column">
           <h3>${statusLabels[status]} (${groupOrders.length})</h3>
-          ${groupOrders.map(orderCard).join("") || "<p>Sin pedidos.</p>"}
+          ${groupOrders.map(orderCard).join("") || "<p>Sin entradas.</p>"}
         </article>`;
       })
       .join("")}
@@ -977,15 +991,15 @@ function requestsTable(rows) {
 
 function ordersTable(rows) {
   return `<table>
-    <thead><tr><th>Pedido</th><th>Tienda</th><th>Cliente</th><th>Total</th><th>Estado</th></tr></thead>
+    <thead><tr><th>Entrada</th><th>Tienda</th><th>Cliente</th><th>Detalle</th><th>Estado</th></tr></thead>
     <tbody>${rows
       .map((order) => {
         const store = stores.find((item) => item.id === order.storeId);
         return `<tr>
           <td><strong>${order.id}</strong><br><small>${order.date}</small></td>
           <td>${store?.name || order.storeId}</td>
-          <td>${order.customer}<br><small>${order.items}</small></td>
-          <td>$${order.total.toFixed(2)}</td>
+          <td>${escapeHtml(order.customer)}<br><small>${escapeHtml([order.email, order.phone].filter(Boolean).join(" · "))}</small></td>
+          <td>${escapeHtml(order.items)}${order.message ? `<br><small>${escapeHtml(order.message)}</small>` : ""}</td>
           <td>${statusBadge(order.status)}</td>
         </tr>`;
       })
@@ -1142,11 +1156,13 @@ function subscriptionsTable(rows) {
 function orderCard(order) {
   const store = stores.find((item) => item.id === order.storeId);
   return `<article class="order-card">
-    <strong>${order.id} · $${order.total.toFixed(2)}</strong>
+    <strong>${escapeHtml(order.id)}</strong>
     <span>${store?.name || order.storeId}</span>
-    <span>${order.customer}</span>
-    <span>${order.items}</span>
-    <span>${order.date}</span>
+    <span>${escapeHtml(order.customer)}</span>
+    <span>${escapeHtml([order.email, order.phone].filter(Boolean).join(" · "))}</span>
+    <span>${escapeHtml(order.items)}</span>
+    ${order.message ? `<small>${escapeHtml(order.message)}</small>` : ""}
+    <span>${escapeHtml(order.date)}</span>
   </article>`;
 }
 
