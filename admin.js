@@ -79,6 +79,12 @@ let subscriptions = [];
 let adminSecurity = {
   tokenConfigured: false,
 };
+let domainSearch = {
+  query: "",
+  provider: "",
+  exactAvailability: false,
+  results: [],
+};
 
 let pages = [
   { storeId: "luna", title: "Home", slug: "/", type: "Home", status: "Publicada" },
@@ -399,8 +405,12 @@ function render() {
     });
   });
   content.querySelector("#domainForm")?.addEventListener("submit", saveDomainFromForm);
+  content.querySelector("#domainSearchForm")?.addEventListener("submit", searchDomainsFromForm);
   content.querySelectorAll("[data-activate-domain]").forEach((button) => {
     button.addEventListener("click", () => activateDomain(button.dataset.activateDomain));
+  });
+  content.querySelectorAll("[data-use-domain]").forEach((button) => {
+    button.addEventListener("click", () => useSuggestedDomain(button.dataset.useDomain));
   });
   content.querySelector("#saveAdminTokenButton")?.addEventListener("click", saveAdminTokenFromSettings);
   content.querySelector("#clearAdminTokenButton")?.addEventListener("click", clearAdminTokenFromSettings);
@@ -608,6 +618,21 @@ function renderSettings() {
     <section class="section-grid settings-grid">
       <article class="data-card">
         <div class="card-header">
+          <h2>Buscar dominio</h2>
+          <span>Disponibilidad preliminar</span>
+        </div>
+        <form id="domainSearchForm" class="settings-form">
+          <label>Nombre deseado
+            <input name="domainQuery" placeholder="luna market, barber pro, mitienda.com" required>
+          </label>
+          <button class="primary-button" type="submit">Buscar opciones</button>
+          <p class="settings-note">Esto genera opciones rapido. Antes de vender o comprar se confirma disponibilidad y precio con registrador real.</p>
+        </form>
+        ${domainSearchResults()}
+      </article>
+
+      <article class="data-card">
+        <div class="card-header">
           <h2>Agregar dominio</h2>
           <span>Subdominio o dominio propio</span>
         </div>
@@ -619,7 +644,7 @@ function renderSettings() {
             <select name="siteId">${siteOptions}</select>
           </label>
           <label>Dominio
-            <input name="domain" placeholder="cliente.vmbusinesssystems.com" required>
+            <input id="domainInput" name="domain" placeholder="cliente.vmbusinesssystems.com" required>
           </label>
           <label>Tipo
             <select name="domainType">
@@ -692,6 +717,50 @@ async function saveDomainFromForm(event) {
   } catch (error) {
     window.alert(`No se pudo guardar el dominio: ${shortMessage(error)}`);
   }
+}
+
+async function searchDomainsFromForm(event) {
+  event.preventDefault();
+  const query = event.currentTarget.elements.domainQuery.value.trim();
+  if (!query) return;
+  domainSearch = {
+    query,
+    provider: "checking",
+    exactAvailability: false,
+    results: [],
+  };
+  render();
+  try {
+    const response = await fetch(`/api/admin/domain-search?q=${encodeURIComponent(query)}`, {
+      headers: adminHeaders(),
+    });
+    if (response.status === 401) {
+      promptForAdminToken();
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    const result = await response.json();
+    domainSearch = {
+      query: result.query,
+      provider: result.provider,
+      exactAvailability: Boolean(result.exact_availability),
+      results: result.results || [],
+    };
+    render();
+  } catch (error) {
+    domainSearch = {
+      query,
+      provider: "error",
+      exactAvailability: false,
+      results: [{ domain: query, status: shortMessage(error), available_hint: false }],
+    };
+    render();
+  }
+}
+
+function useSuggestedDomain(domain) {
+  const input = content.querySelector("#domainInput");
+  if (input) input.value = domain;
 }
 
 async function activateDomain(domainId) {
@@ -797,6 +866,34 @@ function domainsTable(rows) {
       })
       .join("")}</tbody>
   </table>`;
+}
+
+function domainSearchResults() {
+  if (domainSearch.provider === "checking") {
+    return `<div class="domain-results"><p class="settings-note">Buscando opciones...</p></div>`;
+  }
+  if (!domainSearch.results.length) {
+    return `<div class="domain-results"><p class="settings-note">Busca un nombre para ver sugerencias .com, .store, .shop y mas.</p></div>`;
+  }
+  return `<div class="domain-results">
+    <div class="domain-result-head">
+      <strong>Resultados para ${escapeHtml(domainSearch.query)}</strong>
+      <span>${domainSearch.exactAvailability ? "Disponibilidad real" : "Sugerencias rapidas"}</span>
+    </div>
+    ${domainSearch.results
+      .map((item) => {
+        const hintedAvailable = Boolean(item.available_hint);
+        return `<article class="domain-result ${hintedAvailable ? "available" : "taken"}">
+          <div>
+            <strong>${escapeHtml(item.domain)}</strong>
+            <span>${hintedAvailable ? "Candidato para revisar/comprar" : "Requiere revision manual"}</span>
+            <small>${escapeHtml(item.confidence || "dns_hint")}</small>
+          </div>
+          <button class="text-button" data-use-domain="${escapeAttribute(item.domain)}" type="button">${hintedAvailable ? "Usar" : "Revisar"}</button>
+        </article>`;
+      })
+      .join("")}
+  </div>`;
 }
 
 function plansTable(rows) {

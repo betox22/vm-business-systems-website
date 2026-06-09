@@ -401,6 +401,59 @@ th {
   gap: 10px;
 }
 
+.domain-results {
+  display: grid;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.domain-result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.domain-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: #ffffff;
+}
+
+.domain-result.available {
+  border-color: rgba(18, 128, 92, 0.25);
+  background: #f1faf6;
+}
+
+.domain-result.taken {
+  background: #fafafa;
+}
+
+.domain-result strong,
+.domain-result span,
+.domain-result small {
+  display: block;
+}
+
+.domain-result span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.domain-result small {
+  margin-top: 2px;
+  color: #8c9196;
+  font-size: 12px;
+}
+
 .muted-cell {
   color: var(--muted);
   font-size: 13px;
