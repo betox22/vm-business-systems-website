@@ -739,13 +739,13 @@ async function searchDomainsFromForm(event) {
       return;
     }
     if (!response.ok) throw new Error(await response.text());
-    const result = await response.json();
-    domainSearch = {
-      query: result.query,
-      provider: result.provider,
-      exactAvailability: Boolean(result.exact_availability),
-      results: result.results || [],
-    };
+  const result = await response.json();
+  domainSearch = {
+    query: result.query,
+    provider: result.provider,
+    exactAvailability: Boolean(result.exact_availability || result.exactAvailability),
+    results: result.results || [],
+  };
     render();
   } catch (error) {
     domainSearch = {
@@ -883,13 +883,23 @@ function domainSearchResults() {
     ${domainSearch.results
       .map((item) => {
         const hintedAvailable = Boolean(item.available_hint);
+        const included = Boolean(item.included_in_package);
+        const review = Boolean(item.requires_review);
+        const label = included
+          ? "Disponible e incluido"
+          : review
+            ? "Disponible, requiere revision"
+            : hintedAvailable
+              ? "Candidato para revisar/comprar"
+              : "No disponible";
+        const actionLabel = included || hintedAvailable ? "Usar" : "Revisar";
         return `<article class="domain-result ${hintedAvailable ? "available" : "taken"}">
           <div>
             <strong>${escapeHtml(item.domain)}</strong>
-            <span>${hintedAvailable ? "Candidato para revisar/comprar" : "Requiere revision manual"}</span>
+            <span>${label}</span>
             <small>${escapeHtml(item.confidence || "dns_hint")}</small>
           </div>
-          <button class="text-button" data-use-domain="${escapeAttribute(item.domain)}" type="button">${hintedAvailable ? "Usar" : "Revisar"}</button>
+          <button class="text-button" data-use-domain="${escapeAttribute(item.domain)}" type="button">${actionLabel}</button>
         </article>`;
       })
       .join("")}
