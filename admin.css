@@ -355,6 +355,70 @@ th {
   font-weight: 900;
 }
 
+.settings-grid {
+  margin-bottom: 16px;
+}
+
+.settings-form {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.settings-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.settings-form input,
+.settings-form select {
+  width: 100%;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: none;
+}
+
+.settings-note,
+.empty-state {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.empty-state {
+  padding: 16px;
+}
+
+.inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.muted-cell {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+code {
+  display: inline-block;
+  max-width: 360px;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #f6f6f7;
+  padding: 6px 8px;
+  color: #3f454a;
+  font-size: 12px;
+}
+
 .builder-module {
   overflow: hidden;
   border: 1px solid var(--line);

@@ -73,6 +73,13 @@ let orders = [
   },
 ];
 
+let domains = [];
+let planLimits = [];
+let subscriptions = [];
+let adminSecurity = {
+  tokenConfigured: false,
+};
+
 let pages = [
   { storeId: "luna", title: "Home", slug: "/", type: "Home", status: "Publicada" },
   { storeId: "luna", title: "Catalogo", slug: "/catalogo", type: "Catalog", status: "Publicada" },
@@ -195,8 +202,8 @@ const views = {
   },
   settings: {
     title: "Configuracion",
-    subtitle: "Planes, dominios, permisos, impresoras y credenciales.",
-    render: () => placeholder("Configuracion", "Aqui van roles, planes y credenciales."),
+    subtitle: "Planes, dominios, permisos y seguridad de la plataforma.",
+    render: renderSettings,
   },
 };
 
@@ -269,6 +276,10 @@ function applyCloudOverview(overview) {
   const sites = overview.sites || [];
   const catalogItems = overview.catalog_items || [];
   const generations = overview.ai_generations || [];
+  domains = overview.domains || [];
+  planLimits = overview.plan_limits || [];
+  subscriptions = overview.subscriptions || [];
+  adminSecurity = overview.security || { tokenConfigured: false };
   const businessById = Object.fromEntries(businesses.map((business) => [business.id, business]));
   const siteByBusiness = sites.reduce((acc, site) => {
     if (site.business_id && !acc[site.business_id]) acc[site.business_id] = site;
@@ -299,9 +310,9 @@ function applyCloudOverview(overview) {
       id: business.id,
       name: business.business_name || site?.name || "Sitio sin nombre",
       owner: business.contact_info?.name || business.contact_info?.email || "Cliente",
-      domain: site?.public_slug || `${slugify(business.business_name || site?.name || "sitio")}.local`,
+      domain: primaryDomainForBusiness(business.id) || site?.public_slug || `${slugify(business.business_name || site?.name || "sitio")}.local`,
       status: site?.status === "published" ? "Publicada" : "Borrador",
-      plan: business.selected_language || "es",
+      plan: business.plan_code || business.selected_language || "starter",
       siteId: site?.id || "",
     };
   });
@@ -387,6 +398,12 @@ function render() {
       render();
     });
   });
+  content.querySelector("#domainForm")?.addEventListener("submit", saveDomainFromForm);
+  content.querySelectorAll("[data-activate-domain]").forEach((button) => {
+    button.addEventListener("click", () => activateDomain(button.dataset.activateDomain));
+  });
+  content.querySelector("#saveAdminTokenButton")?.addEventListener("click", saveAdminTokenFromSettings);
+  content.querySelector("#clearAdminTokenButton")?.addEventListener("click", clearAdminTokenFromSettings);
 }
 
 function selectedStoreIds() {
@@ -569,6 +586,144 @@ function renderBuilder() {
   </section>`;
 }
 
+function renderSettings() {
+  const selectedStoreOptions = stores
+    .map((store) => `<option value="${escapeAttribute(store.id)}">${escapeHtml(store.name)}</option>`)
+    .join("");
+  const siteOptions = [
+    '<option value="">Auto: usar el sitio publicado del negocio</option>',
+    ...stores
+      .filter((store) => store.siteId)
+      .map((store) => `<option value="${escapeAttribute(store.siteId)}">${escapeHtml(store.name)} - sitio principal</option>`),
+  ].join("");
+
+  return `
+    <section class="metric-grid settings-metrics">
+      ${metric("Negocios", stores.length, "Tenants registrados")}
+      ${metric("Dominios", domains.length, `${domains.filter((item) => item.status === "active").length} activos`)}
+      ${metric("Planes", planLimits.length || 3, "Starter, Business, Pro")}
+      ${metric("Admin token", adminSecurity.tokenConfigured ? "Activo" : "Demo", adminSecurity.tokenConfigured ? "API protegida" : "Configuralo antes de vender")}
+    </section>
+
+    <section class="section-grid settings-grid">
+      <article class="data-card">
+        <div class="card-header">
+          <h2>Agregar dominio</h2>
+          <span>Subdominio o dominio propio</span>
+        </div>
+        <form id="domainForm" class="settings-form">
+          <label>Negocio
+            <select name="businessId" required>${selectedStoreOptions}</select>
+          </label>
+          <label>Sitio
+            <select name="siteId">${siteOptions}</select>
+          </label>
+          <label>Dominio
+            <input name="domain" placeholder="cliente.vmbusinesssystems.com" required>
+          </label>
+          <label>Tipo
+            <select name="domainType">
+              <option value="subdomain">Subdominio</option>
+              <option value="custom">Dominio propio</option>
+            </select>
+          </label>
+          <button class="primary-button" type="submit">Guardar dominio</button>
+          <p class="settings-note">Despues de guardar, copia el token TXT en DNS y marca activo cuando este verificado.</p>
+        </form>
+      </article>
+
+      <article class="data-card">
+        <div class="card-header">
+          <h2>Seguridad admin</h2>
+          <span>${adminSecurity.tokenConfigured ? "Protegido" : "Pendiente"}</span>
+        </div>
+        <div class="settings-form">
+          <label>Token local del panel
+            <input id="adminTokenInput" type="password" placeholder="Pega ADMIN_API_TOKEN">
+          </label>
+          <div class="inline-actions">
+            <button id="saveAdminTokenButton" class="primary-button" type="button">Guardar token</button>
+            <button id="clearAdminTokenButton" class="secondary-link" type="button">Limpiar</button>
+          </div>
+          <p class="settings-note">Esto no crea el token del servidor; solo guarda en este navegador el token que definamos en el backend.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="data-card wide-card">
+      <div class="card-header"><h2>Dominios</h2><span>${domains.length} configurados</span></div>
+      ${domainsTable(domains)}
+    </section>
+
+    <section class="section-grid">
+      <article class="data-card">
+        <div class="card-header"><h2>Planes y limites</h2><span>Capacidad comercial</span></div>
+        ${plansTable(planLimits)}
+      </article>
+      <article class="data-card">
+        <div class="card-header"><h2>Suscripciones</h2><span>${subscriptions.length} registros</span></div>
+        ${subscriptionsTable(subscriptions)}
+      </article>
+    </section>
+  `;
+}
+
+async function saveDomainFromForm(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const payload = {
+    businessId: form.elements.businessId.value,
+    siteId: form.elements.siteId.value || null,
+    domain: form.elements.domain.value.trim(),
+    domainType: form.elements.domainType.value,
+  };
+  try {
+    const response = await fetch("/api/admin/domains", {
+      method: "POST",
+      headers: adminHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify(payload),
+    });
+    if (response.status === 401) {
+      promptForAdminToken();
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    await loadCloudOverview();
+  } catch (error) {
+    window.alert(`No se pudo guardar el dominio: ${shortMessage(error)}`);
+  }
+}
+
+async function activateDomain(domainId) {
+  if (!domainId) return;
+  try {
+    const response = await fetch(`/api/admin/domains/${encodeURIComponent(domainId)}/activate`, {
+      method: "POST",
+      headers: adminHeaders(),
+    });
+    if (response.status === 401) {
+      promptForAdminToken();
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    await loadCloudOverview();
+  } catch (error) {
+    window.alert(`No se pudo activar el dominio: ${shortMessage(error)}`);
+  }
+}
+
+function saveAdminTokenFromSettings() {
+  const value = content.querySelector("#adminTokenInput")?.value.trim();
+  if (!value) return;
+  localStorage.setItem("lumaAdminToken", value);
+  loadCloudOverview();
+}
+
+function clearAdminTokenFromSettings() {
+  localStorage.removeItem("lumaAdminToken");
+  loadCloudOverview();
+}
+
 function requestsTable(rows) {
   return `<table>
     <thead><tr><th>Solicitud</th><th>Cliente</th><th>Tipo</th><th>Estado</th><th>Accion</th></tr></thead>
@@ -619,6 +774,66 @@ function storesTable(rows) {
   </table>`;
 }
 
+function domainsTable(rows) {
+  if (!rows.length) {
+    return `<div class="empty-state">Todavia no hay dominios. Agrega uno para publicar por subdominio o dominio propio.</div>`;
+  }
+  return `<table>
+    <thead><tr><th>Dominio</th><th>Negocio</th><th>Estado</th><th>Verificacion DNS</th><th>Accion</th></tr></thead>
+    <tbody>${rows
+      .map((domain) => {
+        const store = stores.find((item) => item.id === domain.business_id);
+        return `<tr>
+          <td><strong>${escapeHtml(domain.domain)}</strong><br><small>${escapeHtml(domain.domain_type)}</small></td>
+          <td>${escapeHtml(store?.name || domain.business_id)}</td>
+          <td><span class="status status-${escapeAttribute(domain.status)}">${escapeHtml(domain.status)}</span></td>
+          <td><code>${escapeHtml(domain.verification_token || "Sin token")}</code></td>
+          <td>${
+            domain.status === "active"
+              ? '<span class="muted-cell">Activo</span>'
+              : `<button class="text-button" data-activate-domain="${escapeAttribute(domain.id)}" type="button">Marcar activo</button>`
+          }</td>
+        </tr>`;
+      })
+      .join("")}</tbody>
+  </table>`;
+}
+
+function plansTable(rows) {
+  if (!rows.length) {
+    return `<div class="empty-state">Los planes apareceran aqui cuando Supabase responda.</div>`;
+  }
+  return `<table>
+    <thead><tr><th>Plan</th><th>Precio</th><th>Limites</th></tr></thead>
+    <tbody>${rows
+      .map((plan) => `<tr>
+        <td><strong>${escapeHtml(plan.name || plan.plan_code)}</strong><br><small>${escapeHtml(plan.plan_code)}</small></td>
+        <td>$${Number(plan.monthly_price || 0).toFixed(2)}/mes<br><small>Setup $${Number(plan.setup_price || 0).toFixed(2)}</small></td>
+        <td>${Number(plan.max_sites || 0)} sitios · ${Number(plan.max_catalog_items || 0)} items<br><small>${Number(plan.storage_mb || 0)} MB · dominio propio: ${plan.custom_domain_enabled ? "si" : "no"}</small></td>
+      </tr>`)
+      .join("")}</tbody>
+  </table>`;
+}
+
+function subscriptionsTable(rows) {
+  if (!rows.length) {
+    return `<div class="empty-state">Sin suscripciones todavia. Se conectara a Stripe/PayPal en la fase de cobro.</div>`;
+  }
+  return `<table>
+    <thead><tr><th>Negocio</th><th>Plan</th><th>Estado</th></tr></thead>
+    <tbody>${rows
+      .map((subscription) => {
+        const store = stores.find((item) => item.id === subscription.business_id);
+        return `<tr>
+          <td>${escapeHtml(store?.name || subscription.business_id)}</td>
+          <td>${escapeHtml(subscription.plan_code)}</td>
+          <td><span class="status status-${escapeAttribute(subscription.status)}">${escapeHtml(subscription.status)}</span></td>
+        </tr>`;
+      })
+      .join("")}</tbody>
+  </table>`;
+}
+
 function orderCard(order) {
   const store = stores.find((item) => item.id === order.storeId);
   return `<article class="order-card">
@@ -647,6 +862,29 @@ function placeholder(heading, text) {
     <div class="card-header"><h2>${heading}</h2></div>
     <div style="padding:16px"><p>${text}</p></div>
   </article>`;
+}
+
+function primaryDomainForBusiness(businessId) {
+  const active = domains.find((domain) => domain.business_id === businessId && domain.status === "active");
+  const pending = domains.find((domain) => domain.business_id === businessId);
+  return active?.domain || pending?.domain || "";
+}
+
+function shortMessage(error) {
+  return String(error?.message || error || "Error desconocido").slice(0, 240);
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replaceAll("`", "&#096;");
 }
 
 function refreshStoreFilter(selectedId = storeFilter.value) {
