@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Luma AI Website Builder</title>
+    <link rel="stylesheet" href="/client.css?v=4">
+  </head>
+  <body class="client-landing-body">
+    <main class="client-landing">
+      <nav class="client-nav" aria-label="Public navigation">
+        <div class="client-brand">
+          <span class="client-brand-mark">LU</span>
+          <span>Luma</span>
+        </div>
+        <label class="client-language">
+          <span data-client-i18n="language">Language</span>
+          <select id="clientLanguage">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="pt">Português</option>
+          </select>
+        </label>
+        <a class="client-admin-link" href="/admin/" data-client-i18n="adminAccess">Admin panel</a>
+      </nav>
+
+      <section class="client-hero">
+        <div class="client-hero-copy">
+          <span class="client-kicker" data-client-i18n="kicker">AI guided website setup</span>
+          <h1 data-client-i18n="title">Build your business website with AI</h1>
+          <p data-client-i18n="subtitle">Talk to Luma, your AI website assistant. Answer a few simple questions, upload your logo or photos if you have them, and get a professional editable website draft in minutes.</p>
+          <div class="client-actions">
+            <a id="startWithGnuDev" class="client-button primary" href="/client/setup/">
+              <span data-client-i18n="start">Start with Luma</span>
+            </a>
+            <a id="useManualForm" class="client-button secondary" href="/client/setup/?manual=1">
+              <span data-client-i18n="how">Use manual form</span>
+            </a>
+          </div>
+          <div class="client-trust-row" aria-label="Highlights">
+            <span data-client-i18n="trustVoice">Type or use voice</span>
+            <span data-client-i18n="trustAssets">Upload logo and photos</span>
+            <span data-client-i18n="trustEditable">Review and edit before generating</span>
+          </div>
+        </div>
+
+        <div class="mascot-stage" aria-hidden="true">
+          <div class="mascot-card">
+            <img src="/public/brand/gnu-dev-assistant.png" alt="">
+          </div>
+          <div class="speech-card">
+            <strong data-client-i18n="bubbleTitle">Luma is ready</strong>
+            <p data-client-i18n="bubbleText">A friendly chat collects the details and turns them into a website draft.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="how-it-works" class="how-section">
+        <div class="how-inner">
+          <h2 data-client-i18n="howTitle">A Faster Way To Start Online</h2>
+          <div class="how-grid">
+            <article class="how-card">
+              <span class="how-number">1</span>
+              <strong data-client-i18n="step1Title">Talk, don't build</strong>
+              <p data-client-i18n="step1Text">Describe your business naturally. Luma turns your answers into a website brief.</p>
+            </article>
+            <article class="how-card">
+              <span class="how-number">2</span>
+              <strong data-client-i18n="step2Title">AI-generated design</strong>
+              <p data-client-i18n="step2Text">Get layout, copy, colors, sections, and catalog suggestions.</p>
+            </article>
+            <article class="how-card">
+              <span class="how-number">3</span>
+              <strong data-client-i18n="step3Title">Editable before publishing</strong>
+              <p data-client-i18n="step3Text">Review and adjust everything before your site goes live.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+    <div id="clientChatModal" class="client-chat-modal" hidden role="dialog" aria-modal="true" aria-label="Luma chat">
+      <div class="client-chat-frame-shell">
+        <button id="closeClientChat" class="client-chat-close" type="button" aria-label="Close">×</button>
+        <iframe id="clientChatFrame" title="Luma AI website assistant"></iframe>
+      </div>
+    </div>
+    <script src="/client-start.js?v=9"></script>
+  </body>
+</html>

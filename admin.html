@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>V&M AI Websites Admin</title>
+    <link rel="stylesheet" href="admin.css?v=2">
+  </head>
+  <body>
+    <main class="admin-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">AI</div>
+          <div>
+            <strong>V&M AI Websites</strong>
+            <span>Panel operativo</span>
+          </div>
+        </div>
+        <nav class="nav-list" aria-label="Menu principal">
+          <button class="active" data-view="dashboard">Inicio</button>
+          <button data-view="requests">Solicitudes</button>
+          <button data-view="stores">Tiendas</button>
+          <button data-view="orders">Pedidos</button>
+          <button data-view="pages">Paginas web</button>
+          <button data-view="builder">Constructor AI</button>
+          <button data-view="products">Productos</button>
+          <button data-view="payments">Pagos</button>
+          <button data-view="settings">Configuracion</button>
+        </nav>
+      </aside>
+
+      <section class="main-panel">
+        <header class="topbar">
+          <div>
+            <h1 id="viewTitle">Dashboard</h1>
+            <p id="viewSubtitle">Vista general de tiendas, pedidos y estado operativo.</p>
+          </div>
+          <div class="topbar-actions">
+            <select id="storeFilter" aria-label="Filtrar tienda"></select>
+            <a class="secondary-link" href="/start/">Vista cliente</a>
+            <button id="newStoreButton" type="button">Crear tienda con AI</button>
+          </div>
+        </header>
+
+        <section id="content" class="content"></section>
+      </section>
+    </main>
+
+    <template id="metricTemplate">
+      <article class="metric-card">
+        <span class="metric-label"></span>
+        <strong class="metric-value"></strong>
+        <small class="metric-note"></small>
+      </article>
+    </template>
+
+    <script src="luma-config.js?v=1"></script>
+    <script src="admin.js?v=5"></script>
+  </body>
+</html>
