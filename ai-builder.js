@@ -2,6 +2,7 @@ const API_BASE_URL = resolveApiBaseUrl();
 const API_URL = `${API_BASE_URL}/ai/website-builder`;
 const INTAKE_ASSISTANT_URL = `${API_BASE_URL}/api/ai/intake-assistant`;
 const CLIENT_REQUESTS_URL = `${API_BASE_URL}/client-requests`;
+const ASSET_UPLOAD_URL = `${API_BASE_URL}/api/admin/assets/upload`;
 const SUPPORTED_LANGUAGES = ["en", "es", "fr", "pt"];
 const ASSISTANT_AVATAR_FALLBACK = "/public/brand/gnu-dev-assistant.png";
 const ASSISTANT_AVATARS = {
@@ -1934,12 +1935,12 @@ async function collectPayload() {
 
   const logoFile = data.get("logo_file");
   if (logoFile instanceof File && logoFile.size > 0) {
-    assets.push({ asset_type: "logo", label: "Uploaded logo", url: await fileToDataUrl(logoFile) });
+    assets.push({ asset_type: "logo", label: "Uploaded logo", url: await uploadAssetOrFallback(logoFile, "logo", "Uploaded logo") });
   }
 
   const photoFiles = data.getAll("photo_files").filter((file) => file instanceof File && file.size > 0);
   for (const [index, file] of photoFiles.entries()) {
-    assets.push({ asset_type: "photo", label: `Uploaded photo ${index + 1}`, url: await fileToDataUrl(file) });
+    assets.push({ asset_type: "photo", label: `Uploaded photo ${index + 1}`, url: await uploadAssetOrFallback(file, "photo", `Uploaded photo ${index + 1}`) });
   }
 
   return {
@@ -2178,7 +2179,8 @@ function renderEditor() {
     input.addEventListener("change", async () => {
       const file = input.files?.[0];
       if (!file) return;
-      setPath({ catalog_items: currentCatalogItems }, input.dataset.catalogImageUpload, await fileToDataUrl(file));
+      const imageUrl = await uploadAssetOrFallback(file, "catalog", "Catalog item image");
+      setPath({ catalog_items: currentCatalogItems }, input.dataset.catalogImageUpload, imageUrl);
       renderEditor();
       renderPreview();
     });
@@ -2908,6 +2910,45 @@ function splitLines(value) {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+async function uploadAssetOrFallback(file, assetType, label) {
+  try {
+    const uploaded = await uploadAssetFile(file, assetType, label);
+    if (uploaded?.url) return uploaded.url;
+  } catch (error) {
+    console.warn("Asset upload failed, using development fallback.", error);
+    if (storageStatus) {
+      storageStatus.textContent = "Asset storage unavailable. Using development image fallback.";
+    }
+  }
+  return fileToDataUrl(file);
+}
+
+async function uploadAssetFile(file, assetType, label) {
+  const dataUrl = await fileToDataUrl(file);
+  const response = await fetch(ASSET_UPLOAD_URL, {
+    method: "POST",
+    headers: adminHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({
+      businessId: currentBusinessId,
+      siteId: currentSiteId,
+      assetType,
+      fileName: file.name || `${assetType}.png`,
+      contentType: file.type || "image/png",
+      dataUrl,
+      label,
+    }),
+  });
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(details || `Asset upload failed with ${response.status}`);
+  }
+  const result = await response.json();
+  if (storageStatus) {
+    storageStatus.textContent = "Asset uploaded to cloud storage.";
+  }
+  return result;
 }
 
 function fileToDataUrl(file) {

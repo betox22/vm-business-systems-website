@@ -3,66 +3,63 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Luma Guided Setup</title>
+    <title>AI Website Builder</title>
     <link rel="stylesheet" href="/ai-builder.css?v=23">
-    <link rel="stylesheet" href="/client-setup.css?v=7">
   </head>
-  <body class="public-client-setup guided-modal-open" data-context="client-setup">
+  <body>
     <main class="ai-shell">
       <aside class="intake-panel">
-        <div id="manualFormShell" class="client-support-hidden manual-form-shell">
-          <div class="brand-row">
-            <div class="mark">AI</div>
-            <div>
-              <h1>Client Website Setup</h1>
-              <p>Support fields</p>
-            </div>
+        <div class="brand-row">
+          <div class="mark">AI</div>
+          <div>
+            <h1>Client Website Builder</h1>
+            <p>Internal admin workflow</p>
           </div>
-
-          <div class="intake-mode-tabs" aria-label="Intake mode">
-            <button id="quickModeButton" class="active" type="button" data-i18n="quickForm">Quick Form</button>
-            <button id="guidedModeButton" type="button" data-i18n="guidedSetup">AI Guided Setup</button>
-          </div>
-
-          <label class="language-control" data-i18n-label="languageLabel">
-            Website language
-            <select id="languageSelector" name="selected_language">
-              <option value="en">English</option>
-              <option value="es">Español</option>
-              <option value="fr">Français</option>
-              <option value="pt">Português</option>
-            </select>
-          </label>
-
-          <form id="intakeForm" class="intake-form mode-panel active">
-            <button id="backToChatButton" class="secondary-action full-width" type="button" data-i18n="backToChat">Back to chat</button>
-            <label data-i18n-label="businessName">Client/business name<input name="business_name" required></label>
-            <label data-i18n-label="businessDescription">Business description<textarea name="business_description" rows="4" required></textarea></label>
-            <label data-i18n-label="industry">Industry<input name="industry" required></label>
-            <label data-i18n-label="location">Location<input name="location"></label>
-            <label data-i18n-label="servicesProducts">Services/products<textarea name="services_products" rows="3"></textarea></label>
-            <label data-i18n-label="targetAudience">Target audience<input name="target_audience"></label>
-            <label data-i18n-label="preferredTone">Preferred tone<input name="preferred_tone"></label>
-            <label data-i18n-label="preferredColors">Preferred colors<input name="preferred_colors"></label>
-            <label data-i18n-label="contactInfo">Contact info<textarea name="contact_info" rows="3"></textarea></label>
-            <label data-i18n-label="logoUrl">Logo URL optional<input name="logo_url" placeholder="https://..."></label>
-            <label data-i18n-label="uploadLogo">Upload logo optional<input name="logo_file" type="file" accept="image/*"></label>
-            <label data-i18n-label="photoUrls">Photo URLs optional<textarea name="photo_urls" rows="3" data-i18n-placeholder="photoUrlsPlaceholder"></textarea></label>
-            <label data-i18n-label="uploadPhotos">Upload photos optional<input name="photo_files" type="file" accept="image/*" multiple></label>
-            <button id="generateButton" type="submit" data-i18n="generateButton">Generate Website with AI</button>
-            <p id="statusText" class="status-text" data-i18n="serverKeyNotice">You can switch back to chat any time.</p>
-          </form>
         </div>
 
-        <section id="guidedPanel" class="guided-panel mode-panel active" aria-modal="true" role="dialog">
+        <div class="intake-mode-tabs" aria-label="Intake mode">
+          <button id="quickModeButton" class="active" type="button" data-i18n="quickForm">Quick Form</button>
+          <button id="guidedModeButton" type="button" data-i18n="guidedSetup">AI Guided Setup</button>
+        </div>
+
+        <label class="language-control" data-i18n-label="languageLabel">
+          Website language
+          <select id="languageSelector" name="selected_language">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="pt">Português</option>
+          </select>
+        </label>
+
+        <form id="intakeForm" class="intake-form mode-panel active">
+          <label data-i18n-label="businessName">Client/business name<input name="business_name" required value="Luna Market"></label>
+          <label data-i18n-label="businessDescription">Business description<textarea name="business_description" rows="4" required>Modern online boutique for curated accessories, gifts, and everyday style products.</textarea></label>
+          <label data-i18n-label="industry">Industry<input name="industry" required value="Fashion retail"></label>
+          <label data-i18n-label="location">Location<input name="location" value="Miami, FL"></label>
+          <label data-i18n-label="servicesProducts">Services/products<textarea name="services_products" rows="3">Handbags, Gift sets, Limited edition accessories</textarea></label>
+          <label data-i18n-label="targetAudience">Target audience<input name="target_audience" value="Women 25-45 looking for stylish gifts and accessories"></label>
+          <label data-i18n-label="preferredTone">Preferred tone<input name="preferred_tone" value="Elegant, clear, warm"></label>
+          <label data-i18n-label="preferredColors">Preferred colors<input name="preferred_colors" value="elegante verde profundo y marfil"></label>
+          <label data-i18n-label="contactInfo">Contact info<textarea name="contact_info" rows="3">email: hello@lunamarket.com
+phone: +1 555 0100
+instagram: @lunamarket</textarea></label>
+          <label data-i18n-label="logoUrl">Logo URL optional<input name="logo_url" placeholder="https://..."></label>
+          <label data-i18n-label="uploadLogo">Upload logo optional<input name="logo_file" type="file" accept="image/*"></label>
+          <label data-i18n-label="photoUrls">Photo URLs optional<textarea name="photo_urls" rows="3" placeholder="One image URL per line" data-i18n-placeholder="photoUrlsPlaceholder"></textarea></label>
+          <label data-i18n-label="uploadPhotos">Upload photos optional<input name="photo_files" type="file" accept="image/*" multiple></label>
+          <button id="generateButton" type="submit" data-i18n="generateButton">Generate Website with AI</button>
+          <p id="statusText" class="status-text" data-i18n="serverKeyNotice">OPENAI_API_KEY stays on the server.</p>
+        </form>
+
+        <section id="guidedPanel" class="guided-panel mode-panel" aria-modal="true" role="dialog">
           <div class="guided-shell">
             <header class="guided-header">
               <div class="assistant-identity">
-                <img class="assistant-avatar large" src="/public/brand/gnu-dev-assistant.png" alt="Luma">
+                <img class="assistant-avatar large" src="/public/brand/gnu-dev-assistant.png" alt="GNU Dev">
                 <div>
-                  <strong>Luma</strong>
+                  <strong>GNU Dev</strong>
                   <span data-i18n="assistantSubtitle">Website setup assistant</span>
-                  <em><i></i><span data-i18n="onlineStatus">Online</span></em>
                 </div>
               </div>
               <div class="guided-header-actions">
@@ -75,7 +72,7 @@
                     <option value="pt">Português</option>
                   </select>
                 </label>
-                <button id="assistantAudioToggle" class="secondary-action icon-only audio-toggle" type="button" data-i18n="voiceOutputOff" aria-label="Voice off">Voice off</button>
+                <button id="assistantAudioToggle" class="secondary-action" type="button" data-i18n="voiceOutputOff">Voice off</button>
                 <button id="guidedCloseButton" class="icon-button" type="button" aria-label="Close">×</button>
               </div>
             </header>
@@ -90,7 +87,7 @@
                 <div id="guidedChat" class="guided-chat" aria-live="polite"></div>
                 <div id="guidedThinking" class="guided-thinking">
                   <img class="assistant-avatar tiny" src="/public/brand/gnu-dev-assistant.png" alt="">
-                  <span data-i18n="thinking">Luma is thinking...</span>
+                  <span data-i18n="thinking">GNU Dev is thinking...</span>
                 </div>
                 <div class="chat-status-card">
                   <div>
@@ -106,16 +103,13 @@
                   <button data-ai-decide="targetAudience" type="button" data-i18n="decideAudience">Audience: Let AI decide</button>
                   <button data-ai-decide="sectionsPreference" type="button" data-i18n="decideSections">Sections: Let AI decide</button>
                 </div>
-                <div class="chat-composer">
                 <div class="chat-input-label">
                   <input id="guidedReply" type="text" placeholder="Type your answer..." data-i18n-placeholder="replyPlaceholder" autocomplete="off">
                 </div>
                 <div class="guided-actions">
-                  <button id="guidedMicButton" class="secondary-action icon-only mic-toggle" type="button" data-i18n="micButton" aria-label="Use voice">Use voice</button>
-                  <button id="guidedSendButton" class="icon-only send-toggle" type="button" data-i18n="send" aria-label="Send">Send</button>
-                  <button id="guidedSkipButton" class="text-action" type="button" data-i18n="skip">Skip</button>
-                  <button id="switchManualFormButton" class="text-action" type="button" data-i18n="switchToManualForm">Switch to manual form</button>
-                </div>
+                  <button id="guidedSendButton" type="button" data-i18n="send">Send</button>
+                  <button id="guidedMicButton" class="secondary-action" type="button" data-i18n="micButton">Use voice</button>
+                  <button id="guidedSkipButton" class="secondary-action" type="button" data-i18n="skip">Skip</button>
                 </div>
                 <p id="voiceStatusText" class="mini-note"></p>
               </div>
@@ -123,8 +117,8 @@
               <div class="summary-panel" aria-label="Review details">
                 <div class="summary-head">
                   <div>
-                    <h2 data-i18n="finalReviewTitle">Your website brief</h2>
-                    <p data-i18n="summaryHelper">Review the essentials. Tap any field to edit it before Luma generates your draft.</p>
+                    <h2 data-i18n="finalReviewTitle">Review details</h2>
+                    <p data-i18n="summaryHelper">Edit anything before generating.</p>
                   </div>
                   <img class="assistant-avatar tiny" src="/public/brand/gnu-dev-assistant.png" alt="">
                 </div>
@@ -152,16 +146,16 @@
                   <img id="guidedLogoPreview" class="asset-preview" alt="">
                   <div id="guidedPhotoPreview" class="photo-preview-strip"></div>
                 </div>
-                <button id="guidedGenerateButton" type="button" data-i18n="reviewGenerate">Generate my website</button>
+                <button id="guidedGenerateButton" type="button" data-i18n="reviewGenerate">Review and Generate</button>
                 <button id="keepChattingButton" class="secondary-action full-width" type="button" data-i18n="keepChatting">Keep chatting</button>
-                <p id="guidedStatusText" class="status-text" data-i18n="assistantServerNotice">Your details stay ready for review before generating.</p>
+                <p id="guidedStatusText" class="status-text" data-i18n="assistantServerNotice">The assistant talks only to the secure backend route.</p>
               </div>
             </div>
           </div>
         </section>
       </aside>
 
-      <section class="workspace client-support-hidden">
+      <section class="workspace">
         <header class="toolbar">
           <div>
             <strong id="siteTitle">Generated site</strong>
