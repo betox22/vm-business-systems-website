@@ -77,36 +77,17 @@ body.public-client-setup.generated-preview-open {
 }
 
 .public-client-setup.generated-preview-open .client-review-bar {
-  display: flex;
-  position: sticky;
-  top: 53px;
-  z-index: 25;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-  padding: 10px 16px;
-  background: rgba(248, 250, 252, 0.96);
-  color: #101827;
-}
-
-.public-client-setup.generated-preview-open .client-review-bar button {
-  border: 1px solid rgba(15, 23, 42, 0.14);
-  border-radius: 999px;
-  padding: 8px 12px;
-  background: #ffffff;
-  color: #101827;
-  font-weight: 800;
+  display: none !important;
 }
 
 .public-client-setup.generated-preview-open #previewFrame {
-  min-height: calc(100vh - 110px);
+  min-height: calc(100vh - 54px);
   height: auto;
   overflow: visible;
 }
 
 .public-client-setup.generated-preview-open #previewFrame .rendered-site {
-  min-height: calc(100vh - 110px);
+  min-height: calc(100vh - 54px);
 }
 
 .public-client-setup .intake-panel {
