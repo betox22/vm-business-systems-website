@@ -1,0 +1,163 @@
+{
+  "id": "luxury-product-store",
+  "name": "Luxury Product Store",
+  "category": "ecommerce",
+  "bestFor": [
+    "jewelry",
+    "perfume",
+    "watches",
+    "leather goods",
+    "premium gifts"
+  ],
+  "style": {
+    "tone": "elegant, refined, exclusive",
+    "layoutDensity": "low",
+    "imageStyle": "moody premium photography",
+    "defaultColors": {
+      "background": "#090909",
+      "surface": "#15110D",
+      "primary": "#F5EFE6",
+      "secondary": "#B8AA98",
+      "accent": "#D6B56D"
+    },
+    "fonts": {
+      "heading": "Playfair Display",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "type": "header",
+      "fields": {
+        "logo": "{{logo_url}}",
+        "businessName": "{{business_name}}",
+        "navItems": [
+          "Home",
+          "Shop",
+          "About",
+          "Contact"
+        ],
+        "ctaLabel": "{{primary_cta_label}}",
+        "ctaUrl": "{{primary_cta_url}}"
+      }
+    },
+    {
+      "type": "luxury_hero",
+      "fields": {
+        "eyebrow": "{{brand_eyebrow}}",
+        "headline": "{{hero_headline}}",
+        "subheadline": "{{hero_subheadline}}",
+        "image": "{{hero_image}}",
+        "button": {
+          "label": "Discover Collection",
+          "url": "/collections"
+        }
+      }
+    },
+    {
+      "type": "brand_story",
+      "fields": {
+        "title": "{{brand_story_title}}",
+        "text": "{{brand_story_text}}",
+        "image": "{{brand_story_image}}"
+      }
+    },
+    {
+      "type": "premium_collection",
+      "fields": {
+        "title": "Signature Collection",
+        "products": "{{featured_products}}"
+      }
+    },
+    {
+      "type": "materials_quality",
+      "fields": {
+        "title": "Crafted With Intention",
+        "items": "{{quality_points}}"
+      }
+    },
+    {
+      "type": "reviews_minimal",
+      "fields": {
+        "title": "Client Notes",
+        "items": "{{testimonials}}"
+      }
+    },
+    {
+      "type": "footer",
+      "fields": {
+        "businessName": "{{business_name}}",
+        "description": "{{short_description}}",
+        "email": "{{email}}",
+        "phone": "{{phone}}",
+        "address": "{{address}}",
+        "socialLinks": "{{social_links}}",
+        "legalLinks": [
+          "Privacy Policy",
+          "Terms",
+          "Refund Policy"
+        ]
+      }
+    }
+  ],
+  "aiPrompt": "Generate a luxury ecommerce page with refined language, exclusivity, craftsmanship, and premium trust signals.",
+  "catalogModel": {
+    "catalogType": "luxury_gallery_catalog",
+    "productCardStyle": "large cinematic product cards with limited text, material note, premium price display",
+    "collectionLayout": "slow-scroll gallery, featured collection, craftsmanship blocks",
+    "filters": [
+      "collection",
+      "material",
+      "occasion",
+      "price_range"
+    ],
+    "productDetailModel": "story-driven PDP with craftsmanship, materials, care guide, authenticity proof",
+    "upsellModel": "curated pairings and private collection recommendations",
+    "customerFeeling": "exclusive, expensive, refined"
+  },
+  "visualDifference": "Not a normal shop grid. Feels like a luxury showroom with storytelling and premium imagery.",
+  "clientSelectionCard": {
+    "title": "Luxury Product Store",
+    "category": "ecommerce",
+    "bestForLabel": "jewelry, perfume, watches",
+    "difference": "Not a normal shop grid. Feels like a luxury showroom with storytelling and premium imagery.",
+    "previewTags": [
+      "luxury_gallery_catalog",
+      "elegant, refined, exclusive",
+      "low"
+    ]
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "purpose": "Main conversion page",
+      "usesSections": [
+        "header",
+        "luxury_hero",
+        "brand_story",
+        "premium_collection",
+        "materials_quality",
+        "reviews_minimal",
+        "footer"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "purpose": "exclusive, expensive, refined",
+      "catalogType": "luxury_gallery_catalog",
+      "layout": "slow-scroll gallery, featured collection, craftsmanship blocks",
+      "filters": [
+        "collection",
+        "material",
+        "occasion",
+        "price_range"
+      ]
+    },
+    {
+      "name": "Detail",
+      "purpose": "Product, service, offer, menu item, or project detail",
+      "layout": "story-driven PDP with craftsmanship, materials, care guide, authenticity proof",
+      "upsell": "curated pairings and private collection recommendations"
+    }
+  ]
+}

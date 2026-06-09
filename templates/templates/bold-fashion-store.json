@@ -1,0 +1,184 @@
+{
+  "id": "bold-fashion-store",
+  "name": "Bold Fashion Store",
+  "category": "ecommerce",
+  "bestFor": [
+    "fashion",
+    "streetwear",
+    "sneakers",
+    "boutique"
+  ],
+  "style": {
+    "tone": "bold, energetic, editorial",
+    "layoutDensity": "high visual impact",
+    "imageStyle": "full-bleed lifestyle images",
+    "defaultColors": {
+      "background": "#0E0E0E",
+      "surface": "#181818",
+      "primary": "#FFFFFF",
+      "secondary": "#B8B8B8",
+      "accent": "#FF4D00"
+    },
+    "fonts": {
+      "heading": "Archivo Black",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "type": "announcement_bar",
+      "enabled": true,
+      "fields": {
+        "text": "{{announcement_text}}",
+        "linkLabel": "{{announcement_link_label}}",
+        "linkUrl": "{{announcement_link_url}}"
+      }
+    },
+    {
+      "type": "header",
+      "fields": {
+        "logo": "{{logo_url}}",
+        "businessName": "{{business_name}}",
+        "navItems": [
+          "New Arrivals",
+          "Collections",
+          "Sale",
+          "Lookbook"
+        ],
+        "ctaLabel": "{{primary_cta_label}}",
+        "ctaUrl": "{{primary_cta_url}}"
+      }
+    },
+    {
+      "type": "hero_collection",
+      "fields": {
+        "headline": "{{collection_headline}}",
+        "subheadline": "{{collection_subheadline}}",
+        "backgroundImage": "{{hero_image}}",
+        "primaryButton": {
+          "label": "Shop The Drop",
+          "url": "/new-arrivals"
+        }
+      }
+    },
+    {
+      "type": "new_arrivals",
+      "fields": {
+        "title": "New Arrivals",
+        "products": "{{new_arrivals}}"
+      }
+    },
+    {
+      "type": "split_banner",
+      "fields": {
+        "leftImage": "{{lookbook_image_1}}",
+        "rightImage": "{{lookbook_image_2}}",
+        "headline": "{{style_statement}}",
+        "button": {
+          "label": "View Lookbook",
+          "url": "/lookbook"
+        }
+      }
+    },
+    {
+      "type": "discount_banner",
+      "fields": {
+        "headline": "{{promo_headline}}",
+        "text": "{{promo_text}}",
+        "button": {
+          "label": "Shop Sale",
+          "url": "/sale"
+        }
+      }
+    },
+    {
+      "type": "featured_products",
+      "fields": {
+        "title": "Trending Now",
+        "products": "{{featured_products}}",
+        "columns": 4
+      }
+    },
+    {
+      "type": "footer",
+      "fields": {
+        "businessName": "{{business_name}}",
+        "description": "{{short_description}}",
+        "email": "{{email}}",
+        "phone": "{{phone}}",
+        "address": "{{address}}",
+        "socialLinks": "{{social_links}}",
+        "legalLinks": [
+          "Privacy Policy",
+          "Terms",
+          "Refund Policy"
+        ]
+      }
+    }
+  ],
+  "aiPrompt": "Create an energetic fashion ecommerce page with short punchy copy, strong collection language, and bold visual hierarchy.",
+  "catalogModel": {
+    "catalogType": "lookbook_collection_catalog",
+    "productCardStyle": "large lifestyle image cards with hover reveal, size swatches, sale badges",
+    "collectionLayout": "collection drops, lookbook banners, outfit sections, new arrivals carousel",
+    "filters": [
+      "collection",
+      "size",
+      "color",
+      "style",
+      "new_arrivals",
+      "sale"
+    ],
+    "productDetailModel": "fashion PDP with model photos, size selector, fit notes, complete-the-look products",
+    "upsellModel": "complete the outfit and similar styles",
+    "customerFeeling": "fashion brand, visual, drop-based, modern"
+  },
+  "visualDifference": "Feels like a fashion brand, not a normal product grid. Uses collections, model images, drops, and lookbook.",
+  "clientSelectionCard": {
+    "title": "Bold Fashion Store",
+    "category": "ecommerce",
+    "bestForLabel": "fashion, streetwear, sneakers",
+    "difference": "Feels like a fashion brand, not a normal product grid. Uses collections, model images, drops, and lookbook.",
+    "previewTags": [
+      "lookbook_collection_catalog",
+      "bold, energetic, editorial",
+      "high visual impact"
+    ]
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "purpose": "Main conversion page",
+      "usesSections": [
+        "announcement_bar",
+        "header",
+        "hero_collection",
+        "new_arrivals",
+        "split_banner",
+        "discount_banner",
+        "featured_products",
+        "footer"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "purpose": "fashion brand, visual, drop-based, modern",
+      "catalogType": "lookbook_collection_catalog",
+      "layout": "collection drops, lookbook banners, outfit sections, new arrivals carousel",
+      "filters": [
+        "collection",
+        "size",
+        "color",
+        "style",
+        "new_arrivals",
+        "sale"
+      ]
+    },
+    {
+      "name": "Detail",
+      "purpose": "Product, service, offer, menu item, or project detail",
+      "layout": "fashion PDP with model photos, size selector, fit notes, complete-the-look products",
+      "upsell": "complete the outfit and similar styles"
+    }
+  ]
+}

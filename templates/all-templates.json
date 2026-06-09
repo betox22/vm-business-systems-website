@@ -1,0 +1,2247 @@
+[
+  {
+    "id": "minimal-store",
+    "name": "Minimal Store",
+    "category": "ecommerce",
+    "bestFor": [
+      "cosmetics",
+      "accessories",
+      "premium products",
+      "small retail brand"
+    ],
+    "style": {
+      "tone": "clean, simple, premium",
+      "layoutDensity": "medium",
+      "imageStyle": "large product photos with whitespace",
+      "defaultColors": {
+        "background": "#FFFFFF",
+        "surface": "#F7F7F5",
+        "primary": "#111111",
+        "secondary": "#767676",
+        "accent": "#C9A86A"
+      },
+      "fonts": {
+        "heading": "Inter",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "type": "announcement_bar",
+        "enabled": true,
+        "fields": {
+          "text": "{{announcement_text}}",
+          "linkLabel": "{{announcement_link_label}}",
+          "linkUrl": "{{announcement_link_url}}"
+        }
+      },
+      {
+        "type": "header",
+        "fields": {
+          "logo": "{{logo_url}}",
+          "businessName": "{{business_name}}",
+          "navItems": [
+            "Home",
+            "Shop",
+            "About",
+            "Contact"
+          ],
+          "ctaLabel": "{{primary_cta_label}}",
+          "ctaUrl": "{{primary_cta_url}}"
+        }
+      },
+      {
+        "type": "hero_product",
+        "fields": {
+          "eyebrow": "{{hero_eyebrow}}",
+          "headline": "{{hero_headline}}",
+          "subheadline": "{{hero_subheadline}}",
+          "image": "{{hero_image}}",
+          "primaryButton": {
+            "label": "Shop Now",
+            "url": "/shop"
+          },
+          "secondaryButton": {
+            "label": "Explore Collection",
+            "url": "/collections"
+          }
+        }
+      },
+      {
+        "type": "category_grid",
+        "fields": {
+          "title": "Shop by Category",
+          "categories": "{{product_categories}}"
+        }
+      },
+      {
+        "type": "featured_products",
+        "fields": {
+          "title": "Best Sellers",
+          "products": "{{featured_products}}",
+          "columns": 4
+        }
+      },
+      {
+        "type": "benefits_row",
+        "fields": {
+          "items": [
+            {
+              "title": "Fast Shipping",
+              "text": "{{shipping_message}}"
+            },
+            {
+              "title": "Secure Checkout",
+              "text": "{{payment_message}}"
+            },
+            {
+              "title": "Easy Returns",
+              "text": "{{returns_message}}"
+            }
+          ]
+        }
+      },
+      {
+        "type": "testimonials",
+        "fields": {
+          "title": "Loved by Customers",
+          "items": "{{testimonials}}"
+        }
+      },
+      {
+        "type": "footer",
+        "fields": {
+          "businessName": "{{business_name}}",
+          "description": "{{short_description}}",
+          "email": "{{email}}",
+          "phone": "{{phone}}",
+          "address": "{{address}}",
+          "socialLinks": "{{social_links}}",
+          "legalLinks": [
+            "Privacy Policy",
+            "Terms",
+            "Refund Policy"
+          ]
+        }
+      }
+    ],
+    "aiPrompt": "Generate a clean premium ecommerce homepage using strong product benefits, concise copy, and minimal visual clutter.",
+    "catalogModel": {
+      "catalogType": "editorial_minimal_grid",
+      "productCardStyle": "clean cards with large image, product name, short benefit, price, quick add",
+      "collectionLayout": "3-column category grid followed by 4-column product grid",
+      "filters": [
+        "category",
+        "price",
+        "best_seller",
+        "new"
+      ],
+      "productDetailModel": "image gallery left, product information right, sticky add-to-cart",
+      "upsellModel": "related products below product detail",
+      "customerFeeling": "simple, premium, easy to browse"
+    },
+    "visualDifference": "Large whitespace, minimal product cards, calm premium shopping experience.",
+    "clientSelectionCard": {
+      "title": "Minimal Store",
+      "category": "ecommerce",
+      "bestForLabel": "cosmetics, accessories, premium products",
+      "difference": "Large whitespace, minimal product cards, calm premium shopping experience.",
+      "previewTags": [
+        "editorial_minimal_grid",
+        "clean, simple, premium",
+        "medium"
+      ]
+    },
+    "pages": [
+      {
+        "name": "Home",
+        "purpose": "Main conversion page",
+        "usesSections": [
+          "announcement_bar",
+          "header",
+          "hero_product",
+          "category_grid",
+          "featured_products",
+          "benefits_row",
+          "testimonials",
+          "footer"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "purpose": "simple, premium, easy to browse",
+        "catalogType": "editorial_minimal_grid",
+        "layout": "3-column category grid followed by 4-column product grid",
+        "filters": [
+          "category",
+          "price",
+          "best_seller",
+          "new"
+        ]
+      },
+      {
+        "name": "Detail",
+        "purpose": "Product, service, offer, menu item, or project detail",
+        "layout": "image gallery left, product information right, sticky add-to-cart",
+        "upsell": "related products below product detail"
+      }
+    ]
+  },
+  {
+    "id": "bold-fashion-store",
+    "name": "Bold Fashion Store",
+    "category": "ecommerce",
+    "bestFor": [
+      "fashion",
+      "streetwear",
+      "sneakers",
+      "boutique"
+    ],
+    "style": {
+      "tone": "bold, energetic, editorial",
+      "layoutDensity": "high visual impact",
+      "imageStyle": "full-bleed lifestyle images",
+      "defaultColors": {
+        "background": "#0E0E0E",
+        "surface": "#181818",
+        "primary": "#FFFFFF",
+        "secondary": "#B8B8B8",
+        "accent": "#FF4D00"
+      },
+      "fonts": {
+        "heading": "Archivo Black",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "type": "announcement_bar",
+        "enabled": true,
+        "fields": {
+          "text": "{{announcement_text}}",
+          "linkLabel": "{{announcement_link_label}}",
+          "linkUrl": "{{announcement_link_url}}"
+        }
+      },
+      {
+        "type": "header",
+        "fields": {
+          "logo": "{{logo_url}}",
+          "businessName": "{{business_name}}",
+          "navItems": [
+            "New Arrivals",
+            "Collections",
+            "Sale",
+            "Lookbook"
+          ],
+          "ctaLabel": "{{primary_cta_label}}",
+          "ctaUrl": "{{primary_cta_url}}"
+        }
+      },
+      {
+        "type": "hero_collection",
+        "fields": {
+          "headline": "{{collection_headline}}",
+          "subheadline": "{{collection_subheadline}}",
+          "backgroundImage": "{{hero_image}}",
+          "primaryButton": {
+            "label": "Shop The Drop",
+            "url": "/new-arrivals"
+          }
+        }
+      },
+      {
+        "type": "new_arrivals",
+        "fields": {
+          "title": "New Arrivals",
+          "products": "{{new_arrivals}}"
+        }
+      },
+      {
+        "type": "split_banner",
+        "fields": {
+          "leftImage": "{{lookbook_image_1}}",
+          "rightImage": "{{lookbook_image_2}}",
+          "headline": "{{style_statement}}",
+          "button": {
+            "label": "View Lookbook",
+            "url": "/lookbook"
+          }
+        }
+      },
+      {
+        "type": "discount_banner",
+        "fields": {
+          "headline": "{{promo_headline}}",
+          "text": "{{promo_text}}",
+          "button": {
+            "label": "Shop Sale",
+            "url": "/sale"
+          }
+        }
+      },
+      {
+        "type": "featured_products",
+        "fields": {
+          "title": "Trending Now",
+          "products": "{{featured_products}}",
+          "columns": 4
+        }
+      },
+      {
+        "type": "footer",
+        "fields": {
+          "businessName": "{{business_name}}",
+          "description": "{{short_description}}",
+          "email": "{{email}}",
+          "phone": "{{phone}}",
+          "address": "{{address}}",
+          "socialLinks": "{{social_links}}",
+          "legalLinks": [
+            "Privacy Policy",
+            "Terms",
+            "Refund Policy"
+          ]
+        }
+      }
+    ],
+    "aiPrompt": "Create an energetic fashion ecommerce page with short punchy copy, strong collection language, and bold visual hierarchy.",
+    "catalogModel": {
+      "catalogType": "lookbook_collection_catalog",
+      "productCardStyle": "large lifestyle image cards with hover reveal, size swatches, sale badges",
+      "collectionLayout": "collection drops, lookbook banners, outfit sections, new arrivals carousel",
+      "filters": [
+        "collection",
+        "size",
+        "color",
+        "style",
+        "new_arrivals",
+        "sale"
+      ],
+      "productDetailModel": "fashion PDP with model photos, size selector, fit notes, complete-the-look products",
+      "upsellModel": "complete the outfit and similar styles",
+      "customerFeeling": "fashion brand, visual, drop-based, modern"
+    },
+    "visualDifference": "Feels like a fashion brand, not a normal product grid. Uses collections, model images, drops, and lookbook.",
+    "clientSelectionCard": {
+      "title": "Bold Fashion Store",
+      "category": "ecommerce",
+      "bestForLabel": "fashion, streetwear, sneakers",
+      "difference": "Feels like a fashion brand, not a normal product grid. Uses collections, model images, drops, and lookbook.",
+      "previewTags": [
+        "lookbook_collection_catalog",
+        "bold, energetic, editorial",
+        "high visual impact"
+      ]
+    },
+    "pages": [
+      {
+        "name": "Home",
+        "purpose": "Main conversion page",
+        "usesSections": [
+          "announcement_bar",
+          "header",
+          "hero_collection",
+          "new_arrivals",
+          "split_banner",
+          "discount_banner",
+          "featured_products",
+          "footer"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "purpose": "fashion brand, visual, drop-based, modern",
+        "catalogType": "lookbook_collection_catalog",
+        "layout": "collection drops, lookbook banners, outfit sections, new arrivals carousel",
+        "filters": [
+          "collection",
+          "size",
+          "color",
+          "style",
+          "new_arrivals",
+          "sale"
+        ]
+      },
+      {
+        "name": "Detail",
+        "purpose": "Product, service, offer, menu item, or project detail",
+        "layout": "fashion PDP with model photos, size selector, fit notes, complete-the-look products",
+        "upsell": "complete the outfit and similar styles"
+      }
+    ]
+  },
+  {
+    "id": "marketplace-style",
+    "name": "Marketplace Style",
+    "category": "ecommerce",
+    "bestFor": [
+      "electronics",
+      "home goods",
+      "general store",
+      "dropshipping",
+      "multi-category retail"
+    ],
+    "style": {
+      "tone": "practical, organized, deal-focused",
+      "layoutDensity": "dense",
+      "imageStyle": "product thumbnails and category cards",
+      "defaultColors": {
+        "background": "#F5F6F8",
+        "surface": "#FFFFFF",
+        "primary": "#1F2937",
+        "secondary": "#6B7280",
+        "accent": "#2563EB"
+      },
+      "fonts": {
+        "heading": "Inter",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "type": "announcement_bar",
+        "enabled": true,
+        "fields": {
+          "text": "{{announcement_text}}",
+          "linkLabel": "{{announcement_link_label}}",
+          "linkUrl": "{{announcement_link_url}}"
+        }
+      },
+      {
+        "type": "marketplace_header",
+        "fields": {
+          "logo": "{{logo_url}}",
+          "businessName": "{{business_name}}",
+          "searchPlaceholder": "Search products...",
+          "navItems": [
+            "Deals",
+            "Categories",
+            "Best Sellers",
+            "Support"
+          ]
+        }
+      },
+      {
+        "type": "hero_deals",
+        "fields": {
+          "headline": "{{hero_headline}}",
+          "subheadline": "{{hero_subheadline}}",
+          "deals": "{{featured_deals}}"
+        }
+      },
+      {
+        "type": "category_tiles",
+        "fields": {
+          "title": "Popular Categories",
+          "categories": "{{product_categories}}"
+        }
+      },
+      {
+        "type": "deal_carousel",
+        "fields": {
+          "title": "Today’s Deals",
+          "products": "{{deal_products}}"
+        }
+      },
+      {
+        "type": "product_grid",
+        "fields": {
+          "title": "Best Sellers",
+          "products": "{{featured_products}}",
+          "columns": 5
+        }
+      },
+      {
+        "type": "trust_strip",
+        "fields": {
+          "items": [
+            "Secure payments",
+            "Fast delivery",
+            "Customer support",
+            "Easy returns"
+          ]
+        }
+      },
+      {
+        "type": "footer",
+        "fields": {
+          "businessName": "{{business_name}}",
+          "description": "{{short_description}}",
+          "email": "{{email}}",
+          "phone": "{{phone}}",
+          "address": "{{address}}",
+          "socialLinks": "{{social_links}}",
+          "legalLinks": [
+            "Privacy Policy",
+            "Terms",
+            "Refund Policy"
+          ]
+        }
+      }
+    ],
+    "aiPrompt": "Build a multi-category ecommerce homepage focused on fast product discovery, deals, search, and trust.",
+    "catalogModel": {
+      "catalogType": "dense_marketplace_catalog",
+      "productCardStyle": "compact cards with rating, discount, delivery badge, quick view, compare",
+      "collectionLayout": "search-first layout, category sidebar, deal rows, best seller sections",
+      "filters": [
+        "category",
+        "brand",
+        "price",
+        "rating",
+        "availability",
+        "shipping_speed"
+      ],
+      "productDetailModel": "marketplace PDP with specs, reviews, Q&A, shipping estimate, recommended bundles",
+      "upsellModel": "frequently bought together and recently viewed",
+      "customerFeeling": "Amazon-style discovery, many products, practical and fast"
+    },
+    "visualDifference": "Dense catalog with search bar, side filters, deals, ratings, and comparison feeling.",
+    "clientSelectionCard": {
+      "title": "Marketplace Style",
+      "category": "ecommerce",
+      "bestForLabel": "electronics, home goods, general store",
+      "difference": "Dense catalog with search bar, side filters, deals, ratings, and comparison feeling.",
+      "previewTags": [
+        "dense_marketplace_catalog",
+        "practical, organized, deal-focused",
+        "dense"
+      ]
+    },
+    "pages": [
+      {
+        "name": "Home",
+        "purpose": "Main conversion page",
+        "usesSections": [
+          "announcement_bar",
+          "marketplace_header",
+          "hero_deals",
+          "category_tiles",
+          "deal_carousel",
+          "product_grid",
+          "trust_strip",
+          "footer"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "purpose": "Amazon-style discovery, many products, practical and fast",
+        "catalogType": "dense_marketplace_catalog",
+        "layout": "search-first layout, category sidebar, deal rows, best seller sections",
+        "filters": [
+          "category",
+          "brand",
+          "price",
+          "rating",
+          "availability",
+          "shipping_speed"
+        ]
+      },
+      {
+        "name": "Detail",
+        "purpose": "Product, service, offer, menu item, or project detail",
+        "layout": "marketplace PDP with specs, reviews, Q&A, shipping estimate, recommended bundles",
+        "upsell": "frequently bought together and recently viewed"
+      }
+    ]
+  },
+  {
+    "id": "luxury-product-store",
+    "name": "Luxury Product Store",
+    "category": "ecommerce",
+    "bestFor": [
+      "jewelry",
+      "perfume",
+      "watches",
+      "leather goods",
+      "premium gifts"
+    ],
+    "style": {
+      "tone": "elegant, refined, exclusive",
+      "layoutDensity": "low",
+      "imageStyle": "moody premium photography",
+      "defaultColors": {
+        "background": "#090909",
+        "surface": "#15110D",
+        "primary": "#F5EFE6",
+        "secondary": "#B8AA98",
+        "accent": "#D6B56D"
+      },
+      "fonts": {
+        "heading": "Playfair Display",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "type": "header",
+        "fields": {
+          "logo": "{{logo_url}}",
+          "businessName": "{{business_name}}",
+          "navItems": [
+            "Home",
+            "Shop",
+            "About",
+            "Contact"
+          ],
+          "ctaLabel": "{{primary_cta_label}}",
+          "ctaUrl": "{{primary_cta_url}}"
+        }
+      },
+      {
+        "type": "luxury_hero",
+        "fields": {
+          "eyebrow": "{{brand_eyebrow}}",
+          "headline": "{{hero_headline}}",
+          "subheadline": "{{hero_subheadline}}",
+          "image": "{{hero_image}}",
+          "button": {
+            "label": "Discover Collection",
+            "url": "/collections"
+          }
+        }
+      },
+      {
+        "type": "brand_story",
+        "fields": {
+          "title": "{{brand_story_title}}",
+          "text": "{{brand_story_text}}",
+          "image": "{{brand_story_image}}"
+        }
+      },
+      {
+        "type": "premium_collection",
+        "fields": {
+          "title": "Signature Collection",
+          "products": "{{featured_products}}"
+        }
+      },
+      {
+        "type": "materials_quality",
+        "fields": {
+          "title": "Crafted With Intention",
+          "items": "{{quality_points}}"
+        }
+      },
+      {
+        "type": "reviews_minimal",
+        "fields": {
+          "title": "Client Notes",
+          "items": "{{testimonials}}"
+        }
+      },
+      {
+        "type": "footer",
+        "fields": {
+          "businessName": "{{business_name}}",
+          "description": "{{short_description}}",
+          "email": "{{email}}",
+          "phone": "{{phone}}",
+          "address": "{{address}}",
+          "socialLinks": "{{social_links}}",
+          "legalLinks": [
+            "Privacy Policy",
+            "Terms",
+            "Refund Policy"
+          ]
+        }
+      }
+    ],
+    "aiPrompt": "Generate a luxury ecommerce page with refined language, exclusivity, craftsmanship, and premium trust signals.",
+    "catalogModel": {
+      "catalogType": "luxury_gallery_catalog",
+      "productCardStyle": "large cinematic product cards with limited text, material note, premium price display",
+      "collectionLayout": "slow-scroll gallery, featured collection, craftsmanship blocks",
+      "filters": [
+        "collection",
+        "material",
+        "occasion",
+        "price_range"
+      ],
+      "productDetailModel": "story-driven PDP with craftsmanship, materials, care guide, authenticity proof",
+      "upsellModel": "curated pairings and private collection recommendations",
+      "customerFeeling": "exclusive, expensive, refined"
+    },
+    "visualDifference": "Not a normal shop grid. Feels like a luxury showroom with storytelling and premium imagery.",
+    "clientSelectionCard": {
+      "title": "Luxury Product Store",
+      "category": "ecommerce",
+      "bestForLabel": "jewelry, perfume, watches",
+      "difference": "Not a normal shop grid. Feels like a luxury showroom with storytelling and premium imagery.",
+      "previewTags": [
+        "luxury_gallery_catalog",
+        "elegant, refined, exclusive",
+        "low"
+      ]
+    },
+    "pages": [
+      {
+        "name": "Home",
+        "purpose": "Main conversion page",
+        "usesSections": [
+          "header",
+          "luxury_hero",
+          "brand_story",
+          "premium_collection",
+          "materials_quality",
+          "reviews_minimal",
+          "footer"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "purpose": "exclusive, expensive, refined",
+        "catalogType": "luxury_gallery_catalog",
+        "layout": "slow-scroll gallery, featured collection, craftsmanship blocks",
+        "filters": [
+          "collection",
+          "material",
+          "occasion",
+          "price_range"
+        ]
+      },
+      {
+        "name": "Detail",
+        "purpose": "Product, service, offer, menu item, or project detail",
+        "layout": "story-driven PDP with craftsmanship, materials, care guide, authenticity proof",
+        "upsell": "curated pairings and private collection recommendations"
+      }
+    ]
+  },
+  {
+    "id": "digital-products-store",
+    "name": "Digital Products Store",
+    "category": "ecommerce",
+    "bestFor": [
+      "courses",
+      "ebooks",
+      "templates",
+      "software",
+      "memberships"
+    ],
+    "style": {
+      "tone": "modern, clear, benefit-driven",
+      "layoutDensity": "medium",
+      "imageStyle": "mockups, screenshots, digital previews",
+      "defaultColors": {
+        "background": "#0F172A",
+        "surface": "#111827",
+        "primary": "#FFFFFF",
+        "secondary": "#CBD5E1",
+        "accent": "#38BDF8"
+      },
+      "fonts": {
+        "heading": "Inter",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "type": "header",
+        "fields": {
+          "logo": "{{logo_url}}",
+          "businessName": "{{business_name}}",
+          "navItems": [
+            "Home",
+            "Shop",
+            "About",
+            "Contact"
+          ],
+          "ctaLabel": "{{primary_cta_label}}",
+          "ctaUrl": "{{primary_cta_url}}"
+        }
+      },
+      {
+        "type": "saas_hero",
+        "fields": {
+          "headline": "{{hero_headline}}",
+          "subheadline": "{{hero_subheadline}}",
+          "mockupImage": "{{hero_image}}",
+          "primaryButton": {
+            "label": "Get Access",
+            "url": "/products"
+          },
+          "secondaryButton": {
+            "label": "See What’s Included",
+            "url": "#included"
+          }
+        }
+      },
+      {
+        "type": "digital_product_cards",
+        "fields": {
+          "title": "Choose Your Product",
+          "products": "{{featured_products}}"
+        }
+      },
+      {
+        "type": "included_section",
+        "fields": {
+          "title": "What’s Included",
+          "items": "{{included_items}}"
+        }
+      },
+      {
+        "type": "preview_gallery",
+        "fields": {
+          "title": "Preview",
+          "images": "{{preview_images}}"
+        }
+      },
+      {
+        "type": "faq",
+        "fields": {
+          "title": "Questions",
+          "items": "{{faqs}}"
+        }
+      },
+      {
+        "type": "footer",
+        "fields": {
+          "businessName": "{{business_name}}",
+          "description": "{{short_description}}",
+          "email": "{{email}}",
+          "phone": "{{phone}}",
+          "address": "{{address}}",
+          "socialLinks": "{{social_links}}",
+          "legalLinks": [
+            "Privacy Policy",
+            "Terms",
+            "Refund Policy"
+          ]
+        }
+      }
+    ],
+    "aiPrompt": "Create a conversion-focused digital product page explaining the offer, what is included, and why it is valuable.",
+    "catalogModel": {
+      "catalogType": "digital_offer_catalog",
+      "productCardStyle": "offer cards with outcome, included files/modules, instant access badge, preview button",
+      "collectionLayout": "product cards grouped by outcome, bundles, previews, FAQ before purchase",
+      "filters": [
+        "format",
+        "skill_level",
+        "topic",
+        "bundle",
+        "price"
+      ],
+      "productDetailModel": "sales-page PDP with what’s included, previews, modules, testimonials, FAQ",
+      "upsellModel": "bundle upgrade, membership access, related templates",
+      "customerFeeling": "course/template/software shop with clear value"
+    },
+    "visualDifference": "Catalog sells outcomes, previews, modules, and bundles instead of simple physical products.",
+    "clientSelectionCard": {
+      "title": "Digital Products Store",
+      "category": "ecommerce",
+      "bestForLabel": "courses, ebooks, templates",
+      "difference": "Catalog sells outcomes, previews, modules, and bundles instead of simple physical products.",
+      "previewTags": [
+        "digital_offer_catalog",
+        "modern, clear, benefit-driven",
+        "medium"
+      ]
+    },
+    "pages": [
+      {
+        "name": "Home",
+        "purpose": "Main conversion page",
+        "usesSections": [
+          "header",
+          "saas_hero",
+          "digital_product_cards",
+          "included_section",
+          "preview_gallery",
+          "faq",
+          "footer"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "purpose": "course/template/software shop with clear value",
+        "catalogType": "digital_offer_catalog",
+        "layout": "product cards grouped by outcome, bundles, previews, FAQ before purchase",
+        "filters": [
+          "format",
+          "skill_level",
+          "topic",
+          "bundle",
+          "price"
+        ]
+      },
+      {
+        "name": "Detail",
+        "purpose": "Product, service, offer, menu item, or project detail",
+        "layout": "sales-page PDP with what’s included, previews, modules, testimonials, FAQ",
+        "upsell": "bundle upgrade, membership access, related templates"
+      }
+    ]
+  },
+  {
+    "id": "startup-landing",
+    "name": "Startup Landing",
+    "category": "landing",
+    "bestFor": [
+      "apps",
+      "SaaS",
+      "AI tools",
+      "platforms",
+      "startups"
+    ],
+    "style": {
+      "tone": "smart, modern, confident",
+      "layoutDensity": "medium",
+      "imageStyle": "product UI, gradients, abstract visuals",
+      "defaultColors": {
+        "background": "#FFFFFF",
+        "surface": "#F1F5F9",
+        "primary": "#0F172A",
+        "secondary": "#475569",
+        "accent": "#7C3AED"
+      },
+      "fonts": {
+        "heading": "Inter",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "type": "header",
+        "fields": {
+          "logo": "{{logo_url}}",
+          "businessName": "{{business_name}}",
+          "navItems": [
+            "Home",
+            "Shop",
+            "About",
+            "Contact"
+          ],
+          "ctaLabel": "{{primary_cta_label}}",
+          "ctaUrl": "{{primary_cta_url}}"
+        }
+      },
+      {
+        "type": "startup_hero",
+        "fields": {
+          "headline": "{{hero_headline}}",
+          "subheadline": "{{hero_subheadline}}",
+          "productImage": "{{product_screenshot}}",
+          "primaryButton": {
+            "label": "Start Free",
+            "url": "{{signup_url}}"
+          },
+          "secondaryButton": {
+            "label": "Watch Demo",
+            "url": "{{demo_url}}"
+          }
+        }
+      },
+      {
+        "type": "problem_solution",
+        "fields": {
+          "problemTitle": "{{problem_title}}",
+          "problemText": "{{problem_text}}",
+          "solutionTitle": "{{solution_title}}",
+          "solutionText": "{{solution_text}}"
+        }
+      },
+      {
+        "type": "how_it_works",
+        "fields": {
+          "title": "How It Works",
+          "steps": "{{process_steps}}"
+        }
+      },
+      {
+        "type": "features_grid",
+        "fields": {
+          "title": "Features",
+          "features": "{{features}}"
+        }
+      },
+      {
+        "type": "pricing_preview",
+        "fields": {
+          "title": "Simple Pricing",
+          "plans": "{{pricing_plans}}"
+        }
+      },
+      {
+        "type": "footer",
+        "fields": {
+          "businessName": "{{business_name}}",
+          "description": "{{short_description}}",
+          "email": "{{email}}",
+          "phone": "{{phone}}",
+          "address": "{{address}}",
+          "socialLinks": "{{social_links}}",
+          "legalLinks": [
+            "Privacy Policy",
+            "Terms",
+            "Refund Policy"
+          ]
+        }
+      }
+    ],
+    "aiPrompt": "Generate a modern startup landing page with problem-solution framing, product benefits, features, and a clear signup CTA.",
+    "catalogModel": {
+      "catalogType": "pricing_plan_catalog",
+      "productCardStyle": "plan cards with features, recommended badge, monthly/yearly toggle",
+      "collectionLayout": "features, use cases, pricing, demo CTA",
+      "filters": [
+        "not_applicable"
+      ],
+      "productDetailModel": "plan comparison and signup flow",
+      "upsellModel": "upgrade to pro plan, add-ons, enterprise CTA",
+      "customerFeeling": "SaaS/app landing page, not a store"
+    },
+    "visualDifference": "No product grid. It uses plan cards, features, demo, and signup flow.",
+    "clientSelectionCard": {
+      "title": "Startup Landing",
+      "category": "landing",
+      "bestForLabel": "apps, SaaS, AI tools",
+      "difference": "No product grid. It uses plan cards, features, demo, and signup flow.",
+      "previewTags": [
+        "pricing_plan_catalog",
+        "smart, modern, confident",
+        "medium"
+      ]
+    },
+    "pages": [
+      {
+        "name": "Home",
+        "purpose": "Main conversion page",
+        "usesSections": [
+          "header",
+          "startup_hero",
+          "problem_solution",
+          "how_it_works",
+          "features_grid",
+          "pricing_preview",
+          "footer"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "purpose": "SaaS/app landing page, not a store",
+        "catalogType": "pricing_plan_catalog",
+        "layout": "features, use cases, pricing, demo CTA",
+        "filters": [
+          "not_applicable"
+        ]
+      },
+      {
+        "name": "Detail",
+        "purpose": "Product, service, offer, menu item, or project detail",
+        "layout": "plan comparison and signup flow",
+        "upsell": "upgrade to pro plan, add-ons, enterprise CTA"
+      }
+    ]
+  },
+  {
+    "id": "personal-brand-landing",
+    "name": "Personal Brand Landing",
+    "category": "landing",
+    "bestFor": [
+      "consultants",
+      "coaches",
+      "freelancers",
+      "creators",
+      "speakers"
+    ],
+    "style": {
+      "tone": "professional, personal, credible",
+      "layoutDensity": "medium",
+      "imageStyle": "portrait, lifestyle, work samples",
+      "defaultColors": {
+        "background": "#FAFAF9",
+        "surface": "#FFFFFF",
+        "primary": "#1C1917",
+        "secondary": "#57534E",
+        "accent": "#A16207"
+      },
+      "fonts": {
+        "heading": "DM Serif Display",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "type": "header",
+        "fields": {
+          "logo": "{{logo_url}}",
+          "businessName": "{{business_name}}",
+          "navItems": [
+            "Home",
+            "Shop",
+            "About",
+            "Contact"
+          ],
+          "ctaLabel": "{{primary_cta_label}}",
+          "ctaUrl": "{{primary_cta_url}}"
+        }
+      },
+      {
+        "type": "personal_hero",
+        "fields": {
+          "name": "{{person_name}}",
+          "headline": "{{hero_headline}}",
+          "subheadline": "{{hero_subheadline}}",
+          "portrait": "{{portrait_image}}",
+          "button": {
+            "label": "Work With Me",
+            "url": "#contact"
+          }
+        }
+      },
+      {
+        "type": "about_person",
+        "fields": {
+          "title": "About",
+          "text": "{{about_text}}"
+        }
+      },
+      {
+        "type": "service_cards",
+        "fields": {
+          "title": "Ways I Can Help",
+          "services": "{{services}}"
+        }
+      },
+      {
+        "type": "results_section",
+        "fields": {
+          "title": "Results",
+          "items": "{{case_results}}"
+        }
+      },
+      {
+        "type": "contact_form",
+        "fields": {
+          "title": "Let’s Talk",
+          "fields": [
+            "name",
+            "email",
+            "message"
+          ]
+        }
+      },
+      {
+        "type": "footer",
+        "fields": {
+          "businessName": "{{business_name}}",
+          "description": "{{short_description}}",
+          "email": "{{email}}",
+          "phone": "{{phone}}",
+          "address": "{{address}}",
+          "socialLinks": "{{social_links}}",
+          "legalLinks": [
+            "Privacy Policy",
+            "Terms",
+            "Refund Policy"
+          ]
+        }
+      }
+    ],
+    "aiPrompt": "Create a personal brand landing page that builds credibility, explains expertise, and drives inquiries.",
+    "catalogModel": {
+      "catalogType": "service_package_catalog",
+      "productCardStyle": "service package cards with outcome, session length, who it is for, CTA",
+      "collectionLayout": "about, expertise, service packages, results, contact form",
+      "filters": [
+        "not_applicable"
+      ],
+      "productDetailModel": "service detail section with deliverables, process, expected result",
+      "upsellModel": "higher-tier package or consultation call",
+      "customerFeeling": "personal expert page with service packages"
+    },
+    "visualDifference": "Client chooses a person/service package, not products. Strong about/results/contact layout.",
+    "clientSelectionCard": {
+      "title": "Personal Brand Landing",
+      "category": "landing",
+      "bestForLabel": "consultants, coaches, freelancers",
+      "difference": "Client chooses a person/service package, not products. Strong about/results/contact layout.",
+      "previewTags": [
+        "service_package_catalog",
+        "professional, personal, credible",
+        "medium"
+      ]
+    },
+    "pages": [
+      {
+        "name": "Home",
+        "purpose": "Main conversion page",
+        "usesSections": [
+          "header",
+          "personal_hero",
+          "about_person",
+          "service_cards",
+          "results_section",
+          "contact_form",
+          "footer"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "purpose": "personal expert page with service packages",
+        "catalogType": "service_package_catalog",
+        "layout": "about, expertise, service packages, results, contact form",
+        "filters": [
+          "not_applicable"
+        ]
+      },
+      {
+        "name": "Detail",
+        "purpose": "Product, service, offer, menu item, or project detail",
+        "layout": "service detail section with deliverables, process, expected result",
+        "upsell": "higher-tier package or consultation call"
+      }
+    ]
+  },
+  {
+    "id": "event-promo-landing",
+    "name": "Event / Promo Landing",
+    "category": "landing",
+    "bestFor": [
+      "events",
+      "webinars",
+      "launches",
+      "seasonal promotions",
+      "limited offers"
+    ],
+    "style": {
+      "tone": "urgent, clear, action-focused",
+      "layoutDensity": "medium-high",
+      "imageStyle": "event photos, bold promo graphics",
+      "defaultColors": {
+        "background": "#FFFFFF",
+        "surface": "#FFF7ED",
+        "primary": "#111827",
+        "secondary": "#4B5563",
+        "accent": "#EA580C"
+      },
+      "fonts": {
+        "heading": "Inter",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "type": "announcement_bar",
+        "enabled": true,
+        "fields": {
+          "text": "{{announcement_text}}",
+          "linkLabel": "{{announcement_link_label}}",
+          "linkUrl": "{{announcement_link_url}}"
+        }
+      },
+      {
+        "type": "header",
+        "fields": {
+          "logo": "{{logo_url}}",
+          "businessName": "{{business_name}}",
+          "navItems": [
+            "Home",
+            "Shop",
+            "About",
+            "Contact"
+          ],
+          "ctaLabel": "{{primary_cta_label}}",
+          "ctaUrl": "{{primary_cta_url}}"
+        }
+      },
+      {
+        "type": "event_hero",
+        "fields": {
+          "headline": "{{event_headline}}",
+          "subheadline": "{{event_subheadline}}",
+          "date": "{{event_date}}",
+          "location": "{{event_location}}",
+          "image": "{{hero_image}}",
+          "button": {
+            "label": "{{primary_cta_label}}",
+            "url": "{{primary_cta_url}}"
+          }
+        }
+      },
+      {
+        "type": "benefits_grid",
+        "fields": {
+          "title": "Why Join",
+          "items": "{{benefits}}"
+        }
+      },
+      {
+        "type": "schedule",
+        "fields": {
+          "title": "Agenda",
+          "items": "{{agenda_items}}"
+        }
+      },
+      {
+        "type": "speakers_or_products",
+        "fields": {
+          "title": "{{featured_people_or_products_title}}",
+          "items": "{{featured_people_or_products}}"
+        }
+      },
+      {
+        "type": "lead_form",
+        "fields": {
+          "title": "Reserve Your Spot",
+          "fields": [
+            "name",
+            "email",
+            "phone"
+          ]
+        }
+      },
+      {
+        "type": "footer",
+        "fields": {
+          "businessName": "{{business_name}}",
+          "description": "{{short_description}}",
+          "email": "{{email}}",
+          "phone": "{{phone}}",
+          "address": "{{address}}",
+          "socialLinks": "{{social_links}}",
+          "legalLinks": [
+            "Privacy Policy",
+            "Terms",
+            "Refund Policy"
+          ]
+        }
+      }
+    ],
+    "aiPrompt": "Generate an event or promotional landing page with urgency, clear details, benefits, and a strong conversion flow.",
+    "catalogModel": {
+      "catalogType": "ticket_or_offer_catalog",
+      "productCardStyle": "ticket cards or promo offer blocks with urgency, date, price, availability",
+      "collectionLayout": "hero with event date, agenda, speakers, ticket options, registration form",
+      "filters": [
+        "ticket_type",
+        "date",
+        "availability"
+      ],
+      "productDetailModel": "event registration flow with agenda and ticket selection",
+      "upsellModel": "VIP ticket, group ticket, limited-time bonus",
+      "customerFeeling": "urgent event/promotion page"
+    },
+    "visualDifference": "Built around time, date, agenda, ticket/lead capture, and urgency.",
+    "clientSelectionCard": {
+      "title": "Event / Promo Landing",
+      "category": "landing",
+      "bestForLabel": "events, webinars, launches",
+      "difference": "Built around time, date, agenda, ticket/lead capture, and urgency.",
+      "previewTags": [
+        "ticket_or_offer_catalog",
+        "urgent, clear, action-focused",
+        "medium-high"
+      ]
+    },
+    "pages": [
+      {
+        "name": "Home",
+        "purpose": "Main conversion page",
+        "usesSections": [
+          "announcement_bar",
+          "header",
+          "event_hero",
+          "benefits_grid",
+          "schedule",
+          "speakers_or_products",
+          "lead_form",
+          "footer"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "purpose": "urgent event/promotion page",
+        "catalogType": "ticket_or_offer_catalog",
+        "layout": "hero with event date, agenda, speakers, ticket options, registration form",
+        "filters": [
+          "ticket_type",
+          "date",
+          "availability"
+        ]
+      },
+      {
+        "name": "Detail",
+        "purpose": "Product, service, offer, menu item, or project detail",
+        "layout": "event registration flow with agenda and ticket selection",
+        "upsell": "VIP ticket, group ticket, limited-time bonus"
+      }
+    ]
+  },
+  {
+    "id": "local-business-pro",
+    "name": "Local Business Pro",
+    "category": "services",
+    "bestFor": [
+      "cleaning",
+      "landscaping",
+      "remodeling",
+      "plumbing",
+      "electricians",
+      "repair services"
+    ],
+    "style": {
+      "tone": "trustworthy, direct, local",
+      "layoutDensity": "medium",
+      "imageStyle": "real team photos, before-after work",
+      "defaultColors": {
+        "background": "#FFFFFF",
+        "surface": "#F3F4F6",
+        "primary": "#111827",
+        "secondary": "#4B5563",
+        "accent": "#16A34A"
+      },
+      "fonts": {
+        "heading": "Inter",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "type": "header",
+        "fields": {
+          "logo": "{{logo_url}}",
+          "businessName": "{{business_name}}",
+          "navItems": [
+            "Home",
+            "Shop",
+            "About",
+            "Contact"
+          ],
+          "ctaLabel": "{{primary_cta_label}}",
+          "ctaUrl": "{{primary_cta_url}}"
+        }
+      },
+      {
+        "type": "local_service_hero",
+        "fields": {
+          "headline": "{{hero_headline}}",
+          "subheadline": "{{hero_subheadline}}",
+          "serviceArea": "{{service_area}}",
+          "image": "{{hero_image}}",
+          "primaryButton": {
+            "label": "Request a Quote",
+            "url": "#quote"
+          },
+          "secondaryButton": {
+            "label": "Call Now",
+            "url": "tel:{{phone}}"
+          }
+        }
+      },
+      {
+        "type": "service_cards",
+        "fields": {
+          "title": "Services",
+          "services": "{{services}}"
+        }
+      },
+      {
+        "type": "why_choose_us",
+        "fields": {
+          "title": "Why Choose Us",
+          "items": "{{benefits}}"
+        }
+      },
+      {
+        "type": "before_after_gallery",
+        "fields": {
+          "title": "Recent Work",
+          "items": "{{before_after_images}}"
+        }
+      },
+      {
+        "type": "reviews",
+        "fields": {
+          "title": "Local Reviews",
+          "items": "{{testimonials}}"
+        }
+      },
+      {
+        "type": "quote_form",
+        "fields": {
+          "title": "Get a Free Quote",
+          "fields": [
+            "name",
+            "phone",
+            "email",
+            "service_needed",
+            "message"
+          ]
+        }
+      },
+      {
+        "type": "footer",
+        "fields": {
+          "businessName": "{{business_name}}",
+          "description": "{{short_description}}",
+          "email": "{{email}}",
+          "phone": "{{phone}}",
+          "address": "{{address}}",
+          "socialLinks": "{{social_links}}",
+          "legalLinks": [
+            "Privacy Policy",
+            "Terms",
+            "Refund Policy"
+          ]
+        }
+      }
+    ],
+    "aiPrompt": "Create a local service business website focused on trust, service area, clear services, proof, and quote requests.",
+    "catalogModel": {
+      "catalogType": "service_area_catalog",
+      "productCardStyle": "service cards with icon, short description, starting price or quote CTA",
+      "collectionLayout": "services, service areas, trust badges, reviews, quote form",
+      "filters": [
+        "service_type",
+        "area",
+        "residential_or_commercial"
+      ],
+      "productDetailModel": "service detail page with scope, process, estimate CTA, before/after images",
+      "upsellModel": "recurring service, maintenance plan, add-on services",
+      "customerFeeling": "local company ready to quote"
+    },
+    "visualDifference": "Services are organized by area and quote request, not by shopping cart.",
+    "clientSelectionCard": {
+      "title": "Local Business Pro",
+      "category": "services",
+      "bestForLabel": "cleaning, landscaping, remodeling",
+      "difference": "Services are organized by area and quote request, not by shopping cart.",
+      "previewTags": [
+        "service_area_catalog",
+        "trustworthy, direct, local",
+        "medium"
+      ]
+    },
+    "pages": [
+      {
+        "name": "Home",
+        "purpose": "Main conversion page",
+        "usesSections": [
+          "header",
+          "local_service_hero",
+          "service_cards",
+          "why_choose_us",
+          "before_after_gallery",
+          "reviews",
+          "quote_form",
+          "footer"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "purpose": "local company ready to quote",
+        "catalogType": "service_area_catalog",
+        "layout": "services, service areas, trust badges, reviews, quote form",
+        "filters": [
+          "service_type",
+          "area",
+          "residential_or_commercial"
+        ]
+      },
+      {
+        "name": "Detail",
+        "purpose": "Product, service, offer, menu item, or project detail",
+        "layout": "service detail page with scope, process, estimate CTA, before/after images",
+        "upsell": "recurring service, maintenance plan, add-on services"
+      }
+    ]
+  },
+  {
+    "id": "appointment-booking",
+    "name": "Appointment Booking",
+    "category": "services",
+    "bestFor": [
+      "barbershop",
+      "salon",
+      "spa",
+      "massage",
+      "aesthetic clinic",
+      "consultations"
+    ],
+    "style": {
+      "tone": "polished, inviting, easy to book",
+      "layoutDensity": "medium",
+      "imageStyle": "service photos, staff photos, clean interiors",
+      "defaultColors": {
+        "background": "#FFFBF7",
+        "surface": "#FFFFFF",
+        "primary": "#2B2118",
+        "secondary": "#6B5E55",
+        "accent": "#D97706"
+      },
+      "fonts": {
+        "heading": "Playfair Display",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "type": "header",
+        "fields": {
+          "logo": "{{logo_url}}",
+          "businessName": "{{business_name}}",
+          "navItems": [
+            "Home",
+            "Shop",
+            "About",
+            "Contact"
+          ],
+          "ctaLabel": "{{primary_cta_label}}",
+          "ctaUrl": "{{primary_cta_url}}"
+        }
+      },
+      {
+        "type": "booking_hero",
+        "fields": {
+          "headline": "{{hero_headline}}",
+          "subheadline": "{{hero_subheadline}}",
+          "image": "{{hero_image}}",
+          "button": {
+            "label": "Book Now",
+            "url": "{{booking_url}}"
+          }
+        }
+      },
+      {
+        "type": "service_price_list",
+        "fields": {
+          "title": "Services & Pricing",
+          "services": "{{services}}"
+        }
+      },
+      {
+        "type": "booking_cta",
+        "fields": {
+          "headline": "Ready to schedule?",
+          "text": "{{booking_message}}",
+          "button": {
+            "label": "Book Appointment",
+            "url": "{{booking_url}}"
+          }
+        }
+      },
+      {
+        "type": "staff_grid",
+        "fields": {
+          "title": "Meet the Team",
+          "staff": "{{staff_members}}"
+        }
+      },
+      {
+        "type": "gallery",
+        "fields": {
+          "title": "Gallery",
+          "images": "{{gallery_images}}"
+        }
+      },
+      {
+        "type": "location_hours",
+        "fields": {
+          "address": "{{address}}",
+          "hours": "{{business_hours}}"
+        }
+      },
+      {
+        "type": "footer",
+        "fields": {
+          "businessName": "{{business_name}}",
+          "description": "{{short_description}}",
+          "email": "{{email}}",
+          "phone": "{{phone}}",
+          "address": "{{address}}",
+          "socialLinks": "{{social_links}}",
+          "legalLinks": [
+            "Privacy Policy",
+            "Terms",
+            "Refund Policy"
+          ]
+        }
+      }
+    ],
+    "aiPrompt": "Generate a service appointment site with services, pricing, staff, schedule CTA, location, and easy booking.",
+    "catalogModel": {
+      "catalogType": "booking_menu_catalog",
+      "productCardStyle": "service menu cards with duration, price, staff availability, book button",
+      "collectionLayout": "service menu, calendar CTA, staff, gallery, location/hours",
+      "filters": [
+        "service",
+        "duration",
+        "staff_member",
+        "price"
+      ],
+      "productDetailModel": "booking detail with duration, staff, preparation notes, appointment CTA",
+      "upsellModel": "add-on services, packages, membership",
+      "customerFeeling": "salon/spa/barber booking experience"
+    },
+    "visualDifference": "Catalog behaves like a booking menu with price, duration, staff, and schedule CTA.",
+    "clientSelectionCard": {
+      "title": "Appointment Booking",
+      "category": "services",
+      "bestForLabel": "barbershop, salon, spa",
+      "difference": "Catalog behaves like a booking menu with price, duration, staff, and schedule CTA.",
+      "previewTags": [
+        "booking_menu_catalog",
+        "polished, inviting, easy to book",
+        "medium"
+      ]
+    },
+    "pages": [
+      {
+        "name": "Home",
+        "purpose": "Main conversion page",
+        "usesSections": [
+          "header",
+          "booking_hero",
+          "service_price_list",
+          "booking_cta",
+          "staff_grid",
+          "gallery",
+          "location_hours",
+          "footer"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "purpose": "salon/spa/barber booking experience",
+        "catalogType": "booking_menu_catalog",
+        "layout": "service menu, calendar CTA, staff, gallery, location/hours",
+        "filters": [
+          "service",
+          "duration",
+          "staff_member",
+          "price"
+        ]
+      },
+      {
+        "name": "Detail",
+        "purpose": "Product, service, offer, menu item, or project detail",
+        "layout": "booking detail with duration, staff, preparation notes, appointment CTA",
+        "upsell": "add-on services, packages, membership"
+      }
+    ]
+  },
+  {
+    "id": "professional-services",
+    "name": "Professional Services",
+    "category": "services",
+    "bestFor": [
+      "law firms",
+      "accountants",
+      "insurance",
+      "real estate",
+      "consulting",
+      "agencies"
+    ],
+    "style": {
+      "tone": "serious, credible, polished",
+      "layoutDensity": "medium",
+      "imageStyle": "professional team, office, abstract corporate",
+      "defaultColors": {
+        "background": "#FFFFFF",
+        "surface": "#F8FAFC",
+        "primary": "#0F172A",
+        "secondary": "#475569",
+        "accent": "#1D4ED8"
+      },
+      "fonts": {
+        "heading": "Merriweather",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "type": "header",
+        "fields": {
+          "logo": "{{logo_url}}",
+          "businessName": "{{business_name}}",
+          "navItems": [
+            "Home",
+            "Shop",
+            "About",
+            "Contact"
+          ],
+          "ctaLabel": "{{primary_cta_label}}",
+          "ctaUrl": "{{primary_cta_url}}"
+        }
+      },
+      {
+        "type": "professional_hero",
+        "fields": {
+          "headline": "{{hero_headline}}",
+          "subheadline": "{{hero_subheadline}}",
+          "image": "{{hero_image}}",
+          "button": {
+            "label": "Schedule a Consultation",
+            "url": "#consultation"
+          }
+        }
+      },
+      {
+        "type": "practice_areas",
+        "fields": {
+          "title": "Services",
+          "items": "{{services}}"
+        }
+      },
+      {
+        "type": "process",
+        "fields": {
+          "title": "Our Process",
+          "steps": "{{process_steps}}"
+        }
+      },
+      {
+        "type": "credentials",
+        "fields": {
+          "title": "Why Clients Trust Us",
+          "items": "{{credentials}}"
+        }
+      },
+      {
+        "type": "case_studies",
+        "fields": {
+          "title": "Client Results",
+          "items": "{{case_results}}"
+        }
+      },
+      {
+        "type": "consultation_form",
+        "fields": {
+          "title": "Request a Consultation",
+          "fields": [
+            "name",
+            "email",
+            "phone",
+            "service_needed",
+            "message"
+          ]
+        }
+      },
+      {
+        "type": "footer",
+        "fields": {
+          "businessName": "{{business_name}}",
+          "description": "{{short_description}}",
+          "email": "{{email}}",
+          "phone": "{{phone}}",
+          "address": "{{address}}",
+          "socialLinks": "{{social_links}}",
+          "legalLinks": [
+            "Privacy Policy",
+            "Terms",
+            "Refund Policy"
+          ]
+        }
+      }
+    ],
+    "aiPrompt": "Create a professional services website emphasizing credibility, clarity, process, credentials, and consultation requests.",
+    "catalogModel": {
+      "catalogType": "practice_area_catalog",
+      "productCardStyle": "professional service cards with problem solved, credentials, consultation CTA",
+      "collectionLayout": "practice areas, process, credentials, case results, consultation form",
+      "filters": [
+        "service_area",
+        "industry",
+        "case_type"
+      ],
+      "productDetailModel": "practice area page with problem, process, documents needed, consultation CTA",
+      "upsellModel": "retainer, premium consultation, audit package",
+      "customerFeeling": "corporate/professional trust page"
+    },
+    "visualDifference": "Serious service catalog built around credibility, case type, process, and consultation.",
+    "clientSelectionCard": {
+      "title": "Professional Services",
+      "category": "services",
+      "bestForLabel": "law firms, accountants, insurance",
+      "difference": "Serious service catalog built around credibility, case type, process, and consultation.",
+      "previewTags": [
+        "practice_area_catalog",
+        "serious, credible, polished",
+        "medium"
+      ]
+    },
+    "pages": [
+      {
+        "name": "Home",
+        "purpose": "Main conversion page",
+        "usesSections": [
+          "header",
+          "professional_hero",
+          "practice_areas",
+          "process",
+          "credentials",
+          "case_studies",
+          "consultation_form",
+          "footer"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "purpose": "corporate/professional trust page",
+        "catalogType": "practice_area_catalog",
+        "layout": "practice areas, process, credentials, case results, consultation form",
+        "filters": [
+          "service_area",
+          "industry",
+          "case_type"
+        ]
+      },
+      {
+        "name": "Detail",
+        "purpose": "Product, service, offer, menu item, or project detail",
+        "layout": "practice area page with problem, process, documents needed, consultation CTA",
+        "upsell": "retainer, premium consultation, audit package"
+      }
+    ]
+  },
+  {
+    "id": "restaurant-food-business",
+    "name": "Restaurant / Food Business",
+    "category": "services",
+    "bestFor": [
+      "restaurants",
+      "food trucks",
+      "catering",
+      "bakeries",
+      "cafes"
+    ],
+    "style": {
+      "tone": "warm, visual, appetite-driven",
+      "layoutDensity": "medium",
+      "imageStyle": "food photography, interior, menu items",
+      "defaultColors": {
+        "background": "#FFF8F1",
+        "surface": "#FFFFFF",
+        "primary": "#2A1608",
+        "secondary": "#6B4E3D",
+        "accent": "#C2410C"
+      },
+      "fonts": {
+        "heading": "Fraunces",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "type": "header",
+        "fields": {
+          "logo": "{{logo_url}}",
+          "businessName": "{{business_name}}",
+          "navItems": [
+            "Home",
+            "Shop",
+            "About",
+            "Contact"
+          ],
+          "ctaLabel": "{{primary_cta_label}}",
+          "ctaUrl": "{{primary_cta_url}}"
+        }
+      },
+      {
+        "type": "food_hero",
+        "fields": {
+          "headline": "{{hero_headline}}",
+          "subheadline": "{{hero_subheadline}}",
+          "image": "{{hero_image}}",
+          "primaryButton": {
+            "label": "View Menu",
+            "url": "#menu"
+          },
+          "secondaryButton": {
+            "label": "Order Now",
+            "url": "{{order_url}}"
+          }
+        }
+      },
+      {
+        "type": "featured_menu",
+        "fields": {
+          "title": "Popular Items",
+          "items": "{{menu_highlights}}"
+        }
+      },
+      {
+        "type": "menu_categories",
+        "fields": {
+          "title": "Menu",
+          "categories": "{{menu_categories}}"
+        }
+      },
+      {
+        "type": "special_banner",
+        "fields": {
+          "headline": "{{special_headline}}",
+          "text": "{{special_text}}",
+          "button": {
+            "label": "Order Today",
+            "url": "{{order_url}}"
+          }
+        }
+      },
+      {
+        "type": "food_gallery",
+        "fields": {
+          "title": "Fresh From the Kitchen",
+          "images": "{{gallery_images}}"
+        }
+      },
+      {
+        "type": "location_hours",
+        "fields": {
+          "address": "{{address}}",
+          "hours": "{{business_hours}}"
+        }
+      },
+      {
+        "type": "footer",
+        "fields": {
+          "businessName": "{{business_name}}",
+          "description": "{{short_description}}",
+          "email": "{{email}}",
+          "phone": "{{phone}}",
+          "address": "{{address}}",
+          "socialLinks": "{{social_links}}",
+          "legalLinks": [
+            "Privacy Policy",
+            "Terms",
+            "Refund Policy"
+          ]
+        }
+      }
+    ],
+    "aiPrompt": "Create a restaurant or food business website with strong food visuals, menu highlights, location, hours, and ordering CTA.",
+    "catalogModel": {
+      "catalogType": "menu_catalog",
+      "productCardStyle": "menu item cards with food image, description, price, dietary tags, order button",
+      "collectionLayout": "popular items, menu categories, specials, gallery, hours, order CTA",
+      "filters": [
+        "menu_category",
+        "dietary_tag",
+        "spice_level",
+        "price"
+      ],
+      "productDetailModel": "menu item detail with ingredients, options, add-ons, order CTA",
+      "upsellModel": "combo, drink, dessert, family meal",
+      "customerFeeling": "restaurant menu and ordering experience"
+    },
+    "visualDifference": "Feels like a restaurant menu, with categories, specials, food photos, and ordering.",
+    "clientSelectionCard": {
+      "title": "Restaurant / Food Business",
+      "category": "services",
+      "bestForLabel": "restaurants, food trucks, catering",
+      "difference": "Feels like a restaurant menu, with categories, specials, food photos, and ordering.",
+      "previewTags": [
+        "menu_catalog",
+        "warm, visual, appetite-driven",
+        "medium"
+      ]
+    },
+    "pages": [
+      {
+        "name": "Home",
+        "purpose": "Main conversion page",
+        "usesSections": [
+          "header",
+          "food_hero",
+          "featured_menu",
+          "menu_categories",
+          "special_banner",
+          "food_gallery",
+          "location_hours",
+          "footer"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "purpose": "restaurant menu and ordering experience",
+        "catalogType": "menu_catalog",
+        "layout": "popular items, menu categories, specials, gallery, hours, order CTA",
+        "filters": [
+          "menu_category",
+          "dietary_tag",
+          "spice_level",
+          "price"
+        ]
+      },
+      {
+        "name": "Detail",
+        "purpose": "Product, service, offer, menu item, or project detail",
+        "layout": "menu item detail with ingredients, options, add-ons, order CTA",
+        "upsell": "combo, drink, dessert, family meal"
+      }
+    ]
+  },
+  {
+    "id": "contractor-before-after",
+    "name": "Contractor Before / After",
+    "category": "services",
+    "bestFor": [
+      "contractors",
+      "home improvement",
+      "painting",
+      "flooring",
+      "roofing",
+      "renovation"
+    ],
+    "style": {
+      "tone": "practical, reliable, proof-focused",
+      "layoutDensity": "medium",
+      "imageStyle": "before and after project photos",
+      "defaultColors": {
+        "background": "#FFFFFF",
+        "surface": "#F4F4F5",
+        "primary": "#18181B",
+        "secondary": "#52525B",
+        "accent": "#F59E0B"
+      },
+      "fonts": {
+        "heading": "Inter",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "type": "header",
+        "fields": {
+          "logo": "{{logo_url}}",
+          "businessName": "{{business_name}}",
+          "navItems": [
+            "Home",
+            "Shop",
+            "About",
+            "Contact"
+          ],
+          "ctaLabel": "{{primary_cta_label}}",
+          "ctaUrl": "{{primary_cta_url}}"
+        }
+      },
+      {
+        "type": "contractor_hero",
+        "fields": {
+          "headline": "{{hero_headline}}",
+          "subheadline": "{{hero_subheadline}}",
+          "image": "{{hero_image}}",
+          "button": {
+            "label": "Get Estimate",
+            "url": "#estimate"
+          }
+        }
+      },
+      {
+        "type": "before_after_slider",
+        "fields": {
+          "title": "Before & After",
+          "projects": "{{before_after_images}}"
+        }
+      },
+      {
+        "type": "service_cards",
+        "fields": {
+          "title": "What We Do",
+          "services": "{{services}}"
+        }
+      },
+      {
+        "type": "project_gallery",
+        "fields": {
+          "title": "Recent Projects",
+          "items": "{{project_gallery}}"
+        }
+      },
+      {
+        "type": "quote_form",
+        "fields": {
+          "title": "Request an Estimate",
+          "fields": [
+            "name",
+            "phone",
+            "email",
+            "project_type",
+            "message"
+          ]
+        }
+      },
+      {
+        "type": "footer",
+        "fields": {
+          "businessName": "{{business_name}}",
+          "description": "{{short_description}}",
+          "email": "{{email}}",
+          "phone": "{{phone}}",
+          "address": "{{address}}",
+          "socialLinks": "{{social_links}}",
+          "legalLinks": [
+            "Privacy Policy",
+            "Terms",
+            "Refund Policy"
+          ]
+        }
+      }
+    ],
+    "aiPrompt": "Generate a contractor website built around proof, before-after visuals, services, and estimate requests.",
+    "catalogModel": {
+      "catalogType": "project_gallery_catalog",
+      "productCardStyle": "project cards with before/after images, project type, location, result summary",
+      "collectionLayout": "before-after slider, services, project gallery, estimate form",
+      "filters": [
+        "project_type",
+        "room_area",
+        "budget_range",
+        "location"
+      ],
+      "productDetailModel": "project detail with before/after, scope, materials, timeline, estimate CTA",
+      "upsellModel": "inspection, premium materials, maintenance service",
+      "customerFeeling": "proof-based contractor portfolio"
+    },
+    "visualDifference": "Catalog is a portfolio of transformations, not products. Before/after is the main selling point.",
+    "clientSelectionCard": {
+      "title": "Contractor Before / After",
+      "category": "services",
+      "bestForLabel": "contractors, home improvement, painting",
+      "difference": "Catalog is a portfolio of transformations, not products. Before/after is the main selling point.",
+      "previewTags": [
+        "project_gallery_catalog",
+        "practical, reliable, proof-focused",
+        "medium"
+      ]
+    },
+    "pages": [
+      {
+        "name": "Home",
+        "purpose": "Main conversion page",
+        "usesSections": [
+          "header",
+          "contractor_hero",
+          "before_after_slider",
+          "service_cards",
+          "project_gallery",
+          "quote_form",
+          "footer"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "purpose": "proof-based contractor portfolio",
+        "catalogType": "project_gallery_catalog",
+        "layout": "before-after slider, services, project gallery, estimate form",
+        "filters": [
+          "project_type",
+          "room_area",
+          "budget_range",
+          "location"
+        ]
+      },
+      {
+        "name": "Detail",
+        "purpose": "Product, service, offer, menu item, or project detail",
+        "layout": "project detail with before/after, scope, materials, timeline, estimate CTA",
+        "upsell": "inspection, premium materials, maintenance service"
+      }
+    ]
+  }
+]

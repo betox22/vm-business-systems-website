@@ -1,0 +1,160 @@
+{
+  "id": "personal-brand-landing",
+  "name": "Personal Brand Landing",
+  "category": "landing",
+  "bestFor": [
+    "consultants",
+    "coaches",
+    "freelancers",
+    "creators",
+    "speakers"
+  ],
+  "style": {
+    "tone": "professional, personal, credible",
+    "layoutDensity": "medium",
+    "imageStyle": "portrait, lifestyle, work samples",
+    "defaultColors": {
+      "background": "#FAFAF9",
+      "surface": "#FFFFFF",
+      "primary": "#1C1917",
+      "secondary": "#57534E",
+      "accent": "#A16207"
+    },
+    "fonts": {
+      "heading": "DM Serif Display",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "type": "header",
+      "fields": {
+        "logo": "{{logo_url}}",
+        "businessName": "{{business_name}}",
+        "navItems": [
+          "Home",
+          "Shop",
+          "About",
+          "Contact"
+        ],
+        "ctaLabel": "{{primary_cta_label}}",
+        "ctaUrl": "{{primary_cta_url}}"
+      }
+    },
+    {
+      "type": "personal_hero",
+      "fields": {
+        "name": "{{person_name}}",
+        "headline": "{{hero_headline}}",
+        "subheadline": "{{hero_subheadline}}",
+        "portrait": "{{portrait_image}}",
+        "button": {
+          "label": "Work With Me",
+          "url": "#contact"
+        }
+      }
+    },
+    {
+      "type": "about_person",
+      "fields": {
+        "title": "About",
+        "text": "{{about_text}}"
+      }
+    },
+    {
+      "type": "service_cards",
+      "fields": {
+        "title": "Ways I Can Help",
+        "services": "{{services}}"
+      }
+    },
+    {
+      "type": "results_section",
+      "fields": {
+        "title": "Results",
+        "items": "{{case_results}}"
+      }
+    },
+    {
+      "type": "contact_form",
+      "fields": {
+        "title": "Let’s Talk",
+        "fields": [
+          "name",
+          "email",
+          "message"
+        ]
+      }
+    },
+    {
+      "type": "footer",
+      "fields": {
+        "businessName": "{{business_name}}",
+        "description": "{{short_description}}",
+        "email": "{{email}}",
+        "phone": "{{phone}}",
+        "address": "{{address}}",
+        "socialLinks": "{{social_links}}",
+        "legalLinks": [
+          "Privacy Policy",
+          "Terms",
+          "Refund Policy"
+        ]
+      }
+    }
+  ],
+  "aiPrompt": "Create a personal brand landing page that builds credibility, explains expertise, and drives inquiries.",
+  "catalogModel": {
+    "catalogType": "service_package_catalog",
+    "productCardStyle": "service package cards with outcome, session length, who it is for, CTA",
+    "collectionLayout": "about, expertise, service packages, results, contact form",
+    "filters": [
+      "not_applicable"
+    ],
+    "productDetailModel": "service detail section with deliverables, process, expected result",
+    "upsellModel": "higher-tier package or consultation call",
+    "customerFeeling": "personal expert page with service packages"
+  },
+  "visualDifference": "Client chooses a person/service package, not products. Strong about/results/contact layout.",
+  "clientSelectionCard": {
+    "title": "Personal Brand Landing",
+    "category": "landing",
+    "bestForLabel": "consultants, coaches, freelancers",
+    "difference": "Client chooses a person/service package, not products. Strong about/results/contact layout.",
+    "previewTags": [
+      "service_package_catalog",
+      "professional, personal, credible",
+      "medium"
+    ]
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "purpose": "Main conversion page",
+      "usesSections": [
+        "header",
+        "personal_hero",
+        "about_person",
+        "service_cards",
+        "results_section",
+        "contact_form",
+        "footer"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "purpose": "personal expert page with service packages",
+      "catalogType": "service_package_catalog",
+      "layout": "about, expertise, service packages, results, contact form",
+      "filters": [
+        "not_applicable"
+      ]
+    },
+    {
+      "name": "Detail",
+      "purpose": "Product, service, offer, menu item, or project detail",
+      "layout": "service detail section with deliverables, process, expected result",
+      "upsell": "higher-tier package or consultation call"
+    }
+  ]
+}

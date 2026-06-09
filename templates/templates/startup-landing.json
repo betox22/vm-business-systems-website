@@ -1,0 +1,161 @@
+{
+  "id": "startup-landing",
+  "name": "Startup Landing",
+  "category": "landing",
+  "bestFor": [
+    "apps",
+    "SaaS",
+    "AI tools",
+    "platforms",
+    "startups"
+  ],
+  "style": {
+    "tone": "smart, modern, confident",
+    "layoutDensity": "medium",
+    "imageStyle": "product UI, gradients, abstract visuals",
+    "defaultColors": {
+      "background": "#FFFFFF",
+      "surface": "#F1F5F9",
+      "primary": "#0F172A",
+      "secondary": "#475569",
+      "accent": "#7C3AED"
+    },
+    "fonts": {
+      "heading": "Inter",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "type": "header",
+      "fields": {
+        "logo": "{{logo_url}}",
+        "businessName": "{{business_name}}",
+        "navItems": [
+          "Home",
+          "Shop",
+          "About",
+          "Contact"
+        ],
+        "ctaLabel": "{{primary_cta_label}}",
+        "ctaUrl": "{{primary_cta_url}}"
+      }
+    },
+    {
+      "type": "startup_hero",
+      "fields": {
+        "headline": "{{hero_headline}}",
+        "subheadline": "{{hero_subheadline}}",
+        "productImage": "{{product_screenshot}}",
+        "primaryButton": {
+          "label": "Start Free",
+          "url": "{{signup_url}}"
+        },
+        "secondaryButton": {
+          "label": "Watch Demo",
+          "url": "{{demo_url}}"
+        }
+      }
+    },
+    {
+      "type": "problem_solution",
+      "fields": {
+        "problemTitle": "{{problem_title}}",
+        "problemText": "{{problem_text}}",
+        "solutionTitle": "{{solution_title}}",
+        "solutionText": "{{solution_text}}"
+      }
+    },
+    {
+      "type": "how_it_works",
+      "fields": {
+        "title": "How It Works",
+        "steps": "{{process_steps}}"
+      }
+    },
+    {
+      "type": "features_grid",
+      "fields": {
+        "title": "Features",
+        "features": "{{features}}"
+      }
+    },
+    {
+      "type": "pricing_preview",
+      "fields": {
+        "title": "Simple Pricing",
+        "plans": "{{pricing_plans}}"
+      }
+    },
+    {
+      "type": "footer",
+      "fields": {
+        "businessName": "{{business_name}}",
+        "description": "{{short_description}}",
+        "email": "{{email}}",
+        "phone": "{{phone}}",
+        "address": "{{address}}",
+        "socialLinks": "{{social_links}}",
+        "legalLinks": [
+          "Privacy Policy",
+          "Terms",
+          "Refund Policy"
+        ]
+      }
+    }
+  ],
+  "aiPrompt": "Generate a modern startup landing page with problem-solution framing, product benefits, features, and a clear signup CTA.",
+  "catalogModel": {
+    "catalogType": "pricing_plan_catalog",
+    "productCardStyle": "plan cards with features, recommended badge, monthly/yearly toggle",
+    "collectionLayout": "features, use cases, pricing, demo CTA",
+    "filters": [
+      "not_applicable"
+    ],
+    "productDetailModel": "plan comparison and signup flow",
+    "upsellModel": "upgrade to pro plan, add-ons, enterprise CTA",
+    "customerFeeling": "SaaS/app landing page, not a store"
+  },
+  "visualDifference": "No product grid. It uses plan cards, features, demo, and signup flow.",
+  "clientSelectionCard": {
+    "title": "Startup Landing",
+    "category": "landing",
+    "bestForLabel": "apps, SaaS, AI tools",
+    "difference": "No product grid. It uses plan cards, features, demo, and signup flow.",
+    "previewTags": [
+      "pricing_plan_catalog",
+      "smart, modern, confident",
+      "medium"
+    ]
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "purpose": "Main conversion page",
+      "usesSections": [
+        "header",
+        "startup_hero",
+        "problem_solution",
+        "how_it_works",
+        "features_grid",
+        "pricing_preview",
+        "footer"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "purpose": "SaaS/app landing page, not a store",
+      "catalogType": "pricing_plan_catalog",
+      "layout": "features, use cases, pricing, demo CTA",
+      "filters": [
+        "not_applicable"
+      ]
+    },
+    {
+      "name": "Detail",
+      "purpose": "Product, service, offer, menu item, or project detail",
+      "layout": "plan comparison and signup flow",
+      "upsell": "upgrade to pro plan, add-ons, enterprise CTA"
+    }
+  ]
+}

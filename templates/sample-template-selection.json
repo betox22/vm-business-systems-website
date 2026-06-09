@@ -1,0 +1,11 @@
+{
+  "businessInput": {
+    "businessName": "Luma Cleaning Co.",
+    "businessType": "residential and commercial cleaning",
+    "location": "Cincinnati, OH",
+    "goal": "Get quote requests"
+  },
+  "selectedTemplateId": "local-business-pro",
+  "reason": "The business sells a local service and needs trust, service-area clarity, reviews, and quote requests.",
+  "nextStep": "Use the template sections and replace placeholders with generated content."
+}

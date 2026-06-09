@@ -1,0 +1,174 @@
+{
+  "id": "appointment-booking",
+  "name": "Appointment Booking",
+  "category": "services",
+  "bestFor": [
+    "barbershop",
+    "salon",
+    "spa",
+    "massage",
+    "aesthetic clinic",
+    "consultations"
+  ],
+  "style": {
+    "tone": "polished, inviting, easy to book",
+    "layoutDensity": "medium",
+    "imageStyle": "service photos, staff photos, clean interiors",
+    "defaultColors": {
+      "background": "#FFFBF7",
+      "surface": "#FFFFFF",
+      "primary": "#2B2118",
+      "secondary": "#6B5E55",
+      "accent": "#D97706"
+    },
+    "fonts": {
+      "heading": "Playfair Display",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "type": "header",
+      "fields": {
+        "logo": "{{logo_url}}",
+        "businessName": "{{business_name}}",
+        "navItems": [
+          "Home",
+          "Shop",
+          "About",
+          "Contact"
+        ],
+        "ctaLabel": "{{primary_cta_label}}",
+        "ctaUrl": "{{primary_cta_url}}"
+      }
+    },
+    {
+      "type": "booking_hero",
+      "fields": {
+        "headline": "{{hero_headline}}",
+        "subheadline": "{{hero_subheadline}}",
+        "image": "{{hero_image}}",
+        "button": {
+          "label": "Book Now",
+          "url": "{{booking_url}}"
+        }
+      }
+    },
+    {
+      "type": "service_price_list",
+      "fields": {
+        "title": "Services & Pricing",
+        "services": "{{services}}"
+      }
+    },
+    {
+      "type": "booking_cta",
+      "fields": {
+        "headline": "Ready to schedule?",
+        "text": "{{booking_message}}",
+        "button": {
+          "label": "Book Appointment",
+          "url": "{{booking_url}}"
+        }
+      }
+    },
+    {
+      "type": "staff_grid",
+      "fields": {
+        "title": "Meet the Team",
+        "staff": "{{staff_members}}"
+      }
+    },
+    {
+      "type": "gallery",
+      "fields": {
+        "title": "Gallery",
+        "images": "{{gallery_images}}"
+      }
+    },
+    {
+      "type": "location_hours",
+      "fields": {
+        "address": "{{address}}",
+        "hours": "{{business_hours}}"
+      }
+    },
+    {
+      "type": "footer",
+      "fields": {
+        "businessName": "{{business_name}}",
+        "description": "{{short_description}}",
+        "email": "{{email}}",
+        "phone": "{{phone}}",
+        "address": "{{address}}",
+        "socialLinks": "{{social_links}}",
+        "legalLinks": [
+          "Privacy Policy",
+          "Terms",
+          "Refund Policy"
+        ]
+      }
+    }
+  ],
+  "aiPrompt": "Generate a service appointment site with services, pricing, staff, schedule CTA, location, and easy booking.",
+  "catalogModel": {
+    "catalogType": "booking_menu_catalog",
+    "productCardStyle": "service menu cards with duration, price, staff availability, book button",
+    "collectionLayout": "service menu, calendar CTA, staff, gallery, location/hours",
+    "filters": [
+      "service",
+      "duration",
+      "staff_member",
+      "price"
+    ],
+    "productDetailModel": "booking detail with duration, staff, preparation notes, appointment CTA",
+    "upsellModel": "add-on services, packages, membership",
+    "customerFeeling": "salon/spa/barber booking experience"
+  },
+  "visualDifference": "Catalog behaves like a booking menu with price, duration, staff, and schedule CTA.",
+  "clientSelectionCard": {
+    "title": "Appointment Booking",
+    "category": "services",
+    "bestForLabel": "barbershop, salon, spa",
+    "difference": "Catalog behaves like a booking menu with price, duration, staff, and schedule CTA.",
+    "previewTags": [
+      "booking_menu_catalog",
+      "polished, inviting, easy to book",
+      "medium"
+    ]
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "purpose": "Main conversion page",
+      "usesSections": [
+        "header",
+        "booking_hero",
+        "service_price_list",
+        "booking_cta",
+        "staff_grid",
+        "gallery",
+        "location_hours",
+        "footer"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "purpose": "salon/spa/barber booking experience",
+      "catalogType": "booking_menu_catalog",
+      "layout": "service menu, calendar CTA, staff, gallery, location/hours",
+      "filters": [
+        "service",
+        "duration",
+        "staff_member",
+        "price"
+      ]
+    },
+    {
+      "name": "Detail",
+      "purpose": "Product, service, offer, menu item, or project detail",
+      "layout": "booking detail with duration, staff, preparation notes, appointment CTA",
+      "upsell": "add-on services, packages, membership"
+    }
+  ]
+}

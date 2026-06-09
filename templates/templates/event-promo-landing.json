@@ -1,0 +1,175 @@
+{
+  "id": "event-promo-landing",
+  "name": "Event / Promo Landing",
+  "category": "landing",
+  "bestFor": [
+    "events",
+    "webinars",
+    "launches",
+    "seasonal promotions",
+    "limited offers"
+  ],
+  "style": {
+    "tone": "urgent, clear, action-focused",
+    "layoutDensity": "medium-high",
+    "imageStyle": "event photos, bold promo graphics",
+    "defaultColors": {
+      "background": "#FFFFFF",
+      "surface": "#FFF7ED",
+      "primary": "#111827",
+      "secondary": "#4B5563",
+      "accent": "#EA580C"
+    },
+    "fonts": {
+      "heading": "Inter",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "type": "announcement_bar",
+      "enabled": true,
+      "fields": {
+        "text": "{{announcement_text}}",
+        "linkLabel": "{{announcement_link_label}}",
+        "linkUrl": "{{announcement_link_url}}"
+      }
+    },
+    {
+      "type": "header",
+      "fields": {
+        "logo": "{{logo_url}}",
+        "businessName": "{{business_name}}",
+        "navItems": [
+          "Home",
+          "Shop",
+          "About",
+          "Contact"
+        ],
+        "ctaLabel": "{{primary_cta_label}}",
+        "ctaUrl": "{{primary_cta_url}}"
+      }
+    },
+    {
+      "type": "event_hero",
+      "fields": {
+        "headline": "{{event_headline}}",
+        "subheadline": "{{event_subheadline}}",
+        "date": "{{event_date}}",
+        "location": "{{event_location}}",
+        "image": "{{hero_image}}",
+        "button": {
+          "label": "{{primary_cta_label}}",
+          "url": "{{primary_cta_url}}"
+        }
+      }
+    },
+    {
+      "type": "benefits_grid",
+      "fields": {
+        "title": "Why Join",
+        "items": "{{benefits}}"
+      }
+    },
+    {
+      "type": "schedule",
+      "fields": {
+        "title": "Agenda",
+        "items": "{{agenda_items}}"
+      }
+    },
+    {
+      "type": "speakers_or_products",
+      "fields": {
+        "title": "{{featured_people_or_products_title}}",
+        "items": "{{featured_people_or_products}}"
+      }
+    },
+    {
+      "type": "lead_form",
+      "fields": {
+        "title": "Reserve Your Spot",
+        "fields": [
+          "name",
+          "email",
+          "phone"
+        ]
+      }
+    },
+    {
+      "type": "footer",
+      "fields": {
+        "businessName": "{{business_name}}",
+        "description": "{{short_description}}",
+        "email": "{{email}}",
+        "phone": "{{phone}}",
+        "address": "{{address}}",
+        "socialLinks": "{{social_links}}",
+        "legalLinks": [
+          "Privacy Policy",
+          "Terms",
+          "Refund Policy"
+        ]
+      }
+    }
+  ],
+  "aiPrompt": "Generate an event or promotional landing page with urgency, clear details, benefits, and a strong conversion flow.",
+  "catalogModel": {
+    "catalogType": "ticket_or_offer_catalog",
+    "productCardStyle": "ticket cards or promo offer blocks with urgency, date, price, availability",
+    "collectionLayout": "hero with event date, agenda, speakers, ticket options, registration form",
+    "filters": [
+      "ticket_type",
+      "date",
+      "availability"
+    ],
+    "productDetailModel": "event registration flow with agenda and ticket selection",
+    "upsellModel": "VIP ticket, group ticket, limited-time bonus",
+    "customerFeeling": "urgent event/promotion page"
+  },
+  "visualDifference": "Built around time, date, agenda, ticket/lead capture, and urgency.",
+  "clientSelectionCard": {
+    "title": "Event / Promo Landing",
+    "category": "landing",
+    "bestForLabel": "events, webinars, launches",
+    "difference": "Built around time, date, agenda, ticket/lead capture, and urgency.",
+    "previewTags": [
+      "ticket_or_offer_catalog",
+      "urgent, clear, action-focused",
+      "medium-high"
+    ]
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "purpose": "Main conversion page",
+      "usesSections": [
+        "announcement_bar",
+        "header",
+        "event_hero",
+        "benefits_grid",
+        "schedule",
+        "speakers_or_products",
+        "lead_form",
+        "footer"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "purpose": "urgent event/promotion page",
+      "catalogType": "ticket_or_offer_catalog",
+      "layout": "hero with event date, agenda, speakers, ticket options, registration form",
+      "filters": [
+        "ticket_type",
+        "date",
+        "availability"
+      ]
+    },
+    {
+      "name": "Detail",
+      "purpose": "Product, service, offer, menu item, or project detail",
+      "layout": "event registration flow with agenda and ticket selection",
+      "upsell": "VIP ticket, group ticket, limited-time bonus"
+    }
+  ]
+}

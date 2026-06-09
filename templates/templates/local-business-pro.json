@@ -1,0 +1,179 @@
+{
+  "id": "local-business-pro",
+  "name": "Local Business Pro",
+  "category": "services",
+  "bestFor": [
+    "cleaning",
+    "landscaping",
+    "remodeling",
+    "plumbing",
+    "electricians",
+    "repair services"
+  ],
+  "style": {
+    "tone": "trustworthy, direct, local",
+    "layoutDensity": "medium",
+    "imageStyle": "real team photos, before-after work",
+    "defaultColors": {
+      "background": "#FFFFFF",
+      "surface": "#F3F4F6",
+      "primary": "#111827",
+      "secondary": "#4B5563",
+      "accent": "#16A34A"
+    },
+    "fonts": {
+      "heading": "Inter",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "type": "header",
+      "fields": {
+        "logo": "{{logo_url}}",
+        "businessName": "{{business_name}}",
+        "navItems": [
+          "Home",
+          "Shop",
+          "About",
+          "Contact"
+        ],
+        "ctaLabel": "{{primary_cta_label}}",
+        "ctaUrl": "{{primary_cta_url}}"
+      }
+    },
+    {
+      "type": "local_service_hero",
+      "fields": {
+        "headline": "{{hero_headline}}",
+        "subheadline": "{{hero_subheadline}}",
+        "serviceArea": "{{service_area}}",
+        "image": "{{hero_image}}",
+        "primaryButton": {
+          "label": "Request a Quote",
+          "url": "#quote"
+        },
+        "secondaryButton": {
+          "label": "Call Now",
+          "url": "tel:{{phone}}"
+        }
+      }
+    },
+    {
+      "type": "service_cards",
+      "fields": {
+        "title": "Services",
+        "services": "{{services}}"
+      }
+    },
+    {
+      "type": "why_choose_us",
+      "fields": {
+        "title": "Why Choose Us",
+        "items": "{{benefits}}"
+      }
+    },
+    {
+      "type": "before_after_gallery",
+      "fields": {
+        "title": "Recent Work",
+        "items": "{{before_after_images}}"
+      }
+    },
+    {
+      "type": "reviews",
+      "fields": {
+        "title": "Local Reviews",
+        "items": "{{testimonials}}"
+      }
+    },
+    {
+      "type": "quote_form",
+      "fields": {
+        "title": "Get a Free Quote",
+        "fields": [
+          "name",
+          "phone",
+          "email",
+          "service_needed",
+          "message"
+        ]
+      }
+    },
+    {
+      "type": "footer",
+      "fields": {
+        "businessName": "{{business_name}}",
+        "description": "{{short_description}}",
+        "email": "{{email}}",
+        "phone": "{{phone}}",
+        "address": "{{address}}",
+        "socialLinks": "{{social_links}}",
+        "legalLinks": [
+          "Privacy Policy",
+          "Terms",
+          "Refund Policy"
+        ]
+      }
+    }
+  ],
+  "aiPrompt": "Create a local service business website focused on trust, service area, clear services, proof, and quote requests.",
+  "catalogModel": {
+    "catalogType": "service_area_catalog",
+    "productCardStyle": "service cards with icon, short description, starting price or quote CTA",
+    "collectionLayout": "services, service areas, trust badges, reviews, quote form",
+    "filters": [
+      "service_type",
+      "area",
+      "residential_or_commercial"
+    ],
+    "productDetailModel": "service detail page with scope, process, estimate CTA, before/after images",
+    "upsellModel": "recurring service, maintenance plan, add-on services",
+    "customerFeeling": "local company ready to quote"
+  },
+  "visualDifference": "Services are organized by area and quote request, not by shopping cart.",
+  "clientSelectionCard": {
+    "title": "Local Business Pro",
+    "category": "services",
+    "bestForLabel": "cleaning, landscaping, remodeling",
+    "difference": "Services are organized by area and quote request, not by shopping cart.",
+    "previewTags": [
+      "service_area_catalog",
+      "trustworthy, direct, local",
+      "medium"
+    ]
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "purpose": "Main conversion page",
+      "usesSections": [
+        "header",
+        "local_service_hero",
+        "service_cards",
+        "why_choose_us",
+        "before_after_gallery",
+        "reviews",
+        "quote_form",
+        "footer"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "purpose": "local company ready to quote",
+      "catalogType": "service_area_catalog",
+      "layout": "services, service areas, trust badges, reviews, quote form",
+      "filters": [
+        "service_type",
+        "area",
+        "residential_or_commercial"
+      ]
+    },
+    {
+      "name": "Detail",
+      "purpose": "Product, service, offer, menu item, or project detail",
+      "layout": "service detail page with scope, process, estimate CTA, before/after images",
+      "upsell": "recurring service, maintenance plan, add-on services"
+    }
+  ]
+}

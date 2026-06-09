@@ -1,0 +1,289 @@
+{
+  "purpose": "Use this file to show customers how templates differ before they choose.",
+  "templates": [
+    {
+      "id": "minimal-store",
+      "name": "Minimal Store",
+      "category": "ecommerce",
+      "bestFor": [
+        "cosmetics",
+        "accessories",
+        "premium products",
+        "small retail brand"
+      ],
+      "visualDifference": "Large whitespace, minimal product cards, calm premium shopping experience.",
+      "catalogType": "editorial_minimal_grid",
+      "catalogCardStyle": "clean cards with large image, product name, short benefit, price, quick add",
+      "filters": [
+        "category",
+        "price",
+        "best_seller",
+        "new"
+      ],
+      "customerFeeling": "simple, premium, easy to browse"
+    },
+    {
+      "id": "bold-fashion-store",
+      "name": "Bold Fashion Store",
+      "category": "ecommerce",
+      "bestFor": [
+        "fashion",
+        "streetwear",
+        "sneakers",
+        "boutique"
+      ],
+      "visualDifference": "Feels like a fashion brand, not a normal product grid. Uses collections, model images, drops, and lookbook.",
+      "catalogType": "lookbook_collection_catalog",
+      "catalogCardStyle": "large lifestyle image cards with hover reveal, size swatches, sale badges",
+      "filters": [
+        "collection",
+        "size",
+        "color",
+        "style",
+        "new_arrivals",
+        "sale"
+      ],
+      "customerFeeling": "fashion brand, visual, drop-based, modern"
+    },
+    {
+      "id": "marketplace-style",
+      "name": "Marketplace Style",
+      "category": "ecommerce",
+      "bestFor": [
+        "electronics",
+        "home goods",
+        "general store",
+        "dropshipping",
+        "multi-category retail"
+      ],
+      "visualDifference": "Dense catalog with search bar, side filters, deals, ratings, and comparison feeling.",
+      "catalogType": "dense_marketplace_catalog",
+      "catalogCardStyle": "compact cards with rating, discount, delivery badge, quick view, compare",
+      "filters": [
+        "category",
+        "brand",
+        "price",
+        "rating",
+        "availability",
+        "shipping_speed"
+      ],
+      "customerFeeling": "Amazon-style discovery, many products, practical and fast"
+    },
+    {
+      "id": "luxury-product-store",
+      "name": "Luxury Product Store",
+      "category": "ecommerce",
+      "bestFor": [
+        "jewelry",
+        "perfume",
+        "watches",
+        "leather goods",
+        "premium gifts"
+      ],
+      "visualDifference": "Not a normal shop grid. Feels like a luxury showroom with storytelling and premium imagery.",
+      "catalogType": "luxury_gallery_catalog",
+      "catalogCardStyle": "large cinematic product cards with limited text, material note, premium price display",
+      "filters": [
+        "collection",
+        "material",
+        "occasion",
+        "price_range"
+      ],
+      "customerFeeling": "exclusive, expensive, refined"
+    },
+    {
+      "id": "digital-products-store",
+      "name": "Digital Products Store",
+      "category": "ecommerce",
+      "bestFor": [
+        "courses",
+        "ebooks",
+        "templates",
+        "software",
+        "memberships"
+      ],
+      "visualDifference": "Catalog sells outcomes, previews, modules, and bundles instead of simple physical products.",
+      "catalogType": "digital_offer_catalog",
+      "catalogCardStyle": "offer cards with outcome, included files/modules, instant access badge, preview button",
+      "filters": [
+        "format",
+        "skill_level",
+        "topic",
+        "bundle",
+        "price"
+      ],
+      "customerFeeling": "course/template/software shop with clear value"
+    },
+    {
+      "id": "startup-landing",
+      "name": "Startup Landing",
+      "category": "landing",
+      "bestFor": [
+        "apps",
+        "SaaS",
+        "AI tools",
+        "platforms",
+        "startups"
+      ],
+      "visualDifference": "No product grid. It uses plan cards, features, demo, and signup flow.",
+      "catalogType": "pricing_plan_catalog",
+      "catalogCardStyle": "plan cards with features, recommended badge, monthly/yearly toggle",
+      "filters": [
+        "not_applicable"
+      ],
+      "customerFeeling": "SaaS/app landing page, not a store"
+    },
+    {
+      "id": "personal-brand-landing",
+      "name": "Personal Brand Landing",
+      "category": "landing",
+      "bestFor": [
+        "consultants",
+        "coaches",
+        "freelancers",
+        "creators",
+        "speakers"
+      ],
+      "visualDifference": "Client chooses a person/service package, not products. Strong about/results/contact layout.",
+      "catalogType": "service_package_catalog",
+      "catalogCardStyle": "service package cards with outcome, session length, who it is for, CTA",
+      "filters": [
+        "not_applicable"
+      ],
+      "customerFeeling": "personal expert page with service packages"
+    },
+    {
+      "id": "event-promo-landing",
+      "name": "Event / Promo Landing",
+      "category": "landing",
+      "bestFor": [
+        "events",
+        "webinars",
+        "launches",
+        "seasonal promotions",
+        "limited offers"
+      ],
+      "visualDifference": "Built around time, date, agenda, ticket/lead capture, and urgency.",
+      "catalogType": "ticket_or_offer_catalog",
+      "catalogCardStyle": "ticket cards or promo offer blocks with urgency, date, price, availability",
+      "filters": [
+        "ticket_type",
+        "date",
+        "availability"
+      ],
+      "customerFeeling": "urgent event/promotion page"
+    },
+    {
+      "id": "local-business-pro",
+      "name": "Local Business Pro",
+      "category": "services",
+      "bestFor": [
+        "cleaning",
+        "landscaping",
+        "remodeling",
+        "plumbing",
+        "electricians",
+        "repair services"
+      ],
+      "visualDifference": "Services are organized by area and quote request, not by shopping cart.",
+      "catalogType": "service_area_catalog",
+      "catalogCardStyle": "service cards with icon, short description, starting price or quote CTA",
+      "filters": [
+        "service_type",
+        "area",
+        "residential_or_commercial"
+      ],
+      "customerFeeling": "local company ready to quote"
+    },
+    {
+      "id": "appointment-booking",
+      "name": "Appointment Booking",
+      "category": "services",
+      "bestFor": [
+        "barbershop",
+        "salon",
+        "spa",
+        "massage",
+        "aesthetic clinic",
+        "consultations"
+      ],
+      "visualDifference": "Catalog behaves like a booking menu with price, duration, staff, and schedule CTA.",
+      "catalogType": "booking_menu_catalog",
+      "catalogCardStyle": "service menu cards with duration, price, staff availability, book button",
+      "filters": [
+        "service",
+        "duration",
+        "staff_member",
+        "price"
+      ],
+      "customerFeeling": "salon/spa/barber booking experience"
+    },
+    {
+      "id": "professional-services",
+      "name": "Professional Services",
+      "category": "services",
+      "bestFor": [
+        "law firms",
+        "accountants",
+        "insurance",
+        "real estate",
+        "consulting",
+        "agencies"
+      ],
+      "visualDifference": "Serious service catalog built around credibility, case type, process, and consultation.",
+      "catalogType": "practice_area_catalog",
+      "catalogCardStyle": "professional service cards with problem solved, credentials, consultation CTA",
+      "filters": [
+        "service_area",
+        "industry",
+        "case_type"
+      ],
+      "customerFeeling": "corporate/professional trust page"
+    },
+    {
+      "id": "restaurant-food-business",
+      "name": "Restaurant / Food Business",
+      "category": "services",
+      "bestFor": [
+        "restaurants",
+        "food trucks",
+        "catering",
+        "bakeries",
+        "cafes"
+      ],
+      "visualDifference": "Feels like a restaurant menu, with categories, specials, food photos, and ordering.",
+      "catalogType": "menu_catalog",
+      "catalogCardStyle": "menu item cards with food image, description, price, dietary tags, order button",
+      "filters": [
+        "menu_category",
+        "dietary_tag",
+        "spice_level",
+        "price"
+      ],
+      "customerFeeling": "restaurant menu and ordering experience"
+    },
+    {
+      "id": "contractor-before-after",
+      "name": "Contractor Before / After",
+      "category": "services",
+      "bestFor": [
+        "contractors",
+        "home improvement",
+        "painting",
+        "flooring",
+        "roofing",
+        "renovation"
+      ],
+      "visualDifference": "Catalog is a portfolio of transformations, not products. Before/after is the main selling point.",
+      "catalogType": "project_gallery_catalog",
+      "catalogCardStyle": "project cards with before/after images, project type, location, result summary",
+      "filters": [
+        "project_type",
+        "room_area",
+        "budget_range",
+        "location"
+      ],
+      "customerFeeling": "proof-based contractor portfolio"
+    }
+  ]
+}

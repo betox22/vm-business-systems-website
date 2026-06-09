@@ -1,0 +1,188 @@
+{
+  "id": "minimal-store",
+  "name": "Minimal Store",
+  "category": "ecommerce",
+  "bestFor": [
+    "cosmetics",
+    "accessories",
+    "premium products",
+    "small retail brand"
+  ],
+  "style": {
+    "tone": "clean, simple, premium",
+    "layoutDensity": "medium",
+    "imageStyle": "large product photos with whitespace",
+    "defaultColors": {
+      "background": "#FFFFFF",
+      "surface": "#F7F7F5",
+      "primary": "#111111",
+      "secondary": "#767676",
+      "accent": "#C9A86A"
+    },
+    "fonts": {
+      "heading": "Inter",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "type": "announcement_bar",
+      "enabled": true,
+      "fields": {
+        "text": "{{announcement_text}}",
+        "linkLabel": "{{announcement_link_label}}",
+        "linkUrl": "{{announcement_link_url}}"
+      }
+    },
+    {
+      "type": "header",
+      "fields": {
+        "logo": "{{logo_url}}",
+        "businessName": "{{business_name}}",
+        "navItems": [
+          "Home",
+          "Shop",
+          "About",
+          "Contact"
+        ],
+        "ctaLabel": "{{primary_cta_label}}",
+        "ctaUrl": "{{primary_cta_url}}"
+      }
+    },
+    {
+      "type": "hero_product",
+      "fields": {
+        "eyebrow": "{{hero_eyebrow}}",
+        "headline": "{{hero_headline}}",
+        "subheadline": "{{hero_subheadline}}",
+        "image": "{{hero_image}}",
+        "primaryButton": {
+          "label": "Shop Now",
+          "url": "/shop"
+        },
+        "secondaryButton": {
+          "label": "Explore Collection",
+          "url": "/collections"
+        }
+      }
+    },
+    {
+      "type": "category_grid",
+      "fields": {
+        "title": "Shop by Category",
+        "categories": "{{product_categories}}"
+      }
+    },
+    {
+      "type": "featured_products",
+      "fields": {
+        "title": "Best Sellers",
+        "products": "{{featured_products}}",
+        "columns": 4
+      }
+    },
+    {
+      "type": "benefits_row",
+      "fields": {
+        "items": [
+          {
+            "title": "Fast Shipping",
+            "text": "{{shipping_message}}"
+          },
+          {
+            "title": "Secure Checkout",
+            "text": "{{payment_message}}"
+          },
+          {
+            "title": "Easy Returns",
+            "text": "{{returns_message}}"
+          }
+        ]
+      }
+    },
+    {
+      "type": "testimonials",
+      "fields": {
+        "title": "Loved by Customers",
+        "items": "{{testimonials}}"
+      }
+    },
+    {
+      "type": "footer",
+      "fields": {
+        "businessName": "{{business_name}}",
+        "description": "{{short_description}}",
+        "email": "{{email}}",
+        "phone": "{{phone}}",
+        "address": "{{address}}",
+        "socialLinks": "{{social_links}}",
+        "legalLinks": [
+          "Privacy Policy",
+          "Terms",
+          "Refund Policy"
+        ]
+      }
+    }
+  ],
+  "aiPrompt": "Generate a clean premium ecommerce homepage using strong product benefits, concise copy, and minimal visual clutter.",
+  "catalogModel": {
+    "catalogType": "editorial_minimal_grid",
+    "productCardStyle": "clean cards with large image, product name, short benefit, price, quick add",
+    "collectionLayout": "3-column category grid followed by 4-column product grid",
+    "filters": [
+      "category",
+      "price",
+      "best_seller",
+      "new"
+    ],
+    "productDetailModel": "image gallery left, product information right, sticky add-to-cart",
+    "upsellModel": "related products below product detail",
+    "customerFeeling": "simple, premium, easy to browse"
+  },
+  "visualDifference": "Large whitespace, minimal product cards, calm premium shopping experience.",
+  "clientSelectionCard": {
+    "title": "Minimal Store",
+    "category": "ecommerce",
+    "bestForLabel": "cosmetics, accessories, premium products",
+    "difference": "Large whitespace, minimal product cards, calm premium shopping experience.",
+    "previewTags": [
+      "editorial_minimal_grid",
+      "clean, simple, premium",
+      "medium"
+    ]
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "purpose": "Main conversion page",
+      "usesSections": [
+        "announcement_bar",
+        "header",
+        "hero_product",
+        "category_grid",
+        "featured_products",
+        "benefits_row",
+        "testimonials",
+        "footer"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "purpose": "simple, premium, easy to browse",
+      "catalogType": "editorial_minimal_grid",
+      "layout": "3-column category grid followed by 4-column product grid",
+      "filters": [
+        "category",
+        "price",
+        "best_seller",
+        "new"
+      ]
+    },
+    {
+      "name": "Detail",
+      "purpose": "Product, service, offer, menu item, or project detail",
+      "layout": "image gallery left, product information right, sticky add-to-cart",
+      "upsell": "related products below product detail"
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "id": "marketplace-style",
+  "name": "Marketplace Style",
+  "category": "ecommerce",
+  "bestFor": [
+    "electronics",
+    "home goods",
+    "general store",
+    "dropshipping",
+    "multi-category retail"
+  ],
+  "style": {
+    "tone": "practical, organized, deal-focused",
+    "layoutDensity": "dense",
+    "imageStyle": "product thumbnails and category cards",
+    "defaultColors": {
+      "background": "#F5F6F8",
+      "surface": "#FFFFFF",
+      "primary": "#1F2937",
+      "secondary": "#6B7280",
+      "accent": "#2563EB"
+    },
+    "fonts": {
+      "heading": "Inter",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "type": "announcement_bar",
+      "enabled": true,
+      "fields": {
+        "text": "{{announcement_text}}",
+        "linkLabel": "{{announcement_link_label}}",
+        "linkUrl": "{{announcement_link_url}}"
+      }
+    },
+    {
+      "type": "marketplace_header",
+      "fields": {
+        "logo": "{{logo_url}}",
+        "businessName": "{{business_name}}",
+        "searchPlaceholder": "Search products...",
+        "navItems": [
+          "Deals",
+          "Categories",
+          "Best Sellers",
+          "Support"
+        ]
+      }
+    },
+    {
+      "type": "hero_deals",
+      "fields": {
+        "headline": "{{hero_headline}}",
+        "subheadline": "{{hero_subheadline}}",
+        "deals": "{{featured_deals}}"
+      }
+    },
+    {
+      "type": "category_tiles",
+      "fields": {
+        "title": "Popular Categories",
+        "categories": "{{product_categories}}"
+      }
+    },
+    {
+      "type": "deal_carousel",
+      "fields": {
+        "title": "Today’s Deals",
+        "products": "{{deal_products}}"
+      }
+    },
+    {
+      "type": "product_grid",
+      "fields": {
+        "title": "Best Sellers",
+        "products": "{{featured_products}}",
+        "columns": 5
+      }
+    },
+    {
+      "type": "trust_strip",
+      "fields": {
+        "items": [
+          "Secure payments",
+          "Fast delivery",
+          "Customer support",
+          "Easy returns"
+        ]
+      }
+    },
+    {
+      "type": "footer",
+      "fields": {
+        "businessName": "{{business_name}}",
+        "description": "{{short_description}}",
+        "email": "{{email}}",
+        "phone": "{{phone}}",
+        "address": "{{address}}",
+        "socialLinks": "{{social_links}}",
+        "legalLinks": [
+          "Privacy Policy",
+          "Terms",
+          "Refund Policy"
+        ]
+      }
+    }
+  ],
+  "aiPrompt": "Build a multi-category ecommerce homepage focused on fast product discovery, deals, search, and trust.",
+  "catalogModel": {
+    "catalogType": "dense_marketplace_catalog",
+    "productCardStyle": "compact cards with rating, discount, delivery badge, quick view, compare",
+    "collectionLayout": "search-first layout, category sidebar, deal rows, best seller sections",
+    "filters": [
+      "category",
+      "brand",
+      "price",
+      "rating",
+      "availability",
+      "shipping_speed"
+    ],
+    "productDetailModel": "marketplace PDP with specs, reviews, Q&A, shipping estimate, recommended bundles",
+    "upsellModel": "frequently bought together and recently viewed",
+    "customerFeeling": "Amazon-style discovery, many products, practical and fast"
+  },
+  "visualDifference": "Dense catalog with search bar, side filters, deals, ratings, and comparison feeling.",
+  "clientSelectionCard": {
+    "title": "Marketplace Style",
+    "category": "ecommerce",
+    "bestForLabel": "electronics, home goods, general store",
+    "difference": "Dense catalog with search bar, side filters, deals, ratings, and comparison feeling.",
+    "previewTags": [
+      "dense_marketplace_catalog",
+      "practical, organized, deal-focused",
+      "dense"
+    ]
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "purpose": "Main conversion page",
+      "usesSections": [
+        "announcement_bar",
+        "marketplace_header",
+        "hero_deals",
+        "category_tiles",
+        "deal_carousel",
+        "product_grid",
+        "trust_strip",
+        "footer"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "purpose": "Amazon-style discovery, many products, practical and fast",
+      "catalogType": "dense_marketplace_catalog",
+      "layout": "search-first layout, category sidebar, deal rows, best seller sections",
+      "filters": [
+        "category",
+        "brand",
+        "price",
+        "rating",
+        "availability",
+        "shipping_speed"
+      ]
+    },
+    {
+      "name": "Detail",
+      "purpose": "Product, service, offer, menu item, or project detail",
+      "layout": "marketplace PDP with specs, reviews, Q&A, shipping estimate, recommended bundles",
+      "upsell": "frequently bought together and recently viewed"
+    }
+  ]
+}

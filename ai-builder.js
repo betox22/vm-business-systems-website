@@ -1447,6 +1447,8 @@ async function readErrorMessage(response) {
 
 async function generateWebsite(triggerButton = document.querySelector("#generateButton")) {
   const payload = await collectPayload();
+  const templateSelection = await selectTemplateForPayload(payload);
+  attachTemplateSelection(payload, templateSelection);
   const button = triggerButton;
   button.disabled = true;
   button.textContent = t("generating");
@@ -1465,24 +1467,15 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     }
 
     const result = await response.json();
-    currentSchema = result.schema;
-    currentSiteId = result.site_id;
-    currentBusinessId = result.business_id;
-    currentGenerationId = result.generation_id;
-    currentCatalogItems = catalogItemsFromSchema(currentSchema);
-    selectedPageKey = currentSchema.pages[0]?.page_key || "home";
-    selectedVariantId = currentSchema.design_variants?.[0]?.id || "";
-    saveGeneratedSite(result);
-    siteTitle.textContent = currentSchema.business.name;
-    storageStatus.textContent = storageLabel(result.storage_status, result.used_dev_mock);
+    if (templateSelection) {
+      result.schema = mergeTemplateSelectionIntoSchema(result.schema, templateSelection);
+    }
     statusText.textContent = result.used_dev_mock
       ? "Development mock used because OPENAI_API_KEY is missing on the server."
       : t("generatedOpenAI");
-    renderEditor();
-    renderPreview();
-    showGeneratedClientPreview();
+    applyGenerationResult(result);
   } catch (error) {
-    const fallbackResult = buildInstantTemplateResult(payload, error);
+    const fallbackResult = buildInstantTemplateResult(payload, error, templateSelection);
     applyGenerationResult(fallbackResult);
     const message = `${t("generateError")}: ${shortError(error.message)}. Showing a fast editable draft instead.`;
     statusText.textContent = message;
@@ -1491,6 +1484,57 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     button.disabled = false;
     button.textContent = button.id === "guidedGenerateButton" ? t("reviewGenerate") : t("generateButton");
   }
+}
+
+async function selectTemplateForPayload(payload) {
+  if (!window.TemplateRouter?.selectTemplateFromPrompt) return null;
+  const prompt = [
+    payload.business_name,
+    payload.business_description,
+    payload.industry,
+    arrayValue(payload.services_products).join(" "),
+    payload.target_audience,
+    payload.preferred_tone,
+    arrayValue(payload.preferred_colors).join(" "),
+  ].join(" ");
+  try {
+    return await window.TemplateRouter.selectTemplateFromPrompt(prompt);
+  } catch (error) {
+    console.warn("Template selection failed", error);
+    return null;
+  }
+}
+
+function attachTemplateSelection(payload, selection) {
+  if (!selection) return payload;
+  payload.templateId = selection.templateId;
+  payload.templateIntent = selection.intent;
+  payload.catalogType = selection.catalogType;
+  payload.selectedTemplate = selection.template || {};
+  return payload;
+}
+
+function mergeTemplateSelectionIntoSchema(schema, selection) {
+  if (!schema || !selection) return schema;
+  schema.selected_template = {
+    id: selection.templateId,
+    name: selection.template?.name || selection.templateId,
+    category: selection.template?.category || "",
+    intent: selection.intent,
+    reason: selection.reason,
+    visualDifference: selection.template?.visualDifference || "",
+    clientSelectionCard: selection.template?.clientSelectionCard || {},
+    sections: selection.template?.sections || [],
+    pages: selection.template?.pages || [],
+  };
+  schema.catalog_model = selection.template?.catalogModel || { catalogType: selection.catalogType };
+  schema.layout_mode = {
+    ...(schema.layout_mode || {}),
+    template_id: selection.templateId,
+    catalog_type: selection.catalogType,
+    intent: selection.intent,
+  };
+  return schema;
 }
 
 function applyGenerationResult(result) {
@@ -1509,8 +1553,8 @@ function applyGenerationResult(result) {
   showGeneratedClientPreview();
 }
 
-function buildInstantTemplateResult(payload, error) {
-  const schema = buildInstantTemplateSchema(payload);
+function buildInstantTemplateResult(payload, error, templateSelection) {
+  const schema = buildInstantTemplateSchema(payload, templateSelection);
   return {
     business_id: null,
     site_id: null,
@@ -1522,9 +1566,11 @@ function buildInstantTemplateResult(payload, error) {
   };
 }
 
-function buildInstantTemplateSchema(payload) {
+function buildInstantTemplateSchema(payload, templateSelection) {
   const language = payload.selectedLanguage || selectedLanguage || "en";
   const isSpanish = language === "es";
+  const template = templateSelection?.template || payload.selectedTemplate || {};
+  const catalogType = templateSelection?.catalogType || template.catalogModel?.catalogType || payload.catalogType || "editorial_minimal_grid";
   const name = payload.business_name || (isSpanish ? "Nueva tienda" : "New store");
   const description = payload.business_description || (isSpanish ? "Una marca preparada para vender en linea." : "A brand ready to sell online.");
   const products = arrayValue(payload.services_products).length
@@ -1568,7 +1614,10 @@ function buildInstantTemplateSchema(payload) {
       radius: 10,
     },
     layout_mode: {
-      id: "instant_storefront",
+      id: template.id || "instant_storefront",
+      template_id: template.id || "",
+      catalog_type: catalogType,
+      intent: templateSelection?.intent || payload.templateIntent || "",
       navigation: { show_cart: true, show_header: true, sticky_header: true },
       checkout: { mode: "quote_or_cart", primary_action: isSpanish ? "Solicitar pedido" : "Request order" },
     },
@@ -1652,15 +1701,27 @@ function buildInstantTemplateSchema(payload) {
       logo_url: payload.assets?.find((asset) => asset.asset_type === "logo")?.url || "",
       footer_text: isSpanish ? `${name} - Pagina generada como borrador editable.` : `${name} - Editable draft website.`,
     },
+    selected_template: {
+      id: template.id || "",
+      name: template.name || "",
+      category: template.category || "",
+      intent: templateSelection?.intent || "",
+      reason: templateSelection?.reason || "",
+      visualDifference: template.visualDifference || "",
+      clientSelectionCard: template.clientSelectionCard || {},
+      sections: template.sections || [],
+      pages: template.pages || [],
+    },
+    catalog_model: template.catalogModel || { catalogType },
     design_variants: [
       {
         id: "instant-modern",
-        name: isSpanish ? "Moderno comercial" : "Modern commercial",
-        description: isSpanish ? "Base rapida, limpia y editable para validar la tienda." : "Fast, clean, editable base to validate the store.",
+        name: template.name || (isSpanish ? "Moderno comercial" : "Modern commercial"),
+        description: template.visualDifference || (isSpanish ? "Base rapida, limpia y editable para validar la tienda." : "Fast, clean, editable base to validate the store."),
         theme: { colors, fonts: { heading: "Inter", body: "Inter" }, buttons: { primary_label: isSpanish ? "Comprar ahora" : "Shop now", secondary_label: isSpanish ? "Contactar" : "Contact" }, radius: 10 },
-        layout_mode_id: "instant_storefront",
+        layout_mode_id: template.id || "instant_storefront",
         hero_layout: "split_showcase",
-        product_layout: "grid",
+        product_layout: catalogType,
       },
     ],
     products_services: catalogItems,
@@ -2297,13 +2358,15 @@ function renderProductGrid(section, schema) {
   const catalogItems = (schema.catalog_items || schema.products_services || [])
     .filter((item) => item.is_active !== false)
     .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+  const catalogType = schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || "editorial_minimal_grid";
+  const customCatalog = renderCatalogByType(catalogType, catalogItems, schema);
   return `<section class="rendered-section section-${escapeAttribute(slugify(section.settings?.layout || "grid"))} ${sectionClass(section)}" ${sectionVars(section)}>
     <div class="section-heading">
       <span class="rendered-kicker">${escapeHtml(schema.business.tone || "Selected")}</span>
       <h2>${escapeHtml(editable.title || editable.headline || "Products and services")}</h2>
       ${editable.text || editable.subtitle ? `<p>${escapeHtml(editable.text || editable.subtitle)}</p>` : ""}
     </div>
-    <div class="rendered-grid columns-${columns}">
+    ${customCatalog || `<div class="rendered-grid columns-${columns}">
       ${catalogItems
         .map(
           (item) => `<article class="rendered-card">
@@ -2317,8 +2380,121 @@ function renderProductGrid(section, schema) {
           </article>`,
         )
         .join("")}
-    </div>
+    </div>`}
   </section>`;
+}
+
+function renderCatalogByType(catalogType, items, schema) {
+  const renderers = {
+    dense_marketplace_catalog: renderMarketplaceCatalog,
+    listing_marketplace_catalog: renderClassifiedMarketplaceCatalog,
+    editorial_minimal_grid: renderMinimalProductGrid,
+    lookbook_collection_catalog: renderFashionLookbookCatalog,
+    luxury_gallery_catalog: renderLuxuryGalleryCatalog,
+    digital_offer_catalog: renderDigitalOfferCatalog,
+    menu_catalog: renderRestaurantMenuCatalog,
+    online_ordering_catalog: renderRestaurantMenuCatalog,
+    booking_menu_catalog: renderBookingMenuCatalog,
+    service_area_catalog: renderLocalServiceCatalog,
+    practice_area_catalog: renderProfessionalServicesCatalog,
+    project_gallery_catalog: renderBeforeAfterProjectCatalog,
+    pricing_plan_catalog: renderPricingPlanCatalog,
+    ticket_or_offer_catalog: renderEventTicketCatalog,
+    service_package_catalog: renderPersonalBrandServicesCatalog,
+  };
+  return (renderers[catalogType] || renderMinimalProductGrid)(items, schema, catalogType);
+}
+
+function renderMarketplaceCatalog(items) {
+  return `<div class="catalog-shell catalog-marketplace">
+    <aside><strong>Search & filters</strong><span>Category</span><span>Brand</span><span>Price</span><span>Rating</span><span>Delivery</span></aside>
+    <div class="catalog-results">${items.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? "Deal" : "Fast ship"}`)).join("")}</div>
+  </div>`;
+}
+
+function renderClassifiedMarketplaceCatalog(items) {
+  return `<div class="catalog-shell catalog-classified">
+    ${items.map((item, index) => `<article class="listing-card">
+      <div>${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : `<span>${escapeHtml(item.name.slice(0, 2))}</span>`}</div>
+      <section><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.description)}</p><small>Seller verified · ${index % 2 ? "Used" : "New"} · Local pickup</small></section>
+      <aside><b>${escapeHtml(item.price_label || "Make offer")}</b><a class="rendered-button" href="#">${escapeHtml(item.button_label || "Contact seller")}</a></aside>
+    </article>`).join("")}
+  </div>`;
+}
+
+function renderMinimalProductGrid(items) {
+  return `<div class="catalog-minimal">${items.map((item) => renderCatalogCard(item, "minimal-card", item.price_label)).join("")}</div>`;
+}
+
+function renderFashionLookbookCatalog(items) {
+  return `<div class="catalog-lookbook">${items.map((item, index) => `<article class="lookbook-card ${index === 0 ? "wide" : ""}">
+    ${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : `<div>${escapeHtml(item.name.slice(0, 2))}</div>`}
+    <span>New drop</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
+  </article>`).join("")}</div>`;
+}
+
+function renderLuxuryGalleryCatalog(items) {
+  return `<div class="catalog-luxury">${items.map((item) => `<article>
+    <div>${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : ""}</div>
+    <small>Limited selection</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
+  </article>`).join("")}</div>`;
+}
+
+function renderDigitalOfferCatalog(items) {
+  return `<div class="catalog-digital">${items.map((item) => `<article>
+    <span>Instant access</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p>
+    <ul><li>Downloadable content</li><li>Bonus resources</li><li>Lifetime access</li></ul>
+    <b>${escapeHtml(item.price_label)}</b><a class="rendered-button" href="#">${escapeHtml(item.button_label || "Get access")}</a>
+  </article>`).join("")}</div>`;
+}
+
+function renderRestaurantMenuCatalog(items) {
+  return `<div class="catalog-menu">${items.map((item, index) => `<article>
+    <div><small>${index % 2 ? "Main" : "Popular"}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p></div>
+    <strong>${escapeHtml(item.price_label || "Market price")}</strong>
+  </article>`).join("")}</div>`;
+}
+
+function renderBookingMenuCatalog(items) {
+  return `<div class="catalog-booking">${items.map((item, index) => `<article>
+    <small>${30 + index * 15} min</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p>
+    <b>${escapeHtml(item.price_label || "From quote")}</b><a class="rendered-button" href="#">Book</a>
+  </article>`).join("")}</div>`;
+}
+
+function renderLocalServiceCatalog(items) {
+  return `<div class="catalog-services">${items.map((item) => renderCatalogCard(item, "service-card-pro", "Free quote")).join("")}</div>`;
+}
+
+function renderProfessionalServicesCatalog(items) {
+  return `<div class="catalog-practice">${items.map((item) => `<article><span>Practice area</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><a class="rendered-button secondary" href="#">Schedule consultation</a></article>`).join("")}</div>`;
+}
+
+function renderBeforeAfterProjectCatalog(items) {
+  return `<div class="catalog-projects">${items.map((item) => `<article><div><span>Before</span><span>After</span></div><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><a class="rendered-button" href="#">View project</a></article>`).join("")}</div>`;
+}
+
+function renderPricingPlanCatalog(items) {
+  return `<div class="catalog-pricing">${items.map((item, index) => `<article class="${index === 1 ? "featured" : ""}"><small>Plan</small><h3>${escapeHtml(item.name)}</h3><b>${escapeHtml(item.price_label || "Custom")}</b><p>${escapeHtml(item.description)}</p><a class="rendered-button" href="#">Start</a></article>`).join("")}</div>`;
+}
+
+function renderEventTicketCatalog(items) {
+  return `<div class="catalog-tickets">${items.map((item) => `<article><span>Ticket / offer</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b><a class="rendered-button" href="#">Reserve</a></article>`).join("")}</div>`;
+}
+
+function renderPersonalBrandServicesCatalog(items) {
+  return `<div class="catalog-packages">${items.map((item) => `<article><small>Package</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><a class="rendered-button secondary" href="#">Apply now</a></article>`).join("")}</div>`;
+}
+
+function renderCatalogCard(item, className, badge) {
+  return `<article class="${className}">
+    ${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : `<div class="card-placeholder">${escapeHtml(item.name.slice(0, 2))}</div>`}
+    ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
+    <h3>${escapeHtml(item.name)}</h3>
+    <p>${escapeHtml(item.description)}</p>
+    <b>${escapeHtml(item.price_label)}</b>
+    <a class="rendered-button" href="#">${escapeHtml(item.button_label || "View")}</a>
+  </article>`;
 }
 
 function renderFeatureBand(section) {

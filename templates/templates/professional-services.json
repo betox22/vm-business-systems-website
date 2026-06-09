@@ -1,0 +1,174 @@
+{
+  "id": "professional-services",
+  "name": "Professional Services",
+  "category": "services",
+  "bestFor": [
+    "law firms",
+    "accountants",
+    "insurance",
+    "real estate",
+    "consulting",
+    "agencies"
+  ],
+  "style": {
+    "tone": "serious, credible, polished",
+    "layoutDensity": "medium",
+    "imageStyle": "professional team, office, abstract corporate",
+    "defaultColors": {
+      "background": "#FFFFFF",
+      "surface": "#F8FAFC",
+      "primary": "#0F172A",
+      "secondary": "#475569",
+      "accent": "#1D4ED8"
+    },
+    "fonts": {
+      "heading": "Merriweather",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "type": "header",
+      "fields": {
+        "logo": "{{logo_url}}",
+        "businessName": "{{business_name}}",
+        "navItems": [
+          "Home",
+          "Shop",
+          "About",
+          "Contact"
+        ],
+        "ctaLabel": "{{primary_cta_label}}",
+        "ctaUrl": "{{primary_cta_url}}"
+      }
+    },
+    {
+      "type": "professional_hero",
+      "fields": {
+        "headline": "{{hero_headline}}",
+        "subheadline": "{{hero_subheadline}}",
+        "image": "{{hero_image}}",
+        "button": {
+          "label": "Schedule a Consultation",
+          "url": "#consultation"
+        }
+      }
+    },
+    {
+      "type": "practice_areas",
+      "fields": {
+        "title": "Services",
+        "items": "{{services}}"
+      }
+    },
+    {
+      "type": "process",
+      "fields": {
+        "title": "Our Process",
+        "steps": "{{process_steps}}"
+      }
+    },
+    {
+      "type": "credentials",
+      "fields": {
+        "title": "Why Clients Trust Us",
+        "items": "{{credentials}}"
+      }
+    },
+    {
+      "type": "case_studies",
+      "fields": {
+        "title": "Client Results",
+        "items": "{{case_results}}"
+      }
+    },
+    {
+      "type": "consultation_form",
+      "fields": {
+        "title": "Request a Consultation",
+        "fields": [
+          "name",
+          "email",
+          "phone",
+          "service_needed",
+          "message"
+        ]
+      }
+    },
+    {
+      "type": "footer",
+      "fields": {
+        "businessName": "{{business_name}}",
+        "description": "{{short_description}}",
+        "email": "{{email}}",
+        "phone": "{{phone}}",
+        "address": "{{address}}",
+        "socialLinks": "{{social_links}}",
+        "legalLinks": [
+          "Privacy Policy",
+          "Terms",
+          "Refund Policy"
+        ]
+      }
+    }
+  ],
+  "aiPrompt": "Create a professional services website emphasizing credibility, clarity, process, credentials, and consultation requests.",
+  "catalogModel": {
+    "catalogType": "practice_area_catalog",
+    "productCardStyle": "professional service cards with problem solved, credentials, consultation CTA",
+    "collectionLayout": "practice areas, process, credentials, case results, consultation form",
+    "filters": [
+      "service_area",
+      "industry",
+      "case_type"
+    ],
+    "productDetailModel": "practice area page with problem, process, documents needed, consultation CTA",
+    "upsellModel": "retainer, premium consultation, audit package",
+    "customerFeeling": "corporate/professional trust page"
+  },
+  "visualDifference": "Serious service catalog built around credibility, case type, process, and consultation.",
+  "clientSelectionCard": {
+    "title": "Professional Services",
+    "category": "services",
+    "bestForLabel": "law firms, accountants, insurance",
+    "difference": "Serious service catalog built around credibility, case type, process, and consultation.",
+    "previewTags": [
+      "practice_area_catalog",
+      "serious, credible, polished",
+      "medium"
+    ]
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "purpose": "Main conversion page",
+      "usesSections": [
+        "header",
+        "professional_hero",
+        "practice_areas",
+        "process",
+        "credentials",
+        "case_studies",
+        "consultation_form",
+        "footer"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "purpose": "corporate/professional trust page",
+      "catalogType": "practice_area_catalog",
+      "layout": "practice areas, process, credentials, case results, consultation form",
+      "filters": [
+        "service_area",
+        "industry",
+        "case_type"
+      ]
+    },
+    {
+      "name": "Detail",
+      "purpose": "Product, service, offer, menu item, or project detail",
+      "layout": "practice area page with problem, process, documents needed, consultation CTA",
+      "upsell": "retainer, premium consultation, audit package"
+    }
+  ]
+}

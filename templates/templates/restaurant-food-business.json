@@ -1,0 +1,177 @@
+{
+  "id": "restaurant-food-business",
+  "name": "Restaurant / Food Business",
+  "category": "services",
+  "bestFor": [
+    "restaurants",
+    "food trucks",
+    "catering",
+    "bakeries",
+    "cafes"
+  ],
+  "style": {
+    "tone": "warm, visual, appetite-driven",
+    "layoutDensity": "medium",
+    "imageStyle": "food photography, interior, menu items",
+    "defaultColors": {
+      "background": "#FFF8F1",
+      "surface": "#FFFFFF",
+      "primary": "#2A1608",
+      "secondary": "#6B4E3D",
+      "accent": "#C2410C"
+    },
+    "fonts": {
+      "heading": "Fraunces",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "type": "header",
+      "fields": {
+        "logo": "{{logo_url}}",
+        "businessName": "{{business_name}}",
+        "navItems": [
+          "Home",
+          "Shop",
+          "About",
+          "Contact"
+        ],
+        "ctaLabel": "{{primary_cta_label}}",
+        "ctaUrl": "{{primary_cta_url}}"
+      }
+    },
+    {
+      "type": "food_hero",
+      "fields": {
+        "headline": "{{hero_headline}}",
+        "subheadline": "{{hero_subheadline}}",
+        "image": "{{hero_image}}",
+        "primaryButton": {
+          "label": "View Menu",
+          "url": "#menu"
+        },
+        "secondaryButton": {
+          "label": "Order Now",
+          "url": "{{order_url}}"
+        }
+      }
+    },
+    {
+      "type": "featured_menu",
+      "fields": {
+        "title": "Popular Items",
+        "items": "{{menu_highlights}}"
+      }
+    },
+    {
+      "type": "menu_categories",
+      "fields": {
+        "title": "Menu",
+        "categories": "{{menu_categories}}"
+      }
+    },
+    {
+      "type": "special_banner",
+      "fields": {
+        "headline": "{{special_headline}}",
+        "text": "{{special_text}}",
+        "button": {
+          "label": "Order Today",
+          "url": "{{order_url}}"
+        }
+      }
+    },
+    {
+      "type": "food_gallery",
+      "fields": {
+        "title": "Fresh From the Kitchen",
+        "images": "{{gallery_images}}"
+      }
+    },
+    {
+      "type": "location_hours",
+      "fields": {
+        "address": "{{address}}",
+        "hours": "{{business_hours}}"
+      }
+    },
+    {
+      "type": "footer",
+      "fields": {
+        "businessName": "{{business_name}}",
+        "description": "{{short_description}}",
+        "email": "{{email}}",
+        "phone": "{{phone}}",
+        "address": "{{address}}",
+        "socialLinks": "{{social_links}}",
+        "legalLinks": [
+          "Privacy Policy",
+          "Terms",
+          "Refund Policy"
+        ]
+      }
+    }
+  ],
+  "aiPrompt": "Create a restaurant or food business website with strong food visuals, menu highlights, location, hours, and ordering CTA.",
+  "catalogModel": {
+    "catalogType": "menu_catalog",
+    "productCardStyle": "menu item cards with food image, description, price, dietary tags, order button",
+    "collectionLayout": "popular items, menu categories, specials, gallery, hours, order CTA",
+    "filters": [
+      "menu_category",
+      "dietary_tag",
+      "spice_level",
+      "price"
+    ],
+    "productDetailModel": "menu item detail with ingredients, options, add-ons, order CTA",
+    "upsellModel": "combo, drink, dessert, family meal",
+    "customerFeeling": "restaurant menu and ordering experience"
+  },
+  "visualDifference": "Feels like a restaurant menu, with categories, specials, food photos, and ordering.",
+  "clientSelectionCard": {
+    "title": "Restaurant / Food Business",
+    "category": "services",
+    "bestForLabel": "restaurants, food trucks, catering",
+    "difference": "Feels like a restaurant menu, with categories, specials, food photos, and ordering.",
+    "previewTags": [
+      "menu_catalog",
+      "warm, visual, appetite-driven",
+      "medium"
+    ]
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "purpose": "Main conversion page",
+      "usesSections": [
+        "header",
+        "food_hero",
+        "featured_menu",
+        "menu_categories",
+        "special_banner",
+        "food_gallery",
+        "location_hours",
+        "footer"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "purpose": "restaurant menu and ordering experience",
+      "catalogType": "menu_catalog",
+      "layout": "popular items, menu categories, specials, gallery, hours, order CTA",
+      "filters": [
+        "menu_category",
+        "dietary_tag",
+        "spice_level",
+        "price"
+      ]
+    },
+    {
+      "name": "Detail",
+      "purpose": "Product, service, offer, menu item, or project detail",
+      "layout": "menu item detail with ingredients, options, add-ons, order CTA",
+      "upsell": "combo, drink, dessert, family meal"
+    }
+  ]
+}

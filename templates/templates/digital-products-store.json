@@ -1,0 +1,167 @@
+{
+  "id": "digital-products-store",
+  "name": "Digital Products Store",
+  "category": "ecommerce",
+  "bestFor": [
+    "courses",
+    "ebooks",
+    "templates",
+    "software",
+    "memberships"
+  ],
+  "style": {
+    "tone": "modern, clear, benefit-driven",
+    "layoutDensity": "medium",
+    "imageStyle": "mockups, screenshots, digital previews",
+    "defaultColors": {
+      "background": "#0F172A",
+      "surface": "#111827",
+      "primary": "#FFFFFF",
+      "secondary": "#CBD5E1",
+      "accent": "#38BDF8"
+    },
+    "fonts": {
+      "heading": "Inter",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "type": "header",
+      "fields": {
+        "logo": "{{logo_url}}",
+        "businessName": "{{business_name}}",
+        "navItems": [
+          "Home",
+          "Shop",
+          "About",
+          "Contact"
+        ],
+        "ctaLabel": "{{primary_cta_label}}",
+        "ctaUrl": "{{primary_cta_url}}"
+      }
+    },
+    {
+      "type": "saas_hero",
+      "fields": {
+        "headline": "{{hero_headline}}",
+        "subheadline": "{{hero_subheadline}}",
+        "mockupImage": "{{hero_image}}",
+        "primaryButton": {
+          "label": "Get Access",
+          "url": "/products"
+        },
+        "secondaryButton": {
+          "label": "See What’s Included",
+          "url": "#included"
+        }
+      }
+    },
+    {
+      "type": "digital_product_cards",
+      "fields": {
+        "title": "Choose Your Product",
+        "products": "{{featured_products}}"
+      }
+    },
+    {
+      "type": "included_section",
+      "fields": {
+        "title": "What’s Included",
+        "items": "{{included_items}}"
+      }
+    },
+    {
+      "type": "preview_gallery",
+      "fields": {
+        "title": "Preview",
+        "images": "{{preview_images}}"
+      }
+    },
+    {
+      "type": "faq",
+      "fields": {
+        "title": "Questions",
+        "items": "{{faqs}}"
+      }
+    },
+    {
+      "type": "footer",
+      "fields": {
+        "businessName": "{{business_name}}",
+        "description": "{{short_description}}",
+        "email": "{{email}}",
+        "phone": "{{phone}}",
+        "address": "{{address}}",
+        "socialLinks": "{{social_links}}",
+        "legalLinks": [
+          "Privacy Policy",
+          "Terms",
+          "Refund Policy"
+        ]
+      }
+    }
+  ],
+  "aiPrompt": "Create a conversion-focused digital product page explaining the offer, what is included, and why it is valuable.",
+  "catalogModel": {
+    "catalogType": "digital_offer_catalog",
+    "productCardStyle": "offer cards with outcome, included files/modules, instant access badge, preview button",
+    "collectionLayout": "product cards grouped by outcome, bundles, previews, FAQ before purchase",
+    "filters": [
+      "format",
+      "skill_level",
+      "topic",
+      "bundle",
+      "price"
+    ],
+    "productDetailModel": "sales-page PDP with what’s included, previews, modules, testimonials, FAQ",
+    "upsellModel": "bundle upgrade, membership access, related templates",
+    "customerFeeling": "course/template/software shop with clear value"
+  },
+  "visualDifference": "Catalog sells outcomes, previews, modules, and bundles instead of simple physical products.",
+  "clientSelectionCard": {
+    "title": "Digital Products Store",
+    "category": "ecommerce",
+    "bestForLabel": "courses, ebooks, templates",
+    "difference": "Catalog sells outcomes, previews, modules, and bundles instead of simple physical products.",
+    "previewTags": [
+      "digital_offer_catalog",
+      "modern, clear, benefit-driven",
+      "medium"
+    ]
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "purpose": "Main conversion page",
+      "usesSections": [
+        "header",
+        "saas_hero",
+        "digital_product_cards",
+        "included_section",
+        "preview_gallery",
+        "faq",
+        "footer"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "purpose": "course/template/software shop with clear value",
+      "catalogType": "digital_offer_catalog",
+      "layout": "product cards grouped by outcome, bundles, previews, FAQ before purchase",
+      "filters": [
+        "format",
+        "skill_level",
+        "topic",
+        "bundle",
+        "price"
+      ]
+    },
+    {
+      "name": "Detail",
+      "purpose": "Product, service, offer, menu item, or project detail",
+      "layout": "sales-page PDP with what’s included, previews, modules, testimonials, FAQ",
+      "upsell": "bundle upgrade, membership access, related templates"
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "id": "contractor-before-after",
+  "name": "Contractor Before / After",
+  "category": "services",
+  "bestFor": [
+    "contractors",
+    "home improvement",
+    "painting",
+    "flooring",
+    "roofing",
+    "renovation"
+  ],
+  "style": {
+    "tone": "practical, reliable, proof-focused",
+    "layoutDensity": "medium",
+    "imageStyle": "before and after project photos",
+    "defaultColors": {
+      "background": "#FFFFFF",
+      "surface": "#F4F4F5",
+      "primary": "#18181B",
+      "secondary": "#52525B",
+      "accent": "#F59E0B"
+    },
+    "fonts": {
+      "heading": "Inter",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "type": "header",
+      "fields": {
+        "logo": "{{logo_url}}",
+        "businessName": "{{business_name}}",
+        "navItems": [
+          "Home",
+          "Shop",
+          "About",
+          "Contact"
+        ],
+        "ctaLabel": "{{primary_cta_label}}",
+        "ctaUrl": "{{primary_cta_url}}"
+      }
+    },
+    {
+      "type": "contractor_hero",
+      "fields": {
+        "headline": "{{hero_headline}}",
+        "subheadline": "{{hero_subheadline}}",
+        "image": "{{hero_image}}",
+        "button": {
+          "label": "Get Estimate",
+          "url": "#estimate"
+        }
+      }
+    },
+    {
+      "type": "before_after_slider",
+      "fields": {
+        "title": "Before & After",
+        "projects": "{{before_after_images}}"
+      }
+    },
+    {
+      "type": "service_cards",
+      "fields": {
+        "title": "What We Do",
+        "services": "{{services}}"
+      }
+    },
+    {
+      "type": "project_gallery",
+      "fields": {
+        "title": "Recent Projects",
+        "items": "{{project_gallery}}"
+      }
+    },
+    {
+      "type": "quote_form",
+      "fields": {
+        "title": "Request an Estimate",
+        "fields": [
+          "name",
+          "phone",
+          "email",
+          "project_type",
+          "message"
+        ]
+      }
+    },
+    {
+      "type": "footer",
+      "fields": {
+        "businessName": "{{business_name}}",
+        "description": "{{short_description}}",
+        "email": "{{email}}",
+        "phone": "{{phone}}",
+        "address": "{{address}}",
+        "socialLinks": "{{social_links}}",
+        "legalLinks": [
+          "Privacy Policy",
+          "Terms",
+          "Refund Policy"
+        ]
+      }
+    }
+  ],
+  "aiPrompt": "Generate a contractor website built around proof, before-after visuals, services, and estimate requests.",
+  "catalogModel": {
+    "catalogType": "project_gallery_catalog",
+    "productCardStyle": "project cards with before/after images, project type, location, result summary",
+    "collectionLayout": "before-after slider, services, project gallery, estimate form",
+    "filters": [
+      "project_type",
+      "room_area",
+      "budget_range",
+      "location"
+    ],
+    "productDetailModel": "project detail with before/after, scope, materials, timeline, estimate CTA",
+    "upsellModel": "inspection, premium materials, maintenance service",
+    "customerFeeling": "proof-based contractor portfolio"
+  },
+  "visualDifference": "Catalog is a portfolio of transformations, not products. Before/after is the main selling point.",
+  "clientSelectionCard": {
+    "title": "Contractor Before / After",
+    "category": "services",
+    "bestForLabel": "contractors, home improvement, painting",
+    "difference": "Catalog is a portfolio of transformations, not products. Before/after is the main selling point.",
+    "previewTags": [
+      "project_gallery_catalog",
+      "practical, reliable, proof-focused",
+      "medium"
+    ]
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "purpose": "Main conversion page",
+      "usesSections": [
+        "header",
+        "contractor_hero",
+        "before_after_slider",
+        "service_cards",
+        "project_gallery",
+        "quote_form",
+        "footer"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "purpose": "proof-based contractor portfolio",
+      "catalogType": "project_gallery_catalog",
+      "layout": "before-after slider, services, project gallery, estimate form",
+      "filters": [
+        "project_type",
+        "room_area",
+        "budget_range",
+        "location"
+      ]
+    },
+    {
+      "name": "Detail",
+      "purpose": "Product, service, offer, menu item, or project detail",
+      "layout": "project detail with before/after, scope, materials, timeline, estimate CTA",
+      "upsell": "inspection, premium materials, maintenance service"
+    }
+  ]
+}
