@@ -92,6 +92,24 @@ let cloudGenerations = [];
 let selectedBusinessId = "";
 let lastPublishedUrl = "";
 
+const ADMIN_API_BASE_URL = resolveAdminApiBaseUrl();
+
+function resolveAdminApiBaseUrl() {
+  if (window.LUMA_API_BASE_URL) {
+    return String(window.LUMA_API_BASE_URL).replace(/\/$/, "");
+  }
+  const savedApi = localStorage.getItem("lumaApiBaseUrl");
+  if (savedApi) return savedApi.replace(/\/$/, "");
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    return "http://127.0.0.1:8010";
+  }
+  return "";
+}
+
+function apiUrl(path) {
+  return `${ADMIN_API_BASE_URL}${path}`;
+}
+
 let pages = [
   { storeId: "luna", title: "Home", slug: "/", type: "Home", status: "Publicada" },
   { storeId: "luna", title: "Catalogo", slug: "/catalogo", type: "Catalog", status: "Publicada" },
@@ -273,7 +291,7 @@ function init() {
 
 async function loadCloudOverview() {
   try {
-    const response = await fetch("/api/admin/overview", { headers: adminHeaders() });
+    const response = await fetch(apiUrl("/api/admin/overview"), { headers: adminHeaders() });
     if (response.status === 401) {
       promptForAdminToken();
       return;
@@ -818,7 +836,7 @@ async function saveDomainFromForm(event) {
     domainType: form.elements.domainType.value,
   };
   try {
-    const response = await fetch("/api/admin/domains", {
+    const response = await fetch(apiUrl("/api/admin/domains"), {
       method: "POST",
       headers: adminHeaders({ "content-type": "application/json" }),
       body: JSON.stringify(payload),
@@ -846,7 +864,7 @@ async function searchDomainsFromForm(event) {
   };
   render();
   try {
-    const response = await fetch(`/api/admin/domain-search?q=${encodeURIComponent(query)}`, {
+    const response = await fetch(apiUrl(`/api/admin/domain-search?q=${encodeURIComponent(query)}`), {
       headers: adminHeaders(),
     });
     if (response.status === 401) {
@@ -881,7 +899,7 @@ function useSuggestedDomain(domain) {
 async function activateDomain(domainId) {
   if (!domainId) return;
   try {
-    const response = await fetch(`/api/admin/domains/${encodeURIComponent(domainId)}/activate`, {
+    const response = await fetch(apiUrl(`/api/admin/domains/${encodeURIComponent(domainId)}/activate`), {
       method: "POST",
       headers: adminHeaders(),
     });
@@ -899,7 +917,7 @@ async function activateDomain(domainId) {
 async function publishSiteFromAdmin(siteId) {
   if (!siteId) return;
   try {
-    const response = await fetch(`/sites/${encodeURIComponent(siteId)}/publish-complete`, {
+    const response = await fetch(apiUrl(`/sites/${encodeURIComponent(siteId)}/publish-complete`), {
       method: "POST",
       headers: adminHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({}),
