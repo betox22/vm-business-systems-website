@@ -416,6 +416,7 @@ let guidedStep = "businessName";
 let guidedHistory = [];
 let assistantState = "neutral";
 let assistantVoiceEnabled = localStorage.getItem("gnuDevAssistantVoice") === "on";
+let forcedTemplateSelection = null;
 let guidedState = {
   businessName: "",
   businessDescription: "",
@@ -771,9 +772,44 @@ function languageToSpeechLocale(language) {
 function initGuidedIntake() {
   importQuickFormToGuidedState();
   restoreGuidedDraft();
+  applyPromptFromQuery();
   restoreGeneratedSite();
   renderGuidedSummary();
   resetAssistantConversation();
+}
+
+function applyPromptFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  const prompt = params.get("prompt") || params.get("description") || "";
+  if (!prompt.trim()) return;
+  guidedState.businessDescription = prompt.trim();
+  guidedState.preferredTone = guidedState.preferredTone || extractStyleHint(prompt);
+  guidedState.industry = guidedState.industry || inferIndustryFromPrompt(prompt);
+  if (params.get("templateId")) {
+    forcedTemplateSelection = {
+      templateId: params.get("templateId"),
+      catalogType: params.get("catalogType") || "",
+      intent: params.get("intent") || "manual_template",
+      reason: "Template selected from customer template gallery",
+    };
+  }
+  applyGuidedStateToForm();
+}
+
+function extractStyleHint(prompt) {
+  const text = String(prompt || "").toLowerCase();
+  const styles = ["cyberpunk", "futurista", "neon", "neón", "premium", "minimal", "lujo", "elegante", "moderno", "shopify", "amazon", "ebay"];
+  return styles.filter((style) => text.includes(style)).join(", ");
+}
+
+function inferIndustryFromPrompt(prompt) {
+  const text = String(prompt || "").toLowerCase();
+  if (/restaurante|restaurant|menu|menú|comida|food/.test(text)) return selectedLanguage === "es" ? "Restaurante / comida" : "Restaurant / food";
+  if (/barber|barberia|barbería|salon|spa|cita|reserva/.test(text)) return selectedLanguage === "es" ? "Servicios con citas" : "Appointment services";
+  if (/curso|course|ebook|digital|software|membres/.test(text)) return selectedLanguage === "es" ? "Productos digitales" : "Digital products";
+  if (/contractor|construction|remodel|pintura|roofing|flooring/.test(text)) return selectedLanguage === "es" ? "Construccion / contractor" : "Contractor";
+  if (/tienda|store|shop|producto|vender|ecommerce|amazon|ebay|cyberpunk|gamer/.test(text)) return selectedLanguage === "es" ? "Tienda online / ecommerce" : "Online store / ecommerce";
+  return "";
 }
 
 function resetAssistantConversation() {
@@ -1488,6 +1524,16 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
 
 async function selectTemplateForPayload(payload) {
   if (!window.TemplateRouter?.selectTemplateFromPrompt) return null;
+  if (forcedTemplateSelection?.templateId && window.TemplateRouter.getTemplateById) {
+    const template = await window.TemplateRouter.getTemplateById(forcedTemplateSelection.templateId);
+    if (template) {
+      return {
+        ...forcedTemplateSelection,
+        template,
+        catalogType: forcedTemplateSelection.catalogType || template.catalogModel?.catalogType || "",
+      };
+    }
+  }
   const prompt = [
     payload.business_name,
     payload.business_description,
@@ -1733,10 +1779,19 @@ function buildInstantTemplateSchema(payload, templateSelection) {
 
 function chooseInstantPalette(payload) {
   const preferred = arrayValue(payload.preferred_colors).join(" ").toLowerCase();
-  if (/pink|rosa|boutique|fashion|moda|beauty|belleza/.test(preferred + " " + (payload.industry || "").toLowerCase())) {
+  const allText = [
+    preferred,
+    payload.preferred_tone,
+    payload.business_description,
+    payload.industry,
+  ].join(" ").toLowerCase();
+  if (/cyberpunk|neon|neón|futurista|gaming|gamer|super cool/.test(allText)) {
+    return { background: "#070714", surface: "#111126", primary: "#00f5ff", secondary: "#ff2bd6", text: "#f8fbff", muted: "#9ca3ff" };
+  }
+  if (/pink|rosa|boutique|fashion|moda|beauty|belleza/.test(allText)) {
     return { background: "#fff7fb", surface: "#ffffff", primary: "#c0266c", secondary: "#fde7f1", text: "#1f1720", muted: "#7a6670" };
   }
-  if (/tech|tecnologia|technology|software|digital/.test(preferred + " " + (payload.industry || "").toLowerCase())) {
+  if (/tech|tecnologia|technology|software|digital/.test(allText)) {
     return { background: "#f5fbff", surface: "#ffffff", primary: "#155eef", secondary: "#e0f2fe", text: "#111827", muted: "#64748b" };
   }
   return { background: "#f8fafc", surface: "#ffffff", primary: "#0e7c66", secondary: "#e3f3ee", text: "#101828", muted: "#667085" };

@@ -55,7 +55,7 @@
       intent: "fashion",
       templateId: "bold-fashion-store",
       catalogType: "lookbook_collection_catalog",
-      keywords: ["ropa", "fashion", "boutique", "tipo nike", "streetwear", "sneakers"],
+      keywords: ["ropa", "fashion", "boutique", "tipo nike", "streetwear", "sneakers", "cyberpunk", "futurista", "neon", "neón", "gaming", "super cool"],
     },
     {
       intent: "minimal_premium",
@@ -162,8 +162,14 @@
     };
   }
 
+  async function getTemplateById(templateId) {
+    const templates = await loadTemplates();
+    return templates.find((item) => item.id === templateId) || null;
+  }
+
   window.TemplateRouter = {
     loadTemplates,
+    getTemplateById,
     selectTemplateFromPrompt,
     normalizeText,
     intentRules: INTENT_RULES,
