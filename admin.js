@@ -85,6 +85,11 @@ let domainSearch = {
   exactAvailability: false,
   results: [],
 };
+let cloudBusinesses = [];
+let cloudSites = [];
+let cloudCatalogItems = [];
+let cloudGenerations = [];
+let selectedBusinessId = "";
 
 let pages = [
   { storeId: "luna", title: "Home", slug: "/", type: "Home", status: "Publicada" },
@@ -180,6 +185,11 @@ const views = {
     title: "Tiendas",
     subtitle: "Clientes, dominios, planes y estado de cada tienda.",
     render: renderStores,
+  },
+  storeDetail: {
+    title: "Detalle de tienda",
+    subtitle: "Publicacion, dominio, catalogo y estado operativo del negocio.",
+    render: renderStoreDetail,
   },
   orders: {
     title: "Pedidos",
@@ -282,6 +292,10 @@ function applyCloudOverview(overview) {
   const sites = overview.sites || [];
   const catalogItems = overview.catalog_items || [];
   const generations = overview.ai_generations || [];
+  cloudBusinesses = businesses;
+  cloudSites = sites;
+  cloudCatalogItems = catalogItems;
+  cloudGenerations = generations;
   domains = overview.domains || [];
   planLimits = overview.plan_limits || [];
   subscriptions = overview.subscriptions || [];
@@ -404,6 +418,17 @@ function render() {
       render();
     });
   });
+  content.querySelectorAll("[data-view-store]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedBusinessId = button.dataset.viewStore;
+      currentView = "storeDetail";
+      setActiveNav("stores");
+      render();
+    });
+  });
+  content.querySelectorAll("[data-publish-site]").forEach((button) => {
+    button.addEventListener("click", () => publishSiteFromAdmin(button.dataset.publishSite));
+  });
   content.querySelector("#domainForm")?.addEventListener("submit", saveDomainFromForm);
   content.querySelector("#domainSearchForm")?.addEventListener("submit", searchDomainsFromForm);
   content.querySelectorAll("[data-activate-domain]").forEach((button) => {
@@ -488,10 +513,88 @@ function renderStores() {
           <span>Dominio: ${store.domain}</span>
           <span>Plan: ${store.plan}</span>
           <span>Estado: ${store.status}</span>
+          <div class="card-actions">
+            <button class="text-button" data-view-store="${escapeAttribute(store.id)}" type="button">Ver detalle</button>
+            ${store.siteId ? `<button class="text-button" data-publish-site="${escapeAttribute(store.siteId)}" type="button">Publicar</button>` : ""}
+          </div>
         </article>`,
       )
       .join("")}
   </section>`;
+}
+
+function renderStoreDetail() {
+  const store = stores.find((item) => item.id === selectedBusinessId) || stores[0];
+  if (!store) {
+    return placeholder("Sin tiendas", "Aun no hay negocios cargados desde Supabase.");
+  }
+  selectedBusinessId = store.id;
+  const business = cloudBusinesses.find((item) => item.id === store.id) || {};
+  const site = cloudSites.find((item) => item.business_id === store.id) || {};
+  const storeDomains = domains.filter((item) => item.business_id === store.id);
+  const catalog = cloudCatalogItems.filter((item) => item.business_id === store.id || item.site_id === store.siteId);
+  const storePages = pages.filter((item) => item.storeId === store.id);
+  const publicUrl = site.id ? `/site.html?site_id=${encodeURIComponent(site.id)}` : "";
+  const activeDomain = storeDomains.find((item) => item.status === "active");
+  const domainUrl = activeDomain ? `https://${activeDomain.domain}` : "";
+  return `
+    <section class="detail-header data-card">
+      <div>
+        <button class="text-button" data-go-view="stores" type="button">Volver a tiendas</button>
+        <h2>${escapeHtml(store.name)}</h2>
+        <p>${escapeHtml(business.business_description || "Negocio generado desde intake/AI.")}</p>
+      </div>
+      <div class="detail-actions">
+        ${site.id ? `<button class="primary-button" data-publish-site="${escapeAttribute(site.id)}" type="button">Publicar ahora</button>` : ""}
+        ${publicUrl ? `<a class="secondary-link" href="${escapeAttribute(publicUrl)}" target="_blank" rel="noreferrer">Abrir por site_id</a>` : ""}
+        ${domainUrl ? `<a class="secondary-link" href="${escapeAttribute(domainUrl)}" target="_blank" rel="noreferrer">Abrir dominio</a>` : ""}
+      </div>
+    </section>
+
+    <section class="metric-grid">
+      ${metric("Estado", site.status || store.status, "Publicacion")}
+      ${metric("Plan", store.plan, "Limites aplicados luego")}
+      ${metric("Catalogo", catalog.length, "Items conectados")}
+      ${metric("Dominios", storeDomains.length, `${storeDomains.filter((item) => item.status === "active").length} activos`)}
+    </section>
+
+    <section class="section-grid">
+      <article class="data-card">
+        <div class="card-header"><h2>Publicacion</h2><span>${escapeHtml(site.status || "sin sitio")}</span></div>
+        <div class="settings-form">
+          <p><strong>Site ID:</strong> ${escapeHtml(site.id || "No generado")}</p>
+          <p><strong>URL temporal:</strong> ${publicUrl ? `<code>${escapeHtml(publicUrl)}</code>` : "No disponible"}</p>
+          <p><strong>Dominio activo:</strong> ${activeDomain ? `<code>${escapeHtml(activeDomain.domain)}</code>` : "Pendiente"}</p>
+          <p class="settings-note">El link por dominio funciona cuando el dominio esta activo y el hosting apunta al resolver publico.</p>
+        </div>
+      </article>
+      <article class="data-card">
+        <div class="card-header"><h2>Cliente</h2><span>${escapeHtml(business.industry || "")}</span></div>
+        <div class="settings-form">
+          <p><strong>Contacto:</strong> ${escapeHtml(store.owner)}</p>
+          <p><strong>Ubicacion:</strong> ${escapeHtml(business.location || "")}</p>
+          <p><strong>Idioma:</strong> ${escapeHtml(business.selected_language || "")}</p>
+          <p><strong>Tono:</strong> ${escapeHtml(business.preferred_tone || "")}</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="section-grid">
+      <article class="data-card">
+        <div class="card-header"><h2>Dominios de esta tienda</h2><span>${storeDomains.length}</span></div>
+        ${domainsTable(storeDomains)}
+      </article>
+      <article class="data-card">
+        <div class="card-header"><h2>Paginas</h2><span>${storePages.length}</span></div>
+        ${storePagesTable(storePages)}
+      </article>
+    </section>
+
+    <section class="data-card wide-card">
+      <div class="card-header"><h2>Catalogo conectado</h2><span>${catalog.length} items</span></div>
+      ${catalogItemsTable(catalog)}
+    </section>
+  `;
 }
 
 function openNewStoreModal() {
@@ -739,13 +842,13 @@ async function searchDomainsFromForm(event) {
       return;
     }
     if (!response.ok) throw new Error(await response.text());
-  const result = await response.json();
-  domainSearch = {
-    query: result.query,
-    provider: result.provider,
-    exactAvailability: Boolean(result.exact_availability || result.exactAvailability),
-    results: result.results || [],
-  };
+    const result = await response.json();
+    domainSearch = {
+      query: result.query,
+      provider: result.provider,
+      exactAvailability: Boolean(result.exact_availability || result.exactAvailability),
+      results: result.results || [],
+    };
     render();
   } catch (error) {
     domainSearch = {
@@ -778,6 +881,27 @@ async function activateDomain(domainId) {
     await loadCloudOverview();
   } catch (error) {
     window.alert(`No se pudo activar el dominio: ${shortMessage(error)}`);
+  }
+}
+
+async function publishSiteFromAdmin(siteId) {
+  if (!siteId) return;
+  try {
+    const response = await fetch(`/sites/${encodeURIComponent(siteId)}/publish`, {
+      method: "POST",
+      headers: adminHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({}),
+    });
+    if (response.status === 401) {
+      promptForAdminToken();
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    const result = await response.json();
+    await loadCloudOverview();
+    window.alert(`Publicado: ${result.public_url || result.site_id}`);
+  } catch (error) {
+    window.alert(`No se pudo publicar: ${shortMessage(error)}`);
   }
 }
 
@@ -864,6 +988,39 @@ function domainsTable(rows) {
           }</td>
         </tr>`;
       })
+      .join("")}</tbody>
+  </table>`;
+}
+
+function storePagesTable(rows) {
+  if (!rows.length) {
+    return `<div class="empty-state">Este sitio aun no tiene paginas registradas.</div>`;
+  }
+  return `<table>
+    <thead><tr><th>Pagina</th><th>Ruta</th><th>Estado</th></tr></thead>
+    <tbody>${rows
+      .map((page) => `<tr>
+        <td><strong>${escapeHtml(page.title)}</strong><br><small>${escapeHtml(page.type)}</small></td>
+        <td>${escapeHtml(page.slug)}</td>
+        <td>${escapeHtml(page.status)}</td>
+      </tr>`)
+      .join("")}</tbody>
+  </table>`;
+}
+
+function catalogItemsTable(rows) {
+  if (!rows.length) {
+    return `<div class="empty-state">El catalogo aparecera aqui cuando el sitio tenga productos/servicios guardados.</div>`;
+  }
+  return `<table>
+    <thead><tr><th>Item</th><th>Precio</th><th>Estado</th></tr></thead>
+    <tbody>${rows
+      .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+      .map((item) => `<tr>
+        <td><strong>${escapeHtml(item.name)}</strong><br><small>${escapeHtml(item.description || "")}</small></td>
+        <td>${escapeHtml(item.price_label || item.price_type || "")}</td>
+        <td>${item.is_active === false ? "Inactivo" : "Activo"}${item.is_featured ? " · destacado" : ""}</td>
+      </tr>`)
       .join("")}</tbody>
   </table>`;
 }
