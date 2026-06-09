@@ -207,6 +207,21 @@ const storeFilter = document.querySelector("#storeFilter");
 
 let currentView = "dashboard";
 
+function adminHeaders(extra = {}) {
+  const token = localStorage.getItem("lumaAdminToken") || "";
+  return {
+    ...extra,
+    ...(token ? { "x-admin-token": token } : {}),
+  };
+}
+
+function promptForAdminToken() {
+  const token = window.prompt("Admin token");
+  if (!token) return;
+  localStorage.setItem("lumaAdminToken", token.trim());
+  loadCloudOverview();
+}
+
 init();
 
 function init() {
@@ -234,8 +249,11 @@ function init() {
 
 async function loadCloudOverview() {
   try {
-    const apiBaseUrl = String(window.LUMA_API_BASE_URL || "").replace(/\/$/, "");
-    const response = await fetch(`${apiBaseUrl}/api/admin/overview`);
+    const response = await fetch("/api/admin/overview", { headers: adminHeaders() });
+    if (response.status === 401) {
+      promptForAdminToken();
+      return;
+    }
     if (!response.ok) throw new Error(await response.text());
     const overview = await response.json();
     applyCloudOverview(overview);

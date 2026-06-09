@@ -22,6 +22,14 @@ const LANGUAGE_NAMES = {
 const GUIDED_DRAFT_STORAGE_KEY = "lumaGuidedDraft";
 const GENERATED_SITE_STORAGE_KEY = "lumaGeneratedSite";
 
+function adminHeaders(extra = {}) {
+  const token = localStorage.getItem("lumaAdminToken") || "";
+  return {
+    ...extra,
+    ...(token ? { "x-admin-token": token } : {}),
+  };
+}
+
 function resolveApiBaseUrl() {
   const params = new URLSearchParams(window.location.search);
   const apiFromQuery = params.get("api");
@@ -1962,9 +1970,13 @@ async function saveCurrentSchema() {
   }
   const response = await fetch(`${API_BASE_URL}/sites/${currentSiteId}/schema`, {
     method: "PUT",
-    headers: { "content-type": "application/json" },
+    headers: adminHeaders({ "content-type": "application/json" }),
     body: JSON.stringify({ schema: currentSchema, catalog_items: catalogItemsForApi() }),
   });
+  if (response.status === 401) {
+    storageStatus.textContent = "Admin token required to save.";
+    return;
+  }
   const result = await response.json();
   storageStatus.textContent = result.storage_status === "stored" ? "Saved to database" : result.storage_status;
 }
@@ -1980,9 +1992,13 @@ async function publishCurrentSite() {
   }
   const response = await fetch(`${API_BASE_URL}/sites/${currentSiteId}/publish`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: adminHeaders({ "content-type": "application/json" }),
     body: JSON.stringify({ schema: currentSchema, catalog_items: catalogItemsForApi() }),
   });
+  if (response.status === 401) {
+    storageStatus.textContent = "Admin token required to publish.";
+    return;
+  }
   const result = await response.json();
   storageStatus.innerHTML = result.public_url
     ? `Published · <a href="${escapeAttribute(result.public_url)}" target="_blank" rel="noreferrer">Open public URL</a>`
