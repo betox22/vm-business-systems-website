@@ -90,6 +90,7 @@ let cloudSites = [];
 let cloudCatalogItems = [];
 let cloudGenerations = [];
 let selectedBusinessId = "";
+let lastPublishedUrl = "";
 
 let pages = [
   { storeId: "luna", title: "Home", slug: "/", type: "Home", status: "Publicada" },
@@ -429,6 +430,9 @@ function render() {
   content.querySelectorAll("[data-publish-site]").forEach((button) => {
     button.addEventListener("click", () => publishSiteFromAdmin(button.dataset.publishSite));
   });
+  content.querySelectorAll("[data-copy-url]").forEach((button) => {
+    button.addEventListener("click", () => copyText(button.dataset.copyUrl));
+  });
   content.querySelector("#domainForm")?.addEventListener("submit", saveDomainFromForm);
   content.querySelector("#domainSearchForm")?.addEventListener("submit", searchDomainsFromForm);
   content.querySelectorAll("[data-activate-domain]").forEach((button) => {
@@ -537,6 +541,12 @@ function renderStoreDetail() {
   const publicUrl = site.id ? `/site.html?site_id=${encodeURIComponent(site.id)}` : "";
   const activeDomain = storeDomains.find((item) => item.status === "active");
   const domainUrl = activeDomain ? `https://${activeDomain.domain}` : "";
+  const finalUrl = domainUrl || publicUrl;
+  const publishState = site.status !== "published"
+    ? "Borrador"
+    : activeDomain
+      ? "Publicado con dominio"
+      : "Publicado sin dominio";
   return `
     <section class="detail-header data-card">
       <div>
@@ -546,13 +556,14 @@ function renderStoreDetail() {
       </div>
       <div class="detail-actions">
         ${site.id ? `<button class="primary-button" data-publish-site="${escapeAttribute(site.id)}" type="button">Publicar ahora</button>` : ""}
+        ${finalUrl ? `<button class="secondary-link" data-copy-url="${escapeAttribute(finalUrl)}" type="button">Copiar link final</button>` : ""}
         ${publicUrl ? `<a class="secondary-link" href="${escapeAttribute(publicUrl)}" target="_blank" rel="noreferrer">Abrir por site_id</a>` : ""}
         ${domainUrl ? `<a class="secondary-link" href="${escapeAttribute(domainUrl)}" target="_blank" rel="noreferrer">Abrir dominio</a>` : ""}
       </div>
     </section>
 
     <section class="metric-grid">
-      ${metric("Estado", site.status || store.status, "Publicacion")}
+      ${metric("Estado", publishState, "Publicacion")}
       ${metric("Plan", store.plan, "Limites aplicados luego")}
       ${metric("Catalogo", catalog.length, "Items conectados")}
       ${metric("Dominios", storeDomains.length, `${storeDomains.filter((item) => item.status === "active").length} activos`)}
@@ -565,6 +576,7 @@ function renderStoreDetail() {
           <p><strong>Site ID:</strong> ${escapeHtml(site.id || "No generado")}</p>
           <p><strong>URL temporal:</strong> ${publicUrl ? `<code>${escapeHtml(publicUrl)}</code>` : "No disponible"}</p>
           <p><strong>Dominio activo:</strong> ${activeDomain ? `<code>${escapeHtml(activeDomain.domain)}</code>` : "Pendiente"}</p>
+          <p><strong>Link final:</strong> ${finalUrl ? `<code>${escapeHtml(finalUrl)}</code>` : "Pendiente"}</p>
           <p class="settings-note">El link por dominio funciona cuando el dominio esta activo y el hosting apunta al resolver publico.</p>
         </div>
       </article>
@@ -887,7 +899,7 @@ async function activateDomain(domainId) {
 async function publishSiteFromAdmin(siteId) {
   if (!siteId) return;
   try {
-    const response = await fetch(`/sites/${encodeURIComponent(siteId)}/publish`, {
+    const response = await fetch(`/sites/${encodeURIComponent(siteId)}/publish-complete`, {
       method: "POST",
       headers: adminHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({}),
@@ -898,10 +910,21 @@ async function publishSiteFromAdmin(siteId) {
     }
     if (!response.ok) throw new Error(await response.text());
     const result = await response.json();
+    lastPublishedUrl = result.finalUrl || result.final_url || result.public_url || "";
     await loadCloudOverview();
-    window.alert(`Publicado: ${result.public_url || result.site_id}`);
+    window.alert(`Publicado: ${lastPublishedUrl || result.site_id}`);
   } catch (error) {
     window.alert(`No se pudo publicar: ${shortMessage(error)}`);
+  }
+}
+
+async function copyText(value) {
+  if (!value) return;
+  try {
+    await navigator.clipboard.writeText(value);
+    window.alert("Link copiado.");
+  } catch {
+    window.prompt("Copia el link:", value);
   }
 }
 
