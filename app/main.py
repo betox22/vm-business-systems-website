@@ -7,10 +7,13 @@ from sqlalchemy.orm import Session
 from .ai_design import generate_store_config, generate_store_design
 from .ai_intake import guide_intake
 from .ai_website_builder import generate_ai_website_schema
+from .auth_store import AuthError, AuthNotConfiguredError, login_admin, verify_admin_bearer
 from .database import Base, SessionLocal, engine, get_db
 from .domain_provider import search_domains as search_domain_provider
 from .models import Order, Product, StoreCustomer, StoreDesignConfig, StorePage, Tenant
 from .schemas import (
+    AdminLoginPayload,
+    AdminLoginResponse,
     AssetUploadPayload,
     AssetUploadResponse,
     CustomerOut,
@@ -99,17 +102,41 @@ def tenant_dependency(request: Request, db: Session = Depends(get_db)) -> Tenant
 
 def require_admin(request: Request) -> None:
     settings = get_settings()
-    if not settings.admin_api_token:
-        return
     header_token = request.headers.get("x-admin-token", "")
     authorization = request.headers.get("authorization", "")
     bearer_token = authorization.removeprefix("Bearer ").strip()
-    if header_token == settings.admin_api_token or bearer_token == settings.admin_api_token:
+    if settings.admin_api_token and (
+        header_token == settings.admin_api_token or bearer_token == settings.admin_api_token
+    ):
+        return
+    if bearer_token:
+        try:
+            verify_admin_bearer(bearer_token)
+            return
+        except (AuthError, AuthNotConfiguredError):
+            pass
+    if not settings.admin_api_token and not bearer_token:
         return
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Admin authorization required.",
     )
+
+
+@app.post("/api/auth/login", response_model=AdminLoginResponse)
+def login_admin_user(payload: AdminLoginPayload) -> AdminLoginResponse:
+    try:
+        return AdminLoginResponse(**login_admin(payload.email, payload.password))
+    except AuthNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except AuthError as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(error),
+        ) from error
 
 
 @app.get("/tenant", response_model=TenantOut)

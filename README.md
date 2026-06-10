@@ -30,6 +30,7 @@ OPENAI_API_KEY=
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 ADMIN_API_TOKEN=
+ADMIN_ALLOWED_EMAILS=
 ```
 
 Opcionales para dominios reales:
@@ -60,3 +61,10 @@ uvicorn app.main:app --host 127.0.0.1 --port 8010
 ## Seguridad
 
 No subir `.env`, logs, base SQLite local ni llaves. Este repo solo debe tener `.env.example`.
+
+El admin acepta dos formas de acceso:
+
+- Login Supabase por `POST /api/auth/login`, autorizado si el email esta en
+  `ADMIN_ALLOWED_EMAILS` o si el usuario existe en `business_members` con rol
+  `owner`, `admin` o `staff`.
+- `ADMIN_API_TOKEN` como respaldo tecnico para operaciones internas.

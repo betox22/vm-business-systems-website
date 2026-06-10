@@ -28,6 +28,8 @@ services:
         sync: false
       - key: ADMIN_API_TOKEN
         sync: false
+      - key: ADMIN_ALLOWED_EMAILS
+        sync: false
       - key: CLOUDFLARE_ACCOUNT_ID
         sync: false
       - key: CLOUDFLARE_API_TOKEN

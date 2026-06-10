@@ -202,6 +202,24 @@ class ClientRequestResponse(BaseModel):
     storage_status: str
 
 
+class AdminLoginPayload(BaseModel):
+    email: str = Field(min_length=3, max_length=240)
+    password: str = Field(min_length=1, max_length=240)
+
+
+class AdminUserOut(BaseModel):
+    id: str
+    email: str = ""
+    role: str = "admin"
+
+
+class AdminLoginResponse(BaseModel):
+    access_token: str = Field(alias="accessToken")
+    refresh_token: str = Field(default="", alias="refreshToken")
+    expires_in: int = Field(default=0, alias="expiresIn")
+    user: AdminUserOut
+
+
 class DomainPayload(BaseModel):
     business_id: str = Field(alias="businessId")
     domain: str = Field(min_length=3, max_length=255)

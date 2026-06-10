@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     )
     allow_dev_ai_mock: bool = Field(default=False, alias="ALLOW_DEV_AI_MOCK")
     admin_api_token: str | None = Field(default=None, alias="ADMIN_API_TOKEN")
+    admin_allowed_emails: str = Field(default="", alias="ADMIN_ALLOWED_EMAILS")
     public_site_base_url: str = Field(
         default="http://127.0.0.1:5177/site.html",
         alias="PUBLIC_SITE_BASE_URL",
