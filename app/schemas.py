@@ -214,6 +214,8 @@ class AdminUserOut(BaseModel):
 
 
 class AdminLoginResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     access_token: str = Field(alias="accessToken")
     refresh_token: str = Field(default="", alias="refreshToken")
     expires_in: int = Field(default=0, alias="expiresIn")
