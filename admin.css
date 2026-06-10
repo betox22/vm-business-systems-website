@@ -385,6 +385,29 @@ th {
   font-size: 13px;
 }
 
+.lead-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.mini-action {
+  border: 1px solid var(--primary);
+  border-radius: 7px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mini-action.secondary {
+  border-color: var(--line);
+  background: #fff;
+  color: var(--ink);
+}
+
 .card-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

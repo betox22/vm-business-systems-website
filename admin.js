@@ -173,6 +173,11 @@ let requests = [
 
 const statusLabels = {
   new: "Nuevo",
+  contacted: "Contactado",
+  qualified: "Calificado",
+  won: "Ganado",
+  lost: "Perdido",
+  archived: "Archivado",
   pending_payment: "Pendiente pago",
   paid: "Pagado",
   processing: "En proceso",
@@ -445,6 +450,9 @@ function applyCloudOverview(overview) {
     email: lead.email || "",
     phone: lead.phone || "",
     message: lead.message || "",
+    internalNotes: lead.internal_notes || "",
+    contactedAt: lead.contacted_at || "",
+    closedAt: lead.closed_at || "",
   }));
   stores.forEach((store) => {
     store.catalogCount = catalogItems.filter((item) => item.business_id === store.id || item.site_id === store.siteId).length;
@@ -518,6 +526,12 @@ function render() {
   });
   content.querySelectorAll("[data-copy-url]").forEach((button) => {
     button.addEventListener("click", () => copyText(button.dataset.copyUrl));
+  });
+  content.querySelectorAll("[data-lead-status]").forEach((button) => {
+    button.addEventListener("click", () => updateLeadStatus(button.dataset.leadId, button.dataset.leadStatus));
+  });
+  content.querySelectorAll("[data-lead-note]").forEach((button) => {
+    button.addEventListener("click", () => editLeadNote(button.dataset.leadNote));
   });
   content.querySelector("#domainForm")?.addEventListener("submit", saveDomainFromForm);
   content.querySelector("#domainSearchForm")?.addEventListener("submit", searchDomainsFromForm);
@@ -752,7 +766,7 @@ function openNewStoreModal() {
 }
 
 function renderOrders() {
-  const groups = ["new", "pending_payment", "paid", "processing", "shipped"];
+  const groups = ["new", "contacted", "qualified", "won", "lost"];
   const visibleOrders = filteredOrders();
   return `<section class="kanban">
     ${groups
@@ -979,6 +993,47 @@ async function activateDomain(domainId) {
     await loadCloudOverview();
   } catch (error) {
     window.alert(`No se pudo activar el dominio: ${shortMessage(error)}`);
+  }
+}
+
+async function updateLeadStatus(leadId, nextStatus) {
+  if (!leadId || !nextStatus) return;
+  try {
+    const response = await fetch(apiUrl(`/api/admin/leads/${encodeURIComponent(leadId)}`), {
+      method: "PATCH",
+      headers: adminHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ status: nextStatus }),
+    });
+    if (response.status === 401) {
+      showAdminLogin("Inicia sesion para actualizar leads.");
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    await loadCloudOverview();
+  } catch (error) {
+    window.alert(`No se pudo actualizar el lead: ${shortMessage(error)}`);
+  }
+}
+
+async function editLeadNote(leadId) {
+  if (!leadId) return;
+  const lead = orders.find((item) => item.id === leadId);
+  const note = window.prompt("Notas internas del lead", lead?.internalNotes || "");
+  if (note === null) return;
+  try {
+    const response = await fetch(apiUrl(`/api/admin/leads/${encodeURIComponent(leadId)}`), {
+      method: "PATCH",
+      headers: adminHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ internalNotes: note }),
+    });
+    if (response.status === 401) {
+      showAdminLogin("Inicia sesion para editar notas.");
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    await loadCloudOverview();
+  } catch (error) {
+    window.alert(`No se pudo guardar la nota: ${shortMessage(error)}`);
   }
 }
 
@@ -1211,6 +1266,15 @@ function subscriptionsTable(rows) {
 
 function orderCard(order) {
   const store = stores.find((item) => item.id === order.storeId);
+  const actions = [
+    ["contacted", "Contactado"],
+    ["qualified", "Calificar"],
+    ["won", "Ganado"],
+    ["lost", "Perdido"],
+  ]
+    .filter(([status]) => status !== order.status)
+    .map(([status, label]) => `<button class="mini-action" data-lead-id="${escapeAttribute(order.id)}" data-lead-status="${escapeAttribute(status)}" type="button">${label}</button>`)
+    .join("");
   return `<article class="order-card">
     <strong>${escapeHtml(order.id)}</strong>
     <span>${store?.name || order.storeId}</span>
@@ -1218,7 +1282,12 @@ function orderCard(order) {
     <span>${escapeHtml([order.email, order.phone].filter(Boolean).join(" · "))}</span>
     <span>${escapeHtml(order.items)}</span>
     ${order.message ? `<small>${escapeHtml(order.message)}</small>` : ""}
+    ${order.internalNotes ? `<small><strong>Nota:</strong> ${escapeHtml(order.internalNotes)}</small>` : ""}
     <span>${escapeHtml(order.date)}</span>
+    <div class="lead-actions">
+      ${actions}
+      <button class="mini-action secondary" data-lead-note="${escapeAttribute(order.id)}" type="button">Nota</button>
+    </div>
   </article>`;
 }
 
