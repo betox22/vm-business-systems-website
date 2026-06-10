@@ -212,6 +212,11 @@ textarea {
   text-decoration: none;
 }
 
+.danger-link {
+  border-color: #fecdca;
+  color: var(--danger);
+}
+
 .content {
   padding: 22px;
 }

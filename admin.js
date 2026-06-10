@@ -524,6 +524,13 @@ function render() {
   content.querySelectorAll("[data-publish-site]").forEach((button) => {
     button.addEventListener("click", () => publishSiteFromAdmin(button.dataset.publishSite));
   });
+  content.querySelectorAll("[data-site-status]").forEach((button) => {
+    button.addEventListener("click", () => updateSiteStatus(button.dataset.siteId, button.dataset.siteStatus));
+  });
+  content.querySelectorAll("[data-duplicate-site]").forEach((button) => {
+    button.addEventListener("click", () => duplicateSiteFromAdmin(button.dataset.duplicateSite));
+  });
+  content.querySelector("#siteEditForm")?.addEventListener("submit", saveSiteFromDetail);
   content.querySelectorAll("[data-copy-url]").forEach((button) => {
     button.addEventListener("click", () => copyText(button.dataset.copyUrl));
   });
@@ -673,13 +680,7 @@ function renderStoreDetail() {
     <section class="section-grid">
       <article class="data-card">
         <div class="card-header"><h2>Publicacion</h2><span>${escapeHtml(site.status || "sin sitio")}</span></div>
-        <div class="settings-form">
-          <p><strong>Site ID:</strong> ${escapeHtml(site.id || "No generado")}</p>
-          <p><strong>URL temporal:</strong> ${publicUrl ? `<code>${escapeHtml(publicUrl)}</code>` : "No disponible"}</p>
-          <p><strong>Dominio activo:</strong> ${activeDomain ? `<code>${escapeHtml(activeDomain.domain)}</code>` : "Pendiente"}</p>
-          <p><strong>Link final:</strong> ${finalUrl ? `<code>${escapeHtml(finalUrl)}</code>` : "Pendiente"}</p>
-          <p class="settings-note">El link por dominio funciona cuando el dominio esta activo y el hosting apunta al resolver publico.</p>
-        </div>
+        ${sitePublicationForm(site, publicUrl, activeDomain, finalUrl)}
       </article>
       <article class="data-card">
         <div class="card-header"><h2>Cliente</h2><span>${escapeHtml(business.industry || "")}</span></div>
@@ -1076,6 +1077,69 @@ async function saveBusinessFromDetail(event) {
   }
 }
 
+async function saveSiteFromDetail(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const siteId = form.dataset.siteId;
+  if (!siteId) return;
+  try {
+    const response = await fetch(apiUrl(`/api/admin/sites/${encodeURIComponent(siteId)}`), {
+      method: "PATCH",
+      headers: adminHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({
+        name: form.elements.siteName.value.trim(),
+        status: form.elements.siteStatus.value,
+      }),
+    });
+    if (response.status === 401) {
+      showAdminLogin("Inicia sesion para editar sitios.");
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    await loadCloudOverview();
+  } catch (error) {
+    window.alert(`No se pudo guardar el sitio: ${shortMessage(error)}`);
+  }
+}
+
+async function updateSiteStatus(siteId, status) {
+  if (!siteId || !status) return;
+  try {
+    const response = await fetch(apiUrl(`/api/admin/sites/${encodeURIComponent(siteId)}`), {
+      method: "PATCH",
+      headers: adminHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ status }),
+    });
+    if (response.status === 401) {
+      showAdminLogin("Inicia sesion para cambiar estado.");
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    await loadCloudOverview();
+  } catch (error) {
+    window.alert(`No se pudo actualizar el sitio: ${shortMessage(error)}`);
+  }
+}
+
+async function duplicateSiteFromAdmin(siteId) {
+  if (!siteId) return;
+  try {
+    const response = await fetch(apiUrl(`/api/admin/sites/${encodeURIComponent(siteId)}/duplicate`), {
+      method: "POST",
+      headers: adminHeaders(),
+    });
+    if (response.status === 401) {
+      showAdminLogin("Inicia sesion para duplicar sitios.");
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    await loadCloudOverview();
+    window.alert("Sitio duplicado como borrador.");
+  } catch (error) {
+    window.alert(`No se pudo duplicar el sitio: ${shortMessage(error)}`);
+  }
+}
+
 async function publishSiteFromAdmin(siteId) {
   if (!siteId) return;
   try {
@@ -1206,6 +1270,35 @@ function businessEditForm(business, store) {
       <textarea name="internalNotes" rows="3">${escapeHtml(metadata.internal_notes || "")}</textarea>
     </label>
     <button class="primary-button" type="submit">Guardar cliente</button>
+  </form>`;
+}
+
+function sitePublicationForm(site, publicUrl, activeDomain, finalUrl) {
+  if (!site.id) {
+    return `<div class="settings-form"><p>No hay sitio generado todavia.</p></div>`;
+  }
+  return `<form id="siteEditForm" class="settings-form" data-site-id="${escapeAttribute(site.id)}">
+    <p><strong>Site ID:</strong> ${escapeHtml(site.id)}</p>
+    <label>Nombre del sitio
+      <input name="siteName" value="${escapeAttribute(site.name || "Generated site")}" required>
+    </label>
+    <label>Estado
+      <select name="siteStatus">
+        ${["draft", "published", "archived", "disabled"].map((item) => `<option value="${item}" ${item === site.status ? "selected" : ""}>${item}</option>`).join("")}
+      </select>
+    </label>
+    <p><strong>URL temporal:</strong> ${publicUrl ? `<code>${escapeHtml(publicUrl)}</code>` : "No disponible"}</p>
+    <p><strong>Dominio activo:</strong> ${activeDomain ? `<code>${escapeHtml(activeDomain.domain)}</code>` : "Pendiente"}</p>
+    <p><strong>Link final:</strong> ${finalUrl ? `<code>${escapeHtml(finalUrl)}</code>` : "Pendiente"}</p>
+    <p class="settings-note">El link por dominio funciona cuando el dominio esta activo y el hosting apunta al resolver publico.</p>
+    <div class="inline-actions">
+      <button class="primary-button" type="submit">Guardar sitio</button>
+      <button class="secondary-link" data-duplicate-site="${escapeAttribute(site.id)}" type="button">Duplicar borrador</button>
+      ${site.status === "published"
+        ? `<button class="secondary-link danger-link" data-site-id="${escapeAttribute(site.id)}" data-site-status="draft" type="button">Despublicar</button>`
+        : `<button class="secondary-link" data-publish-site="${escapeAttribute(site.id)}" type="button">Publicar</button>`}
+      <button class="secondary-link" data-site-id="${escapeAttribute(site.id)}" data-site-status="archived" type="button">Archivar</button>
+    </div>
   </form>`;
 }
 
