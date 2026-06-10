@@ -31,6 +31,7 @@ SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 ADMIN_API_TOKEN=
 ADMIN_ALLOWED_EMAILS=
+ALLOWED_ORIGINS=https://vmbusinesssystems.com,https://www.vmbusinesssystems.com
 ```
 
 Opcionales para dominios reales:

@@ -73,15 +73,15 @@ from .supabase_store import (
 from .tenant import get_current_tenant
 from .ticket import render_thermal_ticket_html
 
+def configured_origins() -> list[str]:
+    settings = get_settings()
+    return [origin.strip() for origin in settings.allowed_origins.split(",") if origin.strip()]
+
+
 app = FastAPI(title="Store Page Generator API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5177",
-        "http://localhost:5177",
-        "https://vmbusinesssystems.com",
-        "https://www.vmbusinesssystems.com",
-    ],
+    allow_origins=configured_origins(),
     allow_origin_regex=r"https://.*\.trycloudflare\.com",
     allow_credentials=True,
     allow_methods=["*"],
