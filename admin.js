@@ -252,8 +252,10 @@ let currentView = "dashboard";
 
 function adminHeaders(extra = {}) {
   const token = localStorage.getItem("lumaAdminToken") || "";
+  const accessToken = localStorage.getItem("lumaAdminAccessToken") || "";
   return {
     ...extra,
+    ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
     ...(token ? { "x-admin-token": token } : {}),
   };
 }
@@ -262,7 +264,56 @@ function promptForAdminToken() {
   const token = window.prompt("Admin token");
   if (!token) return;
   localStorage.setItem("lumaAdminToken", token.trim());
+  hideAdminLogin();
   loadCloudOverview();
+}
+
+function showAdminLogin(message = "") {
+  const loginScreen = document.querySelector("#adminLoginScreen");
+  const status = document.querySelector("#adminLoginStatus");
+  loginScreen?.classList.remove("hidden");
+  if (status) status.textContent = message;
+}
+
+function hideAdminLogin() {
+  document.querySelector("#adminLoginScreen")?.classList.add("hidden");
+}
+
+async function loginWithSupabase(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const status = document.querySelector("#adminLoginStatus");
+  if (status) status.textContent = "Verificando acceso...";
+  try {
+    const response = await fetch(apiUrl("/api/auth/login"), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: form.elements.email.value.trim(),
+        password: form.elements.password.value,
+      }),
+    });
+    if (!response.ok) {
+      const details = await response.text();
+      throw new Error(details || "No se pudo iniciar sesion.");
+    }
+    const session = await response.json();
+    localStorage.setItem("lumaAdminAccessToken", session.accessToken);
+    localStorage.setItem("lumaAdminUserEmail", session.user?.email || form.elements.email.value.trim());
+    localStorage.removeItem("lumaAdminToken");
+    form.reset();
+    hideAdminLogin();
+    await loadCloudOverview();
+  } catch (error) {
+    if (status) status.textContent = shortMessage(error);
+  }
+}
+
+function logoutAdmin() {
+  localStorage.removeItem("lumaAdminAccessToken");
+  localStorage.removeItem("lumaAdminUserEmail");
+  localStorage.removeItem("lumaAdminToken");
+  showAdminLogin("Sesion cerrada.");
 }
 
 init();
@@ -286,6 +337,9 @@ function init() {
     setActiveNav("builder");
     render();
   });
+  document.querySelector("#adminLoginForm")?.addEventListener("submit", loginWithSupabase);
+  document.querySelector("#useTokenFallbackButton")?.addEventListener("click", promptForAdminToken);
+  document.querySelector("#adminLogoutButton")?.addEventListener("click", logoutAdmin);
   render();
   loadCloudOverview();
 }
@@ -294,7 +348,7 @@ async function loadCloudOverview() {
   try {
     const response = await fetch(apiUrl("/api/admin/overview"), { headers: adminHeaders() });
     if (response.status === 401) {
-      promptForAdminToken();
+      showAdminLogin("Inicia sesion para continuar.");
       return;
     }
     if (!response.ok) throw new Error(await response.text());
@@ -964,11 +1018,13 @@ function saveAdminTokenFromSettings() {
   const value = content.querySelector("#adminTokenInput")?.value.trim();
   if (!value) return;
   localStorage.setItem("lumaAdminToken", value);
+  localStorage.removeItem("lumaAdminAccessToken");
   loadCloudOverview();
 }
 
 function clearAdminTokenFromSettings() {
   localStorage.removeItem("lumaAdminToken");
+  localStorage.removeItem("lumaAdminAccessToken");
   loadCloudOverview();
 }
 

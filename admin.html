@@ -4,9 +4,26 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>V&M AI Websites Admin</title>
-    <link rel="stylesheet" href="admin.css?v=6">
+    <link rel="stylesheet" href="admin.css?v=7">
   </head>
   <body>
+    <section id="adminLoginScreen" class="admin-login-screen hidden">
+      <form id="adminLoginForm" class="admin-login-card">
+        <div class="brand-mark">AI</div>
+        <h1>Acceso admin</h1>
+        <p>Entra con tu usuario autorizado de Supabase para manejar clientes, sitios y leads.</p>
+        <label>Email
+          <input name="email" type="email" autocomplete="email" required>
+        </label>
+        <label>Password
+          <input name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="primary-button" type="submit">Entrar</button>
+        <span id="adminLoginStatus" class="login-status"></span>
+        <button id="useTokenFallbackButton" class="secondary-link" type="button">Usar token tecnico</button>
+      </form>
+    </section>
+
     <main class="admin-shell">
       <aside class="sidebar">
         <div class="brand">
@@ -38,6 +55,7 @@
           <div class="topbar-actions">
             <select id="storeFilter" aria-label="Filtrar tienda"></select>
             <a class="secondary-link" href="/start/">Vista cliente</a>
+            <button id="adminLogoutButton" class="secondary-link" type="button">Salir</button>
             <button id="newStoreButton" type="button">Crear tienda con AI</button>
           </div>
         </header>
@@ -55,6 +73,6 @@
     </template>
 
     <script src="luma-config.js?v=1"></script>
-    <script src="admin.js?v=13"></script>
+    <script src="admin.js?v=14"></script>
   </body>
 </html>
