@@ -204,6 +204,105 @@ a {
   background: rgba(255, 255, 255, 0.16);
 }
 
+.btn-secondary.dark {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: var(--white);
+}
+
+.ai-product-section {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.ai-product-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+  gap: 32px;
+  align-items: stretch;
+  padding: clamp(28px, 5vw, 44px);
+  border: 1px solid #dbeafe;
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at top left, rgba(20, 184, 166, 0.14), transparent 28%),
+    linear-gradient(135deg, #ffffff 0%, #eef6ff 100%);
+  box-shadow: var(--shadow);
+}
+
+.ai-product-copy h2 {
+  margin: 0;
+  max-width: 760px;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.055em;
+}
+
+.ai-product-copy p {
+  max-width: 720px;
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 1.06rem;
+}
+
+.ai-product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.ai-product-flow {
+  display: grid;
+  gap: 14px;
+}
+
+.ai-flow-card {
+  padding: 20px;
+  border: 1px solid #dbeafe;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.ai-flow-card.active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: var(--white);
+}
+
+.ai-flow-card span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.ai-flow-card.active span {
+  background: rgba(20, 184, 166, 0.18);
+  color: #6ee7d8;
+}
+
+.ai-flow-card strong {
+  display: block;
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.ai-flow-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.ai-flow-card.active p {
+  color: #c9d4e5;
+}
+
 .portal-activation-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2699,6 +2798,10 @@ body[data-portal-role="representative"] #portalToken {
 }
 
 @media (max-width: 940px) {
+  .ai-product-panel {
+    grid-template-columns: 1fr;
+  }
+
   .portal-entry-grid {
     grid-template-columns: 1fr;
   }
@@ -2730,6 +2833,16 @@ body[data-portal-role="representative"] #portalToken {
 }
 
 @media (max-width: 620px) {
+  .ai-product-panel {
+    width: min(100% - 20px, var(--container));
+    padding: 22px;
+    border-radius: 22px;
+  }
+
+  .ai-product-actions .btn {
+    width: 100%;
+  }
+
   .portal-access-row {
     flex-direction: column;
   }
