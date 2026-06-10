@@ -533,6 +533,7 @@ function render() {
   content.querySelectorAll("[data-lead-note]").forEach((button) => {
     button.addEventListener("click", () => editLeadNote(button.dataset.leadNote));
   });
+  content.querySelector("#businessEditForm")?.addEventListener("submit", saveBusinessFromDetail);
   content.querySelector("#domainForm")?.addEventListener("submit", saveDomainFromForm);
   content.querySelector("#domainSearchForm")?.addEventListener("submit", searchDomainsFromForm);
   content.querySelectorAll("[data-activate-domain]").forEach((button) => {
@@ -682,12 +683,7 @@ function renderStoreDetail() {
       </article>
       <article class="data-card">
         <div class="card-header"><h2>Cliente</h2><span>${escapeHtml(business.industry || "")}</span></div>
-        <div class="settings-form">
-          <p><strong>Contacto:</strong> ${escapeHtml(store.owner)}</p>
-          <p><strong>Ubicacion:</strong> ${escapeHtml(business.location || "")}</p>
-          <p><strong>Idioma:</strong> ${escapeHtml(business.selected_language || "")}</p>
-          <p><strong>Tono:</strong> ${escapeHtml(business.preferred_tone || "")}</p>
-        </div>
+        ${businessEditForm(business, store)}
       </article>
     </section>
 
@@ -1037,6 +1033,49 @@ async function editLeadNote(leadId) {
   }
 }
 
+async function saveBusinessFromDetail(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const businessId = form.dataset.businessId;
+  if (!businessId) return;
+  const contactInfo = {
+    name: form.elements.contactName.value.trim(),
+    email: form.elements.contactEmail.value.trim(),
+    phone: form.elements.contactPhone.value.trim(),
+  };
+  const payload = {
+    businessName: form.elements.businessName.value.trim(),
+    businessDescription: form.elements.businessDescription.value.trim(),
+    industry: form.elements.industry.value.trim(),
+    location: form.elements.location.value.trim(),
+    preferredTone: form.elements.preferredTone.value.trim(),
+    billingEmail: form.elements.billingEmail.value.trim(),
+    planCode: form.elements.planCode.value,
+    tenantStatus: form.elements.tenantStatus.value,
+    internalNotes: form.elements.internalNotes.value.trim(),
+    contactInfo,
+  };
+  try {
+    const response = await fetch(apiUrl(`/api/admin/businesses/${encodeURIComponent(businessId)}`), {
+      method: "PATCH",
+      headers: adminHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify(payload),
+    });
+    if (response.status === 401) {
+      showAdminLogin("Inicia sesion para editar clientes.");
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    await loadCloudOverview();
+    selectedBusinessId = businessId;
+    currentView = "storeDetail";
+    setActiveNav("stores");
+    render();
+  } catch (error) {
+    window.alert(`No se pudo guardar el cliente: ${shortMessage(error)}`);
+  }
+}
+
 async function publishSiteFromAdmin(siteId) {
   if (!siteId) return;
   try {
@@ -1116,6 +1155,58 @@ function ordersTable(rows) {
       })
       .join("")}</tbody>
   </table>`;
+}
+
+function businessEditForm(business, store) {
+  const contact = business.contact_info || {};
+  const metadata = business.metadata || {};
+  const plan = business.plan_code || store.plan || "starter";
+  const tenantStatus = business.tenant_status || "active";
+  return `<form id="businessEditForm" class="settings-form" data-business-id="${escapeAttribute(store.id)}">
+    <label>Nombre del negocio
+      <input name="businessName" value="${escapeAttribute(business.business_name || store.name)}" required>
+    </label>
+    <label>Descripcion
+      <textarea name="businessDescription" rows="3">${escapeHtml(business.business_description || "")}</textarea>
+    </label>
+    <div class="form-grid-2">
+      <label>Industria
+        <input name="industry" value="${escapeAttribute(business.industry || "")}">
+      </label>
+      <label>Ubicacion
+        <input name="location" value="${escapeAttribute(business.location || "")}">
+      </label>
+      <label>Plan
+        <select name="planCode">
+          ${["starter", "business", "pro"].map((item) => `<option value="${item}" ${item === plan ? "selected" : ""}>${item}</option>`).join("")}
+        </select>
+      </label>
+      <label>Estado
+        <select name="tenantStatus">
+          ${["trial", "active", "past_due", "suspended", "cancelled"].map((item) => `<option value="${item}" ${item === tenantStatus ? "selected" : ""}>${item}</option>`).join("")}
+        </select>
+      </label>
+      <label>Contacto
+        <input name="contactName" value="${escapeAttribute(contact.name || store.owner || "")}">
+      </label>
+      <label>Email contacto
+        <input name="contactEmail" type="email" value="${escapeAttribute(contact.email || "")}">
+      </label>
+      <label>Telefono
+        <input name="contactPhone" value="${escapeAttribute(contact.phone || contact.whatsapp || "")}">
+      </label>
+      <label>Email facturacion
+        <input name="billingEmail" type="email" value="${escapeAttribute(business.billing_email || contact.email || "")}">
+      </label>
+    </div>
+    <label>Tono/estilo
+      <input name="preferredTone" value="${escapeAttribute(business.preferred_tone || "")}">
+    </label>
+    <label>Notas internas
+      <textarea name="internalNotes" rows="3">${escapeHtml(metadata.internal_notes || "")}</textarea>
+    </label>
+    <button class="primary-button" type="submit">Guardar cliente</button>
+  </form>`;
 }
 
 function storesTable(rows) {
