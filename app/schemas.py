@@ -392,3 +392,29 @@ class LeadMutationResponse(BaseModel):
     id: str
     storage_status: str
     lead: dict
+
+
+class BusinessUpdatePayload(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    business_name: str | None = Field(default=None, alias="businessName", max_length=180)
+    business_description: str | None = Field(default=None, alias="businessDescription", max_length=3000)
+    industry: str | None = Field(default=None, max_length=180)
+    location: str | None = Field(default=None, max_length=180)
+    target_audience: str | None = Field(default=None, alias="targetAudience", max_length=800)
+    preferred_tone: str | None = Field(default=None, alias="preferredTone", max_length=240)
+    plan_code: str | None = Field(default=None, alias="planCode", pattern="^(starter|business|pro)$")
+    tenant_status: str | None = Field(
+        default=None,
+        alias="tenantStatus",
+        pattern="^(trial|active|past_due|suspended|cancelled)$",
+    )
+    billing_email: str | None = Field(default=None, alias="billingEmail", max_length=240)
+    internal_notes: str | None = Field(default=None, alias="internalNotes", max_length=4000)
+    contact_info: dict[str, str] | None = Field(default=None, alias="contactInfo")
+
+
+class BusinessMutationResponse(BaseModel):
+    id: str
+    storage_status: str
+    business: dict

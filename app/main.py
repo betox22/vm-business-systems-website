@@ -16,6 +16,8 @@ from .schemas import (
     AdminLoginResponse,
     AssetUploadPayload,
     AssetUploadResponse,
+    BusinessMutationResponse,
+    BusinessUpdatePayload,
     CustomerOut,
     AiWebsiteBuilderRequest,
     AiWebsiteBuilderResponse,
@@ -60,6 +62,7 @@ from .supabase_store import (
     publish_site_with_default_domain,
     store_ai_website_generation,
     update_lead,
+    update_business,
     update_site_schema,
     upsert_domain,
 )
@@ -456,6 +459,39 @@ def update_admin_lead(lead_id: str, payload: LeadUpdatePayload) -> LeadMutationR
             detail=str(error),
         ) from error
     return LeadMutationResponse(id=lead["id"], storage_status="stored", lead=lead)
+
+
+@app.patch("/api/admin/businesses/{business_id}", response_model=BusinessMutationResponse, dependencies=[Depends(require_admin)])
+def update_admin_business(business_id: str, payload: BusinessUpdatePayload) -> BusinessMutationResponse:
+    metadata = None
+    if payload.internal_notes is not None:
+        metadata = {"internal_notes": payload.internal_notes}
+    data = {
+        "business_name": payload.business_name,
+        "business_description": payload.business_description,
+        "industry": payload.industry,
+        "location": payload.location,
+        "target_audience": payload.target_audience,
+        "preferred_tone": payload.preferred_tone,
+        "plan_code": payload.plan_code,
+        "tenant_status": payload.tenant_status,
+        "billing_email": payload.billing_email,
+        "contact_info": payload.contact_info,
+        "metadata": metadata,
+    }
+    try:
+        business = update_business(business_id, data)
+    except SupabaseNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(error),
+        ) from error
+    return BusinessMutationResponse(id=business["id"], storage_status="stored", business=business)
 
 
 @app.post("/api/admin/assets/upload", response_model=AssetUploadResponse, dependencies=[Depends(require_admin)])

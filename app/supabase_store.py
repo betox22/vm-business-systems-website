@@ -476,6 +476,12 @@ def update_lead(lead_id: str, *, status: str | None = None, internal_notes: str 
     return _update("leads", lead_id, payload)
 
 
+def update_business(business_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    data = {key: value for key, value in payload.items() if value is not None}
+    data["updated_at"] = _now_iso()
+    return _update("businesses", business_id, data)
+
+
 def normalize_domain(value: str) -> str:
     domain = (value or "").strip().lower()
     domain = re.sub(r"^https?://", "", domain)
