@@ -211,6 +211,44 @@ def publish_site(
     return updated
 
 
+def update_site_admin(site_id: str, *, name: str | None = None, status: str | None = None) -> dict[str, Any]:
+    payload: dict[str, Any] = {"updated_at": _now_iso()}
+    if name is not None:
+        payload["name"] = name
+    if status is not None:
+        payload["status"] = status
+        if status == "published":
+            payload["published_at"] = _now_iso()
+    return _update("sites", site_id, payload)
+
+
+def duplicate_site(site_id: str) -> dict[str, Any]:
+    rows = _select(
+        "sites",
+        f"id=eq.{quote(site_id)}&select=*&limit=1",
+    )
+    if not rows:
+        raise RuntimeError("Site not found.")
+    source = rows[0]
+    duplicate = _insert(
+        "sites",
+        {
+            "business_id": source["business_id"],
+            "client_request_id": source.get("client_request_id"),
+            "client_request_ref": source.get("client_request_ref") or "",
+            "name": f"{source.get('name') or 'Site'} copy",
+            "status": "draft",
+            "selected_language": source.get("selected_language") or "en",
+            "schema": source.get("schema") or {},
+            "updated_at": _now_iso(),
+        },
+    )
+    _copy_site_pages(site_id, duplicate["id"])
+    _copy_site_concepts(site_id, duplicate["id"])
+    _copy_catalog_items(site_id, duplicate["id"], source["business_id"])
+    return duplicate
+
+
 def publish_site_with_default_domain(
     site_id: str,
     schema: WebsiteSchema | None = None,
@@ -225,6 +263,33 @@ def publish_site_with_default_domain(
         "domain": domain,
         "final_url": f"https://{domain['domain']}" if domain else "",
     }
+
+
+def _copy_site_pages(source_site_id: str, target_site_id: str) -> None:
+    pages = _select(
+        "site_pages",
+        f"site_id=eq.{quote(source_site_id)}&select=page_key,title,slug,sort_order,schema",
+    )
+    for page in pages:
+        _insert("site_pages", {**page, "site_id": target_site_id})
+
+
+def _copy_site_concepts(source_site_id: str, target_site_id: str) -> None:
+    concepts = _select(
+        "site_concepts",
+        f"site_id=eq.{quote(source_site_id)}&select=concept_key,name,description,theme,layout_config,logo_style,background_style,sort_order,is_selected",
+    )
+    for concept in concepts:
+        _insert("site_concepts", {**concept, "site_id": target_site_id})
+
+
+def _copy_catalog_items(source_site_id: str, target_site_id: str, business_id: str) -> None:
+    items = _select(
+        "catalog_items",
+        f"site_id=eq.{quote(source_site_id)}&select=name,description,price_type,price_value,price_label,image_url,button_label,is_active,is_featured,sort_order,metadata",
+    )
+    for item in items:
+        _insert("catalog_items", {**item, "site_id": target_site_id, "business_id": business_id})
 
 
 def get_active_domain_for_site(site_id: str, business_id: str | None = None) -> dict[str, Any] | None:

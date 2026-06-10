@@ -418,3 +418,14 @@ class BusinessMutationResponse(BaseModel):
     id: str
     storage_status: str
     business: dict
+
+
+class SiteAdminUpdatePayload(BaseModel):
+    name: str | None = Field(default=None, max_length=180)
+    status: str | None = Field(default=None, pattern="^(draft|published|archived|disabled)$")
+
+
+class SiteAdminMutationResponse(BaseModel):
+    id: str
+    storage_status: str
+    site: dict

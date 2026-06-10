@@ -40,6 +40,8 @@ from .schemas import (
     PublishSiteRequest,
     SaveSiteSchemaRequest,
     SiteMutationResponse,
+    SiteAdminMutationResponse,
+    SiteAdminUpdatePayload,
     StorePageOut,
     StoreDesign,
     StoreDesignRequest,
@@ -54,6 +56,7 @@ from .supabase_store import (
     activate_domain,
     create_public_lead,
     create_client_request,
+    duplicate_site,
     get_admin_overview,
     get_public_site,
     get_public_site_by_host,
@@ -63,6 +66,7 @@ from .supabase_store import (
     store_ai_website_generation,
     update_lead,
     update_business,
+    update_site_admin,
     update_site_schema,
     upsert_domain,
 )
@@ -492,6 +496,40 @@ def update_admin_business(business_id: str, payload: BusinessUpdatePayload) -> B
             detail=str(error),
         ) from error
     return BusinessMutationResponse(id=business["id"], storage_status="stored", business=business)
+
+
+@app.patch("/api/admin/sites/{site_id}", response_model=SiteAdminMutationResponse, dependencies=[Depends(require_admin)])
+def update_admin_site(site_id: str, payload: SiteAdminUpdatePayload) -> SiteAdminMutationResponse:
+    try:
+        site = update_site_admin(site_id, name=payload.name, status=payload.status)
+    except SupabaseNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(error),
+        ) from error
+    return SiteAdminMutationResponse(id=site["id"], storage_status="stored", site=site)
+
+
+@app.post("/api/admin/sites/{site_id}/duplicate", response_model=SiteAdminMutationResponse, dependencies=[Depends(require_admin)])
+def duplicate_admin_site(site_id: str) -> SiteAdminMutationResponse:
+    try:
+        site = duplicate_site(site_id)
+    except SupabaseNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(error),
+        ) from error
+    return SiteAdminMutationResponse(id=site["id"], storage_status="stored", site=site)
 
 
 @app.post("/api/admin/assets/upload", response_model=AssetUploadResponse, dependencies=[Depends(require_admin)])
