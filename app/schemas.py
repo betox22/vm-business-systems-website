@@ -376,3 +376,17 @@ class PublicLeadPayload(BaseModel):
 class PublicLeadResponse(BaseModel):
     id: str | None = None
     storage_status: str
+
+
+class LeadUpdatePayload(BaseModel):
+    status: str | None = Field(
+        default=None,
+        pattern="^(new|contacted|qualified|won|lost|archived|pending_payment|paid|processing|shipped|delivered|cancelled)$",
+    )
+    internal_notes: str | None = Field(default=None, alias="internalNotes", max_length=4000)
+
+
+class LeadMutationResponse(BaseModel):
+    id: str
+    storage_status: str
+    lead: dict

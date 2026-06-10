@@ -29,6 +29,8 @@ from .schemas import (
     DesignConfigPayload,
     IntakeAssistantRequest,
     IntakeAssistantResponse,
+    LeadMutationResponse,
+    LeadUpdatePayload,
     OrderOut,
     ProductOut,
     PublicLeadPayload,
@@ -57,6 +59,7 @@ from .supabase_store import (
     publish_site,
     publish_site_with_default_domain,
     store_ai_website_generation,
+    update_lead,
     update_site_schema,
     upsert_domain,
 )
@@ -432,6 +435,27 @@ def mark_domain_active(domain_id: str) -> dict:
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(error),
         ) from error
+
+
+@app.patch("/api/admin/leads/{lead_id}", response_model=LeadMutationResponse, dependencies=[Depends(require_admin)])
+def update_admin_lead(lead_id: str, payload: LeadUpdatePayload) -> LeadMutationResponse:
+    try:
+        lead = update_lead(
+            lead_id,
+            status=payload.status,
+            internal_notes=payload.internal_notes,
+        )
+    except SupabaseNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(error),
+        ) from error
+    return LeadMutationResponse(id=lead["id"], storage_status="stored", lead=lead)
 
 
 @app.post("/api/admin/assets/upload", response_model=AssetUploadResponse, dependencies=[Depends(require_admin)])

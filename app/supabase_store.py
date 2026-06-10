@@ -463,6 +463,19 @@ def create_public_lead(payload: PublicLeadPayload) -> dict[str, Any]:
     )
 
 
+def update_lead(lead_id: str, *, status: str | None = None, internal_notes: str | None = None) -> dict[str, Any]:
+    payload: dict[str, Any] = {"updated_at": _now_iso()}
+    if status is not None:
+        payload["status"] = status
+        if status in {"contacted", "qualified"}:
+            payload["contacted_at"] = _now_iso()
+        if status in {"won", "lost", "archived", "cancelled", "delivered"}:
+            payload["closed_at"] = _now_iso()
+    if internal_notes is not None:
+        payload["internal_notes"] = internal_notes
+    return _update("leads", lead_id, payload)
+
+
 def normalize_domain(value: str) -> str:
     domain = (value or "").strip().lower()
     domain = re.sub(r"^https?://", "", domain)
