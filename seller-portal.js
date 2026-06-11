@@ -83,8 +83,9 @@ function shortError(error) {
 
 function renderShell() {
   const business = state.overview.business || {};
+  const member = state.overview.member || {};
   storeName.textContent = business.business_name || "Mi tienda";
-  storeMeta.textContent = [business.industry, business.location].filter(Boolean).join(" · ") || "Panel de cliente";
+  storeMeta.textContent = `${roleLabel(member.role || "owner")} · ${[business.industry, business.location].filter(Boolean).join(" · ") || "Panel de cliente"}`;
   navButtons.forEach((button) => button.classList.toggle("active", button.dataset.sellerView === state.currentView));
 
   const titles = {
@@ -120,6 +121,22 @@ function selectedItem() {
   return (state.overview.catalog_items || []).find((item) => item.id === state.selectedItemId) || null;
 }
 
+function can(permission) {
+  return (state.overview?.permissions || []).includes(permission);
+}
+
+function roleLabel(role) {
+  const labels = {
+    owner: "Dueno",
+    manager: "Manager",
+    catalog_manager: "Catalogo",
+    seller: "Vendedor",
+    fulfillment: "Despacho",
+    viewer: "Lectura",
+  };
+  return labels[role] || "Cliente";
+}
+
 function renderCatalog() {
   const all = state.overview.catalog_items || [];
   const active = all.filter((item) => item.is_active !== false);
@@ -137,7 +154,7 @@ function renderCatalog() {
       <article class="panel">
         <div class="panel-header">
           <h2>Inventario</h2>
-          <button class="primary-button" data-new-item type="button">Nuevo producto</button>
+          ${can("catalog:create") ? `<button class="primary-button" data-new-item type="button">Nuevo producto</button>` : ""}
         </div>
         <div class="catalog-toolbar">
           <input id="catalogSearch" placeholder="Buscar producto, SKU o categoria" value="${escapeAttribute(state.query)}">
@@ -150,7 +167,7 @@ function renderCatalog() {
         </div>
         ${catalogTable(catalogItems())}
       </article>
-      ${renderEditor(selectedItem())}
+      ${can("catalog:update") || can("catalog:create") ? renderEditor(selectedItem()) : renderReadOnlyPanel()}
     </section>
   `;
 }
@@ -185,7 +202,7 @@ function catalogTable(rows) {
             <span class="status-pill ${item.is_active === false ? "off" : ""}">${item.is_active === false ? "Inactivo" : "Activo"}</span>
             ${item.is_featured ? `<span class="sale-pill">Destacado</span>` : ""}
           </td>
-          <td><button class="text-button" data-edit-item="${escapeAttribute(item.id)}" type="button">Editar</button></td>
+          <td>${can("catalog:update") ? `<button class="text-button" data-edit-item="${escapeAttribute(item.id)}" type="button">Editar</button>` : `<span class="muted">Solo lectura</span>`}</td>
         </tr>`;
       }).join("")}
     </tbody>
@@ -194,10 +211,15 @@ function catalogTable(rows) {
 
 function renderEditor(item) {
   const metadata = item?.metadata || {};
+  const canCreate = can("catalog:create");
+  const canUpdate = can("catalog:update");
+  const canDelete = can("catalog:delete");
+  const canUpload = can("assets:upload");
+  const canSave = item ? canUpdate : canCreate;
   return `<aside class="editor-card">
     <div class="panel-header">
       <h2>${item ? "Editar producto" : "Nuevo producto"}</h2>
-      ${item ? `<button class="text-button danger" data-delete-item="${escapeAttribute(item.id)}" type="button">Eliminar</button>` : ""}
+      ${item && canDelete ? `<button class="text-button danger" data-delete-item="${escapeAttribute(item.id)}" type="button">Eliminar</button>` : ""}
     </div>
     <form id="catalogItemForm" class="editor-form">
       <label>Nombre
@@ -245,9 +267,9 @@ function renderEditor(item) {
           <input name="sortOrder" type="number" step="1" value="${escapeAttribute(item?.sort_order ?? 0)}">
         </label>
       </div>
-      <label>Imagen
+      ${canUpload ? `<label>Imagen
         <input name="imageFile" type="file" accept="image/*">
-      </label>
+      </label>` : ""}
       <label>URL de imagen
         <input name="imageUrl" value="${escapeAttribute(item?.image_url || "")}">
       </label>
@@ -256,10 +278,19 @@ function renderEditor(item) {
         <label class="switch-row">Destacado <input name="isFeatured" type="checkbox" ${item?.is_featured ? "checked" : ""}></label>
       </div>
       <div class="inline-actions">
-        <button class="primary-button" type="submit">${state.saving ? "Guardando..." : "Guardar"}</button>
+        ${canSave ? `<button class="primary-button" type="submit">${state.saving ? "Guardando..." : "Guardar"}</button>` : ""}
         <button class="secondary-button" data-clear-editor type="button">Limpiar</button>
       </div>
     </form>
+  </aside>`;
+}
+
+function renderReadOnlyPanel() {
+  return `<aside class="editor-card">
+    <div class="panel-header"><h2>Acceso limitado</h2></div>
+    <div class="panel-body">
+      <p>Tu rol puede revisar el catalogo, pero no crear ni editar productos.</p>
+    </div>
   </aside>`;
 }
 
@@ -284,11 +315,12 @@ function renderSettings() {
   const business = state.overview.business || {};
   const domains = state.overview.domains || [];
   const sites = state.overview.sites || [];
+  const member = state.overview.member || {};
   return `<section class="metric-grid">
     ${metric("Sitios", sites.length)}
     ${metric("Dominios", domains.length)}
     ${metric("Plan", business.plan_code || "starter")}
-    ${metric("Estado", business.tenant_status || "active")}
+    ${metric("Rol", roleLabel(member.role || "owner"))}
   </section>
   <section class="panel">
     <div class="panel-header"><h2>Informacion del negocio</h2><span class="muted">Solo lectura por ahora</span></div>
@@ -353,7 +385,7 @@ async function saveCatalogItem(event) {
 }
 
 async function payloadFromForm(form) {
-  const imageFile = form.elements.imageFile.files?.[0];
+  const imageFile = form.elements.imageFile?.files?.[0];
   let imageUrl = form.elements.imageUrl.value.trim();
   if (imageFile) {
     imageUrl = await uploadImage(imageFile);
