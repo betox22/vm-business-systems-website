@@ -6,7 +6,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import ProxyHandler, Request, build_opener
 
-from .auth_store import AuthError, create_supabase_auth_user, existing_member_user_id
+from .auth_store import AuthError, apply_member_role_overrides, create_supabase_auth_user, existing_member_user_id
 from .config import get_settings
 from .schemas import (
     AiWebsiteBuilderRequest,
@@ -25,6 +25,9 @@ from .schemas import (
 
 class SupabaseNotConfiguredError(RuntimeError):
     pass
+
+
+DB_COMPATIBLE_MEMBER_ROLES = {"owner", "admin", "staff", "viewer"}
 
 
 _NO_PROXY_OPENER = build_opener(ProxyHandler({}))
@@ -501,9 +504,11 @@ def get_admin_overview() -> dict[str, Any]:
             "subscriptions",
             "select=*&order=created_at.desc&limit=500",
         ),
-        "business_members": _select_optional(
-            "business_members",
-            "select=*&order=created_at.desc&limit=1000",
+        "business_members": apply_member_role_overrides(
+            _select_optional(
+                "business_members",
+                "select=*&order=created_at.desc&limit=1000",
+            )
         ),
         "leads": _select(
             "leads",
@@ -513,9 +518,11 @@ def get_admin_overview() -> dict[str, Any]:
 
 
 def list_business_members(business_id: str) -> list[dict[str, Any]]:
-    return _select_optional(
-        "business_members",
-        f"business_id=eq.{quote(business_id)}&select=*&order=created_at.desc&limit=100",
+    return apply_member_role_overrides(
+        _select_optional(
+            "business_members",
+            f"business_id=eq.{quote(business_id)}&select=*&order=created_at.desc&limit=100",
+        )
     )
 
 
@@ -539,19 +546,54 @@ def upsert_business_member(business_id: str, payload: BusinessMemberPayload) -> 
         "business_id": business_id,
         "email": email,
         "user_id": user_id,
-        "role": payload.role,
+        "role": _db_compatible_member_role(payload.role),
         "status": payload.status,
         "updated_at": _now_iso(),
     }
     if existing:
-        return _update("business_members", existing[0]["id"], data)
-    return _insert("business_members", data)
+        member = _update("business_members", existing[0]["id"], data)
+    else:
+        member = _insert("business_members", data)
+    _store_member_role_override(member, payload.role)
+    return apply_member_role_overrides([member])[0]
 
 
 def update_business_member(member_id: str, payload: BusinessMemberUpdatePayload) -> dict[str, Any]:
-    data = {key: value for key, value in payload.model_dump().items() if value is not None}
+    requested = payload.model_dump()
+    requested_role = requested.get("role")
+    data = {key: value for key, value in requested.items() if value is not None and key != "role"}
+    if requested_role:
+        data["role"] = _db_compatible_member_role(requested_role)
     data["updated_at"] = _now_iso()
-    return _update("business_members", member_id, data)
+    member = _update("business_members", member_id, data)
+    if requested_role:
+        _store_member_role_override(member, requested_role)
+    return apply_member_role_overrides([member])[0]
+
+
+def _db_compatible_member_role(role: str) -> str:
+    return role if role in DB_COMPATIBLE_MEMBER_ROLES else "viewer"
+
+
+def _store_member_role_override(member: dict[str, Any], role: str) -> None:
+    if not member.get("id") or role in DB_COMPATIBLE_MEMBER_ROLES:
+        return
+    _insert(
+        "audit_logs",
+        {
+            "business_id": member.get("business_id"),
+            "actor_user_id": member.get("user_id"),
+            "actor_email": member.get("email") or "",
+            "action": "business_member_role_set",
+            "entity_type": "business_member",
+            "entity_id": member["id"],
+            "metadata": {
+                "role": role,
+                "storage_role": member.get("role") or "viewer",
+                "source": "admin_member_access",
+            },
+        },
+    )
 
 
 def create_domain_order(payload: DomainOrderPayload) -> dict[str, Any]:

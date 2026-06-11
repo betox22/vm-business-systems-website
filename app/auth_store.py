@@ -250,9 +250,50 @@ def select_business_members(user_id: str, email: str) -> list[dict[str, Any]]:
         },
     )
     try:
-        return _json_request(request, "Supabase member lookup failed")
+        rows = _json_request(request, "Supabase member lookup failed")
+        return apply_member_role_overrides(rows)
     except AuthError:
         return []
+
+
+def apply_member_role_overrides(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not rows:
+        return rows
+    settings = get_settings()
+    if not settings.supabase_url or not settings.supabase_service_role_key:
+        return rows
+    member_ids = {row.get("id") for row in rows if row.get("id")}
+    if not member_ids:
+        return rows
+    request = Request(
+        f"{settings.supabase_url.rstrip('/')}/rest/v1/audit_logs?"
+        "action=eq.business_member_role_set&entity_type=eq.business_member"
+        "&select=entity_id,metadata,created_at&order=created_at.desc&limit=1000",
+        method="GET",
+        headers={
+            "apikey": settings.supabase_service_role_key or "",
+            "authorization": f"Bearer {settings.supabase_service_role_key}",
+            "content-type": "application/json",
+        },
+    )
+    try:
+        logs = _json_request(request, "Supabase member role override lookup failed")
+    except AuthError:
+        return rows
+    overrides: dict[str, str] = {}
+    for log in logs:
+        entity_id = log.get("entity_id")
+        if entity_id not in member_ids or entity_id in overrides:
+            continue
+        role = (log.get("metadata") or {}).get("role")
+        if role:
+            overrides[entity_id] = role
+    for row in rows:
+        override = overrides.get(row.get("id"))
+        if override:
+            row["storage_role"] = row.get("role") or ""
+            row["role"] = override
+    return rows
 
 
 def existing_member_user_id(email: str) -> str:
