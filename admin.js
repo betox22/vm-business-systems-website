@@ -578,6 +578,7 @@ function publicationRows() {
       const publicUrl = site.id ? `/site.html?site_id=${encodeURIComponent(site.id)}` : "";
       const domainUrl = activeDomain ? `https://${activeDomain.domain}` : "";
       const finalUrl = domainUrl || publicUrl;
+      const sellerPortalUrl = `/client/portal/?business_id=${encodeURIComponent(store.id)}`;
       const catalogCount = cloudCatalogItems.filter((item) => item.business_id === store.id || item.site_id === site.id).length;
       const status = !site.id
         ? "Sin sitio"
@@ -593,6 +594,7 @@ function publicationRows() {
         publicUrl,
         domainUrl,
         finalUrl,
+        sellerPortalUrl,
         catalogCount,
         domainCount: storeDomains.length,
         activeDomain,
@@ -640,6 +642,7 @@ function publicationCard(row) {
     ${needsWildcard ? `<p class="notice-line">Para abrir por subdominio falta activar el wildcard en Cloudflare.</p>` : ""}
     <div class="card-actions">
       <button class="text-button" data-view-store="${escapeAttribute(row.store.id)}" type="button">Detalle</button>
+      <a class="text-button" href="${escapeAttribute(row.sellerPortalUrl)}" target="_blank" rel="noreferrer">Panel cliente</a>
       ${row.publicUrl ? `<a class="text-button" href="${escapeAttribute(row.publicUrl)}" target="_blank" rel="noreferrer">Preview</a>` : ""}
       ${row.site.id ? `<button class="text-button" data-publish-site="${escapeAttribute(row.site.id)}" type="button">Publicar</button>` : ""}
       ${row.finalUrl ? `<button class="text-button" data-copy-url="${escapeAttribute(row.finalUrl)}" type="button">Copiar</button>` : ""}
@@ -709,6 +712,7 @@ function renderStores() {
           ${row?.finalUrl ? `<span class="store-link">${escapeHtml(row.finalUrl)}</span>` : ""}
           <div class="card-actions">
             <button class="text-button" data-view-store="${escapeAttribute(store.id)}" type="button">Ver detalle</button>
+            <a class="text-button" href="/client/portal/?business_id=${escapeAttribute(store.id)}" target="_blank" rel="noreferrer">Panel cliente</a>
             ${row?.publicUrl ? `<a class="text-button" href="${escapeAttribute(row.publicUrl)}" target="_blank" rel="noreferrer">Preview</a>` : ""}
             ${store.siteId ? `<button class="text-button" data-publish-site="${escapeAttribute(store.siteId)}" type="button">Publicar</button>` : ""}
             ${row?.finalUrl ? `<button class="text-button" data-copy-url="${escapeAttribute(row.finalUrl)}" type="button">Copiar link</button>` : ""}
@@ -749,6 +753,7 @@ function renderStoreDetail() {
       </div>
       <div class="detail-actions">
         ${site.id ? `<button class="primary-button" data-publish-site="${escapeAttribute(site.id)}" type="button">Publicar ahora</button>` : ""}
+        <a class="secondary-link" href="/client/portal/?business_id=${escapeAttribute(store.id)}" target="_blank" rel="noreferrer">Panel cliente</a>
         ${finalUrl ? `<button class="secondary-link" data-copy-url="${escapeAttribute(finalUrl)}" type="button">Copiar link final</button>` : ""}
         ${publicUrl ? `<a class="secondary-link" href="${escapeAttribute(publicUrl)}" target="_blank" rel="noreferrer">Abrir por site_id</a>` : ""}
         ${domainUrl ? `<a class="secondary-link" href="${escapeAttribute(domainUrl)}" target="_blank" rel="noreferrer">Abrir dominio</a>` : ""}

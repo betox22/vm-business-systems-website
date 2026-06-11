@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Panel de Cliente | V&M AI Websites</title>
+    <link rel="stylesheet" href="/seller-portal.css?v=2">
+  </head>
+  <body>
+    <main class="seller-shell">
+      <aside class="seller-sidebar">
+        <div class="brand">
+          <div class="brand-mark">AI</div>
+          <div>
+            <strong id="sellerStoreName">Mi tienda</strong>
+            <span id="sellerStoreMeta">Panel de vendedor</span>
+          </div>
+        </div>
+        <nav class="seller-nav" aria-label="Panel de cliente">
+          <button class="active" data-seller-view="catalog" type="button">Catalogo</button>
+          <button data-seller-view="leads" type="button">Pedidos y solicitudes</button>
+          <button data-seller-view="settings" type="button">Datos de tienda</button>
+        </nav>
+      </aside>
+
+      <section class="seller-main">
+        <header class="seller-topbar">
+          <div>
+            <h1 id="sellerTitle">Catalogo</h1>
+            <p id="sellerSubtitle">Productos, precios, stock, ofertas e imagenes.</p>
+          </div>
+          <div class="topbar-actions">
+            <a class="secondary-button" href="/start/">Crear otra pagina</a>
+            <button id="refreshButton" class="primary-button" type="button">Actualizar</button>
+          </div>
+        </header>
+
+        <section id="sellerContent" class="seller-content"></section>
+      </section>
+    </main>
+
+    <script src="/luma-config.js?v=1781138876"></script>
+    <script src="/seller-portal.js?v=2"></script>
+  </body>
+</html>
