@@ -546,7 +546,7 @@ def create_domain_order(payload: DomainOrderPayload) -> dict[str, Any]:
                 "actor_email": order_payload["owner_email"],
                 "action": "domain_order_created",
                 "entity_type": "domain_order",
-                "entity_id": normalized,
+                "entity_id": order_payload["site_id"] or order_payload["business_id"] or "",
                 "metadata": order_payload,
             },
         )
