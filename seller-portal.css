@@ -19,6 +19,7 @@
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   background: var(--bg);
   color: var(--ink);
 }
@@ -89,6 +90,7 @@ body {
 .luma-stage {
   position: relative;
   display: grid;
+  min-width: 0;
   min-height: 360px;
   place-items: center;
 }
@@ -128,6 +130,7 @@ body {
 
 .welcome-copy {
   display: grid;
+  min-width: 0;
   gap: 18px;
   color: white;
 }
@@ -150,6 +153,7 @@ body {
   font-size: clamp(34px, 5vw, 62px);
   line-height: 0.98;
   letter-spacing: 0;
+  overflow-wrap: break-word;
 }
 
 .welcome-copy p {
@@ -167,6 +171,7 @@ body {
 }
 
 .access-grid article {
+  min-width: 0;
   min-height: 104px;
   border: 1px solid rgba(180, 216, 255, 0.16);
   border-radius: 12px;
@@ -193,6 +198,7 @@ body {
 
 .seller-login-card {
   display: grid;
+  min-width: 0;
   gap: 13px;
   width: 100%;
   border: 1px solid rgba(190, 223, 255, 0.18);
@@ -235,6 +241,8 @@ body {
 }
 
 .seller-login-card input {
+  width: 100%;
+  min-width: 0;
   border-color: rgba(190, 223, 255, 0.22);
   background: rgba(3, 10, 20, 0.52);
   color: white;
@@ -690,6 +698,9 @@ th {
   .seller-welcome-card {
     grid-template-columns: 1fr;
     gap: 16px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
     min-height: auto;
     border-radius: 14px;
     padding: 16px;
@@ -712,7 +723,7 @@ th {
   }
 
   .welcome-copy h1 {
-    font-size: 34px;
+    font-size: 30px;
     line-height: 1.04;
   }
 
