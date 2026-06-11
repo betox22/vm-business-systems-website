@@ -19,6 +19,9 @@ from .schemas import (
     AssetUploadResponse,
     BusinessMutationResponse,
     BusinessUpdatePayload,
+    ClientPortalCatalogItemPayload,
+    ClientPortalCatalogMutationResponse,
+    ClientPortalOverviewResponse,
     CustomerOut,
     AiWebsiteBuilderRequest,
     AiWebsiteBuilderResponse,
@@ -55,10 +58,13 @@ from .storage_store import upload_site_asset
 from .supabase_store import (
     SupabaseNotConfiguredError,
     activate_domain,
+    create_client_catalog_item,
     create_public_lead,
     create_client_request,
+    delete_client_catalog_item,
     duplicate_site,
     get_admin_overview,
+    get_client_portal_overview,
     get_public_site,
     get_public_site_by_host,
     list_domains,
@@ -67,6 +73,7 @@ from .supabase_store import (
     store_ai_website_generation,
     update_lead,
     update_business,
+    update_client_catalog_item,
     update_site_admin,
     update_site_schema,
     upsert_domain,
@@ -665,6 +672,113 @@ def publish_site_complete(site_id: str, payload: PublishSiteRequest) -> SiteMuta
         domain=result.get("domain"),
         schema=payload.schema,
     )
+
+
+@app.get("/api/client/portal", response_model=ClientPortalOverviewResponse)
+def read_client_portal(business_id: str) -> ClientPortalOverviewResponse:
+    try:
+        overview = get_client_portal_overview(business_id)
+    except SupabaseNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        ) from error
+    return ClientPortalOverviewResponse(**overview)
+
+
+@app.post("/api/client/catalog-items", response_model=ClientPortalCatalogMutationResponse)
+def create_client_catalog_item_route(
+    business_id: str,
+    payload: ClientPortalCatalogItemPayload,
+) -> ClientPortalCatalogMutationResponse:
+    try:
+        item = create_client_catalog_item(business_id, payload)
+    except SupabaseNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        ) from error
+    return ClientPortalCatalogMutationResponse(id=item["id"], storage_status="stored", item=item)
+
+
+@app.patch("/api/client/catalog-items/{item_id}", response_model=ClientPortalCatalogMutationResponse)
+def update_client_catalog_item_route(
+    item_id: str,
+    business_id: str,
+    payload: ClientPortalCatalogItemPayload,
+) -> ClientPortalCatalogMutationResponse:
+    try:
+        item = update_client_catalog_item(business_id, item_id, payload)
+    except SupabaseNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        ) from error
+    return ClientPortalCatalogMutationResponse(id=item["id"], storage_status="stored", item=item)
+
+
+@app.delete("/api/client/catalog-items/{item_id}", response_model=ClientPortalCatalogMutationResponse)
+def delete_client_catalog_item_route(
+    item_id: str,
+    business_id: str,
+) -> ClientPortalCatalogMutationResponse:
+    try:
+        item = delete_client_catalog_item(business_id, item_id)
+    except SupabaseNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        ) from error
+    return ClientPortalCatalogMutationResponse(id=item["id"], storage_status="deleted", item=item)
+
+
+@app.post("/api/client/assets/upload", response_model=AssetUploadResponse)
+def upload_client_asset(business_id: str, payload: AssetUploadPayload) -> AssetUploadResponse:
+    if payload.business_id and payload.business_id != business_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Asset business does not match portal business.",
+        )
+    payload.business_id = business_id
+    payload.asset_type = payload.asset_type or "catalog"
+    try:
+        result = upload_site_asset(payload)
+    except SupabaseNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(error),
+        ) from error
+    return AssetUploadResponse(**result)
 
 
 @app.get("/public/sites/{site_id}")

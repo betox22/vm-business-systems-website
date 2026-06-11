@@ -11,6 +11,7 @@ from .schemas import (
     AiWebsiteBuilderRequest,
     CatalogItemInput,
     ClientRequestPayload,
+    ClientPortalCatalogItemPayload,
     DomainPayload,
     PublicLeadPayload,
     WebsiteAssetInput,
@@ -501,6 +502,63 @@ def get_admin_overview() -> dict[str, Any]:
     }
 
 
+def get_client_portal_overview(business_id: str) -> dict[str, Any]:
+    settings = get_settings()
+    if not settings.supabase_url or not settings.supabase_service_role_key:
+        raise SupabaseNotConfiguredError(
+            "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required."
+        )
+
+    business = _get_business_or_raise(business_id)
+    return {
+        "business": business,
+        "sites": _select(
+            "sites",
+            f"business_id=eq.{quote(business_id)}&select=id,business_id,name,status,selected_language,public_slug,published_at,created_at,updated_at&order=updated_at.desc&limit=50",
+        ),
+        "catalog_items": _select(
+            "catalog_items",
+            f"business_id=eq.{quote(business_id)}&select=*&order=sort_order.asc,created_at.asc&limit=1000",
+        ),
+        "leads": _select(
+            "leads",
+            f"business_id=eq.{quote(business_id)}&select=*&order=created_at.desc&limit=250",
+        ),
+        "domains": _select(
+            "domains",
+            f"business_id=eq.{quote(business_id)}&select=*&order=created_at.desc&limit=50",
+        ),
+    }
+
+
+def create_client_catalog_item(business_id: str, payload: ClientPortalCatalogItemPayload) -> dict[str, Any]:
+    _get_business_or_raise(business_id)
+    site_id = payload.site_id or _primary_site_id_for_business(business_id)
+    if not site_id:
+        raise RuntimeError("No site exists for this business yet.")
+    _ensure_site_belongs_to_business(site_id, business_id)
+    return _insert("catalog_items", _catalog_payload(business_id, site_id, payload))
+
+
+def update_client_catalog_item(
+    business_id: str,
+    item_id: str,
+    payload: ClientPortalCatalogItemPayload,
+) -> dict[str, Any]:
+    existing = _get_catalog_item_for_business(business_id, item_id)
+    site_id = payload.site_id or existing.get("site_id") or _primary_site_id_for_business(business_id)
+    if not site_id:
+        raise RuntimeError("No site exists for this business yet.")
+    _ensure_site_belongs_to_business(site_id, business_id)
+    return _update("catalog_items", item_id, _catalog_payload(business_id, site_id, payload))
+
+
+def delete_client_catalog_item(business_id: str, item_id: str) -> dict[str, Any]:
+    existing = _get_catalog_item_for_business(business_id, item_id)
+    _delete("catalog_items", "id", item_id)
+    return existing
+
+
 def create_public_lead(payload: PublicLeadPayload) -> dict[str, Any]:
     settings = get_settings()
     if not settings.supabase_url or not settings.supabase_service_role_key:
@@ -594,6 +652,77 @@ def _business_id_for_site(site_id: str) -> str | None:
         f"id=eq.{quote(site_id)}&select=business_id&limit=1",
     )
     return rows[0].get("business_id") if rows else None
+
+
+def _get_business_or_raise(business_id: str) -> dict[str, Any]:
+    rows = _select(
+        "businesses",
+        f"id=eq.{quote(business_id)}&select=*&limit=1",
+    )
+    if not rows:
+        raise RuntimeError("Business not found.")
+    return rows[0]
+
+
+def _primary_site_id_for_business(business_id: str) -> str | None:
+    rows = _select(
+        "sites",
+        f"business_id=eq.{quote(business_id)}&select=id,status,updated_at&order=published_at.desc.nullslast,updated_at.desc&limit=1",
+    )
+    return rows[0].get("id") if rows else None
+
+
+def _ensure_site_belongs_to_business(site_id: str, business_id: str) -> None:
+    rows = _select(
+        "sites",
+        f"id=eq.{quote(site_id)}&business_id=eq.{quote(business_id)}&select=id&limit=1",
+    )
+    if not rows:
+        raise RuntimeError("Site does not belong to this business.")
+
+
+def _get_catalog_item_for_business(business_id: str, item_id: str) -> dict[str, Any]:
+    rows = _select(
+        "catalog_items",
+        f"id=eq.{quote(item_id)}&business_id=eq.{quote(business_id)}&select=*&limit=1",
+    )
+    if not rows:
+        raise RuntimeError("Catalog item not found for this business.")
+    return rows[0]
+
+
+def _catalog_payload(
+    business_id: str,
+    site_id: str,
+    item: ClientPortalCatalogItemPayload,
+) -> dict[str, Any]:
+    metadata = {
+        "sku": item.sku,
+        "category": item.category,
+        "inventory_quantity": item.inventory_quantity,
+        "compare_at_price": item.compare_at_price,
+        "sale_price": item.sale_price,
+        "sale_label": item.sale_label,
+        "sale_starts_at": item.sale_starts_at,
+        "sale_ends_at": item.sale_ends_at,
+        "tags": item.tags,
+    }
+    return {
+        "business_id": business_id,
+        "site_id": site_id,
+        "name": item.name.strip(),
+        "description": item.description.strip(),
+        "price_type": item.price_type,
+        "price_value": item.price_value,
+        "price_label": item.price_label.strip(),
+        "image_url": item.image_url.strip(),
+        "button_label": item.button_label.strip() or "Comprar",
+        "is_active": item.is_active,
+        "is_featured": item.is_featured,
+        "sort_order": item.sort_order,
+        "metadata": metadata,
+        "updated_at": _now_iso(),
+    }
 
 
 def _store_asset(asset: WebsiteAssetInput, business_id: str, site_id: str) -> None:

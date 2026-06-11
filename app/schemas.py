@@ -168,6 +168,45 @@ class CatalogItemInput(BaseModel):
     sort_order: int = 0
 
 
+class ClientPortalCatalogItemPayload(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    site_id: str | None = Field(default=None, alias="siteId")
+    name: str = Field(min_length=1, max_length=180)
+    description: str = Field(default="", max_length=3000)
+    price_type: str = Field(default="fixed", alias="priceType", pattern="^(fixed|starting_at|quote_only)$")
+    price_value: float | None = Field(default=None, alias="priceValue")
+    price_label: str = Field(default="", alias="priceLabel", max_length=120)
+    image_url: str = Field(default="", alias="imageUrl", max_length=3000)
+    button_label: str = Field(default="Comprar", alias="buttonLabel", max_length=80)
+    is_active: bool = Field(default=True, alias="isActive")
+    is_featured: bool = Field(default=False, alias="isFeatured")
+    sort_order: int = Field(default=0, alias="sortOrder")
+    sku: str = Field(default="", max_length=120)
+    category: str = Field(default="", max_length=160)
+    inventory_quantity: int | None = Field(default=None, alias="inventoryQuantity")
+    compare_at_price: float | None = Field(default=None, alias="compareAtPrice")
+    sale_price: float | None = Field(default=None, alias="salePrice")
+    sale_label: str = Field(default="", alias="saleLabel", max_length=120)
+    sale_starts_at: str = Field(default="", alias="saleStartsAt", max_length=80)
+    sale_ends_at: str = Field(default="", alias="saleEndsAt", max_length=80)
+    tags: list[str] = Field(default_factory=list)
+
+
+class ClientPortalCatalogMutationResponse(BaseModel):
+    id: str
+    storage_status: str
+    item: dict
+
+
+class ClientPortalOverviewResponse(BaseModel):
+    business: dict
+    sites: list[dict] = Field(default_factory=list)
+    catalog_items: list[dict] = Field(default_factory=list)
+    leads: list[dict] = Field(default_factory=list)
+    domains: list[dict] = Field(default_factory=list)
+
+
 class ClientRequestPayload(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
