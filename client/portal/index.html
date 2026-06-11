@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Panel de Cliente | V&M AI Websites</title>
-    <link rel="stylesheet" href="/seller-portal.css?v=6">
+    <link rel="stylesheet" href="/seller-portal.css?v=7">
   </head>
   <body>
     <section id="sellerLoginScreen" class="seller-login-screen">
@@ -18,20 +18,24 @@
         </div>
         <div class="welcome-copy">
           <span class="eyebrow">Luma Client Portal</span>
-          <h1>Tu tienda ya tiene cabina de control</h1>
-          <p>Entra para manejar productos, ofertas, inventario, solicitudes y datos visibles de tu pagina publicada.</p>
+          <h1>Comienza tu pagina hablando con Luma</h1>
+          <p>Si todavia no eres cliente, empieza aqui. Luma te entrevista, recoge la informacion de tu negocio y genera una primera version editable de tu pagina o tienda.</p>
           <div class="access-grid" aria-label="Funciones del panel">
-            <article><strong>Catalogo</strong><span>Productos, fotos, precios y stock.</span></article>
-            <article><strong>Solicitudes</strong><span>Leads y pedidos desde tu web.</span></article>
-            <article><strong>Publicacion</strong><span>Dominio, estado y datos de tienda.</span></article>
+            <article><strong>Habla con IA</strong><span>Describe tu negocio en tus palabras.</span></article>
+            <article><strong>Genera el borrador</strong><span>Luma crea estructura, textos y estilo.</span></article>
+            <article><strong>Luego entra al panel</strong><span>Cuando la pagina este lista, manejas catalogo y pedidos.</span></article>
+          </div>
+          <div class="welcome-actions">
+            <a class="primary-button" href="/client/setup/">Crear mi pagina con Luma</a>
+            <button id="existingAccessButton" class="secondary-button dark" type="button">Ya tengo acceso</button>
           </div>
         </div>
-        <form id="sellerLoginForm" class="seller-login-card">
+        <form id="sellerLoginForm" class="seller-login-card login-collapsed" aria-hidden="true">
           <div class="login-card-head">
             <div class="brand-mark">AI</div>
             <div>
-              <strong>Acceso seguro</strong>
-              <span>Usa tu invitacion o credenciales asignadas.</span>
+              <strong>Panel para clientes existentes</strong>
+              <span>Usa tu invitacion o credenciales asignadas cuando tu pagina ya exista.</span>
             </div>
           </div>
           <label>Email
@@ -80,6 +84,6 @@
     </main>
 
     <script src="/luma-config.js?v=1781138876"></script>
-    <script src="/seller-portal.js?v=6"></script>
+    <script src="/seller-portal.js?v=7"></script>
   </body>
 </html>

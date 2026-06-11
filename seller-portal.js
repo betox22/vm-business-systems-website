@@ -21,6 +21,7 @@ const loginScreen = document.querySelector("#sellerLoginScreen");
 const loginForm = document.querySelector("#sellerLoginForm");
 const loginStatus = document.querySelector("#sellerLoginStatus");
 const demoAccessButton = document.querySelector("#sellerDemoAccessButton");
+const existingAccessButton = document.querySelector("#existingAccessButton");
 const logoutButton = document.querySelector("#sellerLogoutButton");
 
 captureAuthRedirect();
@@ -101,7 +102,7 @@ async function loadPortal() {
     });
     if (response.status === 401 || response.status === 403) {
       clearSession();
-      showLogin("Tu sesion no tiene acceso a esta tienda.");
+      showLogin("Tu sesion no tiene acceso a esta tienda.", true);
       return;
     }
     if (!response.ok) throw new Error(await response.text());
@@ -112,9 +113,11 @@ async function loadPortal() {
   }
 }
 
-function showLogin(message = "") {
+function showLogin(message = "", revealForm = false) {
   loginScreen.classList.remove("hidden");
   loginStatus.textContent = message;
+  loginForm.classList.toggle("login-collapsed", !revealForm);
+  loginForm.setAttribute("aria-hidden", revealForm ? "false" : "true");
   content.innerHTML = "";
 }
 
@@ -584,6 +587,11 @@ navButtons.forEach((button) => {
 });
 
 loginForm.addEventListener("submit", loginSeller);
+existingAccessButton?.addEventListener("click", () => {
+  loginForm.classList.remove("login-collapsed");
+  loginForm.setAttribute("aria-hidden", "false");
+  loginForm.elements.email?.focus();
+});
 demoAccessButton?.addEventListener("click", () => {
   state.demoAccess = true;
   const url = new URL(window.location.href);
@@ -594,7 +602,7 @@ demoAccessButton?.addEventListener("click", () => {
 logoutButton.addEventListener("click", () => {
   clearSession();
   state.demoAccess = false;
-  showLogin("Sesion cerrada.");
+  showLogin("Sesion cerrada.", true);
 });
 document.querySelector("#refreshButton").addEventListener("click", loadPortal);
 
