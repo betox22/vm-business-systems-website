@@ -584,7 +584,7 @@ navButtons.forEach((button) => {
 });
 
 loginForm.addEventListener("submit", loginSeller);
-demoAccessButton.addEventListener("click", () => {
+demoAccessButton?.addEventListener("click", () => {
   state.demoAccess = true;
   const url = new URL(window.location.href);
   url.searchParams.set("demo", "1");
