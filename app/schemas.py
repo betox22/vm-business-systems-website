@@ -201,6 +201,8 @@ class ClientPortalCatalogMutationResponse(BaseModel):
 
 class ClientPortalOverviewResponse(BaseModel):
     business: dict
+    member: dict = Field(default_factory=dict)
+    permissions: list[str] = Field(default_factory=list)
     sites: list[dict] = Field(default_factory=list)
     catalog_items: list[dict] = Field(default_factory=list)
     leads: list[dict] = Field(default_factory=list)

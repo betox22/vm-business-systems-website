@@ -7,7 +7,30 @@ from urllib.request import ProxyHandler, Request, build_opener
 from .config import get_settings
 
 _NO_PROXY_OPENER = build_opener(ProxyHandler({}))
-ADMIN_ROLES = {"owner", "admin", "staff"}
+ADMIN_ROLES = {"owner", "admin", "staff", "manager"}
+CLIENT_ROLES = {"owner", "manager", "catalog_manager", "seller", "fulfillment", "viewer"}
+ROLE_PERMISSIONS = {
+    "owner": {
+      "catalog:read", "catalog:create", "catalog:update", "catalog:delete",
+      "assets:upload", "leads:read", "orders:read", "settings:read", "members:manage",
+    },
+    "manager": {
+      "catalog:read", "catalog:create", "catalog:update", "catalog:delete",
+      "assets:upload", "leads:read", "orders:read", "settings:read",
+    },
+    "catalog_manager": {
+      "catalog:read", "catalog:create", "catalog:update", "catalog:delete", "assets:upload",
+    },
+    "seller": {
+      "catalog:read", "catalog:update", "assets:upload", "leads:read", "orders:read",
+    },
+    "fulfillment": {
+      "catalog:read", "orders:read", "leads:read",
+    },
+    "viewer": {
+      "catalog:read", "orders:read", "leads:read", "settings:read",
+    },
+}
 
 
 class AuthError(RuntimeError):
@@ -58,6 +81,27 @@ def verify_admin_bearer(access_token: str) -> dict[str, Any]:
     return user
 
 
+def verify_client_member(
+    access_token: str,
+    business_id: str,
+    required_permission: str = "catalog:read",
+) -> dict[str, Any]:
+    if not access_token:
+        raise AuthError("Missing bearer token.")
+    user = get_supabase_user(access_token)
+    member = client_member_for_user(user, business_id)
+    if not member:
+        raise AuthError("Client access is not enabled for this business.")
+    permissions = permissions_for_role(member.get("role") or "viewer")
+    if required_permission and required_permission not in permissions:
+        raise AuthError("This role does not have permission for that action.")
+    return {
+        "user": user,
+        "member": member,
+        "permissions": sorted(permissions),
+    }
+
+
 def get_supabase_user(access_token: str) -> dict[str, Any]:
     settings = get_settings()
     _require_supabase_auth(settings)
@@ -91,6 +135,36 @@ def admin_role_for_user(user: dict[str, Any]) -> str:
         if row.get("status") == "active" and row.get("role") in ADMIN_ROLES:
             return row.get("role") or "admin"
     return ""
+
+
+def client_member_for_user(user: dict[str, Any], business_id: str) -> dict[str, Any] | None:
+    user_id = user.get("id") or ""
+    email = (user.get("email") or "").strip().lower()
+    rows = select_business_members(user_id, email)
+    for row in rows:
+        if (
+            row.get("status") == "active"
+            and row.get("business_id") == business_id
+            and row.get("role") in CLIENT_ROLES
+        ):
+            return row
+    return None
+
+
+def permissions_for_role(role: str) -> set[str]:
+    return set(ROLE_PERMISSIONS.get(role, ROLE_PERMISSIONS["viewer"]))
+
+
+def demo_client_member(role: str = "owner") -> dict[str, Any]:
+    normalized_role = role if role in CLIENT_ROLES else "owner"
+    return {
+        "id": "development-demo-member",
+        "business_id": "",
+        "user_id": "",
+        "email": "",
+        "role": normalized_role,
+        "status": "active",
+    }
 
 
 def select_business_members(user_id: str, email: str) -> list[dict[str, Any]]:

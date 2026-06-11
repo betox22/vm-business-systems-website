@@ -8,7 +8,15 @@ from sqlalchemy.orm import Session
 from .ai_design import generate_store_config, generate_store_design
 from .ai_intake import guide_intake
 from .ai_website_builder import generate_ai_website_schema
-from .auth_store import AuthError, AuthNotConfiguredError, login_admin, verify_admin_bearer
+from .auth_store import (
+    AuthError,
+    AuthNotConfiguredError,
+    demo_client_member,
+    login_admin,
+    permissions_for_role,
+    verify_admin_bearer,
+    verify_client_member,
+)
 from .database import Base, SessionLocal, engine, get_db
 from .domain_provider import search_domains as search_domain_provider
 from .models import Order, Product, StoreCustomer, StoreDesignConfig, StorePage, Tenant
@@ -139,6 +147,33 @@ def require_admin(request: Request) -> None:
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Admin authorization required.",
     )
+
+
+def client_portal_context(
+    request: Request,
+    business_id: str,
+    required_permission: str,
+) -> dict:
+    authorization = request.headers.get("authorization", "")
+    bearer_token = authorization.removeprefix("Bearer ").strip()
+    if bearer_token:
+        try:
+            return verify_client_member(bearer_token, business_id, required_permission)
+        except (AuthError, AuthNotConfiguredError) as error:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=str(error),
+            ) from error
+
+    member = demo_client_member("owner")
+    member["business_id"] = business_id
+    permissions = sorted(permissions_for_role(member["role"]))
+    if required_permission and required_permission not in permissions:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This role does not have permission for that action.",
+        )
+    return {"user": {}, "member": member, "permissions": permissions}
 
 
 @app.post("/api/auth/login", response_model=AdminLoginResponse)
@@ -675,7 +710,8 @@ def publish_site_complete(site_id: str, payload: PublishSiteRequest) -> SiteMuta
 
 
 @app.get("/api/client/portal", response_model=ClientPortalOverviewResponse)
-def read_client_portal(business_id: str) -> ClientPortalOverviewResponse:
+def read_client_portal(request: Request, business_id: str) -> ClientPortalOverviewResponse:
+    context = client_portal_context(request, business_id, "catalog:read")
     try:
         overview = get_client_portal_overview(business_id)
     except SupabaseNotConfiguredError as error:
@@ -688,14 +724,18 @@ def read_client_portal(business_id: str) -> ClientPortalOverviewResponse:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error),
         ) from error
+    overview["member"] = context["member"]
+    overview["permissions"] = context["permissions"]
     return ClientPortalOverviewResponse(**overview)
 
 
 @app.post("/api/client/catalog-items", response_model=ClientPortalCatalogMutationResponse)
 def create_client_catalog_item_route(
+    request: Request,
     business_id: str,
     payload: ClientPortalCatalogItemPayload,
 ) -> ClientPortalCatalogMutationResponse:
+    client_portal_context(request, business_id, "catalog:create")
     try:
         item = create_client_catalog_item(business_id, payload)
     except SupabaseNotConfiguredError as error:
@@ -713,10 +753,12 @@ def create_client_catalog_item_route(
 
 @app.patch("/api/client/catalog-items/{item_id}", response_model=ClientPortalCatalogMutationResponse)
 def update_client_catalog_item_route(
+    request: Request,
     item_id: str,
     business_id: str,
     payload: ClientPortalCatalogItemPayload,
 ) -> ClientPortalCatalogMutationResponse:
+    client_portal_context(request, business_id, "catalog:update")
     try:
         item = update_client_catalog_item(business_id, item_id, payload)
     except SupabaseNotConfiguredError as error:
@@ -734,9 +776,11 @@ def update_client_catalog_item_route(
 
 @app.delete("/api/client/catalog-items/{item_id}", response_model=ClientPortalCatalogMutationResponse)
 def delete_client_catalog_item_route(
+    request: Request,
     item_id: str,
     business_id: str,
 ) -> ClientPortalCatalogMutationResponse:
+    client_portal_context(request, business_id, "catalog:delete")
     try:
         item = delete_client_catalog_item(business_id, item_id)
     except SupabaseNotConfiguredError as error:
@@ -753,7 +797,8 @@ def delete_client_catalog_item_route(
 
 
 @app.post("/api/client/assets/upload", response_model=AssetUploadResponse)
-def upload_client_asset(business_id: str, payload: AssetUploadPayload) -> AssetUploadResponse:
+def upload_client_asset(request: Request, business_id: str, payload: AssetUploadPayload) -> AssetUploadResponse:
+    client_portal_context(request, business_id, "assets:upload")
     if payload.business_id and payload.business_id != business_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
