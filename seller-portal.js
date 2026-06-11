@@ -276,35 +276,50 @@ function metric(label, value) {
 
 function catalogTable(rows) {
   if (!rows.length) return `<div class="empty-state">No hay productos con ese filtro.</div>`;
-  return `<table>
-    <thead><tr><th>Producto</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Accion</th></tr></thead>
-    <tbody>
+  return `<div class="catalog-card-list">
       ${rows.map((item) => {
         const metadata = item.metadata || {};
-        return `<tr>
-          <td>
-            <div class="product-cell">
-              <div class="product-thumb">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="">` : ""}</div>
+        const inventory = metadata.inventory_quantity ?? "Sin control";
+        const price = item.price_label || money(item.price_value) || "Cotizar";
+        const salePrice = metadata.sale_price ? money(metadata.sale_price) : "";
+        const tags = Array.isArray(metadata.tags) ? metadata.tags : [];
+        return `<article class="catalog-card ${item.is_active === false ? "is-inactive" : ""}">
+          <div class="catalog-card-media">
+            ${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="">` : `<span>Sin foto</span>`}
+          </div>
+          <div class="catalog-card-main">
+            <div class="catalog-card-head">
               <div>
                 <strong>${escapeHtml(item.name)}</strong>
                 <span class="muted">${escapeHtml(metadata.sku || "Sin SKU")} ${metadata.category ? `· ${escapeHtml(metadata.category)}` : ""}</span>
               </div>
+              <div class="catalog-price">
+                <strong>${escapeHtml(price)}</strong>
+                ${salePrice ? `<span>${escapeHtml(salePrice)}</span>` : ""}
+              </div>
             </div>
-          </td>
-          <td>
-            <strong>${escapeHtml(item.price_label || money(item.price_value) || "Cotizar")}</strong>
-            ${metadata.sale_price ? `<span class="sale-pill">Oferta ${escapeHtml(money(metadata.sale_price))}</span>` : ""}
-          </td>
-          <td>${metadata.inventory_quantity ?? "Sin control"}</td>
-          <td>
-            <span class="status-pill ${item.is_active === false ? "off" : ""}">${item.is_active === false ? "Inactivo" : "Activo"}</span>
-            ${item.is_featured ? `<span class="sale-pill">Destacado</span>` : ""}
-          </td>
-          <td>${can("catalog:update") ? `<button class="text-button" data-edit-item="${escapeAttribute(item.id)}" type="button">Editar</button>` : `<span class="muted">Solo lectura</span>`}</td>
-        </tr>`;
+            <p>${escapeHtml(item.description || "Sin descripcion visible.")}</p>
+            <div class="catalog-meta-row">
+              <span>Stock: ${escapeHtml(inventory)}</span>
+              <span>Orden: ${escapeHtml(item.sort_order ?? 0)}</span>
+              <span>Boton: ${escapeHtml(item.button_label || "Comprar")}</span>
+            </div>
+            <div class="catalog-badges">
+              <span class="status-pill ${item.is_active === false ? "off" : ""}">${item.is_active === false ? "Inactivo" : "Activo"}</span>
+              ${item.is_featured ? `<span class="sale-pill">Destacado</span>` : ""}
+              ${metadata.sale_label ? `<span class="sale-pill">${escapeHtml(metadata.sale_label)}</span>` : ""}
+              ${tags.slice(0, 4).map((tag) => `<span class="tag-pill">${escapeHtml(tag)}</span>`).join("")}
+            </div>
+          </div>
+          <div class="catalog-card-actions">
+            ${can("catalog:update") ? `<button class="secondary-button compact" data-edit-item="${escapeAttribute(item.id)}" type="button">Editar</button>` : ""}
+            ${can("catalog:update") ? `<button class="secondary-button compact" data-toggle-active="${escapeAttribute(item.id)}" type="button">${item.is_active === false ? "Activar" : "Pausar"}</button>` : ""}
+            ${can("catalog:update") ? `<button class="secondary-button compact" data-toggle-featured="${escapeAttribute(item.id)}" type="button">${item.is_featured ? "Quitar destacado" : "Destacar"}</button>` : ""}
+            ${can("catalog:create") ? `<button class="text-button" data-duplicate-item="${escapeAttribute(item.id)}" type="button">Duplicar</button>` : ""}
+          </div>
+        </article>`;
       }).join("")}
-    </tbody>
-  </table>`;
+    </div>`;
 }
 
 function renderEditor(item) {
@@ -349,6 +364,9 @@ function renderEditor(item) {
       <label>Etiqueta visible del precio
         <input name="priceLabel" placeholder="$29.99, Desde $50, Cotizar" value="${escapeAttribute(item?.price_label || "")}">
       </label>
+      <label>Texto del boton
+        <input name="buttonLabel" placeholder="Comprar, Reservar, Cotizar" value="${escapeAttribute(item?.button_label || "Comprar")}">
+      </label>
       <div class="form-grid-2">
         <label>Precio antes
           <input name="compareAtPrice" type="number" step="0.01" value="${escapeAttribute(metadata.compare_at_price ?? "")}">
@@ -357,6 +375,9 @@ function renderEditor(item) {
           <input name="salePrice" type="number" step="0.01" value="${escapeAttribute(metadata.sale_price ?? "")}">
         </label>
       </div>
+      <label>Etiqueta de oferta
+        <input name="saleLabel" placeholder="Oferta limitada, Liquidacion, 2x1" value="${escapeAttribute(metadata.sale_label || "")}">
+      </label>
       <div class="form-grid-2">
         <label>Stock
           <input name="inventoryQuantity" type="number" step="1" value="${escapeAttribute(metadata.inventory_quantity ?? "")}">
@@ -365,6 +386,17 @@ function renderEditor(item) {
           <input name="sortOrder" type="number" step="1" value="${escapeAttribute(item?.sort_order ?? 0)}">
         </label>
       </div>
+      <div class="form-grid-2">
+        <label>Oferta inicia
+          <input name="saleStartsAt" type="date" value="${escapeAttribute(metadata.sale_starts_at || "")}">
+        </label>
+        <label>Oferta termina
+          <input name="saleEndsAt" type="date" value="${escapeAttribute(metadata.sale_ends_at || "")}">
+        </label>
+      </div>
+      <label>Tags
+        <input name="tags" placeholder="nuevo, premium, cyberpunk" value="${escapeAttribute((Array.isArray(metadata.tags) ? metadata.tags : []).join(", "))}">
+      </label>
       ${canUpload ? `<label>Imagen
         <input name="imageFile" type="file" accept="image/*">
       </label>` : ""}
@@ -449,6 +481,15 @@ function bindViewEvents() {
       renderShell();
     });
   });
+  document.querySelectorAll("[data-toggle-active]").forEach((button) => {
+    button.addEventListener("click", () => toggleCatalogItem(button.dataset.toggleActive, "isActive"));
+  });
+  document.querySelectorAll("[data-toggle-featured]").forEach((button) => {
+    button.addEventListener("click", () => toggleCatalogItem(button.dataset.toggleFeatured, "isFeatured"));
+  });
+  document.querySelectorAll("[data-duplicate-item]").forEach((button) => {
+    button.addEventListener("click", () => duplicateCatalogItem(button.dataset.duplicateItem));
+  });
   document.querySelector("[data-clear-editor]")?.addEventListener("click", () => {
     state.selectedItemId = "";
     renderShell();
@@ -496,14 +537,95 @@ async function payloadFromForm(form) {
     priceType: form.elements.priceType.value,
     priceValue: numberOrNull(form.elements.priceValue.value),
     priceLabel: form.elements.priceLabel.value.trim(),
+    buttonLabel: form.elements.buttonLabel.value.trim() || "Comprar",
     compareAtPrice: numberOrNull(form.elements.compareAtPrice.value),
     salePrice: numberOrNull(form.elements.salePrice.value),
+    saleLabel: form.elements.saleLabel.value.trim(),
+    saleStartsAt: form.elements.saleStartsAt.value,
+    saleEndsAt: form.elements.saleEndsAt.value,
+    tags: tagsFromInput(form.elements.tags.value),
     inventoryQuantity: integerOrNull(form.elements.inventoryQuantity.value),
     sortOrder: Number(form.elements.sortOrder.value || 0),
     imageUrl,
     isActive: form.elements.isActive.checked,
     isFeatured: form.elements.isFeatured.checked,
   };
+}
+
+function payloadFromItem(item, overrides = {}) {
+  const metadata = item.metadata || {};
+  return {
+    name: item.name || "Producto",
+    description: item.description || "",
+    sku: metadata.sku || "",
+    category: metadata.category || "",
+    priceType: item.price_type || "fixed",
+    priceValue: item.price_value ?? null,
+    priceLabel: item.price_label || "",
+    buttonLabel: item.button_label || "Comprar",
+    compareAtPrice: metadata.compare_at_price ?? null,
+    salePrice: metadata.sale_price ?? null,
+    saleLabel: metadata.sale_label || "",
+    saleStartsAt: metadata.sale_starts_at || "",
+    saleEndsAt: metadata.sale_ends_at || "",
+    tags: Array.isArray(metadata.tags) ? metadata.tags : [],
+    inventoryQuantity: metadata.inventory_quantity ?? null,
+    sortOrder: Number(item.sort_order || 0),
+    imageUrl: item.image_url || "",
+    isActive: item.is_active !== false,
+    isFeatured: Boolean(item.is_featured),
+    ...overrides,
+  };
+}
+
+async function toggleCatalogItem(itemId, field) {
+  const item = (state.overview.catalog_items || []).find((entry) => entry.id === itemId);
+  if (!item || state.saving) return;
+  const nextValue = field === "isActive" ? item.is_active === false : !item.is_featured;
+  state.saving = true;
+  try {
+    const response = await fetch(apiUrl(`/api/client/catalog-items/${encodeURIComponent(itemId)}?business_id=${encodeURIComponent(state.businessId)}`), {
+      method: "PATCH",
+      headers: authHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify(payloadFromItem(item, { [field]: nextValue })),
+    });
+    if (!response.ok) throw new Error(await response.text());
+    await refreshOverview();
+  } catch (error) {
+    window.alert(`No se pudo actualizar: ${shortError(error)}`);
+  } finally {
+    state.saving = false;
+    renderShell();
+  }
+}
+
+async function duplicateCatalogItem(itemId) {
+  const item = (state.overview.catalog_items || []).find((entry) => entry.id === itemId);
+  if (!item || state.saving) return;
+  state.saving = true;
+  try {
+    const payload = payloadFromItem(item, {
+      name: `${item.name || "Producto"} copia`,
+      sku: "",
+      isActive: false,
+      isFeatured: false,
+      sortOrder: Number(item.sort_order || 0) + 1,
+    });
+    const response = await fetch(apiUrl(`/api/client/catalog-items?business_id=${encodeURIComponent(state.businessId)}`), {
+      method: "POST",
+      headers: authHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error(await response.text());
+    const result = await response.json();
+    state.selectedItemId = result.id;
+    await refreshOverview();
+  } catch (error) {
+    window.alert(`No se pudo duplicar: ${shortError(error)}`);
+  } finally {
+    state.saving = false;
+    renderShell();
+  }
 }
 
 async function uploadImage(file) {
@@ -568,6 +690,14 @@ function integerOrNull(value) {
   if (value === "") return null;
   const number = Number.parseInt(value, 10);
   return Number.isNaN(number) ? null : number;
+}
+
+function tagsFromInput(value) {
+  return String(value || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+    .slice(0, 12);
 }
 
 function formatDate(value) {
