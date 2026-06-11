@@ -489,10 +489,7 @@ def get_admin_overview() -> dict[str, Any]:
             "domains",
             "select=*&order=created_at.desc&limit=500",
         ),
-        "domain_orders": _select_optional(
-            "domain_orders",
-            "select=*&order=created_at.desc&limit=500",
-        ),
+        "domain_orders": list_domain_orders(),
         "plan_limits": _select(
             "plan_limits",
             "select=*&order=monthly_price.asc",
@@ -518,29 +515,69 @@ def create_domain_order(payload: DomainOrderPayload) -> dict[str, Any]:
     normalized = normalize_domain(payload.requested_domain)
     selected = payload.selected_result or {}
     internal_pricing = selected.get("internal_pricing") or {}
-    aliases = email_aliases_for_domain(normalized)
-    return _insert(
+    order_payload = {
+        "business_id": _uuid_or_none(payload.business_id),
+        "site_id": _uuid_or_none(payload.site_id),
+        "client_request_id": _uuid_or_none(payload.client_request_id),
+        "requested_domain": payload.requested_domain.strip(),
+        "normalized_domain": normalized,
+        "owner_email": payload.owner_email.strip().lower(),
+        "owner_name": payload.owner_name.strip(),
+        "package_code": payload.package_code,
+        "status": "awaiting_payment",
+        "payment_status": "unpaid",
+        "provider": "cloudflare" if selected.get("confidence") == "authoritative_cloudflare" else "manual_review",
+        "availability_status": selected.get("status") or "pending_check",
+        "selected_result": selected,
+        "internal_pricing": internal_pricing,
+        "public_package_note": "Domain setup is included after payment approval.",
+        "email_aliases": email_aliases_for_domain(normalized),
+        "updated_at": _now_iso(),
+    }
+    try:
+        return _insert("domain_orders", order_payload)
+    except RuntimeError as error:
+        if "does not exist" not in str(error) and "PGRST205" not in str(error):
+            raise
+        audit = _insert(
+            "audit_logs",
+            {
+                "business_id": order_payload["business_id"],
+                "actor_email": order_payload["owner_email"],
+                "action": "domain_order_created",
+                "entity_type": "domain_order",
+                "entity_id": normalized,
+                "metadata": order_payload,
+            },
+        )
+        return {
+            **order_payload,
+            "id": audit.get("id"),
+            "storage_fallback": "audit_logs",
+            "created_at": audit.get("created_at"),
+        }
+
+
+def list_domain_orders() -> list[dict[str, Any]]:
+    rows = _select_optional(
         "domain_orders",
-        {
-            "business_id": _uuid_or_none(payload.business_id),
-            "site_id": _uuid_or_none(payload.site_id),
-            "client_request_id": _uuid_or_none(payload.client_request_id),
-            "requested_domain": payload.requested_domain.strip(),
-            "normalized_domain": normalized,
-            "owner_email": payload.owner_email.strip().lower(),
-            "owner_name": payload.owner_name.strip(),
-            "package_code": payload.package_code,
-            "status": "awaiting_payment",
-            "payment_status": "unpaid",
-            "provider": "cloudflare" if selected.get("confidence") == "authoritative_cloudflare" else "manual_review",
-            "availability_status": selected.get("status") or "pending_check",
-            "selected_result": selected,
-            "internal_pricing": internal_pricing,
-            "public_package_note": "Domain setup is included after payment approval.",
-            "email_aliases": aliases,
-            "updated_at": _now_iso(),
-        },
+        "select=*&order=created_at.desc&limit=500",
     )
+    if rows:
+        return rows
+    audits = _select_optional(
+        "audit_logs",
+        "action=eq.domain_order_created&select=*&order=created_at.desc&limit=500",
+    )
+    return [
+        {
+            **(row.get("metadata") or {}),
+            "id": row.get("id"),
+            "created_at": row.get("created_at"),
+            "storage_fallback": "audit_logs",
+        }
+        for row in audits
+    ]
 
 
 def email_aliases_for_domain(domain: str) -> list[dict[str, str]]:

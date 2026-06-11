@@ -481,13 +481,12 @@ def save_domain_order(payload: DomainOrderPayload) -> DomainOrderResponse:
     except SupabaseNotConfiguredError:
         return DomainOrderResponse(storage_status="supabase_not_configured")
     except RuntimeError as error:
-        if "does not exist" in str(error) or "PGRST205" in str(error):
-            return DomainOrderResponse(storage_status="domain_orders_table_missing")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(error),
         ) from error
-    return DomainOrderResponse(id=order.get("id"), storage_status="stored", order=order)
+    status_label = "stored_fallback" if order.get("storage_fallback") else "stored"
+    return DomainOrderResponse(id=order.get("id"), storage_status=status_label, order=order)
 
 
 @app.post("/api/admin/domains", response_model=DomainOut, dependencies=[Depends(require_admin)])
