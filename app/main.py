@@ -751,3 +751,97 @@ def submit_public_lead(payload: PublicLeadPayload) -> PublicLeadResponse:
 @app.post("/tickets/thermal", response_class=HTMLResponse)
 def create_thermal_ticket(payload: TicketRequest) -> str:
     return render_thermal_ticket_html(payload)
+
+
+def _public_site_shell() -> str:
+    return """<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Published site</title>
+    <link rel="stylesheet" href="https://vmbusinesssystems.com/ai-builder.css">
+    <style>
+      body { margin: 0; background: #fff; }
+      .site-preview { min-height: 100vh; }
+      .public-empty {
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        color: #667085;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+      .lead-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgba(15, 23, 42, 0.58);
+      }
+      .lead-modal-card {
+        width: min(460px, 100%);
+        display: grid;
+        gap: 12px;
+        padding: 18px;
+        border-radius: 14px;
+        background: #fff;
+        color: #111827;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.26);
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+      .lead-modal-card > div {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .lead-modal-card label {
+        display: grid;
+        gap: 6px;
+        color: #475467;
+        font-size: 13px;
+      }
+      .lead-modal-card input,
+      .lead-modal-card textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #d0d5dd;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font: inherit;
+        color: #101828;
+      }
+      .lead-modal-card [data-close-lead] {
+        border: 0;
+        background: transparent;
+        color: #475467;
+        font-size: 24px;
+        cursor: pointer;
+      }
+      .lead-status {
+        min-height: 18px;
+        color: #0e7c66;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="publicSite" class="site-preview">
+      <div class="public-empty">Loading published site...</div>
+    </main>
+    <script>window.LUMA_API_BASE_URL = "https://luma-api.vmbusinesssystems.com";</script>
+    <script src="https://vmbusinesssystems.com/site-viewer.js?v=2"></script>
+  </body>
+</html>"""
+
+
+@app.get("/", response_class=HTMLResponse)
+def serve_public_site_shell() -> str:
+    return _public_site_shell()
+
+
+@app.get("/{path:path}", response_class=HTMLResponse, include_in_schema=False)
+def serve_public_site_shell_path(path: str) -> str:
+    return _public_site_shell()
