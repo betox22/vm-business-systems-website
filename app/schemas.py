@@ -462,7 +462,7 @@ class PublicLeadResponse(BaseModel):
 class LeadUpdatePayload(BaseModel):
     status: str | None = Field(
         default=None,
-        pattern="^(new|contacted|qualified|won|lost|archived|pending_payment|paid|processing|shipped|delivered|cancelled)$",
+        pattern="^(new|contacted|qualified|draft_generated|in_review|changes_requested|approved|won|lost|archived|pending_payment|paid|processing|shipped|delivered|cancelled)$",
     )
     internal_notes: str | None = Field(default=None, alias="internalNotes", max_length=4000)
 

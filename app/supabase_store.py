@@ -834,7 +834,7 @@ def update_lead(lead_id: str, *, status: str | None = None, internal_notes: str 
     payload: dict[str, Any] = {"updated_at": _now_iso()}
     if status is not None:
         payload["status"] = status
-        if status in {"contacted", "qualified"}:
+        if status in {"contacted", "qualified", "in_review", "changes_requested", "approved", "draft_generated"}:
             payload["contacted_at"] = _now_iso()
         if status in {"won", "lost", "archived", "cancelled", "delivered"}:
             payload["closed_at"] = _now_iso()
