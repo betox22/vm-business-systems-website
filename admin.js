@@ -578,6 +578,7 @@ function render() {
   });
   content.querySelector("#saveAdminTokenButton")?.addEventListener("click", saveAdminTokenFromSettings);
   content.querySelector("#clearAdminTokenButton")?.addEventListener("click", clearAdminTokenFromSettings);
+  content.querySelector("#changeAdminPasswordForm")?.addEventListener("submit", changeAdminPasswordFromSettings);
 }
 
 function selectedStoreIds() {
@@ -1013,6 +1014,23 @@ function renderSettings() {
           <p class="settings-note">Esto no crea el token del servidor; solo guarda en este navegador el token que definamos en el backend.</p>
         </div>
       </article>
+
+      <article class="data-card">
+        <div class="card-header">
+          <h2>Cambiar clave</h2>
+          <span>Cuenta actual</span>
+        </div>
+        <form id="changeAdminPasswordForm" class="settings-form">
+          <label>Nueva clave
+            <input name="newPassword" type="password" autocomplete="new-password" minlength="8" required>
+          </label>
+          <label>Confirmar clave
+            <input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+          </label>
+          <button class="primary-button" type="submit">Actualizar clave</button>
+          <p class="settings-note">Disponible solo cuando entras con email y password. Despues de cambiarla, vuelve a iniciar sesion.</p>
+        </form>
+      </article>
     </section>
 
     <section class="data-card wide-card">
@@ -1394,6 +1412,43 @@ function clearAdminTokenFromSettings() {
   localStorage.removeItem("lumaAdminToken");
   localStorage.removeItem("lumaAdminAccessToken");
   loadCloudOverview();
+}
+
+async function changeAdminPasswordFromSettings(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const newPassword = form.elements.newPassword.value;
+  const confirmPassword = form.elements.confirmPassword.value;
+  if (newPassword.length < 8) {
+    window.alert("La clave debe tener al menos 8 caracteres.");
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    window.alert("Las claves no coinciden.");
+    return;
+  }
+  const accessToken = localStorage.getItem("lumaAdminAccessToken") || "";
+  if (!accessToken) {
+    window.alert("Entra con email y password para poder cambiar la clave. El token tecnico no permite resetear cuentas.");
+    return;
+  }
+  try {
+    const response = await fetch(apiUrl("/api/auth/change-password"), {
+      method: "POST",
+      headers: adminHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify({ newPassword }),
+    });
+    if (response.status === 401) {
+      showAdminLogin("Vuelve a iniciar sesion para cambiar la clave.");
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    form.reset();
+    window.alert("Clave actualizada. Entra de nuevo con tu nueva clave.");
+    logoutAdmin();
+  } catch (error) {
+    window.alert(`No se pudo cambiar la clave: ${shortMessage(error)}`);
+  }
 }
 
 function generatedDraftsPanel(rows) {
