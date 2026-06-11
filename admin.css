@@ -433,12 +433,93 @@ th {
   padding: 15px;
 }
 
+.store-link {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--primary) !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .card-actions,
 .detail-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 14px;
+}
+
+.launch-console {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+}
+
+.launch-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfc;
+  padding: 14px;
+}
+
+.launch-card > div:first-child {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.launch-card > div:first-child span {
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: right;
+}
+
+.launch-card dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.launch-card dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.launch-card dd {
+  overflow: hidden;
+  margin: 3px 0 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.launch-url {
+  overflow: hidden;
+  margin: 0;
+  border-radius: 7px;
+  background: #f1f8f5;
+  color: var(--primary);
+  padding: 8px 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notice-line {
+  margin: -4px 0 0;
+  border-left: 3px solid var(--warning);
+  color: var(--warning);
+  padding-left: 9px;
+  font-size: 13px;
 }
 
 .detail-header {
@@ -632,6 +713,7 @@ code {
 
   .metric-grid,
   .section-grid,
+  .launch-console,
   .card-list {
     grid-template-columns: 1fr 1fr;
   }
@@ -648,6 +730,8 @@ code {
   .nav-list,
   .metric-grid,
   .section-grid,
+  .launch-console,
+  .launch-card dl,
   .card-list {
     grid-template-columns: 1fr;
   }

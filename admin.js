@@ -569,6 +569,84 @@ function filteredPages() {
   return pages.filter((page) => selected.has(page.storeId));
 }
 
+function publicationRows() {
+  return stores
+    .map((store) => {
+      const site = cloudSites.find((item) => item.business_id === store.id) || {};
+      const storeDomains = domains.filter((item) => item.business_id === store.id);
+      const activeDomain = storeDomains.find((item) => item.status === "active");
+      const publicUrl = site.id ? `/site.html?site_id=${encodeURIComponent(site.id)}` : "";
+      const domainUrl = activeDomain ? `https://${activeDomain.domain}` : "";
+      const finalUrl = domainUrl || publicUrl;
+      const catalogCount = cloudCatalogItems.filter((item) => item.business_id === store.id || item.site_id === site.id).length;
+      const status = !site.id
+        ? "Sin sitio"
+        : site.status === "published" && activeDomain
+          ? "Publicado con dominio"
+          : site.status === "published"
+            ? "Publicado por link temporal"
+            : "Borrador";
+      return {
+        store,
+        site,
+        status,
+        publicUrl,
+        domainUrl,
+        finalUrl,
+        catalogCount,
+        domainCount: storeDomains.length,
+        activeDomain,
+      };
+    })
+    .sort((a, b) => {
+      const rank = { "Sin sitio": 0, Borrador: 1, "Publicado por link temporal": 2, "Publicado con dominio": 3 };
+      return (rank[a.status] || 0) - (rank[b.status] || 0);
+    });
+}
+
+function renderPublicationConsole(limit = 4) {
+  const rows = publicationRows().slice(0, limit);
+  if (!rows.length) {
+    return `<section class="data-card wide-card">
+      <div class="card-header"><h2>Consola de publicacion</h2><span>Sin tiendas</span></div>
+      <div class="empty-state">Cuando una solicitud genere un sitio, aparecera aqui con preview, dominio y acciones.</div>
+    </section>`;
+  }
+
+  return `<section class="data-card wide-card">
+    <div class="card-header">
+      <h2>Consola de publicacion</h2>
+      <button class="text-button" data-go-view="stores" type="button">Ver todas</button>
+    </div>
+    <div class="launch-console">
+      ${rows.map(publicationCard).join("")}
+    </div>
+  </section>`;
+}
+
+function publicationCard(row) {
+  const needsWildcard = row.domainUrl && !row.domainUrl.includes("luma-api.");
+  return `<article class="launch-card">
+    <div>
+      <strong>${escapeHtml(row.store.name)}</strong>
+      <span>${escapeHtml(row.status)}</span>
+    </div>
+    <dl>
+      <div><dt>Sitio</dt><dd>${row.site.id ? escapeHtml(row.site.name || row.store.name) : "Pendiente"}</dd></div>
+      <div><dt>Catalogo</dt><dd>${row.catalogCount} items</dd></div>
+      <div><dt>Dominios</dt><dd>${row.domainCount}${row.activeDomain ? " · activo" : ""}</dd></div>
+    </dl>
+    ${row.finalUrl ? `<p class="launch-url">${escapeHtml(row.finalUrl)}</p>` : `<p class="launch-url muted-cell">Genera el sitio para crear un enlace.</p>`}
+    ${needsWildcard ? `<p class="notice-line">Para abrir por subdominio falta activar el wildcard en Cloudflare.</p>` : ""}
+    <div class="card-actions">
+      <button class="text-button" data-view-store="${escapeAttribute(row.store.id)}" type="button">Detalle</button>
+      ${row.publicUrl ? `<a class="text-button" href="${escapeAttribute(row.publicUrl)}" target="_blank" rel="noreferrer">Preview</a>` : ""}
+      ${row.site.id ? `<button class="text-button" data-publish-site="${escapeAttribute(row.site.id)}" type="button">Publicar</button>` : ""}
+      ${row.finalUrl ? `<button class="text-button" data-copy-url="${escapeAttribute(row.finalUrl)}" type="button">Copiar</button>` : ""}
+    </div>
+  </article>`;
+}
+
 function renderDashboard() {
   const visibleOrders = filteredOrders();
   const paidTotal = visibleOrders
@@ -595,6 +673,7 @@ function renderDashboard() {
         ${storesTable(stores)}
       </article>
     </section>
+    ${renderPublicationConsole()}
     <section class="data-card wide-card">
       <div class="card-header">
         <h2>Pedidos recientes</h2>
@@ -619,17 +698,23 @@ function renderStores() {
   return `<section class="card-list">
     ${stores
       .map(
-        (store) => `<article class="store-card">
+        (store) => {
+          const row = publicationRows().find((item) => item.store.id === store.id);
+          return `<article class="store-card">
           <strong>${store.name}</strong>
           <span>Cliente: ${store.owner}</span>
           <span>Dominio: ${store.domain}</span>
           <span>Plan: ${store.plan}</span>
-          <span>Estado: ${store.status}</span>
+          <span>Estado: ${row?.status || store.status}</span>
+          ${row?.finalUrl ? `<span class="store-link">${escapeHtml(row.finalUrl)}</span>` : ""}
           <div class="card-actions">
             <button class="text-button" data-view-store="${escapeAttribute(store.id)}" type="button">Ver detalle</button>
+            ${row?.publicUrl ? `<a class="text-button" href="${escapeAttribute(row.publicUrl)}" target="_blank" rel="noreferrer">Preview</a>` : ""}
             ${store.siteId ? `<button class="text-button" data-publish-site="${escapeAttribute(store.siteId)}" type="button">Publicar</button>` : ""}
+            ${row?.finalUrl ? `<button class="text-button" data-copy-url="${escapeAttribute(row.finalUrl)}" type="button">Copiar link</button>` : ""}
           </div>
-        </article>`,
+        </article>`;
+        },
       )
       .join("")}
   </section>`;
