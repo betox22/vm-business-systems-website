@@ -1,6 +1,7 @@
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from openai import AuthenticationError, OpenAIError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -558,6 +559,16 @@ def upload_admin_asset(payload: AssetUploadPayload) -> AssetUploadResponse:
 def create_ai_website(payload: AiWebsiteBuilderRequest) -> AiWebsiteBuilderResponse:
     try:
         schema, used_dev_mock, provider = generate_ai_website_schema(payload)
+    except AuthenticationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="OpenAI API key is invalid or expired. Update OPENAI_API_KEY on the server.",
+        ) from error
+    except OpenAIError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"OpenAI generation failed: {error.__class__.__name__}",
+        ) from error
     except RuntimeError as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
