@@ -81,6 +81,7 @@ const I18N = {
     preferredTone: "Preferred tone/style",
     preferredColors: "Preferred colors",
     contactInfo: "Contact info",
+    desiredDomain: "Desired domain",
     logoUrl: "Logo URL optional",
     uploadLogo: "Upload logo optional",
     photoUrls: "Photo URLs optional",
@@ -161,6 +162,7 @@ const I18N = {
     preferredTone: "Tono/estilo preferido",
     preferredColors: "Colores preferidos",
     contactInfo: "Informacion de contacto",
+    desiredDomain: "Dominio deseado",
     logoUrl: "URL del logo opcional",
     uploadLogo: "Subir logo opcional",
     photoUrls: "URLs de fotos opcionales",
@@ -238,6 +240,7 @@ const I18N = {
     preferredTone: "Ton/style préféré",
     preferredColors: "Couleurs préférées",
     contactInfo: "Coordonnées",
+    desiredDomain: "Domaine souhaité",
     logoUrl: "URL du logo optionnelle",
     uploadLogo: "Importer un logo optionnel",
     photoUrls: "URLs de photos optionnelles",
@@ -314,6 +317,7 @@ const I18N = {
     preferredTone: "Tom/estilo preferido",
     preferredColors: "Cores preferidas",
     contactInfo: "Informações de contato",
+    desiredDomain: "Domínio desejado",
     logoUrl: "URL do logo opcional",
     uploadLogo: "Enviar logo opcional",
     photoUrls: "URLs de fotos opcionais",
@@ -376,6 +380,7 @@ const GUIDED_QUESTIONS = {
     contactInfo: "What contact details should appear: email, phone, Instagram, or WhatsApp?",
     salesMode: "Should the site support online sales, quote requests, or both?",
     hasLogoPhotos: "Do you have a logo or photos ready to use?",
+    desiredDomain: "What domain would you like? You can write a name like lunastore.com or skip it for now.",
     review: "Review the summary. If it looks right, generate the site.",
   },
   es: {
@@ -391,6 +396,7 @@ const GUIDED_QUESTIONS = {
     contactInfo: "Que contacto quieres mostrar: email, telefono, Instagram o WhatsApp?",
     salesMode: "Quieres ventas online, solicitudes de cotizacion, o ambos?",
     hasLogoPhotos: "Tienes logo o fotos listas para usar?",
+    desiredDomain: "Que dominio te gustaria? Puedes escribir algo como lunastore.com o saltarlo por ahora.",
     review: "Revisa el resumen. Si esta bien, genera el sitio.",
   },
   fr: {
@@ -406,6 +412,7 @@ const GUIDED_QUESTIONS = {
     contactInfo: "Quelles coordonnées afficher: email, téléphone, Instagram ou WhatsApp?",
     salesMode: "Le site doit-il proposer la vente en ligne, les demandes de devis, ou les deux?",
     hasLogoPhotos: "Avez-vous un logo ou des photos prêts à utiliser?",
+    desiredDomain: "Quel domaine souhaitez-vous? Vous pouvez écrire lunastore.com ou ignorer pour l'instant.",
     review: "Vérifiez le résumé. Si tout est bon, générez le site.",
   },
   pt: {
@@ -421,6 +428,7 @@ const GUIDED_QUESTIONS = {
     contactInfo: "Quais contatos devem aparecer: email, telefone, Instagram ou WhatsApp?",
     salesMode: "O site deve aceitar vendas online, pedidos de orçamento, ou ambos?",
     hasLogoPhotos: "Você tem logo ou fotos prontas para usar?",
+    desiredDomain: "Qual domínio você gostaria? Pode escrever lunastore.com ou pular por enquanto.",
     review: "Revise o resumo. Se estiver certo, gere o site.",
   },
 };
@@ -459,6 +467,7 @@ let guidedState = {
   salesMode: "",
   hasLogoPhotos: "",
   sectionsPreference: "",
+  desiredDomain: "",
 };
 
 const GUIDED_STEPS = [
@@ -474,6 +483,7 @@ const GUIDED_STEPS = [
   "contactInfo",
   "salesMode",
   "hasLogoPhotos",
+  "desiredDomain",
   "review",
 ];
 
@@ -1351,6 +1361,7 @@ function importQuickFormToGuidedState() {
     selectedLanguage,
     hasLogo: Boolean((data.get("logo_url")?.toString().trim() || guidedState.logoUrl)),
     hasPhotos: Boolean(splitLines(data.get("photo_urls")?.toString() || "").length || guidedState.photoUrls.length),
+    desiredDomain: data.get("desired_domain")?.toString().trim() || guidedState.desiredDomain,
   };
 }
 
@@ -1364,6 +1375,7 @@ function applyGuidedStateToForm() {
   setInputValue("preferred_tone", guidedState.preferredTone);
   setInputValue("preferred_colors", arrayValue(guidedState.preferredColors).join(", "));
   setInputValue("contact_info", contactInfoToLines(guidedState.contactInfo));
+  setInputValue("desired_domain", guidedState.desiredDomain);
   setInputValue("logo_url", guidedState.logoUrl);
   setInputValue("photo_urls", arrayValue(guidedState.photoUrls).join("\n"));
 }
@@ -1488,6 +1500,7 @@ function guidedStateForApi() {
     preferredTone: guidedState.preferredTone,
     preferredColors: arrayValue(guidedState.preferredColors),
     contactInfo: guidedState.contactInfo || {},
+    desiredDomain: guidedState.desiredDomain,
     logoUrl,
     photoUrls,
     selectedLanguage,
@@ -1560,6 +1573,7 @@ function inferGuidedUpdates(step, message) {
     preferredTone: "preferredTone",
     salesMode: "salesMode",
     hasLogoPhotos: "hasLogoPhotos",
+    desiredDomain: "desiredDomain",
   };
   return keyByStep[step] ? { [keyByStep[step]]: message } : {};
 }
@@ -1620,6 +1634,7 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
       ? "Development mock used because OPENAI_API_KEY is missing on the server."
       : t("generatedOpenAI");
     applyGenerationResult(result);
+    await createDomainOrderIfNeeded(payload, result);
   } catch (error) {
     const fallbackResult = buildInstantTemplateResult(payload, error, templateSelection);
     applyGenerationResult(fallbackResult);
@@ -1629,6 +1644,45 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
   } finally {
     button.disabled = false;
     button.textContent = button.id === "guidedGenerateButton" ? t("reviewGenerate") : t("generateButton");
+  }
+}
+
+async function createDomainOrderIfNeeded(payload, result) {
+  const requestedDomain = payload.desiredDomain || payload.desired_domain || "";
+  if (!requestedDomain.trim() || !result.business_id) return;
+  try {
+    const search = await fetch(`${API_BASE_URL}/public/domain-search?q=${encodeURIComponent(requestedDomain)}`);
+    const searchResult = search.ok ? await search.json() : { results: [] };
+    const selectedResult = (searchResult.results || []).find((item) => item.domain === requestedDomain.trim().toLowerCase())
+      || (searchResult.results || [])[0]
+      || {};
+    const orderPayload = {
+      businessId: result.business_id,
+      siteId: result.site_id,
+      clientRequestId: currentRequestId,
+      requestedDomain,
+      ownerEmail: payload.contact_info?.email || payload.contact_info?.contact || "",
+      ownerName: payload.contact_info?.name || payload.business_name || "",
+      packageCode: "starter",
+      selectedResult,
+    };
+    const response = await fetch(`${API_BASE_URL}/domain-orders`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(orderPayload),
+    });
+    if (!response.ok) throw new Error(await readErrorMessage(response));
+    const saved = await response.json();
+    if (saved.storage_status === "stored") {
+      guidedStatusText.textContent = selectedLanguage === "es"
+        ? "Pagina generada. Dominio guardado para revisar/pagar antes de registrarlo."
+        : "Website generated. Domain saved for review/payment before registration.";
+    }
+  } catch (error) {
+    console.warn("Domain order could not be saved", error);
+    guidedStatusText.textContent = selectedLanguage === "es"
+      ? "Pagina generada. No se pudo guardar la orden de dominio; puedes hacerlo desde admin."
+      : "Website generated. Could not save the domain order; you can do it from admin.";
   }
 }
 
@@ -1953,6 +2007,7 @@ async function collectPayload() {
     preferred_tone: data.get("preferred_tone")?.toString().trim(),
     preferred_colors: splitCommaOrLines(data.get("preferred_colors")?.toString() || ""),
     contact_info: contactInfo,
+    desiredDomain: data.get("desired_domain")?.toString().trim() || guidedState.desiredDomain || "",
     selectedLanguage,
     request_id: currentRequestId,
     catalog_items: catalogItemsFromForm(),

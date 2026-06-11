@@ -74,6 +74,7 @@ let orders = [
 ];
 
 let domains = [];
+let domainOrders = [];
 let planLimits = [];
 let subscriptions = [];
 let adminSecurity = {
@@ -378,6 +379,7 @@ function applyCloudOverview(overview) {
   cloudGenerations = generations;
   cloudLeads = leads;
   domains = overview.domains || [];
+  domainOrders = overview.domain_orders || [];
   planLimits = overview.plan_limits || [];
   subscriptions = overview.subscriptions || [];
   adminSecurity = overview.security || { tokenConfigured: false };
@@ -913,8 +915,8 @@ function renderSettings() {
     <section class="metric-grid settings-metrics">
       ${metric("Negocios", stores.length, "Tenants registrados")}
       ${metric("Dominios", domains.length, `${domains.filter((item) => item.status === "active").length} activos`)}
+      ${metric("Ordenes dominio", domainOrders.length, `${domainOrders.filter((item) => item.status === "awaiting_payment").length} esperando pago`)}
       ${metric("Planes", planLimits.length || 3, "Starter, Business, Pro")}
-      ${metric("Admin token", adminSecurity.tokenConfigured ? "Activo" : "Demo", adminSecurity.tokenConfigured ? "API protegida" : "Configuralo antes de vender")}
     </section>
 
     <section class="section-grid settings-grid">
@@ -980,6 +982,11 @@ function renderSettings() {
     <section class="data-card wide-card">
       <div class="card-header"><h2>Dominios</h2><span>${domains.length} configurados</span></div>
       ${domainsTable(domains)}
+    </section>
+
+    <section class="data-card wide-card">
+      <div class="card-header"><h2>Ordenes de dominio</h2><span>${domainOrders.length} solicitudes</span></div>
+      ${domainOrdersTable(domainOrders)}
     </section>
 
     <section class="section-grid">
@@ -1426,6 +1433,28 @@ function domainsTable(rows) {
               ? '<span class="muted-cell">Activo</span>'
               : `<button class="text-button" data-activate-domain="${escapeAttribute(domain.id)}" type="button">Marcar activo</button>`
           }</td>
+        </tr>`;
+      })
+      .join("")}</tbody>
+  </table>`;
+}
+
+function domainOrdersTable(rows) {
+  if (!rows.length) {
+    return `<div class="empty-state">Cuando un cliente elija un dominio en el flujo inicial, aparecera aqui antes de comprarlo.</div>`;
+  }
+  return `<table>
+    <thead><tr><th>Dominio</th><th>Cliente</th><th>Estado</th><th>Pago</th><th>Email planeado</th></tr></thead>
+    <tbody>${rows
+      .map((order) => {
+        const store = stores.find((item) => item.id === order.business_id);
+        const aliases = Array.isArray(order.email_aliases) ? order.email_aliases : [];
+        return `<tr>
+          <td><strong>${escapeHtml(order.requested_domain || order.normalized_domain)}</strong><br><small>${escapeHtml(order.provider || "")} · ${escapeHtml(order.availability_status || "")}</small></td>
+          <td>${escapeHtml(store?.name || order.owner_name || "Pendiente")}<br><small>${escapeHtml(order.owner_email || "")}</small></td>
+          <td><span class="status status-${escapeAttribute(order.status || "new")}">${escapeHtml(order.status || "draft")}</span></td>
+          <td>${escapeHtml(order.payment_status || "unpaid")}<br><small>${escapeHtml(order.package_code || "starter")}</small></td>
+          <td>${aliases.slice(0, 3).map((item) => `<code>${escapeHtml(item.address || "")}</code>`).join("<br>") || "<span class=\"muted-cell\">Pendiente</span>"}</td>
         </tr>`;
       })
       .join("")}</tbody>

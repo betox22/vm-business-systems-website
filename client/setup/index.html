@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Luma Guided Setup</title>
-    <link rel="stylesheet" href="/ai-builder.css?v=23">
+    <link rel="stylesheet" href="/ai-builder.css?v=24">
     <link rel="stylesheet" href="/client-setup.css?v=7">
   </head>
   <body class="public-client-setup guided-modal-open" data-context="client-setup">
@@ -45,6 +45,7 @@
             <label data-i18n-label="preferredTone">Preferred tone<input name="preferred_tone"></label>
             <label data-i18n-label="preferredColors">Preferred colors<input name="preferred_colors"></label>
             <label data-i18n-label="contactInfo">Contact info<textarea name="contact_info" rows="3"></textarea></label>
+            <label data-i18n-label="desiredDomain">Desired domain<input name="desired_domain" placeholder="example.com"></label>
             <label data-i18n-label="logoUrl">Logo URL optional<input name="logo_url" placeholder="https://..."></label>
             <label data-i18n-label="uploadLogo">Upload logo optional<input name="logo_file" type="file" accept="image/*"></label>
             <label data-i18n-label="photoUrls">Photo URLs optional<textarea name="photo_urls" rows="3" data-i18n-placeholder="photoUrlsPlaceholder"></textarea></label>
@@ -140,6 +141,7 @@
                     <label data-i18n-label="preferredTone">Tone/style<input data-summary-field="preferredTone"></label>
                     <label data-i18n-label="preferredColors">Colors<input data-summary-field="preferredColors"></label>
                     <label data-i18n-label="contactInfo">Contact info<textarea data-summary-field="contactInfo" rows="3"></textarea></label>
+                    <label data-i18n-label="desiredDomain">Desired domain<input data-summary-field="desiredDomain" placeholder="example.com"></label>
                     <label data-i18n-label="salesMode">Sales flow<input data-summary-field="salesMode" placeholder="online sales, quotes, or both" data-i18n-placeholder="salesModePlaceholder"></label>
                     <label data-i18n-label="hasLogoPhotos">Logo/photos<input data-summary-field="hasLogoPhotos"></label>
                     <label data-i18n-label="logoUrl">Logo URL<input data-summary-field="logoUrl"></label>
@@ -200,12 +202,7 @@
       </section>
     </main>
 
-    <script src="/luma-config.js?v=1781138876"></script>
     <script src="/template-router.js?v=2"></script>
-    <script src="/ai-builder.js?v=35"></script>
+    <script src="/ai-builder.js?v=36"></script>
   </body>
 </html>
-
-
-
-
