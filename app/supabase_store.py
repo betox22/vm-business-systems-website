@@ -3,7 +3,7 @@ import re
 from datetime import UTC, datetime
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 from urllib.request import ProxyHandler, Request, build_opener
 
 from .auth_store import (
@@ -592,6 +592,7 @@ def create_business_member_invite(member_id: str) -> dict[str, Any]:
     invite_url = link.get("action_link") or link.get("actionLink") or ""
     if not invite_url:
         raise RuntimeError("Supabase did not return a usable invitation link.")
+    invite_url = _rewrite_supabase_redirect(invite_url, redirect_url)
     _insert(
         "audit_logs",
         {
@@ -649,6 +650,13 @@ def _get_business_member_or_raise(member_id: str) -> dict[str, Any]:
 def _client_portal_url(business_id: str) -> str:
     base_url = (get_settings().client_portal_base_url or "").rstrip("/")
     return f"{base_url}/?business_id={quote(business_id)}"
+
+
+def _rewrite_supabase_redirect(action_link: str, redirect_url: str) -> str:
+    parts = urlsplit(action_link)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query["redirect_to"] = redirect_url
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
 
 
 def create_domain_order(payload: DomainOrderPayload) -> dict[str, Any]:
