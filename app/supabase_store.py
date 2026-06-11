@@ -6,6 +6,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import ProxyHandler, Request, build_opener
 
+from .auth_store import AuthError, create_supabase_auth_user, existing_member_user_id
 from .config import get_settings
 from .schemas import (
     AiWebsiteBuilderRequest,
@@ -521,6 +522,15 @@ def list_business_members(business_id: str) -> list[dict[str, Any]]:
 def upsert_business_member(business_id: str, payload: BusinessMemberPayload) -> dict[str, Any]:
     _get_business_or_raise(business_id)
     email = payload.email.strip().lower()
+    user_id = _uuid_or_none(payload.user_id) or existing_member_user_id(email)
+    if not user_id:
+        try:
+            user = create_supabase_auth_user(email)
+            user_id = user.get("id") or ""
+        except AuthError as error:
+            raise RuntimeError(
+                "Could not create or link the Supabase Auth user for this email."
+            ) from error
     existing = _select_optional(
         "business_members",
         f"business_id=eq.{quote(business_id)}&email=eq.{quote(email)}&select=*&limit=1",
@@ -528,7 +538,7 @@ def upsert_business_member(business_id: str, payload: BusinessMemberPayload) -> 
     data = {
         "business_id": business_id,
         "email": email,
-        "user_id": _uuid_or_none(payload.user_id),
+        "user_id": user_id,
         "role": payload.role,
         "status": payload.status,
         "updated_at": _now_iso(),

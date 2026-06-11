@@ -1,4 +1,6 @@
 import json
+import secrets
+import string
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -95,6 +97,30 @@ def login_supabase(email: str, password: str) -> dict[str, Any]:
         },
     )
     return _json_request(request, "Supabase login failed")
+
+
+def create_supabase_auth_user(email: str) -> dict[str, Any]:
+    settings = get_settings()
+    _require_supabase_auth(settings)
+    temporary_password = _temporary_password()
+    request = Request(
+        f"{settings.supabase_url.rstrip('/')}/auth/v1/admin/users",
+        data=json.dumps(
+            {
+                "email": email,
+                "password": temporary_password,
+                "email_confirm": False,
+                "user_metadata": {"source": "luma_admin_invite"},
+            }
+        ).encode("utf-8"),
+        method="POST",
+        headers={
+            "apikey": settings.supabase_service_role_key or "",
+            "authorization": f"Bearer {settings.supabase_service_role_key}",
+            "content-type": "application/json",
+        },
+    )
+    return _json_request(request, "Supabase auth user creation failed")
 
 
 def verify_admin_bearer(access_token: str) -> dict[str, Any]:
@@ -229,6 +255,14 @@ def select_business_members(user_id: str, email: str) -> list[dict[str, Any]]:
         return []
 
 
+def existing_member_user_id(email: str) -> str:
+    rows = select_business_members("", email)
+    for row in rows:
+        if row.get("user_id"):
+            return row.get("user_id") or ""
+    return ""
+
+
 def allowed_admin_emails() -> set[str]:
     raw = get_settings().admin_allowed_emails or ""
     return {item.strip().lower() for item in raw.split(",") if item.strip()}
@@ -248,3 +282,8 @@ def _json_request(request: Request, error_prefix: str) -> Any:
         raise AuthError(f"{error_prefix}: {details}") from error
     except URLError as error:
         raise AuthError(f"{error_prefix}: {error.reason}") from error
+
+
+def _temporary_password() -> str:
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    return "".join(secrets.choice(alphabet) for _ in range(32))
