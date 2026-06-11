@@ -27,6 +27,7 @@ from .schemas import (
     AssetUploadPayload,
     AssetUploadResponse,
     BusinessMutationResponse,
+    BusinessMemberInviteResponse,
     BusinessMemberMutationResponse,
     BusinessMemberPayload,
     BusinessMemberUpdatePayload,
@@ -78,6 +79,7 @@ from .supabase_store import (
     create_client_catalog_item,
     create_public_lead,
     create_client_request,
+    create_business_member_invite,
     delete_client_catalog_item,
     duplicate_site,
     get_admin_overview,
@@ -648,6 +650,29 @@ def update_admin_business_member(member_id: str, payload: BusinessMemberUpdatePa
             detail=str(error),
         ) from error
     return BusinessMemberMutationResponse(id=member["id"], storage_status="stored", member=member)
+
+
+@app.post("/api/admin/business-members/{member_id}/invite", response_model=BusinessMemberInviteResponse, dependencies=[Depends(require_admin)])
+def invite_admin_business_member(member_id: str) -> BusinessMemberInviteResponse:
+    try:
+        result = create_business_member_invite(member_id)
+    except SupabaseNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(error),
+        ) from error
+    member = result["member"]
+    return BusinessMemberInviteResponse(
+        id=member["id"],
+        storage_status="stored",
+        inviteUrl=result["invite_url"],
+        member=member,
+    )
 
 
 @app.patch("/api/admin/sites/{site_id}", response_model=SiteAdminMutationResponse, dependencies=[Depends(require_admin)])

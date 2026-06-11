@@ -27,6 +27,10 @@ class Settings(BaseSettings):
         default="http://127.0.0.1:5177/site.html",
         alias="PUBLIC_SITE_BASE_URL",
     )
+    client_portal_base_url: str = Field(
+        default="https://vmbusinesssystems.com/client/portal/",
+        alias="CLIENT_PORTAL_BASE_URL",
+    )
     public_root_domain: str = Field(
         default="vmbusinesssystems.com",
         alias="PUBLIC_ROOT_DOMAIN",

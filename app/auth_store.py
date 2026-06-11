@@ -123,6 +123,28 @@ def create_supabase_auth_user(email: str) -> dict[str, Any]:
     return _json_request(request, "Supabase auth user creation failed")
 
 
+def generate_supabase_magic_link(email: str, redirect_to: str) -> dict[str, Any]:
+    settings = get_settings()
+    _require_supabase_auth(settings)
+    request = Request(
+        f"{settings.supabase_url.rstrip('/')}/auth/v1/admin/generate_link",
+        data=json.dumps(
+            {
+                "type": "magiclink",
+                "email": email,
+                "options": {"redirect_to": redirect_to},
+            }
+        ).encode("utf-8"),
+        method="POST",
+        headers={
+            "apikey": settings.supabase_service_role_key or "",
+            "authorization": f"Bearer {settings.supabase_service_role_key}",
+            "content-type": "application/json",
+        },
+    )
+    return _json_request(request, "Supabase magic link generation failed")
+
+
 def verify_admin_bearer(access_token: str) -> dict[str, Any]:
     if not access_token:
         raise AuthError("Missing bearer token.")

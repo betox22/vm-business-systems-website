@@ -6,7 +6,13 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import ProxyHandler, Request, build_opener
 
-from .auth_store import AuthError, apply_member_role_overrides, create_supabase_auth_user, existing_member_user_id
+from .auth_store import (
+    AuthError,
+    apply_member_role_overrides,
+    create_supabase_auth_user,
+    existing_member_user_id,
+    generate_supabase_magic_link,
+)
 from .config import get_settings
 from .schemas import (
     AiWebsiteBuilderRequest,
@@ -571,6 +577,40 @@ def update_business_member(member_id: str, payload: BusinessMemberUpdatePayload)
     return apply_member_role_overrides([member])[0]
 
 
+def create_business_member_invite(member_id: str) -> dict[str, Any]:
+    member = _get_business_member_or_raise(member_id)
+    member = apply_member_role_overrides([member])[0]
+    email = (member.get("email") or "").strip().lower()
+    business_id = member.get("business_id") or ""
+    if not email or not business_id:
+        raise RuntimeError("Business member is missing email or business_id.")
+    redirect_url = _client_portal_url(business_id)
+    try:
+        link = generate_supabase_magic_link(email, redirect_url)
+    except AuthError as error:
+        raise RuntimeError("Could not generate Supabase magic link for this member.") from error
+    invite_url = link.get("action_link") or link.get("actionLink") or ""
+    if not invite_url:
+        raise RuntimeError("Supabase did not return a usable invitation link.")
+    _insert(
+        "audit_logs",
+        {
+            "business_id": business_id,
+            "actor_user_id": member.get("user_id"),
+            "actor_email": email,
+            "action": "business_member_invite_link_created",
+            "entity_type": "business_member",
+            "entity_id": member_id,
+            "metadata": {
+                "role": member.get("role"),
+                "redirect_url": redirect_url,
+                "source": "admin_member_access",
+            },
+        },
+    )
+    return {"member": member, "invite_url": invite_url}
+
+
 def _db_compatible_member_role(role: str) -> str:
     return role if role in DB_COMPATIBLE_MEMBER_ROLES else "viewer"
 
@@ -594,6 +634,21 @@ def _store_member_role_override(member: dict[str, Any], role: str) -> None:
             },
         },
     )
+
+
+def _get_business_member_or_raise(member_id: str) -> dict[str, Any]:
+    rows = _select(
+        "business_members",
+        f"id=eq.{quote(member_id)}&select=*&limit=1",
+    )
+    if not rows:
+        raise RuntimeError("Business member not found.")
+    return rows[0]
+
+
+def _client_portal_url(business_id: str) -> str:
+    base_url = (get_settings().client_portal_base_url or "").rstrip("/")
+    return f"{base_url}/?business_id={quote(business_id)}"
 
 
 def create_domain_order(payload: DomainOrderPayload) -> dict[str, Any]:
