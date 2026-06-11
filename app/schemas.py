@@ -267,6 +267,12 @@ class AdminLoginPayload(BaseModel):
     password: str = Field(min_length=1, max_length=240)
 
 
+class AdminPasswordChangePayload(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    new_password: str = Field(alias="newPassword", min_length=8, max_length=240)
+
+
 class AdminUserOut(BaseModel):
     id: str
     email: str = ""

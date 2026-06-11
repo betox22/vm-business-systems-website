@@ -99,6 +99,24 @@ def login_supabase(email: str, password: str) -> dict[str, Any]:
     return _json_request(request, "Supabase login failed")
 
 
+def update_supabase_user_password(user_id: str, new_password: str) -> dict[str, Any]:
+    if not user_id:
+        raise AuthError("Missing user id.")
+    settings = get_settings()
+    _require_supabase_auth(settings)
+    request = Request(
+        f"{settings.supabase_url.rstrip('/')}/auth/v1/admin/users/{quote(user_id)}",
+        data=json.dumps({"password": new_password}).encode("utf-8"),
+        method="PUT",
+        headers={
+            "apikey": settings.supabase_service_role_key or "",
+            "authorization": f"Bearer {settings.supabase_service_role_key}",
+            "content-type": "application/json",
+        },
+    )
+    return _json_request(request, "Supabase password update failed")
+
+
 def create_supabase_auth_user(email: str) -> dict[str, Any]:
     settings = get_settings()
     _require_supabase_auth(settings)

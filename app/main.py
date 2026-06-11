@@ -15,6 +15,7 @@ from .auth_store import (
     login_client,
     login_admin,
     permissions_for_role,
+    update_supabase_user_password,
     verify_admin_bearer,
     verify_client_member,
 )
@@ -24,6 +25,7 @@ from .models import Order, Product, StoreCustomer, StoreDesignConfig, StorePage,
 from .schemas import (
     AdminLoginPayload,
     AdminLoginResponse,
+    AdminPasswordChangePayload,
     AssetUploadPayload,
     AssetUploadResponse,
     BusinessMutationResponse,
@@ -204,6 +206,34 @@ def login_admin_user(payload: AdminLoginPayload) -> AdminLoginResponse:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(error),
         ) from error
+
+
+@app.post("/api/auth/change-password")
+def change_admin_password(
+    payload: AdminPasswordChangePayload,
+    request: Request,
+) -> dict[str, str]:
+    authorization = request.headers.get("authorization", "")
+    bearer_token = authorization.removeprefix("Bearer ").strip()
+    if not bearer_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Admin session required.",
+        )
+    try:
+        user = verify_admin_bearer(bearer_token)
+        update_supabase_user_password(user.get("id") or "", payload.new_password)
+    except AuthNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except AuthError as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(error),
+        ) from error
+    return {"status": "updated"}
 
 
 @app.post("/api/client/auth/login", response_model=ClientLoginResponse)
