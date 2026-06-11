@@ -162,6 +162,7 @@ body {
   color: #b6c5d6;
   font-size: 17px;
   line-height: 1.6;
+  overflow-wrap: break-word;
 }
 
 .access-grid {
@@ -721,6 +722,7 @@ th {
 
   .welcome-copy {
     gap: 12px;
+    max-width: 100%;
   }
 
   .welcome-copy h1 {
@@ -730,7 +732,13 @@ th {
   }
 
   .welcome-copy p {
+    max-width: 100%;
     font-size: 15px;
+  }
+
+  .access-grid,
+  .seller-login-card {
+    max-width: 100%;
   }
 
   .access-grid article {
