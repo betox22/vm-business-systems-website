@@ -178,6 +178,10 @@ const statusLabels = {
   new: "Nuevo",
   contacted: "Contactado",
   qualified: "Calificado",
+  draft_generated: "Borrador generado",
+  in_review: "En revision",
+  changes_requested: "Cambios pedidos",
+  approved: "Aprobado",
   won: "Ganado",
   lost: "Perdido",
   archived: "Archivado",
@@ -449,13 +453,18 @@ function applyCloudOverview(overview) {
     storeId: lead.business_id || "",
     customer: lead.customer_name || lead.email || lead.phone || "Lead sin nombre",
     total: 0,
-    status: lead.status || "new",
+    status: lead.metadata?.source === "client_generated_draft_review" && (lead.status || "new") === "new"
+      ? "draft_generated"
+      : lead.status || "new",
     items: lead.metadata?.catalog_item_name || lead.message || "Solicitud desde web",
     date: formatDate(lead.created_at),
     email: lead.email || "",
     phone: lead.phone || "",
     message: lead.message || "",
     internalNotes: lead.internal_notes || "",
+    source: lead.metadata?.source || "",
+    siteId: lead.site_id || "",
+    catalogItemId: lead.metadata?.catalog_item_id || "",
     contactedAt: lead.contacted_at || "",
     closedAt: lead.closed_at || "",
   }));
@@ -528,6 +537,9 @@ function render() {
   });
   content.querySelectorAll("[data-publish-site]").forEach((button) => {
     button.addEventListener("click", () => publishSiteFromAdmin(button.dataset.publishSite));
+  });
+  content.querySelectorAll("[data-publish-invite]").forEach((button) => {
+    button.addEventListener("click", () => publishAndInviteClient(button.dataset.publishInvite));
   });
   content.querySelectorAll("[data-site-status]").forEach((button) => {
     button.addEventListener("click", () => updateSiteStatus(button.dataset.siteId, button.dataset.siteStatus));
@@ -667,6 +679,7 @@ function publicationCard(row) {
 
 function renderDashboard() {
   const visibleOrders = filteredOrders();
+  const generatedDrafts = visibleOrders.filter((order) => order.source === "client_generated_draft_review");
   const paidTotal = visibleOrders
     .filter((order) => order.status === "paid")
     .reduce((sum, order) => sum + order.total, 0);
@@ -684,6 +697,7 @@ function renderDashboard() {
           <h2>Trabajo pendiente</h2>
           <button class="text-button" data-go-view="requests" type="button">Ver solicitudes</button>
         </div>
+        ${generatedDraftsPanel(generatedDrafts.slice(0, 4))}
         ${requestsTable(requests)}
       </article>
       <article class="data-card">
@@ -703,11 +717,13 @@ function renderDashboard() {
 }
 
 function renderRequests() {
+  const generatedDrafts = orders.filter((order) => order.source === "client_generated_draft_review");
   return `<section class="data-card">
     <div class="card-header">
       <h2>Solicitudes de clientes</h2>
       <button class="primary-button" data-build-request="${requests[0]?.id || ""}" type="button">Generar con AI</button>
     </div>
+    ${generatedDraftsPanel(generatedDrafts)}
     ${requestsTable(requests)}
   </section>`;
 }
@@ -875,7 +891,7 @@ function openNewStoreModal() {
 }
 
 function renderOrders() {
-  const groups = ["new", "contacted", "qualified", "won", "lost"];
+  const groups = ["new", "draft_generated", "in_review", "changes_requested", "approved", "won", "lost"];
   const visibleOrders = filteredOrders();
   return `<section class="kanban">
     ${groups
@@ -1260,23 +1276,100 @@ async function duplicateSiteFromAdmin(siteId) {
 async function publishSiteFromAdmin(siteId) {
   if (!siteId) return;
   try {
-    const response = await fetch(apiUrl(`/sites/${encodeURIComponent(siteId)}/publish-complete`), {
-      method: "POST",
-      headers: adminHeaders({ "content-type": "application/json" }),
-      body: JSON.stringify({}),
-    });
-    if (response.status === 401) {
-      promptForAdminToken();
-      return;
-    }
-    if (!response.ok) throw new Error(await response.text());
-    const result = await response.json();
+    const result = await publishSite(siteId);
     lastPublishedUrl = result.finalUrl || result.final_url || result.public_url || "";
     await loadCloudOverview();
     window.alert(`Publicado: ${lastPublishedUrl || result.site_id}`);
   } catch (error) {
     window.alert(`No se pudo publicar: ${shortMessage(error)}`);
   }
+}
+
+async function publishAndInviteClient(leadId) {
+  const lead = orders.find((item) => item.id === leadId);
+  if (!lead?.siteId || !lead?.storeId) {
+    window.alert("Este borrador aun no esta conectado a un sitio y negocio.");
+    return;
+  }
+  if (!lead.email) {
+    window.alert("Falta el email del cliente para crear el acceso.");
+    return;
+  }
+  try {
+    const publishResult = await publishSite(lead.siteId);
+    const member = await createClientMember(lead.storeId, lead.email);
+    const inviteResult = await createClientInvite(member.id);
+    lastPublishedUrl = publishResult.finalUrl || publishResult.final_url || publishResult.public_url || "";
+    lastMemberInviteUrl = inviteResult.inviteUrl || "";
+    await updateLeadStatusSilently(lead.id, "approved");
+    await loadCloudOverview();
+    const lines = [
+      `Publicado: ${lastPublishedUrl || publishResult.site_id}`,
+      lastMemberInviteUrl ? `Acceso cliente: ${lastMemberInviteUrl}` : "",
+    ].filter(Boolean);
+    window.alert(lines.join("\n"));
+  } catch (error) {
+    window.alert(`No se pudo publicar y crear acceso: ${shortMessage(error)}`);
+  }
+}
+
+async function publishSite(siteId) {
+  const response = await fetch(apiUrl(`/sites/${encodeURIComponent(siteId)}/publish-complete`), {
+    method: "POST",
+    headers: adminHeaders({ "content-type": "application/json" }),
+    body: JSON.stringify({}),
+  });
+  if (response.status === 401) {
+    promptForAdminToken();
+    throw new Error("Sesion requerida.");
+  }
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+}
+
+async function createClientMember(businessId, email) {
+  const response = await fetch(apiUrl(`/api/admin/businesses/${encodeURIComponent(businessId)}/members`), {
+    method: "POST",
+    headers: adminHeaders({ "content-type": "application/json" }),
+    body: JSON.stringify({
+      email,
+      role: "owner",
+      status: "invited",
+    }),
+  });
+  if (response.status === 401) {
+    showAdminLogin("Inicia sesion para crear accesos.");
+    throw new Error("Sesion requerida.");
+  }
+  if (!response.ok) throw new Error(await response.text());
+  const result = await response.json();
+  return result.member || result;
+}
+
+async function createClientInvite(memberId) {
+  const response = await fetch(apiUrl(`/api/admin/business-members/${encodeURIComponent(memberId)}/invite`), {
+    method: "POST",
+    headers: adminHeaders(),
+  });
+  if (response.status === 401) {
+    showAdminLogin("Inicia sesion para enviar invitaciones.");
+    throw new Error("Sesion requerida.");
+  }
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+}
+
+async function updateLeadStatusSilently(leadId, status) {
+  const response = await fetch(apiUrl(`/api/admin/leads/${encodeURIComponent(leadId)}`), {
+    method: "PATCH",
+    headers: adminHeaders({ "content-type": "application/json" }),
+    body: JSON.stringify({ status }),
+  });
+  if (response.status === 401) {
+    promptForAdminToken();
+    throw new Error("Sesion requerida.");
+  }
+  if (!response.ok) throw new Error(await response.text());
 }
 
 async function copyText(value) {
@@ -1303,6 +1396,32 @@ function clearAdminTokenFromSettings() {
   loadCloudOverview();
 }
 
+function generatedDraftsPanel(rows) {
+  if (!rows.length) {
+    return `<div class="empty-state compact-empty">No hay borradores generados pendientes de revision.</div>`;
+  }
+  return `<div class="generated-drafts">
+    ${rows.map((lead) => {
+      const store = stores.find((item) => item.id === lead.storeId);
+      const previewUrl = lead.siteId ? `/site.html?site_id=${encodeURIComponent(lead.siteId)}` : "";
+      return `<article class="generated-draft-card">
+        <div>
+          <strong>${escapeHtml(lead.customer)}</strong>
+          <span>${escapeHtml(store?.name || "Negocio generado")} · ${escapeHtml(lead.date)}</span>
+          <p>${escapeHtml(firstLine(lead.message))}</p>
+        </div>
+        <div class="card-actions">
+          ${previewUrl ? `<a class="text-button" href="${escapeAttribute(previewUrl)}" target="_blank" rel="noreferrer">Ver borrador</a>` : ""}
+          ${lead.storeId ? `<button class="text-button" data-view-store="${escapeAttribute(lead.storeId)}" type="button">Abrir negocio</button>` : ""}
+          ${lead.siteId ? `<button class="text-button" data-publish-site="${escapeAttribute(lead.siteId)}" type="button">Publicar</button>` : ""}
+          ${lead.siteId && lead.storeId && lead.email ? `<button class="text-button" data-publish-invite="${escapeAttribute(lead.id)}" type="button">Publicar + acceso</button>` : ""}
+          <button class="text-button" data-lead-status="in_review" data-lead-id="${escapeAttribute(lead.id)}" type="button">En revision</button>
+        </div>
+      </article>`;
+    }).join("")}
+  </div>`;
+}
+
 function requestsTable(rows) {
   return `<table>
     <thead><tr><th>Solicitud</th><th>Cliente</th><th>Tipo</th><th>Estado</th><th>Accion</th></tr></thead>
@@ -1326,11 +1445,14 @@ function ordersTable(rows) {
     <tbody>${rows
       .map((order) => {
         const store = stores.find((item) => item.id === order.storeId);
+        const previewUrl = order.siteId ? `/site.html?site_id=${encodeURIComponent(order.siteId)}` : "";
         return `<tr>
           <td><strong>${order.id}</strong><br><small>${order.date}</small></td>
           <td>${store?.name || order.storeId}</td>
           <td>${escapeHtml(order.customer)}<br><small>${escapeHtml([order.email, order.phone].filter(Boolean).join(" · "))}</small></td>
-          <td>${escapeHtml(order.items)}${order.message ? `<br><small>${escapeHtml(order.message)}</small>` : ""}</td>
+          <td>${escapeHtml(order.items)}${order.message ? `<br><small>${escapeHtml(order.message)}</small>` : ""}
+            ${previewUrl ? `<br><a class="text-button" href="${escapeAttribute(previewUrl)}" target="_blank" rel="noreferrer">Ver borrador</a>` : ""}
+          </td>
           <td>${statusBadge(order.status)}</td>
         </tr>`;
       })
@@ -1738,7 +1860,12 @@ function subscriptionsTable(rows) {
 
 function orderCard(order) {
   const store = stores.find((item) => item.id === order.storeId);
+  const previewUrl = order.siteId ? `/site.html?site_id=${encodeURIComponent(order.siteId)}` : "";
   const actions = [
+    ["draft_generated", "Borrador"],
+    ["in_review", "En revision"],
+    ["changes_requested", "Cambios"],
+    ["approved", "Aprobado"],
     ["contacted", "Contactado"],
     ["qualified", "Calificar"],
     ["won", "Ganado"],
@@ -1757,6 +1884,10 @@ function orderCard(order) {
     ${order.internalNotes ? `<small><strong>Nota:</strong> ${escapeHtml(order.internalNotes)}</small>` : ""}
     <span>${escapeHtml(order.date)}</span>
     <div class="lead-actions">
+      ${previewUrl ? `<a class="mini-action secondary" href="${escapeAttribute(previewUrl)}" target="_blank" rel="noreferrer">Preview</a>` : ""}
+      ${order.storeId ? `<button class="mini-action secondary" data-view-store="${escapeAttribute(order.storeId)}" type="button">Negocio</button>` : ""}
+      ${order.siteId ? `<button class="mini-action secondary" data-publish-site="${escapeAttribute(order.siteId)}" type="button">Publicar</button>` : ""}
+      ${order.siteId && order.storeId && order.email ? `<button class="mini-action secondary" data-publish-invite="${escapeAttribute(order.id)}" type="button">Publicar + acceso</button>` : ""}
       ${actions}
       <button class="mini-action secondary" data-lead-note="${escapeAttribute(order.id)}" type="button">Nota</button>
     </div>
@@ -1786,6 +1917,10 @@ function primaryDomainForBusiness(businessId) {
   const active = domains.find((domain) => domain.business_id === businessId && domain.status === "active");
   const pending = domains.find((domain) => domain.business_id === businessId);
   return active?.domain || pending?.domain || "";
+}
+
+function firstLine(value) {
+  return String(value || "").split("\n").find((line) => line.trim()) || "";
 }
 
 function shortMessage(error) {

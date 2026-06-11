@@ -323,7 +323,13 @@ th {
   color: var(--warning);
 }
 
+.status-draft_generated {
+  background: #eef9ff;
+  color: #0369a1;
+}
+
 .status-paid,
+.status-approved,
 .status-delivered {
   background: #e6f7ef;
   color: var(--success);
@@ -338,6 +344,11 @@ th {
 .status-cancelled {
   background: #fde8e7;
   color: var(--danger);
+}
+
+.status-changes_requested {
+  background: #fff1f3;
+  color: #be123c;
 }
 
 .status-ready_for_ai {
@@ -417,6 +428,51 @@ th {
   border-color: var(--line);
   background: #fff;
   color: var(--ink);
+}
+
+.generated-drafts {
+  display: grid;
+  gap: 10px;
+  padding: 0 16px 16px;
+}
+
+.generated-draft-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid rgba(0, 128, 96, 0.18);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f3fbf8, #ffffff);
+  padding: 13px;
+}
+
+.generated-draft-card strong,
+.generated-draft-card span,
+.generated-draft-card p {
+  display: block;
+}
+
+.generated-draft-card span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.generated-draft-card p {
+  margin-top: 7px;
+  max-width: 680px;
+  color: #3f454a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.generated-draft-card .card-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
 }
 
 .card-list {
@@ -722,9 +778,14 @@ code {
 @media (max-width: 720px) {
   .topbar,
   .topbar-actions,
-  .builder-intro {
+  .builder-intro,
+  .generated-draft-card {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .generated-draft-card .card-actions {
+    justify-content: flex-start;
   }
 
   .nav-list,
