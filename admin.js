@@ -91,6 +91,7 @@ let cloudSites = [];
 let cloudCatalogItems = [];
 let cloudGenerations = [];
 let cloudLeads = [];
+let businessMembers = [];
 let selectedBusinessId = "";
 let lastPublishedUrl = "";
 
@@ -378,6 +379,7 @@ function applyCloudOverview(overview) {
   cloudCatalogItems = catalogItems;
   cloudGenerations = generations;
   cloudLeads = leads;
+  businessMembers = overview.business_members || [];
   domains = overview.domains || [];
   domainOrders = overview.domain_orders || [];
   planLimits = overview.plan_limits || [];
@@ -543,6 +545,13 @@ function render() {
     button.addEventListener("click", () => editLeadNote(button.dataset.leadNote));
   });
   content.querySelector("#businessEditForm")?.addEventListener("submit", saveBusinessFromDetail);
+  content.querySelector("#memberInviteForm")?.addEventListener("submit", inviteBusinessMember);
+  content.querySelectorAll("[data-member-status]").forEach((button) => {
+    button.addEventListener("click", () => updateBusinessMember(button.dataset.memberId, { status: button.dataset.memberStatus }));
+  });
+  content.querySelectorAll("[data-member-role]").forEach((select) => {
+    select.addEventListener("change", () => updateBusinessMember(select.dataset.memberId, { role: select.value }));
+  });
   content.querySelector("#domainForm")?.addEventListener("submit", saveDomainFromForm);
   content.querySelector("#domainSearchForm")?.addEventListener("submit", searchDomainsFromForm);
   content.querySelectorAll("[data-activate-domain]").forEach((button) => {
@@ -735,6 +744,7 @@ function renderStoreDetail() {
   const business = cloudBusinesses.find((item) => item.id === store.id) || {};
   const site = cloudSites.find((item) => item.business_id === store.id) || {};
   const storeDomains = domains.filter((item) => item.business_id === store.id);
+  const storeMembers = businessMembers.filter((item) => item.business_id === store.id);
   const catalog = cloudCatalogItems.filter((item) => item.business_id === store.id || item.site_id === store.siteId);
   const storePages = pages.filter((item) => item.storeId === store.id);
   const publicUrl = site.id ? `/site.html?site_id=${encodeURIComponent(site.id)}` : "";
@@ -786,9 +796,15 @@ function renderStoreDetail() {
         ${domainsTable(storeDomains)}
       </article>
       <article class="data-card">
-        <div class="card-header"><h2>Paginas</h2><span>${storePages.length}</span></div>
-        ${storePagesTable(storePages)}
+        <div class="card-header"><h2>Accesos y roles</h2><span>${storeMembers.length}</span></div>
+        ${memberInviteForm(store.id)}
+        ${businessMembersTable(storeMembers)}
       </article>
+    </section>
+
+    <section class="data-card wide-card">
+      <div class="card-header"><h2>Paginas</h2><span>${storePages.length}</span></div>
+      ${storePagesTable(storePages)}
     </section>
 
     <section class="data-card wide-card">
@@ -1368,6 +1384,121 @@ function businessEditForm(business, store) {
     </label>
     <button class="primary-button" type="submit">Guardar cliente</button>
   </form>`;
+}
+
+function memberInviteForm(businessId) {
+  return `<form id="memberInviteForm" class="settings-form compact-form" data-business-id="${escapeAttribute(businessId)}">
+    <label>Email del usuario
+      <input name="memberEmail" type="email" placeholder="usuario@cliente.com" required>
+    </label>
+    <div class="form-grid-2">
+      <label>Rol
+        <select name="memberRole">
+          ${memberRoleOptions("manager")}
+        </select>
+      </label>
+      <label>Estado
+        <select name="memberStatus">
+          <option value="invited">Invitado</option>
+          <option value="active">Activo</option>
+          <option value="disabled">Deshabilitado</option>
+        </select>
+      </label>
+    </div>
+    <button class="primary-button" type="submit">Agregar acceso</button>
+    <p class="settings-note">Luego conectamos invitacion por email/magic link. Por ahora registra el acceso y sus permisos.</p>
+  </form>`;
+}
+
+function businessMembersTable(rows) {
+  if (!rows.length) {
+    return `<div class="empty-state">Aun no hay usuarios asignados a este cliente.</div>`;
+  }
+  return `<table>
+    <thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th>Accion</th></tr></thead>
+    <tbody>${rows
+      .map((member) => {
+        const isDisabled = member.status === "disabled";
+        const nextStatus = isDisabled ? "active" : "disabled";
+        const actionLabel = isDisabled ? "Activar" : "Deshabilitar";
+        return `<tr>
+          <td><strong>${escapeHtml(member.email || "Sin email")}</strong><br><small>${escapeHtml(member.user_id || "Pendiente de usuario")}</small></td>
+          <td>
+            <select class="table-select" data-member-role data-member-id="${escapeAttribute(member.id)}">
+              ${memberRoleOptions(member.role || "viewer")}
+            </select>
+          </td>
+          <td><span class="status status-${escapeAttribute(member.status || "invited")}">${escapeHtml(member.status || "invited")}</span></td>
+          <td><button class="text-button" data-member-status="${escapeAttribute(nextStatus)}" data-member-id="${escapeAttribute(member.id)}" type="button">${actionLabel}</button></td>
+        </tr>`;
+      })
+      .join("")}</tbody>
+  </table>`;
+}
+
+function memberRoleOptions(selected = "viewer") {
+  const roles = [
+    ["owner", "Owner"],
+    ["manager", "Manager"],
+    ["catalog_manager", "Catalogo"],
+    ["seller", "Vendedor"],
+    ["fulfillment", "Fulfillment"],
+    ["viewer", "Solo lectura"],
+  ];
+  return roles
+    .map(([value, label]) => `<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`)
+    .join("");
+}
+
+async function inviteBusinessMember(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const businessId = form.dataset.businessId;
+  if (!businessId) return;
+  const payload = {
+    email: form.elements.memberEmail.value.trim(),
+    role: form.elements.memberRole.value,
+    status: form.elements.memberStatus.value,
+  };
+  try {
+    const response = await fetch(apiUrl(`/api/admin/businesses/${encodeURIComponent(businessId)}/members`), {
+      method: "POST",
+      headers: adminHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify(payload),
+    });
+    if (response.status === 401) {
+      showAdminLogin("Inicia sesion para administrar accesos.");
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    form.reset();
+    await loadCloudOverview();
+    selectedBusinessId = businessId;
+    currentView = "storeDetail";
+    setActiveNav("stores");
+    render();
+  } catch (error) {
+    window.alert(`No se pudo agregar el acceso: ${shortMessage(error)}`);
+  }
+}
+
+async function updateBusinessMember(memberId, payload) {
+  if (!memberId) return;
+  try {
+    const response = await fetch(apiUrl(`/api/admin/business-members/${encodeURIComponent(memberId)}`), {
+      method: "PATCH",
+      headers: adminHeaders({ "content-type": "application/json" }),
+      body: JSON.stringify(payload),
+    });
+    if (response.status === 401) {
+      showAdminLogin("Inicia sesion para administrar accesos.");
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    await loadCloudOverview();
+  } catch (error) {
+    window.alert(`No se pudo actualizar el acceso: ${shortMessage(error)}`);
+  }
 }
 
 function sitePublicationForm(site, publicUrl, activeDomain, finalUrl) {
