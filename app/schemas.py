@@ -209,6 +209,24 @@ class ClientPortalOverviewResponse(BaseModel):
     domains: list[dict] = Field(default_factory=list)
 
 
+class ClientLoginPayload(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    email: str = Field(min_length=3, max_length=240)
+    password: str = Field(min_length=1, max_length=240)
+    business_id: str | None = Field(default=None, alias="businessId")
+
+
+class ClientLoginResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    access_token: str = Field(alias="accessToken")
+    refresh_token: str = Field(default="", alias="refreshToken")
+    expires_in: int = Field(default=0, alias="expiresIn")
+    user: dict = Field(default_factory=dict)
+    memberships: list[dict] = Field(default_factory=list)
+
+
 class ClientRequestPayload(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 

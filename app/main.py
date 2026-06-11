@@ -12,6 +12,7 @@ from .auth_store import (
     AuthError,
     AuthNotConfiguredError,
     demo_client_member,
+    login_client,
     login_admin,
     permissions_for_role,
     verify_admin_bearer,
@@ -29,6 +30,8 @@ from .schemas import (
     BusinessUpdatePayload,
     ClientPortalCatalogItemPayload,
     ClientPortalCatalogMutationResponse,
+    ClientLoginPayload,
+    ClientLoginResponse,
     ClientPortalOverviewResponse,
     CustomerOut,
     AiWebsiteBuilderRequest,
@@ -183,6 +186,22 @@ def client_portal_context(
 def login_admin_user(payload: AdminLoginPayload) -> AdminLoginResponse:
     try:
         return AdminLoginResponse(**login_admin(payload.email, payload.password))
+    except AuthNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except AuthError as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(error),
+        ) from error
+
+
+@app.post("/api/client/auth/login", response_model=ClientLoginResponse)
+def login_client_user(payload: ClientLoginPayload) -> ClientLoginResponse:
+    try:
+        return ClientLoginResponse(**login_client(payload.email, payload.password, payload.business_id))
     except AuthNotConfiguredError as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

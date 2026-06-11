@@ -42,20 +42,7 @@ class AuthNotConfiguredError(RuntimeError):
 
 
 def login_admin(email: str, password: str) -> dict[str, Any]:
-    settings = get_settings()
-    _require_supabase_auth(settings)
-    url = f"{settings.supabase_url.rstrip('/')}/auth/v1/token?grant_type=password"
-    request = Request(
-        url,
-        data=json.dumps({"email": email, "password": password}).encode("utf-8"),
-        method="POST",
-        headers={
-            "apikey": settings.supabase_service_role_key or "",
-            "authorization": f"Bearer {settings.supabase_service_role_key}",
-            "content-type": "application/json",
-        },
-    )
-    payload = _json_request(request, "Supabase login failed")
+    payload = login_supabase(email, password)
     user = payload.get("user") or {}
     access_token = payload.get("access_token") or ""
     if not access_token or not is_admin_user(user):
@@ -70,6 +57,44 @@ def login_admin(email: str, password: str) -> dict[str, Any]:
             "role": admin_role_for_user(user) or "admin",
         },
     }
+
+
+def login_client(email: str, password: str, business_id: str | None = None) -> dict[str, Any]:
+    payload = login_supabase(email, password)
+    user = payload.get("user") or {}
+    access_token = payload.get("access_token") or ""
+    memberships = active_client_memberships(user)
+    if business_id:
+        memberships = [item for item in memberships if item.get("business_id") == business_id]
+    if not access_token or not memberships:
+        raise AuthError("Client access is not enabled for this user.")
+    return {
+        "access_token": access_token,
+        "refresh_token": payload.get("refresh_token") or "",
+        "expires_in": payload.get("expires_in") or 0,
+        "user": {
+            "id": user.get("id") or "",
+            "email": user.get("email") or email,
+        },
+        "memberships": memberships,
+    }
+
+
+def login_supabase(email: str, password: str) -> dict[str, Any]:
+    settings = get_settings()
+    _require_supabase_auth(settings)
+    url = f"{settings.supabase_url.rstrip('/')}/auth/v1/token?grant_type=password"
+    request = Request(
+        url,
+        data=json.dumps({"email": email, "password": password}).encode("utf-8"),
+        method="POST",
+        headers={
+            "apikey": settings.supabase_service_role_key or "",
+            "authorization": f"Bearer {settings.supabase_service_role_key}",
+            "content-type": "application/json",
+        },
+    )
+    return _json_request(request, "Supabase login failed")
 
 
 def verify_admin_bearer(access_token: str) -> dict[str, Any]:
@@ -149,6 +174,16 @@ def client_member_for_user(user: dict[str, Any], business_id: str) -> dict[str, 
         ):
             return row
     return None
+
+
+def active_client_memberships(user: dict[str, Any]) -> list[dict[str, Any]]:
+    user_id = user.get("id") or ""
+    email = (user.get("email") or "").strip().lower()
+    rows = select_business_members(user_id, email)
+    return [
+        row for row in rows
+        if row.get("status") == "active" and row.get("role") in CLIENT_ROLES
+    ]
 
 
 def permissions_for_role(role: str) -> set[str]:
