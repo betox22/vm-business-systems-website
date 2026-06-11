@@ -4,6 +4,52 @@ body.public-client-setup {
   background: transparent;
 }
 
+.public-client-setup .domain-check-card {
+  display: grid;
+  gap: 8px;
+  grid-column: 1 / -1;
+  border: 1px solid rgba(20, 184, 166, 0.18);
+  border-radius: 12px;
+  background: rgba(240, 253, 250, 0.72);
+  padding: 10px;
+}
+
+.public-client-setup .domain-choice-list {
+  display: grid;
+  gap: 8px;
+}
+
+.public-client-setup .domain-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.public-client-setup .domain-choice strong,
+.public-client-setup .domain-choice span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.public-client-setup .domain-choice span {
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.public-client-setup .domain-choice.blocked {
+  opacity: 0.58;
+}
+
 body.public-client-setup.generated-preview-open {
   overflow: auto;
   background: #ffffff;

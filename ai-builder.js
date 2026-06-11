@@ -82,6 +82,11 @@ const I18N = {
     preferredColors: "Preferred colors",
     contactInfo: "Contact info",
     desiredDomain: "Desired domain",
+    checkDomain: "Check domain availability",
+    checkingDomain: "Checking domain options...",
+    domainCheckEmpty: "Write a domain or business name first.",
+    domainExact: "Real registrar availability",
+    domainSuggestions: "Preliminary suggestions",
     logoUrl: "Logo URL optional",
     uploadLogo: "Upload logo optional",
     photoUrls: "Photo URLs optional",
@@ -163,6 +168,11 @@ const I18N = {
     preferredColors: "Colores preferidos",
     contactInfo: "Informacion de contacto",
     desiredDomain: "Dominio deseado",
+    checkDomain: "Verificar disponibilidad",
+    checkingDomain: "Buscando opciones de dominio...",
+    domainCheckEmpty: "Escribe primero un dominio o nombre de negocio.",
+    domainExact: "Disponibilidad real del registrador",
+    domainSuggestions: "Sugerencias preliminares",
     logoUrl: "URL del logo opcional",
     uploadLogo: "Subir logo opcional",
     photoUrls: "URLs de fotos opcionales",
@@ -241,6 +251,11 @@ const I18N = {
     preferredColors: "Couleurs préférées",
     contactInfo: "Coordonnées",
     desiredDomain: "Domaine souhaité",
+    checkDomain: "Vérifier le domaine",
+    checkingDomain: "Recherche d'options de domaine...",
+    domainCheckEmpty: "Écrivez d'abord un domaine ou un nom d'entreprise.",
+    domainExact: "Disponibilité réelle du registraire",
+    domainSuggestions: "Suggestions préliminaires",
     logoUrl: "URL du logo optionnelle",
     uploadLogo: "Importer un logo optionnel",
     photoUrls: "URLs de photos optionnelles",
@@ -318,6 +333,11 @@ const I18N = {
     preferredColors: "Cores preferidas",
     contactInfo: "Informações de contato",
     desiredDomain: "Domínio desejado",
+    checkDomain: "Verificar domínio",
+    checkingDomain: "Buscando opções de domínio...",
+    domainCheckEmpty: "Digite primeiro um domínio ou nome do negócio.",
+    domainExact: "Disponibilidade real do registrador",
+    domainSuggestions: "Sugestões preliminares",
     logoUrl: "URL do logo opcional",
     uploadLogo: "Enviar logo opcional",
     photoUrls: "URLs de fotos opcionais",
@@ -540,6 +560,9 @@ const guidedLogoUpload = document.querySelector("#guidedLogoUpload");
 const guidedPhotoUpload = document.querySelector("#guidedPhotoUpload");
 const guidedLogoPreview = document.querySelector("#guidedLogoPreview");
 const guidedPhotoPreview = document.querySelector("#guidedPhotoPreview");
+const checkDomainButton = document.querySelector("#checkDomainButton");
+const domainCheckStatus = document.querySelector("#domainCheckStatus");
+const domainResults = document.querySelector("#domainResults");
 const languageSelector = document.querySelector("#languageSelector");
 const summaryLanguageSelector = document.querySelector("#summaryLanguageSelector");
 const isPublicClientSetup = document.body.dataset.context === "client-setup";
@@ -604,6 +627,7 @@ backToChatButton?.addEventListener("click", switchBackToChat);
 assistantAudioToggle.addEventListener("click", toggleAssistantAudio);
 reviewDetailsButton.addEventListener("click", openReviewDetails);
 keepChattingButton.addEventListener("click", keepChatting);
+checkDomainButton?.addEventListener("click", checkDesiredDomainOptions);
 document.querySelector("#guidedSendButton").addEventListener("click", sendGuidedReply);
 document.querySelector("#guidedSkipButton").addEventListener("click", skipGuidedQuestion);
 guidedGenerateButton.addEventListener("click", handleGuidedGenerateButton);
@@ -1404,7 +1428,75 @@ function renderGuidedSummary() {
   currentInfoPreview.textContent = compactCollectedPreview();
   currentInfoMeta.textContent = `${Math.min(100, Math.round((completedFieldCount() / 10) * 100))}%`;
   renderAssetPreviews();
+  renderSelectedDomainState();
   saveGuidedDraft();
+}
+
+function renderSelectedDomainState() {
+  if (!domainCheckStatus || !guidedState.desiredDomain || domainResults?.children.length) return;
+  domainCheckStatus.textContent = selectedLanguage === "es"
+    ? "Puedes verificar disponibilidad antes de generar."
+    : "You can check availability before generating.";
+}
+
+async function checkDesiredDomainOptions() {
+  syncGuidedStateFromSummary();
+  const query = guidedState.desiredDomain || guidedState.businessName || "";
+  if (!query.trim()) {
+    domainCheckStatus.textContent = t("domainCheckEmpty");
+    domainResults.innerHTML = "";
+    return;
+  }
+  checkDomainButton.disabled = true;
+  domainCheckStatus.textContent = t("checkingDomain");
+  domainResults.innerHTML = "";
+  try {
+    const response = await fetch(`${API_BASE_URL}/public/domain-search?q=${encodeURIComponent(query)}`);
+    if (!response.ok) throw new Error(await readErrorMessage(response));
+    renderDomainResults(await response.json());
+  } catch (error) {
+    domainCheckStatus.textContent = selectedLanguage === "es"
+      ? `No se pudo verificar: ${shortError(error.message)}`
+      : `Could not check domain: ${shortError(error.message)}`;
+  } finally {
+    checkDomainButton.disabled = false;
+  }
+}
+
+function renderDomainResults(result) {
+  const rows = result.results || [];
+  domainCheckStatus.textContent = result.exact_availability || result.exactAvailability
+    ? t("domainExact")
+    : t("domainSuggestions");
+  if (!rows.length) {
+    domainResults.innerHTML = `<p class="mini-note">${selectedLanguage === "es" ? "No encontramos opciones." : "No options found."}</p>`;
+    return;
+  }
+  domainResults.innerHTML = rows.slice(0, 6).map((item) => {
+    const selectable = item.status !== "not_available";
+    return `<button class="domain-choice ${selectable ? "selectable" : "blocked"}" data-domain-choice="${escapeAttribute(item.domain)}" type="button" ${selectable ? "" : "disabled"}>
+      <strong>${escapeHtml(item.domain)}</strong>
+      <span>${escapeHtml(domainStatusLabel(item))}</span>
+    </button>`;
+  }).join("");
+  domainResults.querySelectorAll("[data-domain-choice]").forEach((button) => {
+    button.addEventListener("click", () => {
+      guidedState.desiredDomain = button.dataset.domainChoice;
+      renderGuidedSummary();
+      domainCheckStatus.textContent = selectedLanguage === "es"
+        ? `Dominio seleccionado: ${button.dataset.domainChoice}`
+        : `Selected domain: ${button.dataset.domainChoice}`;
+    });
+  });
+}
+
+function domainStatusLabel(item) {
+  const status = item.status || "";
+  if (status === "available_included") return selectedLanguage === "es" ? "Disponible en el paquete" : "Available in package";
+  if (status === "available_requires_review") return selectedLanguage === "es" ? "Disponible, requiere revision" : "Available, needs review";
+  if (status === "not_available") return selectedLanguage === "es" ? "No disponible" : "Not available";
+  if (status === "needs_registrar_check") return selectedLanguage === "es" ? "Sugerencia, confirmar antes de pagar" : "Suggestion, confirm before payment";
+  return status || (selectedLanguage === "es" ? "Opcion sugerida" : "Suggested option");
 }
 
 function openReviewDetails() {

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Luma Guided Setup</title>
     <link rel="stylesheet" href="/ai-builder.css?v=24">
-    <link rel="stylesheet" href="/client-setup.css?v=7">
+    <link rel="stylesheet" href="/client-setup.css?v=8">
   </head>
   <body class="public-client-setup guided-modal-open" data-context="client-setup">
     <main class="ai-shell">
@@ -142,6 +142,11 @@
                     <label data-i18n-label="preferredColors">Colors<input data-summary-field="preferredColors"></label>
                     <label data-i18n-label="contactInfo">Contact info<textarea data-summary-field="contactInfo" rows="3"></textarea></label>
                     <label data-i18n-label="desiredDomain">Desired domain<input data-summary-field="desiredDomain" placeholder="example.com"></label>
+                    <div class="domain-check-card">
+                      <button id="checkDomainButton" class="secondary-action" type="button" data-i18n="checkDomain">Check domain availability</button>
+                      <p id="domainCheckStatus" class="mini-note"></p>
+                      <div id="domainResults" class="domain-choice-list"></div>
+                    </div>
                     <label data-i18n-label="salesMode">Sales flow<input data-summary-field="salesMode" placeholder="online sales, quotes, or both" data-i18n-placeholder="salesModePlaceholder"></label>
                     <label data-i18n-label="hasLogoPhotos">Logo/photos<input data-summary-field="hasLogoPhotos"></label>
                     <label data-i18n-label="logoUrl">Logo URL<input data-summary-field="logoUrl"></label>
@@ -203,6 +208,6 @@
     </main>
 
     <script src="/template-router.js?v=2"></script>
-    <script src="/ai-builder.js?v=36"></script>
+    <script src="/ai-builder.js?v=37"></script>
   </body>
 </html>
