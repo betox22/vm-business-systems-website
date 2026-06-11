@@ -123,17 +123,88 @@ body.public-client-setup.generated-preview-open {
 }
 
 .public-client-setup.generated-preview-open .client-review-bar {
-  display: none !important;
+  position: sticky;
+  top: 54px;
+  z-index: 24;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-width: 0 0 1px;
+  background:
+    linear-gradient(90deg, rgba(12, 18, 32, 0.96), rgba(19, 34, 50, 0.94)),
+    #101827;
+  color: #ffffff;
+  padding: 14px 16px;
+}
+
+.public-client-setup.generated-preview-open .client-review-bar strong,
+.public-client-setup.generated-preview-open .client-review-bar span {
+  display: block;
+}
+
+.public-client-setup.generated-preview-open .client-review-bar strong {
+  font-size: 16px;
+}
+
+.public-client-setup.generated-preview-open .client-review-bar span {
+  margin-top: 3px;
+  color: #b9c6d6;
+  font-size: 13px;
+}
+
+.public-client-setup.generated-preview-open .client-review-bar div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.public-client-setup.generated-preview-open .client-review-bar button {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.public-client-setup.generated-preview-open .client-review-bar #submitDraftReviewButton {
+  border-color: #12b981;
+  background: #0f9f75;
+}
+
+@media (max-width: 720px) {
+  .public-client-setup.generated-preview-open .client-review-bar {
+    position: static;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .public-client-setup.generated-preview-open .client-review-bar div:last-child {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .public-client-setup.generated-preview-open .client-review-bar button {
+    width: 100%;
+  }
+
+  .public-client-setup.generated-preview-open #previewFrame,
+  .public-client-setup.generated-preview-open #previewFrame .rendered-site {
+    min-height: auto;
+  }
 }
 
 .public-client-setup.generated-preview-open #previewFrame {
-  min-height: calc(100vh - 54px);
+  min-height: calc(100vh - 112px);
   height: auto;
   overflow: visible;
 }
 
 .public-client-setup.generated-preview-open #previewFrame .rendered-site {
-  min-height: calc(100vh - 54px);
+  min-height: calc(100vh - 112px);
 }
 
 .public-client-setup .intake-panel {

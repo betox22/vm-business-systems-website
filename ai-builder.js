@@ -569,6 +569,8 @@ const isPublicClientSetup = document.body.dataset.context === "client-setup";
 const isEmbeddedClientSetup = new URLSearchParams(window.location.search).get("embedded") === "1";
 const switchManualFormButton = document.querySelector("#switchManualFormButton");
 const backToChatButton = document.querySelector("#backToChatButton");
+const submitDraftReviewButton = document.querySelector("#submitDraftReviewButton");
+const adjustWithLumaButton = document.querySelector("#adjustWithLumaButton");
 
 document.body.classList.toggle("embedded-chat", isEmbeddedClientSetup);
 
@@ -608,6 +610,8 @@ document.querySelector("#clientPreviewButton").addEventListener("click", () => {
 document.querySelector("#exitClientPreviewButton").addEventListener("click", () => {
   document.body.classList.remove("client-preview-mode");
 });
+submitDraftReviewButton?.addEventListener("click", submitGeneratedDraftForReview);
+adjustWithLumaButton?.addEventListener("click", adjustGeneratedDraftWithLuma);
 
 quickModeButton.addEventListener("click", () => setIntakeMode("quick"));
 guidedModeButton.addEventListener("click", () => setIntakeMode("guided"));
@@ -1018,6 +1022,25 @@ async function sendGuidedReply() {
   guidedReply.value = "";
   if (guidedStep === "websiteIntent") {
     await handleWebsiteIntentAnswer(message);
+    return;
+  }
+  if (guidedStep === "review" && currentSchema) {
+    const adjustmentLabel = selectedLanguage === "es" ? "Ajustes pedidos por el cliente" : "Client requested adjustments";
+    guidedState.businessDescription = [
+      guidedState.businessDescription,
+      `${adjustmentLabel}: ${message}`,
+    ].filter(Boolean).join("\n\n");
+    appendChatMessage(
+      "assistant",
+      selectedLanguage === "es"
+        ? "Perfecto, ya agregué esos ajustes al brief. Presiona “Generar mi página” para crear una nueva versión con esos cambios."
+        : "Perfect, I added those adjustments to the brief. Press “Generate my website” to create a new version with those changes.",
+      "success",
+    );
+    guidedStatusText.textContent = selectedLanguage === "es" ? "Ajustes listos para regenerar." : "Adjustments ready to regenerate.";
+    renderGuidedSummary();
+    refreshQuickChips();
+    saveGuidedDraft();
     return;
   }
   guidedStatusText.textContent = t("sendingAssistant");
@@ -2063,6 +2086,73 @@ function showGeneratedClientPreview() {
   guidedPanel.classList.remove("active");
   storageStatus.textContent = currentSiteId ? t("generatedOpenAI") : t("generatedOpenAI");
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function submitGeneratedDraftForReview() {
+  if (!currentSchema) {
+    storageStatus.textContent = selectedLanguage === "es" ? "Primero genera un borrador." : "Generate a draft first.";
+    return;
+  }
+  if (!currentSiteId) {
+    storageStatus.textContent =
+      selectedLanguage === "es"
+        ? "El borrador rapido se ve aqui, pero no tiene site_id para revisión todavía."
+        : "The fast draft is visible here, but it does not have a site_id for review yet.";
+    return;
+  }
+  const contact = guidedState.contactInfo || {};
+  const customerName = guidedState.businessName || currentSchema.business?.name || "Client";
+  const message =
+    selectedLanguage === "es"
+      ? `Cliente envió borrador para revisión.\nNegocio: ${customerName}\nIndustria: ${guidedState.industry || ""}\nDominio deseado: ${guidedState.desiredDomain || ""}\nSite ID: ${currentSiteId}`
+      : `Client submitted draft for review.\nBusiness: ${customerName}\nIndustry: ${guidedState.industry || ""}\nDesired domain: ${guidedState.desiredDomain || ""}\nSite ID: ${currentSiteId}`;
+  submitDraftReviewButton.disabled = true;
+  submitDraftReviewButton.textContent = selectedLanguage === "es" ? "Enviando..." : "Sending...";
+  try {
+    const response = await fetch(`${API_BASE_URL}/public/leads`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        siteId: currentSiteId,
+        businessId: currentBusinessId,
+        customerName,
+        email: contact.email || contact.correo || "",
+        phone: contact.phone || contact.whatsapp || "",
+        message,
+        source: "client_generated_draft_review",
+      }),
+    });
+    if (!response.ok) throw new Error(await readErrorMessage(response));
+    storageStatus.textContent = selectedLanguage === "es"
+      ? "Enviado para revisión. Tu solicitud ya aparece en el admin."
+      : "Sent for review. Your request is now visible in admin.";
+    if (isEmbeddedClientSetup) {
+      window.parent.postMessage({ type: "luma-draft-submitted", siteId: currentSiteId }, "*");
+    }
+  } catch (error) {
+    storageStatus.textContent = `${selectedLanguage === "es" ? "No se pudo enviar" : "Could not send"}: ${shortError(error.message)}`;
+  } finally {
+    submitDraftReviewButton.disabled = false;
+    submitDraftReviewButton.textContent = selectedLanguage === "es" ? "Enviar para revisión" : "Send for review";
+  }
+}
+
+function adjustGeneratedDraftWithLuma() {
+  document.body.classList.remove("generated-preview-open", "client-preview-mode");
+  guidedPanel.classList.add("active");
+  document.body.classList.add("guided-modal-open");
+  guidedStep = "review";
+  const message = selectedLanguage === "es"
+    ? "Claro. Dime qué quieres cambiar del borrador: colores, secciones, textos, productos, estilo o cualquier detalle. Luego genero una nueva versión con esos ajustes."
+    : "Of course. Tell me what you want to change in the draft: colors, sections, copy, products, style, or any detail. Then I can generate a new version with those adjustments.";
+  appendChatMessage("assistant", message, "thinking");
+  guidedStatusText.textContent = selectedLanguage === "es"
+    ? "Describe los ajustes que quieres hacer."
+    : "Describe the adjustments you want.";
+  guidedReply.focus();
+  if (isEmbeddedClientSetup) {
+    window.parent.postMessage({ type: "luma-adjusting-draft" }, "*");
+  }
 }
 
 async function collectPayload() {

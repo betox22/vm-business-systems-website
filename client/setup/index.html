@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Luma Guided Setup</title>
     <link rel="stylesheet" href="/ai-builder.css?v=24">
-    <link rel="stylesheet" href="/client-setup.css?v=8">
+    <link rel="stylesheet" href="/client-setup.css?v=9">
   </head>
   <body class="public-client-setup guided-modal-open" data-context="client-setup">
     <main class="ai-shell">
@@ -194,11 +194,14 @@
 
           <section class="preview-panel">
             <div id="clientReviewBar" class="client-review-bar">
-              <strong>Client preview</strong>
               <div>
-                <button type="button">Approve</button>
-                <button type="button">Request changes</button>
-                <button id="exitClientPreviewButton" type="button">Back to editor</button>
+                <strong id="generatedReadyTitle">Tu borrador está listo</strong>
+                <span id="generatedReadySubtitle">Revísalo completo. Puedes enviarlo al equipo o pedirle ajustes a Luma.</span>
+              </div>
+              <div>
+                <button id="submitDraftReviewButton" type="button">Enviar para revisión</button>
+                <button id="adjustWithLumaButton" type="button">Ajustar con Luma</button>
+                <button id="exitClientPreviewButton" type="button">Seguir revisando</button>
               </div>
             </div>
             <div id="previewFrame" class="site-preview"></div>
@@ -208,6 +211,6 @@
     </main>
 
     <script src="/template-router.js?v=2"></script>
-    <script src="/ai-builder.js?v=38"></script>
+    <script src="/ai-builder.js?v=39"></script>
   </body>
 </html>
