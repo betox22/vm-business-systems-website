@@ -23,6 +23,8 @@ const loginStatus = document.querySelector("#sellerLoginStatus");
 const demoAccessButton = document.querySelector("#sellerDemoAccessButton");
 const logoutButton = document.querySelector("#sellerLogoutButton");
 
+captureAuthRedirect();
+
 function resolveApiBase() {
   if (window.LUMA_API_BASE_URL) return String(window.LUMA_API_BASE_URL).replace(/\/$/, "");
   const saved = localStorage.getItem("lumaApiBaseUrl");
@@ -40,6 +42,26 @@ function authHeaders(extra = {}) {
     ...extra,
     ...(state.accessToken ? { authorization: `Bearer ${state.accessToken}` } : {}),
   };
+}
+
+function captureAuthRedirect() {
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const queryParams = new URLSearchParams(window.location.search);
+  const accessToken = hashParams.get("access_token") || queryParams.get("access_token") || "";
+  const refreshToken = hashParams.get("refresh_token") || queryParams.get("refresh_token") || "";
+  if (!accessToken) return;
+  state.accessToken = accessToken;
+  localStorage.setItem("lumaClientAccessToken", accessToken);
+  if (refreshToken) localStorage.setItem("lumaClientRefreshToken", refreshToken);
+  const cleanUrl = new URL(window.location.href);
+  cleanUrl.hash = "";
+  cleanUrl.searchParams.delete("access_token");
+  cleanUrl.searchParams.delete("refresh_token");
+  cleanUrl.searchParams.delete("expires_in");
+  cleanUrl.searchParams.delete("expires_at");
+  cleanUrl.searchParams.delete("token_type");
+  cleanUrl.searchParams.delete("type");
+  window.history.replaceState({}, "", cleanUrl);
 }
 
 function money(value) {

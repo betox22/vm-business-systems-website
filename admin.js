@@ -94,6 +94,7 @@ let cloudLeads = [];
 let businessMembers = [];
 let selectedBusinessId = "";
 let lastPublishedUrl = "";
+let lastMemberInviteUrl = "";
 
 const ADMIN_API_BASE_URL = resolveAdminApiBaseUrl();
 
@@ -551,6 +552,9 @@ function render() {
   });
   content.querySelectorAll("[data-member-role]").forEach((select) => {
     select.addEventListener("change", () => updateBusinessMember(select.dataset.memberId, { role: select.value }));
+  });
+  content.querySelectorAll("[data-member-invite]").forEach((button) => {
+    button.addEventListener("click", () => inviteMemberByMagicLink(button.dataset.memberInvite));
   });
   content.querySelector("#domainForm")?.addEventListener("submit", saveDomainFromForm);
   content.querySelector("#domainSearchForm")?.addEventListener("submit", searchDomainsFromForm);
@@ -1411,10 +1415,17 @@ function memberInviteForm(businessId) {
 }
 
 function businessMembersTable(rows) {
+  const invitePanel = lastMemberInviteUrl
+    ? `<div class="invite-result">
+        <strong>Link de invitacion listo</strong>
+        <input readonly value="${escapeAttribute(lastMemberInviteUrl)}">
+        <button class="text-button" data-copy-url="${escapeAttribute(lastMemberInviteUrl)}" type="button">Copiar link</button>
+      </div>`
+    : "";
   if (!rows.length) {
-    return `<div class="empty-state">Aun no hay usuarios asignados a este cliente.</div>`;
+    return `${invitePanel}<div class="empty-state">Aun no hay usuarios asignados a este cliente.</div>`;
   }
-  return `<table>
+  return `${invitePanel}<table>
     <thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th>Accion</th></tr></thead>
     <tbody>${rows
       .map((member) => {
@@ -1429,7 +1440,10 @@ function businessMembersTable(rows) {
             </select>
           </td>
           <td><span class="status status-${escapeAttribute(member.status || "invited")}">${escapeHtml(member.status || "invited")}</span></td>
-          <td><button class="text-button" data-member-status="${escapeAttribute(nextStatus)}" data-member-id="${escapeAttribute(member.id)}" type="button">${actionLabel}</button></td>
+          <td>
+            <button class="text-button" data-member-invite="${escapeAttribute(member.id)}" type="button">Invitar</button>
+            <button class="text-button" data-member-status="${escapeAttribute(nextStatus)}" data-member-id="${escapeAttribute(member.id)}" type="button">${actionLabel}</button>
+          </td>
         </tr>`;
       })
       .join("")}</tbody>
@@ -1498,6 +1512,30 @@ async function updateBusinessMember(memberId, payload) {
     await loadCloudOverview();
   } catch (error) {
     window.alert(`No se pudo actualizar el acceso: ${shortMessage(error)}`);
+  }
+}
+
+async function inviteMemberByMagicLink(memberId) {
+  if (!memberId) return;
+  try {
+    const response = await fetch(apiUrl(`/api/admin/business-members/${encodeURIComponent(memberId)}/invite`), {
+      method: "POST",
+      headers: adminHeaders(),
+    });
+    if (response.status === 401) {
+      showAdminLogin("Inicia sesion para enviar invitaciones.");
+      return;
+    }
+    if (!response.ok) throw new Error(await response.text());
+    const result = await response.json();
+    lastMemberInviteUrl = result.inviteUrl || "";
+    if (lastMemberInviteUrl) {
+      await navigator.clipboard?.writeText(lastMemberInviteUrl);
+      window.alert("Link de invitacion generado y copiado. Enviaselo al usuario para entrar al panel.");
+    }
+    await loadCloudOverview();
+  } catch (error) {
+    window.alert(`No se pudo generar la invitacion: ${shortMessage(error)}`);
   }
 }
 
