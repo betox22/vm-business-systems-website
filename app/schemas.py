@@ -228,6 +228,7 @@ class ClientRequestPayload(BaseModel):
     logo_url: str = Field(default="", alias="logoUrl", max_length=2000)
     photo_urls: list[str] = Field(default_factory=list, alias="photoUrls")
     selected_language: str = Field(default="en", alias="selectedLanguage", pattern="^(en|es|fr|pt)$")
+    desired_domain: str = Field(default="", alias="desiredDomain", max_length=255)
     has_logo: bool = Field(default=False, alias="hasLogo")
     has_photos: bool = Field(default=False, alias="hasPhotos")
     sales_mode: str = Field(default="", alias="salesMode", max_length=80)
@@ -275,6 +276,25 @@ class DomainSearchResponse(BaseModel):
     provider: str
     exact_availability: bool = False
     results: list[dict] = Field(default_factory=list)
+
+
+class DomainOrderPayload(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    business_id: str | None = Field(default=None, alias="businessId")
+    site_id: str | None = Field(default=None, alias="siteId")
+    client_request_id: str | None = Field(default=None, alias="clientRequestId")
+    requested_domain: str = Field(alias="requestedDomain", min_length=3, max_length=255)
+    owner_email: str = Field(default="", alias="ownerEmail", max_length=240)
+    owner_name: str = Field(default="", alias="ownerName", max_length=180)
+    package_code: str = Field(default="starter", alias="packageCode", max_length=80)
+    selected_result: dict = Field(default_factory=dict, alias="selectedResult")
+
+
+class DomainOrderResponse(BaseModel):
+    id: str | None = None
+    storage_status: str
+    order: dict = Field(default_factory=dict)
 
 
 class DomainOut(BaseModel):

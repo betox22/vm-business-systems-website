@@ -13,6 +13,7 @@ from .schemas import (
     ClientRequestPayload,
     ClientPortalCatalogItemPayload,
     DomainPayload,
+    DomainOrderPayload,
     PublicLeadPayload,
     WebsiteAssetInput,
     WebsiteSchema,
@@ -75,6 +76,7 @@ def create_client_request(payload: ClientRequestPayload) -> dict[str, Any]:
                     "logoUrl": payload.logo_url,
                     "photoUrls": payload.photo_urls,
                     "contactInfo": payload.contact_info,
+                    "desiredDomain": payload.desired_domain,
                 },
                 ensure_ascii=False,
             ),
@@ -487,6 +489,10 @@ def get_admin_overview() -> dict[str, Any]:
             "domains",
             "select=*&order=created_at.desc&limit=500",
         ),
+        "domain_orders": _select_optional(
+            "domain_orders",
+            "select=*&order=created_at.desc&limit=500",
+        ),
         "plan_limits": _select(
             "plan_limits",
             "select=*&order=monthly_price.asc",
@@ -500,6 +506,53 @@ def get_admin_overview() -> dict[str, Any]:
             "select=*&order=created_at.desc&limit=500",
         ),
     }
+
+
+def create_domain_order(payload: DomainOrderPayload) -> dict[str, Any]:
+    settings = get_settings()
+    if not settings.supabase_url or not settings.supabase_service_role_key:
+        raise SupabaseNotConfiguredError(
+            "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required."
+        )
+
+    normalized = normalize_domain(payload.requested_domain)
+    selected = payload.selected_result or {}
+    internal_pricing = selected.get("internal_pricing") or {}
+    aliases = email_aliases_for_domain(normalized)
+    return _insert(
+        "domain_orders",
+        {
+            "business_id": _uuid_or_none(payload.business_id),
+            "site_id": _uuid_or_none(payload.site_id),
+            "client_request_id": _uuid_or_none(payload.client_request_id),
+            "requested_domain": payload.requested_domain.strip(),
+            "normalized_domain": normalized,
+            "owner_email": payload.owner_email.strip().lower(),
+            "owner_name": payload.owner_name.strip(),
+            "package_code": payload.package_code,
+            "status": "awaiting_payment",
+            "payment_status": "unpaid",
+            "provider": "cloudflare" if selected.get("confidence") == "authoritative_cloudflare" else "manual_review",
+            "availability_status": selected.get("status") or "pending_check",
+            "selected_result": selected,
+            "internal_pricing": internal_pricing,
+            "public_package_note": "Domain setup is included after payment approval.",
+            "email_aliases": aliases,
+            "updated_at": _now_iso(),
+        },
+    )
+
+
+def email_aliases_for_domain(domain: str) -> list[dict[str, str]]:
+    local_parts = ["info", "contacto", "ventas", "soporte", "orders", "admin"]
+    return [
+        {
+            "address": f"{local}@{domain}",
+            "type": "forwarding",
+            "status": "planned",
+        }
+        for local in local_parts
+    ]
 
 
 def get_client_portal_overview(business_id: str) -> dict[str, Any]:
@@ -881,6 +934,15 @@ def _select(table: str, query: str) -> list[dict[str, Any]]:
         raise RuntimeError(f"Supabase select failed for {table}: {details}") from error
     except URLError as error:
         raise RuntimeError(f"Supabase select unavailable for {table}: {error.reason}") from error
+
+
+def _select_optional(table: str, query: str) -> list[dict[str, Any]]:
+    try:
+        return _select(table, query)
+    except RuntimeError as error:
+        if "does not exist" in str(error) or "PGRST205" in str(error):
+            return []
+        raise
 
 
 def _update(table: str, row_id: str, payload: dict[str, Any]) -> dict[str, Any]:
