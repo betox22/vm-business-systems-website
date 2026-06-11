@@ -2,6 +2,8 @@ const state = {
   businessId: new URLSearchParams(window.location.search).get("business_id") || "",
   currentView: "catalog",
   overview: null,
+  accessToken: localStorage.getItem("lumaClientAccessToken") || "",
+  demoAccess: new URLSearchParams(window.location.search).get("demo") === "1",
   selectedItemId: "",
   query: "",
   statusFilter: "all",
@@ -15,6 +17,11 @@ const subtitle = document.querySelector("#sellerSubtitle");
 const storeName = document.querySelector("#sellerStoreName");
 const storeMeta = document.querySelector("#sellerStoreMeta");
 const navButtons = document.querySelectorAll("[data-seller-view]");
+const loginScreen = document.querySelector("#sellerLoginScreen");
+const loginForm = document.querySelector("#sellerLoginForm");
+const loginStatus = document.querySelector("#sellerLoginStatus");
+const demoAccessButton = document.querySelector("#sellerDemoAccessButton");
+const logoutButton = document.querySelector("#sellerLogoutButton");
 
 function resolveApiBase() {
   if (window.LUMA_API_BASE_URL) return String(window.LUMA_API_BASE_URL).replace(/\/$/, "");
@@ -26,6 +33,13 @@ function resolveApiBase() {
 
 function apiUrl(path) {
   return `${apiBase}${path}`;
+}
+
+function authHeaders(extra = {}) {
+  return {
+    ...extra,
+    ...(state.accessToken ? { authorization: `Bearer ${state.accessToken}` } : {}),
+  };
 }
 
 function money(value) {
@@ -49,18 +63,77 @@ function escapeAttribute(value) {
 }
 
 async function loadPortal() {
+  if (!state.accessToken && !state.demoAccess) {
+    showLogin();
+    return;
+  }
   if (!state.businessId) {
     renderError("Falta business_id. Abre este panel desde el admin de una tienda.");
     return;
   }
+  hideLogin();
   renderLoading();
   try {
-    const response = await fetch(apiUrl(`/api/client/portal?business_id=${encodeURIComponent(state.businessId)}`));
+    const response = await fetch(apiUrl(`/api/client/portal?business_id=${encodeURIComponent(state.businessId)}`), {
+      headers: authHeaders(),
+    });
+    if (response.status === 401 || response.status === 403) {
+      clearSession();
+      showLogin("Tu sesion no tiene acceso a esta tienda.");
+      return;
+    }
     if (!response.ok) throw new Error(await response.text());
     state.overview = await response.json();
     renderShell();
   } catch (error) {
     renderError(`No se pudo cargar el portal: ${shortError(error)}`);
+  }
+}
+
+function showLogin(message = "") {
+  loginScreen.classList.remove("hidden");
+  loginStatus.textContent = message;
+  content.innerHTML = "";
+}
+
+function hideLogin() {
+  loginScreen.classList.add("hidden");
+}
+
+function clearSession() {
+  state.accessToken = "";
+  localStorage.removeItem("lumaClientAccessToken");
+  localStorage.removeItem("lumaClientRefreshToken");
+}
+
+async function loginSeller(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  loginStatus.textContent = "Validando acceso...";
+  try {
+    const response = await fetch(apiUrl("/api/client/auth/login"), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: form.elements.email.value.trim(),
+        password: form.elements.password.value,
+        businessId: state.businessId || null,
+      }),
+    });
+    if (!response.ok) throw new Error(await response.text());
+    const result = await response.json();
+    state.accessToken = result.accessToken;
+    localStorage.setItem("lumaClientAccessToken", result.accessToken);
+    if (result.refreshToken) localStorage.setItem("lumaClientRefreshToken", result.refreshToken);
+    if (!state.businessId && result.memberships?.[0]?.business_id) {
+      state.businessId = result.memberships[0].business_id;
+      const url = new URL(window.location.href);
+      url.searchParams.set("business_id", state.businessId);
+      window.history.replaceState({}, "", url);
+    }
+    await loadPortal();
+  } catch (error) {
+    loginStatus.textContent = `No se pudo entrar: ${shortError(error)}`;
   }
 }
 
@@ -369,7 +442,7 @@ async function saveCatalogItem(event) {
     const itemId = state.selectedItemId;
     const response = await fetch(apiUrl(`/api/client/catalog-items${itemId ? `/${encodeURIComponent(itemId)}` : ""}?business_id=${encodeURIComponent(state.businessId)}`), {
       method: itemId ? "PATCH" : "POST",
-      headers: { "content-type": "application/json" },
+      headers: authHeaders({ "content-type": "application/json" }),
       body: JSON.stringify(data),
     });
     if (!response.ok) throw new Error(await response.text());
@@ -412,7 +485,7 @@ async function uploadImage(file) {
   const dataUrl = await fileToDataUrl(file);
   const response = await fetch(apiUrl(`/api/client/assets/upload?business_id=${encodeURIComponent(state.businessId)}`), {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: authHeaders({ "content-type": "application/json" }),
     body: JSON.stringify({
       businessId: state.businessId,
       assetType: "catalog",
@@ -442,6 +515,7 @@ async function deleteSelectedItem() {
   try {
     const response = await fetch(apiUrl(`/api/client/catalog-items/${encodeURIComponent(state.selectedItemId)}?business_id=${encodeURIComponent(state.businessId)}`), {
       method: "DELETE",
+      headers: authHeaders(),
     });
     if (!response.ok) throw new Error(await response.text());
     state.selectedItemId = "";
@@ -452,7 +526,9 @@ async function deleteSelectedItem() {
 }
 
 async function refreshOverview() {
-  const response = await fetch(apiUrl(`/api/client/portal?business_id=${encodeURIComponent(state.businessId)}`));
+  const response = await fetch(apiUrl(`/api/client/portal?business_id=${encodeURIComponent(state.businessId)}`), {
+    headers: authHeaders(),
+  });
   if (!response.ok) throw new Error(await response.text());
   state.overview = await response.json();
 }
@@ -485,6 +561,19 @@ navButtons.forEach((button) => {
   });
 });
 
+loginForm.addEventListener("submit", loginSeller);
+demoAccessButton.addEventListener("click", () => {
+  state.demoAccess = true;
+  const url = new URL(window.location.href);
+  url.searchParams.set("demo", "1");
+  window.history.replaceState({}, "", url);
+  loadPortal();
+});
+logoutButton.addEventListener("click", () => {
+  clearSession();
+  state.demoAccess = false;
+  showLogin("Sesion cerrada.");
+});
 document.querySelector("#refreshButton").addEventListener("click", loadPortal);
 
 loadPortal();
