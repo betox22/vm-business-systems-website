@@ -27,6 +27,9 @@ from .schemas import (
     AssetUploadPayload,
     AssetUploadResponse,
     BusinessMutationResponse,
+    BusinessMemberMutationResponse,
+    BusinessMemberPayload,
+    BusinessMemberUpdatePayload,
     BusinessUpdatePayload,
     ClientPortalCatalogItemPayload,
     ClientPortalCatalogMutationResponse,
@@ -82,15 +85,18 @@ from .supabase_store import (
     get_public_site,
     get_public_site_by_host,
     list_domains,
+    list_business_members,
     publish_site,
     publish_site_with_default_domain,
     store_ai_website_generation,
     update_lead,
+    update_business_member,
     update_business,
     update_client_catalog_item,
     update_site_admin,
     update_site_schema,
     upsert_domain,
+    upsert_business_member,
 )
 from .tenant import get_current_tenant
 from .ticket import render_thermal_ticket_html
@@ -592,6 +598,56 @@ def update_admin_business(business_id: str, payload: BusinessUpdatePayload) -> B
             detail=str(error),
         ) from error
     return BusinessMutationResponse(id=business["id"], storage_status="stored", business=business)
+
+
+@app.get("/api/admin/businesses/{business_id}/members", dependencies=[Depends(require_admin)])
+def read_admin_business_members(business_id: str) -> list[dict]:
+    try:
+        return list_business_members(business_id)
+    except SupabaseNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(error),
+        ) from error
+
+
+@app.post("/api/admin/businesses/{business_id}/members", response_model=BusinessMemberMutationResponse, dependencies=[Depends(require_admin)])
+def create_admin_business_member(business_id: str, payload: BusinessMemberPayload) -> BusinessMemberMutationResponse:
+    try:
+        member = upsert_business_member(business_id, payload)
+    except SupabaseNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(error),
+        ) from error
+    return BusinessMemberMutationResponse(id=member["id"], storage_status="stored", member=member)
+
+
+@app.patch("/api/admin/business-members/{member_id}", response_model=BusinessMemberMutationResponse, dependencies=[Depends(require_admin)])
+def update_admin_business_member(member_id: str, payload: BusinessMemberUpdatePayload) -> BusinessMemberMutationResponse:
+    try:
+        member = update_business_member(member_id, payload)
+    except SupabaseNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(error),
+        ) from error
+    return BusinessMemberMutationResponse(id=member["id"], storage_status="stored", member=member)
 
 
 @app.patch("/api/admin/sites/{site_id}", response_model=SiteAdminMutationResponse, dependencies=[Depends(require_admin)])

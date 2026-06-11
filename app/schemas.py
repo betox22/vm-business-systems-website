@@ -499,6 +499,26 @@ class BusinessMutationResponse(BaseModel):
     business: dict
 
 
+class BusinessMemberPayload(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    email: str = Field(min_length=3, max_length=240)
+    role: str = Field(pattern="^(owner|manager|catalog_manager|seller|fulfillment|viewer|admin|staff)$")
+    status: str = Field(default="invited", pattern="^(invited|active|disabled)$")
+    user_id: str | None = Field(default=None, alias="userId")
+
+
+class BusinessMemberUpdatePayload(BaseModel):
+    role: str | None = Field(default=None, pattern="^(owner|manager|catalog_manager|seller|fulfillment|viewer|admin|staff)$")
+    status: str | None = Field(default=None, pattern="^(invited|active|disabled)$")
+
+
+class BusinessMemberMutationResponse(BaseModel):
+    id: str
+    storage_status: str
+    member: dict
+
+
 class SiteAdminUpdatePayload(BaseModel):
     name: str | None = Field(default=None, max_length=180)
     status: str | None = Field(default=None, pattern="^(draft|published|archived|disabled)$")

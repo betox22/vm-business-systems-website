@@ -9,6 +9,8 @@ from urllib.request import ProxyHandler, Request, build_opener
 from .config import get_settings
 from .schemas import (
     AiWebsiteBuilderRequest,
+    BusinessMemberPayload,
+    BusinessMemberUpdatePayload,
     CatalogItemInput,
     ClientRequestPayload,
     ClientPortalCatalogItemPayload,
@@ -498,11 +500,48 @@ def get_admin_overview() -> dict[str, Any]:
             "subscriptions",
             "select=*&order=created_at.desc&limit=500",
         ),
+        "business_members": _select_optional(
+            "business_members",
+            "select=*&order=created_at.desc&limit=1000",
+        ),
         "leads": _select(
             "leads",
             "select=*&order=created_at.desc&limit=500",
         ),
     }
+
+
+def list_business_members(business_id: str) -> list[dict[str, Any]]:
+    return _select_optional(
+        "business_members",
+        f"business_id=eq.{quote(business_id)}&select=*&order=created_at.desc&limit=100",
+    )
+
+
+def upsert_business_member(business_id: str, payload: BusinessMemberPayload) -> dict[str, Any]:
+    _get_business_or_raise(business_id)
+    email = payload.email.strip().lower()
+    existing = _select_optional(
+        "business_members",
+        f"business_id=eq.{quote(business_id)}&email=eq.{quote(email)}&select=*&limit=1",
+    )
+    data = {
+        "business_id": business_id,
+        "email": email,
+        "user_id": _uuid_or_none(payload.user_id),
+        "role": payload.role,
+        "status": payload.status,
+        "updated_at": _now_iso(),
+    }
+    if existing:
+        return _update("business_members", existing[0]["id"], data)
+    return _insert("business_members", data)
+
+
+def update_business_member(member_id: str, payload: BusinessMemberUpdatePayload) -> dict[str, Any]:
+    data = {key: value for key, value in payload.model_dump().items() if value is not None}
+    data["updated_at"] = _now_iso()
+    return _update("business_members", member_id, data)
 
 
 def create_domain_order(payload: DomainOrderPayload) -> dict[str, Any]:
