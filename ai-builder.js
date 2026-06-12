@@ -766,6 +766,7 @@ function initBuilderAvatarAssistant() {
     root: builderAvatarRoot,
     manager: builderAvatarManager,
     name: isPublicClientSetup ? "Luma" : "GNU Dev",
+    imageUrl: "/public/brand/gnu-dev-assistant.png",
     compact: true,
     labels: {
       idle: t("assistantSubtitle"),

@@ -25,6 +25,7 @@ export function AvatarAssistant({
   name = "Luma",
   labels = {},
   animations = {},
+  imageUrl = "",
   compact = false,
 }) {
   const safeState = avatarStates.includes(state) ? state : "idle";
@@ -32,10 +33,12 @@ export function AvatarAssistant({
   const stateLabel = labels[safeState] || defaultLabels[safeState];
 
   return (
-    <div className={`avatar-assistant ${compact ? "compact" : ""}`} data-avatar-state={safeState}>
+    <div className={`avatar-assistant ${compact ? "compact" : ""} ${imageUrl ? "has-image-skin" : ""}`} data-avatar-state={safeState}>
       <div className="avatar-orb" aria-hidden="true">
         {animationData ? (
           <Lottie animationData={animationData} loop autoplay className="avatar-lottie" />
+        ) : imageUrl ? (
+          <div className="avatar-image-skin" style={{ backgroundImage: `url("${imageUrl}")` }} />
         ) : (
           <div className="avatar-css-face">
             <span className="avatar-eye left" />

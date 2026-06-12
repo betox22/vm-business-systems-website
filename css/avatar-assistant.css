@@ -116,6 +116,40 @@ body.avatar-assistant-ready .fallback-avatar-wrap {
   transform-origin: center bottom;
 }
 
+.avatar-image-skin {
+  position: relative;
+  z-index: 1;
+  width: 88%;
+  aspect-ratio: 1;
+  border-radius: 32px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 20px 34px rgba(6, 16, 23, 0.28));
+  transform-origin: center bottom;
+}
+
+.avatar-assistant.compact .avatar-image-skin {
+  width: 92%;
+  border-radius: 16px;
+}
+
+.avatar-assistant.has-image-skin .avatar-css-face {
+  display: none;
+}
+
+.avatar-assistant.has-image-skin .avatar-orb {
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(38, 224, 191, 0.2), transparent 42%),
+    rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.avatar-assistant.has-image-skin.compact .avatar-orb {
+  border-radius: 18px;
+}
+
 .avatar-assistant.compact .avatar-css-face {
   width: 62%;
 }
@@ -231,6 +265,10 @@ body.avatar-assistant-ready .fallback-avatar-wrap {
   animation: avatarTalk 0.42s ease-in-out infinite;
 }
 
+.avatar-assistant.has-image-skin[data-avatar-state="speaking"] .avatar-image-skin {
+  animation: avatarImageTalk 0.84s ease-in-out infinite;
+}
+
 .avatar-assistant[data-avatar-state="speaking"] .avatar-wave,
 .avatar-assistant[data-avatar-state="listening"] .avatar-wave {
   opacity: 1;
@@ -253,6 +291,10 @@ body.avatar-assistant-ready .fallback-avatar-wrap {
   animation: avatarThink 1.2s ease-in-out infinite;
 }
 
+.avatar-assistant.has-image-skin[data-avatar-state="thinking"] .avatar-image-skin {
+  animation: avatarThink 1.2s ease-in-out infinite;
+}
+
 .avatar-assistant[data-avatar-state="thinking"] .avatar-orb::before {
   border-style: dashed;
   animation-duration: 1.8s;
@@ -260,6 +302,10 @@ body.avatar-assistant-ready .fallback-avatar-wrap {
 
 .avatar-assistant[data-avatar-state="happy"] .avatar-css-face {
   transform: scale(1.02);
+}
+
+.avatar-assistant.has-image-skin[data-avatar-state="happy"] .avatar-image-skin {
+  transform: scale(1.025);
 }
 
 .avatar-assistant[data-avatar-state="happy"] .avatar-spark,
@@ -273,6 +319,10 @@ body.avatar-assistant-ready .fallback-avatar-wrap {
 }
 
 .avatar-assistant[data-avatar-state="confused"] .avatar-css-face {
+  animation: avatarConfused 0.72s ease-in-out 2;
+}
+
+.avatar-assistant.has-image-skin[data-avatar-state="confused"] .avatar-image-skin {
   animation: avatarConfused 0.72s ease-in-out 2;
 }
 
@@ -293,6 +343,12 @@ body.avatar-assistant-ready .fallback-avatar-wrap {
 @keyframes avatarTalk {
   0%, 100% { height: 6%; width: 25%; }
   50% { height: 14%; width: 18%; }
+}
+
+@keyframes avatarImageTalk {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-3px) scale(1.018); }
+  70% { transform: translateY(1px) scale(0.996); }
 }
 
 @keyframes avatarRing {

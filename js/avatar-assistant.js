@@ -15,6 +15,7 @@
       this.manager = options.manager || new window.AvatarStateManager(options.initialState || "idle");
       this.labels = { ...DEFAULT_LABELS, ...(options.labels || {}) };
       this.name = options.name || "Luma";
+      this.imageUrl = options.imageUrl || "";
       this.lottiePaths = options.lottiePaths || {};
       this.compact = Boolean(options.compact);
       this.state = this.manager.getState();
@@ -31,6 +32,7 @@
         <div class="avatar-assistant ${this.compact ? "compact" : ""}" data-avatar-state="${this.state}">
           <div class="avatar-orb" aria-hidden="true">
             <div class="avatar-lottie-slot"></div>
+            <div class="avatar-image-skin" ${this.imageUrl ? `style="background-image: url('${this.escapeAttribute(this.imageUrl)}')"` : ""}></div>
             <div class="avatar-css-face">
               <span class="avatar-eye left"></span>
               <span class="avatar-eye right"></span>
@@ -51,6 +53,8 @@
       this.el = this.root.querySelector(".avatar-assistant");
       this.label = this.root.querySelector(".avatar-state-label");
       this.lottieSlot = this.root.querySelector(".avatar-lottie-slot");
+      this.imageSkin = this.root.querySelector(".avatar-image-skin");
+      this.el.classList.toggle("has-image-skin", Boolean(this.imageUrl));
       this.setState(this.state);
     }
 
@@ -66,6 +70,16 @@
       const path = this.lottiePaths[state];
       if (!this.lottieSlot) return;
       this.lottieSlot.dataset.lottiePath = path || "";
+    }
+
+    escapeAttribute(value) {
+      return String(value || "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#039;",
+      }[char]));
     }
 
     escape(value) {

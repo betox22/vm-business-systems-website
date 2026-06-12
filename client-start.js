@@ -239,6 +239,7 @@ function configureLandingAvatar() {
       root: landingAvatarRoot,
       manager: landingAvatarManager,
       name: "Luma",
+      imageUrl: "/public/brand/gnu-dev-assistant.png",
       labels,
     });
   } else {
