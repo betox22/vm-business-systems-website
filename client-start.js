@@ -3,18 +3,18 @@ const PUBLIC_BACKEND_URL = "";
 
 const LANDING_COPY = {
   en: {
-    title: "Create your online store or business website by talking to AI",
-    kicker: "AI guided website setup",
+    title: "Build your website with Luma",
+    kicker: "AI website assistant",
     subtitle:
-      "Tell Luma what kind of site you want — marketplace, restaurant menu, booking page, service business, digital products, or online store — and get an editable draft built around your brand.",
+      "Tell Luma about your business. It will guide you step by step and create an editable first draft for your website or online store.",
     start: "Start with Luma",
     how: "Choose a template",
     language: "Language",
-    trustVoice: "Type or use voice",
-    trustAssets: "Upload logo and photos",
-    trustEditable: "Review and edit before generating",
-    bubbleTitle: "Luma is ready",
-    bubbleText: "A friendly chat collects the details and turns them into a website draft.",
+    trustVoice: "Chat or voice",
+    trustAssets: "Logo and photos optional",
+    trustEditable: "Editable before publishing",
+    bubbleTitle: "Hi, I'm Luma",
+    bubbleText: "I will ask a few simple questions and prepare your first website draft.",
     howTitle: "A Faster Way To Start Online",
     step1Title: "Talk, don't build",
     step1Text: "Describe your business naturally. Luma turns your answers into a website brief.",
@@ -24,18 +24,18 @@ const LANDING_COPY = {
     step3Text: "Review and adjust everything before your site goes live.",
   },
   es: {
-    title: "Crea tu tienda online o pagina de negocio hablando con IA",
-    kicker: "Configuración guiada con IA",
+    title: "Crea tu pagina con Luma",
+    kicker: "Asistente web con IA",
     subtitle:
-      "Dile a Luma que tipo de sitio quieres: marketplace, menu de restaurante, pagina de reservas, servicios, productos digitales o tienda online, y recibe un borrador editable alrededor de tu marca.",
-    start: "Empezar con Luma",
+      "Cuéntale a Luma sobre tu negocio. Te guiará paso a paso y creará una primera versión editable de tu página o tienda online.",
+    start: "Iniciar con Luma",
     how: "Elegir template",
     language: "Idioma",
-    trustVoice: "Escribe o usa voz",
-    trustAssets: "Sube logo y fotos",
-    trustEditable: "Revisa y edita antes de generar",
-    bubbleTitle: "Luma está lista",
-    bubbleText: "Un chat amigable recoge los detalles y los convierte en una primera versión web.",
+    trustVoice: "Chat o voz",
+    trustAssets: "Logo y fotos opcionales",
+    trustEditable: "Editable antes de publicar",
+    bubbleTitle: "Hola, soy Luma",
+    bubbleText: "Te haré unas preguntas simples y prepararé tu primer borrador web.",
     howTitle: "Una Forma Más Rápida De Empezar Online",
     step1Title: "Habla, no construyas",
     step1Text: "Describe tu negocio de forma natural. Luma convierte tus respuestas en una estructura para tu página.",
@@ -45,18 +45,18 @@ const LANDING_COPY = {
     step3Text: "Revisa y ajusta todo antes de publicar.",
   },
   fr: {
-    title: "Créez votre boutique ou site professionnel en parlant à l'IA",
-    kicker: "Configuration guidée par IA",
+    title: "Créez votre site avec Luma",
+    kicker: "Assistant web IA",
     subtitle:
-      "Dites à Luma quel type de site vous voulez: marketplace, menu restaurant, réservation, services, produits numériques ou boutique, et obtenez un brouillon modifiable autour de votre marque.",
+      "Parlez de votre activité à Luma. Luma vous guide étape par étape et crée un premier brouillon modifiable de votre site ou boutique.",
     start: "Commencer avec Luma",
     how: "Choisir un template",
     language: "Langue",
-    trustVoice: "Écrire ou utiliser la voix",
-    trustAssets: "Ajouter logo et photos",
-    trustEditable: "Relire et modifier avant de générer",
-    bubbleTitle: "Luma est prête",
-    bubbleText: "Un chat convivial collecte les détails et les transforme en brouillon de site.",
+    trustVoice: "Chat ou voix",
+    trustAssets: "Logo et photos optionnels",
+    trustEditable: "Modifiable avant publication",
+    bubbleTitle: "Bonjour, je suis Luma",
+    bubbleText: "Je pose quelques questions simples et prépare votre premier brouillon.",
     howTitle: "Une Façon Plus Rapide De Démarrer",
     step1Title: "Parlez, ne construisez pas",
     step1Text: "Décrivez naturellement votre activité. Luma transforme vos réponses en brief de site.",
@@ -66,18 +66,18 @@ const LANDING_COPY = {
     step3Text: "Relisez et ajustez tout avant la mise en ligne.",
   },
   pt: {
-    title: "Crie sua loja online ou site de negócio conversando com IA",
-    kicker: "Configuração guiada por IA",
+    title: "Crie seu site com Luma",
+    kicker: "Assistente web com IA",
     subtitle:
-      "Diga à Luma que tipo de site você quer: marketplace, menu de restaurante, agendamentos, serviços, produtos digitais ou loja online, e receba um rascunho editável para sua marca.",
+      "Conte para a Luma sobre seu negócio. Ela guia você passo a passo e cria um primeiro rascunho editável do seu site ou loja.",
     start: "Começar com Luma",
     how: "Escolher template",
     language: "Idioma",
-    trustVoice: "Digite ou use voz",
-    trustAssets: "Envie logo e fotos",
-    trustEditable: "Revise e edite antes de gerar",
-    bubbleTitle: "Luma está pronta",
-    bubbleText: "Um chat amigável coleta os detalhes e transforma tudo em um rascunho de site.",
+    trustVoice: "Chat ou voz",
+    trustAssets: "Logo e fotos opcionais",
+    trustEditable: "Editável antes de publicar",
+    bubbleTitle: "Olá, eu sou a Luma",
+    bubbleText: "Vou fazer algumas perguntas simples e preparar seu primeiro rascunho.",
     howTitle: "Uma Forma Mais Rápida De Começar",
     step1Title: "Converse, não construa",
     step1Text: "Descreva seu negócio naturalmente. Luma transforma suas respostas em um briefing de site.",
@@ -104,7 +104,6 @@ let selectedLanguage = initialLanguage();
 const languageSelect = document.querySelector("#clientLanguage");
 const startButton = document.querySelector("#startWithGnuDev");
 const manualButton = document.querySelector("#useManualForm");
-const chooseTemplateButton = document.querySelector("#chooseTemplateButton");
 const chatModal = document.querySelector("#clientChatModal");
 const chatFrame = document.querySelector("#clientChatFrame");
 const closeChatButton = document.querySelector("#closeClientChat");
@@ -133,20 +132,6 @@ startButton.addEventListener("click", (event) => {
 manualButton?.addEventListener("click", (event) => {
   event.preventDefault();
   openLumaChat(true);
-});
-chooseTemplateButton?.addEventListener("click", (event) => {
-  event.preventDefault();
-  document.querySelector("#intentCards")?.scrollIntoView({ behavior: "smooth", block: "start" });
-});
-document.querySelectorAll("[data-intent-prompt]").forEach((card) => {
-  card.querySelector("button")?.addEventListener("click", () => {
-    openLumaChat(false, {
-      prompt: card.dataset.intentPrompt || "",
-      templateId: card.dataset.templateId || "",
-      catalogType: card.dataset.catalogType || "",
-      intent: card.querySelector("strong")?.textContent || "",
-    });
-  });
 });
 
 closeChatButton.addEventListener("click", closeLumaChat);
