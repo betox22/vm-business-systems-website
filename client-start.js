@@ -15,6 +15,11 @@ const LANDING_COPY = {
     trustEditable: "Editable before publishing",
     bubbleTitle: "Hi, I'm Luma",
     bubbleText: "I will ask a few simple questions and prepare your first website draft.",
+    bubbleLines: [
+      "Tell me what you want to build, and I will shape the first draft.",
+      "You can type or use voice. I will guide the process.",
+      "When we have enough details, I will generate your editable website.",
+    ],
     howTitle: "A Faster Way To Start Online",
     step1Title: "Talk, don't build",
     step1Text: "Describe your business naturally. Luma turns your answers into a website brief.",
@@ -36,6 +41,11 @@ const LANDING_COPY = {
     trustEditable: "Editable antes de publicar",
     bubbleTitle: "Hola, soy Luma",
     bubbleText: "Te haré unas preguntas simples y prepararé tu primer borrador web.",
+    bubbleLines: [
+      "Dime qué quieres crear y preparo la primera versión.",
+      "Puedes escribir o usar voz. Yo te voy guiando paso a paso.",
+      "Cuando tenga lo necesario, generaré tu página editable.",
+    ],
     howTitle: "Una Forma Más Rápida De Empezar Online",
     step1Title: "Habla, no construyas",
     step1Text: "Describe tu negocio de forma natural. Luma convierte tus respuestas en una estructura para tu página.",
@@ -57,6 +67,11 @@ const LANDING_COPY = {
     trustEditable: "Modifiable avant publication",
     bubbleTitle: "Bonjour, je suis Luma",
     bubbleText: "Je pose quelques questions simples et prépare votre premier brouillon.",
+    bubbleLines: [
+      "Dites-moi ce que vous voulez créer et je prépare le premier brouillon.",
+      "Vous pouvez écrire ou utiliser la voix. Je vous guide étape par étape.",
+      "Quand les détails sont prêts, je génère votre site modifiable.",
+    ],
     howTitle: "Une Façon Plus Rapide De Démarrer",
     step1Title: "Parlez, ne construisez pas",
     step1Text: "Décrivez naturellement votre activité. Luma transforme vos réponses en brief de site.",
@@ -78,6 +93,11 @@ const LANDING_COPY = {
     trustEditable: "Editável antes de publicar",
     bubbleTitle: "Olá, eu sou a Luma",
     bubbleText: "Vou fazer algumas perguntas simples e preparar seu primeiro rascunho.",
+    bubbleLines: [
+      "Conte o que você quer criar e eu preparo o primeiro rascunho.",
+      "Você pode digitar ou usar voz. Eu guio tudo passo a passo.",
+      "Quando tiver detalhes suficientes, gero seu site editável.",
+    ],
     howTitle: "Uma Forma Mais Rápida De Começar",
     step1Title: "Converse, não construa",
     step1Text: "Descreva seu negócio naturalmente. Luma transforma suas respostas em um briefing de site.",
@@ -108,6 +128,10 @@ const chatModal = document.querySelector("#clientChatModal");
 const chatFrame = document.querySelector("#clientChatFrame");
 const closeChatButton = document.querySelector("#closeClientChat");
 const decorativeMascotImages = document.querySelectorAll(".mascot-card img");
+const lumaAnimatedStage = document.querySelector("#lumaAnimatedStage");
+const lumaBubbleText = document.querySelector("#lumaBubbleText");
+let lumaLineIndex = 0;
+let lumaSpeechTimer;
 
 function applyCopy() {
   const copy = LANDING_COPY[selectedLanguage] || LANDING_COPY.en;
@@ -116,6 +140,8 @@ function applyCopy() {
     item.textContent = copy[item.dataset.clientI18n] || item.textContent;
   });
   startButton.href = `/client/setup/?lang=${selectedLanguage}`;
+  lumaLineIndex = 0;
+  startLandingLumaLoop();
 }
 
 languageSelect.value = selectedLanguage;
@@ -125,6 +151,7 @@ languageSelect.addEventListener("change", () => {
 });
 
 applyCopy();
+startLandingLumaLoop();
 
 decorativeMascotImages.forEach((image) => {
   image.setAttribute("draggable", "false");
@@ -133,6 +160,7 @@ decorativeMascotImages.forEach((image) => {
 
 startButton.addEventListener("click", (event) => {
   event.preventDefault();
+  setLandingLumaState("thinking");
   openLumaChat();
 });
 manualButton?.addEventListener("click", (event) => {
@@ -165,6 +193,7 @@ function openLumaChat(manual = false, intent = {}) {
   chatModal.classList.remove("preview-open");
   document.body.classList.add("client-chat-open");
   document.body.classList.remove("client-preview-open");
+  window.setTimeout(() => setLandingLumaState("speaking"), 420);
 }
 
 function closeLumaChat() {
@@ -172,4 +201,25 @@ function closeLumaChat() {
   chatModal.classList.remove("preview-open");
   document.body.classList.remove("client-chat-open");
   document.body.classList.remove("client-preview-open");
+  setLandingLumaState("idle");
+  startLandingLumaLoop();
+}
+
+function startLandingLumaLoop() {
+  window.clearTimeout(lumaSpeechTimer);
+  const copy = LANDING_COPY[selectedLanguage] || LANDING_COPY.en;
+  const lines = copy.bubbleLines || [];
+  if (!lumaAnimatedStage || !lumaBubbleText || !lines.length) return;
+  setLandingLumaState("speaking");
+  lumaBubbleText.textContent = lines[lumaLineIndex % lines.length];
+  lumaLineIndex += 1;
+  lumaSpeechTimer = window.setTimeout(() => {
+    setLandingLumaState("idle");
+    lumaSpeechTimer = window.setTimeout(startLandingLumaLoop, 3400);
+  }, 2400);
+}
+
+function setLandingLumaState(state) {
+  if (!lumaAnimatedStage) return;
+  lumaAnimatedStage.dataset.lumaState = state;
 }

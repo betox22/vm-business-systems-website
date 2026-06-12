@@ -377,6 +377,19 @@ body.start-minimal-body .client-trust-row span {
   overflow: visible;
 }
 
+.luma-animated-stage[data-luma-state="speaking"] .luma-energy-ring,
+.luma-animated-stage[data-luma-state="thinking"] .luma-energy-ring {
+  animation-duration: 2.2s;
+}
+
+.luma-animated-stage[data-luma-state="thinking"] .luma-energy-ring {
+  border-style: dashed;
+}
+
+.luma-animated-stage[data-luma-state="thinking"] .mascot-card-minimal {
+  animation-duration: 6s, 1.8s;
+}
+
 .luma-animated-stage::before {
   content: "";
   position: absolute;
@@ -513,6 +526,73 @@ body.start-minimal-body .client-trust-row span {
   pointer-events: none;
 }
 
+.luma-mouth {
+  position: absolute;
+  left: 50.5%;
+  top: 58.5%;
+  width: 42px;
+  height: 13px;
+  border-radius: 0 0 999px 999px;
+  background: rgba(7, 17, 31, 0.82);
+  box-shadow: 0 0 18px rgba(92, 255, 220, 0.22);
+  opacity: 0;
+  transform: translate(-50%, -50%) scaleY(0.28);
+  transform-origin: center top;
+  pointer-events: none;
+}
+
+.luma-voice-bars {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  align-items: end;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.luma-voice-bars i {
+  width: 4px;
+  height: 11px;
+  border-radius: 999px;
+  background: #8dffe9;
+  box-shadow: 0 0 12px rgba(141, 255, 233, 0.6);
+  animation: lumaVoiceBar 0.72s ease-in-out infinite;
+}
+
+.luma-voice-bars i:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.luma-voice-bars i:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+.luma-voice-bars i:nth-child(4) {
+  animation-delay: 0.36s;
+}
+
+.luma-animated-stage[data-luma-state="speaking"] .luma-mouth {
+  opacity: 0.78;
+  animation: lumaMouthTalk 0.34s ease-in-out infinite;
+}
+
+.luma-animated-stage[data-luma-state="speaking"] .luma-voice-bars,
+.luma-animated-stage[data-luma-state="thinking"] .luma-voice-bars {
+  opacity: 1;
+}
+
+.luma-animated-stage[data-luma-state="thinking"] .luma-voice-bars i {
+  animation-duration: 1.1s;
+  background: #aab3ff;
+}
+
+.luma-animated-stage[data-luma-state="speaking"] .speech-card {
+  border-color: rgba(92, 255, 220, 0.28);
+  box-shadow: 0 22px 60px rgba(33, 201, 168, 0.16);
+}
+
 .speech-card {
   position: absolute;
   left: -4px;
@@ -593,6 +673,26 @@ body.start-minimal-body .speech-card {
   82% {
     opacity: 0;
     transform: translateX(32%);
+  }
+}
+
+@keyframes lumaMouthTalk {
+  0%, 100% {
+    transform: translate(-50%, -50%) scaleY(0.3) scaleX(0.9);
+  }
+  50% {
+    transform: translate(-50%, -50%) scaleY(1) scaleX(1.08);
+  }
+}
+
+@keyframes lumaVoiceBar {
+  0%, 100% {
+    height: 8px;
+    opacity: 0.55;
+  }
+  50% {
+    height: 24px;
+    opacity: 1;
   }
 }
 
