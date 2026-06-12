@@ -233,13 +233,28 @@ function configureLandingAvatar() {
     thinking: selectedLanguage === "es" ? "Preparando el chat..." : "Preparing the chat...",
     confused: selectedLanguage === "es" ? "Puedo ayudarte a aclararlo." : "I can help clarify it.",
     success: selectedLanguage === "es" ? "Listo para generar." : "Ready to generate.",
+    building: selectedLanguage === "es" ? "Construyendo tu borrador..." : "Building your draft...",
+    optimize: selectedLanguage === "es" ? "Optimizando la experiencia..." : "Optimizing the experience...",
+    alert: selectedLanguage === "es" ? "Revisemos este detalle." : "Let's review this detail.",
   };
   if (!landingAvatar) {
     landingAvatar = new window.AvatarAssistant({
       root: landingAvatarRoot,
       manager: landingAvatarManager,
       name: "Luma",
-      imageUrl: "/public/brand/gnu-dev-assistant.png",
+      imageUrl: "/assets/nixie_idle.png",
+      imagePaths: {
+        idle: "/assets/nixie_idle.png",
+        listening: "/assets/nixie_listening.png",
+        thinking: "/assets/nixie_thinking.png",
+        speaking: "/assets/nixie_speaking.png",
+        building: "/assets/nixie_building.png",
+        optimize: "/assets/nixie_optimize.png",
+        happy: "/assets/nixie_success.png",
+        confused: "/assets/nixie_thinking.png",
+        success: "/assets/nixie_success.png",
+        alert: "/assets/nixie_alert.png",
+      },
       labels,
     });
   } else {

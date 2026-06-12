@@ -94,6 +94,7 @@ export default function NixieAvatarController({
   initialState = "idle",
   className = "",
   label = "Nixie AI assistant",
+  showCaption = false,
   onStateChange,
   onAssetError,
 }) {
@@ -166,13 +167,39 @@ export default function NixieAvatarController({
       aria-label={label}
     >
       <div className="nixie-avatar-viewport">
+        <NixieStateEffects />
         <div className="nixie-avatar-scale-box">
           {displayAsset ? <NixieAsset asset={displayAsset} active /> : <NixieFallback />}
           {pendingAsset ? <NixieAsset asset={pendingAsset} pending /> : null}
         </div>
       </div>
-      <figcaption className="nixie-avatar-caption">{activeState}</figcaption>
+      {showCaption ? <figcaption className="nixie-avatar-caption">{activeState}</figcaption> : null}
     </figure>
+  );
+}
+
+function NixieStateEffects() {
+  return (
+    <div className="nixie-state-effects" aria-hidden="true">
+      <span className="nixie-effect nixie-aura" />
+      <span className="nixie-effect nixie-ring nixie-ring-one" />
+      <span className="nixie-effect nixie-ring nixie-ring-two" />
+      <span className="nixie-effect nixie-ring nixie-ring-three" />
+      <span className="nixie-effect nixie-wave nixie-wave-one" />
+      <span className="nixie-effect nixie-wave nixie-wave-two" />
+      <span className="nixie-effect nixie-trail nixie-trail-one" />
+      <span className="nixie-effect nixie-trail nixie-trail-two" />
+      <span className="nixie-effect nixie-spark nixie-spark-one" />
+      <span className="nixie-effect nixie-spark nixie-spark-two" />
+      <span className="nixie-effect nixie-spark nixie-spark-three" />
+      <span className="nixie-effect nixie-dot nixie-dot-one" />
+      <span className="nixie-effect nixie-dot nixie-dot-two" />
+      <span className="nixie-effect nixie-dot nixie-dot-three" />
+      <span className="nixie-effect nixie-warning" />
+      <span className="nixie-effect nixie-success-burst" />
+      <span className="nixie-effect nixie-build-grid" />
+      <span className="nixie-effect nixie-thinking-orbit" />
+    </div>
   );
 }
 

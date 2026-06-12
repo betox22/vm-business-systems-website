@@ -1,5 +1,5 @@
 (function () {
-  const STATES = ["idle", "listening", "thinking", "speaking", "happy", "confused", "success"];
+  const STATES = ["idle", "listening", "thinking", "speaking", "building", "optimize", "happy", "confused", "success", "alert"];
 
   class AvatarStateManager extends EventTarget {
     constructor(initialState = "idle") {
