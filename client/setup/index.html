@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Luma Guided Setup</title>
+    <link rel="stylesheet" href="/css/avatar-assistant.css?v=1">
     <link rel="stylesheet" href="/ai-builder.css?v=24">
     <link rel="stylesheet" href="/client-setup.css?v=10">
   </head>
@@ -59,7 +60,8 @@
           <div class="guided-shell">
             <header class="guided-header">
               <div class="assistant-identity">
-                <span class="assistant-avatar-wrap">
+                <div id="builderAvatarAssistant" class="guided-avatar-dock"></div>
+                <span class="assistant-avatar-wrap fallback-avatar-wrap">
                   <img class="assistant-avatar large" src="/public/brand/gnu-dev-assistant.png" alt="Luma">
                 </span>
                 <div>
@@ -213,6 +215,8 @@
     </main>
 
     <script src="/template-router.js?v=2"></script>
-    <script src="/ai-builder.js?v=39"></script>
+    <script src="/js/avatar-state-manager.js?v=1"></script>
+    <script src="/js/avatar-assistant.js?v=1"></script>
+    <script src="/ai-builder.js?v=40"></script>
   </body>
 </html>

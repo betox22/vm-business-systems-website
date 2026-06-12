@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Luma AI Website Builder</title>
+    <link rel="stylesheet" href="/css/avatar-assistant.css?v=1">
     <link rel="stylesheet" href="/client.css?v=10">
   </head>
   <body class="client-landing-body start-minimal-body">
@@ -46,25 +47,8 @@
           </div>
         </div>
 
-        <div id="lumaAnimatedStage" class="mascot-stage luma-animated-stage" data-luma-state="idle" aria-hidden="true">
-          <div class="luma-energy-ring"></div>
-          <div class="luma-energy-ring second"></div>
-          <div class="luma-signal-dot dot-one"></div>
-          <div class="luma-signal-dot dot-two"></div>
-          <div class="luma-signal-dot dot-three"></div>
-          <div class="mascot-card mascot-card-minimal">
-            <div class="mascot-art" role="presentation"></div>
-            <div class="luma-voice-bars" role="presentation">
-              <i></i>
-              <i></i>
-              <i></i>
-              <i></i>
-            </div>
-          </div>
-          <div class="speech-card">
-            <strong data-client-i18n="bubbleTitle" id="lumaBubbleTitle">Luma is ready</strong>
-            <p data-client-i18n="bubbleText" id="lumaBubbleText">A friendly chat collects the details and turns them into a website draft.</p>
-          </div>
+        <div class="mascot-stage avatar-stage">
+          <div id="landingAvatarAssistant"></div>
         </div>
       </section>
 
@@ -75,6 +59,8 @@
         <iframe id="clientChatFrame" title="Luma AI website assistant"></iframe>
       </div>
     </div>
-    <script src="/client-start.js?v=15"></script>
+    <script src="/js/avatar-state-manager.js?v=1"></script>
+    <script src="/js/avatar-assistant.js?v=1"></script>
+    <script src="/client-start.js?v=16"></script>
   </body>
 </html>

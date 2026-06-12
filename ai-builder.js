@@ -571,9 +571,13 @@ const switchManualFormButton = document.querySelector("#switchManualFormButton")
 const backToChatButton = document.querySelector("#backToChatButton");
 const submitDraftReviewButton = document.querySelector("#submitDraftReviewButton");
 const adjustWithLumaButton = document.querySelector("#adjustWithLumaButton");
+const builderAvatarRoot = document.querySelector("#builderAvatarAssistant");
+const builderAvatarManager = window.AvatarStateManager ? new window.AvatarStateManager("idle") : null;
+let builderAvatarAssistant = null;
 
 document.body.classList.toggle("embedded-chat", isEmbeddedClientSetup);
 
+initBuilderAvatarAssistant();
 initLanguageControls();
 initVoiceInput();
 updateAssistantAudioToggle();
@@ -641,6 +645,7 @@ guidedReply.addEventListener("keydown", (event) => {
     sendGuidedReply();
   }
 });
+builderAvatarManager?.bindTyping(guidedReply);
 document.querySelectorAll("[data-ai-decide]").forEach((button) => {
   button.addEventListener("click", () => letAiDecide(button.dataset.aiDecide));
 });
@@ -683,6 +688,7 @@ function setSelectedLanguage(value) {
   languageSelector.value = selectedLanguage;
   summaryLanguageSelector.value = selectedLanguage;
   applyI18n();
+  updateBuilderAvatarLabels();
   renderGuidedSummary();
   if (previousLanguage !== selectedLanguage) {
     resetAssistantConversation();
@@ -722,6 +728,21 @@ function applyI18n() {
   });
   initVoiceInput();
   updateAssistantAudioToggle();
+  updateBuilderAvatarLabels();
+}
+
+function updateBuilderAvatarLabels() {
+  if (!builderAvatarAssistant) return;
+  builderAvatarAssistant.labels = {
+    idle: t("assistantSubtitle"),
+    listening: selectedLanguage === "es" ? "Estoy escuchando tu idea." : "I'm listening to your idea.",
+    thinking: t("thinking"),
+    speaking: selectedLanguage === "es" ? "Te guio paso a paso." : "Guiding you step by step.",
+    happy: selectedLanguage === "es" ? "Listo para ayudarte." : "Ready to help.",
+    confused: selectedLanguage === "es" ? "Necesito un poco mas de contexto." : "I need a little more context.",
+    success: selectedLanguage === "es" ? "Tu borrador esta listo." : "Your draft is ready.",
+  };
+  builderAvatarAssistant.setState(builderAvatarManager?.getState() || "idle");
 }
 
 function setLabelText(label, value) {
@@ -739,9 +760,42 @@ function setLabelText(label, value) {
   target.textContent = `${value} `;
 }
 
+function initBuilderAvatarAssistant() {
+  if (!builderAvatarRoot || !window.AvatarAssistant || !builderAvatarManager) return;
+  builderAvatarAssistant = new window.AvatarAssistant({
+    root: builderAvatarRoot,
+    manager: builderAvatarManager,
+    name: isPublicClientSetup ? "Luma" : "GNU Dev",
+    compact: true,
+    labels: {
+      idle: t("assistantSubtitle"),
+      listening: selectedLanguage === "es" ? "Estoy escuchando tu idea." : "I'm listening to your idea.",
+      thinking: t("thinking"),
+      speaking: selectedLanguage === "es" ? "Te guio paso a paso." : "Guiding you step by step.",
+      happy: selectedLanguage === "es" ? "Listo para ayudarte." : "Ready to help.",
+      confused: selectedLanguage === "es" ? "Necesito un poco mas de contexto." : "I need a little more context.",
+      success: selectedLanguage === "es" ? "Tu borrador esta listo." : "Your draft is ready.",
+    },
+  });
+  document.body.classList.add("avatar-assistant-ready");
+}
+
+function avatarStateFromAssistantState(state) {
+  return {
+    neutral: "idle",
+    happy: "happy",
+    thinking: "thinking",
+    listening: "listening",
+    speaking: "speaking",
+    alert: "confused",
+    success: "success",
+  }[state] || "idle";
+}
+
 function setAssistantState(state) {
   assistantState = normalizeAssistantState(state);
   document.body.dataset.assistantState = assistantState;
+  builderAvatarManager?.setState(avatarStateFromAssistantState(assistantState), { source: "guided-assistant" });
   document.querySelectorAll(".assistant-avatar").forEach((avatar) => {
     avatar.dataset.state = assistantState;
     avatar.src = ASSISTANT_AVATARS[assistantState] || ASSISTANT_AVATAR_FALLBACK;
@@ -1729,6 +1783,7 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
   button.textContent = t("generating");
   statusText.textContent = t("generatingLong");
   if (isPublicClientSetup) guidedStatusText.textContent = t("generatingLong");
+  builderAvatarManager?.setState("thinking", { source: "generate-website" });
 
   try {
     const response = await fetch(API_URL, {
@@ -1751,6 +1806,7 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     applyGenerationResult(result);
     await createDomainOrderIfNeeded(payload, result);
   } catch (error) {
+    builderAvatarManager?.setState("confused", { source: "generate-error" });
     const fallbackResult = buildInstantTemplateResult(payload, error, templateSelection);
     applyGenerationResult(fallbackResult);
     const message = `${t("generateError")}: ${shortError(error.message)}. Showing a fast editable draft instead.`;
@@ -1876,6 +1932,7 @@ function applyGenerationResult(result) {
   renderEditor();
   renderPreview();
   showGeneratedClientPreview();
+  builderAvatarManager?.setState("success", { source: "preview-generated" });
 }
 
 function buildInstantTemplateResult(payload, error, templateSelection) {

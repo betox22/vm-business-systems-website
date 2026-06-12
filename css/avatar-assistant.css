@@ -1,0 +1,343 @@
+.avatar-assistant-host {
+  position: relative;
+  z-index: 2;
+}
+
+.avatar-stage {
+  min-height: min(66vh, 640px);
+  display: grid;
+  place-items: center;
+}
+
+.builder-avatar-dock {
+  margin: -2px 0 16px;
+}
+
+.guided-avatar-dock {
+  min-width: 0;
+}
+
+body.avatar-assistant-ready .fallback-avatar-wrap {
+  display: none;
+}
+
+.guided-avatar-dock .avatar-assistant.compact .avatar-orb {
+  width: 52px;
+}
+
+.guided-avatar-dock .avatar-caption span {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatar-assistant {
+  --avatar-accent: #26e0bf;
+  --avatar-accent-2: #7c8cff;
+  --avatar-ink: #061017;
+  --avatar-panel: rgba(6, 16, 23, 0.72);
+  width: min(100%, 380px);
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  color: #eef8ff;
+  text-align: center;
+}
+
+.avatar-assistant.compact {
+  width: auto;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: start;
+  gap: 10px;
+  text-align: left;
+}
+
+.avatar-orb {
+  position: relative;
+  width: clamp(128px, 19vw, 220px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(180, 244, 255, 0.16);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 32%, rgba(255, 255, 255, 0.96), rgba(198, 244, 255, 0.88) 36%, rgba(17, 37, 54, 0.84) 72%),
+    linear-gradient(135deg, rgba(38, 224, 191, 0.22), rgba(124, 140, 255, 0.24));
+  box-shadow:
+    0 32px 90px rgba(0, 0, 0, 0.35),
+    inset 0 0 38px rgba(255, 255, 255, 0.16),
+    0 0 46px rgba(38, 224, 191, 0.16);
+  animation: avatarIdleFloat 4.8s ease-in-out infinite;
+  overflow: visible;
+}
+
+.avatar-assistant.compact .avatar-orb {
+  width: 58px;
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.16),
+    inset 0 0 20px rgba(255, 255, 255, 0.18);
+}
+
+.avatar-orb::before,
+.avatar-orb::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.avatar-orb::before {
+  border: 1px solid rgba(38, 224, 191, 0.22);
+  animation: avatarRing 3.4s ease-in-out infinite;
+}
+
+.avatar-orb::after {
+  background: conic-gradient(from 120deg, transparent, rgba(38, 224, 191, 0.28), rgba(124, 140, 255, 0.2), transparent);
+  filter: blur(24px);
+  opacity: 0.48;
+  z-index: -1;
+  animation: avatarAura 8s linear infinite;
+}
+
+.avatar-css-face {
+  position: relative;
+  width: 58%;
+  aspect-ratio: 1;
+  border-radius: 32% 32% 42% 42%;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.95), transparent 9%),
+    linear-gradient(160deg, #d8fbff, #8adfd6 54%, #415469);
+  box-shadow:
+    inset 0 -16px 28px rgba(6, 16, 23, 0.2),
+    0 18px 42px rgba(6, 16, 23, 0.22);
+  transform-origin: center bottom;
+}
+
+.avatar-assistant.compact .avatar-css-face {
+  width: 62%;
+}
+
+.avatar-eye {
+  position: absolute;
+  top: 36%;
+  width: 12%;
+  height: 13%;
+  border-radius: 999px;
+  background: #061017;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45);
+  animation: avatarBlink 5.2s ease-in-out infinite;
+}
+
+.avatar-eye.left {
+  left: 29%;
+}
+
+.avatar-eye.right {
+  right: 29%;
+}
+
+.avatar-mouth {
+  position: absolute;
+  left: 50%;
+  top: 59%;
+  width: 25%;
+  height: 6%;
+  border-radius: 999px;
+  background: #061017;
+  transform: translateX(-50%);
+  transform-origin: center;
+}
+
+.avatar-spark {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.8);
+  opacity: 0;
+}
+
+.avatar-spark.one {
+  right: -14%;
+  top: 18%;
+}
+
+.avatar-spark.two {
+  left: -12%;
+  top: 30%;
+}
+
+.avatar-spark.three {
+  right: 2%;
+  bottom: -12%;
+}
+
+.avatar-wave {
+  position: absolute;
+  inset: -18px;
+  border: 1px solid rgba(38, 224, 191, 0.24);
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.avatar-wave.two {
+  inset: -30px;
+  border-color: rgba(124, 140, 255, 0.22);
+}
+
+.avatar-caption {
+  width: min(100%, 320px);
+  border: 1px solid rgba(238, 248, 255, 0.12);
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(6, 16, 23, 0.58);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(14px);
+}
+
+.avatar-assistant.compact .avatar-caption {
+  width: auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.avatar-caption strong,
+.avatar-caption span {
+  display: block;
+}
+
+.avatar-caption strong {
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+.avatar-caption span {
+  margin-top: 4px;
+  color: rgba(238, 248, 255, 0.72);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.avatar-assistant[data-avatar-state="speaking"] .avatar-mouth {
+  animation: avatarTalk 0.42s ease-in-out infinite;
+}
+
+.avatar-assistant[data-avatar-state="speaking"] .avatar-wave,
+.avatar-assistant[data-avatar-state="listening"] .avatar-wave {
+  opacity: 1;
+  animation: avatarWave 1.4s ease-out infinite;
+}
+
+.avatar-assistant[data-avatar-state="speaking"] .avatar-wave.two,
+.avatar-assistant[data-avatar-state="listening"] .avatar-wave.two {
+  animation-delay: 0.24s;
+}
+
+.avatar-assistant[data-avatar-state="listening"] .avatar-orb {
+  box-shadow:
+    0 32px 90px rgba(0, 0, 0, 0.35),
+    0 0 0 8px rgba(38, 224, 191, 0.1),
+    0 0 62px rgba(38, 224, 191, 0.32);
+}
+
+.avatar-assistant[data-avatar-state="thinking"] .avatar-css-face {
+  animation: avatarThink 1.2s ease-in-out infinite;
+}
+
+.avatar-assistant[data-avatar-state="thinking"] .avatar-orb::before {
+  border-style: dashed;
+  animation-duration: 1.8s;
+}
+
+.avatar-assistant[data-avatar-state="happy"] .avatar-css-face {
+  transform: scale(1.02);
+}
+
+.avatar-assistant[data-avatar-state="happy"] .avatar-spark,
+.avatar-assistant[data-avatar-state="success"] .avatar-spark {
+  opacity: 1;
+  animation: avatarSpark 1.8s ease-in-out infinite;
+}
+
+.avatar-assistant[data-avatar-state="success"] .avatar-orb {
+  animation: avatarSuccess 0.9s ease-in-out infinite;
+}
+
+.avatar-assistant[data-avatar-state="confused"] .avatar-css-face {
+  animation: avatarConfused 0.72s ease-in-out 2;
+}
+
+.avatar-assistant[data-avatar-state="confused"] .avatar-eye.right {
+  transform: scaleY(0.45);
+}
+
+@keyframes avatarIdleFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-12px) scale(1.012); }
+}
+
+@keyframes avatarBlink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  94%, 96% { transform: scaleY(0.12); }
+}
+
+@keyframes avatarTalk {
+  0%, 100% { height: 6%; width: 25%; }
+  50% { height: 14%; width: 18%; }
+}
+
+@keyframes avatarRing {
+  0%, 100% { opacity: 0.44; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+@keyframes avatarAura {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes avatarWave {
+  0% { opacity: 0.68; transform: scale(0.82); }
+  100% { opacity: 0; transform: scale(1.12); }
+}
+
+@keyframes avatarThink {
+  0%, 100% { transform: rotate(0deg); }
+  35% { transform: rotate(-4deg); }
+  70% { transform: rotate(4deg); }
+}
+
+@keyframes avatarSuccess {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.045); }
+}
+
+@keyframes avatarConfused {
+  0%, 100% { transform: translateX(0); }
+  30% { transform: translateX(-5px); }
+  70% { transform: translateX(5px); }
+}
+
+@keyframes avatarSpark {
+  0%, 100% { transform: translateY(0) scale(0.78); opacity: 0.42; }
+  50% { transform: translateY(-8px) scale(1); opacity: 1; }
+}
+
+@media (max-width: 720px) {
+  .avatar-orb {
+    width: 152px;
+  }
+
+  .avatar-caption {
+    padding: 10px 12px;
+  }
+}

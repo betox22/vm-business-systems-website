@@ -127,11 +127,11 @@ const manualButton = document.querySelector("#useManualForm");
 const chatModal = document.querySelector("#clientChatModal");
 const chatFrame = document.querySelector("#clientChatFrame");
 const closeChatButton = document.querySelector("#closeClientChat");
-const decorativeMascotImages = document.querySelectorAll(".mascot-card img");
-const lumaAnimatedStage = document.querySelector("#lumaAnimatedStage");
-const lumaBubbleText = document.querySelector("#lumaBubbleText");
+const landingAvatarRoot = document.querySelector("#landingAvatarAssistant");
+const landingAvatarManager = window.AvatarStateManager ? new window.AvatarStateManager("idle") : null;
 let lumaLineIndex = 0;
 let lumaSpeechTimer;
+let landingAvatar;
 
 function applyCopy() {
   const copy = LANDING_COPY[selectedLanguage] || LANDING_COPY.en;
@@ -141,6 +141,7 @@ function applyCopy() {
   });
   startButton.href = `/client/setup/?lang=${selectedLanguage}`;
   lumaLineIndex = 0;
+  configureLandingAvatar();
   startLandingLumaLoop();
 }
 
@@ -153,14 +154,9 @@ languageSelect.addEventListener("change", () => {
 applyCopy();
 startLandingLumaLoop();
 
-decorativeMascotImages.forEach((image) => {
-  image.setAttribute("draggable", "false");
-  image.addEventListener("contextmenu", (event) => event.preventDefault());
-});
-
 startButton.addEventListener("click", (event) => {
   event.preventDefault();
-  setLandingLumaState("thinking");
+  setLandingLumaState("happy");
   openLumaChat();
 });
 manualButton?.addEventListener("click", (event) => {
@@ -193,7 +189,7 @@ function openLumaChat(manual = false, intent = {}) {
   chatModal.classList.remove("preview-open");
   document.body.classList.add("client-chat-open");
   document.body.classList.remove("client-preview-open");
-  window.setTimeout(() => setLandingLumaState("speaking"), 420);
+  window.setTimeout(() => setLandingLumaState("thinking"), 420);
 }
 
 function closeLumaChat() {
@@ -209,9 +205,12 @@ function startLandingLumaLoop() {
   window.clearTimeout(lumaSpeechTimer);
   const copy = LANDING_COPY[selectedLanguage] || LANDING_COPY.en;
   const lines = copy.bubbleLines || [];
-  if (!lumaAnimatedStage || !lumaBubbleText || !lines.length) return;
+  if (!landingAvatarManager || !lines.length || document.body.classList.contains("client-chat-open")) return;
   setLandingLumaState("speaking");
-  lumaBubbleText.textContent = lines[lumaLineIndex % lines.length];
+  if (landingAvatar?.labels) {
+    landingAvatar.labels.speaking = lines[lumaLineIndex % lines.length];
+    landingAvatar.setState("speaking");
+  }
   lumaLineIndex += 1;
   lumaSpeechTimer = window.setTimeout(() => {
     setLandingLumaState("idle");
@@ -220,6 +219,30 @@ function startLandingLumaLoop() {
 }
 
 function setLandingLumaState(state) {
-  if (!lumaAnimatedStage) return;
-  lumaAnimatedStage.dataset.lumaState = state;
+  landingAvatarManager?.setState(state, { source: "landing" });
+}
+
+function configureLandingAvatar() {
+  if (!landingAvatarRoot || !window.AvatarAssistant || !landingAvatarManager) return;
+  const copy = LANDING_COPY[selectedLanguage] || LANDING_COPY.en;
+  const labels = {
+    idle: copy.bubbleText,
+    happy: copy.bubbleTitle,
+    speaking: copy.bubbleLines?.[0] || copy.bubbleText,
+    listening: copy.trustVoice,
+    thinking: selectedLanguage === "es" ? "Preparando el chat..." : "Preparing the chat...",
+    confused: selectedLanguage === "es" ? "Puedo ayudarte a aclararlo." : "I can help clarify it.",
+    success: selectedLanguage === "es" ? "Listo para generar." : "Ready to generate.",
+  };
+  if (!landingAvatar) {
+    landingAvatar = new window.AvatarAssistant({
+      root: landingAvatarRoot,
+      manager: landingAvatarManager,
+      name: "Luma",
+      labels,
+    });
+  } else {
+    landingAvatar.labels = labels;
+    landingAvatar.setState(landingAvatarManager.getState());
+  }
 }
