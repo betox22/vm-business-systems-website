@@ -526,21 +526,6 @@ body.start-minimal-body .client-trust-row span {
   pointer-events: none;
 }
 
-.luma-mouth {
-  position: absolute;
-  left: 50.5%;
-  top: 58.5%;
-  width: 42px;
-  height: 13px;
-  border-radius: 0 0 999px 999px;
-  background: rgba(7, 17, 31, 0.82);
-  box-shadow: 0 0 18px rgba(92, 255, 220, 0.22);
-  opacity: 0;
-  transform: translate(-50%, -50%) scaleY(0.28);
-  transform-origin: center top;
-  pointer-events: none;
-}
-
 .luma-voice-bars {
   position: absolute;
   right: 20px;
@@ -571,11 +556,6 @@ body.start-minimal-body .client-trust-row span {
 
 .luma-voice-bars i:nth-child(4) {
   animation-delay: 0.36s;
-}
-
-.luma-animated-stage[data-luma-state="speaking"] .luma-mouth {
-  opacity: 0.78;
-  animation: lumaMouthTalk 0.34s ease-in-out infinite;
 }
 
 .luma-animated-stage[data-luma-state="speaking"] .luma-voice-bars,
@@ -673,15 +653,6 @@ body.start-minimal-body .speech-card {
   82% {
     opacity: 0;
     transform: translateX(32%);
-  }
-}
-
-@keyframes lumaMouthTalk {
-  0%, 100% {
-    transform: translate(-50%, -50%) scaleY(0.3) scaleX(0.9);
-  }
-  50% {
-    transform: translate(-50%, -50%) scaleY(1) scaleX(1.08);
   }
 }
 
