@@ -1,0 +1,25 @@
+{
+  "name": "Nixie Avatar State Assets",
+  "version": "0.1.0",
+  "format": "transparent-png",
+  "source": "_source/nixie/reference/nixie-original-concept.png",
+  "notes": [
+    "These are first-pass transparent state exports cut from the approved Nixie concept sheet.",
+    "The React controller can replace any PNG with a Lottie JSON, MP4, WebM, SVG, WebP, or AVIF later without changing state names.",
+    "The speaking and success states are composited MVP states until final dedicated character art is produced."
+  ],
+  "states": {
+    "idle": "/assets/nixie_idle.png",
+    "listening": "/assets/nixie_listening.png",
+    "thinking": "/assets/nixie_thinking.png",
+    "speaking": "/assets/nixie_speaking.png",
+    "building": "/assets/nixie_building.png",
+    "optimize": "/assets/nixie_optimize.png",
+    "success": "/assets/nixie_success.png",
+    "alert": "/assets/nixie_alert.png"
+  },
+  "events": [
+    "nixie:set-state",
+    "ai:state-change"
+  ]
+}

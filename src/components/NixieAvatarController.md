@@ -2,16 +2,16 @@
 
 React controller for the Nixie AI avatar.
 
-It does not define the final art. It switches between final exported assets:
+It switches between exported state assets. The default MVP assets are transparent PNGs generated from the approved Nixie concept sheet:
 
-- `/assets/nixie_idle.mp4`
-- `/assets/nixie_listening.mp4`
-- `/assets/nixie_thinking.json`
-- `/assets/nixie_speaking.mp4`
-- `/assets/nixie_building.json`
-- `/assets/nixie_optimize.mp4`
-- `/assets/nixie_success.json`
-- `/assets/nixie_alert.mp4`
+- `/assets/nixie_idle.png`
+- `/assets/nixie_listening.png`
+- `/assets/nixie_thinking.png`
+- `/assets/nixie_speaking.png`
+- `/assets/nixie_building.png`
+- `/assets/nixie_optimize.png`
+- `/assets/nixie_success.png`
+- `/assets/nixie_alert.png`
 
 Supported states:
 
@@ -55,4 +55,8 @@ setNixieState("success");
 
 Clipping prevention:
 
-The component uses a square viewport, an oversized internal scale box, `overflow: visible`, and `object-fit: contain`. This lets exported MP4/Lottie assets include glow, particles, bounce, tools, and body extensions without being cut off.
+The component uses a square viewport, an oversized internal scale box, `overflow: visible`, and `object-fit: contain`. This lets exported PNG, SVG, MP4, WebM, or Lottie assets include glow, particles, bounce, tools, and body extensions without being cut off.
+
+Asset replacement:
+
+Any state can be upgraded later by passing an `assets` prop or replacing the files listed in `/assets/nixie_manifest.json`. Supported formats are PNG, JPG, WebP, AVIF, SVG, MP4, WebM, and Lottie JSON.

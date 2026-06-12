@@ -1,2 +1,4 @@
 node_modules/
 .npm-cache/
+.python-packages/
+.u2net/

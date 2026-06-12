@@ -14,14 +14,14 @@ export const NIXIE_STATES = [
 ];
 
 const DEFAULT_ASSETS = {
-  idle: "/assets/nixie_idle.mp4",
-  listening: "/assets/nixie_listening.mp4",
-  thinking: "/assets/nixie_thinking.json",
-  speaking: "/assets/nixie_speaking.mp4",
-  building: "/assets/nixie_building.json",
-  optimize: "/assets/nixie_optimize.mp4",
-  success: "/assets/nixie_success.json",
-  alert: "/assets/nixie_alert.mp4",
+  idle: "/assets/nixie_idle.png",
+  listening: "/assets/nixie_listening.png",
+  thinking: "/assets/nixie_thinking.png",
+  speaking: "/assets/nixie_speaking.png",
+  building: "/assets/nixie_building.png",
+  optimize: "/assets/nixie_optimize.png",
+  success: "/assets/nixie_success.png",
+  alert: "/assets/nixie_alert.png",
 };
 
 const EVENT_NAMES = ["nixie:set-state", "ai:state-change"];
@@ -32,8 +32,17 @@ function normalizeState(value) {
 }
 
 function assetType(src = "") {
-  if (src.endsWith(".json")) return "lottie";
-  if (src.endsWith(".mp4") || src.endsWith(".webm")) return "video";
+  const cleanSrc = src.split("?")[0].toLowerCase();
+  if (cleanSrc.endsWith(".json")) return "lottie";
+  if (cleanSrc.endsWith(".mp4") || cleanSrc.endsWith(".webm")) return "video";
+  if (
+    cleanSrc.endsWith(".png") ||
+    cleanSrc.endsWith(".jpg") ||
+    cleanSrc.endsWith(".jpeg") ||
+    cleanSrc.endsWith(".webp") ||
+    cleanSrc.endsWith(".avif") ||
+    cleanSrc.endsWith(".svg")
+  ) return "image";
   return "unknown";
 }
 
@@ -53,16 +62,31 @@ function preloadVideo(src) {
 
 async function preloadAsset(src) {
   if (!src) throw new Error("Missing Nixie asset src.");
-  if (assetType(src) === "video") {
+  const type = assetType(src);
+  if (type === "image") {
+    await preloadImage(src);
+    return { type: "image", src };
+  }
+  if (type === "video") {
     await preloadVideo(src);
     return { type: "video", src };
   }
-  if (assetType(src) === "lottie") {
+  if (type === "lottie") {
     const response = await fetch(src, { cache: "force-cache" });
     if (!response.ok) throw new Error(`Could not load Lottie asset: ${src}`);
     return { type: "lottie", src, animationData: await response.json() };
   }
   throw new Error(`Unsupported Nixie asset type: ${src}`);
+}
+
+function preloadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => resolve(src);
+    image.onerror = () => reject(new Error(`Could not preload image asset: ${src}`));
+    image.src = src;
+  });
 }
 
 export default function NixieAvatarController({
@@ -120,6 +144,7 @@ export default function NixieAvatarController({
   useEffect(() => {
     const idleSrc = normalizedAssets[SAFE_FALLBACK_STATE];
     if (assetType(idleSrc) === "video") preloadVideo(idleSrc).catch(() => {});
+    if (assetType(idleSrc) === "image") preloadImage(idleSrc).catch(() => {});
     loadState(initialState, "initial");
   }, [initialState, loadState, normalizedAssets]);
 
@@ -161,6 +186,17 @@ function NixieAsset({ asset, active = false, pending = false }) {
         loop
         autoplay
         rendererSettings={{ preserveAspectRatio: "xMidYMid meet" }}
+      />
+    );
+  }
+  if (asset.type === "image") {
+    return (
+      <img
+        className={className}
+        src={asset.src}
+        alt=""
+        draggable={false}
+        decoding="async"
       />
     );
   }
