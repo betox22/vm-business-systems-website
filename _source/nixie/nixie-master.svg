@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-label="Nixie character animation source master">
+  <metadata>
+    Nixie source master built from the provided concept sheet.
+    This file is not a redesigned character. It contains exact cropped reference poses and named groups for professional layer tracing/separation.
+    Open in Figma, Illustrator, Inkscape, or any SVG editor. Keep reference groups locked; trace/export the named production layers.
+  </metadata>
+  <defs>
+    <style>
+      .board-bg{fill:#071323}
+      .panel{fill:#0d1c33;stroke:#38f0ea;stroke-opacity:.2;stroke-width:2}
+      .label{fill:#dffcff;font:700 24px Inter,Arial,sans-serif}
+      .note{fill:#8fc8d4;font:500 15px Inter,Arial,sans-serif}
+      .guide{fill:none;stroke:#87fff5;stroke-width:2;stroke-dasharray:8 8;opacity:.45}
+      .trace-layer{fill:none;stroke:#b98cff;stroke-width:2;stroke-dasharray:5 7;opacity:.6}
+      .hidden-template{display:none}
+    </style>
+  </defs>
+
+  <rect class="board-bg" width="1600" height="1000"/>
+  <text class="label" x="48" y="58">Nixie Animation Source Master</text>
+  <text class="note" x="48" y="86">Real pose references from the supplied sheet. Use these to trace/export professional layers without redesigning the character.</text>
+
+  <g id="reference-original-sheet" opacity="0.28">
+    <image href="reference/nixie-original-concept.png" x="1060" y="36" width="470" height="257" preserveAspectRatio="xMidYMid meet"/>
+    <rect class="guide" x="1060" y="36" width="470" height="257"/>
+    <text class="note" x="1060" y="318">Original sheet reference, low opacity</text>
+  </g>
+
+  <g id="pose-reference-board">
+    <g id="pose-idle-main" data-state="idle">
+      <rect class="panel" x="50" y="130" width="410" height="760" rx="24"/>
+      <text class="label" x="80" y="178">Idle / base</text>
+      <text class="note" x="80" y="204">Main body proportions and default expression</text>
+      <image href="reference/poses/idle-main-reference.png" x="102" y="230" width="300" height="558" preserveAspectRatio="xMidYMid meet"/>
+      <rect class="guide" x="102" y="230" width="300" height="558"/>
+    </g>
+
+    <g id="pose-building-tools" data-state="building">
+      <rect class="panel" x="500" y="130" width="320" height="300" rx="24"/>
+      <text class="label" x="528" y="178">Building</text>
+      <text class="note" x="528" y="204">Working with tools / creating site</text>
+      <image href="reference/poses/building-tools-reference.png" x="535" y="218" width="250" height="242" preserveAspectRatio="xMidYMid meet"/>
+    </g>
+
+    <g id="pose-analytical-thinking" data-state="thinking">
+      <rect class="panel" x="850" y="130" width="320" height="300" rx="24"/>
+      <text class="label" x="878" y="178">Thinking</text>
+      <text class="note" x="878" y="204">Analytical mode / thinker pose</text>
+      <image href="reference/poses/analytical-thinking-reference.png" x="884" y="214" width="246" height="276" preserveAspectRatio="xMidYMid meet"/>
+    </g>
+
+    <g id="pose-optimization-boost" data-state="building optimization">
+      <rect class="panel" x="500" y="500" width="320" height="300" rx="24"/>
+      <text class="label" x="528" y="548">Optimization</text>
+      <text class="note" x="528" y="574">Boosting performance / fast motion</text>
+      <image href="reference/poses/optimization-boost-reference.png" x="528" y="590" width="270" height="218" preserveAspectRatio="xMidYMid meet"/>
+    </g>
+
+    <g id="pose-alert-critical" data-state="alert">
+      <rect class="panel" x="850" y="500" width="320" height="300" rx="24"/>
+      <text class="label" x="878" y="548">Alert</text>
+      <text class="note" x="878" y="574">Critical check / warning expression</text>
+      <image href="reference/poses/alert-critical-reference.png" x="890" y="596" width="230" height="254" preserveAspectRatio="xMidYMid meet"/>
+    </g>
+  </g>
+
+  <g id="production-layer-contract" transform="translate(1220 395)">
+    <rect class="panel" x="0" y="0" width="330" height="505" rx="24"/>
+    <text class="label" x="24" y="46">Layer Contract</text>
+    <text class="note" x="24" y="82">Trace/export these from the references:</text>
+    <text class="note" x="24" y="122">body</text>
+    <text class="note" x="24" y="150">head</text>
+    <text class="note" x="24" y="178">left eye / right eye</text>
+    <text class="note" x="24" y="206">mouth closed / open / smile</text>
+    <text class="note" x="24" y="234">left arm / right arm</text>
+    <text class="note" x="24" y="262">chest symbol</text>
+    <text class="note" x="24" y="290">glow layer</text>
+    <text class="note" x="24" y="318">particles</text>
+    <text class="note" x="24" y="346">tail / fluid extensions</text>
+    <text class="note" x="24" y="396">State exports:</text>
+    <text class="note" x="24" y="424">idle, listening, thinking</text>
+    <text class="note" x="24" y="452">speaking, building, success</text>
+    <text class="note" x="24" y="480">alert</text>
+  </g>
+
+  <g id="trace-templates" class="hidden-template">
+    <g id="layer-body"><desc>Trace from pose-idle-main body only.</desc></g>
+    <g id="layer-head"><desc>Trace from pose-idle-main head only.</desc></g>
+    <g id="layer-left-eye"><desc>Trace left eye separately for blinking.</desc></g>
+    <g id="layer-right-eye"><desc>Trace right eye separately for blinking.</desc></g>
+    <g id="layer-mouth-closed"><desc>Trace default mouth.</desc></g>
+    <g id="layer-mouth-open"><desc>Trace speaking mouth from concept expression or redraw matching style.</desc></g>
+    <g id="layer-mouth-smile"><desc>Trace success/happy mouth matching Nixie style.</desc></g>
+    <g id="layer-left-arm"><desc>Trace idle arm and alternate building/success arms.</desc></g>
+    <g id="layer-right-arm"><desc>Trace idle arm and alternate building/success arms.</desc></g>
+    <g id="layer-chest-symbol"><desc>Trace chest code symbol as independent glow layer.</desc></g>
+    <g id="layer-glow"><desc>Export aura/listening glow separately.</desc></g>
+    <g id="layer-particles"><desc>Export particles and build effects separately.</desc></g>
+    <g id="layer-tail-fluid-extensions"><desc>Trace tail/fluid extensions separately for motion.</desc></g>
+    <g id="state-idle"><desc>Use idle-main pose.</desc></g>
+    <g id="state-listening"><desc>Idle pose plus glow/listening rings.</desc></g>
+    <g id="state-thinking"><desc>Use analytical-thinking pose as expression reference.</desc></g>
+    <g id="state-speaking"><desc>Idle or guide pose with mouth-open cycle.</desc></g>
+    <g id="state-building"><desc>Use building-tools pose with tools/hologram.</desc></g>
+    <g id="state-success"><desc>Use celebratory arms/confetti in Nixie style.</desc></g>
+    <g id="state-alert"><desc>Use alert-critical pose and warm alert glow.</desc></g>
+  </g>
+</svg>
