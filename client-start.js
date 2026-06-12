@@ -107,6 +107,7 @@ const manualButton = document.querySelector("#useManualForm");
 const chatModal = document.querySelector("#clientChatModal");
 const chatFrame = document.querySelector("#clientChatFrame");
 const closeChatButton = document.querySelector("#closeClientChat");
+const decorativeMascotImages = document.querySelectorAll(".mascot-card img");
 
 function applyCopy() {
   const copy = LANDING_COPY[selectedLanguage] || LANDING_COPY.en;
@@ -124,6 +125,11 @@ languageSelect.addEventListener("change", () => {
 });
 
 applyCopy();
+
+decorativeMascotImages.forEach((image) => {
+  image.setAttribute("draggable", "false");
+  image.addEventListener("contextmenu", (event) => event.preventDefault());
+});
 
 startButton.addEventListener("click", (event) => {
   event.preventDefault();
