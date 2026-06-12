@@ -214,8 +214,8 @@ function startLandingLumaLoop() {
   lumaLineIndex += 1;
   lumaSpeechTimer = window.setTimeout(() => {
     setLandingLumaState("idle");
-    lumaSpeechTimer = window.setTimeout(startLandingLumaLoop, 3400);
-  }, 2400);
+    lumaSpeechTimer = window.setTimeout(startLandingLumaLoop, 6200);
+  }, 3600);
 }
 
 function setLandingLumaState(state) {

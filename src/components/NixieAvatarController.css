@@ -255,7 +255,7 @@
 
 .nixie-avatar-controller[data-state="idle"] .nixie-avatar-scale-box,
 .nixie-avatar-controller[data-state="listening"] .nixie-avatar-scale-box {
-  animation: nixieControllerFloat 4.8s ease-in-out infinite;
+  animation: nixieControllerFloat 7.2s cubic-bezier(0.45, 0, 0.25, 1) infinite;
 }
 
 .nixie-avatar-controller[data-state="idle"] .nixie-aura {
@@ -263,24 +263,24 @@
 }
 
 .nixie-avatar-controller[data-state="speaking"] .nixie-avatar-scale-box {
-  animation: nixieControllerSpeak 0.82s ease-in-out infinite;
+  animation: nixieControllerSpeak 1.8s cubic-bezier(0.45, 0, 0.25, 1) infinite;
 }
 
 .nixie-avatar-controller[data-state="thinking"] .nixie-avatar-scale-box,
 .nixie-avatar-controller[data-state="optimize"] .nixie-avatar-scale-box {
-  animation: nixieControllerPulse 1.8s ease-in-out infinite;
+  animation: nixieControllerPulse 3.4s cubic-bezier(0.45, 0, 0.25, 1) infinite;
 }
 
 .nixie-avatar-controller[data-state="building"] .nixie-avatar-scale-box {
-  animation: nixieControllerBuild 1.2s ease-in-out infinite;
+  animation: nixieControllerBuild 2.6s cubic-bezier(0.45, 0, 0.25, 1) infinite;
 }
 
 .nixie-avatar-controller[data-state="success"] .nixie-avatar-scale-box {
-  animation: nixieControllerSuccess 0.9s ease-in-out infinite;
+  animation: nixieControllerSuccess 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
 .nixie-avatar-controller[data-state="alert"] .nixie-avatar-scale-box {
-  animation: nixieControllerAlert 0.52s ease-in-out 2;
+  animation: nixieControllerAlert 1.8s ease-in-out 2;
 }
 
 .nixie-avatar-controller[data-state="listening"] .nixie-aura,

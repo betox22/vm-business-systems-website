@@ -23,6 +23,8 @@
       this.lottiePaths = options.lottiePaths || {};
       this.compact = Boolean(options.compact);
       this.state = this.manager.getState();
+      this.currentImageUrl = this.imageUrl;
+      this.imageSwapTimer = null;
       this.preloadImages();
       this.render();
       this.manager.addEventListener("avatar-state-change", (event) => {
@@ -86,10 +88,23 @@
       if (this.label) this.label.textContent = this.labels[this.state] || DEFAULT_LABELS[this.state];
       const stateImage = this.imagePaths[this.state] || this.imagePaths.idle || this.imageUrl;
       if (this.imageSkin && stateImage) {
-        this.imageSkin.style.backgroundImage = `url('${this.escapeAttribute(stateImage)}')`;
         this.el.classList.add("has-image-skin");
+        this.swapImage(stateImage);
       }
       this.loadLottiePlaceholder(this.state);
+    }
+
+    swapImage(url) {
+      if (!this.imageSkin || !url || this.currentImageUrl === url) return;
+      window.clearTimeout(this.imageSwapTimer);
+      this.imageSkin.classList.add("is-swapping");
+      this.imageSwapTimer = window.setTimeout(() => {
+        this.imageSkin.style.backgroundImage = `url('${this.escapeAttribute(url)}')`;
+        this.currentImageUrl = url;
+        window.requestAnimationFrame(() => {
+          this.imageSkin.classList.remove("is-swapping");
+        });
+      }, 110);
     }
 
     preloadImages() {
