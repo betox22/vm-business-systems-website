@@ -1,0 +1,185 @@
+.nixie-avatar-controller {
+  --nixie-avatar-size: clamp(220px, 34vw, 520px);
+  --nixie-avatar-safe-padding: 13%;
+  width: var(--nixie-avatar-size);
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  color: #dffcff;
+}
+
+.nixie-avatar-viewport {
+  width: 100%;
+  aspect-ratio: 1;
+  position: relative;
+  overflow: visible;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  contain: layout style;
+}
+
+.nixie-avatar-viewport::before {
+  content: "";
+  position: absolute;
+  inset: 7%;
+  z-index: -1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(111, 252, 243, 0.28), transparent 58%),
+    radial-gradient(circle at 70% 28%, rgba(155, 115, 255, 0.2), transparent 36%);
+  filter: blur(22px);
+  opacity: 0.86;
+  transform: translateZ(0);
+}
+
+.nixie-avatar-scale-box {
+  position: absolute;
+  inset: calc(var(--nixie-avatar-safe-padding) * -1);
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  transform-origin: center;
+}
+
+.nixie-avatar-asset {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
+  overflow: visible;
+  opacity: 0;
+  filter: drop-shadow(0 26px 44px rgba(3, 10, 24, 0.34));
+  transform: translateZ(0) scale(1);
+  transition:
+    opacity 180ms ease,
+    filter 220ms ease,
+    transform 220ms ease;
+  will-change: opacity, transform, filter;
+}
+
+.nixie-avatar-asset.is-active {
+  opacity: 1;
+}
+
+.nixie-avatar-asset.is-pending {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nixie-avatar-controller[data-transitioning="true"] .nixie-avatar-asset.is-active {
+  opacity: 0.92;
+}
+
+.nixie-avatar-controller[data-state="idle"] .nixie-avatar-scale-box,
+.nixie-avatar-controller[data-state="listening"] .nixie-avatar-scale-box {
+  animation: nixieControllerFloat 4.8s ease-in-out infinite;
+}
+
+.nixie-avatar-controller[data-state="speaking"] .nixie-avatar-scale-box {
+  animation: nixieControllerSpeak 0.82s ease-in-out infinite;
+}
+
+.nixie-avatar-controller[data-state="thinking"] .nixie-avatar-scale-box,
+.nixie-avatar-controller[data-state="optimize"] .nixie-avatar-scale-box {
+  animation: nixieControllerPulse 1.8s ease-in-out infinite;
+}
+
+.nixie-avatar-controller[data-state="building"] .nixie-avatar-scale-box {
+  animation: nixieControllerBuild 1.2s ease-in-out infinite;
+}
+
+.nixie-avatar-controller[data-state="success"] .nixie-avatar-scale-box {
+  animation: nixieControllerSuccess 0.9s ease-in-out infinite;
+}
+
+.nixie-avatar-controller[data-state="alert"] .nixie-avatar-scale-box {
+  animation: nixieControllerAlert 0.52s ease-in-out 2;
+}
+
+.nixie-avatar-controller[data-state="listening"] .nixie-avatar-viewport::after,
+.nixie-avatar-controller[data-state="speaking"] .nixie-avatar-viewport::after {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  border: 1px solid rgba(111, 252, 243, 0.32);
+  border-radius: 999px;
+  animation: nixieControllerRing 1.4s ease-out infinite;
+}
+
+.nixie-avatar-fallback {
+  width: 64%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(111, 252, 243, 0.22);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 36% 24%, rgba(255, 255, 255, 0.92), transparent 9%),
+    linear-gradient(145deg, #7ffff5, #9171ff 66%, #161a59);
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.28);
+}
+
+.nixie-avatar-fallback span {
+  width: 42%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: rgba(6, 16, 23, 0.74);
+  box-shadow: 0 0 34px rgba(111, 252, 243, 0.32);
+}
+
+.nixie-avatar-caption {
+  min-height: 18px;
+  color: rgba(223, 252, 255, 0.74);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@keyframes nixieControllerFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3.5%) scale(1.012); }
+}
+
+@keyframes nixieControllerSpeak {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-1.6%) scale(1.018); }
+}
+
+@keyframes nixieControllerPulse {
+  0%, 100% { transform: rotate(0deg) scale(1); filter: saturate(1); }
+  50% { transform: rotate(-1deg) scale(1.016); filter: saturate(1.16); }
+}
+
+@keyframes nixieControllerBuild {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-2%) rotate(-1.5deg); }
+}
+
+@keyframes nixieControllerSuccess {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-5%) scale(1.035); }
+}
+
+@keyframes nixieControllerAlert {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2.2%); }
+  50% { transform: translateX(2.2%); }
+  75% { transform: translateX(-1.2%); }
+}
+
+@keyframes nixieControllerRing {
+  0% { opacity: 0.72; transform: scale(0.78); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+
+@media (max-width: 720px) {
+  .nixie-avatar-controller {
+    --nixie-avatar-size: min(88vw, 380px);
+  }
+}
