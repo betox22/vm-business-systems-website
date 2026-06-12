@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nixie Layered Avatar Preview</title>
+    <link rel="stylesheet" href="./nixie-avatar.css">
+    <style>
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        gap: 20px;
+        color: #eafcff;
+        font-family: Inter, system-ui, sans-serif;
+        background:
+          radial-gradient(circle at 50% 20%, rgba(67, 233, 238, 0.22), transparent 28%),
+          radial-gradient(circle at 78% 68%, rgba(136, 100, 255, 0.2), transparent 28%),
+          linear-gradient(135deg, #081323, #121831 52%, #080d1c);
+      }
+      main {
+        width: min(920px, calc(100% - 32px));
+        display: grid;
+        justify-items: center;
+        gap: 18px;
+      }
+      h1, p { margin: 0; text-align: center; }
+      p { color: #a9c8d2; }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+      }
+      button {
+        border: 1px solid rgba(143, 252, 255, 0.22);
+        border-radius: 999px;
+        padding: 9px 13px;
+        color: #eafcff;
+        background: rgba(255, 255, 255, 0.08);
+        font-weight: 800;
+        cursor: pointer;
+      }
+      button:hover { background: rgba(143, 252, 255, 0.16); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Nixie Layered Avatar</h1>
+      <p>Transparent SVG layers prepared for idle, blink, speaking, listening, thinking, building, success, and alert states.</p>
+      <div id="nixie" class="nixie-stage" data-state="idle">
+        <img class="nixie-layer nixie-glow" src="./layers/glow.svg" alt="">
+        <div class="nixie-core">
+          <img class="nixie-layer nixie-tail" src="./layers/tail-fluid-extensions.svg" alt="">
+          <img class="nixie-layer nixie-body" src="./layers/body.svg" alt="">
+          <img class="nixie-layer nixie-arm nixie-arm-left" src="./layers/left-arm.svg" alt="">
+          <img class="nixie-layer nixie-arm nixie-arm-right" src="./layers/right-arm.svg" alt="">
+          <div class="nixie-head-group">
+            <img class="nixie-layer nixie-head" src="./layers/head.svg" alt="">
+            <img class="nixie-layer nixie-eye nixie-left-eye" src="./layers/left-eye.svg" alt="">
+            <img class="nixie-layer nixie-eye nixie-right-eye" src="./layers/right-eye.svg" alt="">
+            <img class="nixie-layer nixie-mouth nixie-mouth-closed" src="./layers/mouth-closed.svg" alt="">
+            <img class="nixie-layer nixie-mouth nixie-mouth-open" src="./layers/mouth-open.svg" alt="">
+            <img class="nixie-layer nixie-mouth nixie-mouth-smile" src="./layers/mouth-smile.svg" alt="">
+          </div>
+          <img class="nixie-layer nixie-chest" src="./layers/chest-symbol.svg" alt="">
+          <img class="nixie-layer nixie-particles" src="./layers/particles.svg" alt="">
+        </div>
+      </div>
+      <div class="controls">
+        <button data-state="idle">Idle</button>
+        <button data-state="listening">Listening</button>
+        <button data-state="thinking">Thinking</button>
+        <button data-state="speaking">Speaking</button>
+        <button data-state="building">Building</button>
+        <button data-state="success">Success</button>
+        <button data-state="alert">Alert</button>
+      </div>
+    </main>
+    <script>
+      const stage = document.querySelector("#nixie");
+      document.querySelectorAll("[data-state]").forEach((button) => {
+        button.addEventListener("click", () => {
+          stage.dataset.state = button.dataset.state;
+        });
+      });
+    </script>
+  </body>
+</html>

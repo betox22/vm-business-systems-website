@@ -1,0 +1,22 @@
+{
+  "name": "Nixie",
+  "canvas": { "width": 512, "height": 512, "viewBox": "0 0 512 512" },
+  "format": "transparent SVG layers",
+  "reference": "Gemini_Generated_Image_qm6lsxqm6lsxqm6l.png",
+  "states": ["idle", "listening", "thinking", "speaking", "happy", "confused", "success", "alert"],
+  "layers": [
+    { "id": "glow", "file": "layers/glow.svg", "role": "listening/thinking glow" },
+    { "id": "tailFluidExtensions", "file": "layers/tail-fluid-extensions.svg", "role": "fluid tail and motion extensions" },
+    { "id": "body", "file": "layers/body.svg", "role": "main torso" },
+    { "id": "leftArm", "file": "layers/left-arm.svg", "role": "independent arm animation" },
+    { "id": "rightArm", "file": "layers/right-arm.svg", "role": "independent arm animation" },
+    { "id": "head", "file": "layers/head.svg", "role": "head bob/tilt" },
+    { "id": "leftEye", "file": "layers/left-eye.svg", "role": "blink" },
+    { "id": "rightEye", "file": "layers/right-eye.svg", "role": "blink" },
+    { "id": "mouthClosed", "file": "layers/mouth-closed.svg", "role": "default mouth" },
+    { "id": "mouthOpen", "file": "layers/mouth-open.svg", "role": "speaking phoneme" },
+    { "id": "mouthSmile", "file": "layers/mouth-smile.svg", "role": "happy/success mouth" },
+    { "id": "chestSymbol", "file": "layers/chest-symbol.svg", "role": "brand code symbol pulse" },
+    { "id": "particles", "file": "layers/particles.svg", "role": "building/success particles" }
+  ]
+}
