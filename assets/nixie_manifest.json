@@ -2,11 +2,11 @@
   "name": "Nixie Avatar State Assets",
   "version": "0.1.0",
   "format": "transparent-png",
-  "source": "Gemini exported state JPGs converted to transparent PNG assets",
+  "source": "Codex-generated Nixie state renders converted from chroma-key to transparent PNG assets",
   "notes": [
-    "These are transparent state exports converted from the newer Nixie pose renders.",
+    "These are transparent state exports generated for the Nixie avatar state system.",
     "The React controller can replace any PNG with a Lottie JSON, MP4, WebM, SVG, WebP, or AVIF later without changing state names.",
-    "If true source PNGs with native transparency are provided later, these files can be replaced without changing code."
+    "The source renders used flat magenta chroma-key backgrounds, then were converted locally into transparent PNG files."
   ],
   "states": {
     "idle": "/assets/nixie_idle.png",
