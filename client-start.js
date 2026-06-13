@@ -1,5 +1,5 @@
 const SUPPORTED_LANGUAGES = ["en", "es", "fr", "pt"];
-const PUBLIC_BACKEND_URL = "";
+const PUBLIC_BACKEND_URL = resolvePublicApiBaseUrl();
 
 const LANDING_COPY = {
   en: {
@@ -27,6 +27,22 @@ const LANDING_COPY = {
     step2Text: "Get layout, copy, colors, sections, and catalog suggestions.",
     step3Title: "Editable before publishing",
     step3Text: "Review and adjust everything before your site goes live.",
+    feedbackOpen: "Feedback",
+    feedbackTitle: "Help us improve Luma",
+    feedbackText: "After testing, tell us what felt confusing, missing, slow, or useful.",
+    feedbackName: "Name",
+    feedbackEmail: "Email",
+    feedbackRating: "Overall impression",
+    feedbackStage: "What did you test?",
+    feedbackMessage: "What should we improve?",
+    feedbackSubmit: "Send feedback",
+    feedbackClose: "Close",
+    feedbackNamePlaceholder: "Your name",
+    feedbackEmailPlaceholder: "you@email.com",
+    feedbackMessagePlaceholder: "Write anything you noticed...",
+    feedbackSent: "Thanks. Your feedback was sent.",
+    feedbackLocal: "Saved locally for now. The server did not confirm receipt.",
+    feedbackSending: "Sending feedback...",
   },
   es: {
     title: "Crea tu pagina con Luma",
@@ -53,6 +69,22 @@ const LANDING_COPY = {
     step2Text: "Obtén diseño, textos, colores, secciones y sugerencias de catálogo.",
     step3Title: "Editable antes de publicar",
     step3Text: "Revisa y ajusta todo antes de publicar.",
+    feedbackOpen: "Feedback",
+    feedbackTitle: "Ayúdanos a mejorar Luma",
+    feedbackText: "Después de probar, dinos qué fue confuso, qué faltó, qué tardó o qué te gustó.",
+    feedbackName: "Nombre",
+    feedbackEmail: "Correo",
+    feedbackRating: "Impresión general",
+    feedbackStage: "¿Qué probaste?",
+    feedbackMessage: "¿Qué deberíamos mejorar?",
+    feedbackSubmit: "Enviar feedback",
+    feedbackClose: "Cerrar",
+    feedbackNamePlaceholder: "Tu nombre",
+    feedbackEmailPlaceholder: "tu@email.com",
+    feedbackMessagePlaceholder: "Escribe cualquier cosa que notaste...",
+    feedbackSent: "Gracias. Tu feedback fue enviado.",
+    feedbackLocal: "Guardado localmente por ahora. El servidor no confirmó recepción.",
+    feedbackSending: "Enviando feedback...",
   },
   fr: {
     title: "Créez votre site avec Luma",
@@ -79,6 +111,22 @@ const LANDING_COPY = {
     step2Text: "Obtenez mise en page, textes, couleurs, sections et suggestions de catalogue.",
     step3Title: "Modifiable avant publication",
     step3Text: "Relisez et ajustez tout avant la mise en ligne.",
+    feedbackOpen: "Feedback",
+    feedbackTitle: "Aidez-nous à améliorer Luma",
+    feedbackText: "Après le test, dites-nous ce qui était confus, manquant, lent ou utile.",
+    feedbackName: "Nom",
+    feedbackEmail: "Email",
+    feedbackRating: "Impression générale",
+    feedbackStage: "Qu'avez-vous testé ?",
+    feedbackMessage: "Que devons-nous améliorer ?",
+    feedbackSubmit: "Envoyer",
+    feedbackClose: "Fermer",
+    feedbackNamePlaceholder: "Votre nom",
+    feedbackEmailPlaceholder: "vous@email.com",
+    feedbackMessagePlaceholder: "Écrivez ce que vous avez remarqué...",
+    feedbackSent: "Merci. Votre feedback a été envoyé.",
+    feedbackLocal: "Enregistré localement pour le moment. Le serveur n'a pas confirmé.",
+    feedbackSending: "Envoi...",
   },
   pt: {
     title: "Crie seu site com Luma",
@@ -105,8 +153,32 @@ const LANDING_COPY = {
     step2Text: "Receba layout, textos, cores, seções e sugestões de catálogo.",
     step3Title: "Editável antes de publicar",
     step3Text: "Revise e ajuste tudo antes do site entrar no ar.",
+    feedbackOpen: "Feedback",
+    feedbackTitle: "Ajude-nos a melhorar a Luma",
+    feedbackText: "Depois de testar, diga o que foi confuso, faltou, demorou ou ajudou.",
+    feedbackName: "Nome",
+    feedbackEmail: "Email",
+    feedbackRating: "Impressão geral",
+    feedbackStage: "O que você testou?",
+    feedbackMessage: "O que devemos melhorar?",
+    feedbackSubmit: "Enviar feedback",
+    feedbackClose: "Fechar",
+    feedbackNamePlaceholder: "Seu nome",
+    feedbackEmailPlaceholder: "voce@email.com",
+    feedbackMessagePlaceholder: "Escreva qualquer coisa que percebeu...",
+    feedbackSent: "Obrigado. Seu feedback foi enviado.",
+    feedbackLocal: "Salvo localmente por enquanto. O servidor não confirmou.",
+    feedbackSending: "Enviando feedback...",
   },
 };
+
+function resolvePublicApiBaseUrl() {
+  if (window.LUMA_API_BASE_URL) return String(window.LUMA_API_BASE_URL).replace(/\/$/, "");
+  const saved = localStorage.getItem("lumaApiBaseUrl");
+  if (saved) return saved.replace(/\/$/, "");
+  if (["localhost", "127.0.0.1"].includes(window.location.hostname)) return "http://127.0.0.1:8010";
+  return "https://luma-api.vmbusinesssystems.com";
+}
 
 function normalizeBrowserLanguage(input) {
   const normalized = String(input || "en").trim().toLowerCase().split("-")[0];
@@ -128,6 +200,11 @@ const chatModal = document.querySelector("#clientChatModal");
 const chatFrame = document.querySelector("#clientChatFrame");
 const closeChatButton = document.querySelector("#closeClientChat");
 const landingAvatarRoot = document.querySelector("#landingAvatarAssistant");
+const feedbackButton = document.querySelector("#testerFeedbackButton");
+const feedbackPanel = document.querySelector("#testerFeedbackPanel");
+const feedbackCloseButton = document.querySelector("#testerFeedbackClose");
+const feedbackForm = document.querySelector("#testerFeedbackForm");
+const feedbackStatus = document.querySelector("#testerFeedbackStatus");
 const landingAvatarManager = window.AvatarStateManager ? new window.AvatarStateManager("idle") : null;
 let lumaLineIndex = 0;
 let lumaSpeechTimer;
@@ -138,6 +215,9 @@ function applyCopy() {
   document.documentElement.lang = selectedLanguage;
   document.querySelectorAll("[data-client-i18n]").forEach((item) => {
     item.textContent = copy[item.dataset.clientI18n] || item.textContent;
+  });
+  document.querySelectorAll("[data-client-i18n-placeholder]").forEach((item) => {
+    item.placeholder = copy[item.dataset.clientI18nPlaceholder] || item.placeholder;
   });
   startButton.href = `/client/setup/?lang=${selectedLanguage}`;
   lumaLineIndex = 0;
@@ -165,6 +245,9 @@ manualButton?.addEventListener("click", (event) => {
 });
 
 closeChatButton.addEventListener("click", closeLumaChat);
+feedbackButton?.addEventListener("click", openTesterFeedback);
+feedbackCloseButton?.addEventListener("click", closeTesterFeedback);
+feedbackForm?.addEventListener("submit", submitTesterFeedback);
 window.addEventListener("message", (event) => {
   if (event.data?.type === "luma-close") closeLumaChat();
   if (event.data?.type === "luma-generated-preview") {
@@ -172,6 +255,73 @@ window.addEventListener("message", (event) => {
     document.body.classList.add("client-preview-open");
   }
 });
+
+function openTesterFeedback() {
+  if (!feedbackPanel) return;
+  feedbackPanel.hidden = false;
+  feedbackPanel.querySelector("textarea, input, select")?.focus();
+  setLandingLumaState("listening");
+}
+
+function closeTesterFeedback() {
+  if (!feedbackPanel) return;
+  feedbackPanel.hidden = true;
+  setLandingLumaState("idle");
+}
+
+async function submitTesterFeedback(event) {
+  event.preventDefault();
+  if (!feedbackForm) return;
+  const copy = LANDING_COPY[selectedLanguage] || LANDING_COPY.en;
+  const data = new FormData(feedbackForm);
+  const feedback = {
+    name: String(data.get("name") || "").trim(),
+    email: String(data.get("email") || "").trim(),
+    rating: String(data.get("rating") || "").trim(),
+    stage: String(data.get("stage") || "").trim(),
+    message: String(data.get("message") || "").trim(),
+    language: selectedLanguage,
+    pageUrl: window.location.href,
+    createdAt: new Date().toISOString(),
+  };
+  if (!feedback.message) {
+    feedbackStatus.textContent = copy.feedbackMessagePlaceholder;
+    return;
+  }
+  feedbackStatus.textContent = copy.feedbackSending;
+  setLandingLumaState("thinking");
+  try {
+    const response = await fetch(`${PUBLIC_BACKEND_URL}/public/leads`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        customerName: feedback.name || "Tester",
+        email: feedback.email,
+        phone: "",
+        message: [
+          "Luma beta feedback",
+          `Rating: ${feedback.rating}`,
+          `Stage: ${feedback.stage}`,
+          `Language: ${feedback.language}`,
+          `URL: ${feedback.pageUrl}`,
+          "",
+          feedback.message,
+        ].join("\n"),
+        source: "luma_public_tester_feedback",
+      }),
+    });
+    if (!response.ok) throw new Error(await response.text());
+    feedbackStatus.textContent = copy.feedbackSent;
+    feedbackForm.reset();
+    setLandingLumaState("success");
+  } catch {
+    const saved = JSON.parse(localStorage.getItem("lumaTesterFeedback") || "[]");
+    saved.push(feedback);
+    localStorage.setItem("lumaTesterFeedback", JSON.stringify(saved.slice(-20)));
+    feedbackStatus.textContent = copy.feedbackLocal;
+    setLandingLumaState("alert");
+  }
+}
 
 function openLumaChat(manual = false, intent = {}) {
   const apiQuery = PUBLIC_BACKEND_URL ? `&api=${encodeURIComponent(PUBLIC_BACKEND_URL)}` : "";

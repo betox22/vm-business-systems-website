@@ -183,11 +183,14 @@ instagram: @lunamarket</textarea></label>
 
           <section class="preview-panel">
             <div id="clientReviewBar" class="client-review-bar">
-              <strong>Client preview</strong>
               <div>
-                <button type="button">Approve</button>
-                <button type="button">Request changes</button>
-                <button id="exitClientPreviewButton" type="button">Back to editor</button>
+                <strong id="generatedReadyTitle">Your draft is ready</strong>
+                <span id="generatedReadySubtitle">Review it completely. You can send it to the team or ask Luma for changes.</span>
+              </div>
+              <div>
+                <button id="submitDraftReviewButton" type="button">Send for review</button>
+                <button id="adjustWithLumaButton" type="button">Adjust with Luma</button>
+                <button id="exitClientPreviewButton" type="button">Keep reviewing</button>
               </div>
             </div>
             <div id="previewFrame" class="site-preview"></div>

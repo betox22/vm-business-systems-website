@@ -84,6 +84,51 @@
         <iframe id="clientChatFrame" title="Luma AI website assistant"></iframe>
       </div>
     </div>
-    <script src="/client-start.js?v=7"></script>
+    <button id="testerFeedbackButton" class="tester-feedback-button" type="button" data-client-i18n="feedbackOpen">Feedback</button>
+    <section id="testerFeedbackPanel" class="tester-feedback-panel" hidden aria-label="Tester feedback">
+      <div class="tester-feedback-card">
+        <button id="testerFeedbackClose" class="tester-feedback-close" type="button" data-client-i18n="feedbackClose">Close</button>
+        <span class="client-kicker">Beta</span>
+        <h2 data-client-i18n="feedbackTitle">Help us improve Luma</h2>
+        <p data-client-i18n="feedbackText">After testing, tell us what felt confusing, missing, slow, or useful.</p>
+        <form id="testerFeedbackForm" class="tester-feedback-form">
+          <label>
+            <span data-client-i18n="feedbackName">Name</span>
+            <input name="name" data-client-i18n-placeholder="feedbackNamePlaceholder" placeholder="Your name">
+          </label>
+          <label>
+            <span data-client-i18n="feedbackEmail">Email</span>
+            <input name="email" type="email" data-client-i18n-placeholder="feedbackEmailPlaceholder" placeholder="you@email.com">
+          </label>
+          <label>
+            <span data-client-i18n="feedbackRating">Overall impression</span>
+            <select name="rating">
+              <option value="good">Good</option>
+              <option value="confusing">Confusing</option>
+              <option value="missing">Missing something</option>
+              <option value="broken">Something broke</option>
+            </select>
+          </label>
+          <label>
+            <span data-client-i18n="feedbackStage">What did you test?</span>
+            <select name="stage">
+              <option value="landing">Landing page</option>
+              <option value="chat">Luma chat</option>
+              <option value="generation">Website generation</option>
+              <option value="preview">Generated preview</option>
+              <option value="client_portal">Client portal</option>
+            </select>
+          </label>
+          <label class="tester-feedback-wide">
+            <span data-client-i18n="feedbackMessage">What should we improve?</span>
+            <textarea name="message" rows="4" required data-client-i18n-placeholder="feedbackMessagePlaceholder" placeholder="Write anything you noticed..."></textarea>
+          </label>
+          <button class="client-button primary" type="submit" data-client-i18n="feedbackSubmit">Send feedback</button>
+          <p id="testerFeedbackStatus" class="tester-feedback-status"></p>
+        </form>
+      </div>
+    </section>
+    <script src="/luma-config.js?v=1781138876"></script>
+    <script src="/client-start.js?v=20"></script>
   </body>
 </html>
