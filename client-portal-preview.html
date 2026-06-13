@@ -158,6 +158,88 @@
       </div>
     </section>
 
+    <section class="section">
+      <div class="container">
+        <div class="portal-sheet-card portal-site-editor-card">
+          <div class="portal-sheet-header">
+            <div>
+              <span class="eyebrow">Editor de mi web</span>
+              <h2>Control visual de la página del cliente</h2>
+              <p>
+                Carga el último borrador creado por Luma, ajusta textos, secciones,
+                fotos y catálogo sin tocar código ni JSON.
+              </p>
+            </div>
+            <span class="portal-mini-badge">Website</span>
+          </div>
+
+          <div class="portal-site-toolbar">
+            <button type="button" class="btn btn-primary" id="portalSiteLoadLatestButton">Cargar último borrador</button>
+            <button type="button" class="btn btn-secondary" id="portalSiteLoadDemoButton">Cargar demo web</button>
+            <button type="button" class="btn btn-secondary" id="portalSiteSaveButton">Guardar borrador</button>
+            <button type="button" class="btn btn-secondary" id="portalSitePublishButton">Preparar publicación</button>
+            <span id="portalSiteEditorStatus">Sin sitio cargado todavía.</span>
+          </div>
+
+          <div class="portal-site-editor-grid">
+            <aside class="portal-site-sidebar" aria-label="Páginas y secciones">
+              <div>
+                <h3>Páginas</h3>
+                <div class="portal-site-list" id="portalSitePageList">
+                  <div class="portal-empty-box">Carga un borrador para ver páginas.</div>
+                </div>
+              </div>
+
+              <div>
+                <h3>Secciones</h3>
+                <div class="portal-site-list" id="portalSiteSectionList">
+                  <div class="portal-empty-box">Selecciona una página.</div>
+                </div>
+              </div>
+            </aside>
+
+            <div class="portal-site-editor-panel">
+              <div class="portal-site-panel-header">
+                <div>
+                  <span class="eyebrow">Contenido editable</span>
+                  <h3>Sección seleccionada</h3>
+                </div>
+                <button type="button" class="portal-light-action" id="portalSiteAddCatalogButton">Agregar producto</button>
+              </div>
+
+              <div class="portal-site-form" id="portalSiteEditorForm">
+                <div class="portal-empty-box">Carga un sitio para editar títulos, textos, botones e imágenes.</div>
+              </div>
+
+              <div class="portal-site-catalog">
+                <div class="portal-site-panel-header">
+                  <div>
+                    <span class="eyebrow">Catálogo</span>
+                    <h3>Productos y servicios</h3>
+                  </div>
+                </div>
+                <div class="portal-site-catalog-list" id="portalSiteCatalogList">
+                  <div class="portal-empty-box">Sin catálogo cargado.</div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="portal-site-preview-panel" aria-label="Vista previa">
+              <div class="portal-site-panel-header">
+                <div>
+                  <span class="eyebrow">Preview</span>
+                  <h3>Cómo se ve ahora</h3>
+                </div>
+              </div>
+              <div class="portal-site-preview-frame" id="portalSitePreview">
+                <div class="portal-empty-box">La vista previa aparecerá aquí.</div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="section alt-section">
       <div class="container portal-overview-grid">
         <article class="portal-sheet-card">

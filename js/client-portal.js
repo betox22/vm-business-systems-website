@@ -224,6 +224,17 @@ const portalElements = {
   latestBackup: document.getElementById("portalLatestBackup"),
   devicesList: document.getElementById("portalDevicesList"),
   backupsList: document.getElementById("portalBackupsList"),
+  siteLoadLatestButton: document.getElementById("portalSiteLoadLatestButton"),
+  siteLoadDemoButton: document.getElementById("portalSiteLoadDemoButton"),
+  siteSaveButton: document.getElementById("portalSiteSaveButton"),
+  sitePublishButton: document.getElementById("portalSitePublishButton"),
+  siteAddCatalogButton: document.getElementById("portalSiteAddCatalogButton"),
+  siteEditorStatus: document.getElementById("portalSiteEditorStatus"),
+  sitePageList: document.getElementById("portalSitePageList"),
+  siteSectionList: document.getElementById("portalSiteSectionList"),
+  siteEditorForm: document.getElementById("portalSiteEditorForm"),
+  siteCatalogList: document.getElementById("portalSiteCatalogList"),
+  sitePreview: document.getElementById("portalSitePreview"),
 };
 
 const portalStorageKeys = {
@@ -234,6 +245,8 @@ const portalStorageKeys = {
   branchCode: "vm_portal_branch_code",
   previewToken: "vm_portal_preview_token",
   previewInfo: "vm_portal_preview_info",
+  siteDraft: "vm_portal_site_draft",
+  generatedSite: "lumaGeneratedSite",
 };
 
 const defaultPortalGatewayUrl = "https://api.vmbusinesssystems.com";
@@ -250,6 +263,12 @@ const portalRuntimeState = {
   devices: null,
   backups: null,
   source: "demo",
+};
+
+const portalSiteState = {
+  schema: null,
+  selectedPageKey: "home",
+  selectedSectionId: "",
 };
 
 function setPortalText(element, value) {
@@ -269,6 +288,484 @@ function portalEscaped(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function portalClone(value) {
+  if (typeof structuredClone === "function") return structuredClone(value);
+  return JSON.parse(JSON.stringify(value));
+}
+
+function portalSiteDefaultSchema() {
+  return {
+    schema_version: "1.0",
+    business: {
+      name: "Luna Studio",
+      description: "Estudio creativo para marcas que quieren vender mejor en línea.",
+      industry: "Servicios creativos",
+      location: "Miami, FL",
+      selectedLanguage: "es",
+    },
+    theme: {
+      colors: {
+        background: "#f7fbff",
+        primary: "#0f766e",
+        secondary: "#7c3aed",
+        text: "#0f172a",
+      },
+      buttons: {
+        primary_label: "Solicitar propuesta",
+        secondary_label: "Ver servicios",
+      },
+    },
+    global_components: {
+      logo_url: "",
+      footer_text: "Sitio creado con Luma AI Builder.",
+    },
+    contact: {
+      phone: "+1 555 0100",
+      email: "hola@lunastudio.com",
+      instagram: "@lunastudio",
+    },
+    navigation: [
+      { label: "Inicio", page_key: "home" },
+      { label: "Catálogo", page_key: "catalog" },
+      { label: "Contacto", page_key: "contact" },
+    ],
+    pages: [
+      {
+        page_key: "home",
+        title: "Inicio",
+        sections: [
+          {
+            id: "hero",
+            type: "Hero",
+            order: 1,
+            editable: {
+              headline: "Una web elegante para vender con claridad",
+              subtitle: "Presenta tu marca, muestra tus servicios y convierte visitas en clientes.",
+              primary_button: "Empezar ahora",
+              secondary_button: "Explorar catálogo",
+              image_url: "",
+            },
+          },
+          {
+            id: "services",
+            type: "ServiceList",
+            order: 2,
+            editable: {
+              title: "Servicios principales",
+              subtitle: "Paquetes listos para marcas que quieren avanzar rápido.",
+            },
+          },
+        ],
+      },
+      {
+        page_key: "catalog",
+        title: "Catálogo",
+        sections: [
+          {
+            id: "catalog-grid",
+            type: "ProductGrid",
+            order: 1,
+            editable: {
+              title: "Catálogo editable",
+              subtitle: "Activa, destaca y actualiza cada producto desde tu portal.",
+            },
+          },
+        ],
+      },
+      {
+        page_key: "contact",
+        title: "Contacto",
+        sections: [
+          {
+            id: "contact",
+            type: "Contact",
+            order: 1,
+            editable: {
+              title: "Hablemos de tu proyecto",
+              subtitle: "Escríbenos y te respondemos con el próximo paso.",
+              button_label: "Contactar",
+            },
+          },
+        ],
+      },
+    ],
+    catalog_items: [
+      {
+        id: "starter-site",
+        name: "Página inicial",
+        description: "Landing profesional editable para validar la marca rápido.",
+        price_label: "Desde $299",
+        button_label: "Solicitar",
+        image_url: "",
+        is_active: true,
+        is_featured: true,
+      },
+      {
+        id: "store-pack",
+        name: "Tienda online",
+        description: "Catálogo, secciones de venta y base para recibir pedidos.",
+        price_label: "Cotizar",
+        button_label: "Ver detalles",
+        image_url: "",
+        is_active: true,
+        is_featured: false,
+      },
+    ],
+  };
+}
+
+function portalSiteNormalizeSchema(input) {
+  const schema = portalClone(input || portalSiteDefaultSchema());
+  schema.business = schema.business || {};
+  schema.theme = schema.theme || {};
+  schema.theme.colors = schema.theme.colors || {};
+  schema.theme.buttons = schema.theme.buttons || {};
+  schema.global_components = schema.global_components || {};
+  schema.contact = schema.contact || {};
+  schema.pages = Array.isArray(schema.pages) && schema.pages.length
+    ? schema.pages
+    : portalSiteDefaultSchema().pages;
+  schema.navigation = Array.isArray(schema.navigation) ? schema.navigation : [];
+  schema.catalog_items = Array.isArray(schema.catalog_items)
+    ? schema.catalog_items
+    : Array.isArray(schema.products_services)
+      ? schema.products_services
+      : [];
+  schema.catalog_items = schema.catalog_items.map((item, index) => ({
+    id: item.id || item.sku || `catalog-${index + 1}`,
+    name: item.name || item.title || `Item ${index + 1}`,
+    description: item.description || "",
+    price_label: item.price_label || item.price || item.priceText || "",
+    button_label: item.button_label || "Ver detalle",
+    image_url: item.image_url || item.imageUrl || "",
+    is_active: item.is_active !== false,
+    is_featured: Boolean(item.is_featured || item.featured),
+  }));
+  return schema;
+}
+
+function portalSiteSetStatus(message) {
+  setPortalText(portalElements.siteEditorStatus, message);
+}
+
+function portalSiteReadSavedPayload(raw) {
+  if (!raw) return null;
+  const parsed = JSON.parse(raw);
+  if (parsed.schema) return parsed.schema;
+  if (parsed.result?.schema) {
+    const schema = portalClone(parsed.result.schema);
+    if (Array.isArray(parsed.result.catalog_items)) {
+      schema.catalog_items = parsed.result.catalog_items;
+    }
+    return schema;
+  }
+  if (parsed.pages || parsed.business) return parsed;
+  return null;
+}
+
+function portalSiteLoadLatest() {
+  try {
+    const raw =
+      localStorage.getItem(portalStorageKeys.siteDraft) ||
+      localStorage.getItem(portalStorageKeys.generatedSite);
+    const schema = portalSiteReadSavedPayload(raw);
+    if (!schema) {
+      portalSiteSetStatus("No encontré un borrador de Luma todavía. Puedes cargar el demo web.");
+      return;
+    }
+    portalSiteState.schema = portalSiteNormalizeSchema(schema);
+    portalSiteState.selectedPageKey = portalSiteState.schema.pages[0]?.page_key || "home";
+    portalSiteState.selectedSectionId = portalSiteState.schema.pages[0]?.sections?.[0]?.id || "";
+    portalSiteRender();
+    portalSiteSetStatus("Borrador cargado desde Luma.");
+  } catch {
+    portalSiteSetStatus("No se pudo leer el borrador guardado.");
+  }
+}
+
+function portalSiteLoadDemo() {
+  portalSiteState.schema = portalSiteNormalizeSchema(portalSiteDefaultSchema());
+  portalSiteState.selectedPageKey = "home";
+  portalSiteState.selectedSectionId = "hero";
+  portalSiteRender();
+  portalSiteSetStatus("Demo web cargado para probar edición visual.");
+}
+
+function portalSiteCurrentPage() {
+  return portalSiteState.schema?.pages?.find((page) => page.page_key === portalSiteState.selectedPageKey) ||
+    portalSiteState.schema?.pages?.[0] ||
+    null;
+}
+
+function portalSiteCurrentSection() {
+  const page = portalSiteCurrentPage();
+  return page?.sections?.find((section) => section.id === portalSiteState.selectedSectionId) ||
+    page?.sections?.[0] ||
+    null;
+}
+
+function portalSiteRender() {
+  if (!portalSiteState.schema) {
+    return;
+  }
+  portalSiteRenderPages();
+  portalSiteRenderSections();
+  portalSiteRenderForm();
+  portalSiteRenderCatalog();
+  portalSiteRenderPreview();
+}
+
+function portalSiteRenderPages() {
+  if (!portalElements.sitePageList) return;
+  portalElements.sitePageList.innerHTML = portalSiteState.schema.pages
+    .map((page) => `
+      <button type="button" class="${page.page_key === portalSiteState.selectedPageKey ? "active" : ""}" data-portal-site-page="${portalEscaped(page.page_key)}">
+        <strong>${portalEscaped(page.title || page.page_key)}</strong>
+        <span>${portalEscaped(page.page_key)}</span>
+      </button>
+    `)
+    .join("");
+}
+
+function portalSiteRenderSections() {
+  if (!portalElements.siteSectionList) return;
+  const page = portalSiteCurrentPage();
+  const sections = [...(page?.sections || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
+  portalElements.siteSectionList.innerHTML = sections.length
+    ? sections
+        .map((section) => `
+          <button type="button" class="${section.id === portalSiteState.selectedSectionId ? "active" : ""}" data-portal-site-section="${portalEscaped(section.id)}">
+            <strong>${portalEscaped(section.editable?.title || section.type || "Sección")}</strong>
+            <span>${portalEscaped(section.type || section.id)}</span>
+          </button>
+        `)
+        .join("")
+    : portalEmptyBox("Esta página todavía no tiene secciones editables.");
+}
+
+function portalSiteRenderForm() {
+  if (!portalElements.siteEditorForm) return;
+  const section = portalSiteCurrentSection();
+  if (!section) {
+    portalElements.siteEditorForm.innerHTML = portalEmptyBox("Selecciona una sección para editar.");
+    return;
+  }
+  const editable = section.editable || {};
+  const fields = Object.entries(editable);
+  portalElements.siteEditorForm.innerHTML = `
+    <div class="portal-site-section-title">
+      <strong>${portalEscaped(section.type || "Sección")}</strong>
+      <span>${portalEscaped(section.id || "")}</span>
+    </div>
+    ${fields.length ? fields.map(([key, value]) => portalSiteFieldHtml("section", key, value)).join("") : portalEmptyBox("Esta sección no tiene campos editables todavía.")}
+    <div class="portal-site-form-split">
+      ${portalSiteFieldHtml("business", "name", portalSiteState.schema.business.name || "", "Nombre del negocio")}
+      ${portalSiteFieldHtml("business", "description", portalSiteState.schema.business.description || "", "Descripción")}
+      ${portalSiteFieldHtml("business", "location", portalSiteState.schema.business.location || "", "Ubicación")}
+      ${portalSiteFieldHtml("theme", "primary", portalSiteState.schema.theme.colors.primary || "", "Color principal")}
+      ${portalSiteFieldHtml("theme", "secondary", portalSiteState.schema.theme.colors.secondary || "", "Color secundario")}
+      ${portalSiteFieldHtml("theme", "background", portalSiteState.schema.theme.colors.background || "", "Fondo")}
+      ${portalSiteFieldHtml("theme", "text", portalSiteState.schema.theme.colors.text || "", "Color de texto")}
+      ${portalSiteFieldHtml("global", "logo_url", portalSiteState.schema.global_components.logo_url || "", "Logo / imagen URL")}
+      ${portalSiteFieldHtml("global", "footer_text", portalSiteState.schema.global_components.footer_text || "", "Texto del footer")}
+      ${portalSiteFieldHtml("contact", "phone", portalSiteState.schema.contact.phone || "", "Teléfono")}
+      ${portalSiteFieldHtml("contact", "email", portalSiteState.schema.contact.email || "", "Email")}
+    </div>
+  `;
+}
+
+function portalSiteFieldHtml(scope, key, value, label) {
+  const displayLabel = label || key.replaceAll("_", " ");
+  const stringValue = Array.isArray(value) ? value.join("\n") : String(value ?? "");
+  const isLong = stringValue.length > 70 || /description|subtitle|footer|notes/i.test(key);
+  const field = isLong
+    ? `<textarea rows="3" data-portal-site-scope="${scope}" data-portal-site-key="${portalEscaped(key)}">${portalEscaped(stringValue)}</textarea>`
+    : `<input type="text" value="${portalEscaped(stringValue)}" data-portal-site-scope="${scope}" data-portal-site-key="${portalEscaped(key)}" />`;
+  return `
+    <label class="portal-site-field">
+      <span>${portalEscaped(displayLabel)}</span>
+      ${field}
+    </label>
+  `;
+}
+
+function portalSiteRenderCatalog() {
+  if (!portalElements.siteCatalogList) return;
+  const items = portalSiteState.schema.catalog_items || [];
+  portalElements.siteCatalogList.innerHTML = items.length
+    ? items
+        .map((item, index) => `
+          <article class="portal-site-catalog-item" data-portal-catalog-index="${index}">
+            <div class="portal-card-topline">
+              <strong>${portalEscaped(item.name)}</strong>
+              <button type="button" class="portal-site-delete" data-portal-catalog-delete="${index}">Eliminar</button>
+            </div>
+            <label>Nombre <input type="text" value="${portalEscaped(item.name)}" data-portal-catalog-field="name" data-portal-catalog-index="${index}" /></label>
+            <label>Descripción <textarea rows="2" data-portal-catalog-field="description" data-portal-catalog-index="${index}">${portalEscaped(item.description)}</textarea></label>
+            <div class="portal-site-form-split">
+              <label>Precio <input type="text" value="${portalEscaped(item.price_label)}" data-portal-catalog-field="price_label" data-portal-catalog-index="${index}" /></label>
+              <label>Botón <input type="text" value="${portalEscaped(item.button_label)}" data-portal-catalog-field="button_label" data-portal-catalog-index="${index}" /></label>
+            </div>
+            <label>Imagen URL <input type="text" value="${portalEscaped(item.image_url)}" data-portal-catalog-field="image_url" data-portal-catalog-index="${index}" /></label>
+            <div class="portal-site-toggle-row">
+              <label><input type="checkbox" ${item.is_active ? "checked" : ""} data-portal-catalog-field="is_active" data-portal-catalog-index="${index}" /> Activo</label>
+              <label><input type="checkbox" ${item.is_featured ? "checked" : ""} data-portal-catalog-field="is_featured" data-portal-catalog-index="${index}" /> Destacado</label>
+            </div>
+          </article>
+        `)
+        .join("")
+    : portalEmptyBox("Agrega productos o servicios para que aparezcan en la página.");
+}
+
+function portalSiteRenderPreview() {
+  if (!portalElements.sitePreview) return;
+  const schema = portalSiteState.schema;
+  const page = portalSiteCurrentPage();
+  const colors = schema.theme?.colors || {};
+  const activeItems = (schema.catalog_items || []).filter((item) => item.is_active !== false);
+  portalElements.sitePreview.style.setProperty("--site-primary", colors.primary || "#0f766e");
+  portalElements.sitePreview.style.setProperty("--site-secondary", colors.secondary || "#7c3aed");
+  portalElements.sitePreview.style.setProperty("--site-bg", colors.background || "#f8fbff");
+  portalElements.sitePreview.style.setProperty("--site-text", colors.text || "#0f172a");
+  portalElements.sitePreview.innerHTML = `
+    <div class="portal-rendered-site">
+      <header>
+        <strong>${portalEscaped(schema.business?.name || "Website")}</strong>
+        <nav>${(schema.navigation || []).map((item) => `<span>${portalEscaped(item.label || item.page_key)}</span>`).join("")}</nav>
+      </header>
+      ${(page?.sections || []).map((section) => portalSitePreviewSection(section, schema, activeItems)).join("")}
+      <footer>${portalEscaped(schema.global_components?.footer_text || schema.business?.name || "")}</footer>
+    </div>
+  `;
+}
+
+function portalSitePreviewSection(section, schema, activeItems) {
+  const editable = section.editable || {};
+  if (section.type === "Hero") {
+    return `
+      <section class="portal-rendered-hero">
+        <div>
+          <span>${portalEscaped(schema.business?.industry || "Website")}</span>
+          <h1>${portalEscaped(editable.headline || schema.business?.name || "")}</h1>
+          <p>${portalEscaped(editable.subtitle || schema.business?.description || "")}</p>
+          <button type="button">${portalEscaped(editable.primary_button || schema.theme?.buttons?.primary_label || "Contactar")}</button>
+        </div>
+        <div class="portal-rendered-visual">${editable.image_url ? `<img src="${portalEscaped(editable.image_url)}" alt="">` : portalEscaped(schema.business?.name || "Preview")}</div>
+      </section>
+    `;
+  }
+  if (["ProductGrid", "ServiceList"].includes(section.type)) {
+    return `
+      <section class="portal-rendered-section">
+        <h2>${portalEscaped(editable.title || "Catálogo")}</h2>
+        <p>${portalEscaped(editable.subtitle || "")}</p>
+        <div class="portal-rendered-catalog">
+          ${activeItems
+            .map((item) => `
+              <article>
+                ${item.image_url ? `<img src="${portalEscaped(item.image_url)}" alt="">` : "<div></div>"}
+                <strong>${portalEscaped(item.name)}</strong>
+                <p>${portalEscaped(item.description)}</p>
+                <span>${portalEscaped(item.price_label)}</span>
+              </article>
+            `)
+            .join("")}
+        </div>
+      </section>
+    `;
+  }
+  return `
+    <section class="portal-rendered-section">
+      <h2>${portalEscaped(editable.title || section.type || "Sección")}</h2>
+      <p>${portalEscaped(editable.subtitle || editable.text || "")}</p>
+    </section>
+  `;
+}
+
+function portalSiteSaveDraft() {
+  if (!portalSiteState.schema) {
+    portalSiteSetStatus("Carga un sitio antes de guardar.");
+    return;
+  }
+  localStorage.setItem(
+    portalStorageKeys.siteDraft,
+    JSON.stringify({
+      schema: portalSiteState.schema,
+      savedAt: new Date().toISOString(),
+      source: "client-portal-editor",
+    }),
+  );
+  portalSiteSetStatus("Borrador guardado en este navegador.");
+}
+
+function portalSitePublishDraft() {
+  portalSiteSaveDraft();
+  portalSiteSetStatus("Borrador listo. La publicación real queda preparada para conectarse al gateway del cliente.");
+}
+
+function portalSiteHandleFieldInput(event) {
+  const target = event.target;
+  if (!portalSiteState.schema || !target?.dataset?.portalSiteScope) return;
+  const scope = target.dataset.portalSiteScope;
+  const key = target.dataset.portalSiteKey;
+  const section = portalSiteCurrentSection();
+  if (scope === "section" && section) {
+    section.editable = section.editable || {};
+    section.editable[key] = target.value;
+  }
+  if (scope === "business") {
+    portalSiteState.schema.business[key] = target.value;
+  }
+  if (scope === "theme") {
+    portalSiteState.schema.theme.colors[key] = target.value;
+  }
+  if (scope === "global") {
+    portalSiteState.schema.global_components[key] = target.value;
+  }
+  if (scope === "contact") {
+    portalSiteState.schema.contact[key] = target.value;
+  }
+  portalSiteRenderPages();
+  portalSiteRenderSections();
+  portalSiteRenderPreview();
+}
+
+function portalSiteHandleCatalogInput(event) {
+  const target = event.target;
+  if (!portalSiteState.schema || target?.dataset?.portalCatalogIndex === undefined) return;
+  const index = Number(target.dataset.portalCatalogIndex);
+  const field = target.dataset.portalCatalogField;
+  const item = portalSiteState.schema.catalog_items[index];
+  if (!item || !field) return;
+  item[field] = target.type === "checkbox" ? target.checked : target.value;
+  portalSiteRenderPreview();
+}
+
+function portalSiteAddCatalogItem() {
+  if (!portalSiteState.schema) portalSiteLoadDemo();
+  portalSiteState.schema.catalog_items.push({
+    id: `item-${Date.now()}`,
+    name: "Nuevo producto",
+    description: "Describe aquí lo que vendes.",
+    price_label: "Cotizar",
+    button_label: "Ver detalle",
+    image_url: "",
+    is_active: true,
+    is_featured: false,
+  });
+  portalSiteRenderCatalog();
+  portalSiteRenderPreview();
+  portalSiteSetStatus("Producto agregado al catálogo.");
+}
+
+function portalSiteDeleteCatalogItem(index) {
+  if (!portalSiteState.schema) return;
+  portalSiteState.schema.catalog_items.splice(index, 1);
+  portalSiteRenderCatalog();
+  portalSiteRenderPreview();
+  portalSiteSetStatus("Producto eliminado del borrador.");
 }
 
 function loadPortalState() {
@@ -949,6 +1446,63 @@ if (portalElements.logoutButton) {
     localStorage.removeItem(portalStorageKeys.previewInfo);
     window.location.replace("client-portal.html");
   });
+}
+
+if (portalElements.siteLoadLatestButton) {
+  portalElements.siteLoadLatestButton.addEventListener("click", portalSiteLoadLatest);
+}
+
+if (portalElements.siteLoadDemoButton) {
+  portalElements.siteLoadDemoButton.addEventListener("click", portalSiteLoadDemo);
+}
+
+if (portalElements.siteSaveButton) {
+  portalElements.siteSaveButton.addEventListener("click", portalSiteSaveDraft);
+}
+
+if (portalElements.sitePublishButton) {
+  portalElements.sitePublishButton.addEventListener("click", portalSitePublishDraft);
+}
+
+if (portalElements.siteAddCatalogButton) {
+  portalElements.siteAddCatalogButton.addEventListener("click", portalSiteAddCatalogItem);
+}
+
+if (portalElements.sitePageList) {
+  portalElements.sitePageList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-portal-site-page]");
+    if (!button || !portalSiteState.schema) return;
+    portalSiteState.selectedPageKey = button.dataset.portalSitePage;
+    const page = portalSiteCurrentPage();
+    portalSiteState.selectedSectionId = page?.sections?.[0]?.id || "";
+    portalSiteRender();
+  });
+}
+
+if (portalElements.siteSectionList) {
+  portalElements.siteSectionList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-portal-site-section]");
+    if (!button || !portalSiteState.schema) return;
+    portalSiteState.selectedSectionId = button.dataset.portalSiteSection;
+    portalSiteRender();
+  });
+}
+
+if (portalElements.siteEditorForm) {
+  portalElements.siteEditorForm.addEventListener("input", portalSiteHandleFieldInput);
+}
+
+if (portalElements.siteCatalogList) {
+  portalElements.siteCatalogList.addEventListener("input", portalSiteHandleCatalogInput);
+  portalElements.siteCatalogList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-portal-catalog-delete]");
+    if (!button) return;
+    portalSiteDeleteCatalogItem(Number(button.dataset.portalCatalogDelete));
+  });
+}
+
+if (portalElements.sitePreview) {
+  portalSiteLoadLatest();
 }
 
 function renderListoActivation(overview) {
