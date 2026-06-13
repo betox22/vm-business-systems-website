@@ -1893,11 +1893,42 @@ function attachTemplateSelection(payload, selection) {
   payload.templateIntent = selection.intent;
   payload.catalogType = selection.catalogType;
   payload.selectedTemplate = selection.template || {};
+  payload.templateInstructions = buildTemplateInstructions(selection);
   return payload;
+}
+
+function buildTemplateInstructions(selection) {
+  const template = selection?.template || {};
+  const sections = Array.isArray(template.sections)
+    ? template.sections.map((section) => section.type).filter(Boolean).join(", ")
+    : "";
+  const pages = Array.isArray(template.pages)
+    ? template.pages.map((page) => `${page.name || page.page_key || "Page"}: ${page.purpose || page.layout || ""}`).join(" | ")
+    : "";
+  const catalog = template.catalogModel || {};
+  return {
+    templateId: selection?.templateId || template.id || "",
+    intent: selection?.intent || "",
+    name: template.name || "",
+    visualDifference: template.visualDifference || "",
+    aiPrompt: template.aiPrompt || "",
+    catalogType: selection?.catalogType || catalog.catalogType || "",
+    catalogCardStyle: catalog.productCardStyle || "",
+    collectionLayout: catalog.collectionLayout || "",
+    productDetailModel: catalog.productDetailModel || "",
+    upsellModel: catalog.upsellModel || "",
+    customerFeeling: catalog.customerFeeling || "",
+    filters: catalog.filters || [],
+    sectionOrder: sections,
+    pages,
+    instruction:
+      "Use this template as the structural base. Replace placeholders with the business information, keep JSON editable, and adapt colors/copy/products without flattening the unique layout pattern.",
+  };
 }
 
 function mergeTemplateSelectionIntoSchema(schema, selection) {
   if (!schema || !selection) return schema;
+  const templateInstructions = buildTemplateInstructions(selection);
   schema.selected_template = {
     id: selection.templateId,
     name: selection.template?.name || selection.templateId,
@@ -1908,6 +1939,7 @@ function mergeTemplateSelectionIntoSchema(schema, selection) {
     clientSelectionCard: selection.template?.clientSelectionCard || {},
     sections: selection.template?.sections || [],
     pages: selection.template?.pages || [],
+    instructions: templateInstructions,
   };
   schema.catalog_model = selection.template?.catalogModel || { catalogType: selection.catalogType };
   schema.layout_mode = {
@@ -1954,6 +1986,9 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isSpanish = language === "es";
   const template = templateSelection?.template || payload.selectedTemplate || {};
   const catalogType = templateSelection?.catalogType || template.catalogModel?.catalogType || payload.catalogType || "editorial_minimal_grid";
+  const templateInstructions = templateSelection
+    ? buildTemplateInstructions(templateSelection)
+    : payload.templateInstructions || {};
   const name = payload.business_name || (isSpanish ? "Nueva tienda" : "New store");
   const description = payload.business_description || (isSpanish ? "Una marca preparada para vender en linea." : "A brand ready to sell online.");
   const products = arrayValue(payload.services_products).length
@@ -2094,6 +2129,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       clientSelectionCard: template.clientSelectionCard || {},
       sections: template.sections || [],
       pages: template.pages || [],
+      instructions: templateInstructions,
     },
     catalog_model: template.catalogModel || { catalogType },
     design_variants: [
