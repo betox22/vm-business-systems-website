@@ -114,11 +114,11 @@ const I18N = {
     salesModePlaceholder: "online sales, quotes, or both",
     sendingAssistant: "Luma is reviewing your answer...",
     summaryUpdated: "Details updated.",
-    devFallbackMissingKey: "Development fallback: OPENAI_API_KEY is missing on the server.",
-    localFallback: "Saved locally for now.",
-    localFallbackMessage: "Development fallback: I saved this locally for now.",
+    devFallbackMissingKey: "Luma is using a simplified response while the AI service finishes connecting.",
+    localFallback: "Answer saved. Continuing with the setup.",
+    localFallbackMessage: "I saved your answer and will keep going.",
     savingRequest: "Saving completed intake as client_request...",
-    requestNotSaved: "Saved in this session. You can still generate your website draft.",
+    requestNotSaved: "Saved in this browser session. You can still generate your website draft.",
     generatedOpenAI: "Generated with OpenAI through the backend.",
     generating: "Generating...",
     generatingLong: "Luma is designing your website. This can take about a minute.",
@@ -200,11 +200,11 @@ const I18N = {
     salesModePlaceholder: "ventas online, cotizaciones, o ambos",
     sendingAssistant: "Luma esta revisando tu respuesta...",
     summaryUpdated: "Detalles actualizados.",
-    devFallbackMissingKey: "Fallback de desarrollo: falta OPENAI_API_KEY en el servidor.",
-    localFallback: "Guardado localmente por ahora.",
-    localFallbackMessage: "Fallback de desarrollo: guarde esto localmente por ahora.",
+    devFallbackMissingKey: "Luma está usando una respuesta simplificada mientras el servicio de IA termina de conectar.",
+    localFallback: "Respuesta guardada. Seguimos con la configuración.",
+    localFallbackMessage: "Guardé tu respuesta y seguimos avanzando.",
     savingRequest: "Guardando intake completado como client_request...",
-    requestNotSaved: "Guardado en esta sesion. Igual puedes generar tu primera version.",
+    requestNotSaved: "Guardado en esta sesión del navegador. Igual puedes generar tu primera versión.",
     generatedOpenAI: "Generado con OpenAI desde el backend.",
     generating: "Generando...",
     generatingLong: "Luma esta disenando tu pagina. Esto puede tardar cerca de un minuto.",
@@ -286,9 +286,9 @@ const I18N = {
     salesModePlaceholder: "vente en ligne, devis, ou les deux",
     sendingAssistant: "Luma analyse votre réponse...",
     summaryUpdated: "Détails mis à jour.",
-    devFallbackMissingKey: "Fallback de développement : OPENAI_API_KEY manque sur le serveur.",
-    localFallback: "Enregistré localement pour le moment.",
-    localFallbackMessage: "Fallback de développement : j'ai enregistré ceci localement pour le moment.",
+    devFallbackMissingKey: "Luma utilise une réponse simplifiée pendant que le service IA se connecte.",
+    localFallback: "Réponse enregistrée. Nous continuons la configuration.",
+    localFallbackMessage: "J'ai enregistré votre réponse et nous continuons.",
     savingRequest: "Enregistrement de l'intake comme client_request...",
     requestNotSaved: "Enregistré dans cette session. Vous pouvez quand même générer le brouillon.",
     generatedOpenAI: "Généré avec OpenAI via le backend.",
@@ -372,9 +372,9 @@ const I18N = {
     salesModePlaceholder: "vendas online, orçamentos, ou ambos",
     sendingAssistant: "Luma está revisando sua resposta...",
     summaryUpdated: "Detalhes atualizados.",
-    devFallbackMissingKey: "Fallback de desenvolvimento: OPENAI_API_KEY não está configurada no servidor.",
-    localFallback: "Salvo localmente por enquanto.",
-    localFallbackMessage: "Fallback de desenvolvimento: salvei isto localmente por enquanto.",
+    devFallbackMissingKey: "A Luma está usando uma resposta simplificada enquanto o serviço de IA termina de conectar.",
+    localFallback: "Resposta salva. Continuamos a configuração.",
+    localFallbackMessage: "Salvei sua resposta e vamos continuar.",
     savingRequest: "Salvando intake concluído como client_request...",
     requestNotSaved: "Salvo nesta sessão. Você ainda pode gerar o rascunho do site.",
     generatedOpenAI: "Gerado com OpenAI pelo backend.",
@@ -1168,9 +1168,10 @@ async function sendGuidedReply() {
     guidedStep = nextGuidedStep(guidedStep);
     appendChatMessage(
       "assistant",
-      `${t("localFallbackMessage")} ${shortError(error.message)}`,
+      t("localFallbackMessage"),
       "alert",
     );
+    console.warn("Luma intake assistant request failed; continuing locally.", error);
     appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
     guidedStatusText.textContent = t("localFallback");
   }
@@ -1207,7 +1208,8 @@ async function handleWebsiteIntentAnswer(message) {
     guidedState.websiteIntent = message;
     guidedState.businessDescription = guidedState.businessDescription || message;
     guidedStep = "businessName";
-    appendChatMessage("assistant", `${t("localFallbackMessage")} ${shortError(error.message)}`, "alert");
+    appendChatMessage("assistant", t("localFallbackMessage"), "alert");
+    console.warn("Luma template intent detection failed; continuing locally.", error);
     appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
     guidedStatusText.textContent = t("localFallback");
   }
