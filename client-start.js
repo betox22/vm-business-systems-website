@@ -1,5 +1,6 @@
 const SUPPORTED_LANGUAGES = ["en", "es", "fr", "pt"];
 const PUBLIC_BACKEND_URL = resolvePublicApiBaseUrl();
+const PUBLIC_BUILD_ID = "20260613-0937af2";
 
 const LANDING_COPY = {
   en: {
@@ -219,7 +220,7 @@ function applyCopy() {
   document.querySelectorAll("[data-client-i18n-placeholder]").forEach((item) => {
     item.placeholder = copy[item.dataset.clientI18nPlaceholder] || item.placeholder;
   });
-  startButton.href = `/client/setup/?lang=${selectedLanguage}`;
+  startButton.href = `/client/setup/?lang=${selectedLanguage}&build=${PUBLIC_BUILD_ID}`;
   lumaLineIndex = 0;
   configureLandingAvatar();
   startLandingLumaLoop();
@@ -331,7 +332,7 @@ function openLumaChat(manual = false, intent = {}) {
     intent.catalogType ? `catalogType=${encodeURIComponent(intent.catalogType)}` : "",
     intent.intent ? `intent=${encodeURIComponent(intent.intent)}` : "",
   ].filter(Boolean).join("&");
-  const nextSrc = `/client/setup/?lang=${selectedLanguage}&embedded=1${apiQuery}${manual ? "&manual=1" : ""}${intentQuery ? `&${intentQuery}` : ""}`;
+  const nextSrc = `/client/setup/?lang=${selectedLanguage}&embedded=1&build=${PUBLIC_BUILD_ID}${apiQuery}${manual ? "&manual=1" : ""}${intentQuery ? `&${intentQuery}` : ""}`;
   if (chatFrame.getAttribute("src") !== nextSrc) {
     chatFrame.src = nextSrc;
   }
