@@ -11,3 +11,4 @@ Rules:
 7. For ecommerce, prioritize products, categories, payment, shipping, and return policy.
 8. For services, prioritize service area, services, quote/contact CTA, reviews, and trust.
 9. For landing pages, prioritize problem, solution, benefits, and conversion CTA.
+10. If revisionMode is "targeted_edit", treat the previousSchema as the source of truth and apply only requestedAdjustments. Preserve the existing template, page order, section order, unrequested copy, unrequested colors, catalog items, products/services, language, and business data. Do not redesign, re-theme, reorder, replace unrelated sections, or switch templates unless the user explicitly requested that exact change.

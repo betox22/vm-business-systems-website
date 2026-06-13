@@ -496,6 +496,8 @@ let guidedState = {
   hasLogoPhotos: "",
   sectionsPreference: "",
   desiredDomain: "",
+  revisionMode: "",
+  requestedAdjustments: [],
 };
 
 const GUIDED_STEPS = [
@@ -1101,10 +1103,11 @@ async function sendGuidedReply() {
       fr: "Ajustements demandés par le client",
       pt: "Ajustes solicitados pelo cliente",
     });
-    guidedState.businessDescription = [
-      guidedState.businessDescription,
+    guidedState.revisionMode = "targeted_edit";
+    guidedState.requestedAdjustments = [
+      ...arrayValue(guidedState.requestedAdjustments),
       `${adjustmentLabel}: ${message}`,
-    ].filter(Boolean).join("\n\n");
+    ];
     appendChatMessage(
       "assistant",
       langText({
@@ -1724,7 +1727,7 @@ function mergeGuidedUpdates(updates) {
 function guidedStateForApi() {
   const logoUrl = isCloudSafeUrl(guidedState.logoUrl) ? guidedState.logoUrl : "";
   const photoUrls = arrayValue(guidedState.photoUrls).filter(isCloudSafeUrl);
-  return {
+  const payload = {
     businessName: guidedState.businessName,
     businessDescription: guidedState.businessDescription,
     industry: guidedState.industry,
@@ -1746,6 +1749,16 @@ function guidedStateForApi() {
     source: "ai_guided_setup",
     status: "ready_to_generate",
   };
+  const revisionInstructions = buildRevisionInstructions();
+  if (revisionInstructions) {
+    payload.revisionMode = revisionInstructions.mode;
+    payload.requestedAdjustments = revisionInstructions.requestedAdjustments;
+    payload.revisionInstructions = {
+      ...revisionInstructions,
+      previousSchema: undefined,
+    };
+  }
+  return payload;
 }
 
 function isCloudSafeUrl(value) {
@@ -1996,6 +2009,25 @@ function buildTemplateInstructions(selection) {
   };
 }
 
+function buildRevisionInstructions() {
+  const requestedAdjustments = arrayValue(guidedState.requestedAdjustments);
+  if (guidedState.revisionMode !== "targeted_edit" || !currentSchema || !requestedAdjustments.length) return null;
+  return {
+    mode: "targeted_edit",
+    requestedAdjustments,
+    preserveExistingDraft: true,
+    preserveTemplate: true,
+    preservePageOrder: true,
+    preserveUnrequestedSections: true,
+    preserveCatalogItems: true,
+    preserveLanguage: true,
+    selectedLanguage,
+    previousSchema: currentSchema,
+    instruction:
+      "This is a revision of an already liked draft. Apply only the specific requested changes. Do not redesign, re-theme, reorder pages, replace unrelated copy, change catalog items, change business data, or switch templates unless the client explicitly asked for that exact change.",
+  };
+}
+
 function mergeTemplateSelectionIntoSchema(schema, selection) {
   if (!schema || !selection) return schema;
   const templateInstructions = buildTemplateInstructions(selection);
@@ -2035,6 +2067,8 @@ function applyGenerationResult(result) {
   renderEditor();
   renderPreview();
   showGeneratedClientPreview();
+  guidedState.revisionMode = "";
+  guidedState.requestedAdjustments = [];
   builderAvatarManager?.setState("success", { source: "preview-generated" });
 }
 
@@ -2486,7 +2520,7 @@ async function collectPayload() {
     assets.push({ asset_type: "photo", label: `Uploaded photo ${index + 1}`, url: await uploadAssetOrFallback(file, "photo", `Uploaded photo ${index + 1}`) });
   }
 
-  return {
+  const payload = {
     business_name: data.get("business_name")?.toString().trim(),
     business_description: data.get("business_description")?.toString().trim(),
     industry: data.get("industry")?.toString().trim(),
@@ -2502,6 +2536,14 @@ async function collectPayload() {
     catalog_items: catalogItemsFromForm(),
     assets,
   };
+  const revisionInstructions = buildRevisionInstructions();
+  if (revisionInstructions) {
+    payload.revisionMode = revisionInstructions.mode;
+    payload.requestedAdjustments = revisionInstructions.requestedAdjustments;
+    payload.revisionInstructions = revisionInstructions;
+    payload.previousSchema = currentSchema;
+  }
+  return payload;
 }
 
 async function saveCurrentSchema() {
