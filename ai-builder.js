@@ -227,6 +227,9 @@ const I18N = {
     assistantSubtitle: "Assistant de création de site",
     onlineStatus: "En ligne",
     assistantIntro: "Bonjour, je suis Luma. Je vais vous aider à créer votre site ou boutique étape par étape. Vous pouvez écrire ou utiliser votre voix.",
+    intentDetected: "Très bien. J'ai détecté cette direction :",
+    selectedTemplate: "Template sélectionné",
+    catalogType: "Type de catalogue",
     currentInfo: "Quelques détails collectés jusqu'ici.",
     finalReviewTitle: "Brief de votre site",
     generateMyWebsite: "Générer mon site",
@@ -290,6 +293,7 @@ const I18N = {
     requestNotSaved: "Enregistré dans cette session. Vous pouvez quand même générer le brouillon.",
     generatedOpenAI: "Généré avec OpenAI via le backend.",
     generating: "Génération...",
+    generatingLong: "Luma conçoit votre site. Cela peut prendre environ une minute.",
     generateError: "Impossible de générer",
     reviewStep: "Vérification",
     step: "Étape",
@@ -309,6 +313,9 @@ const I18N = {
     assistantSubtitle: "Assistente de criação de sites",
     onlineStatus: "Online",
     assistantIntro: "Olá, sou a Luma. Vou ajudar você a criar seu site ou loja passo a passo. Você pode digitar ou usar a voz.",
+    intentDetected: "Ótimo. Detectei esta direção:",
+    selectedTemplate: "Template selecionado",
+    catalogType: "Tipo de catálogo",
     currentInfo: "Alguns detalhes coletados até agora.",
     finalReviewTitle: "Resumo do seu site",
     generateMyWebsite: "Gerar meu site",
@@ -372,6 +379,7 @@ const I18N = {
     requestNotSaved: "Salvo nesta sessão. Você ainda pode gerar o rascunho do site.",
     generatedOpenAI: "Gerado com OpenAI pelo backend.",
     generating: "Gerando...",
+    generatingLong: "A Luma está criando seu site. Isso pode levar cerca de um minuto.",
     generateError: "Não foi possível gerar",
     reviewStep: "Revisão",
     step: "Etapa",
@@ -710,6 +718,10 @@ function t(key) {
   return I18N[selectedLanguage]?.[key] || I18N.en[key] || key;
 }
 
+function langText(map, language = selectedLanguage) {
+  return map[language] || map.en || "";
+}
+
 function guidedQuestion(step) {
   return GUIDED_QUESTIONS[selectedLanguage]?.[step] || GUIDED_QUESTIONS.en[step] || GUIDED_QUESTIONS.en.review;
 }
@@ -735,12 +747,12 @@ function updateBuilderAvatarLabels() {
   if (!builderAvatarAssistant) return;
   builderAvatarAssistant.labels = {
     idle: t("assistantSubtitle"),
-    listening: selectedLanguage === "es" ? "Estoy escuchando tu idea." : "I'm listening to your idea.",
+    listening: langText({ en: "I'm listening to your idea.", es: "Estoy escuchando tu idea.", fr: "J'écoute votre idée.", pt: "Estou ouvindo sua ideia." }),
     thinking: t("thinking"),
-    speaking: selectedLanguage === "es" ? "Te guio paso a paso." : "Guiding you step by step.",
-    happy: selectedLanguage === "es" ? "Listo para ayudarte." : "Ready to help.",
-    confused: selectedLanguage === "es" ? "Necesito un poco mas de contexto." : "I need a little more context.",
-    success: selectedLanguage === "es" ? "Tu borrador esta listo." : "Your draft is ready.",
+    speaking: langText({ en: "Guiding you step by step.", es: "Te guio paso a paso.", fr: "Je vous guide étape par étape.", pt: "Vou guiar você passo a passo." }),
+    happy: langText({ en: "Ready to help.", es: "Listo para ayudarte.", fr: "Prête à vous aider.", pt: "Pronta para ajudar." }),
+    confused: langText({ en: "I need a little more context.", es: "Necesito un poco mas de contexto.", fr: "J'ai besoin d'un peu plus de contexte.", pt: "Preciso de um pouco mais de contexto." }),
+    success: langText({ en: "Your draft is ready.", es: "Tu borrador esta listo.", fr: "Votre brouillon est prêt.", pt: "Seu rascunho está pronto." }),
   };
   builderAvatarAssistant.setState(builderAvatarManager?.getState() || "idle");
 }
@@ -770,12 +782,12 @@ function initBuilderAvatarAssistant() {
     compact: true,
     labels: {
       idle: t("assistantSubtitle"),
-      listening: selectedLanguage === "es" ? "Estoy escuchando tu idea." : "I'm listening to your idea.",
+      listening: langText({ en: "I'm listening to your idea.", es: "Estoy escuchando tu idea.", fr: "J'écoute votre idée.", pt: "Estou ouvindo sua ideia." }),
       thinking: t("thinking"),
-      speaking: selectedLanguage === "es" ? "Te guio paso a paso." : "Guiding you step by step.",
-      happy: selectedLanguage === "es" ? "Listo para ayudarte." : "Ready to help.",
-      confused: selectedLanguage === "es" ? "Necesito un poco mas de contexto." : "I need a little more context.",
-      success: selectedLanguage === "es" ? "Tu borrador esta listo." : "Your draft is ready.",
+      speaking: langText({ en: "Guiding you step by step.", es: "Te guio paso a paso.", fr: "Je vous guide étape par étape.", pt: "Vou guiar você passo a passo." }),
+      happy: langText({ en: "Ready to help.", es: "Listo para ayudarte.", fr: "Prête à vous aider.", pt: "Pronta para ajudar." }),
+      confused: langText({ en: "I need a little more context.", es: "Necesito un poco mas de contexto.", fr: "J'ai besoin d'un peu plus de contexte.", pt: "Preciso de um pouco mais de contexto." }),
+      success: langText({ en: "Your draft is ready.", es: "Tu borrador esta listo.", fr: "Votre brouillon est prêt.", pt: "Seu rascunho está pronto." }),
     },
   });
   document.body.classList.add("avatar-assistant-ready");
@@ -924,11 +936,11 @@ function extractStyleHint(prompt) {
 
 function inferIndustryFromPrompt(prompt) {
   const text = String(prompt || "").toLowerCase();
-  if (/restaurante|restaurant|menu|menú|comida|food/.test(text)) return selectedLanguage === "es" ? "Restaurante / comida" : "Restaurant / food";
-  if (/barber|barberia|barbería|salon|spa|cita|reserva/.test(text)) return selectedLanguage === "es" ? "Servicios con citas" : "Appointment services";
-  if (/curso|course|ebook|digital|software|membres/.test(text)) return selectedLanguage === "es" ? "Productos digitales" : "Digital products";
-  if (/contractor|construction|remodel|pintura|roofing|flooring/.test(text)) return selectedLanguage === "es" ? "Construccion / contractor" : "Contractor";
-  if (/tienda|store|shop|producto|vender|ecommerce|amazon|ebay|cyberpunk|gamer/.test(text)) return selectedLanguage === "es" ? "Tienda online / ecommerce" : "Online store / ecommerce";
+  if (/restaurante|restaurant|menu|menú|comida|food/.test(text)) return langText({ en: "Restaurant / food", es: "Restaurante / comida", fr: "Restaurant / alimentation", pt: "Restaurante / comida" });
+  if (/barber|barberia|barbería|salon|spa|cita|reserva/.test(text)) return langText({ en: "Appointment services", es: "Servicios con citas", fr: "Services avec rendez-vous", pt: "Serviços com agendamento" });
+  if (/curso|course|ebook|digital|software|membres/.test(text)) return langText({ en: "Digital products", es: "Productos digitales", fr: "Produits numériques", pt: "Produtos digitais" });
+  if (/contractor|construction|remodel|pintura|roofing|flooring/.test(text)) return langText({ en: "Contractor", es: "Construccion / contractor", fr: "Construction / entrepreneur", pt: "Construção / empreiteiro" });
+  if (/tienda|store|shop|producto|vender|ecommerce|amazon|ebay|cyberpunk|gamer/.test(text)) return langText({ en: "Online store / ecommerce", es: "Tienda online / ecommerce", fr: "Boutique en ligne / ecommerce", pt: "Loja online / ecommerce" });
   return "";
 }
 
@@ -940,9 +952,12 @@ function resetAssistantConversation() {
   if (guidedStep === "websiteIntent") {
     appendChatMessage(
       "assistant",
-      selectedLanguage === "es"
-        ? "Puedes escribir algo como: quiero algo tipo Amazon, quiero un menu de restaurante, una barberia con citas, o una tienda cyberpunk super cool."
-        : "You can type examples like: I want something like Amazon, I want a restaurant menu, a booking site for a barbershop, or a cyberpunk online store.",
+      langText({
+        en: "You can type examples like: I want something like Amazon, I want a restaurant menu, a booking site for a barbershop, or a cyberpunk online store.",
+        es: "Puedes escribir algo como: quiero algo tipo Amazon, quiero un menu de restaurante, una barberia con citas, o una tienda cyberpunk super cool.",
+        fr: "Vous pouvez écrire par exemple : je veux quelque chose comme Amazon, un menu de restaurant, un site de réservation pour un salon, ou une boutique cyberpunk.",
+        pt: "Você pode escrever algo como: quero algo tipo Amazon, quero um menu de restaurante, um site de reservas para barbearia, ou uma loja cyberpunk.",
+      }),
       "speaking",
     );
   } else if (forcedTemplateSelection?.templateId && guidedState.websiteIntent) {
@@ -1080,19 +1095,32 @@ async function sendGuidedReply() {
     return;
   }
   if (guidedStep === "review" && currentSchema) {
-    const adjustmentLabel = selectedLanguage === "es" ? "Ajustes pedidos por el cliente" : "Client requested adjustments";
+    const adjustmentLabel = langText({
+      en: "Client requested adjustments",
+      es: "Ajustes pedidos por el cliente",
+      fr: "Ajustements demandés par le client",
+      pt: "Ajustes solicitados pelo cliente",
+    });
     guidedState.businessDescription = [
       guidedState.businessDescription,
       `${adjustmentLabel}: ${message}`,
     ].filter(Boolean).join("\n\n");
     appendChatMessage(
       "assistant",
-      selectedLanguage === "es"
-        ? "Perfecto, ya agregué esos ajustes al brief. Presiona “Generar mi página” para crear una nueva versión con esos cambios."
-        : "Perfect, I added those adjustments to the brief. Press “Generate my website” to create a new version with those changes.",
+      langText({
+        en: "Perfect, I added those adjustments to the brief. Press “Generate my website” to create a new version with those changes.",
+        es: "Perfecto, ya agregué esos ajustes al brief. Presiona “Generar mi página” para crear una nueva versión con esos cambios.",
+        fr: "Parfait, j'ai ajouté ces ajustements au brief. Appuyez sur « Générer mon site » pour créer une nouvelle version.",
+        pt: "Perfeito, adicionei esses ajustes ao briefing. Pressione “Gerar meu site” para criar uma nova versão.",
+      }),
       "success",
     );
-    guidedStatusText.textContent = selectedLanguage === "es" ? "Ajustes listos para regenerar." : "Adjustments ready to regenerate.";
+    guidedStatusText.textContent = langText({
+      en: "Adjustments ready to regenerate.",
+      es: "Ajustes listos para regenerar.",
+      fr: "Ajustements prêts pour régénération.",
+      pt: "Ajustes prontos para gerar novamente.",
+    });
     renderGuidedSummary();
     refreshQuickChips();
     saveGuidedDraft();
@@ -1149,7 +1177,12 @@ async function sendGuidedReply() {
 }
 
 async function handleWebsiteIntentAnswer(message) {
-  guidedStatusText.textContent = selectedLanguage === "es" ? "Detectando el mejor template..." : "Detecting the best template...";
+  guidedStatusText.textContent = langText({
+    en: "Detecting the best template...",
+    es: "Detectando el mejor template...",
+    fr: "Détection du meilleur template...",
+    pt: "Detectando o melhor template...",
+  });
   setThinking(true);
   try {
     const selection = await selectTemplateFromFreeText(message);
@@ -1161,7 +1194,12 @@ async function handleWebsiteIntentAnswer(message) {
     appendTemplateDetectionMessage(selection);
     guidedStep = "businessName";
     appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
-    guidedStatusText.textContent = selectedLanguage === "es" ? "Template detectado. Sigamos con los datos del negocio." : "Template detected. Let us continue with the business details.";
+    guidedStatusText.textContent = langText({
+      en: "Template detected. Let us continue with the business details.",
+      es: "Template detectado. Sigamos con los datos del negocio.",
+      fr: "Template détecté. Continuons avec les détails de l'entreprise.",
+      pt: "Template detectado. Vamos continuar com os dados do negócio.",
+    });
   } catch (error) {
     guidedState.websiteIntent = message;
     guidedState.businessDescription = guidedState.businessDescription || message;
@@ -1359,7 +1397,12 @@ async function reviewAndGenerateFromGuided() {
   normalizeGuidedStateBeforeGenerate();
   applyGuidedStateToForm();
   guidedGenerateButton.disabled = true;
-  guidedGenerateButton.textContent = "Saving request...";
+  guidedGenerateButton.textContent = langText({
+    en: "Saving request...",
+    es: "Guardando solicitud...",
+    fr: "Enregistrement de la demande...",
+    pt: "Salvando solicitação...",
+  });
   guidedStatusText.textContent = t("savingRequest");
 
   try {
@@ -1397,7 +1440,12 @@ function normalizeGuidedStateBeforeGenerate() {
   guidedState.industry = guidedState.industry || t("generalBusiness");
   guidedState.businessDescription =
     guidedState.businessDescription ||
-    `Professional website for ${guidedState.businessName} focused on ${services.join(", ") || guidedState.industry}.`;
+    langText({
+      en: `Professional website for ${guidedState.businessName} focused on ${services.join(", ") || guidedState.industry}.`,
+      es: `Pagina profesional para ${guidedState.businessName} enfocada en ${services.join(", ") || guidedState.industry}.`,
+      fr: `Site professionnel pour ${guidedState.businessName} axé sur ${services.join(", ") || guidedState.industry}.`,
+      pt: `Site profissional para ${guidedState.businessName} focado em ${services.join(", ") || guidedState.industry}.`,
+    });
   guidedState.servicesProducts = services.length ? services : [t("featuredOffer"), t("mainService"), t("contactRequest")];
   guidedState.targetAudience = guidedState.targetAudience || t("letAiDecide");
   guidedState.preferredTone = guidedState.preferredTone || t("letAiDecide");
@@ -1420,7 +1468,12 @@ function inferCommerceIndustry(state) {
     .join(" ")
     .toLowerCase();
   if (/(tienda|store|shop|venta|vender|comprar|producto|catalogo|catálogo|online sales|ecommerce|boutique)/.test(text)) {
-    return selectedLanguage === "es" ? "Tienda online / ecommerce" : "Online store / ecommerce";
+    return langText({
+      en: "Online store / ecommerce",
+      es: "Tienda online / ecommerce",
+      fr: "Boutique en ligne / ecommerce",
+      pt: "Loja online / ecommerce",
+    });
   }
   return t("generalBusiness");
 }
@@ -1512,9 +1565,12 @@ function renderGuidedSummary() {
 
 function renderSelectedDomainState() {
   if (!domainCheckStatus || !guidedState.desiredDomain || domainResults?.children.length) return;
-  domainCheckStatus.textContent = selectedLanguage === "es"
-    ? "Puedes verificar disponibilidad antes de generar."
-    : "You can check availability before generating.";
+  domainCheckStatus.textContent = langText({
+    en: "You can check availability before generating.",
+    es: "Puedes verificar disponibilidad antes de generar.",
+    fr: "Vous pouvez vérifier la disponibilité avant de générer.",
+    pt: "Você pode verificar a disponibilidade antes de gerar.",
+  });
 }
 
 async function checkDesiredDomainOptions() {
@@ -1533,9 +1589,12 @@ async function checkDesiredDomainOptions() {
     if (!response.ok) throw new Error(await readErrorMessage(response));
     renderDomainResults(await response.json());
   } catch (error) {
-    domainCheckStatus.textContent = selectedLanguage === "es"
-      ? `No se pudo verificar: ${shortError(error.message)}`
-      : `Could not check domain: ${shortError(error.message)}`;
+    domainCheckStatus.textContent = `${langText({
+      en: "Could not check domain",
+      es: "No se pudo verificar",
+      fr: "Impossible de vérifier le domaine",
+      pt: "Não foi possível verificar o domínio",
+    })}: ${shortError(error.message)}`;
   } finally {
     checkDomainButton.disabled = false;
   }
@@ -1547,7 +1606,7 @@ function renderDomainResults(result) {
     ? t("domainExact")
     : t("domainSuggestions");
   if (!rows.length) {
-    domainResults.innerHTML = `<p class="mini-note">${selectedLanguage === "es" ? "No encontramos opciones." : "No options found."}</p>`;
+    domainResults.innerHTML = `<p class="mini-note">${langText({ en: "No options found.", es: "No encontramos opciones.", fr: "Aucune option trouvée.", pt: "Nenhuma opção encontrada." })}</p>`;
     return;
   }
   domainResults.innerHTML = rows.slice(0, 6).map((item) => {
@@ -1561,20 +1620,25 @@ function renderDomainResults(result) {
     button.addEventListener("click", () => {
       guidedState.desiredDomain = button.dataset.domainChoice;
       renderGuidedSummary();
-      domainCheckStatus.textContent = selectedLanguage === "es"
-        ? `Dominio seleccionado: ${button.dataset.domainChoice}`
-        : `Selected domain: ${button.dataset.domainChoice}`;
+      domainCheckStatus.textContent = langText({
+        en: `Selected domain: ${button.dataset.domainChoice}`,
+        es: `Dominio seleccionado: ${button.dataset.domainChoice}`,
+        fr: `Domaine sélectionné : ${button.dataset.domainChoice}`,
+        pt: `Domínio selecionado: ${button.dataset.domainChoice}`,
+      });
     });
   });
 }
 
 function domainStatusLabel(item) {
   const status = item.status || "";
-  if (status === "available_included") return selectedLanguage === "es" ? "Disponible en el paquete" : "Available in package";
-  if (status === "available_requires_review") return selectedLanguage === "es" ? "Disponible, requiere revision" : "Available, needs review";
-  if (status === "not_available") return selectedLanguage === "es" ? "No disponible" : "Not available";
-  if (status === "needs_registrar_check") return selectedLanguage === "es" ? "Sugerencia, confirmar antes de pagar" : "Suggestion, confirm before payment";
-  return status || (selectedLanguage === "es" ? "Opcion sugerida" : "Suggested option");
+  const labels = {
+    available_included: { en: "Available in package", es: "Disponible en el paquete", fr: "Disponible dans le forfait", pt: "Disponível no pacote" },
+    available_requires_review: { en: "Available, needs review", es: "Disponible, requiere revision", fr: "Disponible, vérification requise", pt: "Disponível, precisa de revisão" },
+    not_available: { en: "Not available", es: "No disponible", fr: "Non disponible", pt: "Não disponível" },
+    needs_registrar_check: { en: "Suggestion, confirm before payment", es: "Sugerencia, confirmar antes de pagar", fr: "Suggestion, confirmer avant paiement", pt: "Sugestão, confirmar antes do pagamento" },
+  };
+  return labels[status] ? langText(labels[status]) : status || langText({ en: "Suggested option", es: "Opcion sugerida", fr: "Option suggérée", pt: "Opção sugerida" });
 }
 
 function openReviewDetails() {
@@ -1846,15 +1910,21 @@ async function createDomainOrderIfNeeded(payload, result) {
     if (!response.ok) throw new Error(await readErrorMessage(response));
     const saved = await response.json();
     if (saved.storage_status === "stored") {
-      guidedStatusText.textContent = selectedLanguage === "es"
-        ? "Pagina generada. Dominio guardado para revisar/pagar antes de registrarlo."
-        : "Website generated. Domain saved for review/payment before registration.";
+      guidedStatusText.textContent = langText({
+        en: "Website generated. Domain saved for review/payment before registration.",
+        es: "Pagina generada. Dominio guardado para revisar/pagar antes de registrarlo.",
+        fr: "Site généré. Domaine enregistré pour vérification/paiement avant l'enregistrement.",
+        pt: "Site gerado. Domínio salvo para revisão/pagamento antes do registro.",
+      });
     }
   } catch (error) {
     console.warn("Domain order could not be saved", error);
-    guidedStatusText.textContent = selectedLanguage === "es"
-      ? "Pagina generada. No se pudo guardar la orden de dominio; puedes hacerlo desde admin."
-      : "Website generated. Could not save the domain order; you can do it from admin.";
+    guidedStatusText.textContent = langText({
+      en: "Website generated. Could not save the domain order; you can do it from admin.",
+      es: "Pagina generada. No se pudo guardar la orden de dominio; puedes hacerlo desde admin.",
+      fr: "Site généré. Impossible d'enregistrer la commande de domaine; vous pouvez le faire depuis l'admin.",
+      pt: "Site gerado. Não foi possível salvar o pedido de domínio; você pode fazer isso no admin.",
+    });
   }
 }
 
@@ -1983,28 +2053,24 @@ function buildInstantTemplateResult(payload, error, templateSelection) {
 
 function buildInstantTemplateSchema(payload, templateSelection) {
   const language = payload.selectedLanguage || selectedLanguage || "en";
-  const isSpanish = language === "es";
   const template = templateSelection?.template || payload.selectedTemplate || {};
   const catalogType = templateSelection?.catalogType || template.catalogModel?.catalogType || payload.catalogType || "editorial_minimal_grid";
   const templateInstructions = templateSelection
     ? buildTemplateInstructions(templateSelection)
     : payload.templateInstructions || {};
-  const name = payload.business_name || (isSpanish ? "Nueva tienda" : "New store");
-  const description = payload.business_description || (isSpanish ? "Una marca preparada para vender en linea." : "A brand ready to sell online.");
+  const copy = instantLocaleCopy(language);
+  const name = payload.business_name || copy.newStore;
+  const description = payload.business_description || copy.defaultDescription;
   const products = arrayValue(payload.services_products).length
     ? arrayValue(payload.services_products)
-    : isSpanish
-      ? ["Producto destacado", "Servicio principal", "Oferta especial"]
-      : ["Featured product", "Main service", "Special offer"];
+    : copy.defaultProducts;
   const colors = chooseInstantPalette(payload);
   const catalogItems = products.map((item, index) => ({
     id: `instant_${index + 1}`,
     name: item,
-    description: isSpanish
-      ? `Una opcion destacada de ${name}, lista para presentar al cliente con detalles, beneficios y llamada a la accion.`
-      : `A featured option from ${name}, ready to present with details, benefits, and a clear call to action.`,
-    price_label: isSpanish ? "Consultar precio" : "Ask for price",
-    button_label: isSpanish ? "Solicitar" : "Request",
+    description: copy.itemDescription(name),
+    price_label: copy.askPrice,
+    button_label: copy.request,
     image_url: "",
     is_active: true,
     is_featured: index < 3,
@@ -2016,18 +2082,18 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     business: {
       name,
       description,
-      industry: payload.industry || (isSpanish ? "Tienda online" : "Online store"),
+      industry: payload.industry || copy.onlineStore,
       location: payload.location || "",
       target_audience: payload.target_audience || "",
-      tone: payload.preferred_tone || (isSpanish ? "Profesional y cercano" : "Professional and friendly"),
+      tone: payload.preferred_tone || copy.defaultTone,
       selectedLanguage: language,
     },
     theme: {
       colors,
       fonts: { heading: "Inter", body: "Inter" },
       buttons: {
-        primary_label: isSpanish ? "Comprar ahora" : "Shop now",
-        secondary_label: isSpanish ? "Ver catalogo" : "View catalog",
+        primary_label: copy.shopNow,
+        secondary_label: copy.viewCatalog,
       },
       radius: 10,
     },
@@ -2037,20 +2103,20 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       catalog_type: catalogType,
       intent: templateSelection?.intent || payload.templateIntent || "",
       navigation: { show_cart: true, show_header: true, sticky_header: true },
-      checkout: { mode: "quote_or_cart", primary_action: isSpanish ? "Solicitar pedido" : "Request order" },
+      checkout: { mode: "quote_or_cart", primary_action: copy.requestOrder },
     },
     integrations: { contact: { whatsapp_enabled: true, email_enabled: true }, analytics: { enabled: false, provider: "" }, payments: { enabled: false, mode: "setup_required" } },
     custom_logic: { enabled: false, risk_level: "restricted", automations: "" },
     navigation: [
-      { label: isSpanish ? "Inicio" : "Home", page_key: "home" },
-      { label: isSpanish ? "Tienda" : "Shop", page_key: "catalog" },
-      { label: isSpanish ? "Nosotros" : "About", page_key: "about" },
-      { label: isSpanish ? "Contacto" : "Contact", page_key: "contact" },
+      { label: copy.home, page_key: "home" },
+      { label: copy.shop, page_key: "catalog" },
+      { label: copy.about, page_key: "about" },
+      { label: copy.contact, page_key: "contact" },
     ],
     pages: [
       {
         page_key: "home",
-        title: isSpanish ? "Inicio" : "Home",
+        title: copy.home,
         slug: "/",
         order: 1,
         sections: [
@@ -2061,8 +2127,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
             editable: {
               headline: name,
               subtitle: description,
-              primary_button: isSpanish ? "Ver tienda" : "View shop",
-              secondary_button: isSpanish ? "Contactar" : "Contact",
+              primary_button: copy.viewShop,
+              secondary_button: copy.contactVerb,
               image_url: payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "",
               images: [],
             },
@@ -2073,8 +2139,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
             type: "ProductGrid",
             order: 2,
             editable: {
-              title: isSpanish ? "Productos destacados" : "Featured products",
-              text: isSpanish ? "Una seleccion inicial para mostrar la oferta del negocio." : "An initial selection to show the business offer.",
+              title: copy.featuredProducts,
+              text: copy.featuredText,
               images: [],
             },
             settings: { layout: "featured", columns: 3 },
@@ -2083,8 +2149,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       },
       {
         page_key: "catalog",
-        title: isSpanish ? "Tienda" : "Shop",
-        slug: isSpanish ? "/tienda" : "/shop",
+        title: copy.shop,
+        slug: copy.shopSlug,
         order: 2,
         sections: [
           {
@@ -2092,8 +2158,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
             type: "ProductGrid",
             order: 1,
             editable: {
-              title: isSpanish ? "Catalogo" : "Catalog",
-              text: isSpanish ? "Productos y servicios listos para editar, activar y publicar." : "Products and services ready to edit, activate, and publish.",
+              title: copy.catalog,
+              text: copy.catalogText,
               images: [],
             },
             settings: { layout: "grid", columns: 3 },
@@ -2102,22 +2168,22 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       },
       {
         page_key: "about",
-        title: isSpanish ? "Nosotros" : "About",
-        slug: isSpanish ? "/nosotros" : "/about",
+        title: copy.about,
+        slug: copy.aboutSlug,
         order: 3,
-        sections: [{ id: "about", type: "About", order: 1, editable: { title: isSpanish ? "Sobre la marca" : "About the brand", text: description }, settings: { layout: "feature" } }],
+        sections: [{ id: "about", type: "About", order: 1, editable: { title: copy.aboutBrand, text: description }, settings: { layout: "feature" } }],
       },
       {
         page_key: "contact",
-        title: isSpanish ? "Contacto" : "Contact",
-        slug: isSpanish ? "/contacto" : "/contact",
+        title: copy.contact,
+        slug: copy.contactSlug,
         order: 4,
-        sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: isSpanish ? "Hablemos" : "Let us talk", text: isSpanish ? "Contacta al negocio para comprar, cotizar o solicitar informacion." : "Contact the business to buy, quote, or request information." }, settings: { layout: "simple" } }],
+        sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: copy.letsTalk, text: copy.contactText }, settings: { layout: "simple" } }],
       },
     ],
     global_components: {
       logo_url: payload.assets?.find((asset) => asset.asset_type === "logo")?.url || "",
-      footer_text: isSpanish ? `${name} - Pagina generada como borrador editable.` : `${name} - Editable draft website.`,
+      footer_text: copy.footerText(name),
     },
     selected_template: {
       id: template.id || "",
@@ -2135,9 +2201,9 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     design_variants: [
       {
         id: "instant-modern",
-        name: template.name || (isSpanish ? "Moderno comercial" : "Modern commercial"),
-        description: template.visualDifference || (isSpanish ? "Base rapida, limpia y editable para validar la tienda." : "Fast, clean, editable base to validate the store."),
-        theme: { colors, fonts: { heading: "Inter", body: "Inter" }, buttons: { primary_label: isSpanish ? "Comprar ahora" : "Shop now", secondary_label: isSpanish ? "Contactar" : "Contact" }, radius: 10 },
+        name: template.name || copy.modernCommercial,
+        description: template.visualDifference || copy.fastBase,
+        theme: { colors, fonts: { heading: "Inter", body: "Inter" }, buttons: { primary_label: copy.shopNow, secondary_label: copy.contactVerb }, radius: 10 },
         layout_mode_id: template.id || "instant_storefront",
         hero_layout: "split_showcase",
         product_layout: catalogType,
@@ -2148,6 +2214,140 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     contact: payload.contact_info || {},
     editable_fields: ["headline", "subtitle", "title", "text", "primary_button", "secondary_button", "image_url", "images"],
   };
+}
+
+function instantLocaleCopy(language) {
+  const copies = {
+    en: {
+      newStore: "New store",
+      defaultDescription: "A brand ready to sell online.",
+      defaultProducts: ["Featured product", "Main service", "Special offer"],
+      itemDescription: (name) => `A featured option from ${name}, ready to present with details, benefits, and a clear call to action.`,
+      askPrice: "Ask for price",
+      request: "Request",
+      onlineStore: "Online store",
+      defaultTone: "Professional and friendly",
+      shopNow: "Shop now",
+      viewCatalog: "View catalog",
+      requestOrder: "Request order",
+      home: "Home",
+      shop: "Shop",
+      about: "About",
+      contact: "Contact",
+      viewShop: "View shop",
+      contactVerb: "Contact",
+      featuredProducts: "Featured products",
+      featuredText: "An initial selection to show the business offer.",
+      catalog: "Catalog",
+      catalogText: "Products and services ready to edit, activate, and publish.",
+      aboutBrand: "About the brand",
+      letsTalk: "Let us talk",
+      contactText: "Contact the business to buy, quote, or request information.",
+      footerText: (name) => `${name} - Editable draft website.`,
+      modernCommercial: "Modern commercial",
+      fastBase: "Fast, clean, editable base to validate the store.",
+      shopSlug: "/shop",
+      aboutSlug: "/about",
+      contactSlug: "/contact",
+    },
+    es: {
+      newStore: "Nueva tienda",
+      defaultDescription: "Una marca preparada para vender en linea.",
+      defaultProducts: ["Producto destacado", "Servicio principal", "Oferta especial"],
+      itemDescription: (name) => `Una opcion destacada de ${name}, lista para presentar al cliente con detalles, beneficios y llamada a la accion.`,
+      askPrice: "Consultar precio",
+      request: "Solicitar",
+      onlineStore: "Tienda online",
+      defaultTone: "Profesional y cercano",
+      shopNow: "Comprar ahora",
+      viewCatalog: "Ver catalogo",
+      requestOrder: "Solicitar pedido",
+      home: "Inicio",
+      shop: "Tienda",
+      about: "Nosotros",
+      contact: "Contacto",
+      viewShop: "Ver tienda",
+      contactVerb: "Contactar",
+      featuredProducts: "Productos destacados",
+      featuredText: "Una seleccion inicial para mostrar la oferta del negocio.",
+      catalog: "Catalogo",
+      catalogText: "Productos y servicios listos para editar, activar y publicar.",
+      aboutBrand: "Sobre la marca",
+      letsTalk: "Hablemos",
+      contactText: "Contacta al negocio para comprar, cotizar o solicitar informacion.",
+      footerText: (name) => `${name} - Pagina generada como borrador editable.`,
+      modernCommercial: "Moderno comercial",
+      fastBase: "Base rapida, limpia y editable para validar la tienda.",
+      shopSlug: "/tienda",
+      aboutSlug: "/nosotros",
+      contactSlug: "/contacto",
+    },
+    fr: {
+      newStore: "Nouvelle boutique",
+      defaultDescription: "Une marque prête à vendre en ligne.",
+      defaultProducts: ["Produit phare", "Service principal", "Offre spéciale"],
+      itemDescription: (name) => `Une option phare de ${name}, prête à être présentée avec détails, bénéfices et appel à l'action.`,
+      askPrice: "Demander le prix",
+      request: "Demander",
+      onlineStore: "Boutique en ligne",
+      defaultTone: "Professionnel et chaleureux",
+      shopNow: "Acheter maintenant",
+      viewCatalog: "Voir le catalogue",
+      requestOrder: "Demander une commande",
+      home: "Accueil",
+      shop: "Boutique",
+      about: "À propos",
+      contact: "Contact",
+      viewShop: "Voir la boutique",
+      contactVerb: "Contacter",
+      featuredProducts: "Produits phares",
+      featuredText: "Une première sélection pour présenter l'offre de l'entreprise.",
+      catalog: "Catalogue",
+      catalogText: "Produits et services prêts à modifier, activer et publier.",
+      aboutBrand: "À propos de la marque",
+      letsTalk: "Parlons-en",
+      contactText: "Contactez l'entreprise pour acheter, demander un devis ou obtenir des informations.",
+      footerText: (name) => `${name} - Brouillon de site modifiable.`,
+      modernCommercial: "Commercial moderne",
+      fastBase: "Base rapide, claire et modifiable pour valider la boutique.",
+      shopSlug: "/boutique",
+      aboutSlug: "/a-propos",
+      contactSlug: "/contact",
+    },
+    pt: {
+      newStore: "Nova loja",
+      defaultDescription: "Uma marca pronta para vender online.",
+      defaultProducts: ["Produto em destaque", "Serviço principal", "Oferta especial"],
+      itemDescription: (name) => `Uma opção em destaque de ${name}, pronta para apresentar detalhes, benefícios e chamada para ação.`,
+      askPrice: "Consultar preço",
+      request: "Solicitar",
+      onlineStore: "Loja online",
+      defaultTone: "Profissional e próximo",
+      shopNow: "Comprar agora",
+      viewCatalog: "Ver catálogo",
+      requestOrder: "Solicitar pedido",
+      home: "Início",
+      shop: "Loja",
+      about: "Sobre",
+      contact: "Contato",
+      viewShop: "Ver loja",
+      contactVerb: "Contato",
+      featuredProducts: "Produtos em destaque",
+      featuredText: "Uma seleção inicial para mostrar a oferta do negócio.",
+      catalog: "Catálogo",
+      catalogText: "Produtos e serviços prontos para editar, ativar e publicar.",
+      aboutBrand: "Sobre a marca",
+      letsTalk: "Vamos conversar",
+      contactText: "Entre em contato para comprar, pedir orçamento ou solicitar informações.",
+      footerText: (name) => `${name} - Rascunho de site editável.`,
+      modernCommercial: "Comercial moderno",
+      fastBase: "Base rápida, limpa e editável para validar a loja.",
+      shopSlug: "/loja",
+      aboutSlug: "/sobre",
+      contactSlug: "/contato",
+    },
+  };
+  return copies[language] || copies.en;
 }
 
 function chooseInstantPalette(payload) {
@@ -2184,24 +2384,28 @@ function showGeneratedClientPreview() {
 
 async function submitGeneratedDraftForReview() {
   if (!currentSchema) {
-    storageStatus.textContent = selectedLanguage === "es" ? "Primero genera un borrador." : "Generate a draft first.";
+    storageStatus.textContent = langText({ en: "Generate a draft first.", es: "Primero genera un borrador.", fr: "Générez d'abord un brouillon.", pt: "Gere primeiro um rascunho." });
     return;
   }
   if (!currentSiteId) {
-    storageStatus.textContent =
-      selectedLanguage === "es"
-        ? "El borrador rapido se ve aqui, pero no tiene site_id para revisión todavía."
-        : "The fast draft is visible here, but it does not have a site_id for review yet.";
+    storageStatus.textContent = langText({
+      en: "The fast draft is visible here, but it does not have a site_id for review yet.",
+      es: "El borrador rapido se ve aqui, pero no tiene site_id para revisión todavía.",
+      fr: "Le brouillon rapide est visible ici, mais il n'a pas encore de site_id pour révision.",
+      pt: "O rascunho rápido está visível aqui, mas ainda não tem site_id para revisão.",
+    });
     return;
   }
   const contact = guidedState.contactInfo || {};
   const customerName = guidedState.businessName || currentSchema.business?.name || "Client";
-  const message =
-    selectedLanguage === "es"
-      ? `Cliente envió borrador para revisión.\nNegocio: ${customerName}\nIndustria: ${guidedState.industry || ""}\nDominio deseado: ${guidedState.desiredDomain || ""}\nSite ID: ${currentSiteId}`
-      : `Client submitted draft for review.\nBusiness: ${customerName}\nIndustry: ${guidedState.industry || ""}\nDesired domain: ${guidedState.desiredDomain || ""}\nSite ID: ${currentSiteId}`;
+  const message = langText({
+    en: `Client submitted draft for review.\nBusiness: ${customerName}\nIndustry: ${guidedState.industry || ""}\nDesired domain: ${guidedState.desiredDomain || ""}\nSite ID: ${currentSiteId}`,
+    es: `Cliente envió borrador para revisión.\nNegocio: ${customerName}\nIndustria: ${guidedState.industry || ""}\nDominio deseado: ${guidedState.desiredDomain || ""}\nSite ID: ${currentSiteId}`,
+    fr: `Client a envoyé le brouillon pour révision.\nEntreprise: ${customerName}\nSecteur: ${guidedState.industry || ""}\nDomaine souhaité: ${guidedState.desiredDomain || ""}\nSite ID: ${currentSiteId}`,
+    pt: `Cliente enviou o rascunho para revisão.\nNegócio: ${customerName}\nSetor: ${guidedState.industry || ""}\nDomínio desejado: ${guidedState.desiredDomain || ""}\nSite ID: ${currentSiteId}`,
+  });
   submitDraftReviewButton.disabled = true;
-  submitDraftReviewButton.textContent = selectedLanguage === "es" ? "Enviando..." : "Sending...";
+  submitDraftReviewButton.textContent = langText({ en: "Sending...", es: "Enviando...", fr: "Envoi...", pt: "Enviando..." });
   try {
     const response = await fetch(`${API_BASE_URL}/public/leads`, {
       method: "POST",
@@ -2217,17 +2421,20 @@ async function submitGeneratedDraftForReview() {
       }),
     });
     if (!response.ok) throw new Error(await readErrorMessage(response));
-    storageStatus.textContent = selectedLanguage === "es"
-      ? "Enviado para revisión. Tu solicitud ya aparece en el admin."
-      : "Sent for review. Your request is now visible in admin.";
+    storageStatus.textContent = langText({
+      en: "Sent for review. Your request is now visible in admin.",
+      es: "Enviado para revisión. Tu solicitud ya aparece en el admin.",
+      fr: "Envoyé pour révision. Votre demande apparaît maintenant dans l'admin.",
+      pt: "Enviado para revisão. Sua solicitação já aparece no admin.",
+    });
     if (isEmbeddedClientSetup) {
       window.parent.postMessage({ type: "luma-draft-submitted", siteId: currentSiteId }, "*");
     }
   } catch (error) {
-    storageStatus.textContent = `${selectedLanguage === "es" ? "No se pudo enviar" : "Could not send"}: ${shortError(error.message)}`;
+    storageStatus.textContent = `${langText({ en: "Could not send", es: "No se pudo enviar", fr: "Impossible d'envoyer", pt: "Não foi possível enviar" })}: ${shortError(error.message)}`;
   } finally {
     submitDraftReviewButton.disabled = false;
-    submitDraftReviewButton.textContent = selectedLanguage === "es" ? "Enviar para revisión" : "Send for review";
+    submitDraftReviewButton.textContent = langText({ en: "Send for review", es: "Enviar para revisión", fr: "Envoyer pour révision", pt: "Enviar para revisão" });
   }
 }
 
@@ -2236,13 +2443,19 @@ function adjustGeneratedDraftWithLuma() {
   guidedPanel.classList.add("active");
   document.body.classList.add("guided-modal-open");
   guidedStep = "review";
-  const message = selectedLanguage === "es"
-    ? "Claro. Dime qué quieres cambiar del borrador: colores, secciones, textos, productos, estilo o cualquier detalle. Luego genero una nueva versión con esos ajustes."
-    : "Of course. Tell me what you want to change in the draft: colors, sections, copy, products, style, or any detail. Then I can generate a new version with those adjustments.";
+  const message = langText({
+    en: "Of course. Tell me what you want to change in the draft: colors, sections, copy, products, style, or any detail. Then I can generate a new version with those adjustments.",
+    es: "Claro. Dime qué quieres cambiar del borrador: colores, secciones, textos, productos, estilo o cualquier detalle. Luego genero una nueva versión con esos ajustes.",
+    fr: "Bien sûr. Dites-moi ce que vous voulez changer dans le brouillon : couleurs, sections, textes, produits, style ou tout autre détail. Ensuite je génère une nouvelle version.",
+    pt: "Claro. Diga o que deseja mudar no rascunho: cores, seções, textos, produtos, estilo ou qualquer detalhe. Depois gero uma nova versão.",
+  });
   appendChatMessage("assistant", message, "thinking");
-  guidedStatusText.textContent = selectedLanguage === "es"
-    ? "Describe los ajustes que quieres hacer."
-    : "Describe the adjustments you want.";
+  guidedStatusText.textContent = langText({
+    en: "Describe the adjustments you want.",
+    es: "Describe los ajustes que quieres hacer.",
+    fr: "Décrivez les ajustements souhaités.",
+    pt: "Descreva os ajustes que deseja.",
+  });
   guidedReply.focus();
   if (isEmbeddedClientSetup) {
     window.parent.postMessage({ type: "luma-adjusting-draft" }, "*");
@@ -2667,11 +2880,11 @@ function ensureStorefrontExperience(schema) {
 
   const language = schema.business?.selectedLanguage || selectedLanguage || "en";
   const labels = {
-    en: { nav: "Shop", title: "Shop", subtitle: "Explore the products and options available from this business." },
-    es: { nav: "Tienda", title: "Tienda", subtitle: "Explora los productos y opciones disponibles para comprar o solicitar." },
-    fr: { nav: "Boutique", title: "Boutique", subtitle: "Decouvrez les produits et options disponibles." },
-    pt: { nav: "Loja", title: "Loja", subtitle: "Explore os produtos e opcoes disponiveis." },
-  }[language] || { nav: "Shop", title: "Shop", subtitle: "Explore the products and options available from this business." };
+    en: { nav: "Shop", title: "Shop", slug: "/shop", featured: "Featured products", subtitle: "Explore the products and options available from this business." },
+    es: { nav: "Tienda", title: "Tienda", slug: "/tienda", featured: "Productos destacados", subtitle: "Explora los productos y opciones disponibles para comprar o solicitar." },
+    fr: { nav: "Boutique", title: "Boutique", slug: "/boutique", featured: "Produits phares", subtitle: "Découvrez les produits et options disponibles." },
+    pt: { nav: "Loja", title: "Loja", slug: "/loja", featured: "Produtos em destaque", subtitle: "Explore os produtos e opções disponíveis." },
+  }[language] || { nav: "Shop", title: "Shop", slug: "/shop", featured: "Featured products", subtitle: "Explore the products and options available from this business." };
 
   let catalogPage = schema.pages.find((page) =>
     /catalog|shop|store|tienda|boutique|loja|products|productos|produits|produtos|services|servicios/i.test(
@@ -2682,7 +2895,7 @@ function ensureStorefrontExperience(schema) {
     catalogPage = {
       page_key: "catalog",
       title: labels.title,
-      slug: language === "es" ? "/tienda" : "/shop",
+      slug: labels.slug,
       order: schema.pages.length + 1,
       sections: [],
     };
@@ -2720,8 +2933,8 @@ function ensureStorefrontExperience(schema) {
         type: "ProductGrid",
         order: homePage.sections.length + 1,
         editable: {
-          title: language === "es" ? "Productos destacados" : "Featured products",
-          headline: language === "es" ? "Productos destacados" : "Featured products",
+          title: labels.featured,
+          headline: labels.featured,
           subtitle: "",
           text: "",
           primary_button: "",
@@ -2746,6 +2959,7 @@ function ensureStorefrontExperience(schema) {
 }
 
 function normalizePreviewCatalogItems(schema) {
+  const labels = catalogLocaleLabels(schema);
   const existing = Array.isArray(schema.catalog_items) && schema.catalog_items.length
     ? schema.catalog_items
     : Array.isArray(schema.products_services)
@@ -2758,7 +2972,7 @@ function normalizePreviewCatalogItems(schema) {
         name: item,
         description: "",
         price_label: "",
-        button_label: selectedLanguage === "es" ? "Consultar" : "Ask now",
+        button_label: labels.request || labels.view,
         is_active: true,
         is_featured: index < 3,
         sort_order: index,
@@ -2769,7 +2983,7 @@ function normalizePreviewCatalogItems(schema) {
       name: item.name || item.title || `Item ${index + 1}`,
       description: item.description || item.text || "",
       price_label: item.price_label || item.price || item.priceLabel || "",
-      button_label: item.button_label || item.cta || (selectedLanguage === "es" ? "Consultar" : "Ask now"),
+      button_label: item.button_label || item.cta || labels.request || labels.view,
       image_url: item.image_url || item.imageUrl || "",
       is_active: item.is_active !== false,
       is_featured: item.is_featured ?? index < 3,
@@ -2911,95 +3125,144 @@ function renderCatalogByType(catalogType, items, schema) {
 }
 
 function renderMarketplaceCatalog(items) {
+  const labels = catalogLocaleLabels(arguments[1]);
   return `<div class="catalog-shell catalog-marketplace">
-    <aside><strong>Search & filters</strong><span>Category</span><span>Brand</span><span>Price</span><span>Rating</span><span>Delivery</span></aside>
-    <div class="catalog-results">${items.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? "Deal" : "Fast ship"}`)).join("")}</div>
+    <aside><strong>${labels.searchFilters}</strong><span>${labels.category}</span><span>${labels.brand}</span><span>${labels.price}</span><span>${labels.rating}</span><span>${labels.delivery}</span></aside>
+    <div class="catalog-results">${items.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? labels.deal : labels.fastShip}`, arguments[1])).join("")}</div>
   </div>`;
 }
 
 function renderClassifiedMarketplaceCatalog(items) {
+  const labels = catalogLocaleLabels(arguments[1]);
   return `<div class="catalog-shell catalog-classified">
     ${items.map((item, index) => `<article class="listing-card">
       <div>${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : `<span>${escapeHtml(item.name.slice(0, 2))}</span>`}</div>
-      <section><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.description)}</p><small>Seller verified · ${index % 2 ? "Used" : "New"} · Local pickup</small></section>
-      <aside><b>${escapeHtml(item.price_label || "Make offer")}</b><a class="rendered-button" href="#">${escapeHtml(item.button_label || "Contact seller")}</a></aside>
+      <section><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.description)}</p><small>${labels.sellerVerified} · ${index % 2 ? labels.used : labels.newItem} · ${labels.localPickup}</small></section>
+      <aside><b>${escapeHtml(item.price_label || labels.makeOffer)}</b><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.contactSeller)}</a></aside>
     </article>`).join("")}
   </div>`;
 }
 
 function renderMinimalProductGrid(items) {
-  return `<div class="catalog-minimal">${items.map((item) => renderCatalogCard(item, "minimal-card", item.price_label)).join("")}</div>`;
+  return `<div class="catalog-minimal">${items.map((item) => renderCatalogCard(item, "minimal-card", item.price_label, arguments[1])).join("")}</div>`;
 }
 
 function renderFashionLookbookCatalog(items) {
+  const labels = catalogLocaleLabels(arguments[1]);
   return `<div class="catalog-lookbook">${items.map((item, index) => `<article class="lookbook-card ${index === 0 ? "wide" : ""}">
     ${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : `<div>${escapeHtml(item.name.slice(0, 2))}</div>`}
-    <span>New drop</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
+    <span>${labels.newDrop}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
   </article>`).join("")}</div>`;
 }
 
 function renderLuxuryGalleryCatalog(items) {
+  const labels = catalogLocaleLabels(arguments[1]);
   return `<div class="catalog-luxury">${items.map((item) => `<article>
     <div>${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : ""}</div>
-    <small>Limited selection</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
+    <small>${labels.limitedSelection}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
   </article>`).join("")}</div>`;
 }
 
 function renderDigitalOfferCatalog(items) {
+  const labels = catalogLocaleLabels(arguments[1]);
   return `<div class="catalog-digital">${items.map((item) => `<article>
-    <span>Instant access</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p>
-    <ul><li>Downloadable content</li><li>Bonus resources</li><li>Lifetime access</li></ul>
-    <b>${escapeHtml(item.price_label)}</b><a class="rendered-button" href="#">${escapeHtml(item.button_label || "Get access")}</a>
+    <span>${labels.instantAccess}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p>
+    <ul><li>${labels.downloadable}</li><li>${labels.bonus}</li><li>${labels.lifetime}</li></ul>
+    <b>${escapeHtml(item.price_label)}</b><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.getAccess)}</a>
   </article>`).join("")}</div>`;
 }
 
 function renderRestaurantMenuCatalog(items) {
+  const labels = catalogLocaleLabels(arguments[1]);
   return `<div class="catalog-menu">${items.map((item, index) => `<article>
-    <div><small>${index % 2 ? "Main" : "Popular"}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p></div>
-    <strong>${escapeHtml(item.price_label || "Market price")}</strong>
+    <div><small>${index % 2 ? labels.main : labels.popular}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p></div>
+    <strong>${escapeHtml(item.price_label || labels.marketPrice)}</strong>
   </article>`).join("")}</div>`;
 }
 
 function renderBookingMenuCatalog(items) {
+  const labels = catalogLocaleLabels(arguments[1]);
   return `<div class="catalog-booking">${items.map((item, index) => `<article>
     <small>${30 + index * 15} min</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p>
-    <b>${escapeHtml(item.price_label || "From quote")}</b><a class="rendered-button" href="#">Book</a>
+    <b>${escapeHtml(item.price_label || labels.fromQuote)}</b><a class="rendered-button" href="#">${labels.book}</a>
   </article>`).join("")}</div>`;
 }
 
 function renderLocalServiceCatalog(items) {
-  return `<div class="catalog-services">${items.map((item) => renderCatalogCard(item, "service-card-pro", "Free quote")).join("")}</div>`;
+  const labels = catalogLocaleLabels(arguments[1]);
+  return `<div class="catalog-services">${items.map((item) => renderCatalogCard(item, "service-card-pro", labels.freeQuote, arguments[1])).join("")}</div>`;
 }
 
 function renderProfessionalServicesCatalog(items) {
-  return `<div class="catalog-practice">${items.map((item) => `<article><span>Practice area</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><a class="rendered-button secondary" href="#">Schedule consultation</a></article>`).join("")}</div>`;
+  const labels = catalogLocaleLabels(arguments[1]);
+  return `<div class="catalog-practice">${items.map((item) => `<article><span>${labels.practiceArea}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><a class="rendered-button secondary" href="#">${labels.scheduleConsultation}</a></article>`).join("")}</div>`;
 }
 
 function renderBeforeAfterProjectCatalog(items) {
-  return `<div class="catalog-projects">${items.map((item) => `<article><div><span>Before</span><span>After</span></div><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><a class="rendered-button" href="#">View project</a></article>`).join("")}</div>`;
+  const labels = catalogLocaleLabels(arguments[1]);
+  return `<div class="catalog-projects">${items.map((item) => `<article><div><span>${labels.before}</span><span>${labels.after}</span></div><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><a class="rendered-button" href="#">${labels.viewProject}</a></article>`).join("")}</div>`;
 }
 
 function renderPricingPlanCatalog(items) {
-  return `<div class="catalog-pricing">${items.map((item, index) => `<article class="${index === 1 ? "featured" : ""}"><small>Plan</small><h3>${escapeHtml(item.name)}</h3><b>${escapeHtml(item.price_label || "Custom")}</b><p>${escapeHtml(item.description)}</p><a class="rendered-button" href="#">Start</a></article>`).join("")}</div>`;
+  const labels = catalogLocaleLabels(arguments[1]);
+  return `<div class="catalog-pricing">${items.map((item, index) => `<article class="${index === 1 ? "featured" : ""}"><small>${labels.plan}</small><h3>${escapeHtml(item.name)}</h3><b>${escapeHtml(item.price_label || labels.custom)}</b><p>${escapeHtml(item.description)}</p><a class="rendered-button" href="#">${labels.start}</a></article>`).join("")}</div>`;
 }
 
 function renderEventTicketCatalog(items) {
-  return `<div class="catalog-tickets">${items.map((item) => `<article><span>Ticket / offer</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b><a class="rendered-button" href="#">Reserve</a></article>`).join("")}</div>`;
+  const labels = catalogLocaleLabels(arguments[1]);
+  return `<div class="catalog-tickets">${items.map((item) => `<article><span>${labels.ticketOffer}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b><a class="rendered-button" href="#">${labels.reserve}</a></article>`).join("")}</div>`;
 }
 
 function renderPersonalBrandServicesCatalog(items) {
-  return `<div class="catalog-packages">${items.map((item) => `<article><small>Package</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><a class="rendered-button secondary" href="#">Apply now</a></article>`).join("")}</div>`;
+  const labels = catalogLocaleLabels(arguments[1]);
+  return `<div class="catalog-packages">${items.map((item) => `<article><small>${labels.package}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><a class="rendered-button secondary" href="#">${labels.applyNow}</a></article>`).join("")}</div>`;
 }
 
-function renderCatalogCard(item, className, badge) {
+function renderCatalogCard(item, className, badge, schema) {
+  const labels = catalogLocaleLabels(schema);
   return `<article class="${className}">
     ${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : `<div class="card-placeholder">${escapeHtml(item.name.slice(0, 2))}</div>`}
     ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
     <h3>${escapeHtml(item.name)}</h3>
     <p>${escapeHtml(item.description)}</p>
     <b>${escapeHtml(item.price_label)}</b>
-    <a class="rendered-button" href="#">${escapeHtml(item.button_label || "View")}</a>
+    <a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.view)}</a>
   </article>`;
+}
+
+function catalogLocaleLabels(schema) {
+  const language = schema?.business?.selectedLanguage || selectedLanguage || "en";
+  const labels = {
+    en: {
+      searchFilters: "Search & filters", category: "Category", brand: "Brand", price: "Price", rating: "Rating", delivery: "Delivery", deal: "Deal", fastShip: "Fast ship",
+      sellerVerified: "Seller verified", used: "Used", newItem: "New", localPickup: "Local pickup", makeOffer: "Make offer", contactSeller: "Contact seller",
+      newDrop: "New drop", limitedSelection: "Limited selection", instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
+      main: "Main", popular: "Popular", marketPrice: "Market price", fromQuote: "From quote", book: "Book", freeQuote: "Free quote", practiceArea: "Practice area", scheduleConsultation: "Schedule consultation",
+      before: "Before", after: "After", viewProject: "View project", plan: "Plan", custom: "Custom", start: "Start", ticketOffer: "Ticket / offer", reserve: "Reserve", package: "Package", applyNow: "Apply now", view: "View", request: "Ask now",
+    },
+    es: {
+      searchFilters: "Busqueda y filtros", category: "Categoria", brand: "Marca", price: "Precio", rating: "Calificacion", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rapido",
+      sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Nuevo", localPickup: "Retiro local", makeOffer: "Hacer oferta", contactSeller: "Contactar vendedor",
+      newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
+      main: "Principal", popular: "Popular", marketPrice: "Precio de mercado", fromQuote: "Desde cotizacion", book: "Reservar", freeQuote: "Cotizacion gratis", practiceArea: "Area de practica", scheduleConsultation: "Agendar consulta",
+      before: "Antes", after: "Despues", viewProject: "Ver proyecto", plan: "Plan", custom: "Personalizado", start: "Empezar", ticketOffer: "Ticket / oferta", reserve: "Reservar", package: "Paquete", applyNow: "Aplicar ahora", view: "Ver", request: "Consultar",
+    },
+    fr: {
+      searchFilters: "Recherche et filtres", category: "Catégorie", brand: "Marque", price: "Prix", rating: "Note", delivery: "Livraison", deal: "Offre", fastShip: "Livraison rapide",
+      sellerVerified: "Vendeur vérifié", used: "Occasion", newItem: "Neuf", localPickup: "Retrait local", makeOffer: "Faire une offre", contactSeller: "Contacter le vendeur",
+      newDrop: "Nouvelle collection", limitedSelection: "Sélection limitée", instantAccess: "Accès immédiat", downloadable: "Contenu téléchargeable", bonus: "Ressources bonus", lifetime: "Accès à vie", getAccess: "Obtenir l'accès",
+      main: "Principal", popular: "Populaire", marketPrice: "Prix du marché", fromQuote: "Sur devis", book: "Réserver", freeQuote: "Devis gratuit", practiceArea: "Domaine d'expertise", scheduleConsultation: "Planifier une consultation",
+      before: "Avant", after: "Après", viewProject: "Voir le projet", plan: "Offre", custom: "Sur mesure", start: "Commencer", ticketOffer: "Billet / offre", reserve: "Réserver", package: "Forfait", applyNow: "Postuler", view: "Voir", request: "Demander",
+    },
+    pt: {
+      searchFilters: "Busca e filtros", category: "Categoria", brand: "Marca", price: "Preço", rating: "Avaliação", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rápido",
+      sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Novo", localPickup: "Retirada local", makeOffer: "Fazer oferta", contactSeller: "Contatar vendedor",
+      newDrop: "Novo drop", limitedSelection: "Seleção limitada", instantAccess: "Acesso imediato", downloadable: "Conteúdo baixável", bonus: "Recursos bônus", lifetime: "Acesso vitalício", getAccess: "Obter acesso",
+      main: "Principal", popular: "Popular", marketPrice: "Preço de mercado", fromQuote: "Sob orçamento", book: "Reservar", freeQuote: "Orçamento grátis", practiceArea: "Área de atuação", scheduleConsultation: "Agendar consulta",
+      before: "Antes", after: "Depois", viewProject: "Ver projeto", plan: "Plano", custom: "Personalizado", start: "Começar", ticketOffer: "Ingresso / oferta", reserve: "Reservar", package: "Pacote", applyNow: "Aplicar agora", view: "Ver", request: "Consultar",
+    },
+  };
+  return labels[language] || labels.en;
 }
 
 function renderFeatureBand(section) {
