@@ -4,3 +4,4 @@ node_modules/
 .u2net/
 node-static-*.log
 static*.log
+templates-preview/screenshots/
