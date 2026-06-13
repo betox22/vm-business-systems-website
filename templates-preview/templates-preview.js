@@ -1,5 +1,6 @@
 const tabs = document.querySelectorAll(".template-tab");
 const previews = document.querySelectorAll(".template-preview");
+const params = new URLSearchParams(window.location.search);
 
 function activateTemplate(target) {
   const fallback = tabs[0]?.dataset.templateTarget || "";
@@ -20,5 +21,9 @@ tabs.forEach((tab) => {
   });
 });
 
-const initialTemplate = new URLSearchParams(window.location.search).get("template");
+const initialTemplate = params.get("template");
 if (initialTemplate) activateTemplate(initialTemplate);
+
+if (params.get("showcase") === "1") {
+  document.body.classList.add("showcase-mode");
+}

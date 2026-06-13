@@ -188,10 +188,12 @@
           <section class="apple-hero">
             <span>New generation</span>
             <h2>One product. Maximum desire.</h2>
-            <p>Minimal product storytelling for electronics, premium gadgets, apps, high-ticket items and brands that need an Apple-like launch page.</p>
+            <p>Launch-page storytelling for electronics, premium gadgets, apps, high-ticket items and brands that need a cinematic purchase flow.</p>
             <a href="/client/setup/?guided=1&templateId=minimal-store&catalogType=editorial_minimal_grid&prompt=quiero%20una%20pagina%20tipo%20apple%20para%20producto%20premium%20minimalista">Generate Apple-style</a>
             <div class="device-orbit" aria-hidden="true">
               <i class="device-main"></i>
+              <i class="device-lens"></i>
+              <i class="device-chip"></i>
               <i class="device-shadow"></i>
             </div>
           </section>
@@ -217,6 +219,9 @@
             <div class="search-bar">Search products, brands and categories</div>
             <a href="/client/setup/?guided=1&templateId=marketplace-style&catalogType=dense_marketplace_catalog&prompt=quiero%20un%20marketplace%20tipo%20amazon%20con%20muchas%20categorias%20filtros%20y%20productos">Use template</a>
           </header>
+          <div class="market-strip">
+            <span>All</span><span>Today's Deals</span><span>Best Sellers</span><span>New Releases</span><span>Gift Cards</span><span>Customer Service</span>
+          </div>
 
           <section class="market-layout">
             <aside class="market-sidebar">
@@ -234,7 +239,12 @@
                   <h2>High-volume catalog with discovery built in.</h2>
                   <p>For businesses with many SKUs, categories, filters, promos, bundles and repeat buyers.</p>
                 </div>
-                <div class="deal-card"><strong>Today Deals</strong><span>Up to 38% off</span></div>
+                <div class="deal-card"><strong>Today Deals</strong><span>Up to 38% off</span><small>Lightning offers, bundles and coupons.</small></div>
+              </section>
+              <section class="market-promos">
+                <article><strong>Electronics</strong><span>Smart setups</span></article>
+                <article><strong>Home refresh</strong><span>Room bundles</span></article>
+                <article><strong>Beauty picks</strong><span>Trending now</span></article>
               </section>
               <div class="market-toolbar">
                 <span>Sort: Featured</span>
@@ -253,12 +263,17 @@
 
         <article class="template-preview ebay-template" id="ebay" aria-label="eBay-style listings template">
           <header class="listing-nav">
-            <strong>Listora</strong>
+            <strong><b>L</b><b>i</b><b>s</b><b>t</b><b>o</b><b>r</b><b>a</b></strong>
             <span>Saved</span>
             <span>Messages</span>
             <span>Sellers</span>
             <a href="/client/setup/?guided=1&templateId=classified-marketplace&catalogType=listing_marketplace_catalog&prompt=quiero%20un%20marketplace%20tipo%20ebay%20con%20vendedores%20listings%20ofertas%20y%20productos%20usados">Use template</a>
           </header>
+          <section class="listing-searchbar">
+            <div>Search for anything</div>
+            <button type="button">Search</button>
+            <span>Advanced</span>
+          </section>
 
           <section class="listing-hero">
             <div>
@@ -275,8 +290,10 @@
           <section class="listing-layout">
             <aside class="listing-filters">
               <strong>Filters</strong>
+              <span class="filter-heading">Buying format</span>
               <label><input type="checkbox" checked> Buy now</label>
               <label><input type="checkbox"> Accepts offers</label>
+              <span class="filter-heading">Delivery</span>
               <label><input type="checkbox" checked> Local pickup</label>
               <label><input type="checkbox"> Certified seller</label>
             </aside>
