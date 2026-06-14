@@ -1239,6 +1239,7 @@ async function sendGuidedReply() {
     const publicAssistantMessage = result.used_dev_fallback
       ? `${t("localFallbackMessage")} ${nextQuestion || guidedQuestion(guidedStep)}`
       : combinedAssistantMessage;
+    appendUnderstandingCard({ updates: { ...broadLocalUpdates, ...updatedFields }, sourceMessage: message });
     appendChatMessage("assistant", publicAssistantMessage, result.used_dev_fallback ? "alert" : emotion);
     guidedStatusText.textContent = result.used_dev_fallback
       ? t("devFallbackMissingKey")
@@ -1253,6 +1254,7 @@ async function sendGuidedReply() {
       "alert",
     );
     console.warn("Luma intake assistant request failed; continuing locally.", error);
+    appendUnderstandingCard({ updates, sourceMessage: message });
     appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
     guidedStatusText.textContent = t("localFallback");
   }
@@ -1277,6 +1279,7 @@ async function handleWebsiteIntentAnswer(message) {
     if (!guidedState.preferredTone) guidedState.preferredTone = extractStyleHint(message);
     appendTemplateDetectionMessage(selection);
     guidedStep = nextGuidedStep("websiteIntent");
+    appendUnderstandingCard({ updates: inferGuidedUpdatesFromAnyMessage(message), sourceMessage: message });
     appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
     guidedStatusText.textContent = langText({
       en: "Template detected. Let us continue with the business details.",
@@ -1289,6 +1292,7 @@ async function handleWebsiteIntentAnswer(message) {
     guidedStep = nextGuidedStep("websiteIntent");
     appendChatMessage("assistant", t("localFallbackMessage"), "alert");
     console.warn("Luma template intent detection failed; continuing locally.", error);
+    appendUnderstandingCard({ updates: inferGuidedUpdatesFromAnyMessage(message), sourceMessage: message });
     appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
     guidedStatusText.textContent = t("localFallback");
   }
@@ -1346,6 +1350,34 @@ function letAiDecide(field) {
 
 function insertQuickChip(value) {
   const translated = translateChip(value);
+  if (value === "Yes, correct") {
+    guidedStep = missingGuidedSteps()[0] || "review";
+    appendChatMessage("user", translated);
+    appendChatMessage("assistant", guidedQuestion(guidedStep), guidedStep === "review" ? "success" : "speaking");
+    renderGuidedSummary();
+    refreshQuickChips();
+    return;
+  }
+  if (value === "Change style") {
+    guidedStep = "preferredTone";
+    guidedReply.value = "";
+    appendChatMessage("user", translated);
+    appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
+    renderGuidedSummary();
+    refreshQuickChips();
+    guidedReply.focus();
+    return;
+  }
+  if (value === "Upload logo") {
+    guidedLogoUpload.click();
+    return;
+  }
+  if (value === "Generate now") {
+    guidedStep = "review";
+    renderGuidedSummary();
+    handleGuidedGenerateButton();
+    return;
+  }
   if (value === "Use my logo colors") {
     guidedReply.value = translated;
     updateAssetPromptVisibility();
@@ -1365,6 +1397,7 @@ function refreshQuickChips() {
     preferredColors: ["Let AI choose", "Use my logo colors", "I have specific colors"],
     salesMode: ["Sell online", "Request quotes", "Calls/messages", "All of the above", "Not sure"],
     targetAudience: ["Local customers", "Families", "Professionals", "Businesses", "Let AI decide"],
+    review: ["Yes, correct", "Change style", "Upload logo", "Generate now"],
   };
   const chips = chipsByStep[guidedStep] || [];
   quickChipRow.innerHTML = chips
@@ -1386,6 +1419,81 @@ function shouldShowAssetPrompt() {
 
 function updateAssetPromptVisibility() {
   guidedAssetPrompt?.classList.toggle("active", shouldShowAssetPrompt());
+}
+
+function appendUnderstandingCard({ updates = {}, sourceMessage = "" } = {}) {
+  const filledItems = understandingItems().filter((item) => item.status === "detected");
+  const missingItems = understandingItems().filter((item) => item.status === "missing");
+  const changedKeys = Object.keys(updates || {}).filter((key) => key in guidedState);
+  if (filledItems.length < 2 && changedKeys.length < 2 && !isRichIntakeMessage(sourceMessage)) return;
+
+  const card = document.createElement("div");
+  card.className = "chat-understanding-card";
+  const heading = document.createElement("strong");
+  heading.textContent = langText({
+    en: "This is what I understood",
+    es: "Esto es lo que entendí",
+    fr: "Voici ce que j'ai compris",
+    pt: "Foi isso que entendi",
+  });
+  const grid = document.createElement("div");
+  grid.className = "understanding-grid";
+  understandingItems()
+    .filter((item) => item.status === "detected" || item.priority)
+    .slice(0, 8)
+    .forEach((item) => {
+      const pill = document.createElement("span");
+      pill.className = `understanding-pill ${item.status}`;
+      pill.textContent = item.value ? `${item.label}: ${item.value}` : item.label;
+      grid.appendChild(pill);
+    });
+  const footer = document.createElement("p");
+  footer.textContent = missingItems.length
+    ? langText({
+        en: `Still useful to know: ${missingItems.slice(0, 3).map((item) => item.label).join(", ")}.`,
+        es: `Todavía sería útil saber: ${missingItems.slice(0, 3).map((item) => item.label).join(", ")}.`,
+        fr: `Il serait encore utile de connaître: ${missingItems.slice(0, 3).map((item) => item.label).join(", ")}.`,
+        pt: `Ainda seria útil saber: ${missingItems.slice(0, 3).map((item) => item.label).join(", ")}.`,
+      })
+    : langText({
+        en: "I have enough to prepare the first draft. You can review or generate.",
+        es: "Ya tengo suficiente para preparar la primera versión. Puedes revisar o generar.",
+        fr: "J'ai assez d'informations pour préparer le premier brouillon. Vous pouvez vérifier ou générer.",
+        pt: "Já tenho o suficiente para preparar o primeiro rascunho. Você pode revisar ou gerar.",
+      });
+  card.append(heading, grid, footer);
+  guidedChat.appendChild(card);
+  guidedChat.scrollTop = guidedChat.scrollHeight;
+}
+
+function understandingItems() {
+  return [
+    understandingItem("businessName", t("businessName"), guidedState.businessName, true),
+    understandingItem("websiteIntent", t("websiteIntent"), guidedState.websiteIntent || forcedTemplateSelection?.templateId, true),
+    understandingItem("industry", t("industry"), guidedState.industry, true),
+    understandingItem("location", t("location"), guidedState.location, false),
+    understandingItem("servicesProducts", t("servicesProducts"), arrayValue(guidedState.servicesProducts).slice(0, 3).join(", "), true),
+    understandingItem("preferredTone", t("preferredTone"), guidedState.preferredTone, false),
+    understandingItem("preferredColors", t("preferredColors"), arrayValue(guidedState.preferredColors).slice(0, 4).join(", "), false),
+    understandingItem("salesMode", t("salesMode"), guidedState.salesMode, false),
+    understandingItem("contactInfo", t("contactInfo"), contactInfoCompactLabel(guidedState.contactInfo), true),
+    understandingItem("hasLogoPhotos", t("hasLogoPhotos"), guidedState.hasLogoPhotos || (guidedState.hasLogo ? t("logoUrl") : ""), false),
+  ];
+}
+
+function understandingItem(key, label, value, priority) {
+  return {
+    key,
+    label,
+    value,
+    priority,
+    status: value ? "detected" : "missing",
+  };
+}
+
+function contactInfoCompactLabel(value) {
+  const keys = Object.keys(value || {}).filter((key) => value[key]);
+  return keys.slice(0, 3).join(", ");
 }
 
 function translateChip(value) {
@@ -1417,6 +1525,10 @@ function translateChip(value) {
       Families: "Familias",
       Professionals: "Profesionales",
       Businesses: "Empresas",
+      "Yes, correct": "Sí, correcto",
+      "Change style": "Cambiar estilo",
+      "Upload logo": "Subir logo",
+      "Generate now": "Generar ya",
     },
     fr: {
       Elegant: "Élégant",
@@ -1439,6 +1551,10 @@ function translateChip(value) {
       Families: "Familles",
       Professionals: "Professionnels",
       Businesses: "Entreprises",
+      "Yes, correct": "Oui, c'est correct",
+      "Change style": "Changer le style",
+      "Upload logo": "Importer un logo",
+      "Generate now": "Générer maintenant",
     },
     pt: {
       Elegant: "Elegante",
@@ -1461,6 +1577,10 @@ function translateChip(value) {
       Families: "Famílias",
       Professionals: "Profissionais",
       Businesses: "Empresas",
+      "Yes, correct": "Sim, correto",
+      "Change style": "Mudar estilo",
+      "Upload logo": "Enviar logo",
+      "Generate now": "Gerar agora",
     },
   };
   return dictionary[selectedLanguage]?.[value] || value;
@@ -1762,7 +1882,7 @@ function renderGuidedSummary() {
   document.body.classList.toggle("final-review-mode", isFinalReview);
   guidedGenerateButton.textContent = isFinalReview ? t("generateMyWebsite") : t("reviewGenerate");
   currentInfoPreview.textContent = compactCollectedPreview();
-  currentInfoMeta.textContent = `${guidedCompletionPercent()}%`;
+  currentInfoMeta.textContent = conversationProgressLabel();
   renderAssetPreviews();
   renderSelectedDomainState();
   updateAssetPromptVisibility();
@@ -1921,6 +2041,24 @@ function compactCollectedPreview() {
     arrayValue(guidedState.servicesProducts).slice(0, 2).join(", "),
   ].filter(Boolean);
   return parts.length ? parts.join(" · ") : t("currentInfo");
+}
+
+function conversationProgressLabel() {
+  const missing = missingGuidedSteps();
+  if (!missing.length) {
+    return langText({
+      en: `${guidedCompletionPercent()}% · ready to review`,
+      es: `${guidedCompletionPercent()}% · listo para revisar`,
+      fr: `${guidedCompletionPercent()}% · prêt à vérifier`,
+      pt: `${guidedCompletionPercent()}% · pronto para revisar`,
+    });
+  }
+  return langText({
+    en: `${guidedCompletionPercent()}% · missing ${missing.length}`,
+    es: `${guidedCompletionPercent()}% · faltan ${missing.length}`,
+    fr: `${guidedCompletionPercent()}% · ${missing.length} manquant(s)`,
+    pt: `${guidedCompletionPercent()}% · faltam ${missing.length}`,
+  });
 }
 
 function syncGuidedStateFromSummary() {
