@@ -73,13 +73,13 @@ const I18N = {
     reviewDetails: "Review brief",
     selectedLanguage: "Selected language",
     businessName: "Client/business name",
-    businessDescription: "Business description",
+    businessDescription: "Business/design context",
     industry: "Industry",
     location: "Location",
     servicesProducts: "Services/products",
     targetAudience: "Target audience",
     preferredTone: "Preferred tone/style",
-    preferredColors: "Preferred colors",
+    preferredColors: "Colors or logo",
     contactInfo: "Contact info",
     desiredDomain: "Desired domain",
     checkDomain: "Check domain availability",
@@ -91,6 +91,8 @@ const I18N = {
     uploadLogo: "Upload logo optional",
     photoUrls: "Photo URLs optional",
     uploadPhotos: "Upload photos optional",
+    assetPromptTitle: "Logo and photos",
+    assetPromptText: "Upload them here and Luma can use them for the draft.",
     salesMode: "Sales flow",
     hasLogoPhotos: "Logo/photos",
     websiteIntent: "Website type",
@@ -116,7 +118,7 @@ const I18N = {
     summaryUpdated: "Details updated.",
     devFallbackMissingKey: "Luma is using a simplified response while the AI service finishes connecting.",
     localFallback: "Answer saved. Continuing with the setup.",
-    localFallbackMessage: "I saved your answer and will keep going.",
+    localFallbackMessage: "Got it. I saved that detail and will keep going.",
     savingRequest: "Saving completed intake as client_request...",
     requestNotSaved: "Saved in this browser session. You can still generate your website draft.",
     generatedOpenAI: "Generated with OpenAI through the backend.",
@@ -159,13 +161,13 @@ const I18N = {
     reviewDetails: "Revisar resumen",
     selectedLanguage: "Idioma seleccionado",
     businessName: "Nombre del negocio",
-    businessDescription: "Descripcion del negocio",
+    businessDescription: "Contexto del negocio",
     industry: "Industria",
     location: "Ubicacion",
     servicesProducts: "Productos/servicios",
     targetAudience: "Audiencia objetivo",
     preferredTone: "Tono/estilo preferido",
-    preferredColors: "Colores preferidos",
+    preferredColors: "Colores o logo",
     contactInfo: "Informacion de contacto",
     desiredDomain: "Dominio deseado",
     checkDomain: "Verificar disponibilidad",
@@ -177,6 +179,8 @@ const I18N = {
     uploadLogo: "Subir logo opcional",
     photoUrls: "URLs de fotos opcionales",
     uploadPhotos: "Subir fotos opcional",
+    assetPromptTitle: "Logo y fotos",
+    assetPromptText: "Súbelos aquí y Luma los usará para diseñar la primera versión.",
     salesMode: "Flujo de venta",
     hasLogoPhotos: "Logo/fotos",
     websiteIntent: "Tipo de sitio",
@@ -202,7 +206,7 @@ const I18N = {
     summaryUpdated: "Detalles actualizados.",
     devFallbackMissingKey: "Luma está usando una respuesta simplificada mientras el servicio de IA termina de conectar.",
     localFallback: "Respuesta guardada. Seguimos con la configuración.",
-    localFallbackMessage: "Guardé tu respuesta y seguimos avanzando.",
+    localFallbackMessage: "Listo. Guardé ese detalle y seguimos avanzando.",
     savingRequest: "Guardando intake completado como client_request...",
     requestNotSaved: "Guardado en esta sesión del navegador. Igual puedes generar tu primera versión.",
     generatedOpenAI: "Generado con OpenAI desde el backend.",
@@ -263,6 +267,8 @@ const I18N = {
     uploadLogo: "Importer un logo optionnel",
     photoUrls: "URLs de photos optionnelles",
     uploadPhotos: "Importer des photos optionnelles",
+    assetPromptTitle: "Logo et photos",
+    assetPromptText: "Importez-les ici et Luma les utilisera pour le brouillon.",
     salesMode: "Parcours de vente",
     hasLogoPhotos: "Logo/photos",
     websiteIntent: "Type de site",
@@ -349,6 +355,8 @@ const I18N = {
     uploadLogo: "Enviar logo opcional",
     photoUrls: "URLs de fotos opcionais",
     uploadPhotos: "Enviar fotos opcionais",
+    assetPromptTitle: "Logo e fotos",
+    assetPromptText: "Envie aqui e a Luma usará no primeiro rascunho.",
     salesMode: "Fluxo de venda",
     hasLogoPhotos: "Logo/fotos",
     websiteIntent: "Tipo de site",
@@ -398,15 +406,15 @@ const GUIDED_QUESTIONS = {
   en: {
     websiteIntent: "What kind of website do you want to create?",
     businessName: "First, what is the name of your business?",
-    businessDescription: "Tell me in one sentence what it sells or does.",
+    businessDescription: "To understand the direction, tell me what the business sells or does. I will use this as design context, not as text to copy literally.",
     industry: "What industry or category best fits it?",
     location: "Where is it located or where does it serve customers?",
     servicesProducts: "Which main products or services should the site show?",
     targetAudience: "Who is the main customer? You can also let AI decide.",
     preferredTone: "What style should it feel like: elegant, modern, friendly, premium? Or should AI decide?",
-    preferredColors: "Any preferred colors? You can write words like luxury, pastel, neon, or let AI decide.",
+    preferredColors: "Any preferred colors, or do you want to upload a logo so I can extract a palette from it?",
     contactInfo: "What contact details should appear: email, phone, Instagram, or WhatsApp?",
-    salesMode: "Should the site support online sales, quote requests, or both?",
+    salesMode: "Should the site support online sales, quote requests, in-person visits, or a mix?",
     hasLogoPhotos: "Do you have a logo or photos ready to use?",
     desiredDomain: "What domain would you like? You can write a name like lunastore.com or skip it for now.",
     review: "Review the summary. If it looks right, generate the site.",
@@ -414,15 +422,15 @@ const GUIDED_QUESTIONS = {
   es: {
     websiteIntent: "Que tipo de pagina quieres crear?",
     businessName: "Primero, ¿cómo se llama tu negocio?",
-    businessDescription: "Perfecto. ¿Qué vende o qué ofrece tu negocio?",
+    businessDescription: "Para entender la dirección, dime qué vende u ofrece tu negocio. Lo usaré como contexto de diseño, no como texto literal para poner en la página.",
     industry: "En que industria o categoria lo pondrias?",
     location: "Donde atiende o donde esta ubicado?",
     servicesProducts: "Que productos o servicios principales quieres mostrar?",
     targetAudience: "A quien le vendes principalmente? Tambien puedes dejar que IA decida.",
     preferredTone: "Que estilo quieres: elegante, moderno, cercano, premium? O dejo que IA decida?",
-    preferredColors: "Tienes colores preferidos? Puedes escribir lujo, pastel, neon, o dejar que IA decida.",
+    preferredColors: "¿Tienes colores preferidos o quieres subir un logo para sacar una paleta desde ahí?",
     contactInfo: "Que contacto quieres mostrar: email, telefono, Instagram o WhatsApp?",
-    salesMode: "Quieres ventas online, solicitudes de cotizacion, o ambos?",
+    salesMode: "¿Quieres ventas online, solicitudes de cotización, visitas presenciales o una mezcla?",
     hasLogoPhotos: "Tienes logo o fotos listas para usar?",
     desiredDomain: "Que dominio te gustaria? Puedes escribir algo como lunastore.com o saltarlo por ahora.",
     review: "Revisa el resumen. Si esta bien, genera el sitio.",
@@ -430,15 +438,15 @@ const GUIDED_QUESTIONS = {
   fr: {
     websiteIntent: "Quel type de site voulez-vous creer?",
     businessName: "Quel est le nom de l'entreprise?",
-    businessDescription: "Décrivez en une phrase ce qu'elle vend ou propose.",
+    businessDescription: "Pour comprendre la direction, dites-moi ce que l'entreprise vend ou propose. Je l'utiliserai comme contexte de design, pas comme texte à copier tel quel.",
     industry: "Dans quel secteur ou catégorie la placeriez-vous?",
     location: "Où se trouve-t-elle ou où sert-elle ses clients?",
     servicesProducts: "Quels produits ou services principaux faut-il afficher?",
     targetAudience: "Qui est le client principal? Vous pouvez aussi laisser l'IA décider.",
     preferredTone: "Quel style voulez-vous: élégant, moderne, chaleureux, premium? Ou l'IA décide?",
-    preferredColors: "Des couleurs préférées? Vous pouvez écrire luxe, pastel, néon, ou laisser l'IA décider.",
+    preferredColors: "Avez-vous des couleurs préférées, ou voulez-vous importer un logo pour que j'en extraie une palette?",
     contactInfo: "Quelles coordonnées afficher: email, téléphone, Instagram ou WhatsApp?",
-    salesMode: "Le site doit-il proposer la vente en ligne, les demandes de devis, ou les deux?",
+    salesMode: "Le site doit-il proposer la vente en ligne, les demandes de devis, les visites en personne, ou un mélange?",
     hasLogoPhotos: "Avez-vous un logo ou des photos prêts à utiliser?",
     desiredDomain: "Quel domaine souhaitez-vous? Vous pouvez écrire lunastore.com ou ignorer pour l'instant.",
     review: "Vérifiez le résumé. Si tout est bon, générez le site.",
@@ -446,15 +454,15 @@ const GUIDED_QUESTIONS = {
   pt: {
     websiteIntent: "Que tipo de site voce quer criar?",
     businessName: "Qual é o nome do negócio?",
-    businessDescription: "Conte em uma frase o que ele vende ou faz.",
+    businessDescription: "Para entender a direção, diga o que o negócio vende ou oferece. Vou usar isso como contexto de design, não como texto literal para o site.",
     industry: "Em qual setor ou categoria ele se encaixa?",
     location: "Onde fica ou onde atende clientes?",
     servicesProducts: "Quais produtos ou serviços principais devem aparecer?",
     targetAudience: "Quem é o cliente principal? Você também pode deixar a IA decidir.",
     preferredTone: "Qual estilo você quer: elegante, moderno, próximo, premium? Ou a IA decide?",
-    preferredColors: "Tem cores preferidas? Pode escrever luxo, pastel, neon, ou deixar a IA decidir.",
+    preferredColors: "Tem cores preferidas, ou quer enviar um logo para eu extrair uma paleta dele?",
     contactInfo: "Quais contatos devem aparecer: email, telefone, Instagram ou WhatsApp?",
-    salesMode: "O site deve aceitar vendas online, pedidos de orçamento, ou ambos?",
+    salesMode: "O site deve aceitar vendas online, pedidos de orçamento, visitas presenciais, ou uma mistura?",
     hasLogoPhotos: "Você tem logo ou fotos prontas para usar?",
     desiredDomain: "Qual domínio você gostaria? Pode escrever lunastore.com ou pular por enquanto.",
     review: "Revise o resumo. Se estiver certo, gere o site.",
@@ -489,6 +497,7 @@ let guidedState = {
   contactInfo: {},
   logoUrl: "",
   photoUrls: [],
+  logoPalette: [],
   selectedLanguage,
   hasLogo: false,
   hasPhotos: false,
@@ -570,6 +579,9 @@ const guidedLogoUpload = document.querySelector("#guidedLogoUpload");
 const guidedPhotoUpload = document.querySelector("#guidedPhotoUpload");
 const guidedLogoPreview = document.querySelector("#guidedLogoPreview");
 const guidedPhotoPreview = document.querySelector("#guidedPhotoPreview");
+const guidedAssetPrompt = document.querySelector("#guidedAssetPrompt");
+const chatLogoUploadButton = document.querySelector("#chatLogoUploadButton");
+const chatPhotoUploadButton = document.querySelector("#chatPhotoUploadButton");
 const checkDomainButton = document.querySelector("#checkDomainButton");
 const domainCheckStatus = document.querySelector("#domainCheckStatus");
 const domainResults = document.querySelector("#domainResults");
@@ -655,6 +667,7 @@ guidedReply.addEventListener("keydown", (event) => {
     sendGuidedReply();
   }
 });
+guidedReply.addEventListener("input", updateAssetPromptVisibility);
 builderAvatarManager?.bindTyping(guidedReply);
 document.querySelectorAll("[data-ai-decide]").forEach((button) => {
   button.addEventListener("click", () => letAiDecide(button.dataset.aiDecide));
@@ -667,6 +680,8 @@ quickChipRow.querySelectorAll("[data-chip]").forEach((button) => {
 });
 guidedLogoUpload.addEventListener("change", handleGuidedLogoUpload);
 guidedPhotoUpload.addEventListener("change", handleGuidedPhotoUpload);
+chatLogoUploadButton?.addEventListener("click", () => guidedLogoUpload.click());
+chatPhotoUploadButton?.addEventListener("click", () => guidedPhotoUpload.click());
 guidedMicButton.addEventListener("click", startVoiceInput);
 languageSelector.addEventListener("change", () => setSelectedLanguage(languageSelector.value));
 summaryLanguageSelector.addEventListener("change", () => setSelectedLanguage(summaryLanguageSelector.value));
@@ -1038,6 +1053,7 @@ function restoreGuidedDraft() {
         servicesProducts: arrayValue(draft.guidedState.servicesProducts),
         preferredColors: arrayValue(draft.guidedState.preferredColors),
         photoUrls: arrayValue(draft.guidedState.photoUrls),
+        logoPalette: arrayValue(draft.guidedState.logoPalette),
         contactInfo: draft.guidedState.contactInfo || {},
       };
     }
@@ -1096,33 +1112,42 @@ async function sendGuidedReply() {
     await handleWebsiteIntentAnswer(message);
     return;
   }
-  if (guidedStep === "review" && currentSchema) {
+  if (guidedStep === "review") {
     const adjustmentLabel = langText({
       en: "Client requested adjustments",
       es: "Ajustes pedidos por el cliente",
       fr: "Ajustements demandés par le client",
       pt: "Ajustes solicitados pelo cliente",
     });
-    guidedState.revisionMode = "targeted_edit";
+    if (currentSchema) {
+      guidedState.revisionMode = "targeted_edit";
+    }
     guidedState.requestedAdjustments = [
       ...arrayValue(guidedState.requestedAdjustments),
       `${adjustmentLabel}: ${message}`,
     ];
     appendChatMessage(
       "assistant",
-      langText({
-        en: "Perfect, I added those adjustments to the brief. Press “Generate my website” to create a new version with those changes.",
-        es: "Perfecto, ya agregué esos ajustes al brief. Presiona “Generar mi página” para crear una nueva versión con esos cambios.",
-        fr: "Parfait, j'ai ajouté ces ajustements au brief. Appuyez sur « Générer mon site » pour créer une nouvelle version.",
-        pt: "Perfeito, adicionei esses ajustes ao briefing. Pressione “Gerar meu site” para criar uma nova versão.",
-      }),
+      currentSchema
+        ? langText({
+            en: "Perfect, I added those adjustments to the brief. Press “Generate my website” to create a new version with only those changes.",
+            es: "Perfecto, ya agregué esos ajustes al brief. Presiona “Generar mi página” para crear una nueva versión cambiando solo eso.",
+            fr: "Parfait, j'ai ajouté ces ajustements au brief. Appuyez sur « Générer mon site » pour créer une version qui change seulement cela.",
+            pt: "Perfeito, adicionei esses ajustes ao briefing. Pressione “Gerar meu site” para criar uma versão mudando apenas isso.",
+          })
+        : langText({
+            en: "Perfect, I added that to the brief. Anything else you want to change or add before I generate?",
+            es: "Perfecto, agregué eso al brief. ¿Quieres modificar algo más o agregar otro detalle antes de generar?",
+            fr: "Parfait, j'ai ajouté cela au brief. Voulez-vous modifier ou ajouter autre chose avant de générer?",
+            pt: "Perfeito, adicionei isso ao briefing. Quer mudar ou adicionar mais alguma coisa antes de gerar?",
+          }),
       "success",
     );
     guidedStatusText.textContent = langText({
-      en: "Adjustments ready to regenerate.",
-      es: "Ajustes listos para regenerar.",
-      fr: "Ajustements prêts pour régénération.",
-      pt: "Ajustes prontos para gerar novamente.",
+      en: "Extra details saved.",
+      es: "Detalles adicionales guardados.",
+      fr: "Détails supplémentaires enregistrés.",
+      pt: "Detalhes adicionais salvos.",
     });
     renderGuidedSummary();
     refreshQuickChips();
@@ -1153,12 +1178,17 @@ async function sendGuidedReply() {
     guidedHistory.push({ role: "user", content: message });
     guidedHistory.push({ role: "assistant", content: assistantMessage });
     mergeGuidedUpdates(updatedFields);
-    guidedStep = result.next_step || nextGuidedStep(guidedStep);
+    const serverNextStep = result.next_step || nextGuidedStep(guidedStep);
+    guidedStep = normalizeNextGuidedStep(serverNextStep);
     if (result.readyToGenerate) guidedStep = "review";
-    const nextQuestion = result.nextQuestion || result.next_question;
+    const serverNextQuestion = result.nextQuestion || result.next_question;
+    const nextQuestion = guidedStep !== serverNextStep ? guidedQuestion(guidedStep) : serverNextQuestion;
     const combinedAssistantMessage =
       nextQuestion && nextQuestion !== assistantMessage ? `${assistantMessage} ${nextQuestion}` : assistantMessage;
-    appendChatMessage("assistant", combinedAssistantMessage, result.used_dev_fallback ? "alert" : emotion);
+    const publicAssistantMessage = result.used_dev_fallback
+      ? `${t("localFallbackMessage")} ${nextQuestion || guidedQuestion(guidedStep)}`
+      : combinedAssistantMessage;
+    appendChatMessage("assistant", publicAssistantMessage, result.used_dev_fallback ? "alert" : emotion);
     guidedStatusText.textContent = result.used_dev_fallback
       ? t("devFallbackMissingKey")
       : t("summaryUpdated");
@@ -1192,7 +1222,6 @@ async function handleWebsiteIntentAnswer(message) {
     const selection = await selectTemplateFromFreeText(message);
     forcedTemplateSelection = selection;
     guidedState.websiteIntent = message;
-    if (!guidedState.businessDescription) guidedState.businessDescription = message;
     if (!guidedState.industry) guidedState.industry = inferIndustryFromPrompt(message);
     if (!guidedState.preferredTone) guidedState.preferredTone = extractStyleHint(message);
     appendTemplateDetectionMessage(selection);
@@ -1206,7 +1235,6 @@ async function handleWebsiteIntentAnswer(message) {
     });
   } catch (error) {
     guidedState.websiteIntent = message;
-    guidedState.businessDescription = guidedState.businessDescription || message;
     guidedStep = "businessName";
     appendChatMessage("assistant", t("localFallbackMessage"), "alert");
     console.warn("Luma template intent detection failed; continuing locally.", error);
@@ -1267,7 +1295,15 @@ function letAiDecide(field) {
 
 function insertQuickChip(value) {
   const translated = translateChip(value);
+  if (value === "Use my logo colors") {
+    guidedReply.value = translated;
+    updateAssetPromptVisibility();
+    guidedLogoUpload.click();
+    guidedReply.focus();
+    return;
+  }
   guidedReply.value = guidedReply.value ? `${guidedReply.value}, ${translated}` : translated;
+  updateAssetPromptVisibility();
   guidedReply.focus();
 }
 
@@ -1286,6 +1322,19 @@ function refreshQuickChips() {
   quickChipRow.querySelectorAll("[data-chip]").forEach((button) => {
     button.addEventListener("click", () => insertQuickChip(button.dataset.chip));
   });
+  updateAssetPromptVisibility();
+}
+
+function shouldShowAssetPrompt() {
+  const typed = guidedReply?.value || "";
+  return (
+    ["preferredColors", "hasLogoPhotos", "review"].includes(guidedStep) ||
+    /logo|foto|fotos|imagen|imagenes|image|photo|photos|brand|marca|color|colors/i.test(typed)
+  );
+}
+
+function updateAssetPromptVisibility() {
+  guidedAssetPrompt?.classList.toggle("active", shouldShowAssetPrompt());
 }
 
 function translateChip(value) {
@@ -1371,8 +1420,32 @@ async function handleGuidedLogoUpload() {
   if (!file) return;
   guidedState.logoUrl = await fileToDataUrl(file);
   guidedState.hasLogo = true;
+  const palette = await extractPaletteFromDataUrl(guidedState.logoUrl);
+  guidedState.logoPalette = palette;
+  if (palette.length) {
+    guidedState.preferredColors = palette;
+  }
   guidedState.hasLogoPhotos = guidedState.hasPhotos ? "Logo and photos uploaded" : "Logo uploaded";
+  appendChatMessage(
+    "assistant",
+    palette.length
+      ? langText({
+          en: `Nice. I extracted this palette from the logo: ${palette.join(", ")}. I will use it as visual direction, not as page text.`,
+          es: `Listo. Saqué esta paleta del logo: ${palette.join(", ")}. La usaré como dirección visual, no como texto de la página.`,
+          fr: `Parfait. J'ai extrait cette palette du logo: ${palette.join(", ")}. Je l'utiliserai comme direction visuelle, pas comme texte du site.`,
+          pt: `Pronto. Extraí esta paleta do logo: ${palette.join(", ")}. Vou usá-la como direção visual, não como texto do site.`,
+        })
+      : langText({
+          en: "Logo uploaded. I will use it as visual direction for the draft.",
+          es: "Logo subido. Lo usaré como referencia visual para la primera versión.",
+          fr: "Logo importé. Je l'utiliserai comme référence visuelle pour la première version.",
+          pt: "Logo enviado. Vou usá-lo como referência visual para o primeiro rascunho.",
+        }),
+    "success",
+  );
   renderGuidedSummary();
+  refreshQuickChips();
+  saveGuidedDraft();
 }
 
 async function handleGuidedPhotoUpload() {
@@ -1385,7 +1458,81 @@ async function handleGuidedPhotoUpload() {
   guidedState.photoUrls = [...arrayValue(guidedState.photoUrls), ...urls];
   guidedState.hasPhotos = true;
   guidedState.hasLogoPhotos = guidedState.hasLogo ? "Logo and photos uploaded" : "Photos uploaded";
+  appendChatMessage(
+    "assistant",
+    langText({
+      en: "Photos uploaded. I will use them to make the draft feel closer to the real business.",
+      es: "Fotos subidas. Las usaré para que la primera versión se sienta más cercana al negocio real.",
+      fr: "Photos importées. Je les utiliserai pour rapprocher le brouillon du vrai business.",
+      pt: "Fotos enviadas. Vou usá-las para deixar o rascunho mais próximo do negócio real.",
+    }),
+    "success",
+  );
   renderGuidedSummary();
+  saveGuidedDraft();
+}
+
+async function extractPaletteFromDataUrl(dataUrl) {
+  if (!dataUrl || !dataUrl.startsWith("data:image")) return [];
+  const image = await loadImage(dataUrl);
+  const canvas = document.createElement("canvas");
+  const size = 96;
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return [];
+  context.drawImage(image, 0, 0, size, size);
+  const pixels = context.getImageData(0, 0, size, size).data;
+  const buckets = new Map();
+  for (let i = 0; i < pixels.length; i += 16) {
+    const r = pixels[i];
+    const g = pixels[i + 1];
+    const b = pixels[i + 2];
+    const a = pixels[i + 3];
+    if (a < 150) continue;
+    const brightness = (r + g + b) / 3;
+    if (brightness > 244 || brightness < 18) continue;
+    const saturation = Math.max(r, g, b) - Math.min(r, g, b);
+    if (saturation < 18 && brightness > 210) continue;
+    const key = [r, g, b].map((channel) => Math.round(channel / 24) * 24).join(",");
+    buckets.set(key, (buckets.get(key) || 0) + 1);
+  }
+  return Array.from(buckets.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([key]) => key.split(",").map(Number))
+    .reduce((palette, rgb) => {
+      if (palette.length >= 5) return palette;
+      const isDifferent = palette.every((hex) => colorDistance(rgb, hexToRgb(hex)) > 54);
+      if (isDifferent) palette.push(rgbToHex(...rgb));
+      return palette;
+    }, []);
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+function rgbToHex(r, g, b) {
+  return `#${[r, g, b].map((value) => Math.max(0, Math.min(255, value)).toString(16).padStart(2, "0")).join("")}`;
+}
+
+function hexToRgb(hex) {
+  const normalized = String(hex || "").replace("#", "");
+  if (normalized.length !== 6) return [0, 0, 0];
+  return [0, 2, 4].map((index) => parseInt(normalized.slice(index, index + 2), 16));
+}
+
+function colorDistance(a, b) {
+  return Math.sqrt(
+    Math.pow((a[0] || 0) - (b[0] || 0), 2) +
+      Math.pow((a[1] || 0) - (b[1] || 0), 2) +
+      Math.pow((a[2] || 0) - (b[2] || 0), 2),
+  );
 }
 
 function renderAssetPreviews() {
@@ -1456,7 +1603,9 @@ function normalizeGuidedStateBeforeGenerate() {
   guidedState.preferredTone = guidedState.preferredTone || t("letAiDecide");
   guidedState.preferredColors = arrayValue(guidedState.preferredColors).length
     ? arrayValue(guidedState.preferredColors)
-    : [t("letAiDecide")];
+    : arrayValue(guidedState.logoPalette).length
+      ? arrayValue(guidedState.logoPalette)
+      : [t("letAiDecide")];
   guidedState.contactInfo = guidedState.contactInfo || {};
   guidedState.salesMode = guidedState.salesMode || t("letAiDecide");
   if (!guidedState.industry || guidedState.industry === t("generalBusiness")) {
@@ -1565,6 +1714,7 @@ function renderGuidedSummary() {
   currentInfoMeta.textContent = `${Math.min(100, Math.round((completedFieldCount() / 10) * 100))}%`;
   renderAssetPreviews();
   renderSelectedDomainState();
+  updateAssetPromptVisibility();
   saveGuidedDraft();
 }
 
@@ -1654,11 +1804,20 @@ function openReviewDetails() {
 
 function keepChatting() {
   document.body.classList.remove("review-details-open", "final-review-mode");
-  if (guidedStep === "review") {
-    guidedStep = "contactInfo";
-    appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
-  }
+  guidedStep = "review";
+  appendChatMessage(
+    "assistant",
+    langText({
+      en: "Sure. Do you want to change something, add something, upload a logo/photo, or clarify any detail before I generate?",
+      es: "Claro. ¿Quieres modificar algo, agregar algo, subir un logo/foto o aclarar algún detalle antes de generar?",
+      fr: "Bien sûr. Voulez-vous modifier quelque chose, ajouter un détail, importer un logo/photo, ou clarifier un point avant de générer?",
+      pt: "Claro. Quer mudar algo, adicionar algo, enviar um logo/foto, ou esclarecer algum detalhe antes de gerar?",
+    }),
+    "speaking",
+  );
+  guidedReply.focus();
   renderGuidedSummary();
+  refreshQuickChips();
 }
 
 function displayStepIndex(step) {
@@ -1742,6 +1901,7 @@ function guidedStateForApi() {
     desiredDomain: guidedState.desiredDomain,
     logoUrl,
     photoUrls,
+    logoPalette: arrayValue(guidedState.logoPalette),
     selectedLanguage,
     hasLogo: Boolean(guidedState.hasLogo || guidedState.logoUrl),
     hasPhotos: Boolean(guidedState.hasPhotos || arrayValue(guidedState.photoUrls).length),
@@ -1750,6 +1910,8 @@ function guidedStateForApi() {
     sectionsPreference: guidedState.sectionsPreference,
     source: "ai_guided_setup",
     status: "ready_to_generate",
+    brandContextNote:
+      "Intake answers describe what the client wants and should guide design strategy. Do not copy internal context literally into visible website copy unless it sounds natural for the brand.",
   };
   const revisionInstructions = buildRevisionInstructions();
   if (revisionInstructions) {
@@ -1805,7 +1967,38 @@ function setThinking(active) {
 
 function nextGuidedStep(step) {
   const index = GUIDED_STEPS.indexOf(step);
-  return GUIDED_STEPS[Math.min((index < 0 ? 0 : index) + 1, GUIDED_STEPS.length - 1)];
+  for (let i = Math.min((index < 0 ? 0 : index) + 1, GUIDED_STEPS.length - 1); i < GUIDED_STEPS.length; i += 1) {
+    const candidate = GUIDED_STEPS[i];
+    if (candidate === "review" || !isGuidedStepAnswered(candidate)) return candidate;
+  }
+  return "review";
+}
+
+function normalizeNextGuidedStep(step) {
+  const candidate = GUIDED_STEPS.includes(step) ? step : nextGuidedStep(guidedStep);
+  if (candidate === "review") return "review";
+  return isGuidedStepAnswered(candidate) ? nextGuidedStep(candidate) : candidate;
+}
+
+function isGuidedStepAnswered(step) {
+  if (step === "websiteIntent") return Boolean(guidedState.websiteIntent);
+  if (step === "businessName") return Boolean(guidedState.businessName);
+  if (step === "businessDescription") return Boolean(guidedState.businessDescription);
+  if (step === "industry") return Boolean(guidedState.industry);
+  if (step === "location") return Boolean(guidedState.location);
+  if (step === "servicesProducts") return arrayValue(guidedState.servicesProducts).length > 0;
+  if (step === "targetAudience") return Boolean(guidedState.targetAudience);
+  if (step === "preferredTone") return Boolean(guidedState.preferredTone);
+  if (step === "preferredColors") {
+    return arrayValue(guidedState.preferredColors).length > 0 || arrayValue(guidedState.logoPalette).length > 0;
+  }
+  if (step === "contactInfo") return Object.keys(guidedState.contactInfo || {}).length > 0;
+  if (step === "salesMode") return Boolean(guidedState.salesMode);
+  if (step === "hasLogoPhotos") {
+    return Boolean(guidedState.hasLogoPhotos || guidedState.hasLogo || guidedState.hasPhotos);
+  }
+  if (step === "desiredDomain") return Boolean(guidedState.desiredDomain);
+  return false;
 }
 
 function inferGuidedUpdates(step, message) {
@@ -2530,13 +2723,19 @@ async function collectPayload() {
     services_products: splitCommaOrLines(data.get("services_products")?.toString() || ""),
     target_audience: data.get("target_audience")?.toString().trim(),
     preferred_tone: data.get("preferred_tone")?.toString().trim(),
-    preferred_colors: splitCommaOrLines(data.get("preferred_colors")?.toString() || ""),
+    preferred_colors: splitCommaOrLines(data.get("preferred_colors")?.toString() || "").length
+      ? splitCommaOrLines(data.get("preferred_colors")?.toString() || "")
+      : arrayValue(guidedState.logoPalette),
     contact_info: contactInfo,
     desiredDomain: data.get("desired_domain")?.toString().trim() || guidedState.desiredDomain || "",
     selectedLanguage,
     request_id: currentRequestId,
     catalog_items: catalogItemsFromForm(),
     assets,
+    logoPalette: arrayValue(guidedState.logoPalette),
+    requestedAdjustments: arrayValue(guidedState.requestedAdjustments),
+    brandContextNote:
+      "Intake answers are client intent and design strategy context. Use them to create polished website copy, but do not copy internal planning answers literally unless they are natural public-facing text.",
   };
   const revisionInstructions = buildRevisionInstructions();
   if (revisionInstructions) {

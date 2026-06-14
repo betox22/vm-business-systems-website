@@ -633,6 +633,62 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   font-weight: 900;
 }
 
+.guided-asset-prompt {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--line));
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 38%),
+    white;
+  padding: 10px;
+  box-shadow: 0 12px 26px rgba(21, 40, 35, 0.08);
+}
+
+.guided-asset-prompt.active {
+  display: flex;
+}
+
+.guided-asset-prompt strong,
+.guided-asset-prompt span {
+  display: block;
+}
+
+.guided-asset-prompt strong {
+  font-size: 12px;
+}
+
+.guided-asset-prompt span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.guided-asset-prompt > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .guided-asset-prompt {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .guided-asset-prompt > div:last-child {
+    justify-content: stretch;
+  }
+
+  .guided-asset-prompt button {
+    flex: 1 1 140px;
+  }
+}
+
 .let-ai-row,
 .guided-actions {
   display: flex;
