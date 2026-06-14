@@ -1157,6 +1157,8 @@ async function sendGuidedReply() {
   if (!message) return;
   appendChatMessage("user", message);
   guidedReply.value = "";
+  const broadLocalUpdates = inferGuidedUpdatesFromAnyMessage(message);
+  mergeGuidedUpdates(broadLocalUpdates);
   if (guidedStep === "websiteIntent") {
     await handleWebsiteIntentAnswer(message);
     return;
@@ -1226,7 +1228,7 @@ async function sendGuidedReply() {
     const updatedFields = result.updatedFields || result.updates || {};
     guidedHistory.push({ role: "user", content: message });
     guidedHistory.push({ role: "assistant", content: assistantMessage });
-    mergeGuidedUpdates(updatedFields);
+    mergeGuidedUpdates({ ...broadLocalUpdates, ...updatedFields });
     const serverNextStep = result.next_step || nextGuidedStep(guidedStep);
     guidedStep = normalizeNextGuidedStep(serverNextStep);
     if (result.readyToGenerate) guidedStep = "review";
@@ -1242,7 +1244,7 @@ async function sendGuidedReply() {
       ? t("devFallbackMissingKey")
       : t("summaryUpdated");
   } catch (error) {
-    const updates = inferGuidedUpdates(guidedStep, message);
+    const updates = { ...broadLocalUpdates, ...inferGuidedUpdates(guidedStep, message) };
     mergeGuidedUpdates(updates);
     guidedStep = nextGuidedStep(guidedStep);
     appendChatMessage(
@@ -1274,7 +1276,7 @@ async function handleWebsiteIntentAnswer(message) {
     if (!guidedState.industry) guidedState.industry = inferIndustryFromPrompt(message);
     if (!guidedState.preferredTone) guidedState.preferredTone = extractStyleHint(message);
     appendTemplateDetectionMessage(selection);
-    guidedStep = "businessName";
+    guidedStep = nextGuidedStep("websiteIntent");
     appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
     guidedStatusText.textContent = langText({
       en: "Template detected. Let us continue with the business details.",
@@ -1284,7 +1286,7 @@ async function handleWebsiteIntentAnswer(message) {
     });
   } catch (error) {
     guidedState.websiteIntent = message;
-    guidedStep = "businessName";
+    guidedStep = nextGuidedStep("websiteIntent");
     appendChatMessage("assistant", t("localFallbackMessage"), "alert");
     console.warn("Luma template intent detection failed; continuing locally.", error);
     appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
@@ -2082,6 +2084,182 @@ function inferGuidedUpdates(step, message) {
     desiredDomain: "desiredDomain",
   };
   return keyByStep[step] ? { [keyByStep[step]]: message } : {};
+}
+
+function inferGuidedUpdatesFromAnyMessage(message) {
+  const text = String(message || "").trim();
+  const lower = text.toLowerCase();
+  const updates = {};
+
+  if (!guidedState.websiteIntent && isRichIntakeMessage(text)) {
+    updates.websiteIntent = extractWebsiteIntent(text);
+  }
+  if (!guidedState.businessDescription && text.length > 45) {
+    updates.businessDescription = text;
+  }
+
+  const businessName = extractBusinessName(text);
+  if (businessName && !guidedState.businessName) updates.businessName = businessName;
+
+  const industry = inferIndustryFromPrompt(text);
+  if (industry && !guidedState.industry) updates.industry = industry;
+
+  const location = extractLocation(text);
+  if (location && !guidedState.location) updates.location = location;
+
+  const services = extractServicesProducts(text);
+  if (services.length && !arrayValue(guidedState.servicesProducts).length) {
+    updates.servicesProducts = services;
+  }
+
+  const audience = extractTargetAudience(text);
+  if (audience && !guidedState.targetAudience) updates.targetAudience = audience;
+
+  const tone = extractToneFromText(text);
+  if (tone && !guidedState.preferredTone) updates.preferredTone = tone;
+
+  const colors = extractColorsFromText(text);
+  if (colors.length && !arrayValue(guidedState.preferredColors).length) {
+    updates.preferredColors = colors;
+  }
+
+  const contactInfo = extractContactInfo(text);
+  if (Object.keys(contactInfo).length) {
+    updates.contactInfo = contactInfo;
+  }
+
+  const salesMode = extractSalesMode(lower);
+  if (salesMode && !guidedState.salesMode) updates.salesMode = salesMode;
+
+  if (/logo|foto|fotos|imagen|imagenes|photo|photos|image|images/.test(lower) && !guidedState.hasLogoPhotos) {
+    updates.hasLogoPhotos = langText({
+      en: "Client mentioned logo/photos",
+      es: "El cliente mencionó logo/fotos",
+      fr: "Le client a mentionné logo/photos",
+      pt: "O cliente mencionou logo/fotos",
+    });
+  }
+
+  return updates;
+}
+
+function isRichIntakeMessage(text) {
+  return text.length > 80 || /nombre|negocio|tienda|ubic|productos|servicios|contact|telefono|teléfono|whatsapp|instagram|colores|vende|ofrece|audiencia|clientes|location|products|services|email|phone|colors/i.test(text);
+}
+
+function extractWebsiteIntent(text) {
+  if (/marketplace|amazon|ebay/i.test(text)) return "Marketplace / online store";
+  if (/restaurante|restaurant|menu|menú/i.test(text)) return "Restaurant menu website";
+  if (/cita|reserva|booking|appointment/i.test(text)) return "Booking website";
+  if (/tienda|store|shop|ecommerce|venta online|vender online/i.test(text)) return "Online store";
+  if (/servicio|services|cotizacion|cotización|quote/i.test(text)) return "Service business website";
+  return text.slice(0, 180);
+}
+
+function extractBusinessName(text) {
+  const patterns = [
+    /(?:nombre(?: del negocio)?|negocio|tienda|marca|empresa)\s*(?:es|se llama|:|-)\s*([^.,;\n]+)/i,
+    /(?:business(?: name)?|store|brand|company)\s*(?:is|called|:|-)\s*([^.,;\n]+)/i,
+    /(?:se llama|called)\s+([^.,;\n]+)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match?.[1]) return cleanExtractedPhrase(match[1], 56);
+  }
+  return "";
+}
+
+function extractLocation(text) {
+  const patterns = [
+    /(?:ubicaci[oó]n|ubicado en|est[aá] en|atiende en|localidad|ciudad|zona)\s*(?:es|:|-)?\s*([^.,;\n]+)/i,
+    /(?:location|located in|serves|city|area)\s*(?:is|:|-)?\s*([^.,;\n]+)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match?.[1]) return cleanExtractedPhrase(match[1], 70);
+  }
+  return "";
+}
+
+function extractServicesProducts(text) {
+  const patterns = [
+    /(?:productos?|servicios?|vende|vendo|ofrece|ofrecemos|catalogo|cat[aá]logo)\s*(?:son|es|:|-)?\s*([^.;\n]+)/i,
+    /(?:products?|services?|sells|offers|catalog)\s*(?:are|is|:|-)?\s*([^.;\n]+)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match?.[1]) {
+      return splitCommaOrLines(match[1])
+        .map((item) => cleanExtractedPhrase(item, 48))
+        .filter((item) => item.length > 1)
+        .slice(0, 8);
+    }
+  }
+  return [];
+}
+
+function extractTargetAudience(text) {
+  const patterns = [
+    /(?:audiencia|cliente ideal|clientes?|publico|p[uú]blico|target)\s*(?:es|son|:|-)?\s*([^.;\n]+)/i,
+    /(?:for|target audience|ideal customer|customers)\s*(?:are|is|:|-)?\s*([^.;\n]+)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match?.[1]) return cleanExtractedPhrase(match[1], 90);
+  }
+  return "";
+}
+
+function extractToneFromText(text) {
+  const styleHint = extractStyleHint(text);
+  const styles = ["elegante", "moderno", "premium", "minimalista", "lujoso", "juvenil", "profesional", "futurista", "cyberpunk", "neon", "neón", "friendly", "modern", "luxury", "minimal", "bold", "clean"];
+  const found = styles.filter((style) => new RegExp(`\\b${escapeRegExp(style)}\\b`, "i").test(text));
+  return [...new Set([styleHint, ...found].filter(Boolean))].join(", ");
+}
+
+function extractColorsFromText(text) {
+  const hexColors = text.match(/#[0-9a-f]{3,8}\b/gi) || [];
+  const colorNames = [
+    "rojo", "azul", "verde", "negro", "blanco", "gris", "dorado", "amarillo", "naranja", "morado", "violeta", "rosa", "beige",
+    "red", "blue", "green", "black", "white", "gray", "grey", "gold", "yellow", "orange", "purple", "pink", "cyan",
+  ].filter((color) => new RegExp(`\\b${escapeRegExp(color)}\\b`, "i").test(text));
+  const colorPhrase = text.match(/(?:colores?|colors?|paleta|palette)\s*(?:son|es|:|-)?\s*([^.;\n]+)/i)?.[1] || "";
+  return [...new Set([...hexColors, ...splitCommaOrLines(colorPhrase), ...colorNames].map((item) => cleanExtractedPhrase(item, 32)).filter(Boolean))].slice(0, 8);
+}
+
+function extractContactInfo(text) {
+  const contact = {};
+  const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
+  if (email) contact.email = email;
+  const phone = text.match(/(?:\+?\d[\d\s().-]{7,}\d)/)?.[0];
+  if (phone) contact.phone = phone.trim();
+  const instagram = text.match(/(?:instagram|ig)\s*(?:es|:|-)?\s*(@?[a-z0-9._]+)/i)?.[1] || text.match(/@[a-z0-9._]{3,}/i)?.[0];
+  if (instagram) contact.instagram = instagram.startsWith("@") ? instagram : `@${instagram}`;
+  const whatsapp = text.match(/(?:whatsapp|wasap|wsp)\s*(?:es|:|-)?\s*([+\d][\d\s().-]{7,}\d)/i)?.[1];
+  if (whatsapp) contact.whatsapp = whatsapp.trim();
+  return contact;
+}
+
+function extractSalesMode(lower) {
+  const modes = [];
+  if (/online|ecommerce|e-commerce|env[ií]o|delivery|pago en linea|pago online|comprar/.test(lower)) modes.push(langText({ en: "online sales", es: "ventas online", fr: "vente en ligne", pt: "vendas online" }));
+  if (/presencial|tienda fisica|tienda física|in person|local|visita/.test(lower)) modes.push(langText({ en: "in-person visits", es: "visitas presenciales", fr: "visites en personne", pt: "visitas presenciais" }));
+  if (/cotizaci[oó]n|cotizar|quote|estimate|presupuesto/.test(lower)) modes.push(langText({ en: "quote requests", es: "solicitudes de cotización", fr: "demandes de devis", pt: "pedidos de orçamento" }));
+  if (/cita|reserva|booking|appointment/.test(lower)) modes.push(langText({ en: "appointments/bookings", es: "citas/reservas", fr: "rendez-vous/réservations", pt: "agendamentos/reservas" }));
+  return [...new Set(modes)].join(", ");
+}
+
+function cleanExtractedPhrase(value, maxLength) {
+  return String(value || "")
+    .replace(/^(que|de|para|with|for)\s+/i, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength)
+    .trim();
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function contactInfoToLines(value) {
