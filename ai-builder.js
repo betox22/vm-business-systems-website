@@ -484,6 +484,7 @@ let guidedHistory = [];
 let assistantState = "neutral";
 let assistantVoiceEnabled = localStorage.getItem("gnuDevAssistantVoice") === "on";
 let forcedTemplateSelection = null;
+let restoredGuidedDraftInfo = null;
 let guidedState = {
   websiteIntent: "",
   businessName: "",
@@ -692,6 +693,12 @@ window.addEventListener("load", () => {
   }
   if (isPublicClientSetup && params.get("manual") === "1") {
     switchToManualForm();
+  }
+});
+window.addEventListener("beforeunload", () => {
+  if (isPublicClientSetup) {
+    syncGuidedStateFromSummary();
+    saveGuidedDraft();
   }
 });
 
@@ -965,6 +972,9 @@ function resetAssistantConversation() {
   guidedChat.innerHTML = "";
   guidedHistory = [];
   setAssistantState("happy");
+  if (restoredGuidedDraftInfo) {
+    appendRestoredDraftMessage();
+  }
   appendChatMessage("assistant", guidedQuestion(guidedStep), "happy");
   if (guidedStep === "websiteIntent") {
     appendChatMessage(
@@ -1031,6 +1041,8 @@ function saveGuidedDraft() {
         guidedState: guidedStateForApi(),
         guidedStep,
         selectedLanguage,
+        completionPercent: guidedCompletionPercent(),
+        missingSteps: missingGuidedSteps(),
         savedAt: new Date().toISOString(),
       }),
     );
@@ -1057,10 +1069,47 @@ function restoreGuidedDraft() {
         contactInfo: draft.guidedState.contactInfo || {},
       };
     }
-    guidedStep = draft.guidedStep || guidedStep;
+    const missing = missingGuidedSteps();
+    const savedStep = draft.guidedStep || guidedStep;
+    guidedStep = savedStep === "review" && missing.length ? missing[0] : normalizeNextGuidedStep(savedStep);
+    restoredGuidedDraftInfo = {
+      savedAt: draft.savedAt || "",
+      completionPercent: guidedCompletionPercent(),
+      missing,
+    };
     applyGuidedStateToForm();
   } catch {
     localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
+  }
+}
+
+function appendRestoredDraftMessage() {
+  const missingLabels = restoredGuidedDraftInfo.missing
+    .slice(0, 3)
+    .map((step) => t(step))
+    .join(", ");
+  const savedAt = formatDraftSavedAt(restoredGuidedDraftInfo.savedAt);
+  appendChatMessage(
+    "assistant",
+    langText({
+      en: `I found your saved draft${savedAt ? ` from ${savedAt}` : ""}. It is about ${restoredGuidedDraftInfo.completionPercent}% complete${missingLabels ? `. We still need: ${missingLabels}.` : "."} You can keep going without starting over.`,
+      es: `Encontré tu borrador guardado${savedAt ? ` de ${savedAt}` : ""}. Va como en ${restoredGuidedDraftInfo.completionPercent}%${missingLabels ? `. Todavía falta: ${missingLabels}.` : "."} Puedes seguir sin empezar de cero.`,
+      fr: `J'ai trouvé votre brouillon enregistré${savedAt ? ` de ${savedAt}` : ""}. Il est complété à environ ${restoredGuidedDraftInfo.completionPercent}%${missingLabels ? `. Il manque encore: ${missingLabels}.` : "."} Vous pouvez continuer sans recommencer.`,
+      pt: `Encontrei seu rascunho salvo${savedAt ? ` de ${savedAt}` : ""}. Ele está cerca de ${restoredGuidedDraftInfo.completionPercent}% completo${missingLabels ? `. Ainda falta: ${missingLabels}.` : "."} Você pode continuar sem começar do zero.`,
+    }),
+    "success",
+  );
+}
+
+function formatDraftSavedAt(value) {
+  if (!value) return "";
+  try {
+    return new Intl.DateTimeFormat(selectedLanguage, {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date(value));
+  } catch {
+    return "";
   }
 }
 
@@ -1711,7 +1760,7 @@ function renderGuidedSummary() {
   document.body.classList.toggle("final-review-mode", isFinalReview);
   guidedGenerateButton.textContent = isFinalReview ? t("generateMyWebsite") : t("reviewGenerate");
   currentInfoPreview.textContent = compactCollectedPreview();
-  currentInfoMeta.textContent = `${Math.min(100, Math.round((completedFieldCount() / 10) * 100))}%`;
+  currentInfoMeta.textContent = `${guidedCompletionPercent()}%`;
   renderAssetPreviews();
   renderSelectedDomainState();
   updateAssetPromptVisibility();
@@ -1844,6 +1893,21 @@ function completedFieldCount() {
     Object.keys(guidedState.contactInfo || {}).length,
     guidedState.salesMode,
   ].filter(Boolean).length;
+}
+
+function missingGuidedSteps() {
+  return GUIDED_STEPS.filter((step) => {
+    if (step === "review") return false;
+    if (step === "desiredDomain") return false;
+    if (step === "hasLogoPhotos") return false;
+    return !isGuidedStepAnswered(step);
+  });
+}
+
+function guidedCompletionPercent() {
+  const trackableSteps = GUIDED_STEPS.filter((step) => !["review", "desiredDomain", "hasLogoPhotos"].includes(step));
+  const completed = trackableSteps.filter((step) => isGuidedStepAnswered(step)).length;
+  return Math.min(100, Math.round((completed / trackableSteps.length) * 100));
 }
 
 function compactCollectedPreview() {
