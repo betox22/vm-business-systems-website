@@ -2570,6 +2570,14 @@ function buildTemplateInstructions(selection) {
     name: template.name || "",
     visualDifference: template.visualDifference || "",
     aiPrompt: template.aiPrompt || "",
+    editableSlots: template.editableSlots || [],
+    copyGenerationRules: [
+      "Generate a strong brand headline, slogan, section titles, CTAs, product/service descriptions, trust copy, and footer copy from the business description.",
+      "All generated visible copy must remain editable in the JSON under section.editable, catalog_items, theme, navigation, business, or global_components.",
+      "Use businessDescription and chat intake as strategy/context, not as literal page text unless it reads naturally for a customer.",
+      "If the client gave only rough details, invent polished but safe placeholder copy that matches the selected language and mark it as editable.",
+      "Keep the selected template's layout personality and catalog model. Do not flatten every template into the same hero/grid structure.",
+    ],
     catalogType: selection?.catalogType || catalog.catalogType || "",
     catalogCardStyle: catalog.productCardStyle || "",
     collectionLayout: catalog.collectionLayout || "",
@@ -2580,7 +2588,7 @@ function buildTemplateInstructions(selection) {
     sectionOrder: sections,
     pages,
     instruction:
-      "Use this template as the structural base. Replace placeholders with the business information, keep JSON editable, and adapt colors/copy/products without flattening the unique layout pattern.",
+      "Use this template as the structural base. Replace placeholders with business-specific titles, slogans, section copy, products, services, colors, images, and CTAs. Keep every generated element editable, and preserve the unique layout pattern instead of turning all templates into the same generic page.",
   };
 }
 
@@ -2617,6 +2625,11 @@ function mergeTemplateSelectionIntoSchema(schema, selection) {
     sections: selection.template?.sections || [],
     pages: selection.template?.pages || [],
     instructions: templateInstructions,
+  };
+  schema.active_template = {
+    id: selection.templateId,
+    name: selection.template?.name || selection.templateId,
+    category: selection.template?.category || "",
   };
   schema.catalog_model = selection.template?.catalogModel || { catalogType: selection.catalogType };
   schema.layout_mode = {
@@ -3631,7 +3644,7 @@ function renderWebsite(schema, pageKey) {
   const theme = schema.theme;
   const logo = schema.global_components.logo_url;
   const layoutId = schema.layout_mode?.id || "standard";
-  const templateId = schema.active_template?.id || "standard";
+  const templateId = schema.active_template?.id || schema.selected_template?.id || "standard";
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme)}">
     <div class="rendered-page-switcher">
       <span>${escapeHtml(schema.business.name || "Website")}</span>
