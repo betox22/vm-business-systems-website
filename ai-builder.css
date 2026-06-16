@@ -635,6 +635,110 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   line-height: 1.35;
 }
 
+.template-choice-panel {
+  justify-self: start;
+  max-width: 100%;
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--line));
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 10px;
+  box-shadow: 0 16px 34px rgba(22, 39, 34, 0.08);
+}
+
+.template-choice-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.template-choice-heading strong,
+.template-choice-heading span {
+  display: block;
+}
+
+.template-choice-heading strong {
+  color: #1f332e;
+  font-size: 12px;
+}
+
+.template-choice-heading span {
+  max-width: 240px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: right;
+}
+
+.template-choice-grid {
+  display: grid;
+  grid-auto-columns: minmax(170px, 210px);
+  grid-auto-flow: column;
+  gap: 9px;
+  max-width: min(720px, 78vw);
+  overflow-x: auto;
+  padding-bottom: 3px;
+  scroll-snap-type: x proximity;
+}
+
+.template-choice-card {
+  scroll-snap-align: start;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--soft) 22%, white);
+  padding: 7px;
+  text-align: left;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.template-choice-card:hover {
+  border-color: color-mix(in srgb, var(--primary) 34%, var(--line));
+  box-shadow: 0 12px 24px rgba(22, 39, 34, 0.1);
+  transform: translateY(-1px);
+}
+
+.template-choice-card.recommended {
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--line));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.template-choice-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 8px;
+  object-fit: cover;
+  object-position: top center;
+  background: var(--soft);
+}
+
+.template-choice-card span {
+  display: inline-flex;
+  margin-top: 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 9%, white);
+  color: var(--primary);
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.template-choice-card strong {
+  display: block;
+  margin-top: 6px;
+  color: #1f332e;
+  font-size: 12px;
+}
+
+.template-choice-card small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.3;
+}
+
 .guided-thinking {
   display: none;
   align-items: center;

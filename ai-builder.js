@@ -527,6 +527,51 @@ const GUIDED_STEPS = [
   "review",
 ];
 
+const TEMPLATE_PREVIEW_CHOICES = [
+  {
+    templateId: "apple-premium-product",
+    name: "Premium Product",
+    catalogType: "editorial_minimal_grid",
+    image: "/templates-preview/screenshots/apple.png",
+    description: "Apple-style product page with spacious hero, refined copy, and premium sections.",
+  },
+  {
+    templateId: "mega-marketplace",
+    name: "Mega Marketplace",
+    catalogType: "dense_marketplace_catalog",
+    image: "/templates-preview/screenshots/amazon.png",
+    description: "Amazon-style catalog with search, categories, deals, filters, and dense products.",
+  },
+  {
+    templateId: "listing-marketplace-pro",
+    name: "Listing Marketplace",
+    catalogType: "listing_marketplace_catalog",
+    image: "/templates-preview/screenshots/ebay.png",
+    description: "eBay-style listings with sellers, item condition, offers, and comparison layout.",
+  },
+  {
+    templateId: "fashion-drop-pro",
+    name: "Fashion Drop",
+    catalogType: "lookbook_collection_catalog",
+    image: "/templates-preview/screenshots/premium.png",
+    description: "Shopify boutique style with editorial hero, collections, lookbook, and drop energy.",
+  },
+  {
+    templateId: "local-services-pro-plus",
+    name: "Local Services",
+    catalogType: "service_area_catalog",
+    image: "/templates-preview/screenshots/services.png",
+    description: "Quote-focused service site with service cards, trust, service area, and contact CTA.",
+  },
+  {
+    templateId: "booking-appointment-pro",
+    name: "Booking",
+    catalogType: "booking_menu_catalog",
+    image: "/templates-preview/screenshots/booking.png",
+    description: "Appointment-first layout with service menu, availability, staff/process, and booking CTA.",
+  },
+];
+
 const TEMPLATE_PRESETS = [
   {
     id: "editorial-boutique",
@@ -1278,6 +1323,7 @@ async function handleWebsiteIntentAnswer(message) {
     if (!guidedState.industry) guidedState.industry = inferIndustryFromPrompt(message);
     if (!guidedState.preferredTone) guidedState.preferredTone = extractStyleHint(message);
     appendTemplateDetectionMessage(selection);
+    appendTemplatePreviewChoices(selection);
     guidedStep = nextGuidedStep("websiteIntent");
     appendUnderstandingCard({ updates: inferGuidedUpdatesFromAnyMessage(message), sourceMessage: message });
     appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
@@ -1324,6 +1370,69 @@ function appendTemplateDetectionMessage(selection) {
     explanation,
   ];
   appendChatMessage("assistant", lines.join("\n"), "success");
+}
+
+function appendTemplatePreviewChoices(selection) {
+  const selectedId = selection?.templateId || "";
+  const card = document.createElement("div");
+  card.className = "template-choice-panel";
+  const heading = document.createElement("div");
+  heading.className = "template-choice-heading";
+  heading.innerHTML = `<strong>${escapeHtml(langText({
+    en: "Choose a visual base",
+    es: "Elige una base visual",
+    fr: "Choisissez une base visuelle",
+    pt: "Escolha uma base visual",
+  }))}</strong><span>${escapeHtml(langText({
+    en: "Luma recommends one, but you can switch before generating.",
+    es: "Luma recomienda una, pero puedes cambiarla antes de generar.",
+    fr: "Luma en recommande une, mais vous pouvez changer avant de générer.",
+    pt: "A Luma recomenda uma, mas você pode trocar antes de gerar.",
+  }))}</span>`;
+  const grid = document.createElement("div");
+  grid.className = "template-choice-grid";
+  TEMPLATE_PREVIEW_CHOICES.forEach((choice) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `template-choice-card ${choice.templateId === selectedId ? "recommended" : ""}`;
+    button.dataset.templateChoice = choice.templateId;
+    button.innerHTML = `
+      <img src="${escapeAttribute(choice.image)}" alt="">
+      <span>${escapeHtml(choice.templateId === selectedId ? langText({ en: "Recommended", es: "Recomendada", fr: "Recommandée", pt: "Recomendada" }) : choice.catalogType)}</span>
+      <strong>${escapeHtml(choice.name)}</strong>
+      <small>${escapeHtml(choice.description)}</small>
+    `;
+    button.addEventListener("click", () => chooseTemplatePreview(choice));
+    grid.appendChild(button);
+  });
+  card.append(heading, grid);
+  guidedChat.appendChild(card);
+  guidedChat.scrollTop = guidedChat.scrollHeight;
+}
+
+async function chooseTemplatePreview(choice) {
+  const template = window.TemplateRouter?.getTemplateById
+    ? await window.TemplateRouter.getTemplateById(choice.templateId)
+    : null;
+  forcedTemplateSelection = {
+    templateId: choice.templateId,
+    template,
+    catalogType: choice.catalogType,
+    intent: "client_visual_template_choice",
+    reason: "Client selected a visual template preview in guided setup",
+  };
+  appendChatMessage(
+    "user",
+    langText({
+      en: `Use ${choice.name}`,
+      es: `Usar ${choice.name}`,
+      fr: `Utiliser ${choice.name}`,
+      pt: `Usar ${choice.name}`,
+    }),
+  );
+  appendTemplateDetectionMessage(forcedTemplateSelection);
+  renderGuidedSummary();
+  saveGuidedDraft();
 }
 
 function skipGuidedQuestion() {
