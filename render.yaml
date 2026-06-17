@@ -2,7 +2,7 @@ services:
   - type: web
     name: luma-ai-builder-api
     env: docker
-    plan: starter
+    plan: free
     healthCheckPath: /health
     autoDeploy: false
     envVars:
