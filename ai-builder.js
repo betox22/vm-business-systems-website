@@ -474,6 +474,8 @@ let selectedLanguage = detectBrowserLanguage();
 let currentSchema = null;
 let selectedPageKey = "home";
 let selectedVariantId = "";
+let selectedStudioSectionId = "";
+let advancedInspectorOpen = false;
 let currentSiteId = null;
 let currentBusinessId = null;
 let currentGenerationId = null;
@@ -499,6 +501,7 @@ let guidedState = {
   logoUrl: "",
   photoUrls: [],
   logoPalette: [],
+  brand: null,
   selectedLanguage,
   hasLogo: false,
   hasPhotos: false,
@@ -596,12 +599,52 @@ const TEMPLATE_PRESETS = [
   },
 ];
 
+const DEFAULT_BRAND = {
+  logoUrl: "",
+  primaryColor: "#0e7c66",
+  secondaryColor: "#e3f3ee",
+  accentColor: "#14b8a6",
+  backgroundColor: "#f8fafc",
+  surfaceColor: "#ffffff",
+  textColor: "#101828",
+  mutedTextColor: "#667085",
+  borderColor: "#d9e2df",
+  buttonColor: "#0e7c66",
+  buttonTextColor: "#ffffff",
+  styleDirection: "clean professional",
+  fontPairing: { heading: "Inter", body: "Inter" },
+  borderRadius: "10px",
+  shadowStyle: "0 18px 48px rgba(16, 24, 40, 0.10)",
+};
+
+const DESIGN_QUALITY_RULES = [
+  "Use the uploaded logo as the source of brand identity, not just as an image.",
+  "Create only purposeful sections with a clear reason, conversion purpose, priority, content, and visual treatment.",
+  "Strong hero, clear headline, clear CTA, consistent spacing, consistent typography, no filler, no repeated sections, no clutter, and accessible contrast.",
+  "Avoid arbitrary gradients, childish styling, oversized random cards, and colors that do not come from the brand system.",
+  "Choose one design direction and keep every section consistent with it.",
+  "Never render sections that have no conversion purpose or meaningful content.",
+  "Review and improve headline, CTA, section order, contrast, visual rhythm, mobile layout, and brand consistency before preview.",
+];
+
 const form = document.querySelector("#intakeForm");
 const statusText = document.querySelector("#statusText");
 const storageStatus = document.querySelector("#storageStatus");
 const siteTitle = document.querySelector("#siteTitle");
 const editorMount = document.querySelector("#editorMount");
 const previewFrame = document.querySelector("#previewFrame");
+const studioSelectionToolbar = document.querySelector("#studioSelectionToolbar");
+const studioProgressList = document.querySelector("#studioProgressList");
+const studioAdjustButton = document.querySelector("#studioAdjustButton");
+const studioLumaMessage = document.querySelector(".studio-luma-message");
+const studioAuthGate = document.querySelector("#studioAuthGate");
+const studioAuthCloseButton = document.querySelector("#studioAuthCloseButton");
+const studioGoogleAuthButton = document.querySelector("#studioGoogleAuthButton");
+const studioAppleAuthButton = document.querySelector("#studioAppleAuthButton");
+const studioEmailAuthButton = document.querySelector("#studioEmailAuthButton");
+const studioEmailAuthForm = document.querySelector("#studioEmailAuthForm");
+const studioAuthEmail = document.querySelector("#studioAuthEmail");
+const studioAuthDemoButton = document.querySelector("#studioAuthDemoButton");
 const quickModeButton = document.querySelector("#quickModeButton");
 const guidedModeButton = document.querySelector("#guidedModeButton");
 const guidedPanel = document.querySelector("#guidedPanel");
@@ -625,6 +668,7 @@ const guidedLogoUpload = document.querySelector("#guidedLogoUpload");
 const guidedPhotoUpload = document.querySelector("#guidedPhotoUpload");
 const guidedLogoPreview = document.querySelector("#guidedLogoPreview");
 const guidedPhotoPreview = document.querySelector("#guidedPhotoPreview");
+const brandKitPanel = document.querySelector("#brandKitPanel");
 const guidedAssetPrompt = document.querySelector("#guidedAssetPrompt");
 const chatLogoUploadButton = document.querySelector("#chatLogoUploadButton");
 const chatPhotoUploadButton = document.querySelector("#chatPhotoUploadButton");
@@ -650,6 +694,7 @@ initLanguageControls();
 initVoiceInput();
 updateAssistantAudioToggle();
 setAssistantState("happy");
+captureStudioAuthRedirect();
 hydrateFromSelectedRequest();
 initGuidedIntake();
 
@@ -674,21 +719,50 @@ document.querySelector("#copySchemaButton").addEventListener("click", async () =
   storageStatus.textContent = "JSON copied";
 });
 
-document.querySelector("#saveSchemaButton").addEventListener("click", saveCurrentSchema);
-document.querySelector("#publishButton").addEventListener("click", publishCurrentSite);
+document.querySelector("#saveSchemaButton").addEventListener("click", (event) => requireStudioAccount(event, "save", saveCurrentSchema));
+document.querySelector("#publishButton").addEventListener("click", (event) => requireStudioAccount(event, "publish", publishCurrentSite));
 document.querySelector("#clientPreviewButton").addEventListener("click", () => {
   document.body.classList.add("client-preview-mode");
 });
 document.querySelector("#exitClientPreviewButton").addEventListener("click", () => {
   document.body.classList.remove("client-preview-mode");
 });
-submitDraftReviewButton?.addEventListener("click", submitGeneratedDraftForReview);
+submitDraftReviewButton?.addEventListener("click", (event) => requireStudioAccount(event, "review", submitGeneratedDraftForReview));
 adjustWithLumaButton?.addEventListener("click", adjustGeneratedDraftWithLuma);
+studioAdjustButton?.addEventListener("click", adjustGeneratedDraftWithLuma);
+document.querySelectorAll("[data-studio-add-section]").forEach((button) => {
+  button.addEventListener("click", () => addStudioSection(button.dataset.studioAddSection));
+});
+document.querySelectorAll("[data-studio-add-product]").forEach((button) => {
+  button.addEventListener("click", addStudioCatalogItem);
+});
+studioSelectionToolbar?.querySelectorAll("[data-selection-action]").forEach((button) => {
+  button.addEventListener("click", () => handleStudioSelectionAction(button.dataset.selectionAction));
+});
+studioAuthCloseButton?.addEventListener("click", closeStudioAuthGate);
+studioAuthDemoButton?.addEventListener("click", closeStudioAuthGate);
+studioGoogleAuthButton?.addEventListener("click", () => continueWithStudioAuth("google"));
+studioAppleAuthButton?.addEventListener("click", () => continueWithStudioAuth("apple"));
+studioEmailAuthButton?.addEventListener("click", () => {
+  if (studioEmailAuthForm) studioEmailAuthForm.hidden = !studioEmailAuthForm.hidden;
+  studioAuthEmail?.focus();
+});
+studioEmailAuthForm?.addEventListener("submit", continueWithEmailAuth);
 
 quickModeButton.addEventListener("click", () => setIntakeMode("quick"));
 guidedModeButton.addEventListener("click", () => setIntakeMode("guided"));
 guidedCloseButton.addEventListener("click", () => {
   if (isPublicClientSetup) {
+    if (currentSchema) {
+      showGeneratedClientPreview();
+      guidedStatusText.textContent = langText({
+        en: "Your generated draft is still here.",
+        es: "Tu borrador generado sigue aquí.",
+        fr: "Votre brouillon généré est toujours ici.",
+        pt: "Seu rascunho gerado continua aqui.",
+      });
+      return;
+    }
     if (isEmbeddedClientSetup) {
       window.parent.postMessage({ type: "luma-close" }, "*");
       return;
@@ -1111,6 +1185,7 @@ function restoreGuidedDraft() {
         preferredColors: arrayValue(draft.guidedState.preferredColors),
         photoUrls: arrayValue(draft.guidedState.photoUrls),
         logoPalette: arrayValue(draft.guidedState.logoPalette),
+        brand: draft.guidedState.brand || null,
         contactInfo: draft.guidedState.contactInfo || {},
       };
     }
@@ -1183,7 +1258,7 @@ function restoreGeneratedSite() {
     const saved = JSON.parse(raw);
     const result = saved.result || {};
     if (!result.schema) return;
-    currentSchema = result.schema;
+    currentSchema = prepareWebsiteConfig(result.schema, { brand: result.schema.brand || guidedState.brand || {} }, null);
     currentSiteId = result.site_id || null;
     currentBusinessId = result.business_id || null;
     currentGenerationId = result.generation_id || null;
@@ -1194,6 +1269,66 @@ function restoreGeneratedSite() {
     storageStatus.textContent = storageLabel(result.storage_status, result.used_dev_mock);
   } catch {
     localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
+  }
+}
+
+function captureStudioAuthRedirect() {
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const queryParams = new URLSearchParams(window.location.search);
+  const accessToken = hashParams.get("access_token") || queryParams.get("access_token") || "";
+  const refreshToken = hashParams.get("refresh_token") || queryParams.get("refresh_token") || "";
+  if (!accessToken) return;
+  localStorage.setItem("lumaClientAccessToken", accessToken);
+  if (refreshToken) localStorage.setItem("lumaClientRefreshToken", refreshToken);
+  restorePendingStudioAfterAuth();
+  const cleanUrl = new URL(window.location.href);
+  cleanUrl.hash = "";
+  ["access_token", "refresh_token", "expires_in", "expires_at", "token_type", "type"].forEach((param) => cleanUrl.searchParams.delete(param));
+  window.history.replaceState({}, "", cleanUrl);
+}
+
+function restorePendingStudioAfterAuth() {
+  try {
+    const raw = localStorage.getItem("lumaPendingGeneratedSite");
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (!saved.schema) return;
+    currentSchema = prepareWebsiteConfig(saved.schema, { brand: saved.schema.brand || guidedState.brand || {} }, null);
+    currentSiteId = saved.siteId || currentSiteId;
+    currentBusinessId = saved.businessId || currentBusinessId;
+    currentCatalogItems = catalogItemsFromSchema(currentSchema);
+    selectedPageKey = saved.selectedPageKey || currentSchema.pages?.[0]?.page_key || "home";
+    selectedVariantId = currentSchema.design_variants?.[0]?.id || selectedVariantId || "";
+    siteTitle.textContent = currentSchema.business?.name || "Generated site";
+    storageStatus.textContent = langText({
+      en: "Account connected. Your draft was restored.",
+      es: "Cuenta conectada. Tu borrador fue restaurado.",
+      fr: "Compte connecté. Votre brouillon a été restauré.",
+      pt: "Conta conectada. Seu rascunho foi restaurado.",
+    });
+    renderEditor();
+    renderPreview();
+    showGeneratedClientPreview();
+    continuePendingStudioAction();
+  } catch {
+    localStorage.removeItem("lumaPendingGeneratedSite");
+  }
+}
+
+function continuePendingStudioAction() {
+  const action = localStorage.getItem("lumaPendingAuthAction") || "";
+  localStorage.removeItem("lumaPendingAuthAction");
+  if (action === "save") {
+    saveCurrentSchema();
+  } else if (action === "review") {
+    submitGeneratedDraftForReview();
+  } else if (action === "publish") {
+    storageStatus.textContent = langText({
+      en: "Account connected. Review once more, then publish.",
+      es: "Cuenta conectada. Revisa una vez más y luego publica.",
+      fr: "Compte connecté. Vérifiez encore une fois, puis publiez.",
+      pt: "Conta conectada. Revise mais uma vez e publique.",
+    });
   }
 }
 
@@ -1698,14 +1833,29 @@ function translateChip(value) {
 async function handleGuidedLogoUpload() {
   const file = guidedLogoUpload.files?.[0];
   if (!file) return;
-  guidedState.logoUrl = await fileToDataUrl(file);
+  const localLogoUrl = await fileToDataUrl(file);
+  let storedLogoUrl = localLogoUrl;
+  try {
+    storedLogoUrl = await uploadAssetOrFallback(file, "logo", "Uploaded logo");
+  } catch {
+    storedLogoUrl = localLogoUrl;
+  }
+  guidedState.logoUrl = storedLogoUrl || localLogoUrl;
   guidedState.hasLogo = true;
-  const palette = await extractPaletteFromDataUrl(guidedState.logoUrl);
+  const brand = await analyzeLogoBrand(localLogoUrl, {
+    logoUrl: guidedState.logoUrl,
+    businessName: guidedState.businessName,
+    industry: guidedState.industry,
+    tone: guidedState.preferredTone,
+  });
+  const palette = brand.extractedColors || [];
   guidedState.logoPalette = palette;
+  guidedState.brand = brand;
   if (palette.length) {
     guidedState.preferredColors = palette;
   }
   guidedState.hasLogoPhotos = guidedState.hasPhotos ? "Logo and photos uploaded" : "Logo uploaded";
+  applyBrandToCurrentSchema(brand);
   appendChatMessage(
     "assistant",
     palette.length
@@ -1723,6 +1873,7 @@ async function handleGuidedLogoUpload() {
         }),
     "success",
   );
+  renderBrandKit();
   renderGuidedSummary();
   refreshQuickChips();
   saveGuidedDraft();
@@ -1788,6 +1939,177 @@ async function extractPaletteFromDataUrl(dataUrl) {
     }, []);
 }
 
+async function analyzeLogoBrand(dataUrl, context = {}) {
+  const extractedColors = await extractPaletteFromDataUrl(dataUrl);
+  return createBrandSystem({
+    ...context,
+    extractedColors,
+    logoUrl: context.logoUrl || dataUrl || "",
+  });
+}
+
+function createBrandSystem(input = {}) {
+  const extractedColors = arrayValue(input.extractedColors)
+    .map((color) => resolveColor(color, ""))
+    .filter(Boolean);
+  const preferredColors = arrayValue(input.preferredColors)
+    .map((color) => resolveColor(color, ""))
+    .filter(Boolean);
+  const sourceColors = [...extractedColors, ...preferredColors].filter((color, index, list) => list.indexOf(color) === index);
+  const primary = selectAccessibleBrandColor(sourceColors, DEFAULT_BRAND.primaryColor);
+  const secondarySource = sourceColors.find((color) => colorDistance(hexToRgb(color), hexToRgb(primary)) > 72) || rotateHue(primary, 26);
+  const accent = ensureContrastColor(adjustColor(secondarySource, { saturation: 1.16, lightness: -0.02 }), "#ffffff", 3) || primary;
+  const background = mixColors(primary, "#ffffff", 0.06);
+  const surface = "#ffffff";
+  const text = contrastRatio("#101828", background) >= 7 ? "#101828" : "#0b1220";
+  const muted = ensureContrastColor(mixColors(text, background, 0.42), background, 4.5) || "#475467";
+  const secondary = mixColors(primary, "#ffffff", 0.84);
+  const button = contrastRatio(primary, "#ffffff") >= 4.5 ? primary : darkenUntilContrast(primary, "#ffffff", 4.5);
+  const businessText = `${input.businessName || ""} ${input.industry || ""} ${input.tone || ""}`.toLowerCase();
+  const isPremium = /premium|luxury|lujo|elegant|elegante|boutique/.test(businessText);
+  const isOperational = /service|servicio|repair|clean|limpieza|contractor|professional|legal|account/.test(businessText);
+  const radius = isPremium ? "6px" : isOperational ? "8px" : "12px";
+  return {
+    ...DEFAULT_BRAND,
+    logoUrl: input.logoUrl || "",
+    primaryColor: primary,
+    secondaryColor: secondary,
+    accentColor: accent,
+    backgroundColor: background,
+    surfaceColor: surface,
+    textColor: text,
+    mutedTextColor: muted,
+    borderColor: mixColors(text, background, 0.14),
+    buttonColor: button,
+    buttonTextColor: contrastColor(button),
+    styleDirection: isPremium ? "refined premium" : isOperational ? "trustworthy conversion-focused" : "modern professional",
+    fontPairing: isPremium ? { heading: "Playfair Display", body: "Inter" } : { heading: "Inter", body: "Inter" },
+    borderRadius: radius,
+    shadowStyle: `0 18px 48px ${hexToRgba(text, 0.1)}`,
+    extractedColors,
+    paletteSource: extractedColors.length ? "uploaded_logo" : "guided_preferences",
+  };
+}
+
+function selectAccessibleBrandColor(colors, fallback) {
+  const ranked = colors
+    .map((color) => ({ color, score: brandColorScore(color) }))
+    .filter((item) => contrastRatio(item.color, "#ffffff") >= 3 || contrastRatio(item.color, "#101828") >= 3)
+    .sort((a, b) => b.score - a.score);
+  return ranked[0]?.color || fallback;
+}
+
+function brandColorScore(color) {
+  const [r, g, b] = hexToRgb(color);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const saturation = max - min;
+  const brightness = (r + g + b) / 3;
+  const contrast = Math.max(contrastRatio(color, "#ffffff"), contrastRatio(color, "#101828"));
+  return saturation * 1.2 + contrast * 20 - Math.abs(brightness - 118) * 0.35;
+}
+
+function ensureContrastColor(color, background, minRatio) {
+  if (contrastRatio(color, background) >= minRatio) return color;
+  const darker = darkenUntilContrast(color, background, minRatio);
+  if (contrastRatio(darker, background) >= minRatio) return darker;
+  const lighter = lightenUntilContrast(color, background, minRatio);
+  return contrastRatio(lighter, background) >= minRatio ? lighter : color;
+}
+
+function darkenUntilContrast(color, background, minRatio) {
+  let current = color;
+  for (let i = 0; i < 18 && contrastRatio(current, background) < minRatio; i += 1) {
+    current = mixColors(current, "#000000", 0.12);
+  }
+  return current;
+}
+
+function lightenUntilContrast(color, background, minRatio) {
+  let current = color;
+  for (let i = 0; i < 18 && contrastRatio(current, background) < minRatio; i += 1) {
+    current = mixColors(current, "#ffffff", 0.12);
+  }
+  return current;
+}
+
+function contrastColor(color) {
+  return contrastRatio(color, "#ffffff") >= contrastRatio(color, "#101828") ? "#ffffff" : "#101828";
+}
+
+function contrastRatio(a, b) {
+  const l1 = relativeLuminance(hexToRgb(resolveColor(a, "#000000")));
+  const l2 = relativeLuminance(hexToRgb(resolveColor(b, "#ffffff")));
+  const light = Math.max(l1, l2);
+  const dark = Math.min(l1, l2);
+  return (light + 0.05) / (dark + 0.05);
+}
+
+function relativeLuminance(rgb) {
+  const [r, g, b] = rgb.map((value) => {
+    const channel = value / 255;
+    return channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function mixColors(a, b, amount = 0.5) {
+  const first = hexToRgb(resolveColor(a, "#000000"));
+  const second = hexToRgb(resolveColor(b, "#ffffff"));
+  const mixed = first.map((channel, index) => Math.round(channel * (1 - amount) + second[index] * amount));
+  return rgbToHex(mixed[0], mixed[1], mixed[2]);
+}
+
+function adjustColor(color, options = {}) {
+  const [h, s, l] = rgbToHsl(...hexToRgb(resolveColor(color, DEFAULT_BRAND.primaryColor)));
+  return hslToHex(
+    h,
+    Math.max(0, Math.min(1, s * (options.saturation || 1))),
+    Math.max(0, Math.min(1, l + (options.lightness || 0))),
+  );
+}
+
+function rotateHue(color, degrees) {
+  const [h, s, l] = rgbToHsl(...hexToRgb(resolveColor(color, DEFAULT_BRAND.primaryColor)));
+  return hslToHex((h + degrees + 360) % 360, s, l);
+}
+
+function rgbToHsl(r, g, b) {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h *= 60;
+  }
+  return [h, s, l];
+}
+
+function hslToHex(h, s, l) {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+  const [r, g, b] =
+    h < 60 ? [c, x, 0] :
+    h < 120 ? [x, c, 0] :
+    h < 180 ? [0, c, x] :
+    h < 240 ? [0, x, c] :
+    h < 300 ? [x, 0, c] : [c, 0, x];
+  return rgbToHex(Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255));
+}
+
+function hexToRgba(hex, alpha) {
+  const [r, g, b] = hexToRgb(resolveColor(hex, "#101828"));
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -1822,6 +2144,43 @@ function renderAssetPreviews() {
     .slice(0, 4)
     .map((url) => `<img src="${escapeAttribute(url)}" alt="">`)
     .join("");
+  renderBrandKit();
+}
+
+function renderBrandKit(brand = guidedState.brand) {
+  if (!brandKitPanel) return;
+  const normalizedBrand = normalizeBrand(brand || (guidedState.logoUrl ? { logoUrl: guidedState.logoUrl } : null));
+  brandKitPanel.hidden = !normalizedBrand.logoUrl && !guidedState.logoPalette.length;
+  if (brandKitPanel.hidden) {
+    brandKitPanel.innerHTML = "";
+    return;
+  }
+  const swatches = brandPalette(normalizedBrand)
+    .map((color) => `<span class="brand-swatch" style="--swatch:${escapeAttribute(color)}" title="${escapeAttribute(color)}"></span>`)
+    .join("");
+  brandKitPanel.innerHTML = `
+    <div class="brand-kit-head">
+      ${normalizedBrand.logoUrl ? `<img src="${escapeAttribute(normalizedBrand.logoUrl)}" alt="">` : ""}
+      <div>
+        <strong>Brand Kit</strong>
+        <span>${escapeHtml(normalizedBrand.styleDirection)}</span>
+      </div>
+    </div>
+    <div class="brand-kit-swatches">${swatches}</div>
+    <div class="brand-kit-meta">
+      <span>${escapeHtml(fontPairingLabel(normalizedBrand.fontPairing))}</span>
+      <span>Radius ${escapeHtml(normalizedBrand.borderRadius)}</span>
+      <button class="brand-kit-button" type="button">Button preview</button>
+    </div>
+  `;
+}
+
+function applyBrandToCurrentSchema(brand) {
+  if (!currentSchema || !brand) return;
+  currentSchema = applyBrandSystemToSchema(currentSchema, brand);
+  currentCatalogItems = catalogItemsFromSchema(currentSchema);
+  renderEditor();
+  renderPreview();
 }
 
 async function reviewAndGenerateFromGuided() {
@@ -2215,6 +2574,16 @@ function guidedStateForApi() {
     logoUrl,
     photoUrls,
     logoPalette: arrayValue(guidedState.logoPalette),
+    brand: normalizeBrand(guidedState.brand || { logoUrl, extractedColors: arrayValue(guidedState.logoPalette) }),
+    designStrategy: createDesignStrategy({
+      business_name: guidedState.businessName,
+      business_description: guidedState.businessDescription,
+      industry: guidedState.industry,
+      target_audience: guidedState.targetAudience,
+      preferred_tone: guidedState.preferredTone,
+      salesMode: guidedState.salesMode,
+    }),
+    qualityRules: DESIGN_QUALITY_RULES,
     selectedLanguage,
     hasLogo: Boolean(guidedState.hasLogo || guidedState.logoUrl),
     hasPhotos: Boolean(guidedState.hasPhotos || arrayValue(guidedState.photoUrls).length),
@@ -2537,9 +2906,12 @@ async function readErrorMessage(response) {
 }
 
 async function generateWebsite(triggerButton = document.querySelector("#generateButton")) {
+  setStudioProgressPhase("understanding");
   const payload = await collectPayload();
+  setStudioProgressPhase("brand");
   const templateSelection = await selectTemplateForPayload(payload);
   attachTemplateSelection(payload, templateSelection);
+  setStudioProgressPhase("homepage");
   const button = triggerButton;
   button.disabled = true;
   button.textContent = t("generating");
@@ -2559,18 +2931,23 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     }
 
     const result = await response.json();
+    setStudioProgressPhase("shop");
     if (templateSelection) {
       result.schema = mergeTemplateSelectionIntoSchema(result.schema, templateSelection);
     }
     statusText.textContent = result.used_dev_mock
       ? "Development mock used because OPENAI_API_KEY is missing on the server."
       : t("generatedOpenAI");
-    applyGenerationResult(result);
+    applyGenerationResult(result, payload, templateSelection);
+    setStudioProgressPhase("mobile");
     await createDomainOrderIfNeeded(payload, result);
+    setStudioProgressPhase("ready");
   } catch (error) {
     builderAvatarManager?.setState("confused", { source: "generate-error" });
+    setStudioProgressPhase("homepage");
     const fallbackResult = buildInstantTemplateResult(payload, error, templateSelection);
-    applyGenerationResult(fallbackResult);
+    applyGenerationResult(fallbackResult, payload, templateSelection);
+    setStudioProgressPhase("ready");
     const message = `${t("generateError")}: ${shortError(error.message)}. Showing a fast editable draft instead.`;
     statusText.textContent = message;
     guidedStatusText.textContent = message;
@@ -2686,6 +3063,7 @@ function buildTemplateInstructions(selection) {
       "Use businessDescription and chat intake as strategy/context, not as literal page text unless it reads naturally for a customer.",
       "If the client gave only rough details, invent polished but safe placeholder copy that matches the selected language and mark it as editable.",
       "Keep the selected template's layout personality and catalog model. Do not flatten every template into the same hero/grid structure.",
+      "Use website_config.brand and CSS brand tokens for all colors. Do not copy hardcoded template default colors when a logo or brand palette exists.",
     ],
     catalogType: selection?.catalogType || catalog.catalogType || "",
     catalogCardStyle: catalog.productCardStyle || "",
@@ -2750,7 +3128,8 @@ function mergeTemplateSelectionIntoSchema(schema, selection) {
   return schema;
 }
 
-function applyGenerationResult(result) {
+function applyGenerationResult(result, payload = {}, templateSelection = null) {
+  result.schema = prepareWebsiteConfig(result.schema, payload, templateSelection);
   currentSchema = result.schema;
   currentSiteId = result.site_id || null;
   currentBusinessId = result.business_id || null;
@@ -2759,7 +3138,7 @@ function applyGenerationResult(result) {
   selectedPageKey = currentSchema.pages[0]?.page_key || "home";
   selectedVariantId = currentSchema.design_variants?.[0]?.id || "";
   saveGeneratedSite(result);
-  siteTitle.textContent = currentSchema.business.name;
+  siteTitle.textContent = currentSchema.business?.name || "Generated site";
   storageStatus.textContent = storageLabel(result.storage_status, result.used_dev_mock);
   renderEditor();
   renderPreview();
@@ -2767,6 +3146,629 @@ function applyGenerationResult(result) {
   guidedState.revisionMode = "";
   guidedState.requestedAdjustments = [];
   builderAvatarManager?.setState("success", { source: "preview-generated" });
+}
+
+function prepareWebsiteConfig(schema, payload = {}, templateSelection = null) {
+  if (!schema) return schema;
+  const brand = normalizeBrand(payload.brand || guidedState.brand || schema.brand || {
+    logoUrl: payload.assets?.find((asset) => asset.asset_type === "logo")?.url || schema.global_components?.logo_url || "",
+    preferredColors: payload.preferred_colors,
+  });
+  let nextSchema = applyBrandSystemToSchema(structuredClone(schema), brand);
+  nextSchema = applyDesignIntelligence(nextSchema, payload, templateSelection);
+  nextSchema.quality_rules = DESIGN_QUALITY_RULES;
+  nextSchema.design_score = scoreWebsiteConfig(nextSchema);
+  nextSchema.designScore = nextSchema.design_score.total;
+  for (let attempt = 0; attempt < 3 && nextSchema.design_score.total < 85; attempt += 1) {
+    nextSchema = improveWebsiteConfig(nextSchema);
+    nextSchema = applyDesignIntelligence(nextSchema, payload, templateSelection, { reviewOnly: true });
+    nextSchema.design_score = scoreWebsiteConfig(nextSchema);
+    nextSchema.designScore = nextSchema.design_score.total;
+  }
+  return nextSchema;
+}
+
+function applyBrandSystemToSchema(schema, brandInput) {
+  const brand = normalizeBrand(brandInput);
+  schema.brand = brand;
+  schema.global_components = {
+    ...(schema.global_components || {}),
+    logo_url: brand.logoUrl || schema.global_components?.logo_url || "",
+    favicon_url: brand.logoUrl || schema.global_components?.favicon_url || "",
+  };
+  schema.theme = {
+    ...(schema.theme || {}),
+    colors: brandToThemeColors(brand),
+    fonts: brand.fontPairing || DEFAULT_BRAND.fontPairing,
+    radius: Number.parseInt(brand.borderRadius, 10) || 10,
+    shadow: brand.shadowStyle,
+    buttons: {
+      ...(schema.theme?.buttons || {}),
+      background: brand.buttonColor,
+      text: brand.buttonTextColor,
+      radius: brand.borderRadius,
+    },
+  };
+  schema.design_variants = arrayValue(schema.design_variants).map((variant) => ({
+    ...variant,
+    theme: {
+      ...(variant.theme || {}),
+      colors: brandToThemeColors(brand),
+      fonts: brand.fontPairing || DEFAULT_BRAND.fontPairing,
+      radius: Number.parseInt(brand.borderRadius, 10) || 10,
+      shadow: brand.shadowStyle,
+      buttons: {
+        ...(variant.theme?.buttons || {}),
+        background: brand.buttonColor,
+        text: brand.buttonTextColor,
+        radius: brand.borderRadius,
+      },
+    },
+  }));
+  if (!schema.design_variants.length) {
+    schema.design_variants = [{
+      id: "brand-system",
+      name: "Brand system",
+      description: brand.styleDirection,
+      theme: schema.theme,
+      layout_mode_id: schema.layout_mode?.id || "brand_system",
+    }];
+  }
+  return schema;
+}
+
+function normalizeBrand(brandInput = {}) {
+  const brand = { ...DEFAULT_BRAND, ...(brandInput || {}) };
+  const colors = brandInput.colors || {};
+  brand.logoUrl = brand.logoUrl || brandInput.logo_url || brandInput.logo || "";
+  brand.primaryColor = resolveColor(brand.primaryColor || colors.primary, DEFAULT_BRAND.primaryColor);
+  brand.secondaryColor = resolveColor(brand.secondaryColor || colors.secondary, DEFAULT_BRAND.secondaryColor);
+  brand.accentColor = resolveColor(brand.accentColor || colors.accent, brand.primaryColor);
+  brand.backgroundColor = resolveColor(brand.backgroundColor || colors.background, DEFAULT_BRAND.backgroundColor);
+  brand.surfaceColor = resolveColor(brand.surfaceColor || colors.surface, DEFAULT_BRAND.surfaceColor);
+  brand.textColor = resolveColor(brand.textColor || colors.text, DEFAULT_BRAND.textColor);
+  brand.mutedTextColor = resolveColor(brand.mutedTextColor || colors.muted, DEFAULT_BRAND.mutedTextColor);
+  brand.borderColor = resolveColor(brand.borderColor || colors.border, mixColors(brand.textColor, brand.backgroundColor, 0.14));
+  brand.buttonColor = resolveColor(brand.buttonColor || colors.button || brand.primaryColor, brand.primaryColor);
+  brand.buttonTextColor = resolveColor(brand.buttonTextColor || colors.buttonText || contrastColor(brand.buttonColor), contrastColor(brand.buttonColor));
+  brand.fontPairing = typeof brand.fontPairing === "string" ? fontPairingFromString(brand.fontPairing) : (brand.fontPairing || DEFAULT_BRAND.fontPairing);
+  brand.borderRadius = String(brand.borderRadius || DEFAULT_BRAND.borderRadius);
+  brand.shadowStyle = brand.shadowStyle || DEFAULT_BRAND.shadowStyle;
+  return brand;
+}
+
+function brandToThemeColors(brand) {
+  return {
+    background: brand.backgroundColor,
+    surface: brand.surfaceColor,
+    primary: brand.primaryColor,
+    secondary: brand.secondaryColor,
+    accent: brand.accentColor,
+    text: brand.textColor,
+    muted: brand.mutedTextColor,
+    border: brand.borderColor,
+    button: brand.buttonColor,
+    buttonText: brand.buttonTextColor,
+  };
+}
+
+function brandPalette(brand) {
+  return [
+    brand.primaryColor,
+    brand.secondaryColor,
+    brand.accentColor,
+    brand.backgroundColor,
+    brand.surfaceColor,
+    brand.textColor,
+    brand.mutedTextColor,
+    brand.borderColor,
+  ].filter(Boolean);
+}
+
+function fontPairingFromString(value) {
+  const [heading, body] = String(value || "").split(/[+/|,]/).map((part) => part.trim()).filter(Boolean);
+  return { heading: heading || "Inter", body: body || heading || "Inter" };
+}
+
+function fontPairingLabel(pairing = {}) {
+  return `${pairing.heading || "Inter"} + ${pairing.body || "Inter"}`;
+}
+
+function createDesignStrategy(payload = {}, templateSelection = null, schema = {}) {
+  const businessContext = analyzeBusinessContext(payload, schema);
+  const designDirection = chooseDesignDirection(businessContext, templateSelection, schema);
+  const layoutStrategy = createLayoutStrategy(businessContext, designDirection, schema);
+  const template = templateSelection?.template || payload.selectedTemplate || schema.selected_template || {};
+  const goalText = payload.salesMode || payload.templateIntent || payload.desiredDomain || "";
+  const isCommerce = /store|shop|ecommerce|tienda|catalog|marketplace|producto|vender/i.test(`${template.id || ""} ${template.category || ""} ${goalText}`);
+  const isLeadGen = /quote|contact|booking|service|cita|consulta|lead/i.test(`${template.id || ""} ${template.category || ""} ${goalText}`);
+  return {
+    businessGoal: businessContext.mainConversionGoal || (isCommerce ? "Sell or present offers clearly" : isLeadGen ? "Generate qualified inquiries" : "Build trust and guide visitors to contact"),
+    targetAudience: businessContext.audience,
+    visualDirection: designDirection.replace(/_/g, " "),
+    conversionGoal: layoutStrategy.heroPurpose,
+    sectionPriority: layoutStrategy.sectionOrder,
+    layoutStyle: layoutStrategy.layoutStyle || template.name || schema.layout_mode?.template_id || "brand-led responsive layout",
+    brandPersonality: businessContext.brandStyle || schema.brand?.styleDirection || payload.preferred_tone || "professional and confident",
+    contentTone: payload.preferred_tone || schema.business?.tone || "clear, specific, customer-focused",
+    businessContext,
+    designDirection,
+    layoutStrategy,
+  };
+}
+
+function applyDesignIntelligence(schema, payload = {}, templateSelection = null, options = {}) {
+  const businessContext = analyzeBusinessContext(payload, schema);
+  const designDirection = chooseDesignDirection(businessContext, templateSelection, schema);
+  const layoutStrategy = createLayoutStrategy(businessContext, designDirection, schema);
+  const strategy = {
+    ...createDesignStrategy(payload, templateSelection, schema),
+    businessContext,
+    designDirection,
+    layoutStrategy,
+  };
+  let nextSchema = {
+    ...schema,
+    design_strategy: strategy,
+    design_intelligence: {
+      businessContext,
+      designDirection,
+      layoutStrategy,
+      strictRules: DESIGN_QUALITY_RULES,
+    },
+  };
+  nextSchema = ensurePurposefulSections(nextSchema, strategy, options);
+  nextSchema = normalizeCatalogCommerceModel(nextSchema, strategy);
+  nextSchema = orderSectionsByStrategy(nextSchema, layoutStrategy);
+  nextSchema = applyProfessionalLayoutSettings(nextSchema, strategy);
+  nextSchema = reviewWebsiteConfigBeforeRender(nextSchema, strategy);
+  return nextSchema;
+}
+
+function normalizeCatalogCommerceModel(schema, strategy = {}) {
+  const direction = strategy.designDirection || schema.design_intelligence?.designDirection || "";
+  const checkoutMode = schema.layout_mode?.checkout?.mode || "";
+  const businessGoal = `${strategy.businessContext?.mainConversionGoal || strategy.businessGoal || ""}`;
+  const isShop = /ecommerce|marketplace|shop|store|catalog|offer|choose/i.test(`${direction} ${checkoutMode} ${businessGoal}`);
+  if (!isShop) return schema;
+  const askPricePattern = /ask|consult|consultar|cotizar|quote|precio\?|preguntar/i;
+  return {
+    ...schema,
+    catalog_items: arrayValue(schema.catalog_items || schema.products_services).map((item, index) => {
+      const nextItem = typeof item === "string" ? { name: item } : { ...item };
+      nextItem.id = nextItem.id || `item_${index + 1}`;
+      nextItem.sku = nextItem.sku || `SKU-${index + 1}`;
+      nextItem.price_type = nextItem.price_type === "quote_only" ? "fixed" : (nextItem.price_type || "fixed");
+      nextItem.currency = nextItem.currency || "USD";
+      nextItem.price_value = nextItem.price_value ?? nextItem.price_amount ?? "";
+      nextItem.price_amount = nextItem.price_amount ?? nextItem.price_value ?? "";
+      if (!nextItem.price_label || askPricePattern.test(nextItem.price_label)) {
+        nextItem.price_label = nextItem.price_value ? `${nextItem.currency} ${nextItem.price_value}` : "Precio editable";
+      }
+      if (!nextItem.button_label || askPricePattern.test(nextItem.button_label)) {
+        nextItem.button_label = "Ver producto";
+      }
+      nextItem.inventory_quantity = nextItem.inventory_quantity ?? nextItem.stock ?? "";
+      nextItem.track_inventory = nextItem.track_inventory ?? true;
+      nextItem.is_active = nextItem.is_active !== false;
+      nextItem.is_featured = nextItem.is_featured ?? index < 3;
+      nextItem.sort_order = Number(nextItem.sort_order ?? index);
+      return nextItem;
+    }),
+    layout_mode: {
+      ...(schema.layout_mode || {}),
+      checkout: {
+        ...(schema.layout_mode?.checkout || {}),
+        mode: checkoutMode && checkoutMode !== "quote_or_cart" ? checkoutMode : "cart_setup_required",
+        primary_action: schema.layout_mode?.checkout?.primary_action || "Comprar ahora",
+      },
+    },
+  };
+}
+
+function analyzeBusinessContext(payload = {}, schema = {}) {
+  const business = schema.business || {};
+  const contact = schema.contact || {};
+  const catalog = arrayValue(schema.catalog_items || schema.products_services);
+  const products = arrayValue(payload.services_products).length ? arrayValue(payload.services_products) : catalog.map((item) => item.name).filter(Boolean);
+  const assets = arrayValue(payload.assets);
+  const text = [
+    payload.business_name,
+    payload.business_description,
+    payload.industry,
+    payload.preferred_tone,
+    payload.salesMode,
+    payload.templateIntent,
+    business.name,
+    business.description,
+    business.industry,
+    business.tone,
+    products.join(" "),
+  ].filter(Boolean).join(" ").toLowerCase();
+  const industry = payload.industry || business.industry || inferIndustryFromText(text);
+  const isCommerce = /shop|store|tienda|ecommerce|catalog|producto|collection|marketplace|menu|order/.test(text);
+  const isBooking = /booking|book|appointment|cita|reservation|reserva|consulta|schedule/.test(text);
+  const isQuote = /quote|estimate|cotiz|proposal|consulta|service|servicio/.test(text);
+  const priceLevel = /luxury|premium|boutique|exclusive|high.?end|lujo|gourmet|signature/.test(text)
+    ? "premium"
+    : /budget|cheap|discount|deal|econ/.test(text)
+      ? "value"
+      : "standard";
+  const trustFactors = [];
+  if (business.location || contact.address) trustFactors.push("local presence");
+  if (contact.phone || contact.email || contact.whatsapp) trustFactors.push("direct contact");
+  if (assets.some((asset) => asset.asset_type === "logo") || schema.brand?.logoUrl) trustFactors.push("brand identity");
+  if (assets.some((asset) => asset.asset_type === "photo") || catalog.some((item) => item.image_url)) trustFactors.push("real visuals");
+  if (catalog.length > 1 || products.length > 1) trustFactors.push("clear offer range");
+  return {
+    industry,
+    audience: payload.target_audience || business.target_audience || inferAudience(industry, text),
+    offer: payload.business_description || business.description || products.slice(0, 3).join(", ") || "a clear professional offer",
+    trustFactors: trustFactors.length ? trustFactors : ["clear offer", "consistent brand", "easy contact"],
+    mainConversionGoal: isCommerce ? "Guide visitors to choose an offer" : isBooking ? "Drive bookings or appointments" : isQuote ? "Generate qualified inquiries" : "Build trust and drive contact",
+    productsOrServices: products.length ? products : catalog.map((item) => item.name).filter(Boolean),
+    priceLevel,
+    brandStyle: payload.preferred_tone || business.tone || schema.brand?.styleDirection || "professional",
+  };
+}
+
+function inferIndustryFromText(text) {
+  if (/restaurant|food|menu|cafe|bar|pizza|taco|bakery|comida|restaurante/.test(text)) return "Restaurant";
+  if (/software|ai|saas|digital|course|ebook|template|tech|app/.test(text)) return "Digital products";
+  if (/real estate|property|broker|inmueble/.test(text)) return "Real estate";
+  if (/law|legal|account|finance|insurance|consult/.test(text)) return "Professional services";
+  if (/salon|spa|beauty|wellness|fitness|health/.test(text)) return "Wellness";
+  if (/shop|store|collection|product|ecommerce|marketplace/.test(text)) return "Commerce";
+  return "Local business";
+}
+
+function inferAudience(industry, text) {
+  if (/b2b|enterprise|business|company|empresa/.test(text)) return "decision-makers comparing professional options";
+  if (/family|kids|children|local|neighborhood|vecino/.test(text)) return "local customers looking for a trusted choice";
+  if (/premium|luxury|boutique|exclusive/.test(text)) return "quality-conscious customers who value trust and polish";
+  if (/digital|course|ebook|template|software|ai/.test(`${industry} ${text}`.toLowerCase())) return "online buyers looking for practical, credible value";
+  return "customers who need a clear, trustworthy solution";
+}
+
+function chooseDesignDirection(context = {}, templateSelection = null, schema = {}) {
+  const template = templateSelection?.template || schema.selected_template || {};
+  const catalogType = `${templateSelection?.catalogType || schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || ""}`.toLowerCase();
+  const text = `${context.industry || ""} ${context.offer || ""} ${context.brandStyle || ""} ${template.id || ""} ${template.category || ""} ${catalogType}`.toLowerCase();
+  if (/marketplace|classified|listing|directory|dense/.test(text)) return "marketplace";
+  if (/restaurant|food|menu|cafe|bar|bakery|order|comida/.test(text)) return "restaurant";
+  if (context.priceLevel === "premium" && /shop|store|collection|product|commerce|ecommerce/.test(text)) return "ecommerce_premium";
+  if (context.priceLevel === "premium") return "luxury";
+  if (/software|saas|ai|tech|digital|app|course|ebook|template/.test(text)) return "modern_tech";
+  if (/law|finance|account|insurance|consult|corporate|enterprise/.test(text)) return "corporate";
+  if (/salon|spa|health|fitness|repair|agency|service|professional/.test(text)) return "service_professional";
+  if (/kids|toy|party|creative|playful|fun|colorful/.test(text)) return "playful";
+  if (/minimal|simple|clean|studio|portfolio/.test(text)) return "minimalist";
+  return "local_business";
+}
+
+function createLayoutStrategy(context = {}, designDirection = "local_business", schema = {}) {
+  const scales = {
+    luxury: { sectionPadding: "spacious", containerWidth: "narrow", cardGap: "comfortable", typographyScale: "editorial", cardDensity: "airy", maxHomeSections: 5, heroLayout: "editorial_showcase" },
+    modern_tech: { sectionPadding: "balanced", containerWidth: "standard", cardGap: "comfortable", typographyScale: "strong", cardDensity: "comfortable", maxHomeSections: 6, heroLayout: "split_showcase" },
+    playful: { sectionPadding: "balanced", containerWidth: "standard", cardGap: "comfortable", typographyScale: "friendly", cardDensity: "comfortable", maxHomeSections: 6, heroLayout: "split_showcase" },
+    minimalist: { sectionPadding: "spacious", containerWidth: "narrow", cardGap: "relaxed", typographyScale: "quiet", cardDensity: "airy", maxHomeSections: 5, heroLayout: "minimal_statement" },
+    local_business: { sectionPadding: "balanced", containerWidth: "standard", cardGap: "comfortable", typographyScale: "clear", cardDensity: "comfortable", maxHomeSections: 6, heroLayout: "trust_first" },
+    corporate: { sectionPadding: "balanced", containerWidth: "standard", cardGap: "comfortable", typographyScale: "structured", cardDensity: "comfortable", maxHomeSections: 6, heroLayout: "authority_split" },
+    ecommerce_premium: { sectionPadding: "spacious", containerWidth: "wide", cardGap: "relaxed", typographyScale: "editorial", cardDensity: "airy", maxHomeSections: 5, heroLayout: "collection_showcase" },
+    marketplace: { sectionPadding: "compact", containerWidth: "wide", cardGap: "tight", typographyScale: "utility", cardDensity: "compact", maxHomeSections: 5, heroLayout: "search_led" },
+    restaurant: { sectionPadding: "balanced", containerWidth: "standard", cardGap: "comfortable", typographyScale: "warm", cardDensity: "comfortable", maxHomeSections: 6, heroLayout: "menu_story" },
+    service_professional: { sectionPadding: "balanced", containerWidth: "standard", cardGap: "comfortable", typographyScale: "clear", cardDensity: "comfortable", maxHomeSections: 6, heroLayout: "problem_solution" },
+  };
+  const scale = scales[designDirection] || scales.local_business;
+  const isCommerce = /offer|choose|catalog|product|shop|store/i.test(context.mainConversionGoal || "");
+  const isBooking = /booking|appointment|book|reservation/i.test(context.mainConversionGoal || "");
+  return {
+    heroPurpose: isCommerce ? "Present the main offer and move visitors into the catalog" : isBooking ? "Make booking feel clear and low-friction" : "Build immediate trust and invite the next contact action",
+    sectionOrder: isCommerce
+      ? ["Hero", "ProductGrid", "ServiceList", "Testimonials", "About", "Gallery", "Contact"]
+      : ["Hero", "FeatureBand", "ServiceList", "ProductGrid", "Testimonials", "About", "Gallery", "Contact"],
+    ctaPlacement: ["hero primary action", "offer cards", "final contact section"],
+    trustSignals: context.trustFactors || [],
+    productServicePresentation: isCommerce ? "comparison-ready catalog cards with clear labels" : "service cards focused on outcomes and next steps",
+    testimonialPlacement: "after offer clarity and before final contact",
+    contactBookingFlow: isBooking ? "booking-first CTA with contact fallback" : "direct contact CTA with phone/email support",
+    layoutStyle: `${designDirection.replace(/_/g, " ")} ${scale.typographyScale}`,
+    spacingScale: scale,
+    mobileBreakpoints: { stackAt: 760, compactNavAt: 680, cardColumnsAt: 820 },
+  };
+}
+
+function ensurePurposefulSections(schema, strategy, options = {}) {
+  const layoutStrategy = strategy.layoutStrategy || {};
+  const business = schema.business || {};
+  const hasCatalog = arrayValue(schema.catalog_items || schema.products_services).length > 0;
+  return {
+    ...schema,
+    pages: arrayValue(schema.pages).map((page) => {
+      const seen = new Set();
+      let sections = arrayValue(page.sections)
+        .filter((section) => hasSectionPurpose(section, hasCatalog, page.page_key === "home"))
+        .filter((section) => {
+          const key = `${section.type}:${normalizeGenericText(section.editable?.title || section.editable?.headline || "")}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      if (!sections.some((section) => section.type === "Hero") && page.page_key === "home") {
+        sections.unshift({
+          type: "Hero",
+          editable: {
+            headline: professionalHeadline(schema, strategy.businessContext),
+            subtitle: business.description || strategy.businessContext?.offer || "",
+            primary_button: primaryCtaForStrategy(strategy),
+          },
+          settings: {},
+        });
+      }
+      if (page.page_key === "home" && !options.reviewOnly) {
+        const maxSections = layoutStrategy.spacingScale?.maxHomeSections || 6;
+        sections = keepEssentialSections(sections, maxSections);
+      }
+      return { ...page, sections };
+    }),
+  };
+}
+
+function hasSectionPurpose(section, hasCatalog, isHomePage) {
+  if (!section) return false;
+  if (section.type === "Hero" || section.type === "Contact" || section.type === "Footer") return true;
+  if ((section.type === "ProductGrid" || section.type === "ServiceList") && hasCatalog) return true;
+  if (section.type === "Gallery") return arrayValue(section.editable?.images).length > 0;
+  const editable = section.editable || {};
+  const text = [editable.title, editable.headline, editable.text, editable.subtitle].filter(Boolean).join(" ");
+  if (!text.trim()) return false;
+  if (!isHomePage) return true;
+  return !/lorem ipsum|placeholder|random section|insert text/i.test(text);
+}
+
+function keepEssentialSections(sections, maxSections) {
+  const priority = { Hero: 0, ProductGrid: 1, ServiceList: 2, FeatureBand: 3, Testimonials: 4, About: 5, Gallery: 6, Contact: 7, Footer: 8 };
+  const sorted = [...sections].sort((a, b) => (priority[a.type] ?? 9) - (priority[b.type] ?? 9));
+  const selected = sorted.slice(0, Math.max(3, maxSections));
+  const contact = sections.find((section) => section.type === "Contact");
+  if (contact && !selected.includes(contact)) selected[selected.length - 1] = contact;
+  return selected;
+}
+
+function orderSectionsByStrategy(schema, layoutStrategy = {}) {
+  const order = layoutStrategy.sectionOrder || ["Hero", "ProductGrid", "ServiceList", "FeatureBand", "Testimonials", "About", "Gallery", "Contact"];
+  return {
+    ...schema,
+    pages: arrayValue(schema.pages).map((page) => ({
+      ...page,
+      sections: arrayValue(page.sections).sort((a, b) => (order.indexOf(a.type) === -1 ? 99 : order.indexOf(a.type)) - (order.indexOf(b.type) === -1 ? 99 : order.indexOf(b.type))),
+    })),
+  };
+}
+
+function applyProfessionalLayoutSettings(schema, strategy) {
+  const scale = strategy.layoutStrategy?.spacingScale || {};
+  const direction = strategy.designDirection || "local_business";
+  return {
+    ...schema,
+    pages: arrayValue(schema.pages).map((page) => ({
+      ...page,
+      sections: arrayValue(page.sections).map((section, index) => addSectionPurpose({
+        ...section,
+        editable: improveSectionCopy(section, schema, strategy),
+        settings: normalizeSectionSettings(section, index, scale, direction),
+      }, index, strategy)),
+    })),
+  };
+}
+
+function normalizeSectionSettings(section, index, scale, direction) {
+  const settings = { ...(section.settings || {}) };
+  if (settings.background && /gradient|random|rainbow/i.test(settings.background)) delete settings.background;
+  settings.spacing = section.type === "Hero" ? "spacious" : settings.spacing || scale.sectionPadding || "balanced";
+  settings.heading_size = section.type === "Hero" ? "large" : settings.heading_size || (direction === "marketplace" ? "small" : "medium");
+  settings.container_width = settings.container_width || (section.type === "Hero" ? scale.containerWidth || "standard" : scale.containerWidth || "standard");
+  settings.card_gap = settings.card_gap || scale.cardGap || "comfortable";
+  settings.card_density = settings.card_density || scale.cardDensity || "comfortable";
+  settings.mobile_stack = true;
+  if (section.type === "Hero") settings.layout = settings.layout || scale.heroLayout || "split_showcase";
+  if (section.type === "ProductGrid" || section.type === "ServiceList") {
+    settings.columns = Number(settings.columns || (direction === "marketplace" ? 4 : direction === "luxury" || direction === "ecommerce_premium" ? 3 : 3));
+  }
+  return settings;
+}
+
+function improveSectionCopy(section, schema, strategy) {
+  const editable = { ...(section.editable || {}) };
+  if (section.type === "Hero") {
+    if (isWeakHeadline(editable.headline, schema.business?.name)) editable.headline = professionalHeadline(schema, strategy.businessContext);
+    if (!editable.subtitle || isGenericText(editable.subtitle)) editable.subtitle = professionalSubtitle(schema, strategy.businessContext);
+    if (!editable.primary_button || isWeakCta(editable.primary_button)) editable.primary_button = primaryCtaForStrategy(strategy);
+    if (isWeakCta(editable.secondary_button)) editable.secondary_button = "View offerings";
+  }
+  if ((section.type === "ProductGrid" || section.type === "ServiceList") && isGenericText(editable.title || editable.headline)) {
+    editable.title = strategy.designDirection === "restaurant" ? "Menu highlights" : "What you can get here";
+  }
+  if (section.type === "Contact") {
+    editable.title = editable.title && !isGenericText(editable.title) ? editable.title : "Ready for the next step?";
+    editable.text = editable.text && !isGenericText(editable.text) ? editable.text : "Send a message and get a clear answer about availability, pricing, or fit.";
+  }
+  return editable;
+}
+
+function reviewWebsiteConfigBeforeRender(schema, strategy) {
+  const improvements = [];
+  const reviewed = {
+    ...schema,
+    global_components: {
+      ...(schema.global_components || {}),
+      footer_text: schema.global_components?.footer_text || `${schema.business?.name || "Brand"} - ${strategy.businessContext?.mainConversionGoal || "clear next steps"}`,
+    },
+  };
+  reviewed.pages = arrayValue(reviewed.pages).map((page) => ({
+    ...page,
+    sections: arrayValue(page.sections).map((section) => {
+      if (section.type !== "Hero") return section;
+      const editable = { ...(section.editable || {}) };
+      if (isWeakHeadline(editable.headline, reviewed.business?.name)) {
+        editable.headline = professionalHeadline(reviewed, strategy.businessContext);
+        improvements.push("Strengthened hero headline");
+      }
+      if (!editable.primary_button || isWeakCta(editable.primary_button)) {
+        editable.primary_button = primaryCtaForStrategy(strategy);
+        improvements.push("Clarified primary CTA");
+      }
+      return { ...section, editable };
+    }),
+  }));
+  reviewed.design_review = {
+    reviewedAt: new Date().toISOString(),
+    focus: ["headline", "CTA", "section order", "contrast", "visual rhythm", "mobile layout", "brand consistency"],
+    improvements,
+  };
+  return reviewed;
+}
+
+function professionalHeadline(schema, context = {}) {
+  const name = schema.business?.name || "Your brand";
+  const offer = cleanShortText(context.offer || schema.business?.description || context.industry || "a better customer experience", 58);
+  if (offer && !new RegExp(`^${escapeRegExp(name)}$`, "i").test(offer)) return `${name}: ${offer}`;
+  return `${name} built for ${context.audience || "modern customers"}`;
+}
+
+function professionalSubtitle(schema, context = {}) {
+  const trust = arrayValue(context.trustFactors).slice(0, 2).join(" and ");
+  const audience = context.audience || "customers";
+  return `A focused ${context.industry || "business"} experience for ${audience}${trust ? `, backed by ${trust}` : ""}.`;
+}
+
+function primaryCtaForStrategy(strategy = {}) {
+  const goal = `${strategy.businessContext?.mainConversionGoal || strategy.conversionGoal || ""}`.toLowerCase();
+  if (/booking|appointment|reservation|book/.test(goal)) return "Book now";
+  if (/quote|inquir|contact|proposal/.test(goal)) return "Request a quote";
+  if (/offer|catalog|product|shop|choose/.test(goal)) return "View offerings";
+  return "Get started";
+}
+
+function isWeakHeadline(value, businessName = "") {
+  const text = String(value || "").trim();
+  if (!text) return true;
+  if (businessName && text.toLowerCase() === String(businessName).trim().toLowerCase()) return true;
+  return text.length < 16 || isGenericText(text);
+}
+
+function isWeakCta(value) {
+  return !value || /click here|learn more|submit|button|cta/i.test(String(value));
+}
+
+function isGenericText(value) {
+  return /lorem|placeholder|generic|products and services|featured product|main service|special offer|your business|welcome to/i.test(String(value || ""));
+}
+
+function cleanShortText(value, maxLength = 60) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength).replace(/\s+\S*$/, "")}`;
+}
+
+function normalizeGenericText(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function addSectionPurpose(section, index, strategy) {
+  const typePurpose = {
+    Hero: "State the offer, establish brand credibility, and drive the primary CTA.",
+    ProductGrid: "Help visitors compare offers and choose a next action.",
+    ServiceList: "Clarify services and reduce decision friction.",
+    FeatureBand: "Explain differentiators that support the conversion goal.",
+    About: "Build trust with context and brand story.",
+    Testimonials: "Provide proof and reduce risk.",
+    Gallery: "Show real visual evidence.",
+    Contact: "Convert interest into a request.",
+    Footer: "Close with brand recall and contact routes.",
+  };
+  return {
+    ...section,
+    reason: section.reason || typePurpose[section.type] || "Support the page narrative with useful information.",
+    conversion_purpose: section.conversion_purpose || (index === 0 ? strategy.conversionGoal : typePurpose[section.type] || strategy.businessGoal),
+    priority: section.priority || (index === 0 ? "high" : index < 3 ? "medium" : "supporting"),
+    visual_treatment: section.visual_treatment || `${strategy.visualDirection}; spacing ${section.settings?.spacing || "balanced"}`,
+  };
+}
+
+function scoreWebsiteConfig(schema) {
+  const brand = normalizeBrand(schema.brand || {});
+  const pages = arrayValue(schema.pages);
+  const sections = pages.flatMap((page) => arrayValue(page.sections));
+  const hero = sections.find((section) => section.type === "Hero");
+  const hasLogo = Boolean(brand.logoUrl || schema.global_components?.logo_url);
+  const hasBrandColors = Boolean(schema.brand?.primaryColor && schema.theme?.colors?.primary);
+  const hasPurposes = sections.length && sections.every((section) => section.reason && section.conversion_purpose && section.priority);
+  const repeatedTypes = sections.length - new Set(sections.map((section) => `${section.type}:${section.editable?.title || section.editable?.headline || ""}`)).size;
+  const contrastOk = contrastRatio(brand.textColor, brand.backgroundColor) >= 4.5 && contrastRatio(brand.buttonColor, brand.buttonTextColor) >= 4.5;
+  const designDirection = schema.design_intelligence?.designDirection || schema.design_strategy?.designDirection;
+  const layoutStrategy = schema.design_intelligence?.layoutStrategy || schema.design_strategy?.layoutStrategy;
+  const genericTextCount = sections.filter((section) => {
+    const editable = section.editable || {};
+    return [editable.headline, editable.title, editable.subtitle, editable.text].some(isGenericText);
+  }).length;
+  const weakCtaCount = sections.filter((section) => section.type === "Hero" && isWeakCta(section.editable?.primary_button)).length;
+  const hasLayoutSettings = sections.every((section) => section.settings?.spacing && section.settings?.container_width && section.settings?.card_density);
+  const purposefulSectionCount = sections.filter((section) => section.type !== "Footer").length;
+  const clutterPenalty = Math.max(0, purposefulSectionCount - 7) * 8;
+  const metrics = {
+    brandConsistency: Math.min(100, 56 + (hasLogo ? 18 : 0) + (hasBrandColors ? 26 : 0)),
+    visualHierarchy: hero?.editable?.headline && hero?.editable?.primary_button ? 92 : 68,
+    contentClarity: Math.max(55, (sections.filter((section) => section.editable?.text || section.editable?.subtitle || section.editable?.headline).length >= Math.min(3, sections.length) ? 90 : 70) - genericTextCount * 12),
+    conversionStrength: Math.max(55, (hero?.editable?.primary_button && sections.some((section) => /Contact|ProductGrid|ServiceList/.test(section.type)) ? 92 : 72) - weakCtaCount * 18),
+    spacing: hasLayoutSettings ? 94 : sections.every((section) => section.settings?.spacing || section.type === "Hero") ? 86 : 74,
+    accessibility: contrastOk ? 94 : 62,
+    templateFit: schema.selected_template?.id || schema.active_template?.id || designDirection ? 90 : 78,
+    mobileUsability: pages.length && sections.length < 10 && sections.every((section) => section.settings?.mobile_stack !== false) ? 92 : 76,
+    sectionPurpose: hasPurposes ? 95 : 65,
+    repetition: Math.max(58, 95 - repeatedTypes * 12),
+    designDirection: designDirection ? 94 : 60,
+    layoutStrategy: layoutStrategy?.sectionOrder?.length ? 94 : 64,
+    clutterControl: Math.max(58, 95 - clutterPenalty),
+  };
+  const total = Math.round(Object.values(metrics).reduce((sum, value) => sum + value, 0) / Object.keys(metrics).length);
+  return { total, metrics };
+}
+
+function improveWebsiteConfig(schema) {
+  const improved = structuredClone(schema);
+  const brand = normalizeBrand(improved.brand || {});
+  improved.theme = improved.theme || {};
+  improved.theme.colors = brandToThemeColors(brand);
+  const strategy = improved.design_strategy || createDesignStrategy({}, null, improved);
+  improved.pages = arrayValue(improved.pages).map((page) => ({
+    ...page,
+    sections: arrayValue(page.sections)
+      .filter((section, index, list) => index === list.findIndex((item) => `${item.type}:${item.editable?.title || item.editable?.headline || ""}` === `${section.type}:${section.editable?.title || section.editable?.headline || ""}`))
+      .map((section, index) => ({
+        ...section,
+        editable: improveSectionCopy(section, improved, strategy),
+        settings: {
+          ...(section.settings || {}),
+          spacing: section.settings?.spacing || (index === 0 ? "spacious" : "balanced"),
+          heading_size: section.settings?.heading_size || (index === 0 ? "large" : "medium"),
+          container_width: section.settings?.container_width || "standard",
+          card_density: section.settings?.card_density || "comfortable",
+          card_gap: section.settings?.card_gap || "comfortable",
+          mobile_stack: true,
+        },
+      })),
+  }));
+  improved.design_review = {
+    ...(improved.design_review || {}),
+    autoImproved: true,
+    designScoreTarget: 85,
+  };
+  return improved;
 }
 
 function buildInstantTemplateResult(payload, error, templateSelection) {
@@ -2792,16 +3794,32 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const copy = instantLocaleCopy(language);
   const name = payload.business_name || copy.newStore;
   const description = payload.business_description || copy.defaultDescription;
+  const salesText = `${payload.salesMode || ""} ${payload.sales_mode || ""} ${payload.templateIntent || ""} ${template.category || ""} ${template.id || ""}`.toLowerCase();
+  const isOnlineShop = /sell online|online sales|shop|store|tienda|ecommerce|cart|checkout|vender|comprar/.test(salesText);
   const products = arrayValue(payload.services_products).length
     ? arrayValue(payload.services_products)
     : copy.defaultProducts;
-  const colors = chooseInstantPalette(payload);
+  const brand = normalizeBrand(payload.brand || createBrandSystem({
+    logoUrl: payload.assets?.find((asset) => asset.asset_type === "logo")?.url || "",
+    extractedColors: payload.logoPalette,
+    preferredColors: payload.preferred_colors,
+    businessName: name,
+    industry: payload.industry,
+    tone: payload.preferred_tone,
+  }));
+  const colors = brandToThemeColors(brand);
   const catalogItems = products.map((item, index) => ({
     id: `instant_${index + 1}`,
+    sku: `SKU-${index + 1}`,
     name: item,
     description: copy.itemDescription(name),
-    price_label: copy.askPrice,
-    button_label: copy.request,
+    price_type: isOnlineShop ? "fixed" : "quote_only",
+    price_amount: "",
+    currency: "USD",
+    price_label: isOnlineShop ? copy.priceNotSet : copy.askPrice,
+    button_label: isOnlineShop ? copy.viewProduct : copy.request,
+    inventory_quantity: "",
+    track_inventory: isOnlineShop,
     image_url: "",
     is_active: true,
     is_featured: index < 3,
@@ -2821,20 +3839,26 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     },
     theme: {
       colors,
-      fonts: { heading: "Inter", body: "Inter" },
+      fonts: brand.fontPairing,
       buttons: {
         primary_label: copy.shopNow,
         secondary_label: copy.viewCatalog,
+        background: brand.buttonColor,
+        text: brand.buttonTextColor,
+        radius: brand.borderRadius,
       },
-      radius: 10,
+      radius: Number.parseInt(brand.borderRadius, 10) || 10,
+      shadow: brand.shadowStyle,
     },
+    brand,
+    design_strategy: createDesignStrategy(payload, templateSelection, { brand }),
     layout_mode: {
       id: template.id || "instant_storefront",
       template_id: template.id || "",
       catalog_type: catalogType,
       intent: templateSelection?.intent || payload.templateIntent || "",
       navigation: { show_cart: true, show_header: true, sticky_header: true },
-      checkout: { mode: "quote_or_cart", primary_action: copy.requestOrder },
+      checkout: { mode: isOnlineShop ? "cart_setup_required" : "quote_or_cart", primary_action: isOnlineShop ? copy.shopNow : copy.requestOrder },
     },
     integrations: { contact: { whatsapp_enabled: true, email_enabled: true }, analytics: { enabled: false, provider: "" }, payments: { enabled: false, mode: "setup_required" } },
     custom_logic: { enabled: false, risk_level: "restricted", automations: "" },
@@ -2913,7 +3937,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       },
     ],
     global_components: {
-      logo_url: payload.assets?.find((asset) => asset.asset_type === "logo")?.url || "",
+      logo_url: brand.logoUrl || payload.assets?.find((asset) => asset.asset_type === "logo")?.url || "",
+      favicon_url: brand.logoUrl || payload.assets?.find((asset) => asset.asset_type === "logo")?.url || "",
       footer_text: copy.footerText(name),
     },
     selected_template: {
@@ -2934,7 +3959,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         id: "instant-modern",
         name: template.name || copy.modernCommercial,
         description: template.visualDifference || copy.fastBase,
-        theme: { colors, fonts: { heading: "Inter", body: "Inter" }, buttons: { primary_label: copy.shopNow, secondary_label: copy.contactVerb }, radius: 10 },
+        theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: copy.shopNow, secondary_label: copy.contactVerb, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
         layout_mode_id: template.id || "instant_storefront",
         hero_layout: "split_showcase",
         product_layout: catalogType,
@@ -2955,7 +3980,9 @@ function instantLocaleCopy(language) {
       defaultProducts: ["Featured product", "Main service", "Special offer"],
       itemDescription: (name) => `A featured option from ${name}, ready to present with details, benefits, and a clear call to action.`,
       askPrice: "Ask for price",
+      priceNotSet: "Price editable",
       request: "Request",
+      viewProduct: "View product",
       onlineStore: "Online store",
       defaultTone: "Professional and friendly",
       shopNow: "Shop now",
@@ -2987,7 +4014,9 @@ function instantLocaleCopy(language) {
       defaultProducts: ["Producto destacado", "Servicio principal", "Oferta especial"],
       itemDescription: (name) => `Una opcion destacada de ${name}, lista para presentar al cliente con detalles, beneficios y llamada a la accion.`,
       askPrice: "Consultar precio",
+      priceNotSet: "Precio editable",
       request: "Solicitar",
+      viewProduct: "Ver producto",
       onlineStore: "Tienda online",
       defaultTone: "Profesional y cercano",
       shopNow: "Comprar ahora",
@@ -3019,7 +4048,9 @@ function instantLocaleCopy(language) {
       defaultProducts: ["Produit phare", "Service principal", "Offre spéciale"],
       itemDescription: (name) => `Une option phare de ${name}, prête à être présentée avec détails, bénéfices et appel à l'action.`,
       askPrice: "Demander le prix",
+      priceNotSet: "Prix editable",
       request: "Demander",
+      viewProduct: "Voir le produit",
       onlineStore: "Boutique en ligne",
       defaultTone: "Professionnel et chaleureux",
       shopNow: "Acheter maintenant",
@@ -3051,7 +4082,9 @@ function instantLocaleCopy(language) {
       defaultProducts: ["Produto em destaque", "Serviço principal", "Oferta especial"],
       itemDescription: (name) => `Uma opção em destaque de ${name}, pronta para apresentar detalhes, benefícios e chamada para ação.`,
       askPrice: "Consultar preço",
+      priceNotSet: "Preço editável",
       request: "Solicitar",
+      viewProduct: "Ver produto",
       onlineStore: "Loja online",
       defaultTone: "Profissional e próximo",
       shopNow: "Comprar agora",
@@ -3169,6 +4202,84 @@ async function submitGeneratedDraftForReview() {
   }
 }
 
+function requireStudioAccount(event, action, callback) {
+  if (event?.preventDefault) event.preventDefault();
+  if (!currentSchema) {
+    callback?.();
+    return;
+  }
+  if (hasStudioAccountSession()) {
+    callback?.();
+    return;
+  }
+  openStudioAuthGate(action);
+}
+
+function hasStudioAccountSession() {
+  return Boolean(
+    localStorage.getItem("lumaClientAccessToken") ||
+    sessionStorage.getItem("lumaClientAccessToken") ||
+    localStorage.getItem("vm_portal_preview_token") ||
+    sessionStorage.getItem("vm_portal_preview_token"),
+  );
+}
+
+function openStudioAuthGate(action = "continue") {
+  if (!studioAuthGate) return;
+  persistPendingStudioAccountAction(action);
+  studioAuthGate.hidden = false;
+  document.body.classList.add("studio-auth-open");
+  setAssistantState("success");
+}
+
+function closeStudioAuthGate() {
+  if (!studioAuthGate) return;
+  studioAuthGate.hidden = true;
+  document.body.classList.remove("studio-auth-open");
+}
+
+function persistPendingStudioAccountAction(action) {
+  try {
+    localStorage.setItem("lumaPendingAuthAction", action);
+    if (currentSchema) {
+      localStorage.setItem("lumaPendingGeneratedSite", JSON.stringify({
+        schema: currentSchema,
+        siteId: currentSiteId,
+        businessId: currentBusinessId,
+        selectedPageKey,
+        savedAt: new Date().toISOString(),
+      }));
+    }
+  } catch {
+    // Storage can fail for large drafts; the live session still keeps the draft.
+  }
+}
+
+function continueWithStudioAuth(provider) {
+  persistPendingStudioAccountAction(provider);
+  const returnTo = encodeURIComponent(window.location.href);
+  const configured = provider === "google" ? window.LUMA_GOOGLE_AUTH_URL : window.LUMA_APPLE_AUTH_URL;
+  const fallback = `${API_BASE_URL}/api/client/auth/oauth/${encodeURIComponent(provider)}?return_to=${returnTo}`;
+  window.location.href = configured || fallback;
+}
+
+function continueWithEmailAuth(event) {
+  event.preventDefault();
+  const email = studioAuthEmail?.value.trim();
+  if (!email) return;
+  persistPendingStudioAccountAction("email");
+  localStorage.setItem("lumaPendingClientEmail", email);
+  if (storageStatus) {
+    storageStatus.textContent = langText({
+      en: "Email saved. The account step is ready to connect to magic links.",
+      es: "Email guardado. El paso de cuenta queda listo para conectar magic links.",
+      fr: "Email enregistré. L'étape de compte est prête pour les magic links.",
+      pt: "Email salvo. A etapa de conta está pronta para magic links.",
+    });
+  }
+  closeStudioAuthGate();
+}
+
 function adjustGeneratedDraftWithLuma() {
   document.body.classList.remove("generated-preview-open", "client-preview-mode");
   guidedPanel.classList.add("active");
@@ -3235,6 +4346,22 @@ async function collectPayload() {
     catalog_items: catalogItemsFromForm(),
     assets,
     logoPalette: arrayValue(guidedState.logoPalette),
+    brand: normalizeBrand(guidedState.brand || {
+      logoUrl: assets.find((asset) => asset.asset_type === "logo")?.url || "",
+      extractedColors: arrayValue(guidedState.logoPalette),
+      preferredColors: splitCommaOrLines(data.get("preferred_colors")?.toString() || ""),
+      industry: data.get("industry")?.toString().trim(),
+      tone: data.get("preferred_tone")?.toString().trim(),
+    }),
+    designStrategy: createDesignStrategy({
+      business_name: data.get("business_name")?.toString().trim(),
+      business_description: data.get("business_description")?.toString().trim(),
+      industry: data.get("industry")?.toString().trim(),
+      target_audience: data.get("target_audience")?.toString().trim(),
+      preferred_tone: data.get("preferred_tone")?.toString().trim(),
+      salesMode: guidedState.salesMode,
+    }),
+    qualityRules: DESIGN_QUALITY_RULES,
     requestedAdjustments: arrayValue(guidedState.requestedAdjustments),
     brandContextNote:
       "Intake answers are client intent and design strategy context. Use them to create polished website copy, but do not copy internal planning answers literally unless they are natural public-facing text.",
@@ -3343,9 +4470,11 @@ function setInputValue(name, value) {
 function catalogItemsFromForm() {
   return splitCommaOrLines(new FormData(form).get("services_products")?.toString() || "").map((name, index) => ({
     id: `seed_${index + 1}`,
-    name,
-    description: "",
-    price_type: "quote_only",
+      name,
+      description: "",
+      category: "",
+      variants: "",
+      price_type: "quote_only",
     price_value: null,
     price_label: "Ask for pricing",
     image_url: "",
@@ -3361,6 +4490,8 @@ function catalogItemsFromSchema(schema) {
     id: item.id || `catalog_${index + 1}`,
     name: item.name || "Catalog item",
     description: item.description || "",
+    category: item.category || "",
+    variants: item.variants || "",
     price_type: item.price_type || "quote_only",
     price_value: item.price_value ?? null,
     price_label: item.price_label || "",
@@ -3384,6 +4515,7 @@ function catalogItemsForApi() {
 
 function renderEditor() {
   if (!currentSchema) return;
+  editorMount.classList.toggle("advanced-inspector-open", advancedInspectorOpen);
   const pageOptions = currentSchema.pages
     .map(
       (page) =>
@@ -3392,10 +4524,12 @@ function renderEditor() {
     .join("");
 
   editorMount.innerHTML = `
+    ${studioInspector()}
     <div class="editor-group">
       <h3>Design options</h3>
       <div class="variant-grid">${designVariantCards()}</div>
     </div>
+    ${brandKitEditor(currentSchema.brand, currentSchema.design_score)}
     <div class="editor-group">
       <label>Editing page<select id="pageSelector">${pageOptions}</select></label>
       <div class="row-actions">
@@ -3408,6 +4542,9 @@ function renderEditor() {
       ${inputField("Business name", "business.name", currentSchema.business.name)}
       ${textareaField("Description", "business.description", currentSchema.business.description)}
       ${inputField("Logo URL", "global_components.logo_url", currentSchema.global_components.logo_url || "")}
+      ${inputField("Brand primary", "brand.primaryColor", currentSchema.brand?.primaryColor || "")}
+      ${inputField("Brand accent", "brand.accentColor", currentSchema.brand?.accentColor || "")}
+      ${inputField("Button color", "brand.buttonColor", currentSchema.brand?.buttonColor || "")}
     </div>
     <div class="editor-group">
       <h3>Colors</h3>
@@ -3435,6 +4572,14 @@ function renderEditor() {
     </div>
   `;
 
+  editorMount.querySelector("#toggleAdvancedInspector")?.addEventListener("click", () => {
+    advancedInspectorOpen = !advancedInspectorOpen;
+    renderEditor();
+  });
+  editorMount.querySelectorAll("[data-studio-add-product]").forEach((button) => {
+    button.addEventListener("click", addStudioCatalogItem);
+  });
+
   editorMount.querySelector("#pageSelector").addEventListener("change", (event) => {
     selectedPageKey = event.target.value;
     renderEditor();
@@ -3452,6 +4597,13 @@ function renderEditor() {
   editorMount.querySelectorAll("[data-path]").forEach((input) => {
     input.addEventListener("input", () => {
       setPath(currentSchema, input.dataset.path, normalizeEditedValue(input.dataset.path, input.value));
+      if (input.dataset.path.startsWith("brand.") || input.dataset.path === "global_components.logo_url") {
+        currentSchema.brand = normalizeBrand({
+          ...(currentSchema.brand || {}),
+          logoUrl: currentSchema.global_components?.logo_url || currentSchema.brand?.logoUrl || "",
+        });
+        currentSchema = applyBrandSystemToSchema(currentSchema, currentSchema.brand);
+      }
       renderPreview();
     });
   });
@@ -3511,13 +4663,7 @@ function renderEditor() {
 
   editorMount.querySelector("#addSectionButton").addEventListener("click", () => {
     const page = selectedPage();
-    page.sections.push({
-      id: `section_${Date.now()}`,
-      type: "FeatureBand",
-      order: page.sections.length + 1,
-      editable: { title: "New section", text: "Edit this content." },
-      settings: {},
-    });
+    page.sections.push(createSectionByType("FeatureBand", page.sections.length + 1));
     renderEditor();
     renderPreview();
   });
@@ -3527,11 +4673,15 @@ function renderEditor() {
       id: `catalog_${Date.now()}`,
       name: "New item",
       description: "Edit this product or service.",
-      price_type: "quote_only",
+      category: "",
+      variants: "",
+      price_type: "fixed",
       price_value: "",
-      price_label: "Ask for pricing",
+      price_label: "Precio editable",
       image_url: "",
-      button_label: "Request info",
+      button_label: "Ver producto",
+      inventory_quantity: "",
+      track_inventory: true,
       is_active: true,
       is_featured: false,
       sort_order: currentCatalogItems.length + 1,
@@ -3551,7 +4701,9 @@ function renderEditor() {
 
 function renderPreview() {
   if (!currentSchema) return;
+  applyGeneratedFavicon(currentSchema);
   previewFrame.innerHTML = renderWebsite(schemaForPreview(), selectedPageKey);
+  renderStudioProgress();
   previewFrame.querySelectorAll("[data-page-link]").forEach((link) => {
     link.addEventListener("click", (event) => {
       event.preventDefault();
@@ -3560,6 +4712,278 @@ function renderPreview() {
       renderPreview();
     });
   });
+  previewFrame.querySelectorAll("[data-studio-section]").forEach((sectionElement) => {
+    sectionElement.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      selectStudioSection(sectionElement.dataset.studioSection);
+    });
+  });
+}
+
+function studioInspector() {
+  const selectedSection = selectedStudioSection();
+  const title = selectedSection ? `${selectedSection.type} inspector` : "Page inspector";
+  return `<div class="editor-group studio-inspector">
+    <div class="studio-inspector-head">
+      <div>
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(selectedSection ? "Edit the selected section from the canvas." : "Select a section on the canvas to edit it directly.")}</p>
+      </div>
+      <button id="toggleAdvancedInspector" class="small-button" type="button">${advancedInspectorOpen ? "Hide advanced" : "Advanced controls"}</button>
+    </div>
+    ${selectedSection ? sectionQuickInspector(selectedSection) : pageQuickInspector()}
+  </div>`;
+}
+
+function sectionQuickInspector(section) {
+  const page = selectedPage();
+  const index = page.sections.findIndex((item) => (item.id || item.type) === (section.id || section.type));
+  const basePath = `pages.${pageIndex()}.sections.${index}`;
+  const editable = section.editable || {};
+  if (section.type === "Hero") {
+    return `<div class="studio-inspector-grid">
+      ${textareaField("Headline", `${basePath}.editable.headline`, editable.headline || "", "data-section-path")}
+      ${textareaField("Subtitle", `${basePath}.editable.subtitle`, editable.subtitle || "", "data-section-path")}
+      ${inputField("Primary CTA", `${basePath}.editable.primary_button`, editable.primary_button || "", "data-section-path")}
+      ${inputField("Image URL", `${basePath}.editable.image_url`, editable.image_url || "", "data-section-path")}
+      ${selectField("Layout", `${basePath}.settings.layout`, section.settings?.layout || "split_showcase", ["split_showcase", "image_left", "centered_hero", "minimal_statement"], "data-section-path")}
+    </div>`;
+  }
+  if (section.type === "ProductGrid" || section.type === "ServiceList") {
+    return `<div class="studio-inspector-grid">
+      ${inputField("Title", `${basePath}.editable.title`, editable.title || editable.headline || "", "data-section-path")}
+      ${textareaField("Intro text", `${basePath}.editable.text`, editable.text || editable.subtitle || "", "data-section-path")}
+      ${selectField("Columns", `${basePath}.settings.columns`, section.settings?.columns || 3, ["2", "3", "4"], "data-section-path")}
+      ${selectField("Card density", `${basePath}.settings.card_density`, section.settings?.card_density || "comfortable", ["compact", "comfortable", "airy"], "data-section-path")}
+      <button class="small-button" type="button" data-studio-add-product>Add product</button>
+    </div>`;
+  }
+  if (section.type === "Contact") {
+    return `<div class="studio-inspector-grid">
+      ${inputField("Title", `${basePath}.editable.title`, editable.title || "", "data-section-path")}
+      ${textareaField("Text", `${basePath}.editable.text`, editable.text || "", "data-section-path")}
+      ${inputField("Email", "contact.email", currentSchema.contact?.email || "")}
+      ${inputField("Phone", "contact.phone", currentSchema.contact?.phone || "")}
+      ${inputField("WhatsApp", "contact.whatsapp", currentSchema.contact?.whatsapp || "")}
+    </div>`;
+  }
+  return `<div class="studio-inspector-grid">
+    ${inputField("Title", `${basePath}.editable.title`, editable.title || editable.headline || "", "data-section-path")}
+    ${textareaField("Text", `${basePath}.editable.text`, editable.text || editable.subtitle || "", "data-section-path")}
+    ${selectField("Spacing", `${basePath}.settings.spacing`, section.settings?.spacing || "balanced", ["compact", "balanced", "spacious"], "data-section-path")}
+  </div>`;
+}
+
+function pageQuickInspector() {
+  return `<div class="studio-inspector-grid">
+    ${inputField("Business name", "business.name", currentSchema.business?.name || "")}
+    ${inputField("Logo URL", "global_components.logo_url", currentSchema.global_components?.logo_url || "")}
+    ${inputField("Brand primary", "brand.primaryColor", currentSchema.brand?.primaryColor || "")}
+    ${inputField("Button color", "brand.buttonColor", currentSchema.brand?.buttonColor || "")}
+  </div>`;
+}
+
+function selectedStudioSection() {
+  const page = selectedPage();
+  return arrayValue(page?.sections).find((section) => (section.id || section.type) === selectedStudioSectionId) || null;
+}
+
+function handleStudioSelectionAction(action) {
+  const page = selectedPage();
+  const index = arrayValue(page.sections).findIndex((section) => (section.id || section.type) === selectedStudioSectionId);
+  if (index < 0) return;
+  if (action === "edit") {
+    renderEditor();
+    selectStudioSection(selectedStudioSectionId);
+    return;
+  }
+  if (action === "up" || action === "down") {
+    const next = action === "up" ? index - 1 : index + 1;
+    if (next >= 0 && next < page.sections.length) {
+      [page.sections[index], page.sections[next]] = [page.sections[next], page.sections[index]];
+      resequence(page.sections);
+    }
+  } else if (action === "duplicate") {
+    const copy = structuredClone(page.sections[index]);
+    copy.id = `${slugify(copy.type)}_${Date.now()}`;
+    copy.order = index + 2;
+    page.sections.splice(index + 1, 0, copy);
+    selectedStudioSectionId = copy.id;
+    resequence(page.sections);
+  } else if (action === "delete") {
+    page.sections.splice(index, 1);
+    selectedStudioSectionId = "";
+    studioSelectionToolbar.hidden = true;
+    resequence(page.sections);
+  } else if (action === "luma") {
+    adjustGeneratedDraftWithLuma();
+    return;
+  }
+  renderEditor();
+  renderPreview();
+  if (selectedStudioSectionId) window.setTimeout(() => selectStudioSection(selectedStudioSectionId), 50);
+}
+
+function renderStudioProgress() {
+  if (!studioProgressList) return;
+  if (!currentSchema) {
+    studioProgressList.innerHTML = studioProgressItems([
+      ["pending", "Home page"],
+      ["pending", "Brand system"],
+      ["pending", "Online shop"],
+      ["pending", "Contact page"],
+    ]);
+    return;
+  }
+  const pages = arrayValue(currentSchema.pages);
+  const sections = pages.flatMap((page) => arrayValue(page.sections));
+  const catalogItems = arrayValue(currentSchema.catalog_items || currentSchema.products_services);
+  const items = [
+    [pages.some((page) => page.page_key === "home") || sections.some((section) => section.type === "Hero") ? "done" : "active", "Home page"],
+    [currentSchema.brand?.primaryColor || currentSchema.theme?.colors?.primary ? "done" : "active", "Brand system"],
+    [catalogItems.length || sections.some((section) => /ProductGrid|ServiceList/.test(section.type)) ? "done" : "active", "Online shop"],
+    [sections.some((section) => section.type === "Contact") || currentSchema.contact?.email || currentSchema.contact?.phone ? "done" : "pending", "Contact page"],
+  ];
+  studioProgressList.innerHTML = studioProgressItems(items);
+}
+
+function setStudioProgressPhase(phase) {
+  if (!studioProgressList) return;
+  const steps = [
+    ["understanding", "Understanding business"],
+    ["brand", "Building brand kit"],
+    ["homepage", "Creating homepage"],
+    ["shop", "Creating shop"],
+    ["mobile", "Optimizing mobile"],
+    ["ready", "Ready"],
+  ];
+  const activeIndex = Math.max(0, steps.findIndex(([key]) => key === phase));
+  studioProgressList.innerHTML = studioProgressItems(steps.map(([key, label], index) => [
+    phase === "ready" || index < activeIndex ? "done" : index === activeIndex ? "active" : "pending",
+    label,
+  ]));
+}
+
+function studioProgressItems(items) {
+  const icon = { done: "<span></span>", active: "<i></i>", pending: "<em></em>" };
+  return items.map(([state, label]) => `<div data-progress-state="${escapeAttribute(state)}">${icon[state] || icon.pending}<strong>${escapeHtml(label)}</strong></div>`).join("");
+}
+
+function addStudioSection(type = "FeatureBand") {
+  if (!currentSchema) return;
+  const page = currentSchema.pages.find((item) => item.page_key === selectedPageKey) || currentSchema.pages[0];
+  if (!page) return;
+  page.sections = arrayValue(page.sections);
+  page.sections.push(createSectionByType(type, page.sections.length + 1));
+  currentSchema = prepareWebsiteConfig(currentSchema, { brand: currentSchema.brand || guidedState.brand || {} }, null);
+  currentCatalogItems = catalogItemsFromSchema(currentSchema);
+  renderEditor();
+  renderPreview();
+}
+
+function addStudioCatalogItem() {
+  if (!currentSchema) return;
+  currentSchema.catalog_items = arrayValue(currentSchema.catalog_items);
+  currentSchema.catalog_items.push({
+    id: `item_${Date.now()}`,
+    sku: `SKU-${currentSchema.catalog_items.length + 1}`,
+    name: "Nuevo producto",
+    description: "Edita la descripción del producto.",
+    category: "",
+    variants: "",
+    price_type: "fixed",
+    price_value: "",
+    price_amount: "",
+    currency: "USD",
+    price_label: "Precio editable",
+    button_label: "Ver producto",
+    inventory_quantity: "",
+    track_inventory: true,
+    image_url: "",
+    is_active: true,
+    is_featured: currentSchema.catalog_items.length < 3,
+    sort_order: currentSchema.catalog_items.length,
+  });
+  currentSchema = prepareWebsiteConfig(currentSchema, { brand: currentSchema.brand || guidedState.brand || {} }, null);
+  currentCatalogItems = catalogItemsFromSchema(currentSchema);
+  renderEditor();
+  renderPreview();
+}
+
+function createSectionByType(type, order) {
+  const base = {
+    id: `${slugify(type)}_${Date.now()}`,
+    type,
+    order,
+    editable: {},
+    settings: { spacing: "balanced", container_width: "standard", card_density: "comfortable" },
+  };
+  if (type === "ProductGrid") {
+    base.editable = { title: "Productos destacados", text: "Una selección editable del catálogo.", images: [] };
+    base.settings = { ...base.settings, layout: "featured", columns: 3 };
+  } else if (type === "Hero") {
+    base.editable = {
+      headline: currentSchema?.business?.name || "Nueva propuesta principal",
+      subtitle: currentSchema?.business?.description || "Explica en una frase clara por qué vale la pena seguir.",
+      primary_button: "Ver productos",
+      secondary_button: "Contactar",
+      image_url: "",
+      images: [],
+    };
+    base.settings = { ...base.settings, layout: "split_showcase", spacing: "spacious", heading_size: "large" };
+  } else if (type === "Gallery") {
+    base.editable = { title: "Galería", images: [] };
+  } else if (type === "Testimonials") {
+    base.editable = { title: "Clientes que confían", text: "Agrega pruebas, comentarios o resultados reales." };
+  } else if (type === "Contact") {
+    base.editable = { title: "Hablemos", text: "Escríbenos para más información." };
+  } else {
+    base.editable = { title: "Nueva sección", text: "Edita este bloque para explicar una razón clara para comprar o contactar." };
+  }
+  return base;
+}
+
+function selectStudioSection(sectionId) {
+  selectedStudioSectionId = sectionId || "";
+  previewFrame.querySelectorAll("[data-studio-section].is-selected").forEach((element) => element.classList.remove("is-selected"));
+  const element = previewFrame.querySelector(`[data-studio-section="${cssEscape(sectionId)}"]`);
+  element?.classList.add("is-selected");
+  if (studioSelectionToolbar) studioSelectionToolbar.hidden = !element;
+  element?.scrollIntoView({ block: "center", behavior: "smooth" });
+  const editorSection = editorMount.querySelector(`[data-editor-section="${cssEscape(sectionId)}"]`);
+  editorSection?.scrollIntoView({ block: "start", behavior: "smooth" });
+  editorSection?.classList.add("editor-focus-flash");
+  window.setTimeout(() => editorSection?.classList.remove("editor-focus-flash"), 900);
+  const type = element?.dataset.studioSectionType || "section";
+  if (studioLumaMessage) {
+    studioLumaMessage.textContent = langText({
+      en: `I selected the ${type}. Tell me what to improve, or adjust its controls on the left.`,
+      es: `Seleccioné ${type}. Dime qué quieres mejorar o ajusta sus controles a la izquierda.`,
+      fr: `J'ai sélectionné ${type}. Dites-moi quoi améliorer ou ajustez ses contrôles à gauche.`,
+      pt: `Selecionei ${type}. Diga o que quer melhorar ou ajuste os controles à esquerda.`,
+    });
+  }
+  setAssistantState("listening");
+  renderEditor();
+}
+
+function cssEscape(value) {
+  if (window.CSS?.escape) return CSS.escape(String(value || ""));
+  return String(value || "").replace(/["\\]/g, "\\$&");
+}
+
+function applyGeneratedFavicon(schema) {
+  const favicon = schema?.global_components?.favicon_url || schema?.brand?.logoUrl || "";
+  if (!favicon) return;
+  let link = document.querySelector("link[data-generated-favicon]");
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "icon";
+    link.dataset.generatedFavicon = "true";
+    document.head.appendChild(link);
+  }
+  link.href = favicon;
 }
 
 function designVariantCards() {
@@ -3579,6 +5003,30 @@ function designVariantCards() {
       },
     )
     .join("");
+}
+
+function brandKitEditor(brandInput, score) {
+  const brand = normalizeBrand(brandInput);
+  const swatches = brandPalette(brand)
+    .map((color) => `<span class="brand-swatch" style="--swatch:${escapeAttribute(color)}" title="${escapeAttribute(color)}"></span>`)
+    .join("");
+  const total = score?.total ? `${score.total}/100` : "Not scored yet";
+  return `<div class="editor-group brand-kit-editor">
+    <h3>Brand Kit</h3>
+    <div class="brand-kit-head">
+      ${brand.logoUrl ? `<img src="${escapeAttribute(brand.logoUrl)}" alt="">` : ""}
+      <div>
+        <strong>${escapeHtml(brand.styleDirection)}</strong>
+        <span>Design score: ${escapeHtml(total)}</span>
+      </div>
+    </div>
+    <div class="brand-kit-swatches">${swatches}</div>
+    <div class="brand-kit-meta">
+      <span>${escapeHtml(fontPairingLabel(brand.fontPairing))}</span>
+      <span>${escapeHtml(brand.borderRadius)}</span>
+      <button class="brand-kit-button" type="button">Button preview</button>
+    </div>
+  </div>`;
 }
 
 function schemaForPreview() {
@@ -3714,10 +5162,20 @@ function normalizePreviewCatalogItems(schema) {
     if (typeof item === "string") {
       return {
         id: `item_${index + 1}`,
+        sku: `SKU-${index + 1}`,
         name: item,
         description: "",
+        category: "",
+        variants: "",
+        price_type: "fixed",
+        price_value: "",
+        price_amount: "",
+        currency: "USD",
         price_label: "",
-        button_label: labels.request || labels.view,
+        button_label: labels.view,
+        inventory_quantity: "",
+        track_inventory: false,
+        image_url: "",
         is_active: true,
         is_featured: index < 3,
         sort_order: index,
@@ -3725,10 +5183,19 @@ function normalizePreviewCatalogItems(schema) {
     }
     return {
       id: item.id || `item_${index + 1}`,
+      sku: item.sku || `SKU-${index + 1}`,
       name: item.name || item.title || `Item ${index + 1}`,
       description: item.description || item.text || "",
+      category: item.category || "",
+      variants: item.variants || "",
+      price_type: item.price_type || "fixed",
+      price_value: item.price_value ?? item.price_amount ?? item.priceAmount ?? "",
+      price_amount: item.price_amount ?? item.price_value ?? item.priceAmount ?? "",
+      currency: item.currency || "USD",
       price_label: item.price_label || item.price || item.priceLabel || "",
-      button_label: item.button_label || item.cta || labels.request || labels.view,
+      button_label: item.button_label || item.cta || labels.view,
+      inventory_quantity: item.inventory_quantity ?? item.stock ?? "",
+      track_inventory: Boolean(item.track_inventory || item.inventory_quantity || item.stock),
       image_url: item.image_url || item.imageUrl || "",
       is_active: item.is_active !== false,
       is_featured: item.is_featured ?? index < 3,
@@ -3750,11 +5217,14 @@ function selectedTemplatePreset() {
 
 function renderWebsite(schema, pageKey) {
   const page = schema.pages.find((item) => item.page_key === pageKey) || schema.pages[0];
-  const theme = schema.theme;
-  const logo = schema.global_components.logo_url;
+  const theme = schema.theme || {};
+  schema.business = schema.business || {};
+  schema.global_components = schema.global_components || {};
+  const logo = schema.brand?.logoUrl || schema.global_components.logo_url;
   const layoutId = schema.layout_mode?.id || "standard";
   const templateId = schema.active_template?.id || schema.selected_template?.id || "standard";
-  return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme)}">
+  return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)}">
+    ${renderStudioFloatingCatalog(schema)}
     <div class="rendered-page-switcher">
       <span>${escapeHtml(schema.business.name || "Website")}</span>
       <div>${schema.pages
@@ -3773,9 +5243,23 @@ function renderWebsite(schema, pageKey) {
       .map((section) => renderSection(section, schema))
       .join("")}
     <footer class="rendered-footer">
-      <strong>${escapeHtml(schema.business.name)}</strong>
+      <div>${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business.name)}">` : renderLogoMark(schema)}</div>
       <span>${escapeHtml(schema.global_components.footer_text || "")}</span>
     </footer>
+  </div>`;
+}
+
+function renderStudioFloatingCatalog(schema) {
+  if (document.body.classList.contains("client-preview-mode")) return "";
+  const items = arrayValue(schema.catalog_items || schema.products_services).filter((item) => item.is_active !== false).slice(0, 3);
+  if (!items.length) return "";
+  return `<div class="studio-floating-catalog" aria-hidden="true">
+    <span>Store preview</span>
+    <div>${items.map((item) => `<article>
+      ${renderResilientImage(item.image_url, item.name, item.name)}
+      <strong>${escapeHtml(item.name || "Product")}</strong>
+      <small>${escapeHtml(item.price_label || "Precio editable")}</small>
+    </article>`).join("")}</div>
   </div>`;
 }
 
@@ -3800,8 +5284,9 @@ function renderHero(section, schema) {
     (schema.catalog_items || schema.products_services || []).find((item) => item.image_url);
   const image = editable.image_url || heroItem?.image_url || "";
   const layout = section.settings?.layout || "split_showcase";
-  return `<section class="rendered-hero hero-${escapeAttribute(slugify(layout))} ${sectionClass(section)}" ${sectionVars(section)}>
+  return `<section class="rendered-hero hero-${escapeAttribute(slugify(layout))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div>
+      ${schema.brand?.logoUrl ? `<span class="hero-brand-badge"><img src="${escapeAttribute(schema.brand.logoUrl)}" alt="">${escapeHtml(schema.business.name || "")}</span>` : ""}
       <span class="rendered-kicker">${escapeHtml(schema.business.industry || schema.business.location || "Featured")}</span>
       <h1>${escapeHtml(editable.headline || schema.business.name)}</h1>
       <p>${escapeHtml(editable.subtitle || schema.business.description)}</p>
@@ -3824,7 +5309,7 @@ function renderProductGrid(section, schema) {
     .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
   const catalogType = schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || "editorial_minimal_grid";
   const customCatalog = renderCatalogByType(catalogType, catalogItems, schema);
-  return `<section class="rendered-section section-${escapeAttribute(slugify(section.settings?.layout || "grid"))} ${sectionClass(section)}" ${sectionVars(section)}>
+  return `<section class="rendered-section section-${escapeAttribute(slugify(section.settings?.layout || "grid"))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="section-heading">
       <span class="rendered-kicker">${escapeHtml(schema.business.tone || "Selected")}</span>
       <h2>${escapeHtml(editable.title || editable.headline || "Products and services")}</h2>
@@ -3834,11 +5319,12 @@ function renderProductGrid(section, schema) {
       ${catalogItems
         .map(
           (item) => `<article class="rendered-card">
-            ${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : `<div class="card-placeholder">${escapeHtml(item.name.slice(0, 2))}</div>`}
+            ${renderResilientImage(item.image_url, item.name, item.name)}
             <div>
               <h3>${escapeHtml(item.name)}</h3>
               <p>${escapeHtml(item.description)}</p>
-              <strong>${escapeHtml(item.price_label)}</strong>
+              <strong>${escapeHtml(productPriceLabel(item))}</strong>
+              ${productStockBadge(item)}
               <br><a class="rendered-button" href="#">${escapeHtml(item.button_label)}</a>
             </div>
           </article>`,
@@ -3966,13 +5452,40 @@ function renderPersonalBrandServicesCatalog(items) {
 function renderCatalogCard(item, className, badge, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<article class="${className}">
-    ${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : `<div class="card-placeholder">${escapeHtml(item.name.slice(0, 2))}</div>`}
+    ${renderResilientImage(item.image_url, item.name, item.name)}
     ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
+    ${item.category ? `<small>${escapeHtml(item.category)}</small>` : ""}
     <h3>${escapeHtml(item.name)}</h3>
     <p>${escapeHtml(item.description)}</p>
-    <b>${escapeHtml(item.price_label)}</b>
+    <b>${escapeHtml(productPriceLabel(item))}</b>
+    ${productStockBadge(item)}
     <a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.view)}</a>
   </article>`;
+}
+
+function productPriceLabel(item = {}) {
+  if (item.price_label && !/precio editable|price editable/i.test(item.price_label)) return item.price_label;
+  const amount = item.price_amount ?? item.price_value;
+  if (amount !== "" && amount !== null && amount !== undefined && !Number.isNaN(Number(amount))) {
+    return `${item.currency || "USD"} ${Number(amount).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  }
+  return item.price_type === "quote_only" ? catalogLocaleLabels(currentSchema).request : "Precio editable";
+}
+
+function productStockBadge(item = {}) {
+  if (!item.track_inventory) return "";
+  const quantity = Number(item.inventory_quantity);
+  if (Number.isNaN(quantity) || item.inventory_quantity === "") return `<span class="stock-badge stock-unknown">Stock editable</span>`;
+  if (quantity <= 0) return `<span class="stock-badge stock-out">Out of stock</span>`;
+  if (quantity <= 3) return `<span class="stock-badge stock-low">Only ${quantity} left</span>`;
+  return `<span class="stock-badge stock-in">In stock</span>`;
+}
+
+function renderResilientImage(url, alt = "", fallbackText = "") {
+  const initials = String(fallbackText || alt || "Item").slice(0, 2).toUpperCase();
+  const placeholder = `<div class="card-placeholder">${escapeHtml(initials)}</div>`;
+  if (!url) return placeholder;
+  return `<div class="image-shell"><img src="${escapeAttribute(url)}" alt="${escapeAttribute(alt)}" loading="lazy" decoding="async" onerror="this.closest('.image-shell').classList.add('image-failed')">${placeholder}</div>`;
 }
 
 function catalogLocaleLabels(schema) {
@@ -4013,7 +5526,7 @@ function catalogLocaleLabels(schema) {
 function renderFeatureBand(section) {
   const editable = section.editable || {};
   const layout = section.settings?.layout || "feature";
-  return `<section class="rendered-section feature-band feature-${escapeAttribute(slugify(layout))} ${sectionClass(section)}" ${sectionVars(section)}>
+  return `<section class="rendered-section feature-band feature-${escapeAttribute(slugify(layout))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="section-heading">
       <span class="rendered-kicker">${escapeHtml(section.type)}</span>
       <h2>${escapeHtml(editable.title || editable.headline || section.type)}</h2>
@@ -4024,7 +5537,7 @@ function renderFeatureBand(section) {
 
 function renderGallery(section) {
   const images = section.editable?.images || [];
-  return `<section class="rendered-section ${sectionClass(section)}" ${sectionVars(section)}>
+  return `<section class="rendered-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <h2>${escapeHtml(section.editable?.title || "Gallery")}</h2>
     <div class="rendered-grid">${images
       .map((url) => `<article class="rendered-card"><img src="${escapeAttribute(url)}" alt=""></article>`)
@@ -4034,7 +5547,7 @@ function renderGallery(section) {
 
 function renderContact(section, schema) {
   const editable = section.editable || {};
-  return `<section class="rendered-section contact-panel ${sectionClass(section)}" ${sectionVars(section)}>
+  return `<section class="rendered-section contact-panel ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div>
       <span class="rendered-kicker">${escapeHtml(schema.business.location || "Contact")}</span>
       <h2>${escapeHtml(editable.title || "Contact")}</h2>
@@ -4079,7 +5592,10 @@ function renderLogoMark(schema) {
 function sectionClass(section) {
   const headingSize = slugify(section.settings?.heading_size || "medium");
   const spacing = slugify(section.settings?.spacing || "balanced");
-  return `heading-${headingSize} spacing-${spacing}`;
+  const container = slugify(section.settings?.container_width || "standard");
+  const density = slugify(section.settings?.card_density || "comfortable");
+  const gap = slugify(section.settings?.card_gap || "comfortable");
+  return `heading-${headingSize} spacing-${spacing} container-${container} density-${density} gap-${gap}`;
 }
 
 function sectionVars(section) {
@@ -4093,17 +5609,33 @@ function sectionVars(section) {
   return styles.length ? `style="${escapeAttribute(styles.join(";"))}"` : "";
 }
 
+function sectionAttrs(section) {
+  const attrs = [
+    `data-studio-section="${escapeAttribute(section.id || section.type || "section")}"`,
+    `data-studio-section-type="${escapeAttribute(section.type || "Section")}"`,
+  ];
+  const vars = sectionVars(section);
+  if (vars) attrs.push(vars);
+  return attrs.join(" ");
+}
+
 function catalogItemEditor(item, index) {
   const basePath = `catalog_items.${index}`;
   return `<div class="editor-group catalog-item-editor">
     <h4>${index + 1}. ${escapeHtml(item.name || "Catalog item")}</h4>
     <div class="control-grid">
+      ${inputField("SKU", `${basePath}.sku`, item.sku || "", "data-catalog-path")}
       ${inputField("Name", `${basePath}.name`, item.name, "data-catalog-path")}
+      ${inputField("Category", `${basePath}.category`, item.category || "", "data-catalog-path")}
+      ${inputField("Variants", `${basePath}.variants`, item.variants || "", "data-catalog-path")}
       ${selectGenericField("Price type", `${basePath}.price_type`, item.price_type || "quote_only", ["fixed", "starting_at", "quote_only"], "data-catalog-path")}
       ${inputField("Price value", `${basePath}.price_value`, item.price_value ?? "", "data-catalog-path")}
+      ${inputField("Currency", `${basePath}.currency`, item.currency || "USD", "data-catalog-path")}
       ${inputField("Price label", `${basePath}.price_label`, item.price_label, "data-catalog-path")}
+      ${inputField("Inventory", `${basePath}.inventory_quantity`, item.inventory_quantity ?? "", "data-catalog-path")}
       ${inputField("Image URL", `${basePath}.image_url`, item.image_url, "data-catalog-path")}
       <label>Upload image<input data-catalog-image-upload="${escapeAttribute(`${basePath}.image_url`)}" type="file" accept="image/*"></label>
+      ${checkboxField("Track stock", `${basePath}.track_inventory`, Boolean(item.track_inventory), "data-catalog-path")}
       ${checkboxField("Active", `${basePath}.is_active`, item.is_active !== false, "data-catalog-path")}
       ${checkboxField("Featured", `${basePath}.is_featured`, Boolean(item.is_featured), "data-catalog-path")}
     </div>
@@ -4121,7 +5653,7 @@ function sectionEditor(section, index) {
   const editable = section.editable || {};
   const basePath = `pages.${pageIndex()}.sections.${index}`;
   const settings = section.settings || {};
-  return `<div class="editor-group">
+  return `<div class="editor-group" data-editor-section="${escapeAttribute(section.id || section.type)}">
     <h4>${index + 1}. ${section.type}</h4>
     <div class="control-grid">
       ${selectField("Layout", `${basePath}.settings.layout`, settings.layout || "", [
@@ -4261,11 +5793,11 @@ async function uploadAssetOrFallback(file, assetType, label) {
       storageStatus.textContent = "Asset storage unavailable. Using development image fallback.";
     }
   }
-  return fileToDataUrl(file);
+  return fileToOptimizedDataUrl(file, assetType);
 }
 
 async function uploadAssetFile(file, assetType, label) {
-  const dataUrl = await fileToDataUrl(file);
+  const dataUrl = await fileToOptimizedDataUrl(file, assetType);
   const response = await fetch(ASSET_UPLOAD_URL, {
     method: "POST",
     headers: adminHeaders({ "Content-Type": "application/json" }),
@@ -4290,6 +5822,22 @@ async function uploadAssetFile(file, assetType, label) {
   return result;
 }
 
+async function fileToOptimizedDataUrl(file, assetType = "photo") {
+  if (!file?.type?.startsWith("image/") || file.type === "image/svg+xml" || file.size < 280000) {
+    return fileToDataUrl(file);
+  }
+  const source = await fileToDataUrl(file);
+  const image = await loadImage(source);
+  const maxSide = assetType === "logo" ? 900 : assetType === "catalog" ? 1200 : 1600;
+  const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+  canvas.height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+  const context = canvas.getContext("2d", { alpha: assetType === "logo" });
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL(assetType === "logo" ? "image/png" : "image/jpeg", assetType === "logo" ? 0.92 : 0.82);
+}
+
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -4309,21 +5857,41 @@ function slugify(value) {
   return String(value || "default").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function themeVars(theme) {
+function themeVars(theme = {}, brandInput = null) {
+  theme.colors = theme.colors || {};
+  theme.fonts = theme.fonts || {};
+  const brand = normalizeBrand(brandInput || { colors: theme.colors, fontPairing: theme.fonts, borderRadius: `${theme.radius || 10}px`, shadowStyle: theme.shadow });
+  const colors = brandToThemeColors(brand);
   return [
-    `--site-bg:${resolveColor(theme.colors.background, "#F8FAF9")}`,
-    `--site-surface:${resolveColor(theme.colors.surface, "#FFFFFF")}`,
-    `--site-primary:${resolveColor(theme.colors.primary, "#0E7C66")}`,
-    `--site-secondary:${resolveColor(theme.colors.secondary, "#E3F3EE")}`,
-    `--site-text:${resolveColor(theme.colors.text, "#111827")}`,
-    `--site-muted:${resolveColor(theme.colors.muted, "#667085")}`,
-    `--site-heading:${JSON.stringify(theme.fonts.heading)}`,
-    `--site-body:${JSON.stringify(theme.fonts.body)}`,
+    `--brand-primary:${colors.primary}`,
+    `--brand-secondary:${colors.secondary}`,
+    `--brand-accent:${colors.accent}`,
+    `--brand-background:${colors.background}`,
+    `--brand-surface:${colors.surface}`,
+    `--brand-text:${colors.text}`,
+    `--brand-muted:${colors.muted}`,
+    `--brand-border:${colors.border}`,
+    `--brand-button:${colors.button}`,
+    `--brand-button-text:${colors.buttonText}`,
+    `--brand-radius:${brand.borderRadius}`,
+    `--brand-shadow:${brand.shadowStyle}`,
+    `--site-bg:${colors.background}`,
+    `--site-surface:${colors.surface}`,
+    `--site-primary:${colors.primary}`,
+    `--site-secondary:${colors.secondary}`,
+    `--site-accent:${colors.accent}`,
+    `--site-text:${colors.text}`,
+    `--site-muted:${colors.muted}`,
+    `--site-border:${colors.border}`,
+    `--site-button:${colors.button}`,
+    `--site-button-text:${colors.buttonText}`,
+    `--site-heading:${JSON.stringify(brand.fontPairing.heading || "Inter")}`,
+    `--site-body:${JSON.stringify(brand.fontPairing.body || "Inter")}`,
   ].join(";");
 }
 
 function normalizeEditedValue(path, value) {
-  if (!path.startsWith("theme.colors.") && !path.endsWith(".settings.background") && !path.endsWith(".settings.text_color")) {
+  if (!path.startsWith("theme.colors.") && !path.startsWith("brand.") && !path.endsWith(".settings.background") && !path.endsWith(".settings.text_color")) {
     return value;
   }
   return resolveColor(value, value);

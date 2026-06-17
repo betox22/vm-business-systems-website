@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Luma Guided Setup</title>
     <link rel="stylesheet" href="/css/avatar-assistant.css?v=2">
-    <link rel="stylesheet" href="/ai-builder.css?v=27">
-    <link rel="stylesheet" href="/client-setup.css?v=10">
+    <link rel="stylesheet" href="/ai-builder.css?v=31">
+    <link rel="stylesheet" href="/client-setup.css?v=12">
   </head>
   <body class="public-client-setup guided-modal-open" data-context="client-setup">
     <main class="ai-shell">
@@ -173,6 +173,7 @@
                   <img id="guidedLogoPreview" class="asset-preview" alt="">
                   <div id="guidedPhotoPreview" class="photo-preview-strip"></div>
                 </div>
+                <div id="brandKitPanel" class="brand-kit-panel" hidden></div>
                 <button id="guidedGenerateButton" type="button" data-i18n="reviewGenerate">Generate my website</button>
                 <button id="keepChattingButton" class="secondary-action full-width" type="button" data-i18n="keepChatting">Keep chatting</button>
                 <p id="guidedStatusText" class="status-text" data-i18n="assistantServerNotice">Your details stay ready for review before generating.</p>
@@ -198,15 +199,36 @@
           </div>
         </header>
 
-        <div class="work-grid">
-          <section class="editor-panel">
-            <h2>Visual editor</h2>
-            <div id="editorMount" class="editor-mount">
-              <p class="empty">Generate a site to edit its schema visually.</p>
+        <div class="work-grid studio-shell">
+          <aside class="studio-side studio-elements-panel">
+            <button class="studio-add-button" type="button" data-studio-add-section="FeatureBand">+ Agregar sección</button>
+            <div class="studio-card">
+              <div class="studio-card-head">
+                <strong>Agregar elementos</strong>
+                <span>Páginas, tienda y bloques</span>
+              </div>
+              <div class="studio-search">Buscar elementos...</div>
+              <div class="studio-element-grid">
+                <button type="button" data-studio-add-section="Hero"><span>Hero</span><small>Título + CTA</small></button>
+                <button type="button" data-studio-add-section="ProductGrid"><span>Slider productos</span><small>Cards de tienda</small></button>
+                <button type="button" data-studio-add-product><span>Producto</span><small>Precio + stock</small></button>
+                <button type="button" data-studio-add-section="Gallery"><span>Galería</span><small>Prueba visual</small></button>
+                <button type="button" data-studio-add-section="Testimonials"><span>Testimonios</span><small>Confianza</small></button>
+                <button type="button" data-studio-add-section="Contact"><span>Contacto</span><small>Captura leads</small></button>
+              </div>
             </div>
-          </section>
+            <div class="studio-card studio-editor-card">
+              <div class="studio-card-head">
+                <strong>Controles del sitio</strong>
+                <span>Edita sin salir del canvas</span>
+              </div>
+              <div id="editorMount" class="editor-mount">
+                <p class="empty">Genera un sitio para editarlo visualmente.</p>
+              </div>
+            </div>
+          </aside>
 
-          <section class="preview-panel">
+          <section class="preview-panel studio-canvas-panel">
             <div id="clientReviewBar" class="client-review-bar">
               <div>
                 <strong id="generatedReadyTitle">Tu borrador está listo</strong>
@@ -218,8 +240,59 @@
                 <button id="exitClientPreviewButton" type="button">Seguir revisando</button>
               </div>
             </div>
+            <div id="studioSelectionToolbar" class="studio-selection-toolbar" hidden>
+              <button type="button" data-selection-action="edit">Editar</button>
+              <button type="button" data-selection-action="up">↑</button>
+              <button type="button" data-selection-action="down">↓</button>
+              <button type="button" data-selection-action="duplicate">Duplicar</button>
+              <button type="button" data-selection-action="luma">Luma</button>
+              <button type="button" data-selection-action="delete">Eliminar</button>
+            </div>
             <div id="previewFrame" class="site-preview"></div>
           </section>
+
+          <aside class="studio-side studio-luma-panel">
+            <div class="studio-card luma-studio-card">
+              <div class="studio-luma-avatar">
+                <img class="assistant-avatar large" src="/public/brand/gnu-dev-assistant.png" alt="Luma">
+                <span></span>
+              </div>
+              <div class="studio-card-head">
+                <strong>Luma</strong>
+                <span>Diseñadora IA</span>
+              </div>
+              <p class="studio-luma-message">Toca una sección o dime qué quieres mejorar. Puedo ajustar layout, productos, textos y estilo.</p>
+              <div class="luma-progress-list" id="studioProgressList">
+                <div><span></span><strong>Home page</strong></div>
+                <div><span></span><strong>Brand system</strong></div>
+                <div><i></i><strong>Online shop</strong></div>
+                <div><em></em><strong>Contact page</strong></div>
+              </div>
+              <button id="studioAdjustButton" class="studio-primary-action" type="button">Ajustar con Luma</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="studioAuthGate" class="studio-auth-gate" hidden aria-modal="true" role="dialog">
+        <div class="studio-auth-card">
+          <button id="studioAuthCloseButton" class="icon-button" type="button" aria-label="Cerrar">×</button>
+          <div class="studio-auth-avatar">
+            <img class="assistant-avatar large" src="/public/brand/gnu-dev-assistant.png" alt="Luma">
+          </div>
+          <span>Guarda tu progreso</span>
+          <h2>Tu primer borrador está listo para seguir editando</h2>
+          <p>Crea una cuenta para guardar este sitio, manejar productos, precios, inventario y continuar con Luma sin perder nada.</p>
+          <div class="studio-auth-actions">
+            <button id="studioGoogleAuthButton" type="button">Continuar con Google</button>
+            <button id="studioAppleAuthButton" type="button">Continuar con Apple</button>
+            <button id="studioEmailAuthButton" type="button">Continuar con email</button>
+          </div>
+          <form id="studioEmailAuthForm" class="studio-email-auth" hidden>
+            <label>Email<input id="studioAuthEmail" type="email" placeholder="tu@email.com"></label>
+            <button type="submit">Enviar enlace</button>
+          </form>
+          <button id="studioAuthDemoButton" class="studio-auth-demo" type="button">Seguir viendo demo</button>
         </div>
       </section>
     </main>
@@ -228,6 +301,6 @@
     <script src="/template-router.js?v=3"></script>
     <script src="/js/avatar-state-manager.js?v=1"></script>
     <script src="/js/avatar-assistant.js?v=2"></script>
-    <script src="/ai-builder.js?v=48"></script>
+    <script src="/ai-builder.js?v=55"></script>
   </body>
 </html>

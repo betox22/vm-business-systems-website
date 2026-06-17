@@ -435,11 +435,20 @@ function portalSiteNormalizeSchema(input) {
       : [];
   schema.catalog_items = schema.catalog_items.map((item, index) => ({
     id: item.id || item.sku || `catalog-${index + 1}`,
+    sku: item.sku || `SKU-${index + 1}`,
     name: item.name || item.title || `Item ${index + 1}`,
     description: item.description || "",
+    category: item.category || "",
+    variants: item.variants || "",
+    price_type: item.price_type || "fixed",
+    price_value: item.price_value ?? item.price_amount ?? item.priceAmount ?? "",
+    price_amount: item.price_amount ?? item.price_value ?? item.priceAmount ?? "",
+    currency: item.currency || "USD",
     price_label: item.price_label || item.price || item.priceText || "",
     button_label: item.button_label || "Ver detalle",
     image_url: item.image_url || item.imageUrl || "",
+    inventory_quantity: item.inventory_quantity ?? item.stock ?? "",
+    track_inventory: Boolean(item.track_inventory || item.inventory_quantity || item.stock),
     is_active: item.is_active !== false,
     is_featured: Boolean(item.is_featured || item.featured),
   }));
@@ -602,14 +611,26 @@ function portalSiteRenderCatalog() {
               <strong>${portalEscaped(item.name)}</strong>
               <button type="button" class="portal-site-delete" data-portal-catalog-delete="${index}">Eliminar</button>
             </div>
+            <label>SKU <input type="text" value="${portalEscaped(item.sku)}" data-portal-catalog-field="sku" data-portal-catalog-index="${index}" /></label>
             <label>Nombre <input type="text" value="${portalEscaped(item.name)}" data-portal-catalog-field="name" data-portal-catalog-index="${index}" /></label>
             <label>Descripción <textarea rows="2" data-portal-catalog-field="description" data-portal-catalog-index="${index}">${portalEscaped(item.description)}</textarea></label>
             <div class="portal-site-form-split">
+              <label>Categoría <input type="text" value="${portalEscaped(item.category || "")}" data-portal-catalog-field="category" data-portal-catalog-index="${index}" /></label>
+              <label>Variantes <input type="text" value="${portalEscaped(item.variants || "")}" data-portal-catalog-field="variants" data-portal-catalog-index="${index}" /></label>
+            </div>
+            <div class="portal-site-form-split">
+              <label>Tipo de precio <select data-portal-catalog-field="price_type" data-portal-catalog-index="${index}">
+                ${["fixed", "starting_at", "quote_only"].map((option) => `<option value="${option}" ${item.price_type === option ? "selected" : ""}>${option}</option>`).join("")}
+              </select></label>
+              <label>Monto <input type="text" value="${portalEscaped(item.price_value ?? item.price_amount ?? "")}" data-portal-catalog-field="price_value" data-portal-catalog-index="${index}" /></label>
+              <label>Moneda <input type="text" value="${portalEscaped(item.currency || "USD")}" data-portal-catalog-field="currency" data-portal-catalog-index="${index}" /></label>
               <label>Precio <input type="text" value="${portalEscaped(item.price_label)}" data-portal-catalog-field="price_label" data-portal-catalog-index="${index}" /></label>
               <label>Botón <input type="text" value="${portalEscaped(item.button_label)}" data-portal-catalog-field="button_label" data-portal-catalog-index="${index}" /></label>
+              <label>Inventario <input type="number" min="0" value="${portalEscaped(item.inventory_quantity ?? "")}" data-portal-catalog-field="inventory_quantity" data-portal-catalog-index="${index}" /></label>
             </div>
             <label>Imagen URL <input type="text" value="${portalEscaped(item.image_url)}" data-portal-catalog-field="image_url" data-portal-catalog-index="${index}" /></label>
             <div class="portal-site-toggle-row">
+              <label><input type="checkbox" ${item.track_inventory ? "checked" : ""} data-portal-catalog-field="track_inventory" data-portal-catalog-index="${index}" /> Controlar inventario</label>
               <label><input type="checkbox" ${item.is_active ? "checked" : ""} data-portal-catalog-field="is_active" data-portal-catalog-index="${index}" /> Activo</label>
               <label><input type="checkbox" ${item.is_featured ? "checked" : ""} data-portal-catalog-field="is_featured" data-portal-catalog-index="${index}" /> Destacado</label>
             </div>
@@ -740,6 +761,7 @@ function portalSiteHandleCatalogInput(event) {
   const item = portalSiteState.schema.catalog_items[index];
   if (!item || !field) return;
   item[field] = target.type === "checkbox" ? target.checked : target.value;
+  if (field === "price_value") item.price_amount = target.value;
   portalSiteRenderPreview();
 }
 
@@ -747,11 +769,20 @@ function portalSiteAddCatalogItem() {
   if (!portalSiteState.schema) portalSiteLoadDemo();
   portalSiteState.schema.catalog_items.push({
     id: `item-${Date.now()}`,
+    sku: `SKU-${Date.now()}`,
     name: "Nuevo producto",
     description: "Describe aquí lo que vendes.",
-    price_label: "Cotizar",
-    button_label: "Ver detalle",
+    category: "",
+    variants: "",
+    price_type: "fixed",
+    price_value: "",
+    price_amount: "",
+    currency: "USD",
+    price_label: "Precio editable",
+    button_label: "Ver producto",
     image_url: "",
+    inventory_quantity: "",
+    track_inventory: true,
     is_active: true,
     is_featured: false,
   });

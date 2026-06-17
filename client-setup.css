@@ -248,6 +248,14 @@ body.public-client-setup.generated-preview-open {
   gap: 11px;
 }
 
+.public-client-setup .guided-avatar-dock .avatar-assistant {
+  width: auto;
+}
+
+.public-client-setup .guided-avatar-dock .avatar-caption {
+  display: none;
+}
+
 .public-client-setup .assistant-identity strong {
   display: block;
   color: #101827;
