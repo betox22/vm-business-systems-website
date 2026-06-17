@@ -530,6 +530,42 @@ const GUIDED_STEPS = [
   "review",
 ];
 
+const REQUIRED_GUIDED_STEPS = [
+  "websiteIntent",
+  "businessName",
+  "businessDescription",
+  "servicesProducts",
+  "contactInfo",
+];
+
+const SMART_GUIDED_STEP_PRIORITY = [
+  "websiteIntent",
+  "businessName",
+  "businessDescription",
+  "servicesProducts",
+  "contactInfo",
+  "salesMode",
+  "industry",
+  "location",
+  "preferredTone",
+  "preferredColors",
+  "targetAudience",
+  "desiredDomain",
+];
+
+const OPTIONAL_GUIDED_STEPS = new Set([
+  "industry",
+  "location",
+  "targetAudience",
+  "preferredTone",
+  "preferredColors",
+  "salesMode",
+  "desiredDomain",
+]);
+
+const guidedAskedSteps = new Map();
+let lastAssistantPromptSignature = "";
+
 const TEMPLATE_PREVIEW_CHOICES = [
   {
     templateId: "apple-premium-product",
@@ -1409,16 +1445,11 @@ async function sendGuidedReply() {
     guidedHistory.push({ role: "user", content: message });
     guidedHistory.push({ role: "assistant", content: assistantMessage });
     mergeGuidedUpdates({ ...broadLocalUpdates, ...updatedFields });
-    const serverNextStep = result.next_step || nextGuidedStep(guidedStep);
-    guidedStep = normalizeNextGuidedStep(serverNextStep);
-    if (result.readyToGenerate) guidedStep = "review";
+    const serverNextStep = result.next_step || result.nextStep || "";
+    guidedStep = result.readyToGenerate ? "review" : nextSmartGuidedStep(serverNextStep || guidedStep);
     const serverNextQuestion = result.nextQuestion || result.next_question;
-    const nextQuestion = guidedStep !== serverNextStep ? guidedQuestion(guidedStep) : serverNextQuestion;
-    const combinedAssistantMessage =
-      nextQuestion && nextQuestion !== assistantMessage ? `${assistantMessage} ${nextQuestion}` : assistantMessage;
-    const publicAssistantMessage = result.used_dev_fallback
-      ? `${t("localFallbackMessage")} ${nextQuestion || guidedQuestion(guidedStep)}`
-      : combinedAssistantMessage;
+    const nextQuestion = chooseNextQuestionText(serverNextQuestion, guidedStep);
+    const publicAssistantMessage = composeAssistantReply(assistantMessage, nextQuestion, result.used_dev_fallback);
     appendUnderstandingCard({ updates: { ...broadLocalUpdates, ...updatedFields }, sourceMessage: message });
     appendChatMessage("assistant", publicAssistantMessage, result.used_dev_fallback ? "alert" : emotion);
     guidedStatusText.textContent = result.used_dev_fallback
@@ -1427,15 +1458,10 @@ async function sendGuidedReply() {
   } catch (error) {
     const updates = { ...broadLocalUpdates, ...inferGuidedUpdates(guidedStep, message) };
     mergeGuidedUpdates(updates);
-    guidedStep = nextGuidedStep(guidedStep);
-    appendChatMessage(
-      "assistant",
-      t("localFallbackMessage"),
-      "alert",
-    );
+    guidedStep = nextSmartGuidedStep(guidedStep);
     console.warn("Luma intake assistant request failed; continuing locally.", error);
     appendUnderstandingCard({ updates, sourceMessage: message });
-    appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
+    appendChatMessage("assistant", composeAssistantReply(t("localFallbackMessage"), guidedQuestion(guidedStep), true), "speaking");
     guidedStatusText.textContent = t("localFallback");
   }
   setThinking(false);
@@ -1459,7 +1485,7 @@ async function handleWebsiteIntentAnswer(message) {
     if (!guidedState.preferredTone) guidedState.preferredTone = extractStyleHint(message);
     appendTemplateDetectionMessage(selection);
     appendTemplatePreviewChoices(selection);
-    guidedStep = nextGuidedStep("websiteIntent");
+    guidedStep = nextSmartGuidedStep("websiteIntent");
     appendUnderstandingCard({ updates: inferGuidedUpdatesFromAnyMessage(message), sourceMessage: message });
     appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
     guidedStatusText.textContent = langText({
@@ -1470,7 +1496,7 @@ async function handleWebsiteIntentAnswer(message) {
     });
   } catch (error) {
     guidedState.websiteIntent = message;
-    guidedStep = nextGuidedStep("websiteIntent");
+    guidedStep = nextSmartGuidedStep("websiteIntent");
     appendChatMessage("assistant", t("localFallbackMessage"), "alert");
     console.warn("Luma template intent detection failed; continuing locally.", error);
     appendUnderstandingCard({ updates: inferGuidedUpdatesFromAnyMessage(message), sourceMessage: message });
@@ -1572,7 +1598,8 @@ async function chooseTemplatePreview(choice) {
 
 function skipGuidedQuestion() {
   appendChatMessage("user", t("skipMessage"));
-  guidedStep = nextGuidedStep(guidedStep);
+  guidedAskedSteps.set(guidedStep, 1);
+  guidedStep = nextSmartGuidedStep(guidedStep);
   appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
   renderGuidedSummary();
 }
@@ -1586,7 +1613,7 @@ function letAiDecide(field) {
   } else {
     guidedState[field] = decision;
   }
-  guidedStep = field === "sectionsPreference" ? "review" : nextGuidedStep(field);
+  guidedStep = field === "sectionsPreference" ? "review" : nextSmartGuidedStep(field);
   appendChatMessage("user", `${field}: ${decision}`);
   appendChatMessage("assistant", guidedQuestion(guidedStep), guidedStep === "review" ? "success" : "speaking");
   renderGuidedSummary();
@@ -1595,7 +1622,7 @@ function letAiDecide(field) {
 function insertQuickChip(value) {
   const translated = translateChip(value);
   if (value === "Yes, correct") {
-    guidedStep = missingGuidedSteps()[0] || "review";
+    guidedStep = nextSmartGuidedStep(guidedStep);
     appendChatMessage("user", translated);
     appendChatMessage("assistant", guidedQuestion(guidedStep), guidedStep === "review" ? "success" : "speaking");
     renderGuidedSummary();
@@ -1657,6 +1684,7 @@ function shouldShowAssetPrompt() {
   const typed = guidedReply?.value || "";
   return (
     ["preferredColors", "hasLogoPhotos", "review"].includes(guidedStep) ||
+    Boolean(guidedState.hasLogoPhotos && !guidedState.hasLogo && !guidedState.hasPhotos) ||
     /logo|foto|fotos|imagen|imagenes|image|photo|photos|brand|marca|color|colors/i.test(typed)
   );
 }
@@ -2443,17 +2471,22 @@ function openReviewDetails() {
 
 function keepChatting() {
   document.body.classList.remove("review-details-open", "final-review-mode");
-  guidedStep = "review";
-  appendChatMessage(
-    "assistant",
-    langText({
-      en: "Sure. Do you want to change something, add something, upload a logo/photo, or clarify any detail before I generate?",
-      es: "Claro. ¿Quieres modificar algo, agregar algo, subir un logo/foto o aclarar algún detalle antes de generar?",
-      fr: "Bien sûr. Voulez-vous modifier quelque chose, ajouter un détail, importer un logo/photo, ou clarifier un point avant de générer?",
-      pt: "Claro. Quer mudar algo, adicionar algo, enviar um logo/foto, ou esclarecer algum detalhe antes de gerar?",
-    }),
-    "speaking",
-  );
+  const nextMissing = nextSmartGuidedStep(guidedStep, { allowReview: false });
+  guidedStep = nextMissing || "review";
+  const message = nextMissing
+    ? langText({
+        en: `We can keep going. The most useful missing detail is this:\n\n${guidedQuestion(nextMissing)}`,
+        es: `Podemos seguir. Lo más útil que falta es esto:\n\n${guidedQuestion(nextMissing)}`,
+        fr: `Nous pouvons continuer. Le détail manquant le plus utile est celui-ci :\n\n${guidedQuestion(nextMissing)}`,
+        pt: `Podemos continuar. O detalhe mais útil que falta é este:\n\n${guidedQuestion(nextMissing)}`,
+      })
+    : langText({
+        en: "What would you like to change or add? You can ask for style changes, upload a logo/photo, add products, change colors, or clarify any detail.",
+        es: "¿Qué quieres cambiar o agregar? Puedes pedir cambios de estilo, subir logo/foto, agregar productos, cambiar colores o aclarar cualquier detalle.",
+        fr: "Que voulez-vous modifier ou ajouter ? Vous pouvez demander un changement de style, importer un logo/photo, ajouter des produits, changer les couleurs ou clarifier un détail.",
+        pt: "O que você quer mudar ou adicionar? Pode pedir mudança de estilo, enviar logo/foto, adicionar produtos, mudar cores ou esclarecer qualquer detalhe.",
+      });
+  appendChatMessage("assistant", message, "speaking");
   guidedReply.focus();
   renderGuidedSummary();
   refreshQuickChips();
@@ -2486,18 +2519,23 @@ function completedFieldCount() {
 }
 
 function missingGuidedSteps() {
-  return GUIDED_STEPS.filter((step) => {
-    if (step === "review") return false;
+  const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
+  if (requiredMissing.length) return requiredMissing;
+  return SMART_GUIDED_STEP_PRIORITY.filter((step) => {
+    if (!OPTIONAL_GUIDED_STEPS.has(step)) return false;
     if (step === "desiredDomain") return false;
-    if (step === "hasLogoPhotos") return false;
-    return !isGuidedStepAnswered(step);
+    if (isGuidedStepAnswered(step)) return false;
+    return (guidedAskedSteps.get(step) || 0) < 1;
   });
 }
 
 function guidedCompletionPercent() {
-  const trackableSteps = GUIDED_STEPS.filter((step) => !["review", "desiredDomain", "hasLogoPhotos"].includes(step));
-  const completed = trackableSteps.filter((step) => isGuidedStepAnswered(step)).length;
-  return Math.min(100, Math.round((completed / trackableSteps.length) * 100));
+  const requiredCompleted = REQUIRED_GUIDED_STEPS.filter((step) => isGuidedStepAnswered(step)).length;
+  const optionalSteps = SMART_GUIDED_STEP_PRIORITY.filter((step) => OPTIONAL_GUIDED_STEPS.has(step) && step !== "desiredDomain");
+  const optionalCompleted = optionalSteps.filter((step) => isGuidedStepAnswered(step) || (guidedAskedSteps.get(step) || 0) > 0).length;
+  const requiredScore = (requiredCompleted / REQUIRED_GUIDED_STEPS.length) * 82;
+  const optionalScore = optionalSteps.length ? (optionalCompleted / optionalSteps.length) * 18 : 18;
+  return Math.min(100, Math.round(requiredScore + optionalScore));
 }
 
 function compactCollectedPreview() {
@@ -2547,6 +2585,7 @@ function syncGuidedStateFromSummary() {
 function mergeGuidedUpdates(updates) {
   Object.entries(updates).forEach(([key, value]) => {
     if (!(key in guidedState)) return;
+    if (key === "businessName" && isInvalidBusinessNameUpdate(value)) return;
     if (key === "contactInfo") {
       guidedState.contactInfo = { ...guidedState.contactInfo, ...(value || {}) };
     } else if (["servicesProducts", "preferredColors", "photoUrls"].includes(key)) {
@@ -2555,6 +2594,11 @@ function mergeGuidedUpdates(updates) {
       guidedState[key] = value || guidedState[key];
     }
   });
+}
+
+function isInvalidBusinessNameUpdate(value) {
+  const text = String(value || "").trim();
+  return text.length > 70 || /(\n|productos?|servicios?|ubicaci[oó]n|contacto|telefono|tel[eé]fono|whatsapp|instagram|colores?|vende|ofrece)/i.test(text);
 }
 
 function guidedStateForApi() {
@@ -2613,6 +2657,10 @@ function isCloudSafeUrl(value) {
 }
 
 function appendChatMessage(role, message, emotion = "neutral") {
+  const cleanMessage = role === "assistant" || role === "system" ? sanitizeAssistantMessage(message) : message;
+  if ((role === "assistant" || role === "system") && cleanMessage) {
+    trackAssistantPrompt(cleanMessage);
+  }
   const bubble = document.createElement("div");
   const state = role === "user" ? "neutral" : normalizeAssistantState(emotion);
   bubble.className = `chat-message ${role} state-${state}`;
@@ -2628,14 +2676,24 @@ function appendChatMessage(role, message, emotion = "neutral") {
     avatar.dataset.state = state;
     avatar.alt = "";
     const text = document.createElement("span");
-    text.textContent = message;
+    text.textContent = cleanMessage;
     bubble.append(avatar, text);
-    speakAssistantMessage(message);
+    speakAssistantMessage(cleanMessage);
   } else {
-    bubble.textContent = message;
+    bubble.textContent = cleanMessage;
   }
   guidedChat.appendChild(bubble);
   guidedChat.scrollTop = guidedChat.scrollHeight;
+}
+
+function trackAssistantPrompt(message) {
+  const signature = questionSignature(message);
+  if (signature && signature === lastAssistantPromptSignature) return;
+  lastAssistantPromptSignature = signature;
+  if (!guidedStep || guidedStep === "review") return;
+  if (message.includes(guidedQuestion(guidedStep)) || /[?¿]/.test(message)) {
+    guidedAskedSteps.set(guidedStep, (guidedAskedSteps.get(guidedStep) || 0) + 1);
+  }
 }
 
 function setThinking(active) {
@@ -2645,6 +2703,74 @@ function setThinking(active) {
   } else if (assistantState === "thinking") {
     setAssistantState(guidedStep === "review" ? "success" : "neutral");
   }
+}
+
+function nextSmartGuidedStep(referenceStep = guidedStep, options = {}) {
+  const { allowReview = true } = options;
+  const requiredMissing = REQUIRED_GUIDED_STEPS.find((step) => !isGuidedStepAnswered(step));
+  if (requiredMissing) return requiredMissing;
+
+  const referenceIndex = SMART_GUIDED_STEP_PRIORITY.indexOf(referenceStep);
+  const ordered = referenceIndex >= 0
+    ? [
+        ...SMART_GUIDED_STEP_PRIORITY.slice(referenceIndex + 1),
+        ...SMART_GUIDED_STEP_PRIORITY.slice(0, referenceIndex + 1),
+      ]
+    : SMART_GUIDED_STEP_PRIORITY;
+
+  const optionalMissing = ordered.find((step) => {
+    if (!OPTIONAL_GUIDED_STEPS.has(step)) return false;
+    if (isGuidedStepAnswered(step)) return false;
+    const askedCount = guidedAskedSteps.get(step) || 0;
+    return askedCount < 1;
+  });
+  if (optionalMissing) return optionalMissing;
+
+  return allowReview ? "review" : "";
+}
+
+function chooseNextQuestionText(serverQuestion, step) {
+  if (step === "review") return guidedQuestion("review");
+  const fallback = guidedQuestion(step);
+  const candidate = String(serverQuestion || "").trim();
+  if (!candidate) return fallback;
+  if (isDuplicateQuestion(candidate, fallback)) return fallback;
+  return candidate;
+}
+
+function composeAssistantReply(message, nextQuestion, usedFallback = false) {
+  const cleanMessage = sanitizeAssistantMessage(message || "");
+  const cleanQuestion = sanitizeAssistantMessage(nextQuestion || "");
+  const base = usedFallback && !cleanMessage ? t("localFallbackMessage") : cleanMessage;
+  if (!cleanQuestion) return base || t("localFallbackMessage");
+  if (!base || isDuplicateQuestion(base, cleanQuestion) || base.includes(cleanQuestion)) return cleanQuestion;
+  return `${base}\n\n${cleanQuestion}`;
+}
+
+function sanitizeAssistantMessage(message) {
+  return String(message || "")
+    .replace(/Development fallback:?\s*/gi, "")
+    .replace(/Load failed\.?/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function isDuplicateQuestion(a, b) {
+  const left = questionSignature(a);
+  const right = questionSignature(b);
+  return Boolean(left && right && (left === right || left.includes(right) || right.includes(left)));
+}
+
+function questionSignature(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(what|which|who|where|do|does|want|quieres|tienes|que|cual|como|donde|para|the|a|el|la|los|las|un|una|de|del)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
 }
 
 function nextGuidedStep(step) {
@@ -2687,6 +2813,9 @@ function inferGuidedUpdates(step, message) {
   if (step === "servicesProducts") return { servicesProducts: splitCommaOrLines(message) };
   if (step === "preferredColors") return { preferredColors: splitCommaOrLines(message) };
   if (step === "contactInfo") return { contactInfo: parseKeyValueLines(message.includes(":") ? message : `notes: ${message}`) };
+  if (step === "businessName" && isRichIntakeMessage(message) && !extractBusinessName(message)) {
+    return {};
+  }
   const keyByStep = {
     websiteIntent: "websiteIntent",
     businessName: "businessName",
@@ -2788,7 +2917,9 @@ function extractBusinessName(text) {
 function extractLocation(text) {
   const patterns = [
     /(?:ubicaci[oó]n|ubicado en|est[aá] en|atiende en|localidad|ciudad|zona)\s*(?:es|:|-)?\s*([^.,;\n]+)/i,
+    /(?:en|desde)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){0,2})(?:\s|,|\.|;|$)/,
     /(?:location|located in|serves|city|area)\s*(?:is|:|-)?\s*([^.,;\n]+)/i,
+    /(?:in|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|,|\.|;|$)/,
   ];
   for (const pattern of patterns) {
     const match = text.match(pattern);
@@ -2800,7 +2931,10 @@ function extractLocation(text) {
 function extractServicesProducts(text) {
   const patterns = [
     /(?:productos?|servicios?|vende|vendo|ofrece|ofrecemos|catalogo|cat[aá]logo)\s*(?:son|es|:|-)?\s*([^.;\n]+)/i,
+    /(?:tienda|negocio|marca|empresa)\s+de\s+([^.;\n]+)/i,
+    /(?:pagina|p[aá]gina|web|site)\s+de\s+([^.;\n]+)/i,
     /(?:products?|services?|sells|offers|catalog)\s*(?:are|is|:|-)?\s*([^.;\n]+)/i,
+    /(?:store|shop|business|brand|website)\s+(?:for|of)\s+([^.;\n]+)/i,
   ];
   for (const pattern of patterns) {
     const match = text.match(pattern);
@@ -2817,7 +2951,9 @@ function extractServicesProducts(text) {
 function extractTargetAudience(text) {
   const patterns = [
     /(?:audiencia|cliente ideal|clientes?|publico|p[uú]blico|target)\s*(?:es|son|:|-)?\s*([^.;\n]+)/i,
+    /(?:para|dirigido a|enfocado en)\s+([^.;\n]+)/i,
     /(?:for|target audience|ideal customer|customers)\s*(?:are|is|:|-)?\s*([^.;\n]+)/i,
+    /(?:for|aimed at|focused on)\s+([^.;\n]+)/i,
   ];
   for (const pattern of patterns) {
     const match = text.match(pattern);
