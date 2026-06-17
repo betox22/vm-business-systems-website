@@ -20,9 +20,9 @@ Debe responder:
 
 ## Deploy en Render
 
-1. Crear un repo GitHub nuevo solo para este backend.
-2. Subir esta carpeta completa al repo.
-3. En Render, crear un Blueprint usando `render.yaml`.
+1. Usar el repo `betox22/vm-business-systems-website`.
+2. Seleccionar la rama `luma-api`, que contiene solo este backend.
+3. En Render, crear un Blueprint usando `render.yaml` desde esa rama.
 4. Configurar las variables secretas:
 
 ```env
