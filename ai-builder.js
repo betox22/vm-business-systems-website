@@ -487,6 +487,7 @@ let assistantState = "neutral";
 let assistantVoiceEnabled = localStorage.getItem("gnuDevAssistantVoice") === "on";
 let forcedTemplateSelection = null;
 let restoredGuidedDraftInfo = null;
+let guidedCoachCard = null;
 let guidedState = {
   websiteIntent: "",
   businessName: "",
@@ -726,6 +727,7 @@ const studioAuthDemoButton = document.querySelector("#studioAuthDemoButton");
 const quickModeButton = document.querySelector("#quickModeButton");
 const guidedModeButton = document.querySelector("#guidedModeButton");
 const guidedPanel = document.querySelector("#guidedPanel");
+const guidedChatCard = document.querySelector(".guided-chat-card");
 const guidedChat = document.querySelector("#guidedChat");
 const guidedReply = document.querySelector("#guidedReply");
 const guidedStatusText = document.querySelector("#guidedStatusText");
@@ -947,6 +949,134 @@ function guidedQuestion(step) {
   return GUIDED_QUESTIONS[selectedLanguage]?.[step] || GUIDED_QUESTIONS.en[step] || GUIDED_QUESTIONS.en.review;
 }
 
+function guidedStage(step = guidedStep) {
+  if (step === "websiteIntent") {
+    return {
+      index: 1,
+      title: langText({ en: "Choose the direction", es: "Elegir la dirección", fr: "Choisir la direction", pt: "Escolher a direção" }),
+      body: langText({
+        en: "Describe the site naturally. Luma will detect the best template and show visual options.",
+        es: "Describe la página naturalmente. Luma detecta el mejor template y muestra opciones visuales.",
+        fr: "Décrivez le site naturellement. Luma détecte le meilleur template et montre des options visuelles.",
+        pt: "Descreva o site naturalmente. A Luma detecta o melhor template e mostra opções visuais.",
+      }),
+      examples: [
+        langText({ en: "Online store like Amazon", es: "Tienda online tipo Amazon", fr: "Boutique type Amazon", pt: "Loja tipo Amazon" }),
+        langText({ en: "Booking site for a barbershop", es: "Barbería con citas", fr: "Site de réservation pour salon", pt: "Barbearia com agendamento" }),
+        langText({ en: "Cyberpunk fashion store", es: "Tienda cyberpunk de ropa", fr: "Boutique mode cyberpunk", pt: "Loja cyberpunk de roupas" }),
+      ],
+    };
+  }
+  if (["businessName", "businessDescription", "industry", "location", "servicesProducts"].includes(step)) {
+    return {
+      index: 2,
+      title: langText({ en: "Understand the business", es: "Entender el negocio", fr: "Comprendre l'entreprise", pt: "Entender o negócio" }),
+      body: langText({
+        en: "Give Luma the raw business details. One rich paragraph is enough; it will extract what matters.",
+        es: "Dale a Luma los datos reales del negocio. Un párrafo completo sirve; Luma extrae lo importante.",
+        fr: "Donnez les détails bruts. Un paragraphe riche suffit; Luma extrait l'essentiel.",
+        pt: "Dê os dados reais do negócio. Um parágrafo completo basta; a Luma extrai o essencial.",
+      }),
+      examples: [
+        langText({ en: "Name, what it sells, city", es: "Nombre, qué vende, ciudad", fr: "Nom, offre, ville", pt: "Nome, o que vende, cidade" }),
+        langText({ en: "Top products or services", es: "Productos o servicios principales", fr: "Produits ou services clés", pt: "Produtos ou serviços principais" }),
+      ],
+    };
+  }
+  if (["targetAudience", "preferredTone", "preferredColors", "salesMode", "hasLogoPhotos"].includes(step)) {
+    return {
+      index: 3,
+      title: langText({ en: "Shape the brand", es: "Definir el estilo", fr: "Définir le style", pt: "Definir o estilo" }),
+      body: langText({
+        en: "Now Luma chooses the visual personality, sales flow and assets. You can answer or let AI decide.",
+        es: "Ahora Luma define personalidad visual, forma de venta y recursos. Puedes responder o dejar que IA decida.",
+        fr: "Luma définit la personnalité visuelle, le flux de vente et les assets. Vous pouvez répondre ou laisser l'IA décider.",
+        pt: "Agora a Luma define visual, venda e assets. Você pode responder ou deixar a IA decidir.",
+      }),
+      examples: [
+        langText({ en: "Premium, minimal, bold, futuristic", es: "Premium, minimal, llamativo, futurista", fr: "Premium, minimal, audacieux, futuriste", pt: "Premium, minimal, chamativo, futurista" }),
+        langText({ en: "Upload logo/photos", es: "Subir logo/fotos", fr: "Importer logo/photos", pt: "Enviar logo/fotos" }),
+      ],
+    };
+  }
+  if (["contactInfo", "desiredDomain"].includes(step)) {
+    return {
+      index: 4,
+      title: langText({ en: "Prepare launch details", es: "Preparar datos de lanzamiento", fr: "Préparer le lancement", pt: "Preparar lançamento" }),
+      body: langText({
+        en: "Contact and domain details help make the draft feel real and ready to publish.",
+        es: "Contacto y dominio ayudan a que el borrador se sienta real y listo para publicar.",
+        fr: "Contact et domaine rendent le brouillon réel et prêt à publier.",
+        pt: "Contato e domínio deixam o rascunho real e pronto para publicar.",
+      }),
+      examples: [
+        langText({ en: "WhatsApp, email, Instagram", es: "WhatsApp, email, Instagram", fr: "WhatsApp, email, Instagram", pt: "WhatsApp, email, Instagram" }),
+        langText({ en: "Desired domain", es: "Dominio deseado", fr: "Domaine souhaité", pt: "Domínio desejado" }),
+      ],
+    };
+  }
+  return {
+    index: 5,
+    title: langText({ en: "Review and generate", es: "Revisar y generar", fr: "Vérifier et générer", pt: "Revisar e gerar" }),
+    body: langText({
+      en: "Luma has enough to create the first editable website draft. Review or ask for one more change.",
+      es: "Luma ya tiene suficiente para crear el primer borrador editable. Revisa o pide un último ajuste.",
+      fr: "Luma a assez d'informations pour créer le premier brouillon modifiable. Vérifiez ou demandez un dernier ajustement.",
+      pt: "A Luma já tem o suficiente para criar o primeiro rascunho editável. Revise ou peça um último ajuste.",
+    }),
+    examples: [
+      langText({ en: "Generate draft", es: "Generar borrador", fr: "Générer le brouillon", pt: "Gerar rascunho" }),
+      langText({ en: "Ask for a change", es: "Pedir un cambio", fr: "Demander un changement", pt: "Pedir uma mudança" }),
+    ],
+  };
+}
+
+function ensureGuidedCoachCard() {
+  if (guidedCoachCard || !guidedChatCard || !guidedChat) return guidedCoachCard;
+  guidedCoachCard = document.createElement("section");
+  guidedCoachCard.className = "luma-coach-card";
+  guidedCoachCard.setAttribute("aria-live", "polite");
+  guidedChatCard.insertBefore(guidedCoachCard, guidedChat);
+  return guidedCoachCard;
+}
+
+function renderGuidedCoachCard() {
+  const card = ensureGuidedCoachCard();
+  if (!card) return;
+  const stage = guidedStage(guidedStep);
+  const completion = guidedCompletionPercent();
+  const templateName = forcedTemplateSelection?.template?.clientSelectionCard?.title
+    || forcedTemplateSelection?.template?.name
+    || forcedTemplateSelection?.templateId
+    || "";
+  const nextAction = guidedStep === "review"
+    ? langText({ en: "Ready for review", es: "Listo para revisar", fr: "Prêt à vérifier", pt: "Pronto para revisar" })
+    : guidedQuestion(guidedStep);
+  card.innerHTML = `
+    <div class="luma-coach-top">
+      <span>${escapeHtml(langText({ en: `Phase ${stage.index}`, es: `Fase ${stage.index}`, fr: `Phase ${stage.index}`, pt: `Fase ${stage.index}` }))}</span>
+      <strong>${escapeHtml(stage.title)}</strong>
+      <em>${escapeHtml(`${completion}%`)}</em>
+    </div>
+    <p>${escapeHtml(stage.body)}</p>
+    ${templateName ? `<div class="luma-coach-template">${escapeHtml(langText({ en: "Selected base", es: "Base seleccionada", fr: "Base sélectionnée", pt: "Base selecionada" }))}: <strong>${escapeHtml(templateName)}</strong></div>` : ""}
+    <div class="luma-coach-next">
+      <small>${escapeHtml(langText({ en: "Next", es: "Siguiente", fr: "Suivant", pt: "Próximo" }))}</small>
+      <span>${escapeHtml(nextAction)}</span>
+    </div>
+    <div class="luma-coach-examples">
+      ${stage.examples.map((example) => `<button type="button" data-coach-example="${escapeAttribute(example)}">${escapeHtml(example)}</button>`).join("")}
+    </div>
+  `;
+  card.querySelectorAll("[data-coach-example]").forEach((button) => {
+    button.addEventListener("click", () => {
+      guidedReply.value = guidedReply.value ? `${guidedReply.value}, ${button.dataset.coachExample}` : button.dataset.coachExample;
+      updateAssetPromptVisibility();
+      guidedReply.focus();
+    });
+  });
+}
+
 function applyI18n() {
   document.documentElement.lang = selectedLanguage;
   document.title = t("pageTitle");
@@ -962,6 +1092,7 @@ function applyI18n() {
   initVoiceInput();
   updateAssistantAudioToggle();
   updateBuilderAvatarLabels();
+  renderGuidedCoachCard();
 }
 
 function updateBuilderAvatarLabels() {
@@ -1169,6 +1300,7 @@ function resetAssistantConversation() {
   guidedChat.innerHTML = "";
   guidedHistory = [];
   setAssistantState("happy");
+  renderGuidedCoachCard();
   if (restoredGuidedDraftInfo) {
     appendRestoredDraftMessage();
   }
@@ -1694,6 +1826,7 @@ async function chooseTemplatePreview(choice) {
     }),
   );
   appendTemplateDetectionMessage(forcedTemplateSelection);
+  renderGuidedCoachCard();
   renderGuidedSummary();
   saveGuidedDraft();
 }
@@ -2481,6 +2614,7 @@ function renderGuidedSummary() {
   guidedGenerateButton.textContent = isFinalReview ? t("generateMyWebsite") : t("reviewGenerate");
   currentInfoPreview.textContent = compactCollectedPreview();
   currentInfoMeta.textContent = conversationProgressLabel();
+  renderGuidedCoachCard();
   renderAssetPreviews();
   renderSelectedDomainState();
   updateAssetPromptVisibility();
