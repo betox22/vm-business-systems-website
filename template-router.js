@@ -410,6 +410,57 @@
     };
   }
 
+  async function getTemplateCandidates(userPrompt, limit = 3) {
+    const templates = await loadTemplates();
+    const normalized = normalizeText(userPrompt);
+    const scored = INTENT_RULES.map((rule) => {
+      const matches = rule.keywords.filter((keyword) => normalized.includes(normalizeText(keyword)));
+      const score = matches.reduce((total, keyword) => total + Math.max(1, normalizeText(keyword).split(" ").length), 0);
+      return { rule, score, matches };
+    })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    const primary = scored.length
+      ? scored
+      : [{ rule: { intent: "default_minimal", templateId: "apple-premium-product", catalogType: "editorial_minimal_grid" }, score: 0, matches: [] }];
+
+    const selected = [];
+    const addRule = (rule, score = 0, reason = "") => {
+      if (!rule?.templateId || selected.some((item) => item.templateId === rule.templateId)) return;
+      const template = templates.find((item) => item.id === rule.templateId) || templates.find((item) => item.id === "minimal-store") || templates[0];
+      selected.push({
+        templateId: template?.id || rule.templateId,
+        template,
+        intent: rule.intent,
+        catalogType: template?.catalogModel?.catalogType || rule.catalogType,
+        score,
+        reason: reason || (score > 0 ? `Matched keywords for ${rule.intent}` : "Recommended alternative"),
+      });
+    };
+
+    primary.forEach((item) => addRule(item.rule, item.score));
+
+    const primaryCatalogType = selected[0]?.catalogType || primary[0]?.rule?.catalogType || "";
+    const fallbackIds = normalized.includes("marketplace") || /marketplace|listing|dense/.test(primaryCatalogType)
+      ? ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro"]
+      : normalized.includes("servicio") || normalized.includes("service") || /service|booking/.test(primaryCatalogType)
+        ? ["local-services-pro-plus", "booking-appointment-pro", "apple-premium-product"]
+        : ["apple-premium-product", "fashion-drop-pro", "mega-marketplace"];
+
+    fallbackIds.forEach((templateId) => {
+      const template = templates.find((item) => item.id === templateId);
+      if (!template) return;
+      addRule({
+        intent: "visual_alternative",
+        templateId,
+        catalogType: template.catalogModel?.catalogType || "editorial_minimal_grid",
+      }, 0);
+    });
+
+    return selected.slice(0, Math.max(1, limit));
+  }
+
   function selectBestIntentRule(normalizedPrompt) {
     const scored = INTENT_RULES.map((rule) => {
       const matches = rule.keywords.filter((keyword) => normalizedPrompt.includes(normalizeText(keyword)));
@@ -430,6 +481,7 @@
     loadTemplates,
     getTemplateById,
     selectTemplateFromPrompt,
+    getTemplateCandidates,
     normalizeText,
     intentRules: INTENT_RULES,
   };

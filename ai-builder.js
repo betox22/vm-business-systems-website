@@ -570,44 +570,86 @@ const TEMPLATE_PREVIEW_CHOICES = [
   {
     templateId: "apple-premium-product",
     name: "Premium Product",
+    names: { en: "Premium Product", es: "Producto premium", fr: "Produit premium", pt: "Produto premium" },
     catalogType: "editorial_minimal_grid",
     image: "/templates-preview/screenshots/apple.png",
     description: "Apple-style product page with spacious hero, refined copy, and premium sections.",
+    descriptions: {
+      en: "Apple-style product page with spacious hero, refined copy, and premium sections.",
+      es: "Pagina tipo Apple: hero amplio, copy refinado y secciones premium.",
+      fr: "Page type Apple avec hero spacieux, texte raffine et sections premium.",
+      pt: "Pagina estilo Apple com hero amplo, copy refinado e secoes premium.",
+    },
   },
   {
     templateId: "mega-marketplace",
     name: "Mega Marketplace",
+    names: { en: "Mega Marketplace", es: "Mega marketplace", fr: "Mega marketplace", pt: "Mega marketplace" },
     catalogType: "dense_marketplace_catalog",
     image: "/templates-preview/screenshots/amazon.png",
     description: "Amazon-style catalog with search, categories, deals, filters, and dense products.",
+    descriptions: {
+      en: "Amazon-style catalog with search, categories, deals, filters, and dense products.",
+      es: "Catalogo tipo Amazon con busqueda, categorias, ofertas, filtros y muchos productos.",
+      fr: "Catalogue type Amazon avec recherche, categories, offres, filtres et produits denses.",
+      pt: "Catalogo tipo Amazon com busca, categorias, ofertas, filtros e muitos produtos.",
+    },
   },
   {
     templateId: "listing-marketplace-pro",
     name: "Listing Marketplace",
+    names: { en: "Listing Marketplace", es: "Marketplace de listados", fr: "Marketplace d'annonces", pt: "Marketplace de anuncios" },
     catalogType: "listing_marketplace_catalog",
     image: "/templates-preview/screenshots/ebay.png",
     description: "eBay-style listings with sellers, item condition, offers, and comparison layout.",
+    descriptions: {
+      en: "eBay-style listings with sellers, item condition, offers, and comparison layout.",
+      es: "Listados tipo eBay con vendedores, condicion, ofertas y comparacion.",
+      fr: "Annonces type eBay avec vendeurs, etat, offres et comparaison.",
+      pt: "Listagens tipo eBay com vendedores, condicao, ofertas e comparacao.",
+    },
   },
   {
     templateId: "fashion-drop-pro",
     name: "Fashion Drop",
+    names: { en: "Fashion Drop", es: "Fashion drop", fr: "Drop mode", pt: "Fashion drop" },
     catalogType: "lookbook_collection_catalog",
     image: "/templates-preview/screenshots/premium.png",
     description: "Shopify boutique style with editorial hero, collections, lookbook, and drop energy.",
+    descriptions: {
+      en: "Shopify boutique style with editorial hero, collections, lookbook, and drop energy.",
+      es: "Boutique tipo Shopify con hero editorial, colecciones, lookbook y energia de lanzamiento.",
+      fr: "Boutique type Shopify avec hero editorial, collections, lookbook et energie de lancement.",
+      pt: "Boutique tipo Shopify com hero editorial, colecoes, lookbook e energia de lancamento.",
+    },
   },
   {
     templateId: "local-services-pro-plus",
     name: "Local Services",
+    names: { en: "Local Services", es: "Servicios locales", fr: "Services locaux", pt: "Servicos locais" },
     catalogType: "service_area_catalog",
     image: "/templates-preview/screenshots/services.png",
     description: "Quote-focused service site with service cards, trust, service area, and contact CTA.",
+    descriptions: {
+      en: "Quote-focused service site with service cards, trust, service area, and contact CTA.",
+      es: "Pagina de servicios con cotizaciones, confianza, areas de servicio y CTA de contacto.",
+      fr: "Site de services oriente devis, confiance, zone de service et CTA de contact.",
+      pt: "Site de servicos focado em orcamentos, confianca, area de atendimento e CTA.",
+    },
   },
   {
     templateId: "booking-appointment-pro",
     name: "Booking",
+    names: { en: "Booking", es: "Reservas", fr: "Reservations", pt: "Agendamentos" },
     catalogType: "booking_menu_catalog",
     image: "/templates-preview/screenshots/booking.png",
     description: "Appointment-first layout with service menu, availability, staff/process, and booking CTA.",
+    descriptions: {
+      en: "Appointment-first layout with service menu, availability, staff/process, and booking CTA.",
+      es: "Layout enfocado en citas con menu de servicios, disponibilidad, equipo/proceso y CTA.",
+      fr: "Layout centre sur les rendez-vous avec services, disponibilite, equipe/processus et CTA.",
+      pt: "Layout focado em agendamentos com servicos, disponibilidade, equipe/processo e CTA.",
+    },
   },
 ];
 
@@ -1484,7 +1526,7 @@ async function handleWebsiteIntentAnswer(message) {
     if (!guidedState.industry) guidedState.industry = inferIndustryFromPrompt(message);
     if (!guidedState.preferredTone) guidedState.preferredTone = extractStyleHint(message);
     appendTemplateDetectionMessage(selection);
-    appendTemplatePreviewChoices(selection);
+    await appendTemplatePreviewChoices(selection, message);
     guidedStep = nextSmartGuidedStep("websiteIntent");
     appendUnderstandingCard({ updates: inferGuidedUpdatesFromAnyMessage(message), sourceMessage: message });
     appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
@@ -1521,6 +1563,60 @@ async function selectTemplateFromFreeText(message) {
   return window.TemplateRouter.selectTemplateFromPrompt(message);
 }
 
+async function getTemplatePreviewCandidates(selection, sourceMessage = "") {
+  const candidates = [];
+  const addCandidate = (candidate) => {
+    if (!candidate?.templateId || candidates.some((item) => item.templateId === candidate.templateId)) return;
+    const meta = templatePreviewMeta(candidate.templateId);
+    candidates.push({
+      ...meta,
+      ...candidate,
+      name: candidate.template?.clientSelectionCard?.title || candidate.template?.name || meta.name || candidate.templateId,
+      description: candidate.template?.clientSelectionCard?.difference || candidate.template?.visualDifference || meta.description || "",
+      image: meta.image || "/templates-preview/screenshots/premium.png",
+      catalogType: candidate.catalogType || candidate.template?.catalogModel?.catalogType || meta.catalogType || "",
+    });
+  };
+
+  addCandidate(selection);
+  if (window.TemplateRouter?.getTemplateCandidates) {
+    try {
+      const ranked = await window.TemplateRouter.getTemplateCandidates(sourceMessage || guidedState.websiteIntent || "", 3);
+      ranked.forEach(addCandidate);
+    } catch (error) {
+      console.warn("Template candidate ranking failed", error);
+    }
+  }
+
+  rankedFallbackChoices(selection?.templateId).forEach(addCandidate);
+  return candidates.slice(0, 3);
+}
+
+function rankedFallbackChoices(selectedTemplateId = "") {
+  const selected = templatePreviewMeta(selectedTemplateId);
+  const selectedCatalog = selected?.catalogType || "";
+  const commerceHeavy = /marketplace|dense|listing/.test(selectedCatalog);
+  const serviceHeavy = /service|booking/.test(selectedCatalog);
+  const ordered = commerceHeavy
+    ? ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro", "apple-premium-product"]
+    : serviceHeavy
+      ? ["local-services-pro-plus", "booking-appointment-pro", "apple-premium-product", "fashion-drop-pro"]
+      : ["apple-premium-product", "fashion-drop-pro", "mega-marketplace", "local-services-pro-plus"];
+  return ordered.map((templateId) => templatePreviewMeta(templateId)).filter(Boolean);
+}
+
+function templatePreviewMeta(templateId) {
+  return TEMPLATE_PREVIEW_CHOICES.find((choice) => choice.templateId === templateId) || null;
+}
+
+function localizedTemplateName(choice) {
+  return choice?.names?.[selectedLanguage] || choice?.name || choice?.template?.clientSelectionCard?.title || choice?.template?.name || choice?.templateId || "";
+}
+
+function localizedTemplateDescription(choice) {
+  return choice?.descriptions?.[selectedLanguage] || choice?.description || choice?.template?.clientSelectionCard?.difference || choice?.template?.visualDifference || "";
+}
+
 function appendTemplateDetectionMessage(selection) {
   const templateName = selection.template?.name || selection.templateId;
   const explanation = selection.template?.catalogModel?.customerFeeling || selection.template?.visualDifference || selection.reason;
@@ -1533,8 +1629,9 @@ function appendTemplateDetectionMessage(selection) {
   appendChatMessage("assistant", lines.join("\n"), "success");
 }
 
-function appendTemplatePreviewChoices(selection) {
+async function appendTemplatePreviewChoices(selection, sourceMessage = "") {
   const selectedId = selection?.templateId || "";
+  const choices = await getTemplatePreviewCandidates(selection, sourceMessage);
   const card = document.createElement("div");
   card.className = "template-choice-panel";
   const heading = document.createElement("div");
@@ -1552,16 +1649,18 @@ function appendTemplatePreviewChoices(selection) {
   }))}</span>`;
   const grid = document.createElement("div");
   grid.className = "template-choice-grid";
-  TEMPLATE_PREVIEW_CHOICES.forEach((choice) => {
+  choices.forEach((choice, index) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `template-choice-card ${choice.templateId === selectedId ? "recommended" : ""}`;
     button.dataset.templateChoice = choice.templateId;
+    button.dataset.catalogType = choice.catalogType || "";
     button.innerHTML = `
       <img src="${escapeAttribute(choice.image)}" alt="">
-      <span>${escapeHtml(choice.templateId === selectedId ? langText({ en: "Recommended", es: "Recomendada", fr: "Recommandée", pt: "Recomendada" }) : choice.catalogType)}</span>
-      <strong>${escapeHtml(choice.name)}</strong>
-      <small>${escapeHtml(choice.description)}</small>
+      <span>${escapeHtml(choice.templateId === selectedId || index === 0 ? langText({ en: "Recommended", es: "Recomendada", fr: "Recommandée", pt: "Recomendada" }) : langText({ en: "Alternative", es: "Alternativa", fr: "Alternative", pt: "Alternativa" }))}</span>
+      <strong>${escapeHtml(localizedTemplateName(choice))}</strong>
+      <small>${escapeHtml(localizedTemplateDescription(choice))}</small>
+      <em>${escapeHtml(choice.catalogType || "")}</em>
     `;
     button.addEventListener("click", () => chooseTemplatePreview(choice));
     grid.appendChild(button);
@@ -1582,13 +1681,16 @@ async function chooseTemplatePreview(choice) {
     intent: "client_visual_template_choice",
     reason: "Client selected a visual template preview in guided setup",
   };
+  guidedState.websiteIntent = guidedState.websiteIntent || localizedTemplateName(choice);
+  document.querySelectorAll(".template-choice-card.selected").forEach((card) => card.classList.remove("selected"));
+  document.querySelector(`[data-template-choice="${cssEscape(choice.templateId)}"]`)?.classList.add("selected");
   appendChatMessage(
     "user",
     langText({
-      en: `Use ${choice.name}`,
-      es: `Usar ${choice.name}`,
-      fr: `Utiliser ${choice.name}`,
-      pt: `Usar ${choice.name}`,
+      en: `Use ${localizedTemplateName(choice)}`,
+      es: `Usar ${localizedTemplateName(choice)}`,
+      fr: `Utiliser ${localizedTemplateName(choice)}`,
+      pt: `Usar ${localizedTemplateName(choice)}`,
     }),
   );
   appendTemplateDetectionMessage(forcedTemplateSelection);
