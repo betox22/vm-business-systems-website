@@ -115,6 +115,10 @@ QUESTION_BY_LANGUAGE = {
 
 def guide_intake(payload: IntakeAssistantRequest) -> IntakeAssistantResponse:
     selected_language = _language(payload.current.selected_language)
+    quick_response = _quick_intake_response(payload, selected_language)
+    if quick_response:
+        return quick_response
+
     settings = get_settings()
     if not settings.openai_api_key:
         return _development_fallback(payload)
@@ -203,8 +207,33 @@ def guide_intake(payload: IntakeAssistantRequest) -> IntakeAssistantResponse:
 
 def _development_fallback(payload: IntakeAssistantRequest) -> IntakeAssistantResponse:
     selected_language = _language(payload.current.selected_language)
-    current = payload.current.model_dump(by_alias=True)
+    return _local_intake_response(payload, selected_language, used_dev_fallback=True, confidence=0.45)
+
+
+def _quick_intake_response(payload: IntakeAssistantRequest, selected_language: str) -> IntakeAssistantResponse | None:
     updates = _infer_updates(payload.current_step, payload.message, selected_language)
+    useful_update_count = len([key for key, value in updates.items() if value not in ("", None, [], {})])
+    if useful_update_count < 2 and payload.current_step not in REQUIRED_STEPS and payload.current_step not in OPTIONAL_STEPS:
+        return None
+    return _local_intake_response(
+        payload,
+        selected_language,
+        updates=updates,
+        used_dev_fallback=False,
+        confidence=0.72 if useful_update_count >= 2 else 0.62,
+    )
+
+
+def _local_intake_response(
+    payload: IntakeAssistantRequest,
+    selected_language: str,
+    *,
+    updates: dict | None = None,
+    used_dev_fallback: bool,
+    confidence: float,
+) -> IntakeAssistantResponse:
+    current = payload.current.model_dump(by_alias=True)
+    updates = updates if updates is not None else _infer_updates(payload.current_step, payload.message, selected_language)
     merged = _merge_current_updates(current, updates)
     next_step = _smart_next_step(payload.current_step, merged)
 
@@ -217,13 +246,13 @@ def _development_fallback(payload: IntakeAssistantRequest) -> IntakeAssistantRes
         next_step=next_step,
         next_question=_question(selected_language, next_step),
         missing_fields=missing,
-        used_dev_fallback=True,
+        used_dev_fallback=used_dev_fallback,
         assistantMessage=message,
         emotion=emotion,
         updatedFields=updates,
         readyToGenerate=not missing,
         missingImportantFields=missing,
-        confidence=0.45,
+        confidence=confidence,
     )
 
 
@@ -334,7 +363,7 @@ def _extract_contact(text: str) -> dict[str, str]:
     if phone_match:
         contact["phone"] = phone_match.group(1).strip()
     if instagram_match:
-        contact["instagram"] = instagram_match.group(0)
+        contact["instagram"] = instagram_match.group(0).rstrip(".")
     if not contact:
         contact["notes"] = text
     return contact
@@ -356,7 +385,9 @@ def _extract_business_name(text: str) -> str:
 def _extract_location(text: str) -> str:
     patterns = [
         r"(?:ubicaci[oó]n|ubicado en|est[aá] en|atiende en|localidad|ciudad|zona)\s*(?:es|:|-)?\s*([^.,;\n]+)",
+        r"(?:en|desde)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){0,2})(?:\s|,|\.|;|$)",
         r"(?:location|located in|serves|city|area)\s*(?:is|:|-)?\s*([^.,;\n]+)",
+        r"(?:in|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|,|\.|;|$)",
     ]
     for pattern in patterns:
         match = re.search(pattern, text, flags=re.I)
@@ -375,8 +406,18 @@ def _extract_services(text: str) -> list[str]:
     for pattern in patterns:
         match = re.search(pattern, text, flags=re.I)
         if match:
-            return [_clean(item, 52) for item in _split_items(match.group(1)) if _clean(item, 52)]
+            product_phrase = _trim_product_phrase(match.group(1))
+            return [_clean(item, 52) for item in _split_items(product_phrase) if _clean(item, 52)]
     return []
+
+
+def _trim_product_phrase(value: str) -> str:
+    return re.split(
+        r"\b(?:quiero|estilo|style|contacto|contact|whatsapp|instagram|tel[eé]fono|phone|email|ubicaci[oó]n|location)\b|\s+en\s+[A-ZÁÉÍÓÚÑ]",
+        value or "",
+        maxsplit=1,
+        flags=re.I,
+    )[0]
 
 
 def _infer_industry(text: str) -> str:
