@@ -627,6 +627,20 @@ const TEMPLATE_PREVIEW_CHOICES = [
     },
   },
   {
+    templateId: "corporate-company-pro",
+    name: "Corporate Company",
+    names: { en: "Corporate Company", es: "Pagina de empresa", fr: "Site entreprise", pt: "Site empresarial" },
+    catalogType: "company_services_catalog",
+    image: "/templates-preview/screenshots/services.png",
+    description: "Professional company website with positioning, services, process, proof, and contact.",
+    descriptions: {
+      en: "Professional company website with positioning, services, process, proof, and contact.",
+      es: "Pagina profesional de empresa con posicionamiento, servicios, proceso, prueba y contacto.",
+      fr: "Site professionnel d'entreprise avec positionnement, services, processus, preuves et contact.",
+      pt: "Site profissional de empresa com posicionamento, servicos, processo, prova e contato.",
+    },
+  },
+  {
     templateId: "local-services-pro-plus",
     name: "Local Services",
     names: { en: "Local Services", es: "Servicios locales", fr: "Services locaux", pt: "Servicos locais" },
@@ -1735,8 +1749,8 @@ function rankedFallbackChoices(selectedTemplateId = "") {
   const ordered = commerceHeavy
     ? ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro", "apple-premium-product"]
     : serviceHeavy
-      ? ["local-services-pro-plus", "booking-appointment-pro", "apple-premium-product", "fashion-drop-pro"]
-      : ["apple-premium-product", "fashion-drop-pro", "mega-marketplace", "local-services-pro-plus"];
+      ? ["local-services-pro-plus", "booking-appointment-pro", "corporate-company-pro", "apple-premium-product"]
+      : ["corporate-company-pro", "apple-premium-product", "fashion-drop-pro", "mega-marketplace"];
   return ordered.map((templateId) => templatePreviewMeta(templateId)).filter(Boolean);
 }
 
@@ -4359,16 +4373,19 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isMarketplaceTemplate = catalogType === "dense_marketplace_catalog" || /mega-marketplace|marketplace-style/i.test(template.id || "");
   const isPremiumTemplate = catalogType === "premium_editorial_catalog" || /apple-premium-product/i.test(template.id || "");
   const isFashionTemplate = catalogType === "lookbook_collection_catalog" || /fashion-drop-pro/i.test(template.id || "");
+  const isCorporateTemplate = catalogType === "company_services_catalog" || /corporate-company-pro/i.test(template.id || "");
   const instantPages = isMarketplaceTemplate
     ? buildMarketplaceInstantPages(copy, name, description, payload)
     : isPremiumTemplate
       ? buildPremiumProductInstantPages(copy, name, description, payload)
       : isFashionTemplate
         ? buildFashionDropInstantPages(copy, name, description, payload)
-    : buildDefaultInstantPages(copy, name, description, payload);
+        : isCorporateTemplate
+          ? buildCorporateCompanyInstantPages(copy, name, description, payload)
+          : buildDefaultInstantPages(copy, name, description, payload);
   return {
     schema_version: "1.0",
-    site_type: "online_store",
+    site_type: isCorporateTemplate ? "business_website" : "online_store",
     business: {
       name,
       description,
@@ -4398,8 +4415,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       template_id: template.id || "",
       catalog_type: catalogType,
       intent: templateSelection?.intent || payload.templateIntent || "",
-      navigation: { show_cart: true, show_header: true, sticky_header: true },
-      checkout: { mode: isOnlineShop ? "cart_setup_required" : "quote_or_cart", primary_action: isOnlineShop ? copy.shopNow : copy.requestOrder },
+      navigation: { show_cart: !isCorporateTemplate, show_header: true, sticky_header: true },
+      checkout: { mode: isCorporateTemplate ? "lead_capture" : isOnlineShop ? "cart_setup_required" : "quote_or_cart", primary_action: isCorporateTemplate ? copy.requestConsultation : isOnlineShop ? copy.shopNow : copy.requestOrder },
     },
     integrations: { contact: { whatsapp_enabled: true, email_enabled: true }, analytics: { enabled: false, provider: "" }, payments: { enabled: false, mode: "setup_required" } },
     custom_logic: { enabled: false, risk_level: "restricted", automations: "" },
@@ -4418,6 +4435,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       { label: copy.newDrop, page_key: "home" },
       { label: copy.collections, page_key: "catalog" },
       { label: copy.lookbook, page_key: "about" },
+      { label: copy.contact, page_key: "contact" },
+    ] : isCorporateTemplate ? [
+      { label: copy.company, page_key: "home" },
+      { label: copy.services, page_key: "catalog" },
+      { label: copy.process, page_key: "about" },
       { label: copy.contact, page_key: "contact" },
     ] : [
       { label: copy.home, page_key: "home" },
@@ -4449,9 +4471,9 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         id: "instant-modern",
         name: template.name || copy.modernCommercial,
         description: template.visualDifference || copy.fastBase,
-        theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: copy.shopNow, secondary_label: copy.contactVerb, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
+        theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: isCorporateTemplate ? copy.requestConsultation : copy.shopNow, secondary_label: copy.contactVerb, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
         layout_mode_id: template.id || "instant_storefront",
-        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : "split_showcase",
+        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : "split_showcase",
         product_layout: catalogType,
       },
     ],
@@ -4727,6 +4749,87 @@ function buildFashionDropInstantPages(copy, name, description, payload = {}) {
   ];
 }
 
+function buildCorporateCompanyInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.company,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "corporate_hero",
+          type: "CorporateHero",
+          order: 1,
+          editable: {
+            headline: copy.corporateHeadline(name),
+            subtitle: copy.corporateSubheadline(description),
+            primary_button: copy.requestConsultation,
+            secondary_button: copy.viewServices,
+            image_url: heroImage,
+            images: [],
+          },
+          settings: { layout: "corporate_editorial" },
+        },
+        {
+          id: "corporate_services",
+          type: "CorporateServices",
+          order: 2,
+          editable: { title: copy.corporateServicesTitle, text: copy.corporateServicesText, images: [] },
+          settings: { layout: "capabilities", columns: 3 },
+        },
+        {
+          id: "corporate_process",
+          type: "CorporateProcess",
+          order: 3,
+          editable: { title: copy.corporateProcessTitle, text: copy.corporateProcessText, items: copy.corporateProcessItems },
+          settings: { layout: "numbered_steps" },
+        },
+        {
+          id: "corporate_proof",
+          type: "CorporateProof",
+          order: 4,
+          editable: { title: copy.corporateProofTitle, text: copy.corporateProofText, items: copy.corporateProofItems },
+          settings: { layout: "proof_panel" },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.services,
+      slug: copy.servicesSlug,
+      order: 2,
+      sections: [
+        {
+          id: "services_grid",
+          type: "ProductGrid",
+          order: 1,
+          editable: { title: copy.corporateServicesTitle, text: copy.corporateServicesText, images: [] },
+          settings: { layout: "company_services", columns: 3 },
+        },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.process,
+      slug: copy.processSlug,
+      order: 3,
+      sections: [
+        { id: "process", type: "CorporateProcess", order: 1, editable: { title: copy.corporateProcessTitle, text: copy.corporateProcessText, items: copy.corporateProcessItems }, settings: { layout: "numbered_steps" } },
+        { id: "proof", type: "CorporateProof", order: 2, editable: { title: copy.corporateProofTitle, text: copy.corporateProofText, items: copy.corporateProofItems }, settings: { layout: "proof_panel" } },
+      ],
+    },
+    {
+      page_key: "contact",
+      title: copy.contact,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: copy.letsTalk, text: copy.corporateContactText }, settings: { layout: "simple" } }],
+    },
+  ];
+}
+
 function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
   return [
     {
@@ -4886,6 +4989,24 @@ function instantLocaleCopy(language) {
       whyBuyHere: "Why customers buy here",
       trustText: "Clear delivery, secure checkout, support, and simple returns.",
       marketplaceCategories: ["Electronics", "Home", "Fashion", "Beauty", "Sports", "Deals"],
+      company: "Company",
+      services: "Services",
+      process: "Process",
+      servicesSlug: "/services",
+      processSlug: "/company",
+      requestConsultation: "Request consultation",
+      viewServices: "View services",
+      corporateHeadline: (name) => `${name} builds work clients can trust`,
+      corporateSubheadline: (description) => description || "A professional company website focused on clarity, services, proof, and direct inquiries.",
+      corporateServicesTitle: "Services and capabilities",
+      corporateServicesText: "A clear overview of what the company does, who it helps, and the outcomes clients can expect.",
+      corporateProcessTitle: "A simple process from first conversation to delivery",
+      corporateProcessText: "Show how the company evaluates needs, recommends the right path, and delivers with accountability.",
+      corporateProcessItems: ["Understand the goal", "Plan the right solution", "Deliver with clear communication", "Support the next step"],
+      corporateProofTitle: "Built on trust and measurable work",
+      corporateProofText: "Use this section for credibility, experience, certifications, client types, or operating standards.",
+      corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
+      corporateContactText: "Send a message to discuss services, availability, pricing, or a custom project.",
       premiumHeadline: (name) => `Meet ${name}`,
       premiumSubheadline: (description) => description || "A refined product experience built to feel simple, confident, and memorable.",
       premiumPrimary: "Explore products",
@@ -4972,6 +5093,24 @@ function instantLocaleCopy(language) {
       whyBuyHere: "Por que comprar aqui",
       trustText: "Entrega clara, checkout seguro, soporte y devoluciones simples.",
       marketplaceCategories: ["Electronica", "Hogar", "Moda", "Belleza", "Deportes", "Ofertas"],
+      company: "Empresa",
+      services: "Servicios",
+      process: "Proceso",
+      servicesSlug: "/servicios",
+      processSlug: "/empresa",
+      requestConsultation: "Solicitar consulta",
+      viewServices: "Ver servicios",
+      corporateHeadline: (name) => `${name} presenta una empresa clara y confiable`,
+      corporateSubheadline: (description) => description || "Una pagina profesional enfocada en claridad, servicios, confianza y contacto directo.",
+      corporateServicesTitle: "Servicios y capacidades",
+      corporateServicesText: "Una vista clara de lo que hace la empresa, a quien ayuda y que resultados puede entregar.",
+      corporateProcessTitle: "Un proceso simple desde la primera conversacion hasta la entrega",
+      corporateProcessText: "Muestra como la empresa entiende la necesidad, recomienda el camino correcto y entrega con responsabilidad.",
+      corporateProcessItems: ["Entender el objetivo", "Planificar la solucion correcta", "Entregar con comunicacion clara", "Acompanar el proximo paso"],
+      corporateProofTitle: "Construido sobre confianza y trabajo medible",
+      corporateProofText: "Usa esta seccion para credibilidad, experiencia, certificaciones, tipos de clientes o estandares de trabajo.",
+      corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
+      corporateContactText: "Envia un mensaje para hablar de servicios, disponibilidad, precios o un proyecto personalizado.",
       premiumHeadline: (name) => `Conoce ${name}`,
       premiumSubheadline: (description) => description || "Una experiencia de producto refinada, simple, segura y memorable.",
       premiumPrimary: "Explorar productos",
@@ -5058,6 +5197,24 @@ function instantLocaleCopy(language) {
       whyBuyHere: "Pourquoi acheter ici",
       trustText: "Livraison claire, paiement securise, support et retours simples.",
       marketplaceCategories: ["Electronique", "Maison", "Mode", "Beaute", "Sport", "Offres"],
+      company: "Entreprise",
+      services: "Services",
+      process: "Processus",
+      servicesSlug: "/services",
+      processSlug: "/entreprise",
+      requestConsultation: "Demander une consultation",
+      viewServices: "Voir les services",
+      corporateHeadline: (name) => `${name} presente une entreprise claire et fiable`,
+      corporateSubheadline: (description) => description || "Un site professionnel centre sur la clarte, les services, la preuve et le contact direct.",
+      corporateServicesTitle: "Services et capacites",
+      corporateServicesText: "Un apercu clair de ce que fait l'entreprise, des clients aides et des resultats attendus.",
+      corporateProcessTitle: "Un processus simple du premier echange a la livraison",
+      corporateProcessText: "Montrez comment l'entreprise comprend le besoin, recommande la bonne approche et livre avec responsabilite.",
+      corporateProcessItems: ["Comprendre l'objectif", "Planifier la bonne solution", "Livrer avec une communication claire", "Accompagner la suite"],
+      corporateProofTitle: "Construit sur la confiance et un travail mesurable",
+      corporateProofText: "Utilisez cette section pour la credibilite, l'experience, les certifications, les types de clients ou les standards.",
+      corporateProofItems: ["Livraison fiable", "Communication claire", "Standards professionnels"],
+      corporateContactText: "Envoyez un message pour discuter des services, disponibilites, prix ou d'un projet sur mesure.",
       premiumHeadline: (name) => `Découvrez ${name}`,
       premiumSubheadline: (description) => description || "Une expérience produit raffinée, simple, confiante et mémorable.",
       premiumPrimary: "Explorer les produits",
@@ -5144,6 +5301,24 @@ function instantLocaleCopy(language) {
       whyBuyHere: "Por que comprar aqui",
       trustText: "Entrega clara, checkout seguro, suporte e devolucoes simples.",
       marketplaceCategories: ["Eletronicos", "Casa", "Moda", "Beleza", "Esportes", "Ofertas"],
+      company: "Empresa",
+      services: "Servicos",
+      process: "Processo",
+      servicesSlug: "/servicos",
+      processSlug: "/empresa",
+      requestConsultation: "Solicitar consulta",
+      viewServices: "Ver servicos",
+      corporateHeadline: (name) => `${name} apresenta uma empresa clara e confiavel`,
+      corporateSubheadline: (description) => description || "Um site profissional focado em clareza, servicos, prova e contato direto.",
+      corporateServicesTitle: "Servicos e capacidades",
+      corporateServicesText: "Uma visao clara do que a empresa faz, quem ajuda e quais resultados pode entregar.",
+      corporateProcessTitle: "Um processo simples da primeira conversa ate a entrega",
+      corporateProcessText: "Mostre como a empresa entende a necessidade, recomenda o caminho certo e entrega com responsabilidade.",
+      corporateProcessItems: ["Entender o objetivo", "Planejar a solucao certa", "Entregar com comunicacao clara", "Apoiar o proximo passo"],
+      corporateProofTitle: "Construido com confianca e trabalho mensuravel",
+      corporateProofText: "Use esta secao para credibilidade, experiencia, certificacoes, tipos de clientes ou padroes de trabalho.",
+      corporateProofItems: ["Entrega confiavel", "Comunicacao clara", "Padroes profissionais"],
+      corporateContactText: "Envie uma mensagem para falar sobre servicos, disponibilidade, precos ou um projeto personalizado.",
       premiumHeadline: (name) => `Conheça ${name}`,
       premiumSubheadline: (description) => description || "Uma experiência de produto refinada, simples, confiante e memorável.",
       premiumPrimary: "Explorar produtos",
@@ -6342,6 +6517,10 @@ function renderSection(section, schema) {
     FashionDropStory: renderFashionDropStory,
     FashionLookbook: renderFashionLookbook,
     FashionFitGuide: renderFashionFitGuide,
+    CorporateHero: renderCorporateHero,
+    CorporateServices: renderCorporateServices,
+    CorporateProcess: renderCorporateProcess,
+    CorporateProof: renderCorporateProof,
     MarketplaceHero: renderMarketplaceHero,
     CategoryRail: renderCategoryRail,
     DealRow: renderDealRow,
@@ -6538,6 +6717,58 @@ function fashionVisualPlaceholder(schema) {
   return `<div class="fashion-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
 }
 
+function renderCorporateHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const image = editable.image_url || marketplaceItems(schema).find((item) => item.image_url)?.image_url || "";
+  return `<section class="corporate-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="corporate-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || labels.company)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.requestConsultation)}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewServices)}</a>
+      </div>
+    </div>
+    <div class="corporate-hero-visual">${image ? `<img src="${escapeAttribute(image)}" alt="">` : corporateVisualPlaceholder(schema)}</div>
+    <div class="corporate-hero-proof">${labels.corporateProofItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderCorporateServices(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="corporate-services-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).services)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    ${renderCorporateServicesCatalog(marketplaceItems(schema), schema)}
+  </section>`;
+}
+
+function renderCorporateProcess(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.corporateProcessItems;
+  return `<section class="corporate-process-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.process)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="corporate-process-list">${items.map((item, index) => `<article><small>0${index + 1}</small><strong>${escapeHtml(item)}</strong></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderCorporateProof(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.corporateProofItems;
+  return `<section class="corporate-proof-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.proof)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div>${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function corporateVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "CO").slice(0, 2).toUpperCase();
+  return `<div class="corporate-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
+}
+
 function renderMarketplaceHero(section, schema) {
   const editable = section.editable || {};
   const items = marketplaceItems(schema);
@@ -6665,6 +6896,7 @@ function renderCatalogByType(catalogType, items, schema) {
     online_ordering_catalog: renderRestaurantMenuCatalog,
     booking_menu_catalog: renderBookingMenuCatalog,
     service_area_catalog: renderLocalServiceCatalog,
+    company_services_catalog: renderCorporateServicesCatalog,
     practice_area_catalog: renderProfessionalServicesCatalog,
     project_gallery_catalog: renderBeforeAfterProjectCatalog,
     pricing_plan_catalog: renderPricingPlanCatalog,
@@ -6725,6 +6957,16 @@ function renderFashionLookbookCatalog(items) {
   return `<div class="catalog-lookbook">${items.map((item, index) => `<article class="lookbook-card ${index === 0 ? "wide" : ""}">
     ${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : `<div>${escapeHtml(item.name.slice(0, 2))}</div>`}
     <span>${labels.newDrop}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
+  </article>`).join("")}</div>`;
+}
+
+function renderCorporateServicesCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-corporate-services">${items.map((item, index) => `<article>
+    <small>${escapeHtml(item.category || `${labels.capability} 0${index + 1}`)}</small>
+    <h3>${escapeHtml(item.name)}</h3>
+    <p>${escapeHtml(item.description)}</p>
+    <a class="rendered-button secondary" href="#">${escapeHtml(item.button_label || labels.requestConsultation)}</a>
   </article>`).join("")}</div>`;
 }
 
@@ -6841,6 +7083,7 @@ function catalogLocaleLabels(schema) {
       sellerVerified: "Seller verified", used: "Used", newItem: "New", localPickup: "Local pickup", makeOffer: "Make offer", contactSeller: "Contact seller",
       newDrop: "New drop", limitedSelection: "Limited selection", instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
       collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
+      company: "Company", services: "Services", process: "Process", proof: "Proof", capability: "Capability", requestConsultation: "Request consultation", viewServices: "View services", corporateProcessItems: ["Discovery", "Strategy", "Delivery", "Support"], corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
       main: "Main", popular: "Popular", marketPrice: "Market price", fromQuote: "From quote", book: "Book", freeQuote: "Free quote", practiceArea: "Practice area", scheduleConsultation: "Schedule consultation",
       before: "Before", after: "After", viewProject: "View project", plan: "Plan", custom: "Custom", start: "Start", ticketOffer: "Ticket / offer", reserve: "Reserve", package: "Package", applyNow: "Apply now", view: "View", request: "Ask now",
     },
@@ -6850,6 +7093,7 @@ function catalogLocaleLabels(schema) {
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Nuevo", localPickup: "Retiro local", makeOffer: "Hacer oferta", contactSeller: "Contactar vendedor",
       newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
       collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
+      company: "Empresa", services: "Servicios", process: "Proceso", proof: "Prueba", capability: "Capacidad", requestConsultation: "Solicitar consulta", viewServices: "Ver servicios", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Soporte"], corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
       main: "Principal", popular: "Popular", marketPrice: "Precio de mercado", fromQuote: "Desde cotizacion", book: "Reservar", freeQuote: "Cotizacion gratis", practiceArea: "Area de practica", scheduleConsultation: "Agendar consulta",
       before: "Antes", after: "Despues", viewProject: "Ver proyecto", plan: "Plan", custom: "Personalizado", start: "Empezar", ticketOffer: "Ticket / oferta", reserve: "Reservar", package: "Paquete", applyNow: "Aplicar ahora", view: "Ver", request: "Consultar",
     },
@@ -6859,6 +7103,7 @@ function catalogLocaleLabels(schema) {
       sellerVerified: "Vendeur vérifié", used: "Occasion", newItem: "Neuf", localPickup: "Retrait local", makeOffer: "Faire une offre", contactSeller: "Contacter le vendeur",
       newDrop: "Nouvelle collection", limitedSelection: "Sélection limitée", instantAccess: "Accès immédiat", downloadable: "Contenu téléchargeable", bonus: "Ressources bonus", lifetime: "Accès à vie", getAccess: "Obtenir l'accès",
       collections: "Collections", lookbook: "Lookbook", fit: "Guide des tailles", drop: "Drop", fitGuide: "Guide des tailles", fitGuideItems: ["Notes de taille", "Suggestions de style", "Conseils d'entretien", "Livraison et retours"], fashionCollections: ["Nouveautes", "Essentiels", "Pieces fortes", "Accessoires", "Drop limite", "Meilleures ventes"],
+      company: "Entreprise", services: "Services", process: "Processus", proof: "Preuve", capability: "Capacite", requestConsultation: "Demander une consultation", viewServices: "Voir les services", corporateProcessItems: ["Diagnostic", "Strategie", "Livraison", "Support"], corporateProofItems: ["Livraison fiable", "Communication claire", "Standards professionnels"],
       main: "Principal", popular: "Populaire", marketPrice: "Prix du marché", fromQuote: "Sur devis", book: "Réserver", freeQuote: "Devis gratuit", practiceArea: "Domaine d'expertise", scheduleConsultation: "Planifier une consultation",
       before: "Avant", after: "Après", viewProject: "Voir le projet", plan: "Offre", custom: "Sur mesure", start: "Commencer", ticketOffer: "Billet / offre", reserve: "Réserver", package: "Forfait", applyNow: "Postuler", view: "Voir", request: "Demander",
     },
@@ -6868,6 +7113,7 @@ function catalogLocaleLabels(schema) {
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Novo", localPickup: "Retirada local", makeOffer: "Fazer oferta", contactSeller: "Contatar vendedor",
       newDrop: "Novo drop", limitedSelection: "Seleção limitada", instantAccess: "Acesso imediato", downloadable: "Conteúdo baixável", bonus: "Recursos bônus", lifetime: "Acesso vitalício", getAccess: "Obter acesso",
       collections: "Colecoes", lookbook: "Lookbook", fit: "Guia de tamanhos", drop: "Drop", fitGuide: "Guia de tamanhos", fitGuideItems: ["Notas de tamanho e caimento", "Sugestoes de estilo", "Cuidados com a peca", "Envios e devolucoes"], fashionCollections: ["Novidades", "Essenciais", "Pecas destaque", "Acessorios", "Drop limitado", "Mais vendidos"],
+      company: "Empresa", services: "Servicos", process: "Processo", proof: "Prova", capability: "Capacidade", requestConsultation: "Solicitar consulta", viewServices: "Ver servicos", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Suporte"], corporateProofItems: ["Entrega confiavel", "Comunicacao clara", "Padroes profissionais"],
       main: "Principal", popular: "Popular", marketPrice: "Preço de mercado", fromQuote: "Sob orçamento", book: "Reservar", freeQuote: "Orçamento grátis", practiceArea: "Área de atuação", scheduleConsultation: "Agendar consulta",
       before: "Antes", after: "Depois", viewProject: "Ver projeto", plan: "Plano", custom: "Personalizado", start: "Começar", ticketOffer: "Ingresso / oferta", reserve: "Reservar", package: "Pacote", applyNow: "Aplicar agora", view: "Ver", request: "Consultar",
     },

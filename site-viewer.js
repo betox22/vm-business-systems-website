@@ -80,6 +80,10 @@ function renderSection(section, schema) {
   if (section.type === "FashionDropStory") return renderFashionDropStory(section, schema);
   if (section.type === "FashionLookbook") return renderFashionLookbook(section, schema);
   if (section.type === "FashionFitGuide") return renderFashionFitGuide(section, schema);
+  if (section.type === "CorporateHero") return renderCorporateHero(section, schema);
+  if (section.type === "CorporateServices") return renderCorporateServices(section, schema);
+  if (section.type === "CorporateProcess") return renderCorporateProcess(section, schema);
+  if (section.type === "CorporateProof") return renderCorporateProof(section, schema);
   if (section.type === "MarketplaceHero") return renderMarketplaceHero(section, schema);
   if (section.type === "CategoryRail") return renderCategoryRail(section, schema);
   if (section.type === "DealRow") return renderDealRow(section, schema);
@@ -254,6 +258,58 @@ function fashionVisualPlaceholder(schema) {
   return `<div class="fashion-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
 }
 
+function renderCorporateHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const image = editable.image_url || publicCatalogItems(schema).find((item) => item.image_url)?.image_url || "";
+  return `<section class="corporate-hero ${sectionClass(section)}">
+    <div class="corporate-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || labels.company)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.requestConsultation)}</button>
+        <button class="rendered-button secondary" data-open-lead type="button">${escapeHtml(editable.secondary_button || labels.viewServices)}</button>
+      </div>
+    </div>
+    <div class="corporate-hero-visual">${image ? `<img src="${escapeAttribute(image)}" alt="">` : corporateVisualPlaceholder(schema)}</div>
+    <div class="corporate-hero-proof">${labels.corporateProofItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderCorporateServices(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="corporate-services-section ${sectionClass(section)}">
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).services)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    ${renderCorporateServicesCatalog(publicCatalogItems(schema), schema)}
+  </section>`;
+}
+
+function renderCorporateProcess(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.corporateProcessItems;
+  return `<section class="corporate-process-section ${sectionClass(section)}">
+    <div><span class="rendered-kicker">${escapeHtml(labels.process)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="corporate-process-list">${items.map((item, index) => `<article><small>0${index + 1}</small><strong>${escapeHtml(item)}</strong></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderCorporateProof(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.corporateProofItems;
+  return `<section class="corporate-proof-section ${sectionClass(section)}">
+    <div><span class="rendered-kicker">${escapeHtml(labels.proof)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div>${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function corporateVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "CO").slice(0, 2).toUpperCase();
+  return `<div class="corporate-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
+}
+
 function renderMarketplaceHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -307,6 +363,8 @@ function renderProductGrid(section, schema) {
       ? renderPremiumEditorialCatalog(catalogItems, schema)
       : catalogType === "lookbook_collection_catalog"
         ? renderFashionLookbookCatalog(catalogItems, schema)
+        : catalogType === "company_services_catalog"
+          ? renderCorporateServicesCatalog(catalogItems, schema)
       : "";
   return `<section class="rendered-section ${sectionClass(section)}">
     <div class="section-heading">
@@ -353,6 +411,16 @@ function renderFashionLookbookCatalog(items, schema) {
   </article>`).join("")}</div>`;
 }
 
+function renderCorporateServicesCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-corporate-services">${items.map((item, index) => `<article>
+    <small>${escapeHtml(item.category || `${labels.capability} 0${index + 1}`)}</small>
+    <h3>${escapeHtml(item.name)}</h3>
+    <p>${escapeHtml(item.description)}</p>
+    <button class="rendered-button secondary" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.requestConsultation)}</button>
+  </article>`).join("")}</div>`;
+}
+
 function renderCatalogCard(item, className, badge, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<article class="${className}">
@@ -380,24 +448,28 @@ function catalogLocaleLabels(schema) {
       searchFilters: "Search & filters", price: "Price", rating: "Rating", delivery: "Delivery", deal: "Deal", fastShip: "Fast ship",
       search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", view: "View", request: "Ask now", signature: "Signature", detail: "Detail", curated: "Curated", flagship: "Flagship", premiumSpecs: ["Presentation", "Quality", "Support", "Delivery"],
       newDrop: "New drop", collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
+      company: "Company", services: "Services", process: "Process", proof: "Proof", capability: "Capability", requestConsultation: "Request consultation", viewServices: "View services", corporateProcessItems: ["Discovery", "Strategy", "Delivery", "Support"], corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
       fallbackCategories: ["Electronics", "Home", "Fashion", "Beauty", "Sports", "Deals"],
     },
     es: {
       searchFilters: "Busqueda y filtros", price: "Precio", rating: "Calificacion", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rapido",
       search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", view: "Ver", request: "Consultar", signature: "Principal", detail: "Detalle", curated: "Curado", flagship: "Producto estrella", premiumSpecs: ["Presentacion", "Calidad", "Soporte", "Entrega"],
       newDrop: "Nuevo drop", collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
+      company: "Empresa", services: "Servicios", process: "Proceso", proof: "Prueba", capability: "Capacidad", requestConsultation: "Solicitar consulta", viewServices: "Ver servicios", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Soporte"], corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
       fallbackCategories: ["Electronica", "Hogar", "Moda", "Belleza", "Deportes", "Ofertas"],
     },
     fr: {
       searchFilters: "Recherche et filtres", price: "Prix", rating: "Note", delivery: "Livraison", deal: "Offre", fastShip: "Livraison rapide",
       search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace", view: "Voir", request: "Demander", signature: "Signature", detail: "Detail", curated: "Soigne", flagship: "Produit phare", premiumSpecs: ["Presentation", "Qualite", "Support", "Livraison"],
       newDrop: "Nouvelle collection", collections: "Collections", lookbook: "Lookbook", fit: "Guide des tailles", drop: "Drop", fitGuide: "Guide des tailles", fitGuideItems: ["Notes de taille", "Suggestions de style", "Conseils d'entretien", "Livraison et retours"], fashionCollections: ["Nouveautes", "Essentiels", "Pieces fortes", "Accessoires", "Drop limite", "Meilleures ventes"],
+      company: "Entreprise", services: "Services", process: "Processus", proof: "Preuve", capability: "Capacite", requestConsultation: "Demander une consultation", viewServices: "Voir les services", corporateProcessItems: ["Diagnostic", "Strategie", "Livraison", "Support"], corporateProofItems: ["Livraison fiable", "Communication claire", "Standards professionnels"],
       fallbackCategories: ["Electronique", "Maison", "Mode", "Beaute", "Sport", "Offres"],
     },
     pt: {
       searchFilters: "Busca e filtros", price: "Preco", rating: "Avaliacao", delivery: "Entrega", deal: "Oferta", fastShip: "Entrega rapida",
       search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace", view: "Ver", request: "Consultar", signature: "Principal", detail: "Detalhe", curated: "Curado", flagship: "Produto principal", premiumSpecs: ["Apresentacao", "Qualidade", "Suporte", "Entrega"],
       newDrop: "Novo drop", collections: "Colecoes", lookbook: "Lookbook", fit: "Guia de tamanhos", drop: "Drop", fitGuide: "Guia de tamanhos", fitGuideItems: ["Notas de tamanho e caimento", "Sugestoes de estilo", "Cuidados com a peca", "Envios e devolucoes"], fashionCollections: ["Novidades", "Essenciais", "Pecas destaque", "Acessorios", "Drop limitado", "Mais vendidos"],
+      company: "Empresa", services: "Servicos", process: "Processo", proof: "Prova", capability: "Capacidade", requestConsultation: "Solicitar consulta", viewServices: "Ver servicos", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Suporte"], corporateProofItems: ["Entrega confiavel", "Comunicacao clara", "Padroes profissionais"],
       fallbackCategories: ["Eletronicos", "Casa", "Moda", "Beleza", "Esportes", "Ofertas"],
     },
   };
