@@ -75,6 +75,11 @@ function renderSection(section, schema) {
   if (section.type === "FeatureShowcase") return renderFeatureShowcase(section, schema);
   if (section.type === "EditorialGallery") return renderEditorialGallery(section, schema);
   if (section.type === "SpecStrip") return renderSpecStrip(section, schema);
+  if (section.type === "FashionHero") return renderFashionHero(section, schema);
+  if (section.type === "FashionCollectionRail") return renderFashionCollectionRail(section, schema);
+  if (section.type === "FashionDropStory") return renderFashionDropStory(section, schema);
+  if (section.type === "FashionLookbook") return renderFashionLookbook(section, schema);
+  if (section.type === "FashionFitGuide") return renderFashionFitGuide(section, schema);
   if (section.type === "MarketplaceHero") return renderMarketplaceHero(section, schema);
   if (section.type === "CategoryRail") return renderCategoryRail(section, schema);
   if (section.type === "DealRow") return renderDealRow(section, schema);
@@ -181,6 +186,74 @@ function premiumVisualPlaceholder(schema) {
   return `<div class="premium-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
 }
 
+function renderFashionHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = publicCatalogItems(schema);
+  const image = editable.image_url || items.find((item) => item.is_featured && item.image_url)?.image_url || items.find((item) => item.image_url)?.image_url || "";
+  return `<section class="fashion-hero ${sectionClass(section)}">
+    <div class="fashion-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || labels.newDrop)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || labels.shopNow)}</button>
+        <button class="rendered-button secondary" data-open-lead type="button">${escapeHtml(editable.secondary_button || labels.lookbook)}</button>
+      </div>
+    </div>
+    <div class="fashion-hero-visual">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(schema.business?.name || "")}">` : fashionVisualPlaceholder(schema)}</div>
+    <div class="fashion-hero-strip">${items.slice(0, 3).map((item) => `<span>${escapeHtml(item.name)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderFashionCollectionRail(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const collections = fashionCollections(schema);
+  return `<section class="fashion-collection-section ${sectionClass(section)}">
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.newDrop)}</span><h2>${escapeHtml(editable.title || labels.collections)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="fashion-collection-rail">${collections.map((collection, index) => `<article><small>0${index + 1}</small><strong>${escapeHtml(collection)}</strong><span>${escapeHtml(index % 2 ? labels.fit : labels.drop)}</span></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderFashionDropStory(section, schema) {
+  const editable = section.editable || {};
+  const image = editable.image_url || publicCatalogItems(schema).find((item) => item.image_url)?.image_url || "";
+  return `<section class="fashion-drop-story ${sectionClass(section)}">
+    <div><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).newDrop)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="fashion-story-image">${image ? `<img src="${escapeAttribute(image)}" alt="">` : fashionVisualPlaceholder(schema)}</div>
+  </section>`;
+}
+
+function renderFashionLookbook(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="fashion-lookbook-section ${sectionClass(section)}">
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).lookbook)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="fashion-lookbook-strip">${publicCatalogItems(schema).slice(0, 5).map((item, index) => `<article class="${index === 1 ? "tall" : ""}">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : fashionVisualPlaceholder(schema)}<strong>${escapeHtml(item.name)}</strong></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderFashionFitGuide(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.fitGuideItems;
+  return `<section class="fashion-fit-guide ${sectionClass(section)}">
+    <div><h2>${escapeHtml(editable.title || labels.fitGuide)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div>${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function fashionCollections(schema) {
+  const fromItems = [...new Set(publicCatalogItems(schema).map((item) => item.category).filter(Boolean))];
+  const labels = catalogLocaleLabels(schema);
+  return [...new Set([...fromItems, ...(labels.fashionCollections || [])])].slice(0, 6);
+}
+
+function fashionVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "FD").slice(0, 2).toUpperCase();
+  return `<div class="fashion-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
+}
+
 function renderMarketplaceHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -232,6 +305,8 @@ function renderProductGrid(section, schema) {
     ? renderMarketplaceCatalog(catalogItems, schema)
     : catalogType === "premium_editorial_catalog"
       ? renderPremiumEditorialCatalog(catalogItems, schema)
+      : catalogType === "lookbook_collection_catalog"
+        ? renderFashionLookbookCatalog(catalogItems, schema)
       : "";
   return `<section class="rendered-section ${sectionClass(section)}">
     <div class="section-heading">
@@ -269,6 +344,15 @@ function renderMarketplaceCatalog(items, schema) {
   </div>`;
 }
 
+function renderFashionLookbookCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-lookbook">${items.map((item, index) => `<article class="lookbook-card ${index === 0 ? "wide" : ""}">
+    ${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : `<div>${escapeHtml(item.name.slice(0, 2))}</div>`}
+    <span>${escapeHtml(labels.newDrop)}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label || labels.request)}</b>
+    <button class="rendered-button secondary" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.view)}</button>
+  </article>`).join("")}</div>`;
+}
+
 function renderCatalogCard(item, className, badge, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<article class="${className}">
@@ -295,21 +379,25 @@ function catalogLocaleLabels(schema) {
     en: {
       searchFilters: "Search & filters", price: "Price", rating: "Rating", delivery: "Delivery", deal: "Deal", fastShip: "Fast ship",
       search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", view: "View", request: "Ask now", signature: "Signature", detail: "Detail", curated: "Curated", flagship: "Flagship", premiumSpecs: ["Presentation", "Quality", "Support", "Delivery"],
+      newDrop: "New drop", collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
       fallbackCategories: ["Electronics", "Home", "Fashion", "Beauty", "Sports", "Deals"],
     },
     es: {
       searchFilters: "Busqueda y filtros", price: "Precio", rating: "Calificacion", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rapido",
       search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", view: "Ver", request: "Consultar", signature: "Principal", detail: "Detalle", curated: "Curado", flagship: "Producto estrella", premiumSpecs: ["Presentacion", "Calidad", "Soporte", "Entrega"],
+      newDrop: "Nuevo drop", collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
       fallbackCategories: ["Electronica", "Hogar", "Moda", "Belleza", "Deportes", "Ofertas"],
     },
     fr: {
       searchFilters: "Recherche et filtres", price: "Prix", rating: "Note", delivery: "Livraison", deal: "Offre", fastShip: "Livraison rapide",
       search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace", view: "Voir", request: "Demander", signature: "Signature", detail: "Detail", curated: "Soigne", flagship: "Produit phare", premiumSpecs: ["Presentation", "Qualite", "Support", "Livraison"],
+      newDrop: "Nouvelle collection", collections: "Collections", lookbook: "Lookbook", fit: "Guide des tailles", drop: "Drop", fitGuide: "Guide des tailles", fitGuideItems: ["Notes de taille", "Suggestions de style", "Conseils d'entretien", "Livraison et retours"], fashionCollections: ["Nouveautes", "Essentiels", "Pieces fortes", "Accessoires", "Drop limite", "Meilleures ventes"],
       fallbackCategories: ["Electronique", "Maison", "Mode", "Beaute", "Sport", "Offres"],
     },
     pt: {
       searchFilters: "Busca e filtros", price: "Preco", rating: "Avaliacao", delivery: "Entrega", deal: "Oferta", fastShip: "Entrega rapida",
       search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace", view: "Ver", request: "Consultar", signature: "Principal", detail: "Detalhe", curated: "Curado", flagship: "Produto principal", premiumSpecs: ["Apresentacao", "Qualidade", "Suporte", "Entrega"],
+      newDrop: "Novo drop", collections: "Colecoes", lookbook: "Lookbook", fit: "Guia de tamanhos", drop: "Drop", fitGuide: "Guia de tamanhos", fitGuideItems: ["Notas de tamanho e caimento", "Sugestoes de estilo", "Cuidados com a peca", "Envios e devolucoes"], fashionCollections: ["Novidades", "Essenciais", "Pecas destaque", "Acessorios", "Drop limitado", "Mais vendidos"],
       fallbackCategories: ["Eletronicos", "Casa", "Moda", "Beleza", "Esportes", "Ofertas"],
     },
   };

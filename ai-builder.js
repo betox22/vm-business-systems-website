@@ -4358,10 +4358,13 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   }));
   const isMarketplaceTemplate = catalogType === "dense_marketplace_catalog" || /mega-marketplace|marketplace-style/i.test(template.id || "");
   const isPremiumTemplate = catalogType === "premium_editorial_catalog" || /apple-premium-product/i.test(template.id || "");
+  const isFashionTemplate = catalogType === "lookbook_collection_catalog" || /fashion-drop-pro/i.test(template.id || "");
   const instantPages = isMarketplaceTemplate
     ? buildMarketplaceInstantPages(copy, name, description, payload)
     : isPremiumTemplate
       ? buildPremiumProductInstantPages(copy, name, description, payload)
+      : isFashionTemplate
+        ? buildFashionDropInstantPages(copy, name, description, payload)
     : buildDefaultInstantPages(copy, name, description, payload);
   return {
     schema_version: "1.0",
@@ -4411,6 +4414,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       { label: copy.products, page_key: "catalog" },
       { label: copy.story, page_key: "about" },
       { label: copy.contact, page_key: "contact" },
+    ] : isFashionTemplate ? [
+      { label: copy.newDrop, page_key: "home" },
+      { label: copy.collections, page_key: "catalog" },
+      { label: copy.lookbook, page_key: "about" },
+      { label: copy.contact, page_key: "contact" },
     ] : [
       { label: copy.home, page_key: "home" },
       { label: copy.shop, page_key: "catalog" },
@@ -4443,7 +4451,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         description: template.visualDifference || copy.fastBase,
         theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: copy.shopNow, secondary_label: copy.contactVerb, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
         layout_mode_id: template.id || "instant_storefront",
-        hero_layout: isPremiumTemplate ? "premium_center_stage" : "split_showcase",
+        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : "split_showcase",
         product_layout: catalogType,
       },
     ],
@@ -4627,6 +4635,98 @@ function buildPremiumProductInstantPages(copy, name, description, payload = {}) 
   ];
 }
 
+function buildFashionDropInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.newDrop,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "fashion_hero",
+          type: "FashionHero",
+          order: 1,
+          editable: {
+            headline: copy.fashionHeadline(name),
+            subtitle: copy.fashionSubheadline(description),
+            primary_button: copy.shopTheDrop,
+            secondary_button: copy.viewLookbook,
+            image_url: heroImage,
+            images: [],
+          },
+          settings: { layout: "editorial_drop", spacing: "cinematic", container_width: "wide" },
+        },
+        {
+          id: "fashion_collections",
+          type: "FashionCollectionRail",
+          order: 2,
+          editable: { title: copy.collections, text: copy.collectionsText },
+          settings: { layout: "collection_tiles", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "fashion_drop_story",
+          type: "FashionDropStory",
+          order: 3,
+          editable: { title: copy.dropStoryTitle, text: copy.dropStoryText, image_url: heroImage },
+          settings: { layout: "split_editorial", spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "fashion_lookbook",
+          type: "FashionLookbook",
+          order: 4,
+          editable: { title: copy.lookbook, text: copy.lookbookText },
+          settings: { layout: "horizontal_lookbook", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "fashion_products",
+          type: "ProductGrid",
+          order: 5,
+          editable: { title: copy.newArrivals, text: copy.newArrivalsText, images: [] },
+          settings: { layout: "fashion_drop_grid", columns: 3, spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "fashion_fit",
+          type: "FashionFitGuide",
+          order: 6,
+          editable: { title: copy.fitGuideTitle, text: copy.fitGuideText, items: copy.fitGuideItems },
+          settings: { layout: "fit_guide", spacing: "balanced", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.collections,
+      slug: copy.shopSlug,
+      order: 2,
+      sections: [
+        {
+          id: "fashion_catalog",
+          type: "ProductGrid",
+          order: 1,
+          editable: { title: copy.collections, text: copy.newArrivalsText, images: [] },
+          settings: { layout: "fashion_drop_grid", columns: 3, spacing: "spacious", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.lookbook,
+      slug: copy.aboutSlug,
+      order: 3,
+      sections: [{ id: "lookbook", type: "FashionLookbook", order: 1, editable: { title: copy.lookbook, text: copy.lookbookText }, settings: { layout: "horizontal_lookbook", container_width: "wide" } }],
+    },
+    {
+      page_key: "contact",
+      title: copy.contact,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: copy.letsTalk, text: copy.contactText }, settings: { layout: "simple", container_width: "wide" } }],
+    },
+  ];
+}
+
 function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
   return [
     {
@@ -4799,6 +4899,22 @@ function instantLocaleCopy(language) {
       premiumSpecsTitle: "Everything important, easy to compare",
       premiumSpecsText: "Highlight materials, warranty, delivery, support, personalization, or service quality without clutter.",
       premiumSpecItems: ["Refined presentation", "Editable product story", "Premium support", "Ready to publish"],
+      newDrop: "New drop",
+      collections: "Collections",
+      lookbook: "Lookbook",
+      fashionHeadline: (name) => `${name} new drop`,
+      fashionSubheadline: (description) => description || "A visual clothing store built around collections, styling, and quick shopping.",
+      shopTheDrop: "Shop the drop",
+      viewLookbook: "View lookbook",
+      collectionsText: "Organize products by drop, fit, color, season, or collection.",
+      dropStoryTitle: "Built for the way it is worn",
+      dropStoryText: "Use this section to explain the mood, materials, fit, and visual story behind the collection.",
+      lookbookText: "Show outfits, lifestyle moments, campaign photos, or product combinations that help customers imagine the look.",
+      newArrivals: "New arrivals",
+      newArrivalsText: "A shopping section for the current drop, best sellers, and pieces ready to buy.",
+      fitGuideTitle: "Fit, sizes and styling",
+      fitGuideText: "Give customers the confidence to choose the right size, material, fit, and complete look.",
+      fitGuideItems: ["Size guide", "Fit notes", "Materials", "Complete the look"],
     },
     es: {
       newStore: "Nueva tienda",
@@ -4869,6 +4985,22 @@ function instantLocaleCopy(language) {
       premiumSpecsTitle: "Lo importante, fácil de comparar",
       premiumSpecsText: "Destaca materiales, garantía, entrega, soporte, personalización o calidad del servicio sin llenar la página de ruido.",
       premiumSpecItems: ["Presentación refinada", "Historia editable", "Soporte premium", "Listo para publicar"],
+      newDrop: "Nuevo drop",
+      collections: "Colecciones",
+      lookbook: "Lookbook",
+      fashionHeadline: (name) => `Nuevo drop de ${name}`,
+      fashionSubheadline: (description) => description || "Una tienda visual de ropa pensada para colecciones, estilo y compra rápida.",
+      shopTheDrop: "Comprar el drop",
+      viewLookbook: "Ver lookbook",
+      collectionsText: "Organiza productos por drop, fit, color, temporada o colección.",
+      dropStoryTitle: "Diseñado para como se usa",
+      dropStoryText: "Usa esta sección para explicar el mood, materiales, fit y la historia visual de la colección.",
+      lookbookText: "Muestra outfits, momentos lifestyle, fotos de campaña o combinaciones para que el cliente imagine el look.",
+      newArrivals: "Nuevas piezas",
+      newArrivalsText: "Una sección de compra para el drop actual, más vendidos y piezas listas para vender.",
+      fitGuideTitle: "Fit, tallas y estilo",
+      fitGuideText: "Dale confianza al cliente para escoger talla, material, fit y completar el look.",
+      fitGuideItems: ["Guía de tallas", "Notas de fit", "Materiales", "Completa el look"],
     },
     fr: {
       newStore: "Nouvelle boutique",
@@ -4939,6 +5071,22 @@ function instantLocaleCopy(language) {
       premiumSpecsTitle: "L'essentiel, facile à comparer",
       premiumSpecsText: "Mettez en avant matériaux, garantie, livraison, support, personnalisation ou qualité de service sans surcharge.",
       premiumSpecItems: ["Présentation raffinée", "Histoire modifiable", "Support premium", "Prêt à publier"],
+      newDrop: "Nouveau drop",
+      collections: "Collections",
+      lookbook: "Lookbook",
+      fashionHeadline: (name) => `Nouveau drop ${name}`,
+      fashionSubheadline: (description) => description || "Une boutique mode visuelle construite autour des collections, du style et de l'achat rapide.",
+      shopTheDrop: "Acheter le drop",
+      viewLookbook: "Voir le lookbook",
+      collectionsText: "Organisez les produits par drop, coupe, couleur, saison ou collection.",
+      dropStoryTitle: "Pensé pour être porté",
+      dropStoryText: "Utilisez cette section pour expliquer l'ambiance, les matières, la coupe et l'histoire visuelle de la collection.",
+      lookbookText: "Montrez des tenues, moments lifestyle, photos de campagne ou combinaisons de produits.",
+      newArrivals: "Nouveautés",
+      newArrivalsText: "Une section shopping pour le drop actuel, les meilleures ventes et les pièces prêtes à acheter.",
+      fitGuideTitle: "Coupe, tailles et style",
+      fitGuideText: "Aidez les clients à choisir la bonne taille, matière, coupe et tenue complète.",
+      fitGuideItems: ["Guide tailles", "Notes coupe", "Matières", "Composer le look"],
     },
     pt: {
       newStore: "Nova loja",
@@ -5009,6 +5157,22 @@ function instantLocaleCopy(language) {
       premiumSpecsTitle: "O importante, fácil de comparar",
       premiumSpecsText: "Destaque materiais, garantia, entrega, suporte, personalização ou qualidade do serviço sem poluir a página.",
       premiumSpecItems: ["Apresentação refinada", "História editável", "Suporte premium", "Pronto para publicar"],
+      newDrop: "Novo drop",
+      collections: "Coleções",
+      lookbook: "Lookbook",
+      fashionHeadline: (name) => `Novo drop ${name}`,
+      fashionSubheadline: (description) => description || "Uma loja visual de roupas feita para coleções, estilo e compra rápida.",
+      shopTheDrop: "Comprar o drop",
+      viewLookbook: "Ver lookbook",
+      collectionsText: "Organize produtos por drop, caimento, cor, temporada ou coleção.",
+      dropStoryTitle: "Criado para a forma de usar",
+      dropStoryText: "Use esta seção para explicar o mood, materiais, caimento e história visual da coleção.",
+      lookbookText: "Mostre looks, momentos lifestyle, fotos de campanha ou combinações de produtos.",
+      newArrivals: "Novidades",
+      newArrivalsText: "Uma seção de compra para o drop atual, mais vendidos e peças prontas para vender.",
+      fitGuideTitle: "Caimento, tamanhos e estilo",
+      fitGuideText: "Dê confiança ao cliente para escolher tamanho, material, caimento e completar o look.",
+      fitGuideItems: ["Guia de tamanhos", "Notas de caimento", "Materiais", "Complete o look"],
     },
   };
   return copies[language] || copies.en;
@@ -6173,6 +6337,11 @@ function renderSection(section, schema) {
     FeatureShowcase: renderFeatureShowcase,
     EditorialGallery: renderEditorialGallery,
     SpecStrip: renderSpecStrip,
+    FashionHero: renderFashionHero,
+    FashionCollectionRail: renderFashionCollectionRail,
+    FashionDropStory: renderFashionDropStory,
+    FashionLookbook: renderFashionLookbook,
+    FashionFitGuide: renderFashionFitGuide,
     MarketplaceHero: renderMarketplaceHero,
     CategoryRail: renderCategoryRail,
     DealRow: renderDealRow,
@@ -6300,6 +6469,73 @@ function renderSpecStrip(section, schema) {
 function premiumVisualPlaceholder(schema) {
   const initials = String(schema.business?.name || "P").slice(0, 2).toUpperCase();
   return `<div class="premium-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
+}
+
+function renderFashionHero(section, schema) {
+  const editable = section.editable || {};
+  const items = marketplaceItems(schema);
+  const image = editable.image_url || items.find((item) => item.image_url)?.image_url || "";
+  return `<section class="fashion-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="fashion-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || catalogLocaleLabels(schema).newDrop || "New drop")}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || "Shop")}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || catalogLocaleLabels(schema).lookbook || "Lookbook")}</a>
+      </div>
+    </div>
+    <div class="fashion-hero-visual">${image ? `<img src="${escapeAttribute(image)}" alt="">` : fashionVisualPlaceholder(schema)}</div>
+    <div class="fashion-hero-strip">${items.slice(0, 3).map((item) => `<span>${escapeHtml(item.name)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderFashionCollectionRail(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const collections = fashionCollections(schema);
+  return `<section class="fashion-collection-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.newDrop)}</span><h2>${escapeHtml(editable.title || labels.collections)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="fashion-collection-rail">${collections.map((collection, index) => `<article><small>0${index + 1}</small><strong>${escapeHtml(collection)}</strong><span>${escapeHtml(index % 2 ? labels.fit : labels.drop)}</span></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderFashionDropStory(section, schema) {
+  const editable = section.editable || {};
+  const image = editable.image_url || marketplaceItems(schema).find((item) => item.image_url)?.image_url || "";
+  return `<section class="fashion-drop-story ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="fashion-story-image">${image ? `<img src="${escapeAttribute(image)}" alt="">` : fashionVisualPlaceholder(schema)}</div>
+    <div><span class="rendered-kicker">${escapeHtml(schema.business?.tone || "")}</span><h2>${escapeHtml(editable.title || "")}</h2><p>${escapeHtml(editable.text || "")}</p></div>
+  </section>`;
+}
+
+function renderFashionLookbook(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="fashion-lookbook-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).lookbook)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="fashion-lookbook-strip">${marketplaceItems(schema).slice(0, 5).map((item, index) => `<article class="${index === 1 ? "tall" : ""}">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : fashionVisualPlaceholder(schema)}<strong>${escapeHtml(item.name)}</strong></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderFashionFitGuide(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.fitGuideItems;
+  return `<section class="fashion-fit-guide ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div>${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function fashionCollections(schema) {
+  const fromItems = [...new Set(marketplaceItems(schema).map((item) => item.category).filter(Boolean))];
+  const labels = catalogLocaleLabels(schema);
+  return [...new Set([...fromItems, ...(labels.fashionCollections || [])])].slice(0, 6);
+}
+
+function fashionVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "FD").slice(0, 2).toUpperCase();
+  return `<div class="fashion-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
 }
 
 function renderMarketplaceHero(section, schema) {
@@ -6604,6 +6840,7 @@ function catalogLocaleLabels(schema) {
       search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", signature: "Signature", detail: "Detail", curated: "Curated", flagship: "Flagship", premiumSpecs: ["Presentation", "Quality", "Support", "Delivery"],
       sellerVerified: "Seller verified", used: "Used", newItem: "New", localPickup: "Local pickup", makeOffer: "Make offer", contactSeller: "Contact seller",
       newDrop: "New drop", limitedSelection: "Limited selection", instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
+      collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
       main: "Main", popular: "Popular", marketPrice: "Market price", fromQuote: "From quote", book: "Book", freeQuote: "Free quote", practiceArea: "Practice area", scheduleConsultation: "Schedule consultation",
       before: "Before", after: "After", viewProject: "View project", plan: "Plan", custom: "Custom", start: "Start", ticketOffer: "Ticket / offer", reserve: "Reserve", package: "Package", applyNow: "Apply now", view: "View", request: "Ask now",
     },
@@ -6612,6 +6849,7 @@ function catalogLocaleLabels(schema) {
       search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", signature: "Principal", detail: "Detalle", curated: "Curado", flagship: "Producto estrella", premiumSpecs: ["Presentacion", "Calidad", "Soporte", "Entrega"],
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Nuevo", localPickup: "Retiro local", makeOffer: "Hacer oferta", contactSeller: "Contactar vendedor",
       newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
+      collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
       main: "Principal", popular: "Popular", marketPrice: "Precio de mercado", fromQuote: "Desde cotizacion", book: "Reservar", freeQuote: "Cotizacion gratis", practiceArea: "Area de practica", scheduleConsultation: "Agendar consulta",
       before: "Antes", after: "Despues", viewProject: "Ver proyecto", plan: "Plan", custom: "Personalizado", start: "Empezar", ticketOffer: "Ticket / oferta", reserve: "Reservar", package: "Paquete", applyNow: "Aplicar ahora", view: "Ver", request: "Consultar",
     },
@@ -6620,6 +6858,7 @@ function catalogLocaleLabels(schema) {
       search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace", signature: "Signature", detail: "Detail", curated: "Soigne", flagship: "Produit phare", premiumSpecs: ["Presentation", "Qualite", "Support", "Livraison"],
       sellerVerified: "Vendeur vérifié", used: "Occasion", newItem: "Neuf", localPickup: "Retrait local", makeOffer: "Faire une offre", contactSeller: "Contacter le vendeur",
       newDrop: "Nouvelle collection", limitedSelection: "Sélection limitée", instantAccess: "Accès immédiat", downloadable: "Contenu téléchargeable", bonus: "Ressources bonus", lifetime: "Accès à vie", getAccess: "Obtenir l'accès",
+      collections: "Collections", lookbook: "Lookbook", fit: "Guide des tailles", drop: "Drop", fitGuide: "Guide des tailles", fitGuideItems: ["Notes de taille", "Suggestions de style", "Conseils d'entretien", "Livraison et retours"], fashionCollections: ["Nouveautes", "Essentiels", "Pieces fortes", "Accessoires", "Drop limite", "Meilleures ventes"],
       main: "Principal", popular: "Populaire", marketPrice: "Prix du marché", fromQuote: "Sur devis", book: "Réserver", freeQuote: "Devis gratuit", practiceArea: "Domaine d'expertise", scheduleConsultation: "Planifier une consultation",
       before: "Avant", after: "Après", viewProject: "Voir le projet", plan: "Offre", custom: "Sur mesure", start: "Commencer", ticketOffer: "Billet / offre", reserve: "Réserver", package: "Forfait", applyNow: "Postuler", view: "Voir", request: "Demander",
     },
@@ -6628,6 +6867,7 @@ function catalogLocaleLabels(schema) {
       search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace", signature: "Principal", detail: "Detalhe", curated: "Curado", flagship: "Produto principal", premiumSpecs: ["Apresentacao", "Qualidade", "Suporte", "Entrega"],
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Novo", localPickup: "Retirada local", makeOffer: "Fazer oferta", contactSeller: "Contatar vendedor",
       newDrop: "Novo drop", limitedSelection: "Seleção limitada", instantAccess: "Acesso imediato", downloadable: "Conteúdo baixável", bonus: "Recursos bônus", lifetime: "Acesso vitalício", getAccess: "Obter acesso",
+      collections: "Colecoes", lookbook: "Lookbook", fit: "Guia de tamanhos", drop: "Drop", fitGuide: "Guia de tamanhos", fitGuideItems: ["Notas de tamanho e caimento", "Sugestoes de estilo", "Cuidados com a peca", "Envios e devolucoes"], fashionCollections: ["Novidades", "Essenciais", "Pecas destaque", "Acessorios", "Drop limitado", "Mais vendidos"],
       main: "Principal", popular: "Popular", marketPrice: "Preço de mercado", fromQuote: "Sob orçamento", book: "Reservar", freeQuote: "Orçamento grátis", practiceArea: "Área de atuação", scheduleConsultation: "Agendar consulta",
       before: "Antes", after: "Depois", viewProject: "Ver projeto", plan: "Plano", custom: "Personalizado", start: "Começar", ticketOffer: "Ingresso / oferta", reserve: "Reservar", package: "Pacote", applyNow: "Aplicar agora", view: "Ver", request: "Consultar",
     },
