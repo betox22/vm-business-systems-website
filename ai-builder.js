@@ -4339,6 +4339,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     sku: `SKU-${index + 1}`,
     name: item,
     description: copy.itemDescription(name),
+    category: marketplaceCategoryForIndex(index, copy),
+    rating: (4.3 + ((index % 5) * 0.12)).toFixed(1),
+    review_count: 42 + index * 31,
+    shipping_label: index % 2 === 0 ? copy.fastDelivery : copy.freeShipping,
+    deal_label: index % 3 === 0 ? copy.todayDeal : "",
     price_type: isOnlineShop ? "fixed" : "quote_only",
     price_amount: "",
     currency: "USD",
@@ -4351,6 +4356,10 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     is_featured: index < 3,
     sort_order: index,
   }));
+  const isMarketplaceTemplate = catalogType === "dense_marketplace_catalog" || /mega-marketplace|marketplace-style/i.test(template.id || "");
+  const instantPages = isMarketplaceTemplate
+    ? buildMarketplaceInstantPages(copy, name, description, payload)
+    : buildDefaultInstantPages(copy, name, description, payload);
   return {
     schema_version: "1.0",
     site_type: "online_store",
@@ -4389,80 +4398,18 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     integrations: { contact: { whatsapp_enabled: true, email_enabled: true }, analytics: { enabled: false, provider: "" }, payments: { enabled: false, mode: "setup_required" } },
     custom_logic: { enabled: false, risk_level: "restricted", automations: "" },
     site_plan: payload.sitePlan || buildSitePlan(templateSelection),
-    navigation: [
+    navigation: isMarketplaceTemplate ? [
+      { label: copy.home, page_key: "home" },
+      { label: copy.deals, page_key: "catalog" },
+      { label: copy.categories, page_key: "catalog" },
+      { label: copy.support, page_key: "contact" },
+    ] : [
       { label: copy.home, page_key: "home" },
       { label: copy.shop, page_key: "catalog" },
       { label: copy.about, page_key: "about" },
       { label: copy.contact, page_key: "contact" },
     ],
-    pages: [
-      {
-        page_key: "home",
-        title: copy.home,
-        slug: "/",
-        order: 1,
-        sections: [
-          {
-            id: "hero",
-            type: "Hero",
-            order: 1,
-            editable: {
-              headline: name,
-              subtitle: description,
-              primary_button: copy.viewShop,
-              secondary_button: copy.contactVerb,
-              image_url: payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "",
-              images: [],
-            },
-            settings: { layout: "split_showcase" },
-          },
-          {
-            id: "featured",
-            type: "ProductGrid",
-            order: 2,
-            editable: {
-              title: copy.featuredProducts,
-              text: copy.featuredText,
-              images: [],
-            },
-            settings: { layout: "featured", columns: 3 },
-          },
-        ],
-      },
-      {
-        page_key: "catalog",
-        title: copy.shop,
-        slug: copy.shopSlug,
-        order: 2,
-        sections: [
-          {
-            id: "catalog_grid",
-            type: "ProductGrid",
-            order: 1,
-            editable: {
-              title: copy.catalog,
-              text: copy.catalogText,
-              images: [],
-            },
-            settings: { layout: "grid", columns: 3 },
-          },
-        ],
-      },
-      {
-        page_key: "about",
-        title: copy.about,
-        slug: copy.aboutSlug,
-        order: 3,
-        sections: [{ id: "about", type: "About", order: 1, editable: { title: copy.aboutBrand, text: description }, settings: { layout: "feature" } }],
-      },
-      {
-        page_key: "contact",
-        title: copy.contact,
-        slug: copy.contactSlug,
-        order: 4,
-        sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: copy.letsTalk, text: copy.contactText }, settings: { layout: "simple" } }],
-      },
-    ],
+    pages: instantPages,
     global_components: {
       logo_url: brand.logoUrl || payload.assets?.find((asset) => asset.asset_type === "logo")?.url || "",
       favicon_url: brand.logoUrl || payload.assets?.find((asset) => asset.asset_type === "logo")?.url || "",
@@ -4497,6 +4444,178 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     contact: payload.contact_info || {},
     editable_fields: ["headline", "subtitle", "title", "text", "primary_button", "secondary_button", "image_url", "images"],
   };
+}
+
+function buildDefaultInstantPages(copy, name, description, payload = {}) {
+  return [
+    {
+      page_key: "home",
+      title: copy.home,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "hero",
+          type: "Hero",
+          order: 1,
+          editable: {
+            headline: name,
+            subtitle: description,
+            primary_button: copy.viewShop,
+            secondary_button: copy.contactVerb,
+            image_url: payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "",
+            images: [],
+          },
+          settings: { layout: "split_showcase" },
+        },
+        {
+          id: "featured",
+          type: "ProductGrid",
+          order: 2,
+          editable: {
+            title: copy.featuredProducts,
+            text: copy.featuredText,
+            images: [],
+          },
+          settings: { layout: "featured", columns: 3 },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.shop,
+      slug: copy.shopSlug,
+      order: 2,
+      sections: [
+        {
+          id: "catalog_grid",
+          type: "ProductGrid",
+          order: 1,
+          editable: {
+            title: copy.catalog,
+            text: copy.catalogText,
+            images: [],
+          },
+          settings: { layout: "grid", columns: 3 },
+        },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.about,
+      slug: copy.aboutSlug,
+      order: 3,
+      sections: [{ id: "about", type: "About", order: 1, editable: { title: copy.aboutBrand, text: description }, settings: { layout: "feature" } }],
+    },
+    {
+      page_key: "contact",
+      title: copy.contact,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: copy.letsTalk, text: copy.contactText }, settings: { layout: "simple" } }],
+    },
+  ];
+}
+
+function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
+  return [
+    {
+      page_key: "home",
+      title: copy.home,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "marketplace_hero",
+          type: "MarketplaceHero",
+          order: 1,
+          editable: {
+            headline: copy.marketplaceHeadline(name),
+            subtitle: description,
+            primary_button: copy.shopDeals,
+            secondary_button: copy.viewCategories,
+            search_placeholder: copy.searchPlaceholder,
+            deal_badge: copy.todayDeal,
+            deal_title: copy.dealTitle,
+            deal_text: copy.dealText,
+            image_url: payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "",
+            images: [],
+          },
+          settings: { layout: "marketplace_deals", spacing: "compact", container_width: "wide" },
+        },
+        {
+          id: "category_rail",
+          type: "CategoryRail",
+          order: 2,
+          editable: { title: copy.shopByCategory, text: copy.categoryRailText },
+          settings: { layout: "category_tiles", spacing: "compact", container_width: "wide" },
+        },
+        {
+          id: "deal_row",
+          type: "DealRow",
+          order: 3,
+          editable: { title: copy.todayDeals, text: copy.dealsText },
+          settings: { layout: "deal_row", spacing: "compact", container_width: "wide" },
+        },
+        {
+          id: "marketplace_catalog",
+          type: "ProductGrid",
+          order: 4,
+          editable: { title: copy.bestSellers, text: copy.catalogText, images: [] },
+          settings: { layout: "marketplace_grid", columns: 4, spacing: "balanced", container_width: "wide", card_density: "compact", card_gap: "tight" },
+        },
+        {
+          id: "trust_strip",
+          type: "TrustStrip",
+          order: 5,
+          editable: { title: copy.whyBuyHere, text: copy.trustText },
+          settings: { layout: "marketplace_trust", spacing: "compact", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.shop,
+      slug: copy.shopSlug,
+      order: 2,
+      sections: [
+        {
+          id: "catalog_grid",
+          type: "ProductGrid",
+          order: 1,
+          editable: { title: copy.catalog, text: copy.catalogText, images: [] },
+          settings: { layout: "marketplace_grid", columns: 4, spacing: "compact", container_width: "wide", card_density: "compact", card_gap: "tight" },
+        },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.about,
+      slug: copy.aboutSlug,
+      order: 3,
+      sections: [{ id: "about", type: "About", order: 1, editable: { title: copy.aboutBrand, text: description }, settings: { layout: "feature", container_width: "wide" } }],
+    },
+    {
+      page_key: "contact",
+      title: copy.contact,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: copy.letsTalk, text: copy.contactText }, settings: { layout: "simple", container_width: "wide" } }],
+    },
+  ];
+}
+
+function marketplaceCategoryForIndex(index, copy) {
+  const categories = copy.marketplaceCategories || ["Featured", "Deals", "New", "Popular"];
+  return categories[index % categories.length];
+}
+
+function marketplaceCategories(schema) {
+  const items = marketplaceItems(schema);
+  const fromItems = [...new Set(items.map((item) => item.category).filter(Boolean))];
+  if (fromItems.length >= 4) return fromItems;
+  const copy = instantLocaleCopy(schema?.business?.selectedLanguage || selectedLanguage || "en");
+  return [...new Set([...fromItems, ...(copy.marketplaceCategories || [])])];
 }
 
 function instantLocaleCopy(language) {
@@ -4534,6 +4653,26 @@ function instantLocaleCopy(language) {
       shopSlug: "/shop",
       aboutSlug: "/about",
       contactSlug: "/contact",
+      deals: "Deals",
+      categories: "Categories",
+      support: "Support",
+      fastDelivery: "Fast delivery",
+      freeShipping: "Free shipping",
+      todayDeal: "Today deal",
+      marketplaceHeadline: (name) => `${name} marketplace`,
+      shopDeals: "Shop deals",
+      viewCategories: "View categories",
+      searchPlaceholder: "Search products, brands, or categories",
+      dealTitle: "Top picks ready to sell",
+      dealText: "A marketplace-style draft with categories, deals, ratings, and checkout-ready product cards.",
+      shopByCategory: "Shop by category",
+      categoryRailText: "Quick paths for customers to compare products faster.",
+      todayDeals: "Today's deals",
+      dealsText: "Limited rows, featured offers, and fast-discovery product cards.",
+      bestSellers: "Best sellers",
+      whyBuyHere: "Why customers buy here",
+      trustText: "Clear delivery, secure checkout, support, and simple returns.",
+      marketplaceCategories: ["Electronics", "Home", "Fashion", "Beauty", "Sports", "Deals"],
     },
     es: {
       newStore: "Nueva tienda",
@@ -4568,6 +4707,26 @@ function instantLocaleCopy(language) {
       shopSlug: "/tienda",
       aboutSlug: "/nosotros",
       contactSlug: "/contacto",
+      deals: "Ofertas",
+      categories: "Categorias",
+      support: "Soporte",
+      fastDelivery: "Entrega rapida",
+      freeShipping: "Envio gratis",
+      todayDeal: "Oferta del dia",
+      marketplaceHeadline: (name) => `${name} marketplace`,
+      shopDeals: "Ver ofertas",
+      viewCategories: "Ver categorias",
+      searchPlaceholder: "Buscar productos, marcas o categorias",
+      dealTitle: "Productos listos para vender",
+      dealText: "Borrador tipo marketplace con categorias, ofertas, calificaciones y productos listos para checkout.",
+      shopByCategory: "Compra por categoria",
+      categoryRailText: "Rutas rapidas para que el cliente compare productos sin perder tiempo.",
+      todayDeals: "Ofertas de hoy",
+      dealsText: "Filas de ofertas, productos destacados y descubrimiento rapido.",
+      bestSellers: "Mas vendidos",
+      whyBuyHere: "Por que comprar aqui",
+      trustText: "Entrega clara, checkout seguro, soporte y devoluciones simples.",
+      marketplaceCategories: ["Electronica", "Hogar", "Moda", "Belleza", "Deportes", "Ofertas"],
     },
     fr: {
       newStore: "Nouvelle boutique",
@@ -4602,6 +4761,26 @@ function instantLocaleCopy(language) {
       shopSlug: "/boutique",
       aboutSlug: "/a-propos",
       contactSlug: "/contact",
+      deals: "Offres",
+      categories: "Categories",
+      support: "Support",
+      fastDelivery: "Livraison rapide",
+      freeShipping: "Livraison gratuite",
+      todayDeal: "Offre du jour",
+      marketplaceHeadline: (name) => `Marketplace ${name}`,
+      shopDeals: "Voir les offres",
+      viewCategories: "Voir les categories",
+      searchPlaceholder: "Rechercher produits, marques ou categories",
+      dealTitle: "Selections pretes a vendre",
+      dealText: "Brouillon marketplace avec categories, offres, notes et fiches produits pretes pour le checkout.",
+      shopByCategory: "Acheter par categorie",
+      categoryRailText: "Chemins rapides pour comparer les produits plus vite.",
+      todayDeals: "Offres du jour",
+      dealsText: "Rangees d'offres, produits mis en avant et decouverte rapide.",
+      bestSellers: "Meilleures ventes",
+      whyBuyHere: "Pourquoi acheter ici",
+      trustText: "Livraison claire, paiement securise, support et retours simples.",
+      marketplaceCategories: ["Electronique", "Maison", "Mode", "Beaute", "Sport", "Offres"],
     },
     pt: {
       newStore: "Nova loja",
@@ -4636,6 +4815,26 @@ function instantLocaleCopy(language) {
       shopSlug: "/loja",
       aboutSlug: "/sobre",
       contactSlug: "/contato",
+      deals: "Ofertas",
+      categories: "Categorias",
+      support: "Suporte",
+      fastDelivery: "Entrega rapida",
+      freeShipping: "Frete gratis",
+      todayDeal: "Oferta do dia",
+      marketplaceHeadline: (name) => `${name} marketplace`,
+      shopDeals: "Ver ofertas",
+      viewCategories: "Ver categorias",
+      searchPlaceholder: "Buscar produtos, marcas ou categorias",
+      dealTitle: "Produtos prontos para vender",
+      dealText: "Rascunho tipo marketplace com categorias, ofertas, avaliacoes e cards prontos para checkout.",
+      shopByCategory: "Comprar por categoria",
+      categoryRailText: "Caminhos rapidos para o cliente comparar produtos.",
+      todayDeals: "Ofertas de hoje",
+      dealsText: "Linhas de ofertas, produtos em destaque e descoberta rapida.",
+      bestSellers: "Mais vendidos",
+      whyBuyHere: "Por que comprar aqui",
+      trustText: "Entrega clara, checkout seguro, suporte e devolucoes simples.",
+      marketplaceCategories: ["Eletronicos", "Casa", "Moda", "Beleza", "Esportes", "Ofertas"],
     },
   };
   return copies[language] || copies.en;
@@ -5795,6 +5994,10 @@ function renderStudioFloatingCatalog(schema) {
 function renderSection(section, schema) {
   const renderers = {
     Hero: renderHero,
+    MarketplaceHero: renderMarketplaceHero,
+    CategoryRail: renderCategoryRail,
+    DealRow: renderDealRow,
+    TrustStrip: renderTrustStrip,
     ProductGrid: renderProductGrid,
     ServiceList: renderProductGrid,
     FeatureBand: renderFeatureBand,
@@ -5805,6 +6008,12 @@ function renderSection(section, schema) {
     Footer: renderContact,
   };
   return (renderers[section.type] || renderFeatureBand)(section, schema);
+}
+
+function marketplaceItems(schema) {
+  return (schema.catalog_items || schema.products_services || [])
+    .filter((item) => item.is_active !== false)
+    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
 }
 
 function renderHero(section, schema) {
@@ -5827,6 +6036,87 @@ function renderHero(section, schema) {
     <div class="rendered-visual">
       ${image ? `<img src="${escapeAttribute(image)}" alt="">` : visualPlaceholder(schema)}
     </div>
+  </section>`;
+}
+
+function renderMarketplaceHero(section, schema) {
+  const editable = section.editable || {};
+  const items = marketplaceItems(schema);
+  const labels = catalogLocaleLabels(schema);
+  const topItems = items.slice(0, 4);
+  return `<section class="marketplace-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="marketplace-search-panel">
+      <div class="marketplace-logo-row">
+        <strong>${escapeHtml(schema.business?.name || "Marketplace")}</strong>
+        <span>${escapeHtml(editable.deal_badge || labels.deal)}</span>
+      </div>
+      <label class="marketplace-search-box">
+        <span>${escapeHtml(labels.search)}</span>
+        <input value="" placeholder="${escapeAttribute(editable.search_placeholder || labels.searchPlaceholder)}" readonly>
+        <button type="button">${escapeHtml(labels.searchButton)}</button>
+      </label>
+      <div class="marketplace-chip-row">${marketplaceCategories(schema).slice(0, 6).map((category) => `<span>${escapeHtml(category)}</span>`).join("")}</div>
+    </div>
+    <div class="marketplace-deal-hero">
+      <div>
+        <small>${escapeHtml(editable.deal_badge || labels.deal)}</small>
+        <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+        <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+        <div class="rendered-actions">
+          <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || labels.shopNow)}</a>
+          <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.categories)}</a>
+        </div>
+      </div>
+      <aside>
+        <b>${escapeHtml(editable.deal_title || labels.dealTitle)}</b>
+        <p>${escapeHtml(editable.deal_text || labels.dealText)}</p>
+        <div>${topItems.map((item) => `<span>${escapeHtml(item.name)}</span>`).join("")}</div>
+      </aside>
+    </div>
+  </section>`;
+}
+
+function renderCategoryRail(section, schema) {
+  const editable = section.editable || {};
+  const categories = marketplaceCategories(schema);
+  return `<section class="marketplace-category-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.tone || "")}</span>
+      <h2>${escapeHtml(editable.title || catalogLocaleLabels(schema).categories)}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    <div class="marketplace-category-rail">${categories.map((category, index) => `<article>
+      <span>${escapeHtml(category.slice(0, 2).toUpperCase())}</span>
+      <strong>${escapeHtml(category)}</strong>
+      <small>${escapeHtml(index % 2 ? catalogLocaleLabels(schema).fastShip : catalogLocaleLabels(schema).deal)}</small>
+    </article>`).join("")}</div>
+  </section>`;
+}
+
+function renderDealRow(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = marketplaceItems(schema).slice(0, 6);
+  return `<section class="marketplace-deal-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading">
+      <span class="rendered-kicker">${escapeHtml(labels.deal)}</span>
+      <h2>${escapeHtml(editable.title || labels.dealTitle)}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    <div class="marketplace-deal-row">${items.map((item, index) => renderCatalogCard(item, "market-card deal-card", index % 2 ? labels.fastShip : labels.deal, schema)).join("")}</div>
+  </section>`;
+}
+
+function renderTrustStrip(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const trust = [labels.secureCheckout, labels.fastShip, labels.support, labels.easyReturns];
+  return `<section class="marketplace-trust-strip ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div>
+      <h2>${escapeHtml(editable.title || labels.trustTitle)}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    <div>${trust.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
   </section>`;
 }
 
@@ -5884,11 +6174,18 @@ function renderCatalogByType(catalogType, items, schema) {
   return (renderers[catalogType] || renderMinimalProductGrid)(items, schema, catalogType);
 }
 
-function renderMarketplaceCatalog(items) {
-  const labels = catalogLocaleLabels(arguments[1]);
+function renderMarketplaceCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-shell catalog-marketplace">
-    <aside><strong>${labels.searchFilters}</strong><span>${labels.category}</span><span>${labels.brand}</span><span>${labels.price}</span><span>${labels.rating}</span><span>${labels.delivery}</span></aside>
-    <div class="catalog-results">${items.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? labels.deal : labels.fastShip}`, arguments[1])).join("")}</div>
+    <aside>
+      <strong>${labels.searchFilters}</strong>
+      ${marketplaceCategories(schema).slice(0, 5).map((category) => `<span>${escapeHtml(category)}</span>`).join("")}
+      <span>${labels.price}</span><span>${labels.rating}</span><span>${labels.delivery}</span>
+    </aside>
+    <div class="marketplace-catalog-main">
+      <div class="marketplace-sort-bar"><b>${escapeHtml(labels.results)}</b><span>${escapeHtml(labels.sortBy)}: ${escapeHtml(labels.featured)}</span></div>
+      <div class="catalog-results">${items.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? labels.deal : labels.fastShip}`, schema)).join("")}</div>
+    </div>
   </div>`;
 }
 
@@ -5980,12 +6277,14 @@ function renderPersonalBrandServicesCatalog(items) {
 
 function renderCatalogCard(item, className, badge, schema) {
   const labels = catalogLocaleLabels(schema);
+  const isMarket = String(className || "").includes("market-card");
   return `<article class="${className}">
     ${renderResilientImage(item.image_url, item.name, item.name)}
     ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
     ${item.category ? `<small>${escapeHtml(item.category)}</small>` : ""}
     <h3>${escapeHtml(item.name)}</h3>
     <p>${escapeHtml(item.description)}</p>
+    ${isMarket ? `<div class="market-meta"><span>${"★".repeat(Math.max(1, Math.min(5, Math.round(Number(item.rating) || 4))))} ${escapeHtml(item.rating || "4.6")}</span><span>${escapeHtml(item.shipping_label || labels.fastShip)}</span></div>` : ""}
     <b>${escapeHtml(productPriceLabel(item))}</b>
     ${productStockBadge(item)}
     <a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.view)}</a>
@@ -6022,6 +6321,7 @@ function catalogLocaleLabels(schema) {
   const labels = {
     en: {
       searchFilters: "Search & filters", category: "Category", brand: "Brand", price: "Price", rating: "Rating", delivery: "Delivery", deal: "Deal", fastShip: "Fast ship",
+      search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust",
       sellerVerified: "Seller verified", used: "Used", newItem: "New", localPickup: "Local pickup", makeOffer: "Make offer", contactSeller: "Contact seller",
       newDrop: "New drop", limitedSelection: "Limited selection", instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
       main: "Main", popular: "Popular", marketPrice: "Market price", fromQuote: "From quote", book: "Book", freeQuote: "Free quote", practiceArea: "Practice area", scheduleConsultation: "Schedule consultation",
@@ -6029,6 +6329,7 @@ function catalogLocaleLabels(schema) {
     },
     es: {
       searchFilters: "Busqueda y filtros", category: "Categoria", brand: "Marca", price: "Precio", rating: "Calificacion", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rapido",
+      search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace",
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Nuevo", localPickup: "Retiro local", makeOffer: "Hacer oferta", contactSeller: "Contactar vendedor",
       newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
       main: "Principal", popular: "Popular", marketPrice: "Precio de mercado", fromQuote: "Desde cotizacion", book: "Reservar", freeQuote: "Cotizacion gratis", practiceArea: "Area de practica", scheduleConsultation: "Agendar consulta",
@@ -6036,6 +6337,7 @@ function catalogLocaleLabels(schema) {
     },
     fr: {
       searchFilters: "Recherche et filtres", category: "Catégorie", brand: "Marque", price: "Prix", rating: "Note", delivery: "Livraison", deal: "Offre", fastShip: "Livraison rapide",
+      search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace",
       sellerVerified: "Vendeur vérifié", used: "Occasion", newItem: "Neuf", localPickup: "Retrait local", makeOffer: "Faire une offre", contactSeller: "Contacter le vendeur",
       newDrop: "Nouvelle collection", limitedSelection: "Sélection limitée", instantAccess: "Accès immédiat", downloadable: "Contenu téléchargeable", bonus: "Ressources bonus", lifetime: "Accès à vie", getAccess: "Obtenir l'accès",
       main: "Principal", popular: "Populaire", marketPrice: "Prix du marché", fromQuote: "Sur devis", book: "Réserver", freeQuote: "Devis gratuit", practiceArea: "Domaine d'expertise", scheduleConsultation: "Planifier une consultation",
@@ -6043,6 +6345,7 @@ function catalogLocaleLabels(schema) {
     },
     pt: {
       searchFilters: "Busca e filtros", category: "Categoria", brand: "Marca", price: "Preço", rating: "Avaliação", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rápido",
+      search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace",
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Novo", localPickup: "Retirada local", makeOffer: "Fazer oferta", contactSeller: "Contatar vendedor",
       newDrop: "Novo drop", limitedSelection: "Seleção limitada", instantAccess: "Acesso imediato", downloadable: "Conteúdo baixável", bonus: "Recursos bônus", lifetime: "Acesso vitalício", getAccess: "Obter acesso",
       main: "Principal", popular: "Popular", marketPrice: "Preço de mercado", fromQuote: "Sob orçamento", book: "Reservar", freeQuote: "Orçamento grátis", practiceArea: "Área de atuação", scheduleConsultation: "Agendar consulta",

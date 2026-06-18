@@ -63,7 +63,7 @@
         { type: "trust_strip", fields: { items: "{{marketplace_trust_points}}" } },
         { type: "footer", fields: { businessName: "{{business_name}}", description: "{{short_description}}", legalLinks: ["Privacy", "Terms", "Returns"] } },
       ],
-      aiPrompt: "Use an Amazon-style marketplace layout. Generate category names, deal headlines, bestseller rows, search-focused copy, trust badges, and editable product/category text.",
+      aiPrompt: "Use a search-first mega marketplace layout inspired by large retailers, without copying any brand. Generate a dense shopping homepage with a utility header, prominent search, category rail, daily deal hero, compact deal rows, best sellers, sidebar filters, ratings, shipping badges, comparison cues, trust modules, and editable product/category text. Preserve this structure; only adapt colors, copy, products, imagery, and CTAs to the business.",
       catalogModel: {
         catalogType: "dense_marketplace_catalog",
         productCardStyle: "compact marketplace cards with discount, rating, shipping badge, compare, quick CTA",
@@ -76,11 +76,12 @@
       visualDifference: "Dense search-first shopping experience with categories, filters, deals, ratings and quick comparison.",
       clientSelectionCard: { title: "Mega Marketplace", category: "ecommerce", bestForLabel: "large stores, many products, categories", difference: "Dense catalog, search, deals, ratings, filters.", previewTags: ["amazon", "marketplace", "dense"] },
       pages: [
-        { name: "Home", purpose: "Marketplace discovery hub", usesSections: ["marketplace_header", "hero_deals", "category_tiles", "deal_carousel", "product_grid", "trust_strip", "footer"] },
-        { name: "Catalog", purpose: "Search-first catalog", catalogType: "dense_marketplace_catalog", layout: "sidebar filters plus dense grid", filters: ["category", "brand", "price", "rating", "shipping_speed"] },
-        { name: "Product", purpose: "Marketplace product detail", layout: "specs, reviews, Q&A, bundles", upsell: "frequently bought together" },
+        { name: "Home", purpose: "Marketplace discovery hub", usesSections: ["marketplace_header", "marketplace_search_hero", "category_rail", "deal_row", "best_seller_grid", "trust_strip", "footer"] },
+        { name: "Catalog", purpose: "Search-first catalog", catalogType: "dense_marketplace_catalog", layout: "left filters, category pills, sort bar, compact product grid, ratings, delivery badges", filters: ["category", "brand", "price", "rating", "shipping_speed"] },
+        { name: "Product", purpose: "Marketplace product detail", layout: "image gallery, price box, specs, reviews, Q&A, shipping estimate, bundles", upsell: "frequently bought together and related products" },
+        { name: "Checkout", purpose: "Cart and checkout readiness", layout: "cart summary, delivery options, payment setup, customer support" },
       ],
-      editableSlots: ["search labels", "categories", "deals", "product rows", "filters", "trust badges", "colors", "logo"],
+      editableSlots: ["search labels", "categories", "deal hero", "deal rows", "product rows", "filters", "ratings", "shipping badges", "trust badges", "colors", "logo", "navigation", "checkout CTA"],
     },
     {
       id: "listing-marketplace-pro",

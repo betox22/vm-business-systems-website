@@ -51,7 +51,9 @@ function renderWebsite(schema) {
   const page = schema.pages?.[0];
   const theme = schema.theme || {};
   const logo = schema.brand?.logoUrl || schema.global_components?.logo_url;
-  return `<div class="rendered-site" style="${themeVars(theme, schema.brand)}">
+  const layoutId = schema.layout_mode?.id || "standard";
+  const templateId = schema.active_template?.id || schema.selected_template?.id || "standard";
+  return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)}">
     <header class="rendered-nav sticky">
       <div>${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business?.name)}">` : renderLogoMark(schema)}</div>
       <nav>${(schema.navigation || [])
@@ -68,9 +70,19 @@ function renderWebsite(schema) {
 
 function renderSection(section, schema) {
   if (section.type === "Hero") return renderHero(section, schema);
+  if (section.type === "MarketplaceHero") return renderMarketplaceHero(section, schema);
+  if (section.type === "CategoryRail") return renderCategoryRail(section, schema);
+  if (section.type === "DealRow") return renderDealRow(section, schema);
+  if (section.type === "TrustStrip") return renderTrustStrip(section, schema);
   if (["ProductGrid", "ServiceList"].includes(section.type)) return renderProductGrid(section, schema);
   if (["Contact", "Footer"].includes(section.type)) return renderContact(section, schema);
   return renderFeature(section);
+}
+
+function publicCatalogItems(schema) {
+  return (schema.catalog_items || schema.products_services || [])
+    .filter((item) => item.is_active !== false)
+    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
 }
 
 function renderHero(section, schema) {
@@ -90,18 +102,61 @@ function renderHero(section, schema) {
   </section>`;
 }
 
+function renderMarketplaceHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = publicCatalogItems(schema).slice(0, 4);
+  return `<section class="marketplace-hero ${sectionClass(section)}">
+    <div class="marketplace-search-panel">
+      <div class="marketplace-logo-row"><strong>${escapeHtml(schema.business?.name || "Marketplace")}</strong><span>${escapeHtml(editable.deal_badge || labels.deal)}</span></div>
+      <label class="marketplace-search-box"><span>${escapeHtml(labels.search)}</span><input placeholder="${escapeAttribute(editable.search_placeholder || labels.searchPlaceholder)}" readonly><button type="button">${escapeHtml(labels.searchButton)}</button></label>
+      <div class="marketplace-chip-row">${marketplaceCategories(schema).slice(0, 6).map((category) => `<span>${escapeHtml(category)}</span>`).join("")}</div>
+    </div>
+    <div class="marketplace-deal-hero">
+      <div><small>${escapeHtml(editable.deal_badge || labels.deal)}</small><h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1><p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p><div class="rendered-actions"><button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.shopNow)}</button></div></div>
+      <aside><b>${escapeHtml(editable.deal_title || labels.dealTitle)}</b><p>${escapeHtml(editable.deal_text || labels.dealText)}</p><div>${items.map((item) => `<span>${escapeHtml(item.name)}</span>`).join("")}</div></aside>
+    </div>
+  </section>`;
+}
+
+function renderCategoryRail(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="marketplace-category-section ${sectionClass(section)}">
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(schema.business?.tone || "")}</span><h2>${escapeHtml(editable.title || labels.categories)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="marketplace-category-rail">${marketplaceCategories(schema).map((category, index) => `<article><span>${escapeHtml(category.slice(0, 2).toUpperCase())}</span><strong>${escapeHtml(category)}</strong><small>${escapeHtml(index % 2 ? labels.fastShip : labels.deal)}</small></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderDealRow(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="marketplace-deal-section ${sectionClass(section)}">
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.deal)}</span><h2>${escapeHtml(editable.title || labels.dealTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="marketplace-deal-row">${publicCatalogItems(schema).slice(0, 6).map((item, index) => renderCatalogCard(item, "market-card deal-card", index % 2 ? labels.fastShip : labels.deal, schema)).join("")}</div>
+  </section>`;
+}
+
+function renderTrustStrip(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const trust = [labels.secureCheckout, labels.fastShip, labels.support, labels.easyReturns];
+  return `<section class="marketplace-trust-strip ${sectionClass(section)}"><div><h2>${escapeHtml(editable.title || labels.trustTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div><div>${trust.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></section>`;
+}
+
 function renderProductGrid(section, schema) {
   const editable = section.editable || {};
   const columns = Math.max(2, Math.min(Number(section.settings?.columns || 3), 4));
+  const catalogItems = publicCatalogItems(schema);
+  const catalogType = schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || "";
+  const customCatalog = catalogType === "dense_marketplace_catalog" ? renderMarketplaceCatalog(catalogItems, schema) : "";
   return `<section class="rendered-section ${sectionClass(section)}">
     <div class="section-heading">
       <h2>${escapeHtml(editable.title || "Products and services")}</h2>
       ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
     </div>
-    <div class="rendered-grid columns-${columns}">
-      ${(schema.catalog_items || [])
-        .filter((item) => item.is_active !== false)
-        .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+    ${customCatalog || `<div class="rendered-grid columns-${columns}">
+      ${catalogItems
         .map((item) => `<article class="rendered-card">
         ${renderResilientImage(item.image_url, item.name, item.name)}
         <div>
@@ -111,8 +166,63 @@ function renderProductGrid(section, schema) {
           <br><button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || "Request info")}</button>
         </div>
       </article>`).join("")}
-    </div>
+    </div>`}
   </section>`;
+}
+
+function renderMarketplaceCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-shell catalog-marketplace">
+    <aside><strong>${escapeHtml(labels.searchFilters)}</strong>${marketplaceCategories(schema).slice(0, 5).map((category) => `<span>${escapeHtml(category)}</span>`).join("")}<span>${escapeHtml(labels.price)}</span><span>${escapeHtml(labels.rating)}</span><span>${escapeHtml(labels.delivery)}</span></aside>
+    <div class="marketplace-catalog-main"><div class="marketplace-sort-bar"><b>${escapeHtml(labels.results)}</b><span>${escapeHtml(labels.sortBy)}: ${escapeHtml(labels.featured)}</span></div><div class="catalog-results">${items.map((item, index) => renderCatalogCard(item, "market-card", index % 3 === 0 ? labels.deal : labels.fastShip, schema)).join("")}</div></div>
+  </div>`;
+}
+
+function renderCatalogCard(item, className, badge, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<article class="${className}">
+    ${renderResilientImage(item.image_url, item.name, item.name)}
+    ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
+    ${item.category ? `<small>${escapeHtml(item.category)}</small>` : ""}
+    <h3>${escapeHtml(item.name)}</h3>
+    <p>${escapeHtml(item.description)}</p>
+    <div class="market-meta"><span>${"★".repeat(Math.max(1, Math.min(5, Math.round(Number(item.rating) || 4))))} ${escapeHtml(item.rating || "4.6")}</span><span>${escapeHtml(item.shipping_label || labels.fastShip)}</span></div>
+    <b>${escapeHtml(item.price_label || labels.request)}</b>
+    <button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.view)}</button>
+  </article>`;
+}
+
+function marketplaceCategories(schema) {
+  const fromItems = [...new Set(publicCatalogItems(schema).map((item) => item.category).filter(Boolean))];
+  const fallback = catalogLocaleLabels(schema).fallbackCategories;
+  return [...new Set([...fromItems, ...fallback])];
+}
+
+function catalogLocaleLabels(schema) {
+  const language = schema?.business?.selectedLanguage || "en";
+  const labels = {
+    en: {
+      searchFilters: "Search & filters", price: "Price", rating: "Rating", delivery: "Delivery", deal: "Deal", fastShip: "Fast ship",
+      search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", view: "View", request: "Ask now",
+      fallbackCategories: ["Electronics", "Home", "Fashion", "Beauty", "Sports", "Deals"],
+    },
+    es: {
+      searchFilters: "Busqueda y filtros", price: "Precio", rating: "Calificacion", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rapido",
+      search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", view: "Ver", request: "Consultar",
+      fallbackCategories: ["Electronica", "Hogar", "Moda", "Belleza", "Deportes", "Ofertas"],
+    },
+    fr: {
+      searchFilters: "Recherche et filtres", price: "Prix", rating: "Note", delivery: "Livraison", deal: "Offre", fastShip: "Livraison rapide",
+      search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace", view: "Voir", request: "Demander",
+      fallbackCategories: ["Electronique", "Maison", "Mode", "Beaute", "Sport", "Offres"],
+    },
+    pt: {
+      searchFilters: "Busca e filtros", price: "Preco", rating: "Avaliacao", delivery: "Entrega", deal: "Oferta", fastShip: "Entrega rapida",
+      search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace", view: "Ver", request: "Consultar",
+      fallbackCategories: ["Eletronicos", "Casa", "Moda", "Beleza", "Esportes", "Ofertas"],
+    },
+  };
+  return labels[language] || labels.en;
 }
 
 function renderResilientImage(url, alt = "", fallbackText = "") {
