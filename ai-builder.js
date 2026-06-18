@@ -512,6 +512,8 @@ let guidedState = {
   desiredDomain: "",
   revisionMode: "",
   requestedAdjustments: [],
+  sitePlan: null,
+  sitePlanApproved: false,
 };
 
 const GUIDED_STEPS = [
@@ -1015,6 +1017,7 @@ function guidedStage(step = guidedStep) {
       ],
     };
   }
+  const plan = guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan() : null);
   return {
     index: 5,
     title: langText({ en: "Review and generate", es: "Revisar y generar", fr: "Vérifier et générer", pt: "Revisar e gerar" }),
@@ -1025,7 +1028,7 @@ function guidedStage(step = guidedStep) {
       pt: "A Luma já tem o suficiente para criar o primeiro rascunho editável. Revise ou peça um último ajuste.",
     }),
     examples: [
-      langText({ en: "Generate draft", es: "Generar borrador", fr: "Générer le brouillon", pt: "Gerar rascunho" }),
+      plan ? langText({ en: "Approve site plan", es: "Aprobar plan del sitio", fr: "Approuver le plan", pt: "Aprovar plano" }) : langText({ en: "Generate draft", es: "Generar borrador", fr: "Générer le brouillon", pt: "Gerar rascunho" }),
       langText({ en: "Ask for a change", es: "Pedir un cambio", fr: "Demander un changement", pt: "Pedir uma mudança" }),
     ],
   };
@@ -1747,6 +1750,146 @@ function localizedTemplateName(choice) {
 
 function localizedTemplateDescription(choice) {
   return choice?.descriptions?.[selectedLanguage] || choice?.description || choice?.template?.clientSelectionCard?.difference || choice?.template?.visualDifference || "";
+}
+
+function buildSitePlan(selection = forcedTemplateSelection) {
+  const template = selection?.template || {};
+  const catalogType = selection?.catalogType || template.catalogModel?.catalogType || "";
+  const isBooking = /booking|appointment/.test(catalogType);
+  const isService = /service|quote|practice|project/.test(catalogType);
+  const isListing = /listing/.test(catalogType);
+  const isMarketplace = /marketplace|dense/.test(catalogType);
+  const isDigital = /digital|pricing|ticket/.test(catalogType);
+  const shopLabel = isBooking
+    ? langText({ en: "Services", es: "Servicios", fr: "Services", pt: "Serviços" })
+    : isService
+      ? langText({ en: "Services", es: "Servicios", fr: "Services", pt: "Serviços" })
+      : isListing
+        ? langText({ en: "Listings", es: "Listados", fr: "Annonces", pt: "Anúncios" })
+        : isDigital
+          ? langText({ en: "Offers", es: "Ofertas", fr: "Offres", pt: "Ofertas" })
+          : langText({ en: "Catalog", es: "Catálogo", fr: "Catalogue", pt: "Catálogo" });
+  const actionLabel = isBooking
+    ? langText({ en: "Booking", es: "Reservas", fr: "Réservation", pt: "Agendamento" })
+    : isService
+      ? langText({ en: "Quote", es: "Cotización", fr: "Devis", pt: "Orçamento" })
+      : langText({ en: "Checkout / Contact", es: "Checkout / Contacto", fr: "Checkout / Contact", pt: "Checkout / Contato" });
+
+  const templatePages = Array.isArray(template.pages) && template.pages.length
+    ? template.pages.slice(0, 4).map((page, index) => ({
+        key: slugify(page.name || page.page_key || `page-${index + 1}`),
+        title: page.name || page.title || `Page ${index + 1}`,
+        purpose: page.purpose || page.layout || "",
+        sections: arrayValue(page.usesSections || page.sections).slice(0, 6),
+      }))
+    : [];
+
+  const basePages = templatePages.length ? templatePages : [
+    {
+      key: "home",
+      title: langText({ en: "Home", es: "Inicio", fr: "Accueil", pt: "Início" }),
+      purpose: langText({ en: "Brand promise, hero, best offer, trust and primary CTA.", es: "Promesa de marca, hero, mejor oferta, confianza y CTA principal.", fr: "Promesse de marque, hero, offre principale, confiance et CTA.", pt: "Promessa da marca, hero, oferta principal, confiança e CTA." }),
+      sections: ["Hero", "Featured", "Trust", "CTA"],
+    },
+    {
+      key: "catalog",
+      title: shopLabel,
+      purpose: langText({ en: "Products/services with filters, cards and clear actions.", es: "Productos/servicios con filtros, tarjetas y acciones claras.", fr: "Produits/services avec filtres, cartes et actions claires.", pt: "Produtos/serviços com filtros, cards e ações claras." }),
+      sections: ["Search", "Categories", "Grid", "Detail CTA"],
+    },
+    {
+      key: "detail",
+      title: isService ? langText({ en: "Service detail", es: "Detalle del servicio", fr: "Détail du service", pt: "Detalhe do serviço" }) : langText({ en: "Product detail", es: "Detalle de producto", fr: "Détail produit", pt: "Detalhe do produto" }),
+      purpose: langText({ en: "Gallery, benefits, price/quote logic, proof and related items.", es: "Galería, beneficios, lógica de precio/cotización, prueba y relacionados.", fr: "Galerie, bénéfices, prix/devis, preuve et éléments liés.", pt: "Galeria, benefícios, preço/orçamento, prova e relacionados." }),
+      sections: ["Gallery", "Benefits", "Proof", "Related"],
+    },
+    {
+      key: "contact",
+      title: actionLabel,
+      purpose: langText({ en: "Final conversion path with contact, booking, quote or checkout intent.", es: "Ruta final de conversión con contacto, reserva, cotización o compra.", fr: "Parcours final avec contact, réservation, devis ou achat.", pt: "Caminho final com contato, agendamento, orçamento ou compra." }),
+      sections: ["Contact", "Form", "Social", "Location"],
+    },
+  ];
+
+  return {
+    version: 1,
+    approved: false,
+    templateId: selection?.templateId || template.id || "",
+    templateName: template.name || selection?.templateId || "",
+    catalogType,
+    strategy: template.visualDifference || template.catalogModel?.customerFeeling || "",
+    pages: basePages,
+    rules: [
+      "Use this plan as the generation contract.",
+      "Generate visible copy from client intent, not literal intake notes.",
+      "Keep all pages, sections, products, colors and text editable.",
+      "Do not replace this plan unless the client asks for a different structure.",
+    ],
+  };
+}
+
+function ensureSitePlan() {
+  const currentTemplateId = forcedTemplateSelection?.templateId || guidedState.sitePlan?.templateId || "";
+  if (!guidedState.sitePlan || guidedState.sitePlan.templateId !== currentTemplateId) {
+    guidedState.sitePlan = buildSitePlan();
+    guidedState.sitePlanApproved = false;
+  }
+  return guidedState.sitePlan;
+}
+
+function renderSitePlanCard() {
+  const plan = ensureSitePlan();
+  const card = document.createElement("section");
+  card.className = `site-plan-card ${guidedState.sitePlanApproved ? "approved" : ""}`;
+  card.innerHTML = `
+    <div class="site-plan-head">
+      <div>
+        <span>${escapeHtml(langText({ en: "Site plan", es: "Plan del sitio", fr: "Plan du site", pt: "Plano do site" }))}</span>
+        <strong>${escapeHtml(plan.templateName || plan.templateId || langText({ en: "Selected structure", es: "Estructura seleccionada", fr: "Structure sélectionnée", pt: "Estrutura selecionada" }))}</strong>
+      </div>
+      <em>${escapeHtml(plan.catalogType || "")}</em>
+    </div>
+    ${plan.strategy ? `<p>${escapeHtml(plan.strategy)}</p>` : ""}
+    <div class="site-plan-pages">
+      ${plan.pages.map((page, index) => `
+        <article>
+          <b>${index + 1}</b>
+          <div>
+            <strong>${escapeHtml(page.title)}</strong>
+            <span>${escapeHtml(page.purpose)}</span>
+            <small>${escapeHtml(arrayValue(page.sections).join(" · "))}</small>
+          </div>
+        </article>
+      `).join("")}
+    </div>
+    <div class="site-plan-actions">
+      <button type="button" data-site-plan-approve>${escapeHtml(guidedState.sitePlanApproved ? langText({ en: "Approved", es: "Aprobado", fr: "Approuvé", pt: "Aprovado" }) : langText({ en: "Approve this structure", es: "Aprobar estructura", fr: "Approuver la structure", pt: "Aprovar estrutura" }))}</button>
+      <button type="button" data-site-plan-adjust>${escapeHtml(langText({ en: "Ask Luma to change it", es: "Pedir cambio a Luma", fr: "Demander un changement", pt: "Pedir mudança à Luma" }))}</button>
+    </div>
+  `;
+  card.querySelector("[data-site-plan-approve]")?.addEventListener("click", () => {
+    guidedState.sitePlanApproved = true;
+    guidedState.sitePlan = { ...guidedState.sitePlan, approved: true };
+    appendChatMessage("user", langText({ en: "I approve this site structure.", es: "Apruebo esta estructura del sitio.", fr: "J'approuve cette structure.", pt: "Aprovo esta estrutura do site." }));
+    appendChatMessage("assistant", langText({
+      en: "Good. I will use this plan as the structure for the draft and keep it editable.",
+      es: "Bien. Usaré este plan como estructura del borrador y lo mantendré editable.",
+      fr: "Très bien. J'utiliserai ce plan comme structure du brouillon et il restera modifiable.",
+      pt: "Certo. Vou usar este plano como estrutura do rascunho e manter tudo editável.",
+    }), "success");
+    renderGuidedSummary();
+  });
+  card.querySelector("[data-site-plan-adjust]")?.addEventListener("click", () => {
+    guidedStep = "review";
+    guidedReply.value = langText({
+      en: "Change the site plan: ",
+      es: "Cambia el plan del sitio: ",
+      fr: "Change le plan du site : ",
+      pt: "Mude o plano do site: ",
+    });
+    guidedReply.focus();
+  });
+  return card;
 }
 
 function appendTemplateDetectionMessage(selection) {
@@ -2618,7 +2761,15 @@ function renderGuidedSummary() {
   renderAssetPreviews();
   renderSelectedDomainState();
   updateAssetPromptVisibility();
+  renderSitePlanInChatIfNeeded();
   saveGuidedDraft();
+}
+
+function renderSitePlanInChatIfNeeded() {
+  if (guidedStep !== "review" || !guidedChat) return;
+  guidedChat.querySelectorAll(".site-plan-card").forEach((card) => card.remove());
+  guidedChat.appendChild(renderSitePlanCard());
+  guidedChat.scrollTop = guidedChat.scrollHeight;
 }
 
 function renderSelectedDomainState() {
@@ -2870,6 +3021,8 @@ function guidedStateForApi() {
     salesMode: guidedState.salesMode,
     hasLogoPhotos: guidedState.hasLogoPhotos,
     sectionsPreference: guidedState.sectionsPreference,
+    sitePlan: guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan() : null),
+    sitePlanApproved: Boolean(guidedState.sitePlanApproved),
     source: "ai_guided_setup",
     status: "ready_to_generate",
     brandContextNote:
@@ -3430,6 +3583,7 @@ function buildTemplateInstructions(selection) {
     aiPrompt: template.aiPrompt || "",
     editableSlots: template.editableSlots || [],
     copyGenerationRules: [
+      "If payload.sitePlan exists, treat it as the approved structure contract for pages, major sections, and conversion flow.",
       "Generate a strong brand headline, slogan, section titles, CTAs, product/service descriptions, trust copy, and footer copy from the business description.",
       "All generated visible copy must remain editable in the JSON under section.editable, catalog_items, theme, navigation, business, or global_components.",
       "Use businessDescription and chat intake as strategy/context, not as literal page text unless it reads naturally for a customer.",
@@ -4234,6 +4388,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     },
     integrations: { contact: { whatsapp_enabled: true, email_enabled: true }, analytics: { enabled: false, provider: "" }, payments: { enabled: false, mode: "setup_required" } },
     custom_logic: { enabled: false, risk_level: "restricted", automations: "" },
+    site_plan: payload.sitePlan || buildSitePlan(templateSelection),
     navigation: [
       { label: copy.home, page_key: "home" },
       { label: copy.shop, page_key: "catalog" },
@@ -4735,6 +4890,8 @@ async function collectPayload() {
     }),
     qualityRules: DESIGN_QUALITY_RULES,
     requestedAdjustments: arrayValue(guidedState.requestedAdjustments),
+    sitePlan: guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan() : null),
+    sitePlanApproved: Boolean(guidedState.sitePlanApproved),
     brandContextNote:
       "Intake answers are client intent and design strategy context. Use them to create polished website copy, but do not copy internal planning answers literally unless they are natural public-facing text.",
   };
