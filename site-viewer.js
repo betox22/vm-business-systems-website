@@ -70,6 +70,11 @@ function renderWebsite(schema) {
 
 function renderSection(section, schema) {
   if (section.type === "Hero") return renderHero(section, schema);
+  if (section.type === "PremiumHero") return renderPremiumHero(section, schema);
+  if (section.type === "ProductStory") return renderProductStory(section, schema);
+  if (section.type === "FeatureShowcase") return renderFeatureShowcase(section, schema);
+  if (section.type === "EditorialGallery") return renderEditorialGallery(section, schema);
+  if (section.type === "SpecStrip") return renderSpecStrip(section, schema);
   if (section.type === "MarketplaceHero") return renderMarketplaceHero(section, schema);
   if (section.type === "CategoryRail") return renderCategoryRail(section, schema);
   if (section.type === "DealRow") return renderDealRow(section, schema);
@@ -100,6 +105,80 @@ function renderHero(section, schema) {
     </div>
     <div class="rendered-visual">${image ? `<img src="${escapeAttribute(image)}" alt="">` : visualPlaceholder(schema)}</div>
   </section>`;
+}
+
+function renderPremiumHero(section, schema) {
+  const editable = section.editable || {};
+  const items = publicCatalogItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url);
+  const image = editable.image_url || heroItem?.image_url || "";
+  const firstItem = items[0];
+  return `<section class="premium-hero ${sectionClass(section)}">
+    <div class="premium-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || schema.business?.tone || "")}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || "Explore")}</button>
+        <button class="rendered-button secondary" data-open-lead type="button">${escapeHtml(editable.secondary_button || schema.theme?.buttons?.secondary_label || "Learn more")}</button>
+      </div>
+    </div>
+    <div class="premium-product-stage">
+      ${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(schema.business?.name || "")}">` : premiumVisualPlaceholder(schema)}
+    </div>
+    ${firstItem ? `<div class="premium-hero-meta"><span>${escapeHtml(firstItem.name)}</span><strong>${escapeHtml(firstItem.price_label || "")}</strong></div>` : ""}
+  </section>`;
+}
+
+function renderProductStory(section, schema) {
+  const editable = section.editable || {};
+  const image = editable.image_url || publicCatalogItems(schema).find((item) => item.image_url)?.image_url || "";
+  return `<section class="premium-story ${sectionClass(section)}">
+    <div>
+      <span class="rendered-kicker">${escapeHtml(schema.business?.tone || "")}</span>
+      <h2>${escapeHtml(editable.title || editable.headline || "")}</h2>
+      <p>${escapeHtml(editable.text || editable.subtitle || "")}</p>
+    </div>
+    <div class="premium-story-visual">${image ? `<img src="${escapeAttribute(image)}" alt="">` : premiumVisualPlaceholder(schema)}</div>
+  </section>`;
+}
+
+function renderFeatureShowcase(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="premium-feature-showcase ${sectionClass(section)}">
+    <div class="section-heading">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || "")}</span>
+      <h2>${escapeHtml(editable.title || "")}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    <div class="premium-feature-grid">
+      ${publicCatalogItems(schema).slice(0, 3).map((item, index) => `<article><small>${escapeHtml(index === 0 ? labels.signature : labels.detail)}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p></article>`).join("")}
+    </div>
+  </section>`;
+}
+
+function renderEditorialGallery(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="premium-gallery-section ${sectionClass(section)}">
+    <div class="section-heading">
+      <span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).curated)}</span>
+      <h2>${escapeHtml(editable.title || "")}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    ${renderPremiumEditorialCatalog(publicCatalogItems(schema), schema)}
+  </section>`;
+}
+
+function renderSpecStrip(section, schema) {
+  const editable = section.editable || {};
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : catalogLocaleLabels(schema).premiumSpecs;
+  return `<section class="premium-spec-strip ${sectionClass(section)}"><div><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div><div>${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></section>`;
+}
+
+function premiumVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "P").slice(0, 2).toUpperCase();
+  return `<div class="premium-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
 }
 
 function renderMarketplaceHero(section, schema) {
@@ -149,7 +228,11 @@ function renderProductGrid(section, schema) {
   const columns = Math.max(2, Math.min(Number(section.settings?.columns || 3), 4));
   const catalogItems = publicCatalogItems(schema);
   const catalogType = schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || "";
-  const customCatalog = catalogType === "dense_marketplace_catalog" ? renderMarketplaceCatalog(catalogItems, schema) : "";
+  const customCatalog = catalogType === "dense_marketplace_catalog"
+    ? renderMarketplaceCatalog(catalogItems, schema)
+    : catalogType === "premium_editorial_catalog"
+      ? renderPremiumEditorialCatalog(catalogItems, schema)
+      : "";
   return `<section class="rendered-section ${sectionClass(section)}">
     <div class="section-heading">
       <h2>${escapeHtml(editable.title || "Products and services")}</h2>
@@ -168,6 +251,14 @@ function renderProductGrid(section, schema) {
       </article>`).join("")}
     </div>`}
   </section>`;
+}
+
+function renderPremiumEditorialCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-premium-editorial">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    <div class="premium-card-visual">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : premiumVisualPlaceholder(schema)}</div>
+    <div><small>${escapeHtml(index === 0 ? labels.flagship : labels.curated)}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><strong>${escapeHtml(item.price_label || "")}</strong><button class="rendered-button secondary" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.view)}</button></div>
+  </article>`).join("")}</div>`;
 }
 
 function renderMarketplaceCatalog(items, schema) {
@@ -203,22 +294,22 @@ function catalogLocaleLabels(schema) {
   const labels = {
     en: {
       searchFilters: "Search & filters", price: "Price", rating: "Rating", delivery: "Delivery", deal: "Deal", fastShip: "Fast ship",
-      search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", view: "View", request: "Ask now",
+      search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", view: "View", request: "Ask now", signature: "Signature", detail: "Detail", curated: "Curated", flagship: "Flagship", premiumSpecs: ["Presentation", "Quality", "Support", "Delivery"],
       fallbackCategories: ["Electronics", "Home", "Fashion", "Beauty", "Sports", "Deals"],
     },
     es: {
       searchFilters: "Busqueda y filtros", price: "Precio", rating: "Calificacion", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rapido",
-      search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", view: "Ver", request: "Consultar",
+      search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", view: "Ver", request: "Consultar", signature: "Principal", detail: "Detalle", curated: "Curado", flagship: "Producto estrella", premiumSpecs: ["Presentacion", "Calidad", "Soporte", "Entrega"],
       fallbackCategories: ["Electronica", "Hogar", "Moda", "Belleza", "Deportes", "Ofertas"],
     },
     fr: {
       searchFilters: "Recherche et filtres", price: "Prix", rating: "Note", delivery: "Livraison", deal: "Offre", fastShip: "Livraison rapide",
-      search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace", view: "Voir", request: "Demander",
+      search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace", view: "Voir", request: "Demander", signature: "Signature", detail: "Detail", curated: "Soigne", flagship: "Produit phare", premiumSpecs: ["Presentation", "Qualite", "Support", "Livraison"],
       fallbackCategories: ["Electronique", "Maison", "Mode", "Beaute", "Sport", "Offres"],
     },
     pt: {
       searchFilters: "Busca e filtros", price: "Preco", rating: "Avaliacao", delivery: "Entrega", deal: "Oferta", fastShip: "Entrega rapida",
-      search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace", view: "Ver", request: "Consultar",
+      search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace", view: "Ver", request: "Consultar", signature: "Principal", detail: "Detalhe", curated: "Curado", flagship: "Produto principal", premiumSpecs: ["Apresentacao", "Qualidade", "Suporte", "Entrega"],
       fallbackCategories: ["Eletronicos", "Casa", "Moda", "Beleza", "Esportes", "Ofertas"],
     },
   };

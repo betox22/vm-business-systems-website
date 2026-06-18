@@ -23,11 +23,11 @@
         { type: "trust_strip", fields: { items: "{{trust_points}}" } },
         { type: "footer", fields: { businessName: "{{business_name}}", description: "{{short_description}}", socialLinks: "{{social_links}}" } },
       ],
-      aiPrompt: "Use an Apple-style premium product layout. Create a memorable headline, refined slogan, product benefit copy, and calm conversion CTAs. Keep it minimal, cinematic, and highly editable.",
+      aiPrompt: "Use a premium Apple-level product presentation layout without copying any brand. Generate a cinematic centered hero, refined product slogan, large product visual area, editorial story sections, feature spotlight, curated small catalog, comparison/spec strip, calm CTAs, and premium trust copy. This template is for small catalogs, flagship products, luxury portfolios, technology products, beauty devices, creator portfolios, and high-presentation offers. Preserve the premium structure; only adapt colors, copy, products, imagery, and CTAs to the business.",
       catalogModel: {
-        catalogType: "editorial_minimal_grid",
-        productCardStyle: "large clean product cards with hero imagery, short benefit, price, and refined CTA",
-        collectionLayout: "single featured product story followed by curated product grid",
+        catalogType: "premium_editorial_catalog",
+        productCardStyle: "large editorial cards with product imagery, short benefit, price, refined CTA, and minimal metadata",
+        collectionLayout: "cinematic hero product story, feature spotlights, curated small catalog, comparison/spec strip",
         filters: ["category", "new", "best_seller"],
         productDetailModel: "gallery-first premium product detail with benefits, specs, social proof, sticky CTA",
         upsellModel: "complete the set and recommended accessories",
@@ -299,8 +299,8 @@
     {
       intent: "minimal_premium",
       templateId: "apple-premium-product",
-      catalogType: "editorial_minimal_grid",
-      keywords: ["tipo apple", "apple style", "minimal", "premium", "limpio", "simple", "producto premium", "minimalista"],
+      catalogType: "premium_editorial_catalog",
+      keywords: ["tipo apple", "apple style", "minimal", "premium", "limpio", "simple", "producto premium", "minimalista", "portafolio", "portfolio", "producto estrella", "productos extravagantes", "presentacion excelente", "excelente presentacion"],
     },
     {
       intent: "luxury",
@@ -395,7 +395,7 @@
     const rule = matchedRule || {
       intent: "default_minimal",
       templateId: "apple-premium-product",
-      catalogType: "editorial_minimal_grid",
+      catalogType: "premium_editorial_catalog",
       keywords: [],
     };
     const template = templates.find((item) => item.id === rule.templateId) || templates.find((item) => item.id === "minimal-store") || templates[0];
@@ -424,7 +424,7 @@
 
     const primary = scored.length
       ? scored
-      : [{ rule: { intent: "default_minimal", templateId: "apple-premium-product", catalogType: "editorial_minimal_grid" }, score: 0, matches: [] }];
+      : [{ rule: { intent: "default_minimal", templateId: "apple-premium-product", catalogType: "premium_editorial_catalog" }, score: 0, matches: [] }];
 
     const selected = [];
     const addRule = (rule, score = 0, reason = "") => {
@@ -455,7 +455,7 @@
       addRule({
         intent: "visual_alternative",
         templateId,
-        catalogType: template.catalogModel?.catalogType || "editorial_minimal_grid",
+        catalogType: template.catalogModel?.catalogType || "premium_editorial_catalog",
       }, 0);
     });
 

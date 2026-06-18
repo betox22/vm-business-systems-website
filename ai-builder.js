@@ -574,7 +574,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     templateId: "apple-premium-product",
     name: "Premium Product",
     names: { en: "Premium Product", es: "Producto premium", fr: "Produit premium", pt: "Produto premium" },
-    catalogType: "editorial_minimal_grid",
+    catalogType: "premium_editorial_catalog",
     image: "/templates-preview/screenshots/apple.png",
     description: "Apple-style product page with spacious hero, refined copy, and premium sections.",
     descriptions: {
@@ -4357,8 +4357,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     sort_order: index,
   }));
   const isMarketplaceTemplate = catalogType === "dense_marketplace_catalog" || /mega-marketplace|marketplace-style/i.test(template.id || "");
+  const isPremiumTemplate = catalogType === "premium_editorial_catalog" || /apple-premium-product/i.test(template.id || "");
   const instantPages = isMarketplaceTemplate
     ? buildMarketplaceInstantPages(copy, name, description, payload)
+    : isPremiumTemplate
+      ? buildPremiumProductInstantPages(copy, name, description, payload)
     : buildDefaultInstantPages(copy, name, description, payload);
   return {
     schema_version: "1.0",
@@ -4403,6 +4406,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       { label: copy.deals, page_key: "catalog" },
       { label: copy.categories, page_key: "catalog" },
       { label: copy.support, page_key: "contact" },
+    ] : isPremiumTemplate ? [
+      { label: copy.overview, page_key: "home" },
+      { label: copy.products, page_key: "catalog" },
+      { label: copy.story, page_key: "about" },
+      { label: copy.contact, page_key: "contact" },
     ] : [
       { label: copy.home, page_key: "home" },
       { label: copy.shop, page_key: "catalog" },
@@ -4435,7 +4443,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         description: template.visualDifference || copy.fastBase,
         theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: copy.shopNow, secondary_label: copy.contactVerb, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
         layout_mode_id: template.id || "instant_storefront",
-        hero_layout: "split_showcase",
+        hero_layout: isPremiumTemplate ? "premium_center_stage" : "split_showcase",
         product_layout: catalogType,
       },
     ],
@@ -4513,6 +4521,108 @@ function buildDefaultInstantPages(copy, name, description, payload = {}) {
       slug: copy.contactSlug,
       order: 4,
       sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: copy.letsTalk, text: copy.contactText }, settings: { layout: "simple" } }],
+    },
+  ];
+}
+
+function buildPremiumProductInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.overview,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "premium_hero",
+          type: "PremiumHero",
+          order: 1,
+          editable: {
+            headline: copy.premiumHeadline(name),
+            subtitle: copy.premiumSubheadline(description),
+            primary_button: copy.premiumPrimary,
+            secondary_button: copy.premiumSecondary,
+            image_url: heroImage,
+            images: [],
+          },
+          settings: { layout: "center_stage", spacing: "cinematic", container_width: "wide" },
+        },
+        {
+          id: "premium_story",
+          type: "ProductStory",
+          order: 2,
+          editable: {
+            title: copy.premiumStoryTitle,
+            text: copy.premiumStoryText,
+            image_url: heroImage,
+            images: [],
+          },
+          settings: { layout: "editorial_split", spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "premium_feature",
+          type: "FeatureShowcase",
+          order: 3,
+          editable: {
+            title: copy.premiumFeatureTitle,
+            text: copy.premiumFeatureText,
+            images: [],
+          },
+          settings: { layout: "feature_focus", spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "premium_gallery",
+          type: "EditorialGallery",
+          order: 4,
+          editable: {
+            title: copy.premiumGalleryTitle,
+            text: copy.premiumGalleryText,
+            images: [],
+          },
+          settings: { layout: "premium_cards", columns: 3, spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "premium_specs",
+          type: "SpecStrip",
+          order: 5,
+          editable: {
+            title: copy.premiumSpecsTitle,
+            text: copy.premiumSpecsText,
+            items: copy.premiumSpecItems,
+          },
+          settings: { layout: "quiet_specs", spacing: "balanced", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.products,
+      slug: copy.shopSlug,
+      order: 2,
+      sections: [
+        {
+          id: "premium_catalog",
+          type: "ProductGrid",
+          order: 1,
+          editable: { title: copy.premiumGalleryTitle, text: copy.premiumGalleryText, images: [] },
+          settings: { layout: "premium_editorial", columns: 3, spacing: "spacious", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.story,
+      slug: copy.aboutSlug,
+      order: 3,
+      sections: [{ id: "about", type: "ProductStory", order: 1, editable: { title: copy.aboutBrand, text: description, image_url: heroImage }, settings: { layout: "editorial_split", container_width: "wide" } }],
+    },
+    {
+      page_key: "contact",
+      title: copy.contact,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: copy.letsTalk, text: copy.contactText }, settings: { layout: "simple", container_width: "wide" } }],
     },
   ];
 }
@@ -4635,6 +4745,9 @@ function instantLocaleCopy(language) {
       viewCatalog: "View catalog",
       requestOrder: "Request order",
       home: "Home",
+      overview: "Overview",
+      products: "Products",
+      story: "Story",
       shop: "Shop",
       about: "About",
       contact: "Contact",
@@ -4673,6 +4786,19 @@ function instantLocaleCopy(language) {
       whyBuyHere: "Why customers buy here",
       trustText: "Clear delivery, secure checkout, support, and simple returns.",
       marketplaceCategories: ["Electronics", "Home", "Fashion", "Beauty", "Sports", "Deals"],
+      premiumHeadline: (name) => `Meet ${name}`,
+      premiumSubheadline: (description) => description || "A refined product experience built to feel simple, confident, and memorable.",
+      premiumPrimary: "Explore products",
+      premiumSecondary: "See the story",
+      premiumStoryTitle: "Designed around the details",
+      premiumStoryText: "A focused product story with clean copy, quiet confidence, and enough space for every feature to feel intentional.",
+      premiumFeatureTitle: "One flagship experience",
+      premiumFeatureText: "Use this section for the signature benefit, craft story, performance promise, or strongest reason to buy.",
+      premiumGalleryTitle: "Curated essentials",
+      premiumGalleryText: "A smaller catalog presented with more care, stronger imagery, and clearer product value.",
+      premiumSpecsTitle: "Everything important, easy to compare",
+      premiumSpecsText: "Highlight materials, warranty, delivery, support, personalization, or service quality without clutter.",
+      premiumSpecItems: ["Refined presentation", "Editable product story", "Premium support", "Ready to publish"],
     },
     es: {
       newStore: "Nueva tienda",
@@ -4689,6 +4815,9 @@ function instantLocaleCopy(language) {
       viewCatalog: "Ver catalogo",
       requestOrder: "Solicitar pedido",
       home: "Inicio",
+      overview: "Vista general",
+      products: "Productos",
+      story: "Historia",
       shop: "Tienda",
       about: "Nosotros",
       contact: "Contacto",
@@ -4727,6 +4856,19 @@ function instantLocaleCopy(language) {
       whyBuyHere: "Por que comprar aqui",
       trustText: "Entrega clara, checkout seguro, soporte y devoluciones simples.",
       marketplaceCategories: ["Electronica", "Hogar", "Moda", "Belleza", "Deportes", "Ofertas"],
+      premiumHeadline: (name) => `Conoce ${name}`,
+      premiumSubheadline: (description) => description || "Una experiencia de producto refinada, simple, segura y memorable.",
+      premiumPrimary: "Explorar productos",
+      premiumSecondary: "Ver historia",
+      premiumStoryTitle: "Diseñado alrededor de los detalles",
+      premiumStoryText: "Una historia de producto enfocada, con textos limpios, confianza visual y espacio para que cada beneficio se entienda.",
+      premiumFeatureTitle: "Una experiencia protagonista",
+      premiumFeatureText: "Usa esta sección para el beneficio principal, la historia de fabricación, la promesa de rendimiento o la razón más fuerte para comprar.",
+      premiumGalleryTitle: "Selección curada",
+      premiumGalleryText: "Un catálogo pequeño presentado con más cuidado, mejor jerarquía visual y valor claro.",
+      premiumSpecsTitle: "Lo importante, fácil de comparar",
+      premiumSpecsText: "Destaca materiales, garantía, entrega, soporte, personalización o calidad del servicio sin llenar la página de ruido.",
+      premiumSpecItems: ["Presentación refinada", "Historia editable", "Soporte premium", "Listo para publicar"],
     },
     fr: {
       newStore: "Nouvelle boutique",
@@ -4743,6 +4885,9 @@ function instantLocaleCopy(language) {
       viewCatalog: "Voir le catalogue",
       requestOrder: "Demander une commande",
       home: "Accueil",
+      overview: "Aperçu",
+      products: "Produits",
+      story: "Histoire",
       shop: "Boutique",
       about: "À propos",
       contact: "Contact",
@@ -4781,6 +4926,19 @@ function instantLocaleCopy(language) {
       whyBuyHere: "Pourquoi acheter ici",
       trustText: "Livraison claire, paiement securise, support et retours simples.",
       marketplaceCategories: ["Electronique", "Maison", "Mode", "Beaute", "Sport", "Offres"],
+      premiumHeadline: (name) => `Découvrez ${name}`,
+      premiumSubheadline: (description) => description || "Une expérience produit raffinée, simple, confiante et mémorable.",
+      premiumPrimary: "Explorer les produits",
+      premiumSecondary: "Voir l'histoire",
+      premiumStoryTitle: "Conçu autour des détails",
+      premiumStoryText: "Une histoire produit ciblée, avec un texte clair, une confiance discrète et assez d'espace pour chaque bénéfice.",
+      premiumFeatureTitle: "Une expérience phare",
+      premiumFeatureText: "Utilisez cette section pour le bénéfice signature, l'histoire de fabrication, la promesse de performance ou la meilleure raison d'acheter.",
+      premiumGalleryTitle: "Sélection soignée",
+      premiumGalleryText: "Un petit catalogue présenté avec plus de soin, une meilleure hiérarchie visuelle et une valeur claire.",
+      premiumSpecsTitle: "L'essentiel, facile à comparer",
+      premiumSpecsText: "Mettez en avant matériaux, garantie, livraison, support, personnalisation ou qualité de service sans surcharge.",
+      premiumSpecItems: ["Présentation raffinée", "Histoire modifiable", "Support premium", "Prêt à publier"],
     },
     pt: {
       newStore: "Nova loja",
@@ -4797,6 +4955,9 @@ function instantLocaleCopy(language) {
       viewCatalog: "Ver catálogo",
       requestOrder: "Solicitar pedido",
       home: "Início",
+      overview: "Visão geral",
+      products: "Produtos",
+      story: "História",
       shop: "Loja",
       about: "Sobre",
       contact: "Contato",
@@ -4835,6 +4996,19 @@ function instantLocaleCopy(language) {
       whyBuyHere: "Por que comprar aqui",
       trustText: "Entrega clara, checkout seguro, suporte e devolucoes simples.",
       marketplaceCategories: ["Eletronicos", "Casa", "Moda", "Beleza", "Esportes", "Ofertas"],
+      premiumHeadline: (name) => `Conheça ${name}`,
+      premiumSubheadline: (description) => description || "Uma experiência de produto refinada, simples, confiante e memorável.",
+      premiumPrimary: "Explorar produtos",
+      premiumSecondary: "Ver história",
+      premiumStoryTitle: "Criado em torno dos detalhes",
+      premiumStoryText: "Uma história de produto focada, com texto limpo, confiança visual e espaço para cada benefício aparecer.",
+      premiumFeatureTitle: "Uma experiência principal",
+      premiumFeatureText: "Use esta seção para o benefício principal, história de fabricação, promessa de desempenho ou motivo mais forte para comprar.",
+      premiumGalleryTitle: "Seleção curada",
+      premiumGalleryText: "Um catálogo menor apresentado com mais cuidado, melhor hierarquia visual e valor claro.",
+      premiumSpecsTitle: "O importante, fácil de comparar",
+      premiumSpecsText: "Destaque materiais, garantia, entrega, suporte, personalização ou qualidade do serviço sem poluir a página.",
+      premiumSpecItems: ["Apresentação refinada", "História editável", "Suporte premium", "Pronto para publicar"],
     },
   };
   return copies[language] || copies.en;
@@ -5994,6 +6168,11 @@ function renderStudioFloatingCatalog(schema) {
 function renderSection(section, schema) {
   const renderers = {
     Hero: renderHero,
+    PremiumHero: renderPremiumHero,
+    ProductStory: renderProductStory,
+    FeatureShowcase: renderFeatureShowcase,
+    EditorialGallery: renderEditorialGallery,
+    SpecStrip: renderSpecStrip,
     MarketplaceHero: renderMarketplaceHero,
     CategoryRail: renderCategoryRail,
     DealRow: renderDealRow,
@@ -6037,6 +6216,90 @@ function renderHero(section, schema) {
       ${image ? `<img src="${escapeAttribute(image)}" alt="">` : visualPlaceholder(schema)}
     </div>
   </section>`;
+}
+
+function renderPremiumHero(section, schema) {
+  const editable = section.editable || {};
+  const items = marketplaceItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url);
+  const image = editable.image_url || heroItem?.image_url || "";
+  const firstItem = items[0];
+  return `<section class="premium-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="premium-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || schema.business?.tone || "")}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || "Explore")}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || schema.theme?.buttons?.secondary_label || "Learn more")}</a>
+      </div>
+    </div>
+    <div class="premium-product-stage">
+      ${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(schema.business?.name || "")}">` : premiumVisualPlaceholder(schema)}
+    </div>
+    ${firstItem ? `<div class="premium-hero-meta"><span>${escapeHtml(firstItem.name)}</span><strong>${escapeHtml(productPriceLabel(firstItem))}</strong></div>` : ""}
+  </section>`;
+}
+
+function renderProductStory(section, schema) {
+  const editable = section.editable || {};
+  const image = editable.image_url || marketplaceItems(schema).find((item) => item.image_url)?.image_url || "";
+  return `<section class="premium-story ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div>
+      <span class="rendered-kicker">${escapeHtml(schema.business?.tone || "")}</span>
+      <h2>${escapeHtml(editable.title || editable.headline || "")}</h2>
+      <p>${escapeHtml(editable.text || editable.subtitle || "")}</p>
+    </div>
+    <div class="premium-story-visual">${image ? `<img src="${escapeAttribute(image)}" alt="">` : premiumVisualPlaceholder(schema)}</div>
+  </section>`;
+}
+
+function renderFeatureShowcase(section, schema) {
+  const editable = section.editable || {};
+  const items = marketplaceItems(schema).slice(0, 3);
+  return `<section class="premium-feature-showcase ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || "")}</span>
+      <h2>${escapeHtml(editable.title || "")}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    <div class="premium-feature-grid">
+      ${items.map((item, index) => `<article>
+        <small>${escapeHtml(index === 0 ? catalogLocaleLabels(schema).signature : catalogLocaleLabels(schema).detail)}</small>
+        <h3>${escapeHtml(item.name)}</h3>
+        <p>${escapeHtml(item.description)}</p>
+      </article>`).join("")}
+    </div>
+  </section>`;
+}
+
+function renderEditorialGallery(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="premium-gallery-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading">
+      <span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).curated)}</span>
+      <h2>${escapeHtml(editable.title || "")}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    ${renderPremiumEditorialCatalog(marketplaceItems(schema), schema)}
+  </section>`;
+}
+
+function renderSpecStrip(section, schema) {
+  const editable = section.editable || {};
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : catalogLocaleLabels(schema).premiumSpecs;
+  return `<section class="premium-spec-strip ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div>
+      <h2>${escapeHtml(editable.title || "")}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    <div>${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function premiumVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "P").slice(0, 2).toUpperCase();
+  return `<div class="premium-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
 }
 
 function renderMarketplaceHero(section, schema) {
@@ -6155,6 +6418,7 @@ function renderProductGrid(section, schema) {
 
 function renderCatalogByType(catalogType, items, schema) {
   const renderers = {
+    premium_editorial_catalog: renderPremiumEditorialCatalog,
     dense_marketplace_catalog: renderMarketplaceCatalog,
     listing_marketplace_catalog: renderClassifiedMarketplaceCatalog,
     editorial_minimal_grid: renderMinimalProductGrid,
@@ -6186,6 +6450,22 @@ function renderMarketplaceCatalog(items, schema) {
       <div class="marketplace-sort-bar"><b>${escapeHtml(labels.results)}</b><span>${escapeHtml(labels.sortBy)}: ${escapeHtml(labels.featured)}</span></div>
       <div class="catalog-results">${items.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? labels.deal : labels.fastShip}`, schema)).join("")}</div>
     </div>
+  </div>`;
+}
+
+function renderPremiumEditorialCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-premium-editorial">
+    ${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+      <div class="premium-card-visual">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : premiumVisualPlaceholder(schema)}</div>
+      <div>
+        <small>${escapeHtml(index === 0 ? labels.flagship : labels.curated)}</small>
+        <h3>${escapeHtml(item.name)}</h3>
+        <p>${escapeHtml(item.description)}</p>
+        <strong>${escapeHtml(productPriceLabel(item))}</strong>
+        <a class="rendered-button secondary" href="#">${escapeHtml(item.button_label || labels.view)}</a>
+      </div>
+    </article>`).join("")}
   </div>`;
 }
 
@@ -6321,7 +6601,7 @@ function catalogLocaleLabels(schema) {
   const labels = {
     en: {
       searchFilters: "Search & filters", category: "Category", brand: "Brand", price: "Price", rating: "Rating", delivery: "Delivery", deal: "Deal", fastShip: "Fast ship",
-      search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust",
+      search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", signature: "Signature", detail: "Detail", curated: "Curated", flagship: "Flagship", premiumSpecs: ["Presentation", "Quality", "Support", "Delivery"],
       sellerVerified: "Seller verified", used: "Used", newItem: "New", localPickup: "Local pickup", makeOffer: "Make offer", contactSeller: "Contact seller",
       newDrop: "New drop", limitedSelection: "Limited selection", instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
       main: "Main", popular: "Popular", marketPrice: "Market price", fromQuote: "From quote", book: "Book", freeQuote: "Free quote", practiceArea: "Practice area", scheduleConsultation: "Schedule consultation",
@@ -6329,7 +6609,7 @@ function catalogLocaleLabels(schema) {
     },
     es: {
       searchFilters: "Busqueda y filtros", category: "Categoria", brand: "Marca", price: "Precio", rating: "Calificacion", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rapido",
-      search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace",
+      search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", signature: "Principal", detail: "Detalle", curated: "Curado", flagship: "Producto estrella", premiumSpecs: ["Presentacion", "Calidad", "Soporte", "Entrega"],
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Nuevo", localPickup: "Retiro local", makeOffer: "Hacer oferta", contactSeller: "Contactar vendedor",
       newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
       main: "Principal", popular: "Popular", marketPrice: "Precio de mercado", fromQuote: "Desde cotizacion", book: "Reservar", freeQuote: "Cotizacion gratis", practiceArea: "Area de practica", scheduleConsultation: "Agendar consulta",
@@ -6337,7 +6617,7 @@ function catalogLocaleLabels(schema) {
     },
     fr: {
       searchFilters: "Recherche et filtres", category: "Catégorie", brand: "Marque", price: "Prix", rating: "Note", delivery: "Livraison", deal: "Offre", fastShip: "Livraison rapide",
-      search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace",
+      search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace", signature: "Signature", detail: "Detail", curated: "Soigne", flagship: "Produit phare", premiumSpecs: ["Presentation", "Qualite", "Support", "Livraison"],
       sellerVerified: "Vendeur vérifié", used: "Occasion", newItem: "Neuf", localPickup: "Retrait local", makeOffer: "Faire une offre", contactSeller: "Contacter le vendeur",
       newDrop: "Nouvelle collection", limitedSelection: "Sélection limitée", instantAccess: "Accès immédiat", downloadable: "Contenu téléchargeable", bonus: "Ressources bonus", lifetime: "Accès à vie", getAccess: "Obtenir l'accès",
       main: "Principal", popular: "Populaire", marketPrice: "Prix du marché", fromQuote: "Sur devis", book: "Réserver", freeQuote: "Devis gratuit", practiceArea: "Domaine d'expertise", scheduleConsultation: "Planifier une consultation",
@@ -6345,7 +6625,7 @@ function catalogLocaleLabels(schema) {
     },
     pt: {
       searchFilters: "Busca e filtros", category: "Categoria", brand: "Marca", price: "Preço", rating: "Avaliação", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rápido",
-      search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace",
+      search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace", signature: "Principal", detail: "Detalhe", curated: "Curado", flagship: "Produto principal", premiumSpecs: ["Apresentacao", "Qualidade", "Suporte", "Entrega"],
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Novo", localPickup: "Retirada local", makeOffer: "Fazer oferta", contactSeller: "Contatar vendedor",
       newDrop: "Novo drop", limitedSelection: "Seleção limitada", instantAccess: "Acesso imediato", downloadable: "Conteúdo baixável", bonus: "Recursos bônus", lifetime: "Acesso vitalício", getAccess: "Obter acesso",
       main: "Principal", popular: "Popular", marketPrice: "Preço de mercado", fromQuote: "Sob orçamento", book: "Reservar", freeQuote: "Orçamento grátis", practiceArea: "Área de atuação", scheduleConsultation: "Agendar consulta",
