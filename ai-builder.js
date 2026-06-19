@@ -599,6 +599,20 @@ const TEMPLATE_PREVIEW_CHOICES = [
     },
   },
   {
+    templateId: "education-course-academy-pro",
+    name: "Course Academy",
+    names: { en: "Course Academy", es: "Academia de cursos", fr: "Academie de cours", pt: "Academia de cursos" },
+    catalogType: "education_course_catalog",
+    image: "/templates-preview/screenshots/education.png",
+    description: "Premium academy style for courses, coaching programs, bootcamps, classes, and training centers.",
+    descriptions: {
+      en: "Premium academy style for courses, coaching programs, bootcamps, classes, and training centers.",
+      es: "Estilo academia premium para cursos, programas de coaching, bootcamps, clases y centros de formacion.",
+      fr: "Style academie premium pour cours, coaching, bootcamps, classes et centres de formation.",
+      pt: "Estilo academia premium para cursos, coaching, bootcamps, aulas e centros de treinamento.",
+    },
+  },
+  {
     templateId: "mega-marketplace",
     name: "Mega Marketplace",
     names: { en: "Mega Marketplace", es: "Mega marketplace", fr: "Mega marketplace", pt: "Mega marketplace" },
@@ -4474,9 +4488,10 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isDigitalTemplate = catalogType === "digital_offer_catalog" || /digital-products-store/i.test(template.id || "");
   const isRealEstateListingTemplate = catalogType === "real_estate_listing_catalog" || /real-estate-listings-pro/i.test(template.id || "");
   const isLuxuryHighTicketTemplate = catalogType === "luxury_high_ticket_catalog" || /luxury-high-ticket-pro/i.test(template.id || "");
-  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate || isRealEstateListingTemplate || isLuxuryHighTicketTemplate;
-  const primaryCta = isLuxuryHighTicketTemplate ? copy.requestPrivateViewing : isRealEstateListingTemplate ? copy.searchListings : isDigitalTemplate ? copy.getAccess : isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
-  const secondaryCta = isLuxuryHighTicketTemplate ? copy.viewCollection : isRealEstateListingTemplate ? copy.viewListings : isDigitalTemplate ? copy.viewProducts : isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
+  const isEducationTemplate = catalogType === "education_course_catalog" || /education-course-academy-pro/i.test(template.id || "");
+  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate || isRealEstateListingTemplate || isLuxuryHighTicketTemplate || isEducationTemplate;
+  const primaryCta = isEducationTemplate ? copy.enrollNow : isLuxuryHighTicketTemplate ? copy.requestPrivateViewing : isRealEstateListingTemplate ? copy.searchListings : isDigitalTemplate ? copy.getAccess : isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
+  const secondaryCta = isEducationTemplate ? copy.viewCurriculum : isLuxuryHighTicketTemplate ? copy.viewCollection : isRealEstateListingTemplate ? copy.viewListings : isDigitalTemplate ? copy.viewProducts : isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
   if (isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate) {
     catalogItems.forEach((item) => {
       item.price_type = "quote_only";
@@ -4518,29 +4533,42 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       item.track_inventory = false;
     });
   }
+  if (isEducationTemplate) {
+    catalogItems.forEach((item, index) => {
+      item.price_type = "fixed";
+      item.category = educationCategoryForIndex(index, copy);
+      item.price_label = item.price_label && item.price_label !== copy.priceNotSet ? item.price_label : copy.coursePrice;
+      item.button_label = copy.enrollNow;
+      item.shipping_label = educationDurationForIndex(index, copy);
+      item.deal_label = index === 0 ? copy.featuredProgram : index % 2 ? copy.beginnerFriendly : copy.certificateReady;
+      item.track_inventory = false;
+    });
+  }
   const instantPages = isMarketplaceTemplate
     ? buildMarketplaceInstantPages(copy, name, description, payload)
     : isPremiumTemplate
       ? buildPremiumProductInstantPages(copy, name, description, payload)
       : isLuxuryHighTicketTemplate
         ? buildLuxuryHighTicketInstantPages(copy, name, description, payload)
-        : isFashionTemplate
-          ? buildFashionDropInstantPages(copy, name, description, payload)
-          : isCorporateTemplate
-            ? buildCorporateCompanyInstantPages(copy, name, description, payload)
-            : isHomeServicesTemplate
-              ? buildHomeServicesPremiumInstantPages(copy, name, description, payload)
-              : isBookingTemplate
-                ? buildBookingAppointmentInstantPages(copy, name, description, payload)
-                : isRestaurantTemplate
-                  ? buildRestaurantMenuInstantPages(copy, name, description, payload)
-                  : isDigitalTemplate
-                    ? buildDigitalProductsInstantPages(copy, name, description, payload)
-                    : isRealEstateListingTemplate
-                      ? buildRealEstateListingsInstantPages(copy, name, description, payload)
-            : isLeadFunnelTemplate
-              ? buildLeadFunnelInstantPages(copy, name, description, payload)
-          : buildDefaultInstantPages(copy, name, description, payload);
+        : isEducationTemplate
+          ? buildEducationAcademyInstantPages(copy, name, description, payload)
+          : isFashionTemplate
+            ? buildFashionDropInstantPages(copy, name, description, payload)
+            : isCorporateTemplate
+              ? buildCorporateCompanyInstantPages(copy, name, description, payload)
+              : isHomeServicesTemplate
+                ? buildHomeServicesPremiumInstantPages(copy, name, description, payload)
+                : isBookingTemplate
+                  ? buildBookingAppointmentInstantPages(copy, name, description, payload)
+                  : isRestaurantTemplate
+                    ? buildRestaurantMenuInstantPages(copy, name, description, payload)
+                    : isDigitalTemplate
+                      ? buildDigitalProductsInstantPages(copy, name, description, payload)
+                      : isRealEstateListingTemplate
+                        ? buildRealEstateListingsInstantPages(copy, name, description, payload)
+              : isLeadFunnelTemplate
+                ? buildLeadFunnelInstantPages(copy, name, description, payload)
+            : buildDefaultInstantPages(copy, name, description, payload);
   return {
     schema_version: "1.0",
     site_type: isBusinessWebsite ? "business_website" : "online_store",
@@ -5240,6 +5268,140 @@ function buildRestaurantMenuInstantPages(copy, name, description, payload = {}) 
   ];
 }
 
+function buildEducationAcademyInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.academy,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "academy_hero",
+          type: "AcademyHero",
+          order: 1,
+          editable: {
+            headline: copy.educationHeadline(name),
+            subtitle: copy.educationSubheadline(description),
+            primary_button: copy.enrollNow,
+            secondary_button: copy.viewCurriculum,
+            image_url: heroImage,
+            badge: copy.courseAcademy,
+            images: [],
+          },
+          settings: { layout: "academy_platform", spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "academy_path",
+          type: "AcademyLearningPath",
+          order: 2,
+          editable: {
+            title: copy.learningPathTitle,
+            text: copy.learningPathText,
+            items: copy.learningPathItems,
+            images: [],
+          },
+          settings: { layout: "module_roadmap", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "academy_programs",
+          type: "AcademyPrograms",
+          order: 3,
+          editable: {
+            title: copy.programsTitle,
+            text: copy.programsText,
+            images: [],
+          },
+          settings: { layout: "program_cards", columns: 3, spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "academy_outcomes",
+          type: "AcademyOutcomes",
+          order: 4,
+          editable: {
+            title: copy.outcomesTitle,
+            text: copy.outcomesText,
+            items: copy.learningOutcomeItems,
+            images: [],
+          },
+          settings: { layout: "outcome_grid", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "academy_instructor",
+          type: "AcademyInstructor",
+          order: 5,
+          editable: {
+            title: copy.instructorTitle,
+            text: copy.instructorText,
+            items: copy.instructorTrustItems,
+            image_url: heroImage,
+            images: [],
+          },
+          settings: { layout: "instructor_trust", spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "academy_enroll",
+          type: "AcademyEnroll",
+          order: 6,
+          editable: {
+            title: copy.enrollmentTitle,
+            text: copy.enrollmentText,
+            primary_button: copy.enrollNow,
+            images: [],
+          },
+          settings: { layout: "enrollment_cta", spacing: "spacious", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "programs",
+      title: copy.programs,
+      slug: copy.programsSlug,
+      order: 2,
+      sections: [
+        {
+          id: "program_catalog",
+          type: "ProductGrid",
+          order: 1,
+          editable: { title: copy.programsTitle, text: copy.programsText, images: [] },
+          settings: { layout: "education_course", columns: 3, spacing: "balanced", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "curriculum",
+      title: copy.curriculum,
+      slug: copy.curriculumSlug,
+      order: 3,
+      sections: [
+        {
+          id: "curriculum_path",
+          type: "AcademyLearningPath",
+          order: 1,
+          editable: { title: copy.learningPathTitle, text: copy.learningPathText, items: copy.learningPathItems, images: [] },
+          settings: { layout: "module_roadmap", spacing: "spacious", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "enroll",
+      title: copy.enroll,
+      slug: copy.enrollSlug,
+      order: 4,
+      sections: [
+        {
+          id: "enroll_contact",
+          type: "AcademyEnroll",
+          order: 1,
+          editable: { title: copy.enrollmentTitle, text: copy.enrollmentText, primary_button: copy.enrollNow, images: [] },
+          settings: { layout: "enrollment_cta", spacing: "spacious", container_width: "wide" },
+        },
+      ],
+    },
+  ];
+}
+
 function buildDigitalProductsInstantPages(copy, name, description, payload = {}) {
   const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
   return [
@@ -5836,6 +5998,16 @@ function luxuryCategoryForIndex(index, copy) {
   return categories[index % categories.length];
 }
 
+function educationCategoryForIndex(index, copy) {
+  const categories = copy.educationCategories || ["Foundation", "Advanced", "Workshop", "Coaching", "Certification", "Membership"];
+  return categories[index % categories.length];
+}
+
+function educationDurationForIndex(index, copy) {
+  const durations = copy.educationDurations || ["4 weeks", "6 modules", "Live cohort", "Self-paced"];
+  return durations[index % durations.length];
+}
+
 function listingLocationForIndex(index, copy) {
   const locations = copy.listingLocations || ["Central area", "North side", "West district", "Near downtown"];
   return locations[index % locations.length];
@@ -6037,6 +6209,37 @@ function instantLocaleCopy(language) {
       luxuryContactText: "Send the piece, occasion, preferred timing and contact method. A client advisor can respond with availability and next steps.",
       luxuryProofItems: ["Verified provenance", "Limited availability", "Private advisor", "Insured handling", "Secure inquiry", "Concierge follow-up"],
       luxuryCategories: ["Watches", "Jewelry", "Art", "Collectibles", "Private collection", "Limited pieces"],
+      academy: "Academy",
+      programs: "Programs",
+      curriculum: "Curriculum",
+      enroll: "Enroll",
+      programsSlug: "/programs",
+      curriculumSlug: "/curriculum",
+      enrollSlug: "/enroll",
+      courseAcademy: "Course academy",
+      enrollNow: "Enroll now",
+      viewCurriculum: "View curriculum",
+      coursePrice: "Enrollment price",
+      featuredProgram: "Featured program",
+      beginnerFriendly: "Beginner friendly",
+      certificateReady: "Certificate-ready",
+      educationHeadline: (name) => `${name}: learn with a clear path`,
+      educationSubheadline: (description) => description || "A premium academy website with courses, modules, outcomes, instructor trust and an enrollment path.",
+      learningPathTitle: "A clear learning path from first lesson to result",
+      learningPathText: "Show the roadmap, modules and milestones so students understand exactly how progress happens.",
+      learningPathItems: ["Start with the foundation", "Practice with guided modules", "Apply the method", "Get feedback or support", "Complete the outcome", "Take the next step"],
+      programsTitle: "Programs built around real outcomes",
+      programsText: "Present courses, coaching packages, bootcamps or memberships with duration, level and enrollment CTAs.",
+      outcomesTitle: "What students should be able to do",
+      outcomesText: "Turn the course promise into concrete results, skills and confidence markers.",
+      learningOutcomeItems: ["Clear skill progression", "Practical assignments", "Editable curriculum", "Student-ready proof", "Support notes", "Launch-ready offer"],
+      instructorTitle: "Expert guidance, structured for action",
+      instructorText: "Use this space for instructor credibility, teaching method, student support, certifications or community value.",
+      instructorTrustItems: ["Expert-led lessons", "Structured modules", "Support path", "Student outcomes", "Flexible access", "Editable offer"],
+      enrollmentTitle: "Ready to start learning?",
+      enrollmentText: "Invite students to enroll, request access, ask about cohorts, or choose the right program.",
+      educationCategories: ["Foundation", "Advanced", "Workshop", "Coaching", "Certification", "Membership"],
+      educationDurations: ["4 weeks", "6 modules", "Live cohort", "Self-paced"],
       modules: "Modules",
       modulesSlug: "/modules",
       viewProducts: "View products",
@@ -6257,6 +6460,37 @@ function instantLocaleCopy(language) {
       luxuryContactText: "Envia la pieza, ocasion, horario preferido y metodo de contacto. Un asesor puede responder con disponibilidad y proximos pasos.",
       luxuryProofItems: ["Provenance verificada", "Disponibilidad limitada", "Asesor privado", "Manejo asegurado", "Consulta segura", "Seguimiento concierge"],
       luxuryCategories: ["Relojes", "Joyeria", "Arte", "Coleccionables", "Coleccion privada", "Piezas limitadas"],
+      academy: "Academia",
+      programs: "Programas",
+      curriculum: "Curriculum",
+      enroll: "Inscripcion",
+      programsSlug: "/programas",
+      curriculumSlug: "/curriculum",
+      enrollSlug: "/inscripcion",
+      courseAcademy: "Academia de cursos",
+      enrollNow: "Inscribirme",
+      viewCurriculum: "Ver curriculum",
+      coursePrice: "Precio de inscripcion",
+      featuredProgram: "Programa destacado",
+      beginnerFriendly: "Ideal para empezar",
+      certificateReady: "Con certificado",
+      educationHeadline: (name) => `${name}: aprende con un camino claro`,
+      educationSubheadline: (description) => description || "Una pagina de academia premium con cursos, modulos, resultados, confianza del instructor y ruta de inscripcion.",
+      learningPathTitle: "Un camino claro desde la primera clase hasta el resultado",
+      learningPathText: "Muestra el recorrido, modulos e hitos para que el estudiante entienda como va a avanzar.",
+      learningPathItems: ["Empieza por la base", "Practica con modulos guiados", "Aplica el metodo", "Recibe soporte", "Completa el resultado", "Da el siguiente paso"],
+      programsTitle: "Programas creados alrededor de resultados reales",
+      programsText: "Presenta cursos, coaching, bootcamps o membresias con duracion, nivel y CTA de inscripcion.",
+      outcomesTitle: "Lo que el estudiante debe lograr",
+      outcomesText: "Convierte la promesa del curso en resultados, habilidades y senales claras de avance.",
+      learningOutcomeItems: ["Progreso claro", "Practicas accionables", "Curriculum editable", "Prueba para estudiantes", "Notas de soporte", "Oferta lista para lanzar"],
+      instructorTitle: "Guia experta, estructurada para actuar",
+      instructorText: "Usa este espacio para credibilidad del instructor, metodo de ensenanza, soporte, certificaciones o valor de comunidad.",
+      instructorTrustItems: ["Clases guiadas por expertos", "Modulos estructurados", "Ruta de soporte", "Resultados del estudiante", "Acceso flexible", "Oferta editable"],
+      enrollmentTitle: "Listo para empezar a aprender?",
+      enrollmentText: "Invita al estudiante a inscribirse, pedir acceso, consultar cohortes o elegir el programa correcto.",
+      educationCategories: ["Base", "Avanzado", "Workshop", "Coaching", "Certificacion", "Membresia"],
+      educationDurations: ["4 semanas", "6 modulos", "Cohorte en vivo", "A tu ritmo"],
       modules: "Modulos",
       modulesSlug: "/modulos",
       viewProducts: "Ver productos",
@@ -6454,6 +6688,37 @@ function instantLocaleCopy(language) {
       premiumSpecsTitle: "L'essentiel, facile à comparer",
       premiumSpecsText: "Mettez en avant matériaux, garantie, livraison, support, personnalisation ou qualité de service sans surcharge.",
       premiumSpecItems: ["Présentation raffinée", "Histoire modifiable", "Support premium", "Prêt à publier"],
+      academy: "Academie",
+      programs: "Programmes",
+      curriculum: "Programme",
+      enroll: "Inscription",
+      programsSlug: "/programmes",
+      curriculumSlug: "/programme",
+      enrollSlug: "/inscription",
+      courseAcademy: "Academie de cours",
+      enrollNow: "S'inscrire",
+      viewCurriculum: "Voir le programme",
+      coursePrice: "Prix d'inscription",
+      featuredProgram: "Programme phare",
+      beginnerFriendly: "Pour debuter",
+      certificateReady: "Certificat pret",
+      educationHeadline: (name) => `${name}: apprendre avec un parcours clair`,
+      educationSubheadline: (description) => description || "Un site d'academie premium avec cours, modules, resultats, credibilite de l'instructeur et inscription.",
+      learningPathTitle: "Un parcours clair de la premiere lecon au resultat",
+      learningPathText: "Montrez les modules, jalons et etapes pour que l'etudiant comprenne sa progression.",
+      learningPathItems: ["Bases", "Pratique guidee", "Application", "Support", "Resultat", "Prochaine etape"],
+      programsTitle: "Programmes construits autour de resultats reels",
+      programsText: "Presentez cours, coaching, bootcamps ou abonnements avec duree, niveau et CTA.",
+      outcomesTitle: "Ce que l'etudiant doit savoir faire",
+      outcomesText: "Transformez la promesse du cours en resultats, competences et signaux de progression.",
+      learningOutcomeItems: ["Progression claire", "Exercices pratiques", "Programme modifiable", "Preuve etudiante", "Notes support", "Offre prete"],
+      instructorTitle: "Guidage expert, structure pour agir",
+      instructorText: "Utilisez cet espace pour la credibilite, la methode, le support ou la communaute.",
+      instructorTrustItems: ["Cours experts", "Modules structures", "Parcours support", "Resultats etudiants", "Acces flexible", "Offre modifiable"],
+      enrollmentTitle: "Pret a commencer?",
+      enrollmentText: "Invitez l'etudiant a s'inscrire, demander l'acces, poser une question ou choisir le bon programme.",
+      educationCategories: ["Bases", "Avance", "Workshop", "Coaching", "Certification", "Abonnement"],
+      educationDurations: ["4 semaines", "6 modules", "Cohorte live", "A son rythme"],
       modules: "Modules",
       modulesSlug: "/modules",
       viewProducts: "Voir les produits",
@@ -6651,6 +6916,37 @@ function instantLocaleCopy(language) {
       premiumSpecsTitle: "O importante, fácil de comparar",
       premiumSpecsText: "Destaque materiais, garantia, entrega, suporte, personalização ou qualidade do serviço sem poluir a página.",
       premiumSpecItems: ["Apresentação refinada", "História editável", "Suporte premium", "Pronto para publicar"],
+      academy: "Academia",
+      programs: "Programas",
+      curriculum: "Curriculo",
+      enroll: "Inscricao",
+      programsSlug: "/programas",
+      curriculumSlug: "/curriculo",
+      enrollSlug: "/inscricao",
+      courseAcademy: "Academia de cursos",
+      enrollNow: "Inscrever-se",
+      viewCurriculum: "Ver curriculo",
+      coursePrice: "Preco de inscricao",
+      featuredProgram: "Programa destaque",
+      beginnerFriendly: "Para iniciantes",
+      certificateReady: "Com certificado",
+      educationHeadline: (name) => `${name}: aprenda com um caminho claro`,
+      educationSubheadline: (description) => description || "Um site premium de academia com cursos, modulos, resultados, confianca do instrutor e inscricao.",
+      learningPathTitle: "Um caminho claro da primeira aula ao resultado",
+      learningPathText: "Mostre roteiro, modulos e marcos para que o aluno entenda como vai evoluir.",
+      learningPathItems: ["Base", "Pratica guiada", "Aplicacao", "Suporte", "Resultado", "Proximo passo"],
+      programsTitle: "Programas criados para resultados reais",
+      programsText: "Apresente cursos, coaching, bootcamps ou assinaturas com duracao, nivel e CTA.",
+      outcomesTitle: "O que o aluno deve conseguir fazer",
+      outcomesText: "Transforme a promessa do curso em resultados, habilidades e sinais claros de progresso.",
+      learningOutcomeItems: ["Progressao clara", "Atividades praticas", "Curriculo editavel", "Prova para alunos", "Notas de suporte", "Oferta pronta"],
+      instructorTitle: "Guia especialista, estruturada para agir",
+      instructorText: "Use este espaco para credibilidade, metodo, suporte, certificacoes ou comunidade.",
+      instructorTrustItems: ["Aulas com especialista", "Modulos estruturados", "Caminho de suporte", "Resultados dos alunos", "Acesso flexivel", "Oferta editavel"],
+      enrollmentTitle: "Pronto para comecar?",
+      enrollmentText: "Convide o aluno a se inscrever, pedir acesso, consultar turmas ou escolher o programa certo.",
+      educationCategories: ["Base", "Avancado", "Workshop", "Coaching", "Certificacao", "Assinatura"],
+      educationDurations: ["4 semanas", "6 modulos", "Turma ao vivo", "No seu ritmo"],
       modules: "Modulos",
       modulesSlug: "/modulos",
       viewProducts: "Ver produtos",
@@ -7874,6 +8170,12 @@ function renderSection(section, schema) {
     LuxuryProvenance: renderLuxuryProvenance,
     LuxuryPrivateService: renderLuxuryPrivateService,
     LuxuryContact: renderLuxuryContact,
+    AcademyHero: renderAcademyHero,
+    AcademyLearningPath: renderAcademyLearningPath,
+    AcademyPrograms: renderAcademyPrograms,
+    AcademyOutcomes: renderAcademyOutcomes,
+    AcademyInstructor: renderAcademyInstructor,
+    AcademyEnroll: renderAcademyEnroll,
     ListingHero: renderListingHero,
     ListingFilters: renderListingFilters,
     ListingFeatured: renderListingFeatured,
@@ -8453,6 +8755,91 @@ function luxuryVisualPlaceholder(schema) {
   return `<div class="luxury-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).privateService)}</small></div>`;
 }
 
+function renderAcademyHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = marketplaceItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url) || items[0];
+  const image = editable.image_url || heroItem?.image_url || "";
+  return `<section class="academy-pro-hero ${sectionClass(section)}">
+    <div class="academy-pro-copy">
+      <span class="rendered-kicker">${escapeHtml(editable.badge || labels.courseAcademy)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.enrollNow)}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewCurriculum)}</a>
+      </div>
+      <div class="academy-proof-strip">${(labels.learningOutcomeItems || []).slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    </div>
+    <div class="academy-pro-stage">
+      <div class="academy-dashboard-card">
+        <div class="academy-dashboard-top"><span></span><span></span><span></span></div>
+        <div class="academy-dashboard-main">
+          <div class="academy-video-frame">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(heroItem?.name || schema.business?.name || "")}">` : academyVisualPlaceholder(schema)}</div>
+          <div class="academy-progress-panel">
+            <small>${escapeHtml(labels.curriculum)}</small>
+            ${(labels.learningPathItems || []).slice(0, 4).map((item, index) => `<div><b>0${index + 1}</b><span>${escapeHtml(item)}</span></div>`).join("")}
+          </div>
+        </div>
+      </div>
+      <div class="academy-floating-card"><small>${escapeHtml(labels.featuredProgram)}</small><strong>${escapeHtml(heroItem?.name || labels.programsTitle)}</strong><span>${escapeHtml(heroItem?.shipping_label || labels.educationDurations?.[0] || "")}</span></div>
+    </div>
+  </section>`;
+}
+
+function renderAcademyLearningPath(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.learningPathItems;
+  return `<section class="academy-path-section ${sectionClass(section)}">
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.curriculum)}</span><h2>${escapeHtml(editable.title || labels.learningPathTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="academy-path-grid">${items.slice(0, 6).map((item, index) => `<article><span>0${index + 1}</span><strong>${escapeHtml(item)}</strong><p>${escapeHtml(index % 2 ? labels.beginnerFriendly : labels.certificateReady)}</p></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderAcademyPrograms(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="academy-programs-section ${sectionClass(section)}">
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).programs)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    ${renderEducationCourseCatalog(marketplaceItems(schema), schema)}
+  </section>`;
+}
+
+function renderAcademyOutcomes(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.learningOutcomeItems;
+  return `<section class="academy-outcomes-section ${sectionClass(section)}">
+    <div><span class="rendered-kicker">${escapeHtml(labels.outcomes)}</span><h2>${escapeHtml(editable.title || labels.outcomesTitle)}</h2><p>${escapeHtml(editable.text || labels.outcomesText)}</p></div>
+    <div class="academy-outcome-grid">${items.slice(0, 6).map((item) => `<article><span></span><strong>${escapeHtml(item)}</strong><p>${escapeHtml(labels.courseAcademy)}</p></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderAcademyInstructor(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.instructorTrustItems;
+  return `<section class="academy-instructor-section ${sectionClass(section)}">
+    <div class="academy-instructor-card">${editable.image_url ? `<img src="${escapeAttribute(editable.image_url)}" alt="${escapeAttribute(editable.title || "")}">` : academyVisualPlaceholder(schema)}</div>
+    <div><span class="rendered-kicker">${escapeHtml(labels.instructor)}</span><h2>${escapeHtml(editable.title || labels.instructorTitle)}</h2><p>${escapeHtml(editable.text || labels.instructorText)}</p><div class="academy-mini-proof">${items.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div>
+  </section>`;
+}
+
+function renderAcademyEnroll(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="academy-enroll-section ${sectionClass(section)}">
+    <div><span class="rendered-kicker">${escapeHtml(labels.enroll)}</span><h2>${escapeHtml(editable.title || labels.enrollmentTitle)}</h2><p>${escapeHtml(editable.text || labels.enrollmentText)}</p></div>
+    <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.enrollNow)}</a>
+  </section>`;
+}
+
+function academyVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "AC").slice(0, 2).toUpperCase();
+  return `<div class="academy-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).courseAcademy)}</small></div>`;
+}
+
 function renderListingHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -8911,6 +9298,7 @@ function renderCatalogByType(catalogType, items, schema) {
     lookbook_collection_catalog: renderFashionLookbookCatalog,
     luxury_gallery_catalog: renderLuxuryGalleryCatalog,
     luxury_high_ticket_catalog: renderLuxuryHighTicketCatalog,
+    education_course_catalog: renderEducationCourseCatalog,
     digital_offer_catalog: renderDigitalOfferCatalog,
     restaurant_menu_catalog: renderRestaurantMenuCatalog,
     menu_catalog: renderRestaurantMenuCatalog,
@@ -9041,6 +9429,28 @@ function renderLuxuryHighTicketCatalog(items, schema) {
   </article>`).join("")}</div>`;
 }
 
+function renderEducationCourseCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-education-course">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    <div class="education-card-top">
+      <small>${escapeHtml(item.deal_label || (index % 2 ? labels.beginnerFriendly : labels.certificateReady))}</small>
+      <span>${escapeHtml(item.shipping_label || labels.educationDurations?.[index % (labels.educationDurations?.length || 1)] || "")}</span>
+    </div>
+    ${item.image_url ? `<div class="education-card-image"><img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}"></div>` : ""}
+    <div class="education-card-body">
+      <small>${escapeHtml(item.category || labels.courseAcademy)}</small>
+      <h3>${escapeHtml(item.name)}</h3>
+      <p>${escapeHtml(item.description)}</p>
+      <ul>
+        <li>${escapeHtml(labels.structuredModules)}</li>
+        <li>${escapeHtml(labels.practicalOutcome)}</li>
+        <li>${escapeHtml(labels.flexibleAccess)}</li>
+      </ul>
+      <div><strong>${escapeHtml(productPriceLabel(item) || labels.coursePrice)}</strong><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.enrollNow)}</a></div>
+    </div>
+  </article>`).join("")}</div>`;
+}
+
 function renderDigitalOfferCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-digital-pro">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
@@ -9166,7 +9576,7 @@ function catalogLocaleLabels(schema) {
       search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", signature: "Signature", detail: "Detail", curated: "Curated", flagship: "Flagship", premiumSpecs: ["Presentation", "Quality", "Support", "Delivery"],
       sellerVerified: "Seller verified", used: "Used", newItem: "New", localPickup: "Local pickup", makeOffer: "Make offer", contactSeller: "Contact seller",
       listings: "Listings", areas: "Areas", searchListings: "Search listings", viewListings: "View listings", inquireNow: "Inquire now", featuredListing: "Featured listing", newListing: "New listing", availableNow: "Available now", listingPrice: "Price on request", listingSearchPlaceholder: "Search by location, type, price or keyword", listingFiltersTitle: "Search with the right filters", listingFiltersText: "Help customers narrow options by category, location, price and availability.", featuredListingsTitle: "Featured listings", featuredListingsText: "Active listings with price, location, specs and inquiry CTAs.", listingAreaTitle: "Explore the best areas", listingAreaText: "Area cards and location notes make discovery feel local.", listingTrustTitle: "Confidence before the inquiry", listingTrustText: "Verified details, contact paths and updated availability.", listingContactTitle: "Ask about a listing", listingContactText: "Send listing, budget, location and preferred contact method.", listingCategories: ["Homes", "Rentals", "Commercial", "Land", "Cars", "Featured"], listingLocations: ["Downtown", "North area", "West district", "Near schools", "Waterfront", "Business zone"], listingTrustItems: ["Verified details", "Updated availability", "Clear pricing", "Local support", "Fast response", "Easy comparison"],
-      newDrop: "New drop", limitedSelection: "Limited selection", collection: "Collection", provenance: "Provenance", privateInquiry: "Private inquiry", requestPrivateViewing: "Request private viewing", viewCollection: "View collection", priceOnRequest: "Price on request", limitedPiece: "Limited piece", authenticated: "Authenticated", privateService: "Private service", signaturePiece: "Signature piece", luxuryProvenanceTitle: "Provenance, authenticity and service", luxuryProvenanceText: "Confidence signals for high-ticket buyers before they inquire.", luxuryPrivateTitle: "Private appointment", luxuryPrivateText: "Request availability, preferred piece and contact method.", luxuryContactTitle: "Request a private consultation", luxuryContactText: "Send the piece, occasion, preferred timing and contact method.", luxuryProofItems: ["Verified provenance", "Limited availability", "Private advisor", "Insured handling", "Secure inquiry", "Concierge follow-up"], instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
+      newDrop: "New drop", limitedSelection: "Limited selection", collection: "Collection", provenance: "Provenance", privateInquiry: "Private inquiry", requestPrivateViewing: "Request private viewing", viewCollection: "View collection", priceOnRequest: "Price on request", limitedPiece: "Limited piece", authenticated: "Authenticated", privateService: "Private service", signaturePiece: "Signature piece", luxuryProvenanceTitle: "Provenance, authenticity and service", luxuryProvenanceText: "Confidence signals for high-ticket buyers before they inquire.", luxuryPrivateTitle: "Private appointment", luxuryPrivateText: "Request availability, preferred piece and contact method.", luxuryContactTitle: "Request a private consultation", luxuryContactText: "Send the piece, occasion, preferred timing and contact method.", luxuryProofItems: ["Verified provenance", "Limited availability", "Private advisor", "Insured handling", "Secure inquiry", "Concierge follow-up"], courseAcademy: "Course academy", programs: "Programs", curriculum: "Curriculum", enroll: "Enroll", enrollNow: "Enroll now", viewCurriculum: "View curriculum", coursePrice: "Enrollment price", featuredProgram: "Featured program", beginnerFriendly: "Beginner friendly", certificateReady: "Certificate-ready", outcomes: "Outcomes", instructor: "Instructor", outcomesTitle: "What students should be able to do", outcomesText: "Clear results, skills and confidence markers.", instructorTitle: "Expert guidance", instructorText: "Instructor credibility, method and support.", learningPathItems: ["Foundation", "Practice", "Apply", "Feedback", "Complete", "Next step"], learningOutcomeItems: ["Clear skill progression", "Practical assignments", "Editable curriculum", "Student-ready proof", "Support notes", "Launch-ready offer"], instructorTrustItems: ["Expert-led lessons", "Structured modules", "Support path", "Student outcomes"], educationDurations: ["4 weeks", "6 modules", "Live cohort", "Self-paced"], structuredModules: "Structured modules", practicalOutcome: "Practical outcome", flexibleAccess: "Flexible access", instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
       digitalProducts: "Digital products", viewProducts: "View products", modules: "Modules", digitalAccessShort: "Downloads, modules and support notes.", digitalBundleTitle: "Digital offers built to sell", digitalModulesTitle: "What customers get inside", digitalProofTitle: "Trust before checkout", digitalAccessTitle: "Get access and start immediately", digitalAccessText: "Customers know exactly what they receive, how access works and where to get support.", digitalModuleItems: ["Core training", "Downloadable resources", "Templates and tools", "Bonus material", "Access instructions", "Support notes"], digitalProofItems: ["Instant access", "Editable modules", "Clear license", "Support-ready", "Bundle value", "Simple checkout"],
       collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
       company: "Company", services: "Services", process: "Process", proof: "Proof", capability: "Capability", requestConsultation: "Request consultation", viewServices: "View services", corporateProcessItems: ["Discovery", "Strategy", "Delivery", "Support"], corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
@@ -9182,7 +9592,7 @@ function catalogLocaleLabels(schema) {
       search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", signature: "Principal", detail: "Detalle", curated: "Curado", flagship: "Producto estrella", premiumSpecs: ["Presentacion", "Calidad", "Soporte", "Entrega"],
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Nuevo", localPickup: "Retiro local", makeOffer: "Hacer oferta", contactSeller: "Contactar vendedor",
       listings: "Listings", areas: "Zonas", searchListings: "Buscar listings", viewListings: "Ver listings", inquireNow: "Consultar ahora", featuredListing: "Listing destacado", newListing: "Nuevo listing", availableNow: "Disponible", listingPrice: "Precio a consultar", listingSearchPlaceholder: "Buscar por ubicacion, tipo, precio o palabra clave", listingFiltersTitle: "Busca con filtros claros", listingFiltersText: "Ayuda al cliente a comparar por categoria, zona, precio y disponibilidad.", featuredListingsTitle: "Listings destacados", featuredListingsText: "Listings activos con precio, ubicacion, detalles y CTA de consulta.", listingAreaTitle: "Explora las mejores zonas", listingAreaText: "Tarjetas de zona y notas de ubicacion hacen la busqueda mas clara.", listingTrustTitle: "Confianza antes de consultar", listingTrustText: "Detalles verificados, contacto claro y disponibilidad actualizada.", listingContactTitle: "Pregunta por un listing", listingContactText: "Envia el listing, presupuesto, ubicacion y metodo de contacto.", listingCategories: ["Casas", "Alquileres", "Comercial", "Terrenos", "Autos", "Destacados"], listingLocations: ["Centro", "Zona norte", "Distrito oeste", "Cerca de escuelas", "Frente al agua", "Zona comercial"], listingTrustItems: ["Detalles verificados", "Disponibilidad actualizada", "Precios claros", "Soporte local", "Respuesta rapida", "Comparacion simple"],
-      newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", collection: "Coleccion", provenance: "Provenance", privateInquiry: "Consulta privada", requestPrivateViewing: "Solicitar cita privada", viewCollection: "Ver coleccion", priceOnRequest: "Precio bajo consulta", limitedPiece: "Pieza limitada", authenticated: "Autenticada", privateService: "Servicio privado", signaturePiece: "Pieza protagonista", luxuryProvenanceTitle: "Provenance, autenticidad y servicio", luxuryProvenanceText: "Senales de confianza para compradores de alto valor antes de consultar.", luxuryPrivateTitle: "Cita privada", luxuryPrivateText: "Solicita disponibilidad, pieza preferida y metodo de contacto.", luxuryContactTitle: "Solicita una consulta privada", luxuryContactText: "Envia la pieza, ocasion, horario preferido y metodo de contacto.", luxuryProofItems: ["Provenance verificada", "Disponibilidad limitada", "Asesor privado", "Manejo asegurado", "Consulta segura", "Seguimiento concierge"], instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
+      newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", collection: "Coleccion", provenance: "Provenance", privateInquiry: "Consulta privada", requestPrivateViewing: "Solicitar cita privada", viewCollection: "Ver coleccion", priceOnRequest: "Precio bajo consulta", limitedPiece: "Pieza limitada", authenticated: "Autenticada", privateService: "Servicio privado", signaturePiece: "Pieza protagonista", luxuryProvenanceTitle: "Provenance, autenticidad y servicio", luxuryProvenanceText: "Senales de confianza para compradores de alto valor antes de consultar.", luxuryPrivateTitle: "Cita privada", luxuryPrivateText: "Solicita disponibilidad, pieza preferida y metodo de contacto.", luxuryContactTitle: "Solicita una consulta privada", luxuryContactText: "Envia la pieza, ocasion, horario preferido y metodo de contacto.", luxuryProofItems: ["Provenance verificada", "Disponibilidad limitada", "Asesor privado", "Manejo asegurado", "Consulta segura", "Seguimiento concierge"], courseAcademy: "Academia de cursos", programs: "Programas", curriculum: "Curriculum", enroll: "Inscripcion", enrollNow: "Inscribirme", viewCurriculum: "Ver curriculum", coursePrice: "Precio de inscripcion", featuredProgram: "Programa destacado", beginnerFriendly: "Ideal para empezar", certificateReady: "Con certificado", outcomes: "Resultados", instructor: "Instructor", outcomesTitle: "Lo que el estudiante debe lograr", outcomesText: "Resultados, habilidades y senales claras de avance.", instructorTitle: "Guia experta", instructorText: "Credibilidad del instructor, metodo y soporte.", learningPathItems: ["Base", "Practica", "Aplicacion", "Soporte", "Resultado", "Siguiente paso"], learningOutcomeItems: ["Progreso claro", "Practicas accionables", "Curriculum editable", "Prueba para estudiantes", "Notas de soporte", "Oferta lista"], instructorTrustItems: ["Clases expertas", "Modulos estructurados", "Ruta de soporte", "Resultados"], educationDurations: ["4 semanas", "6 modulos", "Cohorte en vivo", "A tu ritmo"], structuredModules: "Modulos estructurados", practicalOutcome: "Resultado practico", flexibleAccess: "Acceso flexible", instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
       digitalProducts: "Productos digitales", viewProducts: "Ver productos", modules: "Modulos", digitalAccessShort: "Descargas, modulos y notas de soporte.", digitalBundleTitle: "Ofertas digitales listas para vender", digitalModulesTitle: "Que recibe el cliente", digitalProofTitle: "Confianza antes del checkout", digitalAccessTitle: "Obten acceso y empieza de inmediato", digitalAccessText: "El cliente sabe exactamente que recibe, como entra y donde pide soporte.", digitalModuleItems: ["Entrenamiento principal", "Recursos descargables", "Plantillas y herramientas", "Material bonus", "Instrucciones de acceso", "Notas de soporte"], digitalProofItems: ["Acceso inmediato", "Modulos editables", "Licencia clara", "Soporte listo", "Valor del bundle", "Checkout simple"],
       collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
       company: "Empresa", services: "Servicios", process: "Proceso", proof: "Prueba", capability: "Capacidad", requestConsultation: "Solicitar consulta", viewServices: "Ver servicios", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Soporte"], corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
@@ -9198,7 +9608,7 @@ function catalogLocaleLabels(schema) {
       search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace", signature: "Signature", detail: "Detail", curated: "Soigne", flagship: "Produit phare", premiumSpecs: ["Presentation", "Qualite", "Support", "Livraison"],
       sellerVerified: "Vendeur vérifié", used: "Occasion", newItem: "Neuf", localPickup: "Retrait local", makeOffer: "Faire une offre", contactSeller: "Contacter le vendeur",
       listings: "Annonces", areas: "Zones", searchListings: "Rechercher", viewListings: "Voir les annonces", inquireNow: "Demander", featuredListing: "Annonce en avant", newListing: "Nouvelle annonce", availableNow: "Disponible", listingPrice: "Prix sur demande", listingSearchPlaceholder: "Rechercher par lieu, type, prix ou mot-cle", listingFiltersTitle: "Rechercher avec les bons filtres", listingFiltersText: "Aidez les clients a comparer par categorie, zone, prix et disponibilite.", featuredListingsTitle: "Annonces en avant", featuredListingsText: "Annonces actives avec prix, localisation, details et CTA.", listingAreaTitle: "Explorer les meilleures zones", listingAreaText: "Cartes de zones et notes locales pour clarifier la recherche.", listingTrustTitle: "Confiance avant la demande", listingTrustText: "Details verifies, contact clair et disponibilite mise a jour.", listingContactTitle: "Demander une annonce", listingContactText: "Envoyez l'annonce, le budget, la localisation et le contact prefere.", listingCategories: ["Maisons", "Locations", "Commercial", "Terrain", "Voitures", "En avant"], listingLocations: ["Centre", "Zone nord", "Quartier ouest", "Pres des ecoles", "Bord de l'eau", "Zone business"], listingTrustItems: ["Details verifies", "Disponibilite a jour", "Prix clairs", "Support local", "Reponse rapide", "Comparaison simple"],
-      newDrop: "Nouvelle collection", limitedSelection: "Sélection limitée", instantAccess: "Accès immédiat", downloadable: "Contenu téléchargeable", bonus: "Ressources bonus", lifetime: "Accès à vie", getAccess: "Obtenir l'accès",
+      newDrop: "Nouvelle collection", limitedSelection: "Sélection limitée", courseAcademy: "Academie de cours", programs: "Programmes", curriculum: "Programme", enroll: "Inscription", enrollNow: "S'inscrire", viewCurriculum: "Voir le programme", coursePrice: "Prix d'inscription", featuredProgram: "Programme phare", beginnerFriendly: "Pour debuter", certificateReady: "Certificat pret", outcomes: "Resultats", instructor: "Instructeur", outcomesTitle: "Ce que l'etudiant doit savoir faire", outcomesText: "Resultats, competences et progression claire.", instructorTitle: "Guidage expert", instructorText: "Credibilite, methode et support.", learningPathItems: ["Bases", "Pratique", "Application", "Support", "Resultat", "Suite"], learningOutcomeItems: ["Progression claire", "Exercices pratiques", "Programme modifiable", "Preuve etudiante", "Notes support", "Offre prete"], instructorTrustItems: ["Cours experts", "Modules structures", "Support", "Resultats"], educationDurations: ["4 semaines", "6 modules", "Cohorte live", "A son rythme"], structuredModules: "Modules structures", practicalOutcome: "Resultat pratique", flexibleAccess: "Acces flexible", instantAccess: "Accès immédiat", downloadable: "Contenu téléchargeable", bonus: "Ressources bonus", lifetime: "Accès à vie", getAccess: "Obtenir l'accès",
       digitalProducts: "Produits digitaux", viewProducts: "Voir les produits", modules: "Modules", digitalAccessShort: "Telechargements, modules et notes de support.", digitalBundleTitle: "Offres digitales pretes a vendre", digitalModulesTitle: "Ce que le client recoit", digitalProofTitle: "Confiance avant paiement", digitalAccessTitle: "Obtenir l'acces et commencer tout de suite", digitalAccessText: "Le client sait exactement ce qu'il recoit, comment acceder et ou demander du support.", digitalModuleItems: ["Formation principale", "Ressources telechargeables", "Modeles et outils", "Bonus", "Instructions d'acces", "Notes de support"], digitalProofItems: ["Acces immediat", "Modules modifiables", "Licence claire", "Support pret", "Valeur du bundle", "Paiement simple"],
       collections: "Collections", lookbook: "Lookbook", fit: "Guide des tailles", drop: "Drop", fitGuide: "Guide des tailles", fitGuideItems: ["Notes de taille", "Suggestions de style", "Conseils d'entretien", "Livraison et retours"], fashionCollections: ["Nouveautes", "Essentiels", "Pieces fortes", "Accessoires", "Drop limite", "Meilleures ventes"],
       company: "Entreprise", services: "Services", process: "Processus", proof: "Preuve", capability: "Capacite", requestConsultation: "Demander une consultation", viewServices: "Voir les services", corporateProcessItems: ["Diagnostic", "Strategie", "Livraison", "Support"], corporateProofItems: ["Livraison fiable", "Communication claire", "Standards professionnels"],
@@ -9214,7 +9624,7 @@ function catalogLocaleLabels(schema) {
       search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace", signature: "Principal", detail: "Detalhe", curated: "Curado", flagship: "Produto principal", premiumSpecs: ["Apresentacao", "Qualidade", "Suporte", "Entrega"],
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Novo", localPickup: "Retirada local", makeOffer: "Fazer oferta", contactSeller: "Contatar vendedor",
       listings: "Anuncios", areas: "Areas", searchListings: "Buscar anuncios", viewListings: "Ver anuncios", inquireNow: "Consultar agora", featuredListing: "Anuncio destaque", newListing: "Novo anuncio", availableNow: "Disponivel", listingPrice: "Preco sob consulta", listingSearchPlaceholder: "Buscar por localizacao, tipo, preco ou palavra-chave", listingFiltersTitle: "Busca com filtros claros", listingFiltersText: "Ajude o cliente a comparar por categoria, area, preco e disponibilidade.", featuredListingsTitle: "Anuncios em destaque", featuredListingsText: "Anuncios ativos com preco, localizacao, detalhes e CTA de consulta.", listingAreaTitle: "Explore as melhores areas", listingAreaText: "Cards de area e notas locais deixam a busca clara.", listingTrustTitle: "Confianca antes da consulta", listingTrustText: "Detalhes verificados, contato claro e disponibilidade atualizada.", listingContactTitle: "Perguntar sobre um anuncio", listingContactText: "Envie o anuncio, orcamento, localizacao e metodo de contato.", listingCategories: ["Casas", "Alugueis", "Comercial", "Terrenos", "Carros", "Destaques"], listingLocations: ["Centro", "Zona norte", "Distrito oeste", "Perto de escolas", "Frente a agua", "Zona comercial"], listingTrustItems: ["Detalhes verificados", "Disponibilidade atualizada", "Precos claros", "Suporte local", "Resposta rapida", "Comparacao simples"],
-      newDrop: "Novo drop", limitedSelection: "Seleção limitada", instantAccess: "Acesso imediato", downloadable: "Conteúdo baixável", bonus: "Recursos bônus", lifetime: "Acesso vitalício", getAccess: "Obter acesso",
+      newDrop: "Novo drop", limitedSelection: "Seleção limitada", courseAcademy: "Academia de cursos", programs: "Programas", curriculum: "Curriculo", enroll: "Inscricao", enrollNow: "Inscrever-se", viewCurriculum: "Ver curriculo", coursePrice: "Preco de inscricao", featuredProgram: "Programa destaque", beginnerFriendly: "Para iniciantes", certificateReady: "Com certificado", outcomes: "Resultados", instructor: "Instrutor", outcomesTitle: "O que o aluno deve conseguir fazer", outcomesText: "Resultados, habilidades e progresso claro.", instructorTitle: "Guia especialista", instructorText: "Credibilidade, metodo e suporte.", learningPathItems: ["Base", "Pratica", "Aplicacao", "Suporte", "Resultado", "Proximo passo"], learningOutcomeItems: ["Progressao clara", "Atividades praticas", "Curriculo editavel", "Prova para alunos", "Notas de suporte", "Oferta pronta"], instructorTrustItems: ["Aulas especialistas", "Modulos estruturados", "Suporte", "Resultados"], educationDurations: ["4 semanas", "6 modulos", "Turma ao vivo", "No seu ritmo"], structuredModules: "Modulos estruturados", practicalOutcome: "Resultado pratico", flexibleAccess: "Acesso flexivel", instantAccess: "Acesso imediato", downloadable: "Conteúdo baixável", bonus: "Recursos bônus", lifetime: "Acesso vitalício", getAccess: "Obter acesso",
       digitalProducts: "Produtos digitais", viewProducts: "Ver produtos", modules: "Modulos", digitalAccessShort: "Downloads, modulos e notas de suporte.", digitalBundleTitle: "Ofertas digitais prontas para vender", digitalModulesTitle: "O que o cliente recebe", digitalProofTitle: "Confianca antes do checkout", digitalAccessTitle: "Obtenha acesso e comece imediatamente", digitalAccessText: "O cliente sabe exatamente o que recebe, como acessar e onde pedir suporte.", digitalModuleItems: ["Treinamento principal", "Recursos para download", "Templates e ferramentas", "Material bonus", "Instrucoes de acesso", "Notas de suporte"], digitalProofItems: ["Acesso imediato", "Modulos editaveis", "Licenca clara", "Suporte pronto", "Valor do bundle", "Checkout simples"],
       collections: "Colecoes", lookbook: "Lookbook", fit: "Guia de tamanhos", drop: "Drop", fitGuide: "Guia de tamanhos", fitGuideItems: ["Notas de tamanho e caimento", "Sugestoes de estilo", "Cuidados com a peca", "Envios e devolucoes"], fashionCollections: ["Novidades", "Essenciais", "Pecas destaque", "Acessorios", "Drop limitado", "Mais vendidos"],
       company: "Empresa", services: "Servicos", process: "Processo", proof: "Prova", capability: "Capacidade", requestConsultation: "Solicitar consulta", viewServices: "Ver servicos", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Suporte"], corporateProofItems: ["Entrega confiavel", "Comunicacao clara", "Padroes profissionais"],
