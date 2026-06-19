@@ -4251,6 +4251,301 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   font-size: clamp(48px, 7vw, 84px);
 }
 
+.template-restaurant-food-business,
+.layout-restaurant-food-business {
+  --restaurant-warm: color-mix(in srgb, var(--site-accent) 12%, var(--site-bg));
+}
+
+.restaurant-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+  gap: clamp(28px, 5vw, 76px);
+  align-items: center;
+  min-height: 76vh;
+  padding: clamp(42px, 7vw, 104px) clamp(18px, 5vw, 72px);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 86% 18%, color-mix(in srgb, var(--site-accent) 24%, transparent), transparent 34%),
+    linear-gradient(135deg, color-mix(in srgb, var(--site-bg) 82%, white), color-mix(in srgb, var(--site-accent) 9%, var(--site-bg)));
+}
+
+.restaurant-hero-copy {
+  max-width: 760px;
+}
+
+.restaurant-hero h1 {
+  margin: 0 0 18px;
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(48px, 7vw, 96px);
+  line-height: 0.94;
+  letter-spacing: 0;
+  color: var(--site-text);
+}
+
+.restaurant-hero p {
+  max-width: 660px;
+  margin: 0 0 14px;
+  color: var(--site-muted);
+  font-size: clamp(18px, 1.8vw, 23px);
+  line-height: 1.55;
+}
+
+.restaurant-stage {
+  position: relative;
+  min-height: clamp(420px, 52vw, 640px);
+}
+
+.restaurant-stage-visual {
+  height: 100%;
+  min-height: inherit;
+  overflow: hidden;
+  border-radius: calc(var(--brand-radius) + 18px);
+  background:
+    radial-gradient(circle at 38% 28%, color-mix(in srgb, var(--site-accent) 34%, transparent), transparent 30%),
+    linear-gradient(145deg, color-mix(in srgb, var(--site-primary) 90%, black), color-mix(in srgb, var(--site-accent) 48%, var(--site-primary)));
+  box-shadow: 0 30px 90px color-mix(in srgb, var(--site-text) 16%, transparent);
+}
+
+.restaurant-stage-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.restaurant-mini-card {
+  position: absolute;
+  right: clamp(14px, 3vw, 34px);
+  bottom: clamp(14px, 3vw, 34px);
+  width: min(270px, 72%);
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--site-surface) 58%, transparent);
+  border-radius: var(--brand-radius);
+  background: color-mix(in srgb, var(--site-surface) 90%, transparent);
+  box-shadow: 0 18px 56px color-mix(in srgb, var(--site-text) 18%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.restaurant-mini-card strong {
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: 22px;
+}
+
+.restaurant-mini-card span,
+.restaurant-specials-list span {
+  color: var(--site-muted);
+  line-height: 1.45;
+}
+
+.restaurant-proof-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.restaurant-proof-strip span,
+.restaurant-info-section > div:last-child span,
+.restaurant-specials-list article {
+  border: 1px solid color-mix(in srgb, var(--site-text) 10%, transparent);
+  border-radius: var(--brand-radius);
+  background: color-mix(in srgb, var(--site-surface) 90%, transparent);
+}
+
+.restaurant-proof-strip span {
+  padding: 10px 12px;
+  font-weight: 900;
+}
+
+.restaurant-categories-section,
+.restaurant-menu-section,
+.restaurant-specials-section,
+.restaurant-info-section,
+.restaurant-order-section {
+  padding: clamp(54px, 7vw, 96px) clamp(18px, 5vw, 72px);
+}
+
+.restaurant-category-rail {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(150px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+}
+
+.restaurant-category-rail article {
+  min-height: 150px;
+  display: grid;
+  align-content: space-between;
+  padding: 18px;
+  border-radius: var(--brand-radius);
+  background: color-mix(in srgb, var(--site-primary) 94%, black);
+  color: var(--site-surface);
+}
+
+.restaurant-category-rail small,
+.restaurant-menu-card-top small,
+.restaurant-specials-list small {
+  color: var(--site-accent);
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.restaurant-category-rail strong {
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.catalog-restaurant-menu {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.catalog-restaurant-menu article {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--site-text) 10%, transparent);
+  border-radius: var(--brand-radius);
+  background: var(--site-surface);
+  box-shadow: 0 18px 58px color-mix(in srgb, var(--site-text) 7%, transparent);
+}
+
+.catalog-restaurant-menu article.featured {
+  background: color-mix(in srgb, var(--site-primary) 94%, black);
+  color: var(--site-surface);
+}
+
+.catalog-restaurant-menu article.featured p {
+  color: color-mix(in srgb, var(--site-surface) 72%, transparent);
+}
+
+.restaurant-menu-card-top,
+.restaurant-menu-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.catalog-restaurant-menu .image-shell,
+.catalog-restaurant-menu .card-placeholder {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: calc(var(--brand-radius) - 2px);
+  overflow: hidden;
+}
+
+.catalog-restaurant-menu h3 {
+  margin: 0;
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(23px, 2.4vw, 34px);
+  line-height: 1.02;
+}
+
+.catalog-restaurant-menu p {
+  margin: 0;
+  color: var(--site-muted);
+  line-height: 1.5;
+}
+
+.restaurant-specials-section,
+.restaurant-info-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(340px, 1.18fr);
+  gap: clamp(24px, 5vw, 72px);
+  align-items: start;
+}
+
+.restaurant-specials-section h2,
+.restaurant-info-section h2,
+.restaurant-order-card h2 {
+  margin: 0 0 14px;
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(36px, 5vw, 74px);
+  line-height: 0.98;
+}
+
+.restaurant-specials-section p,
+.restaurant-info-section p,
+.restaurant-order-card p {
+  margin: 0;
+  color: var(--site-muted);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.restaurant-specials-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.restaurant-specials-list article {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+}
+
+.restaurant-specials-list strong {
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: 24px;
+}
+
+.restaurant-info-section > div:last-child {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.restaurant-info-section > div:last-child span {
+  padding: 16px;
+  font-weight: 900;
+}
+
+.restaurant-order-section {
+  background:
+    radial-gradient(circle at 15% 30%, color-mix(in srgb, var(--site-accent) 18%, transparent), transparent 28%),
+    color-mix(in srgb, var(--site-primary) 92%, black);
+}
+
+.restaurant-order-card {
+  max-width: 980px;
+  margin-inline: auto;
+  padding: clamp(28px, 5vw, 58px);
+  border-radius: calc(var(--brand-radius) + 10px);
+  background: var(--site-surface);
+  box-shadow: 0 28px 90px color-mix(in srgb, black 24%, transparent);
+}
+
+.restaurant-visual-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--site-accent) 38%, transparent), transparent 30%),
+    linear-gradient(145deg, color-mix(in srgb, var(--site-primary) 84%, black), color-mix(in srgb, var(--site-accent) 48%, var(--site-primary)));
+}
+
+.restaurant-visual-placeholder span {
+  width: clamp(160px, 22vw, 260px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--site-surface) 92%, transparent);
+  color: var(--site-primary);
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(54px, 8vw, 96px);
+  font-weight: 950;
+}
+
 .catalog-luxury {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -4935,6 +5230,9 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   .booking-availability-section,
   .booking-team-section,
   .booking-contact-section,
+  .restaurant-hero,
+  .restaurant-specials-section,
+  .restaurant-info-section,
   .funnel-hero,
   .funnel-offer-section,
   .funnel-proof-section,
@@ -5010,6 +5308,51 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 
   .booking-contact-section {
     margin: 28px 16px 56px;
+    padding: 28px 18px;
+  }
+
+  .restaurant-hero {
+    min-height: auto;
+    padding: 44px 16px 28px;
+  }
+
+  .restaurant-hero h1 {
+    font-size: clamp(42px, 14vw, 70px);
+  }
+
+  .restaurant-stage {
+    min-height: 320px;
+  }
+
+  .restaurant-mini-card {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: auto;
+    margin-top: 12px;
+  }
+
+  .restaurant-proof-strip,
+  .catalog-restaurant-menu,
+  .restaurant-specials-list,
+  .restaurant-info-section > div:last-child {
+    grid-template-columns: 1fr;
+  }
+
+  .restaurant-categories-section,
+  .restaurant-menu-section,
+  .restaurant-specials-section,
+  .restaurant-info-section,
+  .restaurant-order-section {
+    padding: 44px 16px;
+  }
+
+  .restaurant-category-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow-x: visible;
+  }
+
+  .restaurant-order-card {
     padding: 28px 18px;
   }
 

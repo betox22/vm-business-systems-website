@@ -655,6 +655,20 @@ const TEMPLATE_PREVIEW_CHOICES = [
     },
   },
   {
+    templateId: "restaurant-food-business",
+    name: "Restaurant Menu",
+    names: { en: "Restaurant Menu", es: "Menu restaurante", fr: "Menu restaurant", pt: "Menu restaurante" },
+    catalogType: "restaurant_menu_catalog",
+    image: "/templates-preview/screenshots/services.png",
+    description: "Restaurant-first site with menu categories, signature dishes, specials, hours, and order CTA.",
+    descriptions: {
+      en: "Restaurant-first site with menu categories, signature dishes, specials, hours, and order CTA.",
+      es: "Pagina para restaurante con categorias de menu, platos destacados, especiales, horarios y boton de pedido.",
+      fr: "Site restaurant avec categories de menu, plats signature, offres, horaires et CTA de commande.",
+      pt: "Site para restaurante com categorias de menu, pratos destaque, especiais, horarios e CTA de pedido.",
+    },
+  },
+  {
     templateId: "home-services-premium",
     name: "Local Services Premium",
     names: { en: "Local Services Premium", es: "Servicios locales premium", fr: "Services locaux premium", pt: "Servicos locais premium" },
@@ -1773,9 +1787,12 @@ function rankedFallbackChoices(selectedTemplateId = "") {
   const selected = templatePreviewMeta(selectedTemplateId);
   const selectedCatalog = selected?.catalogType || "";
   const commerceHeavy = /marketplace|dense|listing/.test(selectedCatalog);
+  const restaurantHeavy = /restaurant|menu|food/.test(selectedCatalog);
   const serviceHeavy = /service|booking/.test(selectedCatalog);
   const ordered = commerceHeavy
     ? ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro", "apple-premium-product"]
+    : restaurantHeavy
+      ? ["restaurant-food-business", "lead-funnel-pro", "home-services-premium", "booking-appointment-pro"]
     : serviceHeavy
       ? ["home-services-premium", "lead-funnel-pro", "local-services-pro-plus", "booking-appointment-pro"]
       : ["lead-funnel-pro", "corporate-company-pro", "apple-premium-product", "fashion-drop-pro"];
@@ -4405,14 +4422,16 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isLeadFunnelTemplate = catalogType === "lead_funnel_offer_catalog" || /lead-funnel-pro/i.test(template.id || "");
   const isHomeServicesTemplate = catalogType === "home_services_quote_catalog" || /home-services-premium/i.test(template.id || "");
   const isBookingTemplate = catalogType === "booking_menu_catalog" || /booking-appointment-pro/i.test(template.id || "");
-  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate;
-  const primaryCta = isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
-  const secondaryCta = isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
-  if (isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate) {
+  const isRestaurantTemplate = catalogType === "restaurant_menu_catalog" || catalogType === "menu_catalog" || /restaurant-food-business/i.test(template.id || "");
+  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate;
+  const primaryCta = isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
+  const secondaryCta = isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
+  if (isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate) {
     catalogItems.forEach((item) => {
       item.price_type = "quote_only";
-      item.price_label = isBookingTemplate ? copy.fromQuote : copy.askPrice;
-      item.button_label = isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : copy.claimOffer;
+      item.category = isRestaurantTemplate ? restaurantCategoryForIndex(item.sort_order || 0, copy) : item.category;
+      item.price_label = isRestaurantTemplate ? copy.menuPrice : isBookingTemplate ? copy.fromQuote : copy.askPrice;
+      item.button_label = isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : copy.claimOffer;
       item.track_inventory = false;
     });
   }
@@ -4428,6 +4447,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
             ? buildHomeServicesPremiumInstantPages(copy, name, description, payload)
             : isBookingTemplate
               ? buildBookingAppointmentInstantPages(copy, name, description, payload)
+              : isRestaurantTemplate
+                ? buildRestaurantMenuInstantPages(copy, name, description, payload)
             : isLeadFunnelTemplate
               ? buildLeadFunnelInstantPages(copy, name, description, payload)
           : buildDefaultInstantPages(copy, name, description, payload);
@@ -4494,6 +4515,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       { label: copy.benefits, page_key: "catalog" },
       { label: copy.proof, page_key: "about" },
       { label: copy.contact, page_key: "contact" },
+    ] : isRestaurantTemplate ? [
+      { label: copy.menu, page_key: "home" },
+      { label: copy.specials, page_key: "catalog" },
+      { label: copy.hoursLocation, page_key: "about" },
+      { label: copy.orderNow, page_key: "contact" },
     ] : isHomeServicesTemplate ? [
       { label: copy.services, page_key: "home" },
       { label: copy.serviceAreas, page_key: "catalog" },
@@ -4536,7 +4562,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         description: template.visualDifference || copy.fastBase,
         theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: primaryCta, secondary_label: secondaryCta, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
         layout_mode_id: template.id || "instant_storefront",
-        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : isBookingTemplate ? "appointment_booking" : "split_showcase",
+        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : isBookingTemplate ? "appointment_booking" : isRestaurantTemplate ? "restaurant_menu_story" : "split_showcase",
         product_layout: catalogType,
       },
     ],
@@ -4889,6 +4915,101 @@ function buildCorporateCompanyInstantPages(copy, name, description, payload = {}
       slug: copy.contactSlug,
       order: 4,
       sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: copy.letsTalk, text: copy.corporateContactText }, settings: { layout: "simple" } }],
+    },
+  ];
+}
+
+function buildRestaurantMenuInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.menu,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "restaurant_hero",
+          type: "RestaurantHero",
+          order: 1,
+          editable: {
+            headline: copy.restaurantHeadline(name),
+            subtitle: copy.restaurantSubheadline(description),
+            primary_button: copy.orderNow,
+            secondary_button: copy.viewMenu,
+            image_url: heroImage,
+            images: [],
+          },
+          settings: { layout: "restaurant_menu_story", spacing: "cinematic", container_width: "wide" },
+        },
+        {
+          id: "restaurant_categories",
+          type: "RestaurantCategoryRail",
+          order: 2,
+          editable: { title: copy.restaurantCategoriesTitle, text: copy.restaurantCategoriesText, items: copy.restaurantCategories },
+          settings: { layout: "menu_category_rail", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "restaurant_signature",
+          type: "RestaurantSignatureMenu",
+          order: 3,
+          editable: { title: copy.restaurantSignatureTitle, text: copy.restaurantSignatureText, images: [] },
+          settings: { layout: "signature_menu", columns: 3, spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "restaurant_specials",
+          type: "RestaurantSpecials",
+          order: 4,
+          editable: { title: copy.restaurantSpecialsTitle, text: copy.restaurantSpecialsText, items: copy.restaurantSpecialItems },
+          settings: { layout: "specials_strip", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "restaurant_info",
+          type: "RestaurantInfo",
+          order: 5,
+          editable: { title: copy.restaurantInfoTitle, text: copy.restaurantInfoText, items: copy.restaurantInfoItems },
+          settings: { layout: "hours_location", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "restaurant_order",
+          type: "RestaurantOrderPanel",
+          order: 6,
+          editable: { title: copy.restaurantOrderTitle, text: copy.restaurantOrderText },
+          settings: { layout: "order_panel", spacing: "balanced", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.specials,
+      slug: copy.menuSlug,
+      order: 2,
+      sections: [
+        {
+          id: "restaurant_menu_catalog",
+          type: "ProductGrid",
+          order: 1,
+          editable: { title: copy.restaurantSignatureTitle, text: copy.restaurantSignatureText, images: [] },
+          settings: { layout: "restaurant_menu", columns: 3, spacing: "spacious", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.hoursLocation,
+      slug: copy.hoursSlug,
+      order: 3,
+      sections: [
+        { id: "restaurant_info_page", type: "RestaurantInfo", order: 1, editable: { title: copy.restaurantInfoTitle, text: copy.restaurantInfoText, items: copy.restaurantInfoItems }, settings: { layout: "hours_location", container_width: "wide" } },
+        { id: "restaurant_specials_page", type: "RestaurantSpecials", order: 2, editable: { title: copy.restaurantSpecialsTitle, text: copy.restaurantSpecialsText, items: copy.restaurantSpecialItems }, settings: { layout: "specials_strip", container_width: "wide" } },
+      ],
+    },
+    {
+      page_key: "contact",
+      title: copy.orderNow,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [{ id: "restaurant_order_page", type: "RestaurantOrderPanel", order: 1, editable: { title: copy.restaurantOrderTitle, text: copy.restaurantOrderText }, settings: { layout: "order_panel", container_width: "wide" } }],
     },
   ];
 }
@@ -5285,6 +5406,11 @@ function marketplaceCategoryForIndex(index, copy) {
   return categories[index % categories.length];
 }
 
+function restaurantCategoryForIndex(index, copy) {
+  const categories = copy.restaurantCategories || ["Starters", "Mains", "Drinks", "Desserts"];
+  return categories[index % categories.length];
+}
+
 function marketplaceCategories(schema) {
   const items = marketplaceItems(schema);
   const fromItems = [...new Set(items.map((item) => item.category).filter(Boolean))];
@@ -5309,6 +5435,29 @@ function instantLocaleCopy(language) {
       shopNow: "Shop now",
       viewCatalog: "View catalog",
       requestOrder: "Request order",
+      menu: "Menu",
+      specials: "Specials",
+      hoursLocation: "Hours & location",
+      orderNow: "Order now",
+      viewMenu: "View menu",
+      menuSlug: "/menu",
+      hoursSlug: "/hours-location",
+      menuPrice: "Menu price",
+      restaurantHeadline: (name) => `${name} menu, made easy to order`,
+      restaurantSubheadline: (description) => description || "A warm restaurant site with signature dishes, menu categories, specials, hours, location and a simple ordering path.",
+      restaurantCategoriesTitle: "Explore the menu by category",
+      restaurantCategoriesText: "Give customers fast paths to starters, mains, drinks, desserts, specials and favorites.",
+      restaurantCategories: ["Starters", "Mains", "Drinks", "Desserts", "Specials", "Chef picks"],
+      restaurantSignatureTitle: "Signature dishes ready to order",
+      restaurantSignatureText: "Highlight the dishes, combos and customer favorites that should sell first.",
+      restaurantSpecialsTitle: "Specials and combos",
+      restaurantSpecialsText: "Use this section for lunch specials, family combos, happy hour, delivery offers or chef recommendations.",
+      restaurantSpecialItems: ["Chef recommendation", "Family combo", "Pickup special", "Delivery-ready"],
+      restaurantInfoTitle: "Hours, location and service options",
+      restaurantInfoText: "Show open hours, pickup, delivery, dine-in, service area and how customers should place an order.",
+      restaurantInfoItems: ["Open hours", "Pickup", "Delivery", "Dine-in", "Catering", "WhatsApp orders"],
+      restaurantOrderTitle: "Place an order or ask a question",
+      restaurantOrderText: "Send the preferred dishes, pickup or delivery option, and contact method. The business can confirm by phone, WhatsApp or email.",
       home: "Home",
       overview: "Overview",
       products: "Products",
@@ -5439,6 +5588,29 @@ function instantLocaleCopy(language) {
       shopNow: "Comprar ahora",
       viewCatalog: "Ver catalogo",
       requestOrder: "Solicitar pedido",
+      menu: "Menu",
+      specials: "Especiales",
+      hoursLocation: "Horarios y ubicacion",
+      orderNow: "Ordenar ahora",
+      viewMenu: "Ver menu",
+      menuSlug: "/menu",
+      hoursSlug: "/horarios-ubicacion",
+      menuPrice: "Precio del menu",
+      restaurantHeadline: (name) => `${name}: menu claro y facil de ordenar`,
+      restaurantSubheadline: (description) => description || "Pagina calida para restaurante con platos destacados, categorias de menu, especiales, horarios, ubicacion y pedido simple.",
+      restaurantCategoriesTitle: "Explora el menu por categoria",
+      restaurantCategoriesText: "Crea rutas rapidas hacia entradas, platos fuertes, bebidas, postres, especiales y favoritos.",
+      restaurantCategories: ["Entradas", "Platos fuertes", "Bebidas", "Postres", "Especiales", "Favoritos"],
+      restaurantSignatureTitle: "Platos destacados listos para pedir",
+      restaurantSignatureText: "Muestra los platos, combos y favoritos que deberian venderse primero.",
+      restaurantSpecialsTitle: "Especiales y combos",
+      restaurantSpecialsText: "Usa esta seccion para almuerzos, combos familiares, happy hour, delivery o recomendaciones del chef.",
+      restaurantSpecialItems: ["Recomendacion del chef", "Combo familiar", "Especial pickup", "Listo para delivery"],
+      restaurantInfoTitle: "Horarios, ubicacion y opciones de servicio",
+      restaurantInfoText: "Muestra horarios, pickup, delivery, consumo en local, zona de servicio y como debe ordenar el cliente.",
+      restaurantInfoItems: ["Horarios", "Pickup", "Delivery", "En el local", "Catering", "Pedidos por WhatsApp"],
+      restaurantOrderTitle: "Haz un pedido o pregunta",
+      restaurantOrderText: "Envia platos preferidos, opcion de pickup o delivery y metodo de contacto. El negocio puede confirmar por telefono, WhatsApp o email.",
       home: "Inicio",
       overview: "Vista general",
       products: "Productos",
@@ -5569,6 +5741,29 @@ function instantLocaleCopy(language) {
       shopNow: "Acheter maintenant",
       viewCatalog: "Voir le catalogue",
       requestOrder: "Demander une commande",
+      menu: "Menu",
+      specials: "Specialites",
+      hoursLocation: "Horaires et adresse",
+      orderNow: "Commander",
+      viewMenu: "Voir le menu",
+      menuSlug: "/menu",
+      hoursSlug: "/horaires-adresse",
+      menuPrice: "Prix du menu",
+      restaurantHeadline: (name) => `${name}: un menu simple a commander`,
+      restaurantSubheadline: (description) => description || "Un site restaurant chaleureux avec plats signature, categories de menu, offres, horaires, adresse et commande simple.",
+      restaurantCategoriesTitle: "Explorer le menu par categorie",
+      restaurantCategoriesText: "Creez des chemins rapides vers entrees, plats, boissons, desserts, offres et favoris.",
+      restaurantCategories: ["Entrees", "Plats", "Boissons", "Desserts", "Specialites", "Choix du chef"],
+      restaurantSignatureTitle: "Plats signature prets a commander",
+      restaurantSignatureText: "Mettez en avant les plats, menus et favoris qui doivent vendre en premier.",
+      restaurantSpecialsTitle: "Offres et menus",
+      restaurantSpecialsText: "Utilisez cette section pour formules dejeuner, menus famille, happy hour, livraison ou recommandations du chef.",
+      restaurantSpecialItems: ["Recommandation du chef", "Menu famille", "Offre pickup", "Pret pour livraison"],
+      restaurantInfoTitle: "Horaires, adresse et options de service",
+      restaurantInfoText: "Affichez horaires, retrait, livraison, sur place, zone desservie et comment commander.",
+      restaurantInfoItems: ["Horaires", "Retrait", "Livraison", "Sur place", "Traiteur", "Commandes WhatsApp"],
+      restaurantOrderTitle: "Commander ou poser une question",
+      restaurantOrderText: "Envoyez les plats souhaites, retrait ou livraison et le contact prefere. L'entreprise peut confirmer par telephone, WhatsApp ou email.",
       home: "Accueil",
       overview: "Aperçu",
       products: "Produits",
@@ -5699,6 +5894,29 @@ function instantLocaleCopy(language) {
       shopNow: "Comprar agora",
       viewCatalog: "Ver catálogo",
       requestOrder: "Solicitar pedido",
+      menu: "Menu",
+      specials: "Especiais",
+      hoursLocation: "Horarios e localizacao",
+      orderNow: "Pedir agora",
+      viewMenu: "Ver menu",
+      menuSlug: "/menu",
+      hoursSlug: "/horarios-localizacao",
+      menuPrice: "Preco do menu",
+      restaurantHeadline: (name) => `${name}: menu claro e facil de pedir`,
+      restaurantSubheadline: (description) => description || "Site acolhedor para restaurante com pratos destaque, categorias, especiais, horarios, localizacao e pedido simples.",
+      restaurantCategoriesTitle: "Explore o menu por categoria",
+      restaurantCategoriesText: "Crie caminhos rapidos para entradas, pratos principais, bebidas, sobremesas, especiais e favoritos.",
+      restaurantCategories: ["Entradas", "Pratos principais", "Bebidas", "Sobremesas", "Especiais", "Chef indica"],
+      restaurantSignatureTitle: "Pratos destaque prontos para pedir",
+      restaurantSignatureText: "Mostre pratos, combos e favoritos que devem vender primeiro.",
+      restaurantSpecialsTitle: "Especiais e combos",
+      restaurantSpecialsText: "Use esta secao para almocos, combos familiares, happy hour, delivery ou indicacoes do chef.",
+      restaurantSpecialItems: ["Indicacao do chef", "Combo familia", "Especial pickup", "Pronto para delivery"],
+      restaurantInfoTitle: "Horarios, localizacao e servico",
+      restaurantInfoText: "Mostre horarios, retirada, delivery, consumo no local, area atendida e como o cliente deve pedir.",
+      restaurantInfoItems: ["Horarios", "Pickup", "Delivery", "No local", "Catering", "Pedidos por WhatsApp"],
+      restaurantOrderTitle: "Fazer pedido ou perguntar",
+      restaurantOrderText: "Envie os pratos desejados, opcao de pickup ou delivery e metodo de contato. O negocio pode confirmar por telefone, WhatsApp ou email.",
       home: "Início",
       overview: "Visão geral",
       products: "Produtos",
@@ -6987,6 +7205,12 @@ function renderSection(section, schema) {
     CorporateServices: renderCorporateServices,
     CorporateProcess: renderCorporateProcess,
     CorporateProof: renderCorporateProof,
+    RestaurantHero: renderRestaurantHero,
+    RestaurantCategoryRail: renderRestaurantCategoryRail,
+    RestaurantSignatureMenu: renderRestaurantSignatureMenu,
+    RestaurantSpecials: renderRestaurantSpecials,
+    RestaurantInfo: renderRestaurantInfo,
+    RestaurantOrderPanel: renderRestaurantOrderPanel,
     HomeServiceHero: renderHomeServiceHero,
     HomeServiceCategories: renderHomeServiceCategories,
     HomeServiceAreas: renderHomeServiceAreas,
@@ -7249,6 +7473,124 @@ function renderCorporateProof(section, schema) {
 function corporateVisualPlaceholder(schema) {
   const initials = String(schema.business?.name || "CO").slice(0, 2).toUpperCase();
   return `<div class="corporate-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
+}
+
+function renderRestaurantHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = marketplaceItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url);
+  const image = editable.image_url || heroItem?.image_url || "";
+  return `<section class="restaurant-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="restaurant-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || labels.menu)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.orderNow)}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewMenu)}</a>
+      </div>
+      <div class="restaurant-proof-strip">${labels.restaurantProofItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    </div>
+    <div class="restaurant-stage">
+      <div class="restaurant-stage-visual">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(schema.business?.name || "")}">` : restaurantVisualPlaceholder(schema)}</div>
+      <article class="restaurant-mini-card">
+        <small>${escapeHtml(labels.pickupDelivery)}</small>
+        <strong>${escapeHtml(labels.orderNow)}</strong>
+        <span>${escapeHtml(labels.quickOrderNote)}</span>
+      </article>
+    </div>
+  </section>`;
+}
+
+function renderRestaurantCategoryRail(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const categories = restaurantMenuCategories(schema, editable.items);
+  return `<section class="restaurant-categories-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading">
+      <span class="rendered-kicker">${escapeHtml(labels.menu)}</span>
+      <h2>${escapeHtml(editable.title || labels.restaurantCategoriesTitle)}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    <div class="restaurant-category-rail">${categories.map((category, index) => `<article>
+      <small>0${index + 1}</small>
+      <strong>${escapeHtml(category)}</strong>
+      <span>${escapeHtml(index % 2 ? labels.chefPick : labels.popularDish)}</span>
+    </article>`).join("")}</div>
+  </section>`;
+}
+
+function renderRestaurantSignatureMenu(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="restaurant-menu-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading">
+      <span class="rendered-kicker">${escapeHtml(labels.signatureMenu)}</span>
+      <h2>${escapeHtml(editable.title || labels.restaurantSignatureTitle)}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    ${renderRestaurantMenuCatalog(marketplaceItems(schema), schema)}
+  </section>`;
+}
+
+function renderRestaurantSpecials(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.restaurantSpecialItems;
+  return `<section class="restaurant-specials-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div>
+      <span class="rendered-kicker">${escapeHtml(labels.specials)}</span>
+      <h2>${escapeHtml(editable.title || labels.restaurantSpecialsTitle)}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    <div class="restaurant-specials-list">${items.map((item, index) => `<article>
+      <small>${escapeHtml(index === 0 ? labels.chefPick : labels.specials)}</small>
+      <strong>${escapeHtml(item)}</strong>
+      <span>${escapeHtml(labels.editableMenuNote)}</span>
+    </article>`).join("")}</div>
+  </section>`;
+}
+
+function renderRestaurantInfo(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.restaurantInfoItems;
+  return `<section class="restaurant-info-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div>
+      <span class="rendered-kicker">${escapeHtml(labels.hoursLocation)}</span>
+      <h2>${escapeHtml(editable.title || labels.restaurantInfoTitle)}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    <div>${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderRestaurantOrderPanel(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="restaurant-order-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="restaurant-order-card">
+      <span class="rendered-kicker">${escapeHtml(labels.orderNow)}</span>
+      <h2>${escapeHtml(editable.title || labels.restaurantOrderTitle)}</h2>
+      <p>${escapeHtml(editable.text || labels.restaurantOrderText)}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(labels.orderNow)}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(labels.contact)}</a>
+      </div>
+    </div>
+  </section>`;
+}
+
+function restaurantMenuCategories(schema, fallback = []) {
+  const fromItems = [...new Set(marketplaceItems(schema).map((item) => item.category).filter(Boolean))];
+  const labels = catalogLocaleLabels(schema);
+  return [...new Set([...fromItems, ...(Array.isArray(fallback) ? fallback : []), ...(labels.restaurantCategories || [])])].slice(0, 6);
+}
+
+function restaurantVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "RM").slice(0, 2).toUpperCase();
+  return `<div class="restaurant-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
 }
 
 function renderHomeServiceHero(section, schema) {
@@ -7599,6 +7941,7 @@ function renderCatalogByType(catalogType, items, schema) {
     lookbook_collection_catalog: renderFashionLookbookCatalog,
     luxury_gallery_catalog: renderLuxuryGalleryCatalog,
     digital_offer_catalog: renderDigitalOfferCatalog,
+    restaurant_menu_catalog: renderRestaurantMenuCatalog,
     menu_catalog: renderRestaurantMenuCatalog,
     online_ordering_catalog: renderRestaurantMenuCatalog,
     booking_menu_catalog: renderBookingMenuCatalog,
@@ -7722,11 +8065,20 @@ function renderDigitalOfferCatalog(items) {
   </article>`).join("")}</div>`;
 }
 
-function renderRestaurantMenuCatalog(items) {
-  const labels = catalogLocaleLabels(arguments[1]);
-  return `<div class="catalog-menu">${items.map((item, index) => `<article>
-    <div><small>${index % 2 ? labels.main : labels.popular}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p></div>
-    <strong>${escapeHtml(item.price_label || labels.marketPrice)}</strong>
+function renderRestaurantMenuCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-restaurant-menu">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    <div class="restaurant-menu-card-top">
+      <small>${escapeHtml(item.category || (index % 2 ? labels.chefPick : labels.popularDish))}</small>
+      <span>${escapeHtml(index === 0 ? labels.signatureMenu : labels.menu)}</span>
+    </div>
+    ${renderResilientImage(item.image_url, item.name, item.name)}
+    <h3>${escapeHtml(item.name)}</h3>
+    <p>${escapeHtml(item.description)}</p>
+    <div class="restaurant-menu-card-bottom">
+      <strong>${escapeHtml(productPriceLabel(item) || labels.menuPrice)}</strong>
+      <a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.orderNow)}</a>
+    </div>
   </article>`).join("")}</div>`;
 }
 
@@ -7824,6 +8176,7 @@ function catalogLocaleLabels(schema) {
       company: "Company", services: "Services", process: "Process", proof: "Proof", capability: "Capability", requestConsultation: "Request consultation", viewServices: "View services", corporateProcessItems: ["Discovery", "Strategy", "Delivery", "Support"], corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
       localExperts: "Local experts", callNow: "Call now", fastResponse: "Fast local response", serviceAreas: "Service areas", workProof: "Work proof", workSlug: "work", service: "Service", quoteOnly: "Quote only", serviceAreaReady: "Area-ready", quoteExpectation: "Tell us what you need and get a clear next step.", homeServiceHeadline: (name) => `${name} handles the job right the first time`, homeServiceSubheadline: (description) => description || "Trusted local service with clear communication, reliable scheduling, and quote-first service.", homeServiceCategoriesTitle: "Services built for real local needs", homeServiceCategoriesText: "Organize every service into clear quote-ready options that customers can understand quickly.", homeServiceAreasTitle: "Serving the areas that matter", homeServiceAreasText: "Show cities, neighborhoods, response expectations and emergency availability in one clean section.", serviceAreaItems: ["Nearby neighborhoods", "Same-day options", "Emergency calls", "Recurring service", "Licensed work", "Clear estimates"], beforeAfterTitle: "Real work, visible results", beforeAfterText: "Use job photos, before-and-after proof and finished projects to build trust before the first call.", homeServiceTrustTitle: "Why customers call first", homeServiceTrustText: "Trust signals, reviews and response expectations make the next step feel safe.", homeServiceTrustItems: ["Licensed and insured", "Clear estimates", "On-time arrivals", "Before/after proof", "Local references", "Clean follow-up"], homeServiceQuoteTitle: "Request a clear quote", homeServiceQuoteText: "Share the job details, preferred time and location. The business can respond by phone, WhatsApp or email.",
       appointments: "Appointments", availability: "Availability", team: "Team", teamSlug: "team", bookNow: "Book now", nextAvailable: "Next available", slot: "Slot", confirmation: "Confirmation-ready", staffPick: "Staff pick", bookingContactFallback: "Confirm the preferred service, time and contact method.", bookingHeadline: (name) => `Book ${name} without the back-and-forth`, bookingSubheadline: (description) => description || "A clear appointment page with services, availability, staff notes and a simple booking path.", bookingServicesTitle: "Choose the right appointment", bookingServicesText: "Show duration, service details and what the client should expect before booking.", availabilityTitle: "Availability that feels simple", availabilityText: "Make open windows, preparation notes and confirmation expectations clear.", availabilityItems: ["Today / tomorrow windows", "Morning appointments", "Afternoon appointments", "Weekend options", "Consultation calls", "Follow-up visits"], bookingTeamTitle: "A smoother visit from start to finish", bookingTeamText: "Explain the staff, process and preparation so clients know what happens next.", bookingTeamItems: ["Pick a service", "Choose a preferred time", "Receive confirmation", "Arrive prepared"], bookingProofItems: ["Clear durations", "Easy confirmation", "Service details upfront"], bookingContactTitle: "Reserve the next available time", bookingContactText: "Send the preferred service, day and contact method. The business can confirm by phone, WhatsApp or email.",
+      menu: "Menu", specials: "Specials", hoursLocation: "Hours & location", orderNow: "Order now", viewMenu: "View menu", contact: "Contact", signatureMenu: "Signature menu", popularDish: "Popular dish", chefPick: "Chef pick", pickupDelivery: "Pickup / delivery", quickOrderNote: "Confirm by phone, WhatsApp or email.", editableMenuNote: "Editable from the catalog manager.", restaurantProofItems: ["Editable menu", "Featured combos", "Fast contact"], restaurantCategories: ["Starters", "Mains", "Drinks", "Desserts", "Specials", "Chef picks"], restaurantCategoriesTitle: "Explore the menu by category", restaurantSignatureTitle: "Signature dishes ready to order", restaurantSpecialsTitle: "Specials and combos", restaurantInfoTitle: "Hours, location and service options", restaurantOrderTitle: "Place an order or ask a question", restaurantOrderText: "Send the preferred dishes, pickup or delivery option, and contact method.",
       offer: "Offer", benefits: "Benefits", faq: "FAQ", claimOffer: "Start now", seeProof: "See proof", nextStep: "Next step", quickRequest: "Send a quick request and get a clear response.", bestValue: "Best value", outcomeFocused: "Outcome-focused", fastNextStep: "Fast next step", editableOffer: "Editable offer", faqAnswer: "This can be adjusted to match the business, offer, and customer objections.", funnelBenefitsItems: ["Clear promise", "Simple next step", "Qualified leads", "Editable sections", "Proof-first structure", "Fast launch"], funnelProofItems: ["Specific outcome", "Simple process", "Fast response", "Clear pricing conversation"], funnelFaqItems: [{ question: "What happens next?", answer: "The business follows up with the next step." }, { question: "Can it be customized?", answer: "Yes, the offer and page content are editable." }, { question: "Is this a store?", answer: "No, it is focused on leads." }],
       main: "Main", popular: "Popular", marketPrice: "Market price", fromQuote: "From quote", book: "Book", freeQuote: "Free quote", practiceArea: "Practice area", scheduleConsultation: "Schedule consultation",
       before: "Before", after: "After", viewProject: "View project", plan: "Plan", custom: "Custom", start: "Start", ticketOffer: "Ticket / offer", reserve: "Reserve", package: "Package", applyNow: "Apply now", view: "View", request: "Ask now",
@@ -7837,6 +8190,7 @@ function catalogLocaleLabels(schema) {
       company: "Empresa", services: "Servicios", process: "Proceso", proof: "Prueba", capability: "Capacidad", requestConsultation: "Solicitar consulta", viewServices: "Ver servicios", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Soporte"], corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
       localExperts: "Expertos locales", callNow: "Llamar ahora", fastResponse: "Respuesta local rapida", serviceAreas: "Areas de servicio", workProof: "Trabajos", workSlug: "trabajos", service: "Servicio", quoteOnly: "Cotizacion", serviceAreaReady: "Disponible por zona", quoteExpectation: "Cuenta que necesitas y recibe el siguiente paso claro.", homeServiceHeadline: (name) => `${name} resuelve el trabajo bien desde el primer intento`, homeServiceSubheadline: (description) => description || "Servicio local confiable con comunicacion clara, agenda ordenada y cotizacion primero.", homeServiceCategoriesTitle: "Servicios para necesidades locales reales", homeServiceCategoriesText: "Organiza cada servicio en opciones claras para cotizar sin confundir al cliente.", homeServiceAreasTitle: "Atendemos las zonas importantes", homeServiceAreasText: "Muestra ciudades, vecindarios, tiempos de respuesta y disponibilidad de emergencia en una seccion clara.", serviceAreaItems: ["Zonas cercanas", "Opciones el mismo dia", "Emergencias", "Servicio recurrente", "Trabajo autorizado", "Estimados claros"], beforeAfterTitle: "Trabajo real, resultados visibles", beforeAfterText: "Usa fotos, antes/despues y proyectos terminados para generar confianza antes de la llamada.", homeServiceTrustTitle: "Por que llaman primero", homeServiceTrustText: "Senales de confianza, resenas y expectativas de respuesta hacen que el siguiente paso sea seguro.", homeServiceTrustItems: ["Licencia y seguro", "Estimados claros", "Llegadas puntuales", "Antes/despues", "Referencias locales", "Seguimiento limpio"], homeServiceQuoteTitle: "Solicita una cotizacion clara", homeServiceQuoteText: "Comparte el trabajo, horario preferido y ubicacion. El negocio puede responder por telefono, WhatsApp o email.",
       appointments: "Citas", availability: "Disponibilidad", team: "Equipo", teamSlug: "equipo", bookNow: "Reservar ahora", nextAvailable: "Proxima disponibilidad", slot: "Horario", confirmation: "Listo para confirmar", staffPick: "Recomendado", bookingContactFallback: "Confirma el servicio, horario y metodo de contacto preferido.", bookingHeadline: (name) => `Reserva en ${name} sin vueltas`, bookingSubheadline: (description) => description || "Pagina clara de citas con servicios, disponibilidad, notas del equipo y reserva simple.", bookingServicesTitle: "Elige la cita correcta", bookingServicesText: "Muestra duracion, detalles del servicio y que debe esperar el cliente antes de reservar.", availabilityTitle: "Disponibilidad facil de entender", availabilityText: "Muestra horarios, preparacion y expectativas de confirmacion de forma clara.", availabilityItems: ["Hoy / manana", "Citas en la manana", "Citas en la tarde", "Opciones fin de semana", "Consultas por llamada", "Visitas de seguimiento"], bookingTeamTitle: "Una visita mas simple de inicio a fin", bookingTeamText: "Explica equipo, proceso y preparacion para que el cliente sepa que sigue.", bookingTeamItems: ["Elige un servicio", "Selecciona horario preferido", "Recibe confirmacion", "Llega preparado"], bookingProofItems: ["Duraciones claras", "Confirmacion simple", "Detalles antes de reservar"], bookingContactTitle: "Reserva el proximo horario disponible", bookingContactText: "Envia servicio, dia y metodo de contacto preferido. El negocio puede confirmar por telefono, WhatsApp o email.",
+      menu: "Menu", specials: "Especiales", hoursLocation: "Horarios y ubicacion", orderNow: "Ordenar ahora", viewMenu: "Ver menu", contact: "Contacto", signatureMenu: "Menu destacado", popularDish: "Popular", chefPick: "Chef recomienda", pickupDelivery: "Pickup / delivery", quickOrderNote: "Confirma por telefono, WhatsApp o email.", editableMenuNote: "Editable desde el catalog manager.", restaurantProofItems: ["Menu editable", "Combos destacados", "Contacto rapido"], restaurantCategories: ["Entradas", "Platos fuertes", "Bebidas", "Postres", "Especiales", "Favoritos"], restaurantCategoriesTitle: "Explora el menu por categoria", restaurantSignatureTitle: "Platos destacados listos para pedir", restaurantSpecialsTitle: "Especiales y combos", restaurantInfoTitle: "Horarios, ubicacion y opciones de servicio", restaurantOrderTitle: "Haz un pedido o pregunta", restaurantOrderText: "Envia platos preferidos, opcion de pickup o delivery y metodo de contacto.",
       offer: "Oferta", benefits: "Beneficios", faq: "Preguntas", claimOffer: "Empezar ahora", seeProof: "Ver prueba", nextStep: "Siguiente paso", quickRequest: "Envia una solicitud rapida y recibe una respuesta clara.", bestValue: "Mejor opcion", outcomeFocused: "Enfocado en resultado", fastNextStep: "Siguiente paso rapido", editableOffer: "Oferta editable", faqAnswer: "Esto se puede ajustar al negocio, la oferta y las dudas del cliente.", funnelBenefitsItems: ["Promesa clara", "Siguiente paso simple", "Leads calificados", "Secciones editables", "Estructura con prueba", "Lanzamiento rapido"], funnelProofItems: ["Resultado especifico", "Proceso simple", "Respuesta rapida", "Conversacion clara sobre precios"], funnelFaqItems: [{ question: "Que pasa despues?", answer: "El negocio responde con el siguiente paso." }, { question: "Se puede personalizar?", answer: "Si, la oferta y el contenido son editables." }, { question: "Esto es una tienda?", answer: "No, esta enfocado en leads." }],
       main: "Principal", popular: "Popular", marketPrice: "Precio de mercado", fromQuote: "Desde cotizacion", book: "Reservar", freeQuote: "Cotizacion gratis", practiceArea: "Area de practica", scheduleConsultation: "Agendar consulta",
       before: "Antes", after: "Despues", viewProject: "Ver proyecto", plan: "Plan", custom: "Personalizado", start: "Empezar", ticketOffer: "Ticket / oferta", reserve: "Reservar", package: "Paquete", applyNow: "Aplicar ahora", view: "Ver", request: "Consultar",
@@ -7850,6 +8204,7 @@ function catalogLocaleLabels(schema) {
       company: "Entreprise", services: "Services", process: "Processus", proof: "Preuve", capability: "Capacite", requestConsultation: "Demander une consultation", viewServices: "Voir les services", corporateProcessItems: ["Diagnostic", "Strategie", "Livraison", "Support"], corporateProofItems: ["Livraison fiable", "Communication claire", "Standards professionnels"],
       localExperts: "Experts locaux", callNow: "Appeler", fastResponse: "Reponse locale rapide", serviceAreas: "Zones desservies", workProof: "Realisations", workSlug: "realisations", service: "Service", quoteOnly: "Sur devis", serviceAreaReady: "Zone couverte", quoteExpectation: "Expliquez le besoin et recevez une prochaine etape claire.", homeServiceHeadline: (name) => `${name} realise le travail correctement des le depart`, homeServiceSubheadline: (description) => description || "Service local fiable avec communication claire, planning simple et devis avant intervention.", homeServiceCategoriesTitle: "Services pour des besoins locaux reels", homeServiceCategoriesText: "Organisez chaque service en options claires et faciles a demander.", homeServiceAreasTitle: "Nous couvrons les zones importantes", homeServiceAreasText: "Affichez les villes, quartiers, delais de reponse et options d'urgence.", serviceAreaItems: ["Quartiers proches", "Options le jour meme", "Urgences", "Service recurrent", "Travail autorise", "Devis clairs"], beforeAfterTitle: "Travail reel, resultats visibles", beforeAfterText: "Utilisez photos, avant/apres et projets termines pour creer la confiance.", homeServiceTrustTitle: "Pourquoi les clients appellent d'abord", homeServiceTrustText: "Avis, preuves et delais de reponse rendent la demande plus rassurante.", homeServiceTrustItems: ["Assure et autorise", "Devis clairs", "Arrivees ponctuelles", "Avant/apres", "References locales", "Suivi propre"], homeServiceQuoteTitle: "Demander un devis clair", homeServiceQuoteText: "Partagez le besoin, l'horaire prefere et la localisation. L'entreprise peut repondre par telephone, WhatsApp ou email.",
       appointments: "Rendez-vous", availability: "Disponibilite", team: "Equipe", teamSlug: "equipe", bookNow: "Reserver", nextAvailable: "Prochaine disponibilite", slot: "Creneau", confirmation: "Pret a confirmer", staffPick: "Recommande", bookingContactFallback: "Confirmez le service, le creneau et le mode de contact prefere.", bookingHeadline: (name) => `Reservez ${name} sans aller-retour`, bookingSubheadline: (description) => description || "Page de rendez-vous claire avec services, disponibilite, equipe et reservation simple.", bookingServicesTitle: "Choisissez le bon rendez-vous", bookingServicesText: "Affichez duree, details du service et attentes avant reservation.", availabilityTitle: "Disponibilite facile a comprendre", availabilityText: "Clarifiez les horaires, la preparation et la confirmation.", availabilityItems: ["Aujourd'hui / demain", "Matin", "Apres-midi", "Week-end", "Appels de consultation", "Suivis"], bookingTeamTitle: "Une visite plus fluide", bookingTeamText: "Expliquez l'equipe, le processus et la preparation.", bookingTeamItems: ["Choisir un service", "Choisir un creneau", "Recevoir confirmation", "Arriver prepare"], bookingProofItems: ["Durees claires", "Confirmation simple", "Details avant reservation"], bookingContactTitle: "Reserver le prochain creneau", bookingContactText: "Envoyez le service, le jour et le contact prefere. L'entreprise confirme par telephone, WhatsApp ou email.",
+      menu: "Menu", specials: "Specialites", hoursLocation: "Horaires et adresse", orderNow: "Commander", viewMenu: "Voir le menu", contact: "Contact", signatureMenu: "Menu signature", popularDish: "Populaire", chefPick: "Choix du chef", pickupDelivery: "Retrait / livraison", quickOrderNote: "Confirmation par telephone, WhatsApp ou email.", editableMenuNote: "Modifiable depuis le gestionnaire de catalogue.", restaurantProofItems: ["Menu modifiable", "Menus en avant", "Contact rapide"], restaurantCategories: ["Entrees", "Plats", "Boissons", "Desserts", "Specialites", "Choix du chef"], restaurantCategoriesTitle: "Explorer le menu par categorie", restaurantSignatureTitle: "Plats signature prets a commander", restaurantSpecialsTitle: "Offres et menus", restaurantInfoTitle: "Horaires, adresse et options de service", restaurantOrderTitle: "Commander ou poser une question", restaurantOrderText: "Envoyez les plats souhaites, retrait ou livraison et le contact prefere.",
       offer: "Offre", benefits: "Benefices", faq: "FAQ", claimOffer: "Commencer", seeProof: "Voir les preuves", nextStep: "Prochaine etape", quickRequest: "Envoyez une demande rapide et recevez une reponse claire.", bestValue: "Meilleur choix", outcomeFocused: "Oriente resultat", fastNextStep: "Etape rapide", editableOffer: "Offre modifiable", faqAnswer: "Cela peut etre ajuste au business, a l'offre et aux objections client.", funnelBenefitsItems: ["Promesse claire", "Etape simple", "Leads qualifies", "Sections modifiables", "Structure avec preuves", "Lancement rapide"], funnelProofItems: ["Resultat specifique", "Processus simple", "Reponse rapide", "Prix clarifies"], funnelFaqItems: [{ question: "Que se passe-t-il ensuite ?", answer: "L'entreprise repond avec la prochaine etape." }, { question: "Peut-on personnaliser ?", answer: "Oui, l'offre et le contenu sont modifiables." }, { question: "Est-ce une boutique ?", answer: "Non, c'est centre sur les leads." }],
       main: "Principal", popular: "Populaire", marketPrice: "Prix du marché", fromQuote: "Sur devis", book: "Réserver", freeQuote: "Devis gratuit", practiceArea: "Domaine d'expertise", scheduleConsultation: "Planifier une consultation",
       before: "Avant", after: "Après", viewProject: "Voir le projet", plan: "Offre", custom: "Sur mesure", start: "Commencer", ticketOffer: "Billet / offre", reserve: "Réserver", package: "Forfait", applyNow: "Postuler", view: "Voir", request: "Demander",
@@ -7863,6 +8218,7 @@ function catalogLocaleLabels(schema) {
       company: "Empresa", services: "Servicos", process: "Processo", proof: "Prova", capability: "Capacidade", requestConsultation: "Solicitar consulta", viewServices: "Ver servicos", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Suporte"], corporateProofItems: ["Entrega confiavel", "Comunicacao clara", "Padroes profissionais"],
       localExperts: "Especialistas locais", callNow: "Ligar agora", fastResponse: "Resposta local rapida", serviceAreas: "Areas atendidas", workProof: "Trabalhos", workSlug: "trabalhos", service: "Servico", quoteOnly: "Orcamento", serviceAreaReady: "Area atendida", quoteExpectation: "Conte o que precisa e receba o proximo passo claro.", homeServiceHeadline: (name) => `${name} resolve o servico certo desde o primeiro contato`, homeServiceSubheadline: (description) => description || "Servico local confiavel com comunicacao clara, agenda simples e orcamento primeiro.", homeServiceCategoriesTitle: "Servicos para necessidades locais reais", homeServiceCategoriesText: "Organize cada servico em opcoes claras para solicitar orcamento sem confusao.", homeServiceAreasTitle: "Atendemos as areas importantes", homeServiceAreasText: "Mostre cidades, bairros, expectativa de resposta e disponibilidade de emergencia.", serviceAreaItems: ["Bairros proximos", "Opcoes no mesmo dia", "Emergencias", "Servico recorrente", "Trabalho autorizado", "Estimativas claras"], beforeAfterTitle: "Trabalho real, resultado visivel", beforeAfterText: "Use fotos, antes/depois e projetos finalizados para gerar confianca antes da chamada.", homeServiceTrustTitle: "Por que os clientes ligam primeiro", homeServiceTrustText: "Provas, avaliacoes e expectativa de resposta deixam o proximo passo seguro.", homeServiceTrustItems: ["Licenciado e segurado", "Estimativas claras", "Pontualidade", "Antes/depois", "Referencias locais", "Acompanhamento claro"], homeServiceQuoteTitle: "Solicite um orcamento claro", homeServiceQuoteText: "Compartilhe o servico, horario preferido e localizacao. A empresa pode responder por telefone, WhatsApp ou email.",
       appointments: "Agendamentos", availability: "Disponibilidade", team: "Equipe", teamSlug: "equipe", bookNow: "Agendar agora", nextAvailable: "Proxima disponibilidade", slot: "Horario", confirmation: "Pronto para confirmar", staffPick: "Recomendado", bookingContactFallback: "Confirme o servico, horario e metodo de contato preferido.", bookingHeadline: (name) => `Agende em ${name} sem complicacao`, bookingSubheadline: (description) => description || "Pagina clara de agendamento com servicos, disponibilidade, equipe e reserva simples.", bookingServicesTitle: "Escolha o agendamento certo", bookingServicesText: "Mostre duracao, detalhes do servico e o que o cliente deve esperar.", availabilityTitle: "Disponibilidade facil de entender", availabilityText: "Mostre horarios, preparacao e expectativa de confirmacao.", availabilityItems: ["Hoje / amanha", "Horarios de manha", "Horarios a tarde", "Fim de semana", "Chamadas de consulta", "Retornos"], bookingTeamTitle: "Uma visita mais simples do inicio ao fim", bookingTeamText: "Explique equipe, processo e preparacao.", bookingTeamItems: ["Escolha um servico", "Escolha horario preferido", "Receba confirmacao", "Chegue preparado"], bookingProofItems: ["Duracoes claras", "Confirmacao simples", "Detalhes antes de agendar"], bookingContactTitle: "Reserve o proximo horario", bookingContactText: "Envie servico, dia e contato preferido. A empresa confirma por telefone, WhatsApp ou email.",
+      menu: "Menu", specials: "Especiais", hoursLocation: "Horarios e localizacao", orderNow: "Pedir agora", viewMenu: "Ver menu", contact: "Contato", signatureMenu: "Menu destaque", popularDish: "Popular", chefPick: "Chef indica", pickupDelivery: "Pickup / delivery", quickOrderNote: "Confirme por telefone, WhatsApp ou email.", editableMenuNote: "Editavel no gerenciador de catalogo.", restaurantProofItems: ["Menu editavel", "Combos destaque", "Contato rapido"], restaurantCategories: ["Entradas", "Pratos principais", "Bebidas", "Sobremesas", "Especiais", "Chef indica"], restaurantCategoriesTitle: "Explore o menu por categoria", restaurantSignatureTitle: "Pratos destaque prontos para pedir", restaurantSpecialsTitle: "Especiais e combos", restaurantInfoTitle: "Horarios, localizacao e servico", restaurantOrderTitle: "Fazer pedido ou perguntar", restaurantOrderText: "Envie os pratos desejados, pickup ou delivery e metodo de contato.",
       offer: "Oferta", benefits: "Beneficios", faq: "FAQ", claimOffer: "Comecar agora", seeProof: "Ver prova", nextStep: "Proximo passo", quickRequest: "Envie uma solicitacao rapida e receba uma resposta clara.", bestValue: "Melhor opcao", outcomeFocused: "Foco em resultado", fastNextStep: "Proximo passo rapido", editableOffer: "Oferta editavel", faqAnswer: "Isto pode ser ajustado ao negocio, oferta e duvidas do cliente.", funnelBenefitsItems: ["Promessa clara", "Proximo passo simples", "Leads qualificados", "Secoes editaveis", "Estrutura com prova", "Lancamento rapido"], funnelProofItems: ["Resultado especifico", "Processo simples", "Resposta rapida", "Conversa clara sobre preco"], funnelFaqItems: [{ question: "O que acontece depois?", answer: "O negocio responde com o proximo passo." }, { question: "Pode personalizar?", answer: "Sim, a oferta e o conteudo sao editaveis." }, { question: "Isso e uma loja?", answer: "Nao, e focado em leads." }],
       main: "Principal", popular: "Popular", marketPrice: "Preço de mercado", fromQuote: "Sob orçamento", book: "Reservar", freeQuote: "Orçamento grátis", practiceArea: "Área de atuação", scheduleConsultation: "Agendar consulta",
       before: "Antes", after: "Depois", viewProject: "Ver projeto", plan: "Plano", custom: "Personalizado", start: "Começar", ticketOffer: "Ingresso / oferta", reserve: "Reservar", package: "Pacote", applyNow: "Aplicar agora", view: "Ver", request: "Consultar",

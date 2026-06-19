@@ -362,6 +362,47 @@
       ],
       editableSlots: ["services", "durations", "prices", "staff", "availability", "booking CTA", "contact", "photos"],
     },
+    {
+      id: "restaurant-food-business",
+      name: "Restaurant Menu Pro",
+      category: "restaurant",
+      bestFor: ["restaurants", "cafes", "food trucks", "bakeries", "bars", "catering", "delivery kitchens"],
+      style: {
+        tone: "warm, appetizing, premium, easy to order",
+        layoutDensity: "medium-high",
+        imageStyle: "food photography, menu cards, signature dishes, cozy location details",
+        defaultColors: { background: "#fff7ed", surface: "#ffffff", primary: "#2a130b", secondary: "#7c5f4a", accent: "#ef4444" },
+        fonts: { heading: "Inter", body: "Inter" },
+      },
+      sections: [
+        { type: "restaurant_header", fields: { logo: "{{logo_url}}", businessName: "{{business_name}}", navItems: ["Menu", "Specials", "Hours", "Order"], ctaLabel: "{{order_cta_label}}" } },
+        { type: "restaurant_hero", fields: { headline: "{{restaurant_headline}}", subheadline: "{{restaurant_slogan}}", primaryButton: "{{order_cta_label}}", secondaryButton: "{{view_menu_cta}}" } },
+        { type: "menu_categories", fields: { title: "{{menu_category_title}}", categories: "{{menu_categories}}" } },
+        { type: "signature_dishes", fields: { title: "{{signature_menu_title}}", products: "{{featured_products}}" } },
+        { type: "combo_offer", fields: { title: "{{specials_title}}", items: "{{featured_specials}}" } },
+        { type: "ordering_info", fields: { title: "{{ordering_title}}", text: "{{ordering_text}}" } },
+        { type: "restaurant_contact", fields: { title: "{{contact_title}}", text: "{{contact_text}}" } },
+      ],
+      aiPrompt: "Use a premium restaurant menu website, not a generic marketplace. Generate appetizing restaurant copy, clear menu categories, signature dishes, specials or combos, pickup/delivery/order CTAs, hours, location, contact details and simple ordering expectations. If online ordering is requested, keep the first draft order-ready but editable; otherwise use WhatsApp/phone/contact order requests. Preserve the restaurant menu structure; only adapt colors, copy, dishes, photos, ordering style and CTAs.",
+      catalogModel: {
+        catalogType: "restaurant_menu_catalog",
+        productCardStyle: "menu cards with category, description, price or market label, popular/chef badges and order CTA",
+        collectionLayout: "food hero, category rail, signature dishes, specials, ordering info, hours and location",
+        filters: ["category", "dietary", "price", "availability", "popular"],
+        productDetailModel: "dish detail with ingredients, portion, dietary notes, add-ons and order CTA",
+        upsellModel: "combos, sides, drinks and chef recommendations",
+        customerFeeling: "restaurant menu that makes ordering simple and appetizing",
+      },
+      visualDifference: "Restaurant-first layout with warm food hero, menu categories, signature dishes, specials, pickup/delivery CTAs, hours and location.",
+      clientSelectionCard: { title: "Restaurant Menu", category: "restaurant", bestForLabel: "restaurants, cafes, food trucks, catering", difference: "Menu categories, specials, order CTA, hours and location.", previewTags: ["restaurant", "menu", "ordering"] },
+      pages: [
+        { name: "Home", purpose: "Restaurant intro and ordering conversion", usesSections: ["restaurant_header", "restaurant_hero", "menu_categories", "signature_dishes", "combo_offer", "ordering_info", "restaurant_contact"] },
+        { name: "Menu", purpose: "Menu catalog", catalogType: "restaurant_menu_catalog", layout: "category rail and menu cards", filters: ["category", "dietary", "popular"] },
+        { name: "Specials", purpose: "Combos and featured dishes", layout: "signature specials and chef recommendations" },
+        { name: "Contact", purpose: "Hours, location and ordering contact", layout: "hours, pickup/delivery notes, phone, WhatsApp, location" },
+      ],
+      editableSlots: ["menu categories", "dishes", "prices", "photos", "combos", "pickup/delivery", "hours", "location", "contact info", "order CTAs", "section order"],
+    },
   ];
 
   const INTENT_RULES = [
@@ -380,8 +421,8 @@
     {
       intent: "restaurant",
       templateId: "restaurant-food-business",
-      catalogType: "menu_catalog",
-      keywords: ["restaurante", "restaurant", "food truck", "cafeteria", "cafetería", "catering", "menu", "menú"],
+      catalogType: "restaurant_menu_catalog",
+      keywords: ["restaurante", "restaurant", "food truck", "cafeteria", "cafetería", "catering", "menu", "menú", "comida", "pizza", "tacos", "bakery", "panaderia", "panadería", "bar", "delivery", "pickup", "ordenar", "pedidos"],
     },
     {
       intent: "appointments",
@@ -584,7 +625,9 @@
     primary.forEach((item) => addRule(item.rule, item.score));
 
     const primaryCatalogType = selected[0]?.catalogType || primary[0]?.rule?.catalogType || "";
-    const fallbackIds = normalized.includes("marketplace") || /marketplace|listing|dense/.test(primaryCatalogType)
+    const fallbackIds = normalized.includes("restaurant") || normalized.includes("restaurante") || normalized.includes("comida") || /restaurant|menu|food/.test(primaryCatalogType)
+      ? ["restaurant-food-business", "lead-funnel-pro", "home-services-premium", "booking-appointment-pro"]
+      : normalized.includes("marketplace") || /marketplace|listing|dense/.test(primaryCatalogType)
       ? ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro"]
       : normalized.includes("servicio") || normalized.includes("service") || /service|booking/.test(primaryCatalogType)
         ? ["home-services-premium", "lead-funnel-pro", "local-services-pro-plus", "booking-appointment-pro"]
