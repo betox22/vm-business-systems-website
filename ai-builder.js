@@ -585,6 +585,20 @@ const TEMPLATE_PREVIEW_CHOICES = [
     },
   },
   {
+    templateId: "luxury-high-ticket-pro",
+    name: "Luxury High Ticket",
+    names: { en: "Luxury High Ticket", es: "Lujo high ticket", fr: "Luxe high ticket", pt: "Luxo high ticket" },
+    catalogType: "luxury_high_ticket_catalog",
+    image: "/templates-preview/screenshots/premium.png",
+    description: "Private showroom style for jewelry, watches, art, luxury cars, collectibles, and high-ticket pieces.",
+    descriptions: {
+      en: "Private showroom style for jewelry, watches, art, luxury cars, collectibles, and high-ticket pieces.",
+      es: "Showroom privado para joyeria, relojes, arte, carros de lujo, coleccionables y piezas de alto valor.",
+      fr: "Showroom prive pour bijoux, montres, art, voitures de luxe, objets de collection et pieces haut de gamme.",
+      pt: "Showroom privado para joias, relogios, arte, carros de luxo, colecionaveis e pecas de alto valor.",
+    },
+  },
+  {
     templateId: "mega-marketplace",
     name: "Mega Marketplace",
     names: { en: "Mega Marketplace", es: "Mega marketplace", fr: "Mega marketplace", pt: "Mega marketplace" },
@@ -4459,9 +4473,10 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isRestaurantTemplate = catalogType === "restaurant_menu_catalog" || catalogType === "menu_catalog" || /restaurant-food-business/i.test(template.id || "");
   const isDigitalTemplate = catalogType === "digital_offer_catalog" || /digital-products-store/i.test(template.id || "");
   const isRealEstateListingTemplate = catalogType === "real_estate_listing_catalog" || /real-estate-listings-pro/i.test(template.id || "");
-  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate || isRealEstateListingTemplate;
-  const primaryCta = isRealEstateListingTemplate ? copy.searchListings : isDigitalTemplate ? copy.getAccess : isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
-  const secondaryCta = isRealEstateListingTemplate ? copy.viewListings : isDigitalTemplate ? copy.viewProducts : isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
+  const isLuxuryHighTicketTemplate = catalogType === "luxury_high_ticket_catalog" || /luxury-high-ticket-pro/i.test(template.id || "");
+  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate || isRealEstateListingTemplate || isLuxuryHighTicketTemplate;
+  const primaryCta = isLuxuryHighTicketTemplate ? copy.requestPrivateViewing : isRealEstateListingTemplate ? copy.searchListings : isDigitalTemplate ? copy.getAccess : isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
+  const secondaryCta = isLuxuryHighTicketTemplate ? copy.viewCollection : isRealEstateListingTemplate ? copy.viewListings : isDigitalTemplate ? copy.viewProducts : isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
   if (isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate) {
     catalogItems.forEach((item) => {
       item.price_type = "quote_only";
@@ -4492,24 +4507,37 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       item.track_inventory = false;
     });
   }
+  if (isLuxuryHighTicketTemplate) {
+    catalogItems.forEach((item, index) => {
+      item.price_type = "quote_only";
+      item.category = luxuryCategoryForIndex(index, copy);
+      item.price_label = copy.priceOnRequest;
+      item.button_label = copy.requestPrivateViewing;
+      item.shipping_label = copy.privateService;
+      item.deal_label = index === 0 ? copy.signaturePiece : index % 2 ? copy.authenticated : copy.limitedPiece;
+      item.track_inventory = false;
+    });
+  }
   const instantPages = isMarketplaceTemplate
     ? buildMarketplaceInstantPages(copy, name, description, payload)
     : isPremiumTemplate
       ? buildPremiumProductInstantPages(copy, name, description, payload)
-      : isFashionTemplate
-        ? buildFashionDropInstantPages(copy, name, description, payload)
-        : isCorporateTemplate
-          ? buildCorporateCompanyInstantPages(copy, name, description, payload)
-          : isHomeServicesTemplate
-            ? buildHomeServicesPremiumInstantPages(copy, name, description, payload)
-            : isBookingTemplate
-              ? buildBookingAppointmentInstantPages(copy, name, description, payload)
-              : isRestaurantTemplate
-                ? buildRestaurantMenuInstantPages(copy, name, description, payload)
-                : isDigitalTemplate
-                  ? buildDigitalProductsInstantPages(copy, name, description, payload)
-                  : isRealEstateListingTemplate
-                    ? buildRealEstateListingsInstantPages(copy, name, description, payload)
+      : isLuxuryHighTicketTemplate
+        ? buildLuxuryHighTicketInstantPages(copy, name, description, payload)
+        : isFashionTemplate
+          ? buildFashionDropInstantPages(copy, name, description, payload)
+          : isCorporateTemplate
+            ? buildCorporateCompanyInstantPages(copy, name, description, payload)
+            : isHomeServicesTemplate
+              ? buildHomeServicesPremiumInstantPages(copy, name, description, payload)
+              : isBookingTemplate
+                ? buildBookingAppointmentInstantPages(copy, name, description, payload)
+                : isRestaurantTemplate
+                  ? buildRestaurantMenuInstantPages(copy, name, description, payload)
+                  : isDigitalTemplate
+                    ? buildDigitalProductsInstantPages(copy, name, description, payload)
+                    : isRealEstateListingTemplate
+                      ? buildRealEstateListingsInstantPages(copy, name, description, payload)
             : isLeadFunnelTemplate
               ? buildLeadFunnelInstantPages(copy, name, description, payload)
           : buildDefaultInstantPages(copy, name, description, payload);
@@ -4561,6 +4589,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       { label: copy.products, page_key: "catalog" },
       { label: copy.story, page_key: "about" },
       { label: copy.contact, page_key: "contact" },
+    ] : isLuxuryHighTicketTemplate ? [
+      { label: copy.collection, page_key: "home" },
+      { label: copy.products, page_key: "catalog" },
+      { label: copy.provenance, page_key: "about" },
+      { label: copy.privateInquiry, page_key: "contact" },
     ] : isFashionTemplate ? [
       { label: copy.newDrop, page_key: "home" },
       { label: copy.collections, page_key: "catalog" },
@@ -4633,7 +4666,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         description: template.visualDifference || copy.fastBase,
         theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: primaryCta, secondary_label: secondaryCta, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
         layout_mode_id: template.id || "instant_storefront",
-        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : isBookingTemplate ? "appointment_booking" : isRestaurantTemplate ? "restaurant_menu_story" : isDigitalTemplate ? "digital_product_launch" : "split_showcase",
+        hero_layout: isPremiumTemplate ? "premium_center_stage" : isLuxuryHighTicketTemplate ? "private_luxury_showroom" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : isBookingTemplate ? "appointment_booking" : isRestaurantTemplate ? "restaurant_menu_story" : isDigitalTemplate ? "digital_product_launch" : "split_showcase",
         product_layout: catalogType,
       },
     ],
@@ -4813,6 +4846,128 @@ function buildPremiumProductInstantPages(copy, name, description, payload = {}) 
       slug: copy.contactSlug,
       order: 4,
       sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: copy.letsTalk, text: copy.contactText }, settings: { layout: "simple", container_width: "wide" } }],
+    },
+  ];
+}
+
+function buildLuxuryHighTicketInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.collection,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "luxury_hero",
+          type: "LuxuryHero",
+          order: 1,
+          editable: {
+            headline: copy.luxuryHeadline(name),
+            subtitle: copy.luxurySubheadline(description),
+            primary_button: copy.requestPrivateViewing,
+            secondary_button: copy.viewCollection,
+            image_url: heroImage,
+            badge: copy.limitedSelection,
+            images: [],
+          },
+          settings: { layout: "private_showroom", spacing: "cinematic", container_width: "wide" },
+        },
+        {
+          id: "luxury_signature",
+          type: "LuxurySignature",
+          order: 2,
+          editable: {
+            title: copy.signaturePiece,
+            text: copy.luxurySignatureText,
+            image_url: heroImage,
+            items: copy.luxuryProofItems,
+            images: [],
+          },
+          settings: { layout: "signature_piece", spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "luxury_collection",
+          type: "LuxuryCollection",
+          order: 3,
+          editable: {
+            title: copy.luxuryCollectionTitle,
+            text: copy.luxuryCollectionText,
+            images: [],
+          },
+          settings: { layout: "editorial_collection", columns: 3, spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "luxury_provenance",
+          type: "LuxuryProvenance",
+          order: 4,
+          editable: {
+            title: copy.luxuryProvenanceTitle,
+            text: copy.luxuryProvenanceText,
+            items: copy.luxuryProofItems,
+            images: [],
+          },
+          settings: { layout: "provenance_grid", spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "luxury_private_service",
+          type: "LuxuryPrivateService",
+          order: 5,
+          editable: {
+            title: copy.luxuryPrivateTitle,
+            text: copy.luxuryPrivateText,
+            primary_button: copy.requestPrivateViewing,
+            images: [],
+          },
+          settings: { layout: "concierge_cta", spacing: "spacious", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.products,
+      slug: copy.shopSlug,
+      order: 2,
+      sections: [
+        {
+          id: "luxury_catalog",
+          type: "ProductGrid",
+          order: 1,
+          editable: { title: copy.luxuryCollectionTitle, text: copy.luxuryCollectionText, images: [] },
+          settings: { layout: "luxury_high_ticket", columns: 3, spacing: "spacious", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.provenance,
+      slug: copy.aboutSlug,
+      order: 3,
+      sections: [
+        {
+          id: "provenance",
+          type: "LuxuryProvenance",
+          order: 1,
+          editable: { title: copy.luxuryProvenanceTitle, text: copy.luxuryProvenanceText, items: copy.luxuryProofItems, images: [] },
+          settings: { layout: "provenance_grid", spacing: "spacious", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "contact",
+      title: copy.privateInquiry,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [
+        {
+          id: "private_inquiry",
+          type: "LuxuryContact",
+          order: 1,
+          editable: { title: copy.luxuryContactTitle, text: copy.luxuryContactText, primary_button: copy.requestPrivateViewing, images: [] },
+          settings: { layout: "private_inquiry", spacing: "spacious", container_width: "wide" },
+        },
+      ],
     },
   ];
 }
@@ -5676,6 +5831,11 @@ function listingCategoryForIndex(index, copy) {
   return categories[index % categories.length];
 }
 
+function luxuryCategoryForIndex(index, copy) {
+  const categories = copy.luxuryCategories || ["Watches", "Jewelry", "Art", "Collectibles", "Private collection", "Limited pieces"];
+  return categories[index % categories.length];
+}
+
 function listingLocationForIndex(index, copy) {
   const locations = copy.listingLocations || ["Central area", "North side", "West district", "Near downtown"];
   return locations[index % locations.length];
@@ -5854,6 +6014,29 @@ function instantLocaleCopy(language) {
       premiumSpecsTitle: "Everything important, easy to compare",
       premiumSpecsText: "Highlight materials, warranty, delivery, support, personalization, or service quality without clutter.",
       premiumSpecItems: ["Refined presentation", "Editable product story", "Premium support", "Ready to publish"],
+      collection: "Collection",
+      provenance: "Provenance",
+      privateInquiry: "Private inquiry",
+      viewCollection: "View collection",
+      requestPrivateViewing: "Request private viewing",
+      priceOnRequest: "Price on request",
+      limitedPiece: "Limited piece",
+      authenticated: "Authenticated",
+      privateService: "Private service",
+      signaturePiece: "Signature piece",
+      luxuryHeadline: (name) => `${name}: private pieces for selected clients`,
+      luxurySubheadline: (description) => description || "A private showroom for high-ticket pieces with provenance, editorial presentation, and appointment-led inquiries.",
+      luxurySignatureText: "Lead with one remarkable piece, the story behind it, and why it deserves private attention.",
+      luxuryCollectionTitle: "Curated private collection",
+      luxuryCollectionText: "Present limited pieces with stronger imagery, provenance cues, and a clear private inquiry path.",
+      luxuryProvenanceTitle: "Provenance, authenticity and service",
+      luxuryProvenanceText: "Luxury customers need confidence before they inquire. Use this section for sourcing, certification, materials, care and private support.",
+      luxuryPrivateTitle: "A private appointment, handled with care",
+      luxuryPrivateText: "Invite serious buyers to request availability, preferred piece, budget range, and contact method before a private follow-up.",
+      luxuryContactTitle: "Request a private consultation",
+      luxuryContactText: "Send the piece, occasion, preferred timing and contact method. A client advisor can respond with availability and next steps.",
+      luxuryProofItems: ["Verified provenance", "Limited availability", "Private advisor", "Insured handling", "Secure inquiry", "Concierge follow-up"],
+      luxuryCategories: ["Watches", "Jewelry", "Art", "Collectibles", "Private collection", "Limited pieces"],
       modules: "Modules",
       modulesSlug: "/modules",
       viewProducts: "View products",
@@ -6051,6 +6234,29 @@ function instantLocaleCopy(language) {
       premiumSpecsTitle: "Lo importante, fácil de comparar",
       premiumSpecsText: "Destaca materiales, garantía, entrega, soporte, personalización o calidad del servicio sin llenar la página de ruido.",
       premiumSpecItems: ["Presentación refinada", "Historia editable", "Soporte premium", "Listo para publicar"],
+      collection: "Coleccion",
+      provenance: "Provenance",
+      privateInquiry: "Consulta privada",
+      viewCollection: "Ver coleccion",
+      requestPrivateViewing: "Solicitar cita privada",
+      priceOnRequest: "Precio bajo consulta",
+      limitedPiece: "Pieza limitada",
+      authenticated: "Autenticada",
+      privateService: "Servicio privado",
+      signaturePiece: "Pieza protagonista",
+      luxuryHeadline: (name) => `${name}: piezas exclusivas para clientes privados`,
+      luxurySubheadline: (description) => description || "Un showroom privado para piezas de alto valor con provenance, presentacion editorial y consultas por cita.",
+      luxurySignatureText: "Presenta una pieza protagonista, su historia y la razon por la que merece atencion privada.",
+      luxuryCollectionTitle: "Coleccion privada curada",
+      luxuryCollectionText: "Muestra piezas limitadas con mejor imagen, senales de autenticidad y ruta clara hacia consulta privada.",
+      luxuryProvenanceTitle: "Provenance, autenticidad y servicio",
+      luxuryProvenanceText: "El cliente de lujo necesita confianza antes de consultar. Usa esta seccion para origen, certificacion, materiales, cuidado y soporte privado.",
+      luxuryPrivateTitle: "Una cita privada, manejada con cuidado",
+      luxuryPrivateText: "Invita a compradores serios a solicitar disponibilidad, pieza preferida, rango de presupuesto y metodo de contacto.",
+      luxuryContactTitle: "Solicita una consulta privada",
+      luxuryContactText: "Envia la pieza, ocasion, horario preferido y metodo de contacto. Un asesor puede responder con disponibilidad y proximos pasos.",
+      luxuryProofItems: ["Provenance verificada", "Disponibilidad limitada", "Asesor privado", "Manejo asegurado", "Consulta segura", "Seguimiento concierge"],
+      luxuryCategories: ["Relojes", "Joyeria", "Arte", "Coleccionables", "Coleccion privada", "Piezas limitadas"],
       modules: "Modulos",
       modulesSlug: "/modulos",
       viewProducts: "Ver productos",
@@ -6480,7 +6686,7 @@ function instantLocaleCopy(language) {
       fitGuideItems: ["Guia de tamanhos", "Notas de caimento", "Materiais", "Complete o look"],
     },
   };
-  return copies[language] || copies.en;
+  return { ...copies.en, ...(copies[language] || {}) };
 }
 
 function chooseInstantPalette(payload) {
@@ -7662,6 +7868,12 @@ function renderSection(section, schema) {
     DigitalModules: renderDigitalModules,
     DigitalProof: renderDigitalProof,
     DigitalAccessPanel: renderDigitalAccessPanel,
+    LuxuryHero: renderLuxuryHero,
+    LuxurySignature: renderLuxurySignature,
+    LuxuryCollection: renderLuxuryCollection,
+    LuxuryProvenance: renderLuxuryProvenance,
+    LuxuryPrivateService: renderLuxuryPrivateService,
+    LuxuryContact: renderLuxuryContact,
     ListingHero: renderListingHero,
     ListingFilters: renderListingFilters,
     ListingFeatured: renderListingFeatured,
@@ -8135,6 +8347,112 @@ function digitalVisualPlaceholder(schema) {
   </div>`;
 }
 
+function renderLuxuryHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = marketplaceItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url) || items[0];
+  const image = editable.image_url || heroItem?.image_url || "";
+  return `<section class="luxury-pro-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="luxury-pro-copy">
+      <span class="rendered-kicker">${escapeHtml(editable.badge || labels.limitedSelection)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.requestPrivateViewing)}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewCollection)}</a>
+      </div>
+      <div class="luxury-proof-strip">
+        ${(labels.luxuryProofItems || []).slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
+      </div>
+    </div>
+    <div class="luxury-pro-stage">
+      <div class="luxury-hero-visual">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(heroItem?.name || schema.business?.name || "")}">` : luxuryVisualPlaceholder(schema)}</div>
+      <div class="luxury-floating-card">
+        <small>${escapeHtml(labels.signaturePiece)}</small>
+        <strong>${escapeHtml(heroItem?.name || schema.business?.name || "")}</strong>
+        <span>${escapeHtml(heroItem?.price_label || labels.priceOnRequest)}</span>
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderLuxurySignature(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const item = marketplaceItems(schema)[0];
+  const image = editable.image_url || item?.image_url || "";
+  const proofItems = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.luxuryProofItems;
+  return `<section class="luxury-signature-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="luxury-signature-media">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(item?.name || "")}">` : luxuryVisualPlaceholder(schema)}</div>
+    <div class="luxury-signature-copy">
+      <span class="rendered-kicker">${escapeHtml(labels.authenticated)}</span>
+      <h2>${escapeHtml(editable.title || labels.signaturePiece)}</h2>
+      <p>${escapeHtml(editable.text || "")}</p>
+      <div class="luxury-mini-proof">${proofItems.slice(0, 4).map((proof) => `<span>${escapeHtml(proof)}</span>`).join("")}</div>
+    </div>
+  </section>`;
+}
+
+function renderLuxuryCollection(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="luxury-collection-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading">
+      <span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).collection)}</span>
+      <h2>${escapeHtml(editable.title || "")}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    ${renderLuxuryHighTicketCatalog(marketplaceItems(schema), schema)}
+  </section>`;
+}
+
+function renderLuxuryProvenance(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.luxuryProofItems;
+  return `<section class="luxury-provenance-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div>
+      <span class="rendered-kicker">${escapeHtml(labels.provenance)}</span>
+      <h2>${escapeHtml(editable.title || labels.luxuryProvenanceTitle)}</h2>
+      <p>${escapeHtml(editable.text || labels.luxuryProvenanceText)}</p>
+    </div>
+    <div class="luxury-provenance-grid">
+      ${items.slice(0, 6).map((item) => `<article><span></span><strong>${escapeHtml(item)}</strong><p>${escapeHtml(labels.privateService)}</p></article>`).join("")}
+    </div>
+  </section>`;
+}
+
+function renderLuxuryPrivateService(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="luxury-private-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div>
+      <span class="rendered-kicker">${escapeHtml(labels.privateInquiry)}</span>
+      <h2>${escapeHtml(editable.title || labels.luxuryPrivateTitle)}</h2>
+      <p>${escapeHtml(editable.text || labels.luxuryPrivateText)}</p>
+    </div>
+    <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.requestPrivateViewing)}</a>
+  </section>`;
+}
+
+function renderLuxuryContact(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="luxury-contact-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="luxury-contact-card">
+      <span class="rendered-kicker">${escapeHtml(labels.privateInquiry)}</span>
+      <h2>${escapeHtml(editable.title || labels.luxuryContactTitle)}</h2>
+      <p>${escapeHtml(editable.text || labels.luxuryContactText)}</p>
+      <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.requestPrivateViewing)}</a>
+    </div>
+  </section>`;
+}
+
+function luxuryVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "LX").slice(0, 2).toUpperCase();
+  return `<div class="luxury-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).privateService)}</small></div>`;
+}
+
 function renderListingHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -8592,6 +8910,7 @@ function renderCatalogByType(catalogType, items, schema) {
     editorial_minimal_grid: renderMinimalProductGrid,
     lookbook_collection_catalog: renderFashionLookbookCatalog,
     luxury_gallery_catalog: renderLuxuryGalleryCatalog,
+    luxury_high_ticket_catalog: renderLuxuryHighTicketCatalog,
     digital_offer_catalog: renderDigitalOfferCatalog,
     restaurant_menu_catalog: renderRestaurantMenuCatalog,
     menu_catalog: renderRestaurantMenuCatalog,
@@ -8705,6 +9024,20 @@ function renderLuxuryGalleryCatalog(items) {
   return `<div class="catalog-luxury">${items.map((item) => `<article>
     <div>${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : ""}</div>
     <small>${labels.limitedSelection}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
+  </article>`).join("")}</div>`;
+}
+
+function renderLuxuryHighTicketCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-luxury-high-ticket">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    <div class="luxury-card-top">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : luxuryVisualPlaceholder(schema)}</div>
+    <div class="luxury-card-bottom">
+      <small>${escapeHtml(item.deal_label || (index % 2 ? labels.authenticated : labels.limitedPiece))}</small>
+      <h3>${escapeHtml(item.name)}</h3>
+      <p>${escapeHtml(item.description)}</p>
+      <div><span>${escapeHtml(item.category || labels.collection)}</span><strong>${escapeHtml(productPriceLabel(item) || labels.priceOnRequest)}</strong></div>
+      <a class="rendered-button secondary" href="#">${escapeHtml(item.button_label || labels.requestPrivateViewing)}</a>
+    </div>
   </article>`).join("")}</div>`;
 }
 
@@ -8833,7 +9166,7 @@ function catalogLocaleLabels(schema) {
       search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", signature: "Signature", detail: "Detail", curated: "Curated", flagship: "Flagship", premiumSpecs: ["Presentation", "Quality", "Support", "Delivery"],
       sellerVerified: "Seller verified", used: "Used", newItem: "New", localPickup: "Local pickup", makeOffer: "Make offer", contactSeller: "Contact seller",
       listings: "Listings", areas: "Areas", searchListings: "Search listings", viewListings: "View listings", inquireNow: "Inquire now", featuredListing: "Featured listing", newListing: "New listing", availableNow: "Available now", listingPrice: "Price on request", listingSearchPlaceholder: "Search by location, type, price or keyword", listingFiltersTitle: "Search with the right filters", listingFiltersText: "Help customers narrow options by category, location, price and availability.", featuredListingsTitle: "Featured listings", featuredListingsText: "Active listings with price, location, specs and inquiry CTAs.", listingAreaTitle: "Explore the best areas", listingAreaText: "Area cards and location notes make discovery feel local.", listingTrustTitle: "Confidence before the inquiry", listingTrustText: "Verified details, contact paths and updated availability.", listingContactTitle: "Ask about a listing", listingContactText: "Send listing, budget, location and preferred contact method.", listingCategories: ["Homes", "Rentals", "Commercial", "Land", "Cars", "Featured"], listingLocations: ["Downtown", "North area", "West district", "Near schools", "Waterfront", "Business zone"], listingTrustItems: ["Verified details", "Updated availability", "Clear pricing", "Local support", "Fast response", "Easy comparison"],
-      newDrop: "New drop", limitedSelection: "Limited selection", instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
+      newDrop: "New drop", limitedSelection: "Limited selection", collection: "Collection", provenance: "Provenance", privateInquiry: "Private inquiry", requestPrivateViewing: "Request private viewing", viewCollection: "View collection", priceOnRequest: "Price on request", limitedPiece: "Limited piece", authenticated: "Authenticated", privateService: "Private service", signaturePiece: "Signature piece", luxuryProvenanceTitle: "Provenance, authenticity and service", luxuryProvenanceText: "Confidence signals for high-ticket buyers before they inquire.", luxuryPrivateTitle: "Private appointment", luxuryPrivateText: "Request availability, preferred piece and contact method.", luxuryContactTitle: "Request a private consultation", luxuryContactText: "Send the piece, occasion, preferred timing and contact method.", luxuryProofItems: ["Verified provenance", "Limited availability", "Private advisor", "Insured handling", "Secure inquiry", "Concierge follow-up"], instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
       digitalProducts: "Digital products", viewProducts: "View products", modules: "Modules", digitalAccessShort: "Downloads, modules and support notes.", digitalBundleTitle: "Digital offers built to sell", digitalModulesTitle: "What customers get inside", digitalProofTitle: "Trust before checkout", digitalAccessTitle: "Get access and start immediately", digitalAccessText: "Customers know exactly what they receive, how access works and where to get support.", digitalModuleItems: ["Core training", "Downloadable resources", "Templates and tools", "Bonus material", "Access instructions", "Support notes"], digitalProofItems: ["Instant access", "Editable modules", "Clear license", "Support-ready", "Bundle value", "Simple checkout"],
       collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
       company: "Company", services: "Services", process: "Process", proof: "Proof", capability: "Capability", requestConsultation: "Request consultation", viewServices: "View services", corporateProcessItems: ["Discovery", "Strategy", "Delivery", "Support"], corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
@@ -8849,7 +9182,7 @@ function catalogLocaleLabels(schema) {
       search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", signature: "Principal", detail: "Detalle", curated: "Curado", flagship: "Producto estrella", premiumSpecs: ["Presentacion", "Calidad", "Soporte", "Entrega"],
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Nuevo", localPickup: "Retiro local", makeOffer: "Hacer oferta", contactSeller: "Contactar vendedor",
       listings: "Listings", areas: "Zonas", searchListings: "Buscar listings", viewListings: "Ver listings", inquireNow: "Consultar ahora", featuredListing: "Listing destacado", newListing: "Nuevo listing", availableNow: "Disponible", listingPrice: "Precio a consultar", listingSearchPlaceholder: "Buscar por ubicacion, tipo, precio o palabra clave", listingFiltersTitle: "Busca con filtros claros", listingFiltersText: "Ayuda al cliente a comparar por categoria, zona, precio y disponibilidad.", featuredListingsTitle: "Listings destacados", featuredListingsText: "Listings activos con precio, ubicacion, detalles y CTA de consulta.", listingAreaTitle: "Explora las mejores zonas", listingAreaText: "Tarjetas de zona y notas de ubicacion hacen la busqueda mas clara.", listingTrustTitle: "Confianza antes de consultar", listingTrustText: "Detalles verificados, contacto claro y disponibilidad actualizada.", listingContactTitle: "Pregunta por un listing", listingContactText: "Envia el listing, presupuesto, ubicacion y metodo de contacto.", listingCategories: ["Casas", "Alquileres", "Comercial", "Terrenos", "Autos", "Destacados"], listingLocations: ["Centro", "Zona norte", "Distrito oeste", "Cerca de escuelas", "Frente al agua", "Zona comercial"], listingTrustItems: ["Detalles verificados", "Disponibilidad actualizada", "Precios claros", "Soporte local", "Respuesta rapida", "Comparacion simple"],
-      newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
+      newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", collection: "Coleccion", provenance: "Provenance", privateInquiry: "Consulta privada", requestPrivateViewing: "Solicitar cita privada", viewCollection: "Ver coleccion", priceOnRequest: "Precio bajo consulta", limitedPiece: "Pieza limitada", authenticated: "Autenticada", privateService: "Servicio privado", signaturePiece: "Pieza protagonista", luxuryProvenanceTitle: "Provenance, autenticidad y servicio", luxuryProvenanceText: "Senales de confianza para compradores de alto valor antes de consultar.", luxuryPrivateTitle: "Cita privada", luxuryPrivateText: "Solicita disponibilidad, pieza preferida y metodo de contacto.", luxuryContactTitle: "Solicita una consulta privada", luxuryContactText: "Envia la pieza, ocasion, horario preferido y metodo de contacto.", luxuryProofItems: ["Provenance verificada", "Disponibilidad limitada", "Asesor privado", "Manejo asegurado", "Consulta segura", "Seguimiento concierge"], instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
       digitalProducts: "Productos digitales", viewProducts: "Ver productos", modules: "Modulos", digitalAccessShort: "Descargas, modulos y notas de soporte.", digitalBundleTitle: "Ofertas digitales listas para vender", digitalModulesTitle: "Que recibe el cliente", digitalProofTitle: "Confianza antes del checkout", digitalAccessTitle: "Obten acceso y empieza de inmediato", digitalAccessText: "El cliente sabe exactamente que recibe, como entra y donde pide soporte.", digitalModuleItems: ["Entrenamiento principal", "Recursos descargables", "Plantillas y herramientas", "Material bonus", "Instrucciones de acceso", "Notas de soporte"], digitalProofItems: ["Acceso inmediato", "Modulos editables", "Licencia clara", "Soporte listo", "Valor del bundle", "Checkout simple"],
       collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
       company: "Empresa", services: "Servicios", process: "Proceso", proof: "Prueba", capability: "Capacidad", requestConsultation: "Solicitar consulta", viewServices: "Ver servicios", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Soporte"], corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
@@ -8893,7 +9226,7 @@ function catalogLocaleLabels(schema) {
       before: "Antes", after: "Depois", viewProject: "Ver projeto", plan: "Plano", custom: "Personalizado", start: "Começar", ticketOffer: "Ingresso / oferta", reserve: "Reservar", package: "Pacote", applyNow: "Aplicar agora", view: "Ver", request: "Consultar",
     },
   };
-  return labels[language] || labels.en;
+  return { ...labels.en, ...(labels[language] || {}) };
 }
 
 function renderFeatureBand(section) {

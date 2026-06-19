@@ -95,6 +95,12 @@ function renderSection(section, schema) {
   if (section.type === "DigitalModules") return renderDigitalModules(section, schema);
   if (section.type === "DigitalProof") return renderDigitalProof(section, schema);
   if (section.type === "DigitalAccessPanel") return renderDigitalAccessPanel(section, schema);
+  if (section.type === "LuxuryHero") return renderLuxuryHero(section, schema);
+  if (section.type === "LuxurySignature") return renderLuxurySignature(section, schema);
+  if (section.type === "LuxuryCollection") return renderLuxuryCollection(section, schema);
+  if (section.type === "LuxuryProvenance") return renderLuxuryProvenance(section, schema);
+  if (section.type === "LuxuryPrivateService") return renderLuxuryPrivateService(section, schema);
+  if (section.type === "LuxuryContact") return renderLuxuryContact(section, schema);
   if (section.type === "ListingHero") return renderListingHero(section, schema);
   if (section.type === "ListingFilters") return renderListingFilters(section, schema);
   if (section.type === "ListingFeatured") return renderListingFeatured(section, schema);
@@ -712,6 +718,8 @@ function renderProductGrid(section, schema) {
                 ? renderRestaurantMenuCatalog(catalogItems, schema)
                 : catalogType === "digital_offer_catalog"
                   ? renderDigitalOfferCatalog(catalogItems, schema)
+                  : catalogType === "luxury_high_ticket_catalog"
+                    ? renderLuxuryHighTicketCatalog(catalogItems, schema)
                   : catalogType === "real_estate_listing_catalog"
                     ? renderRealEstateListingCatalog(catalogItems, schema)
                   : catalogType === "lead_funnel_offer_catalog"
@@ -901,12 +909,102 @@ function renderDigitalOfferCatalog(items, schema) {
   </article>`).join("")}</div>`;
 }
 
+function renderLuxuryHighTicketCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-luxury-high-ticket">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    <div class="luxury-card-top">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : luxuryVisualPlaceholder(schema)}</div>
+    <div class="luxury-card-bottom">
+      <small>${escapeHtml(item.deal_label || (index % 2 ? labels.authenticated : labels.limitedPiece))}</small>
+      <h3>${escapeHtml(item.name)}</h3>
+      <p>${escapeHtml(item.description)}</p>
+      <div><span>${escapeHtml(item.category || labels.collection)}</span><strong>${escapeHtml(item.price_label || labels.priceOnRequest)}</strong></div>
+      <button class="rendered-button secondary" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.requestPrivateViewing)}</button>
+    </div>
+  </article>`).join("")}</div>`;
+}
+
 function digitalVisualPlaceholder(schema) {
   const initials = String(schema.business?.name || "DP").slice(0, 2).toUpperCase();
   return `<div class="digital-visual-placeholder">
     <span>${escapeHtml(initials)}</span>
     <small>${escapeHtml(catalogLocaleLabels(schema).instantAccess)}</small>
   </div>`;
+}
+
+function renderLuxuryHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = publicCatalogItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url) || items[0];
+  const image = editable.image_url || heroItem?.image_url || "";
+  return `<section class="luxury-pro-hero ${sectionClass(section)}">
+    <div class="luxury-pro-copy">
+      <span class="rendered-kicker">${escapeHtml(editable.badge || labels.limitedSelection)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.requestPrivateViewing)}</button>
+        <button class="rendered-button secondary" data-open-lead type="button">${escapeHtml(editable.secondary_button || labels.viewCollection)}</button>
+      </div>
+      <div class="luxury-proof-strip">${(labels.luxuryProofItems || []).slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    </div>
+    <div class="luxury-pro-stage">
+      <div class="luxury-hero-visual">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(heroItem?.name || schema.business?.name || "")}">` : luxuryVisualPlaceholder(schema)}</div>
+      <div class="luxury-floating-card"><small>${escapeHtml(labels.signaturePiece)}</small><strong>${escapeHtml(heroItem?.name || schema.business?.name || "")}</strong><span>${escapeHtml(heroItem?.price_label || labels.priceOnRequest)}</span></div>
+    </div>
+  </section>`;
+}
+
+function renderLuxurySignature(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const item = publicCatalogItems(schema)[0];
+  const image = editable.image_url || item?.image_url || "";
+  const proofItems = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.luxuryProofItems;
+  return `<section class="luxury-signature-section ${sectionClass(section)}">
+    <div class="luxury-signature-media">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(item?.name || "")}">` : luxuryVisualPlaceholder(schema)}</div>
+    <div class="luxury-signature-copy"><span class="rendered-kicker">${escapeHtml(labels.authenticated)}</span><h2>${escapeHtml(editable.title || labels.signaturePiece)}</h2><p>${escapeHtml(editable.text || "")}</p><div class="luxury-mini-proof">${proofItems.slice(0, 4).map((proof) => `<span>${escapeHtml(proof)}</span>`).join("")}</div></div>
+  </section>`;
+}
+
+function renderLuxuryCollection(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="luxury-collection-section ${sectionClass(section)}">
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).collection)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    ${renderLuxuryHighTicketCatalog(publicCatalogItems(schema), schema)}
+  </section>`;
+}
+
+function renderLuxuryProvenance(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.luxuryProofItems;
+  return `<section class="luxury-provenance-section ${sectionClass(section)}">
+    <div><span class="rendered-kicker">${escapeHtml(labels.provenance)}</span><h2>${escapeHtml(editable.title || labels.luxuryProvenanceTitle)}</h2><p>${escapeHtml(editable.text || labels.luxuryProvenanceText)}</p></div>
+    <div class="luxury-provenance-grid">${items.slice(0, 6).map((item) => `<article><span></span><strong>${escapeHtml(item)}</strong><p>${escapeHtml(labels.privateService)}</p></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderLuxuryPrivateService(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="luxury-private-section ${sectionClass(section)}">
+    <div><span class="rendered-kicker">${escapeHtml(labels.privateInquiry)}</span><h2>${escapeHtml(editable.title || labels.luxuryPrivateTitle)}</h2><p>${escapeHtml(editable.text || labels.luxuryPrivateText)}</p></div>
+    <button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.requestPrivateViewing)}</button>
+  </section>`;
+}
+
+function renderLuxuryContact(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="luxury-contact-section ${sectionClass(section)}">
+    <div class="luxury-contact-card"><span class="rendered-kicker">${escapeHtml(labels.privateInquiry)}</span><h2>${escapeHtml(editable.title || labels.luxuryContactTitle)}</h2><p>${escapeHtml(editable.text || labels.luxuryContactText)}</p><button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.requestPrivateViewing)}</button></div>
+  </section>`;
+}
+
+function luxuryVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "LX").slice(0, 2).toUpperCase();
+  return `<div class="luxury-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).privateService)}</small></div>`;
 }
 
 function renderListingHero(section, schema) {
@@ -1028,7 +1126,7 @@ function catalogLocaleLabels(schema) {
       searchFilters: "Search & filters", price: "Price", rating: "Rating", delivery: "Delivery", deal: "Deal", fastShip: "Fast ship",
       search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", view: "View", request: "Ask now", signature: "Signature", detail: "Detail", curated: "Curated", flagship: "Flagship", premiumSpecs: ["Presentation", "Quality", "Support", "Delivery"],
       searchFilters: "Search & filters", listings: "Listings", areas: "Areas", searchListings: "Search listings", viewListings: "View listings", inquireNow: "Inquire now", featuredListing: "Featured listing", newListing: "New listing", availableNow: "Available now", listingPrice: "Price on request", listingSearchPlaceholder: "Search by location, type, price or keyword", listingFiltersTitle: "Search with the right filters", listingFiltersText: "Help customers narrow options by category, location, price and availability.", featuredListingsTitle: "Featured listings", featuredListingsText: "Active listings with price, location, specs and inquiry CTAs.", listingAreaTitle: "Explore the best areas", listingAreaText: "Area cards and location notes make discovery feel local.", listingTrustTitle: "Confidence before the inquiry", listingTrustText: "Verified details, contact paths and updated availability.", listingContactTitle: "Ask about a listing", listingContactText: "Send listing, budget, location and preferred contact method.", listingCategories: ["Homes", "Rentals", "Commercial", "Land", "Cars", "Featured"], listingLocations: ["Downtown", "North area", "West district", "Near schools", "Waterfront", "Business zone"], listingTrustItems: ["Verified details", "Updated availability", "Clear pricing", "Local support", "Fast response", "Easy comparison"],
-      newDrop: "New drop", collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
+      newDrop: "New drop", limitedSelection: "Limited selection", collection: "Collection", provenance: "Provenance", privateInquiry: "Private inquiry", requestPrivateViewing: "Request private viewing", viewCollection: "View collection", priceOnRequest: "Price on request", limitedPiece: "Limited piece", authenticated: "Authenticated", privateService: "Private service", signaturePiece: "Signature piece", luxuryProvenanceTitle: "Provenance, authenticity and service", luxuryProvenanceText: "Confidence signals for high-ticket buyers before they inquire.", luxuryPrivateTitle: "Private appointment", luxuryPrivateText: "Request availability, preferred piece and contact method.", luxuryContactTitle: "Request a private consultation", luxuryContactText: "Send the piece, occasion, preferred timing and contact method.", luxuryProofItems: ["Verified provenance", "Limited availability", "Private advisor", "Insured handling", "Secure inquiry", "Concierge follow-up"], collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
       instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access", digitalProducts: "Digital products", viewProducts: "View products", modules: "Modules", digitalAccessShort: "Downloads, modules and support notes.", digitalBundleTitle: "Digital offers built to sell", digitalModulesTitle: "What customers get inside", digitalProofTitle: "Trust before checkout", digitalAccessTitle: "Get access and start immediately", digitalAccessText: "Customers know exactly what they receive, how access works and where to get support.", digitalModuleItems: ["Core training", "Downloadable resources", "Templates and tools", "Bonus material", "Access instructions", "Support notes"], digitalProofItems: ["Instant access", "Editable modules", "Clear license", "Support-ready", "Bundle value", "Simple checkout"],
       company: "Company", services: "Services", process: "Process", proof: "Proof", capability: "Capability", requestConsultation: "Request consultation", viewServices: "View services", corporateProcessItems: ["Discovery", "Strategy", "Delivery", "Support"], corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
       localExperts: "Local experts", callNow: "Call now", freeQuote: "Free quote", before: "Before", after: "After", fastResponse: "Fast local response", serviceAreas: "Service areas", workProof: "Work proof", service: "Service", quoteOnly: "Quote only", serviceAreaReady: "Area-ready", quoteExpectation: "Tell us what you need and get a clear next step.", serviceAreaItems: ["Nearby neighborhoods", "Same-day options", "Emergency calls", "Recurring service", "Licensed work", "Clear estimates"], homeServiceTrustItems: ["Licensed and insured", "Clear estimates", "On-time arrivals", "Before/after proof", "Local references", "Clean follow-up"],
@@ -1041,7 +1139,7 @@ function catalogLocaleLabels(schema) {
       searchFilters: "Busqueda y filtros", price: "Precio", rating: "Calificacion", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rapido",
       search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", view: "Ver", request: "Consultar", signature: "Principal", detail: "Detalle", curated: "Curado", flagship: "Producto estrella", premiumSpecs: ["Presentacion", "Calidad", "Soporte", "Entrega"],
       searchFilters: "Busqueda y filtros", listings: "Listings", areas: "Zonas", searchListings: "Buscar listings", viewListings: "Ver listings", inquireNow: "Consultar ahora", featuredListing: "Listing destacado", newListing: "Nuevo listing", availableNow: "Disponible", listingPrice: "Precio a consultar", listingSearchPlaceholder: "Buscar por ubicacion, tipo, precio o palabra clave", listingFiltersTitle: "Busca con filtros claros", listingFiltersText: "Ayuda al cliente a comparar por categoria, zona, precio y disponibilidad.", featuredListingsTitle: "Listings destacados", featuredListingsText: "Listings activos con precio, ubicacion, detalles y CTA de consulta.", listingAreaTitle: "Explora las mejores zonas", listingAreaText: "Tarjetas de zona y notas de ubicacion hacen la busqueda mas clara.", listingTrustTitle: "Confianza antes de consultar", listingTrustText: "Detalles verificados, contacto claro y disponibilidad actualizada.", listingContactTitle: "Pregunta por un listing", listingContactText: "Envia el listing, presupuesto, ubicacion y metodo de contacto.", listingCategories: ["Casas", "Alquileres", "Comercial", "Terrenos", "Autos", "Destacados"], listingLocations: ["Centro", "Zona norte", "Distrito oeste", "Cerca de escuelas", "Frente al agua", "Zona comercial"], listingTrustItems: ["Detalles verificados", "Disponibilidad actualizada", "Precios claros", "Soporte local", "Respuesta rapida", "Comparacion simple"],
-      newDrop: "Nuevo drop", collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
+      newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", collection: "Coleccion", provenance: "Provenance", privateInquiry: "Consulta privada", requestPrivateViewing: "Solicitar cita privada", viewCollection: "Ver coleccion", priceOnRequest: "Precio bajo consulta", limitedPiece: "Pieza limitada", authenticated: "Autenticada", privateService: "Servicio privado", signaturePiece: "Pieza protagonista", luxuryProvenanceTitle: "Provenance, autenticidad y servicio", luxuryProvenanceText: "Senales de confianza para compradores de alto valor antes de consultar.", luxuryPrivateTitle: "Cita privada", luxuryPrivateText: "Solicita disponibilidad, pieza preferida y metodo de contacto.", luxuryContactTitle: "Solicita una consulta privada", luxuryContactText: "Envia la pieza, ocasion, horario preferido y metodo de contacto.", luxuryProofItems: ["Provenance verificada", "Disponibilidad limitada", "Asesor privado", "Manejo asegurado", "Consulta segura", "Seguimiento concierge"], collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
       instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso", digitalProducts: "Productos digitales", viewProducts: "Ver productos", modules: "Modulos", digitalAccessShort: "Descargas, modulos y notas de soporte.", digitalBundleTitle: "Ofertas digitales listas para vender", digitalModulesTitle: "Que recibe el cliente", digitalProofTitle: "Confianza antes del checkout", digitalAccessTitle: "Obten acceso y empieza de inmediato", digitalAccessText: "El cliente sabe exactamente que recibe, como entra y donde pide soporte.", digitalModuleItems: ["Entrenamiento principal", "Recursos descargables", "Plantillas y herramientas", "Material bonus", "Instrucciones de acceso", "Notas de soporte"], digitalProofItems: ["Acceso inmediato", "Modulos editables", "Licencia clara", "Soporte listo", "Valor del bundle", "Checkout simple"],
       company: "Empresa", services: "Servicios", process: "Proceso", proof: "Prueba", capability: "Capacidad", requestConsultation: "Solicitar consulta", viewServices: "Ver servicios", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Soporte"], corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
       localExperts: "Expertos locales", callNow: "Llamar ahora", freeQuote: "Cotizacion gratis", before: "Antes", after: "Despues", fastResponse: "Respuesta local rapida", serviceAreas: "Areas de servicio", workProof: "Trabajos", service: "Servicio", quoteOnly: "Cotizacion", serviceAreaReady: "Disponible por zona", quoteExpectation: "Cuenta que necesitas y recibe el siguiente paso claro.", serviceAreaItems: ["Zonas cercanas", "Opciones el mismo dia", "Emergencias", "Servicio recurrente", "Trabajo autorizado", "Estimados claros"], homeServiceTrustItems: ["Licencia y seguro", "Estimados claros", "Llegadas puntuales", "Antes/despues", "Referencias locales", "Seguimiento limpio"],
@@ -1077,7 +1175,7 @@ function catalogLocaleLabels(schema) {
       fallbackCategories: ["Eletronicos", "Casa", "Moda", "Beleza", "Esportes", "Ofertas"],
     },
   };
-  return labels[language] || labels.en;
+  return { ...labels.en, ...(labels[language] || {}) };
 }
 
 function renderResilientImage(url, alt = "", fallbackText = "") {
