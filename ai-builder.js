@@ -4404,14 +4404,15 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isCorporateTemplate = catalogType === "company_services_catalog" || /corporate-company-pro/i.test(template.id || "");
   const isLeadFunnelTemplate = catalogType === "lead_funnel_offer_catalog" || /lead-funnel-pro/i.test(template.id || "");
   const isHomeServicesTemplate = catalogType === "home_services_quote_catalog" || /home-services-premium/i.test(template.id || "");
-  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate;
-  const primaryCta = isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
-  const secondaryCta = isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
-  if (isLeadFunnelTemplate || isHomeServicesTemplate) {
+  const isBookingTemplate = catalogType === "booking_menu_catalog" || /booking-appointment-pro/i.test(template.id || "");
+  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate;
+  const primaryCta = isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
+  const secondaryCta = isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
+  if (isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate) {
     catalogItems.forEach((item) => {
       item.price_type = "quote_only";
-      item.price_label = copy.askPrice;
-      item.button_label = isHomeServicesTemplate ? copy.freeQuote : copy.claimOffer;
+      item.price_label = isBookingTemplate ? copy.fromQuote : copy.askPrice;
+      item.button_label = isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : copy.claimOffer;
       item.track_inventory = false;
     });
   }
@@ -4425,6 +4426,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
           ? buildCorporateCompanyInstantPages(copy, name, description, payload)
           : isHomeServicesTemplate
             ? buildHomeServicesPremiumInstantPages(copy, name, description, payload)
+            : isBookingTemplate
+              ? buildBookingAppointmentInstantPages(copy, name, description, payload)
             : isLeadFunnelTemplate
               ? buildLeadFunnelInstantPages(copy, name, description, payload)
           : buildDefaultInstantPages(copy, name, description, payload);
@@ -4496,6 +4499,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       { label: copy.serviceAreas, page_key: "catalog" },
       { label: copy.workProof, page_key: "about" },
       { label: copy.freeQuote, page_key: "contact" },
+    ] : isBookingTemplate ? [
+      { label: copy.services, page_key: "home" },
+      { label: copy.availability, page_key: "catalog" },
+      { label: copy.team, page_key: "about" },
+      { label: copy.bookNow, page_key: "contact" },
     ] : [
       { label: copy.home, page_key: "home" },
       { label: copy.shop, page_key: "catalog" },
@@ -4528,7 +4536,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         description: template.visualDifference || copy.fastBase,
         theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: primaryCta, secondary_label: secondaryCta, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
         layout_mode_id: template.id || "instant_storefront",
-        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : "split_showcase",
+        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : isBookingTemplate ? "appointment_booking" : "split_showcase",
         product_layout: catalogType,
       },
     ],
@@ -4971,6 +4979,88 @@ function buildHomeServicesPremiumInstantPages(copy, name, description, payload =
       slug: copy.contactSlug,
       order: 4,
       sections: [{ id: "quote", type: "HomeServiceQuote", order: 1, editable: { title: copy.homeServiceQuoteTitle, text: copy.homeServiceQuoteText, images: [] }, settings: { layout: "quote_panel" } }],
+    },
+  ];
+}
+
+function buildBookingAppointmentInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.bookNow,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "booking_hero",
+          type: "BookingHero",
+          order: 1,
+          editable: {
+            headline: copy.bookingHeadline(name),
+            subtitle: copy.bookingSubheadline(description),
+            primary_button: copy.bookNow,
+            secondary_button: copy.viewServices,
+            image_url: heroImage,
+            images: [],
+          },
+          settings: { layout: "appointment_stage" },
+        },
+        {
+          id: "booking_services",
+          type: "BookingServices",
+          order: 2,
+          editable: { title: copy.bookingServicesTitle, text: copy.bookingServicesText, images: [] },
+          settings: { layout: "service_menu", columns: 3 },
+        },
+        {
+          id: "booking_availability",
+          type: "BookingAvailability",
+          order: 3,
+          editable: { title: copy.availabilityTitle, text: copy.availabilityText, items: copy.availabilityItems, images: [] },
+          settings: { layout: "schedule_cards" },
+        },
+        {
+          id: "booking_team",
+          type: "BookingTeam",
+          order: 4,
+          editable: { title: copy.bookingTeamTitle, text: copy.bookingTeamText, items: copy.bookingTeamItems, images: [] },
+          settings: { layout: "staff_process" },
+        },
+        {
+          id: "booking_contact",
+          type: "BookingContact",
+          order: 5,
+          editable: { title: copy.bookingContactTitle, text: copy.bookingContactText, images: [] },
+          settings: { layout: "booking_panel" },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.availability,
+      slug: copy.servicesSlug,
+      order: 2,
+      sections: [
+        { id: "services_grid", type: "ProductGrid", order: 1, editable: { title: copy.bookingServicesTitle, text: copy.bookingServicesText, images: [] }, settings: { layout: "booking_menu", columns: 3 } },
+        { id: "availability", type: "BookingAvailability", order: 2, editable: { title: copy.availabilityTitle, text: copy.availabilityText, items: copy.availabilityItems, images: [] }, settings: { layout: "schedule_cards" } },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.team,
+      slug: copy.teamSlug,
+      order: 3,
+      sections: [
+        { id: "team", type: "BookingTeam", order: 1, editable: { title: copy.bookingTeamTitle, text: copy.bookingTeamText, items: copy.bookingTeamItems, images: [] }, settings: { layout: "staff_process" } },
+      ],
+    },
+    {
+      page_key: "contact",
+      title: copy.bookNow,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [{ id: "booking_contact", type: "BookingContact", order: 1, editable: { title: copy.bookingContactTitle, text: copy.bookingContactText, images: [] }, settings: { layout: "booking_panel" } }],
     },
   ];
 }
@@ -6903,6 +6993,11 @@ function renderSection(section, schema) {
     HomeServiceGallery: renderHomeServiceGallery,
     HomeServiceTrust: renderHomeServiceTrust,
     HomeServiceQuote: renderHomeServiceQuote,
+    BookingHero: renderBookingHero,
+    BookingServices: renderBookingServices,
+    BookingAvailability: renderBookingAvailability,
+    BookingTeam: renderBookingTeam,
+    BookingContact: renderBookingContact,
     FunnelHero: renderFunnelHero,
     FunnelBenefits: renderFunnelBenefits,
     FunnelOffer: renderFunnelOffer,
@@ -7242,6 +7337,70 @@ function homeServiceWorkPlaceholder(item, schema) {
   return `<div class="home-service-work-placeholder">${escapeHtml(initials)}</div>`;
 }
 
+function renderBookingHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const image = editable.image_url || marketplaceItems(schema).find((item) => item.image_url)?.image_url || "";
+  return `<section class="booking-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="booking-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.location || labels.appointments)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.bookNow)}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewServices)}</a>
+      </div>
+    </div>
+    <div class="booking-stage">
+      <div class="booking-stage-visual">${image ? `<img src="${escapeAttribute(image)}" alt="">` : bookingVisualPlaceholder(schema)}</div>
+      <div class="booking-mini-card"><strong>${escapeHtml(labels.nextAvailable)}</strong><span>${escapeHtml(labels.availabilityItems[0])}</span><button type="button">${escapeHtml(labels.bookNow)}</button></div>
+    </div>
+    <div class="booking-proof-strip">${labels.bookingProofItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderBookingServices(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="booking-services-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).services)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    ${renderBookingMenuCatalog(marketplaceItems(schema), schema)}
+  </section>`;
+}
+
+function renderBookingAvailability(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.availabilityItems;
+  return `<section class="booking-availability-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.availability)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="booking-availability-grid">${items.map((item, index) => `<article><small>${escapeHtml(labels.slot)} 0${index + 1}</small><strong>${escapeHtml(item)}</strong><span>${escapeHtml(labels.confirmation)}</span></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderBookingTeam(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.bookingTeamItems;
+  return `<section class="booking-team-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.team)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="booking-team-list">${items.map((item, index) => `<article><small>0${index + 1}</small><strong>${escapeHtml(item)}</strong></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderBookingContact(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="booking-contact-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><h2>${escapeHtml(editable.title || labels.bookNow)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="booking-contact-card"><strong>${escapeHtml(labels.confirmation)}</strong><span>${escapeHtml(labels.bookingContactFallback)}</span><a class="rendered-button" href="#">${escapeHtml(labels.bookNow)}</a></div>
+  </section>`;
+}
+
+function bookingVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "BK").slice(0, 2).toUpperCase();
+  return `<div class="booking-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
+}
+
 function renderFunnelHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -7573,9 +7732,12 @@ function renderRestaurantMenuCatalog(items) {
 
 function renderBookingMenuCatalog(items) {
   const labels = catalogLocaleLabels(arguments[1]);
-  return `<div class="catalog-booking">${items.map((item, index) => `<article>
-    <small>${30 + index * 15} min</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p>
-    <b>${escapeHtml(item.price_label || labels.fromQuote)}</b><a class="rendered-button" href="#">${labels.book}</a>
+  return `<div class="catalog-booking-pro">${items.map((item, index) => `<article class="${index === 1 ? "featured" : ""}">
+    <small>${30 + index * 15} min</small>
+    <h3>${escapeHtml(item.name)}</h3>
+    <p>${escapeHtml(item.description)}</p>
+    <div><span>${escapeHtml(labels.staffPick)}</span><span>${escapeHtml(labels.confirmation)}</span></div>
+    <b>${escapeHtml(item.price_label || labels.fromQuote)}</b><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.bookNow)}</a>
   </article>`).join("")}</div>`;
 }
 
@@ -7661,6 +7823,7 @@ function catalogLocaleLabels(schema) {
       collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
       company: "Company", services: "Services", process: "Process", proof: "Proof", capability: "Capability", requestConsultation: "Request consultation", viewServices: "View services", corporateProcessItems: ["Discovery", "Strategy", "Delivery", "Support"], corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
       localExperts: "Local experts", callNow: "Call now", fastResponse: "Fast local response", serviceAreas: "Service areas", workProof: "Work proof", workSlug: "work", service: "Service", quoteOnly: "Quote only", serviceAreaReady: "Area-ready", quoteExpectation: "Tell us what you need and get a clear next step.", homeServiceHeadline: (name) => `${name} handles the job right the first time`, homeServiceSubheadline: (description) => description || "Trusted local service with clear communication, reliable scheduling, and quote-first service.", homeServiceCategoriesTitle: "Services built for real local needs", homeServiceCategoriesText: "Organize every service into clear quote-ready options that customers can understand quickly.", homeServiceAreasTitle: "Serving the areas that matter", homeServiceAreasText: "Show cities, neighborhoods, response expectations and emergency availability in one clean section.", serviceAreaItems: ["Nearby neighborhoods", "Same-day options", "Emergency calls", "Recurring service", "Licensed work", "Clear estimates"], beforeAfterTitle: "Real work, visible results", beforeAfterText: "Use job photos, before-and-after proof and finished projects to build trust before the first call.", homeServiceTrustTitle: "Why customers call first", homeServiceTrustText: "Trust signals, reviews and response expectations make the next step feel safe.", homeServiceTrustItems: ["Licensed and insured", "Clear estimates", "On-time arrivals", "Before/after proof", "Local references", "Clean follow-up"], homeServiceQuoteTitle: "Request a clear quote", homeServiceQuoteText: "Share the job details, preferred time and location. The business can respond by phone, WhatsApp or email.",
+      appointments: "Appointments", availability: "Availability", team: "Team", teamSlug: "team", bookNow: "Book now", nextAvailable: "Next available", slot: "Slot", confirmation: "Confirmation-ready", staffPick: "Staff pick", bookingContactFallback: "Confirm the preferred service, time and contact method.", bookingHeadline: (name) => `Book ${name} without the back-and-forth`, bookingSubheadline: (description) => description || "A clear appointment page with services, availability, staff notes and a simple booking path.", bookingServicesTitle: "Choose the right appointment", bookingServicesText: "Show duration, service details and what the client should expect before booking.", availabilityTitle: "Availability that feels simple", availabilityText: "Make open windows, preparation notes and confirmation expectations clear.", availabilityItems: ["Today / tomorrow windows", "Morning appointments", "Afternoon appointments", "Weekend options", "Consultation calls", "Follow-up visits"], bookingTeamTitle: "A smoother visit from start to finish", bookingTeamText: "Explain the staff, process and preparation so clients know what happens next.", bookingTeamItems: ["Pick a service", "Choose a preferred time", "Receive confirmation", "Arrive prepared"], bookingProofItems: ["Clear durations", "Easy confirmation", "Service details upfront"], bookingContactTitle: "Reserve the next available time", bookingContactText: "Send the preferred service, day and contact method. The business can confirm by phone, WhatsApp or email.",
       offer: "Offer", benefits: "Benefits", faq: "FAQ", claimOffer: "Start now", seeProof: "See proof", nextStep: "Next step", quickRequest: "Send a quick request and get a clear response.", bestValue: "Best value", outcomeFocused: "Outcome-focused", fastNextStep: "Fast next step", editableOffer: "Editable offer", faqAnswer: "This can be adjusted to match the business, offer, and customer objections.", funnelBenefitsItems: ["Clear promise", "Simple next step", "Qualified leads", "Editable sections", "Proof-first structure", "Fast launch"], funnelProofItems: ["Specific outcome", "Simple process", "Fast response", "Clear pricing conversation"], funnelFaqItems: [{ question: "What happens next?", answer: "The business follows up with the next step." }, { question: "Can it be customized?", answer: "Yes, the offer and page content are editable." }, { question: "Is this a store?", answer: "No, it is focused on leads." }],
       main: "Main", popular: "Popular", marketPrice: "Market price", fromQuote: "From quote", book: "Book", freeQuote: "Free quote", practiceArea: "Practice area", scheduleConsultation: "Schedule consultation",
       before: "Before", after: "After", viewProject: "View project", plan: "Plan", custom: "Custom", start: "Start", ticketOffer: "Ticket / offer", reserve: "Reserve", package: "Package", applyNow: "Apply now", view: "View", request: "Ask now",
@@ -7673,6 +7836,7 @@ function catalogLocaleLabels(schema) {
       collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
       company: "Empresa", services: "Servicios", process: "Proceso", proof: "Prueba", capability: "Capacidad", requestConsultation: "Solicitar consulta", viewServices: "Ver servicios", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Soporte"], corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
       localExperts: "Expertos locales", callNow: "Llamar ahora", fastResponse: "Respuesta local rapida", serviceAreas: "Areas de servicio", workProof: "Trabajos", workSlug: "trabajos", service: "Servicio", quoteOnly: "Cotizacion", serviceAreaReady: "Disponible por zona", quoteExpectation: "Cuenta que necesitas y recibe el siguiente paso claro.", homeServiceHeadline: (name) => `${name} resuelve el trabajo bien desde el primer intento`, homeServiceSubheadline: (description) => description || "Servicio local confiable con comunicacion clara, agenda ordenada y cotizacion primero.", homeServiceCategoriesTitle: "Servicios para necesidades locales reales", homeServiceCategoriesText: "Organiza cada servicio en opciones claras para cotizar sin confundir al cliente.", homeServiceAreasTitle: "Atendemos las zonas importantes", homeServiceAreasText: "Muestra ciudades, vecindarios, tiempos de respuesta y disponibilidad de emergencia en una seccion clara.", serviceAreaItems: ["Zonas cercanas", "Opciones el mismo dia", "Emergencias", "Servicio recurrente", "Trabajo autorizado", "Estimados claros"], beforeAfterTitle: "Trabajo real, resultados visibles", beforeAfterText: "Usa fotos, antes/despues y proyectos terminados para generar confianza antes de la llamada.", homeServiceTrustTitle: "Por que llaman primero", homeServiceTrustText: "Senales de confianza, resenas y expectativas de respuesta hacen que el siguiente paso sea seguro.", homeServiceTrustItems: ["Licencia y seguro", "Estimados claros", "Llegadas puntuales", "Antes/despues", "Referencias locales", "Seguimiento limpio"], homeServiceQuoteTitle: "Solicita una cotizacion clara", homeServiceQuoteText: "Comparte el trabajo, horario preferido y ubicacion. El negocio puede responder por telefono, WhatsApp o email.",
+      appointments: "Citas", availability: "Disponibilidad", team: "Equipo", teamSlug: "equipo", bookNow: "Reservar ahora", nextAvailable: "Proxima disponibilidad", slot: "Horario", confirmation: "Listo para confirmar", staffPick: "Recomendado", bookingContactFallback: "Confirma el servicio, horario y metodo de contacto preferido.", bookingHeadline: (name) => `Reserva en ${name} sin vueltas`, bookingSubheadline: (description) => description || "Pagina clara de citas con servicios, disponibilidad, notas del equipo y reserva simple.", bookingServicesTitle: "Elige la cita correcta", bookingServicesText: "Muestra duracion, detalles del servicio y que debe esperar el cliente antes de reservar.", availabilityTitle: "Disponibilidad facil de entender", availabilityText: "Muestra horarios, preparacion y expectativas de confirmacion de forma clara.", availabilityItems: ["Hoy / manana", "Citas en la manana", "Citas en la tarde", "Opciones fin de semana", "Consultas por llamada", "Visitas de seguimiento"], bookingTeamTitle: "Una visita mas simple de inicio a fin", bookingTeamText: "Explica equipo, proceso y preparacion para que el cliente sepa que sigue.", bookingTeamItems: ["Elige un servicio", "Selecciona horario preferido", "Recibe confirmacion", "Llega preparado"], bookingProofItems: ["Duraciones claras", "Confirmacion simple", "Detalles antes de reservar"], bookingContactTitle: "Reserva el proximo horario disponible", bookingContactText: "Envia servicio, dia y metodo de contacto preferido. El negocio puede confirmar por telefono, WhatsApp o email.",
       offer: "Oferta", benefits: "Beneficios", faq: "Preguntas", claimOffer: "Empezar ahora", seeProof: "Ver prueba", nextStep: "Siguiente paso", quickRequest: "Envia una solicitud rapida y recibe una respuesta clara.", bestValue: "Mejor opcion", outcomeFocused: "Enfocado en resultado", fastNextStep: "Siguiente paso rapido", editableOffer: "Oferta editable", faqAnswer: "Esto se puede ajustar al negocio, la oferta y las dudas del cliente.", funnelBenefitsItems: ["Promesa clara", "Siguiente paso simple", "Leads calificados", "Secciones editables", "Estructura con prueba", "Lanzamiento rapido"], funnelProofItems: ["Resultado especifico", "Proceso simple", "Respuesta rapida", "Conversacion clara sobre precios"], funnelFaqItems: [{ question: "Que pasa despues?", answer: "El negocio responde con el siguiente paso." }, { question: "Se puede personalizar?", answer: "Si, la oferta y el contenido son editables." }, { question: "Esto es una tienda?", answer: "No, esta enfocado en leads." }],
       main: "Principal", popular: "Popular", marketPrice: "Precio de mercado", fromQuote: "Desde cotizacion", book: "Reservar", freeQuote: "Cotizacion gratis", practiceArea: "Area de practica", scheduleConsultation: "Agendar consulta",
       before: "Antes", after: "Despues", viewProject: "Ver proyecto", plan: "Plan", custom: "Personalizado", start: "Empezar", ticketOffer: "Ticket / oferta", reserve: "Reservar", package: "Paquete", applyNow: "Aplicar ahora", view: "Ver", request: "Consultar",
@@ -7685,6 +7849,7 @@ function catalogLocaleLabels(schema) {
       collections: "Collections", lookbook: "Lookbook", fit: "Guide des tailles", drop: "Drop", fitGuide: "Guide des tailles", fitGuideItems: ["Notes de taille", "Suggestions de style", "Conseils d'entretien", "Livraison et retours"], fashionCollections: ["Nouveautes", "Essentiels", "Pieces fortes", "Accessoires", "Drop limite", "Meilleures ventes"],
       company: "Entreprise", services: "Services", process: "Processus", proof: "Preuve", capability: "Capacite", requestConsultation: "Demander une consultation", viewServices: "Voir les services", corporateProcessItems: ["Diagnostic", "Strategie", "Livraison", "Support"], corporateProofItems: ["Livraison fiable", "Communication claire", "Standards professionnels"],
       localExperts: "Experts locaux", callNow: "Appeler", fastResponse: "Reponse locale rapide", serviceAreas: "Zones desservies", workProof: "Realisations", workSlug: "realisations", service: "Service", quoteOnly: "Sur devis", serviceAreaReady: "Zone couverte", quoteExpectation: "Expliquez le besoin et recevez une prochaine etape claire.", homeServiceHeadline: (name) => `${name} realise le travail correctement des le depart`, homeServiceSubheadline: (description) => description || "Service local fiable avec communication claire, planning simple et devis avant intervention.", homeServiceCategoriesTitle: "Services pour des besoins locaux reels", homeServiceCategoriesText: "Organisez chaque service en options claires et faciles a demander.", homeServiceAreasTitle: "Nous couvrons les zones importantes", homeServiceAreasText: "Affichez les villes, quartiers, delais de reponse et options d'urgence.", serviceAreaItems: ["Quartiers proches", "Options le jour meme", "Urgences", "Service recurrent", "Travail autorise", "Devis clairs"], beforeAfterTitle: "Travail reel, resultats visibles", beforeAfterText: "Utilisez photos, avant/apres et projets termines pour creer la confiance.", homeServiceTrustTitle: "Pourquoi les clients appellent d'abord", homeServiceTrustText: "Avis, preuves et delais de reponse rendent la demande plus rassurante.", homeServiceTrustItems: ["Assure et autorise", "Devis clairs", "Arrivees ponctuelles", "Avant/apres", "References locales", "Suivi propre"], homeServiceQuoteTitle: "Demander un devis clair", homeServiceQuoteText: "Partagez le besoin, l'horaire prefere et la localisation. L'entreprise peut repondre par telephone, WhatsApp ou email.",
+      appointments: "Rendez-vous", availability: "Disponibilite", team: "Equipe", teamSlug: "equipe", bookNow: "Reserver", nextAvailable: "Prochaine disponibilite", slot: "Creneau", confirmation: "Pret a confirmer", staffPick: "Recommande", bookingContactFallback: "Confirmez le service, le creneau et le mode de contact prefere.", bookingHeadline: (name) => `Reservez ${name} sans aller-retour`, bookingSubheadline: (description) => description || "Page de rendez-vous claire avec services, disponibilite, equipe et reservation simple.", bookingServicesTitle: "Choisissez le bon rendez-vous", bookingServicesText: "Affichez duree, details du service et attentes avant reservation.", availabilityTitle: "Disponibilite facile a comprendre", availabilityText: "Clarifiez les horaires, la preparation et la confirmation.", availabilityItems: ["Aujourd'hui / demain", "Matin", "Apres-midi", "Week-end", "Appels de consultation", "Suivis"], bookingTeamTitle: "Une visite plus fluide", bookingTeamText: "Expliquez l'equipe, le processus et la preparation.", bookingTeamItems: ["Choisir un service", "Choisir un creneau", "Recevoir confirmation", "Arriver prepare"], bookingProofItems: ["Durees claires", "Confirmation simple", "Details avant reservation"], bookingContactTitle: "Reserver le prochain creneau", bookingContactText: "Envoyez le service, le jour et le contact prefere. L'entreprise confirme par telephone, WhatsApp ou email.",
       offer: "Offre", benefits: "Benefices", faq: "FAQ", claimOffer: "Commencer", seeProof: "Voir les preuves", nextStep: "Prochaine etape", quickRequest: "Envoyez une demande rapide et recevez une reponse claire.", bestValue: "Meilleur choix", outcomeFocused: "Oriente resultat", fastNextStep: "Etape rapide", editableOffer: "Offre modifiable", faqAnswer: "Cela peut etre ajuste au business, a l'offre et aux objections client.", funnelBenefitsItems: ["Promesse claire", "Etape simple", "Leads qualifies", "Sections modifiables", "Structure avec preuves", "Lancement rapide"], funnelProofItems: ["Resultat specifique", "Processus simple", "Reponse rapide", "Prix clarifies"], funnelFaqItems: [{ question: "Que se passe-t-il ensuite ?", answer: "L'entreprise repond avec la prochaine etape." }, { question: "Peut-on personnaliser ?", answer: "Oui, l'offre et le contenu sont modifiables." }, { question: "Est-ce une boutique ?", answer: "Non, c'est centre sur les leads." }],
       main: "Principal", popular: "Populaire", marketPrice: "Prix du marché", fromQuote: "Sur devis", book: "Réserver", freeQuote: "Devis gratuit", practiceArea: "Domaine d'expertise", scheduleConsultation: "Planifier une consultation",
       before: "Avant", after: "Après", viewProject: "Voir le projet", plan: "Offre", custom: "Sur mesure", start: "Commencer", ticketOffer: "Billet / offre", reserve: "Réserver", package: "Forfait", applyNow: "Postuler", view: "Voir", request: "Demander",
@@ -7697,6 +7862,7 @@ function catalogLocaleLabels(schema) {
       collections: "Colecoes", lookbook: "Lookbook", fit: "Guia de tamanhos", drop: "Drop", fitGuide: "Guia de tamanhos", fitGuideItems: ["Notas de tamanho e caimento", "Sugestoes de estilo", "Cuidados com a peca", "Envios e devolucoes"], fashionCollections: ["Novidades", "Essenciais", "Pecas destaque", "Acessorios", "Drop limitado", "Mais vendidos"],
       company: "Empresa", services: "Servicos", process: "Processo", proof: "Prova", capability: "Capacidade", requestConsultation: "Solicitar consulta", viewServices: "Ver servicos", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Suporte"], corporateProofItems: ["Entrega confiavel", "Comunicacao clara", "Padroes profissionais"],
       localExperts: "Especialistas locais", callNow: "Ligar agora", fastResponse: "Resposta local rapida", serviceAreas: "Areas atendidas", workProof: "Trabalhos", workSlug: "trabalhos", service: "Servico", quoteOnly: "Orcamento", serviceAreaReady: "Area atendida", quoteExpectation: "Conte o que precisa e receba o proximo passo claro.", homeServiceHeadline: (name) => `${name} resolve o servico certo desde o primeiro contato`, homeServiceSubheadline: (description) => description || "Servico local confiavel com comunicacao clara, agenda simples e orcamento primeiro.", homeServiceCategoriesTitle: "Servicos para necessidades locais reais", homeServiceCategoriesText: "Organize cada servico em opcoes claras para solicitar orcamento sem confusao.", homeServiceAreasTitle: "Atendemos as areas importantes", homeServiceAreasText: "Mostre cidades, bairros, expectativa de resposta e disponibilidade de emergencia.", serviceAreaItems: ["Bairros proximos", "Opcoes no mesmo dia", "Emergencias", "Servico recorrente", "Trabalho autorizado", "Estimativas claras"], beforeAfterTitle: "Trabalho real, resultado visivel", beforeAfterText: "Use fotos, antes/depois e projetos finalizados para gerar confianca antes da chamada.", homeServiceTrustTitle: "Por que os clientes ligam primeiro", homeServiceTrustText: "Provas, avaliacoes e expectativa de resposta deixam o proximo passo seguro.", homeServiceTrustItems: ["Licenciado e segurado", "Estimativas claras", "Pontualidade", "Antes/depois", "Referencias locais", "Acompanhamento claro"], homeServiceQuoteTitle: "Solicite um orcamento claro", homeServiceQuoteText: "Compartilhe o servico, horario preferido e localizacao. A empresa pode responder por telefone, WhatsApp ou email.",
+      appointments: "Agendamentos", availability: "Disponibilidade", team: "Equipe", teamSlug: "equipe", bookNow: "Agendar agora", nextAvailable: "Proxima disponibilidade", slot: "Horario", confirmation: "Pronto para confirmar", staffPick: "Recomendado", bookingContactFallback: "Confirme o servico, horario e metodo de contato preferido.", bookingHeadline: (name) => `Agende em ${name} sem complicacao`, bookingSubheadline: (description) => description || "Pagina clara de agendamento com servicos, disponibilidade, equipe e reserva simples.", bookingServicesTitle: "Escolha o agendamento certo", bookingServicesText: "Mostre duracao, detalhes do servico e o que o cliente deve esperar.", availabilityTitle: "Disponibilidade facil de entender", availabilityText: "Mostre horarios, preparacao e expectativa de confirmacao.", availabilityItems: ["Hoje / amanha", "Horarios de manha", "Horarios a tarde", "Fim de semana", "Chamadas de consulta", "Retornos"], bookingTeamTitle: "Uma visita mais simples do inicio ao fim", bookingTeamText: "Explique equipe, processo e preparacao.", bookingTeamItems: ["Escolha um servico", "Escolha horario preferido", "Receba confirmacao", "Chegue preparado"], bookingProofItems: ["Duracoes claras", "Confirmacao simples", "Detalhes antes de agendar"], bookingContactTitle: "Reserve o proximo horario", bookingContactText: "Envie servico, dia e contato preferido. A empresa confirma por telefone, WhatsApp ou email.",
       offer: "Oferta", benefits: "Beneficios", faq: "FAQ", claimOffer: "Comecar agora", seeProof: "Ver prova", nextStep: "Proximo passo", quickRequest: "Envie uma solicitacao rapida e receba uma resposta clara.", bestValue: "Melhor opcao", outcomeFocused: "Foco em resultado", fastNextStep: "Proximo passo rapido", editableOffer: "Oferta editavel", faqAnswer: "Isto pode ser ajustado ao negocio, oferta e duvidas do cliente.", funnelBenefitsItems: ["Promessa clara", "Proximo passo simples", "Leads qualificados", "Secoes editaveis", "Estrutura com prova", "Lancamento rapido"], funnelProofItems: ["Resultado especifico", "Processo simples", "Resposta rapida", "Conversa clara sobre preco"], funnelFaqItems: [{ question: "O que acontece depois?", answer: "O negocio responde com o proximo passo." }, { question: "Pode personalizar?", answer: "Sim, a oferta e o conteudo sao editaveis." }, { question: "Isso e uma loja?", answer: "Nao, e focado em leads." }],
       main: "Principal", popular: "Popular", marketPrice: "Preço de mercado", fromQuote: "Sob orçamento", book: "Reservar", freeQuote: "Orçamento grátis", practiceArea: "Área de atuação", scheduleConsultation: "Agendar consulta",
       before: "Antes", after: "Depois", viewProject: "Ver projeto", plan: "Plano", custom: "Personalizado", start: "Começar", ticketOffer: "Ingresso / oferta", reserve: "Reservar", package: "Pacote", applyNow: "Aplicar agora", view: "Ver", request: "Consultar",
