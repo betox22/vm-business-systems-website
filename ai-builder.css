@@ -4546,6 +4546,319 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   font-weight: 950;
 }
 
+.template-digital-products-store,
+.layout-digital-products-store {
+  --digital-ink: color-mix(in srgb, var(--site-primary) 86%, #020617);
+  --digital-cyan: color-mix(in srgb, var(--site-accent) 72%, #22d3ee);
+}
+
+.digital-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
+  gap: clamp(30px, 6vw, 84px);
+  align-items: center;
+  min-height: 76vh;
+  padding: clamp(44px, 7vw, 108px) clamp(18px, 5vw, 76px);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 82% 16%, color-mix(in srgb, var(--site-accent) 28%, transparent), transparent 32%),
+    radial-gradient(circle at 18% 82%, color-mix(in srgb, var(--site-primary) 10%, transparent), transparent 30%),
+    linear-gradient(135deg, color-mix(in srgb, var(--site-bg) 92%, white), color-mix(in srgb, var(--site-accent) 8%, var(--site-bg)));
+}
+
+.digital-hero-copy {
+  max-width: 760px;
+}
+
+.digital-hero h1 {
+  margin: 0 0 18px;
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(48px, 7vw, 96px);
+  line-height: 0.94;
+  letter-spacing: 0;
+  color: var(--site-text);
+}
+
+.digital-hero p {
+  max-width: 660px;
+  margin: 0 0 16px;
+  color: var(--site-muted);
+  font-size: clamp(18px, 1.8vw, 23px);
+  line-height: 1.55;
+}
+
+.digital-stage {
+  position: relative;
+  min-height: clamp(430px, 52vw, 650px);
+  display: grid;
+  align-items: center;
+}
+
+.digital-stage-visual {
+  min-height: inherit;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--site-primary) 10%, transparent);
+  border-radius: calc(var(--brand-radius) + 18px);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--site-surface) 86%, transparent), color-mix(in srgb, var(--site-accent) 14%, var(--site-surface))),
+    radial-gradient(circle at 34% 22%, color-mix(in srgb, var(--site-accent) 30%, transparent), transparent 30%);
+  box-shadow: 0 30px 90px color-mix(in srgb, var(--site-primary) 18%, transparent);
+}
+
+.digital-stage-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.digital-access-card {
+  position: absolute;
+  right: clamp(14px, 3vw, 34px);
+  bottom: clamp(14px, 3vw, 34px);
+  width: min(300px, 74%);
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--site-surface) 70%, transparent);
+  border-radius: var(--brand-radius);
+  background: color-mix(in srgb, var(--site-surface) 92%, transparent);
+  box-shadow: 0 20px 62px color-mix(in srgb, var(--site-primary) 18%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.digital-access-card small,
+.digital-card-top small,
+.digital-module-grid small {
+  color: var(--site-accent);
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.digital-access-card strong {
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: 23px;
+}
+
+.digital-access-card span,
+.digital-module-grid span,
+.digital-proof-section p,
+.digital-access-panel p {
+  color: var(--site-muted);
+  line-height: 1.5;
+}
+
+.digital-proof-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.digital-proof-strip span,
+.digital-proof-section > div:last-child span {
+  border: 1px solid color-mix(in srgb, var(--site-primary) 10%, transparent);
+  border-radius: var(--brand-radius);
+  background: color-mix(in srgb, var(--site-surface) 88%, transparent);
+  box-shadow: 0 12px 34px color-mix(in srgb, var(--site-primary) 6%, transparent);
+}
+
+.digital-proof-strip span {
+  padding: 10px 12px;
+  font-weight: 900;
+}
+
+.digital-bundle-section,
+.digital-modules-section,
+.digital-proof-section,
+.digital-access-section {
+  padding: clamp(54px, 7vw, 98px) clamp(18px, 5vw, 76px);
+}
+
+.catalog-digital-pro {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.catalog-digital-pro article {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--site-primary) 10%, transparent);
+  border-radius: var(--brand-radius);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--site-surface) 98%, white), color-mix(in srgb, var(--site-accent) 5%, var(--site-surface)));
+  box-shadow: 0 18px 58px color-mix(in srgb, var(--site-primary) 8%, transparent);
+}
+
+.catalog-digital-pro article.featured {
+  background:
+    radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--site-accent) 26%, transparent), transparent 32%),
+    color-mix(in srgb, var(--site-primary) 92%, #020617);
+  color: var(--site-surface);
+}
+
+.catalog-digital-pro article.featured p,
+.catalog-digital-pro article.featured li {
+  color: color-mix(in srgb, var(--site-surface) 72%, transparent);
+}
+
+.digital-card-top,
+.digital-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.digital-card-top span {
+  padding: 7px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--site-accent) 14%, transparent);
+  color: var(--site-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.catalog-digital-pro .image-shell,
+.catalog-digital-pro .card-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: calc(var(--brand-radius) - 2px);
+  overflow: hidden;
+}
+
+.catalog-digital-pro h3 {
+  margin: 0;
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(22px, 2.2vw, 31px);
+  line-height: 1.02;
+}
+
+.catalog-digital-pro p,
+.catalog-digital-pro ul {
+  margin: 0;
+  color: var(--site-muted);
+  line-height: 1.5;
+}
+
+.catalog-digital-pro ul {
+  display: grid;
+  gap: 6px;
+  padding-left: 18px;
+}
+
+.digital-modules-section,
+.digital-proof-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(340px, 1.18fr);
+  gap: clamp(24px, 5vw, 76px);
+  align-items: start;
+}
+
+.digital-modules-section h2,
+.digital-proof-section h2,
+.digital-access-panel h2 {
+  margin: 0 0 14px;
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(36px, 5vw, 74px);
+  line-height: 0.98;
+}
+
+.digital-modules-section p,
+.digital-proof-section p {
+  margin: 0;
+  color: var(--site-muted);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.digital-module-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.digital-module-grid article {
+  min-height: 150px;
+  display: grid;
+  align-content: space-between;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--site-primary) 10%, transparent);
+  border-radius: var(--brand-radius);
+  background: var(--site-surface);
+  box-shadow: 0 14px 44px color-mix(in srgb, var(--site-primary) 6%, transparent);
+}
+
+.digital-module-grid strong {
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: 23px;
+  line-height: 1.08;
+}
+
+.digital-proof-section > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.digital-proof-section > div:last-child span {
+  padding: 14px 16px;
+  font-weight: 900;
+}
+
+.digital-access-section {
+  background:
+    radial-gradient(circle at 18% 25%, color-mix(in srgb, var(--site-accent) 22%, transparent), transparent 26%),
+    color-mix(in srgb, var(--site-primary) 93%, #020617);
+}
+
+.digital-access-panel {
+  max-width: 980px;
+  margin-inline: auto;
+  padding: clamp(30px, 5vw, 62px);
+  border-radius: calc(var(--brand-radius) + 10px);
+  background: var(--site-surface);
+  box-shadow: 0 28px 90px color-mix(in srgb, black 24%, transparent);
+}
+
+.digital-visual-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--site-surface) 82%, transparent), color-mix(in srgb, var(--site-accent) 16%, var(--site-surface))),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--site-primary) 6%, transparent) 0 1px, transparent 1px 42px);
+}
+
+.digital-visual-placeholder span {
+  width: clamp(150px, 22vw, 240px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 30px;
+  background: color-mix(in srgb, var(--site-primary) 92%, #020617);
+  color: var(--site-surface);
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(50px, 7vw, 86px);
+  font-weight: 950;
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--site-primary) 24%, transparent);
+}
+
+.digital-visual-placeholder small {
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: var(--site-surface);
+  color: var(--site-primary);
+  font-weight: 900;
+}
+
 .catalog-luxury {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -5233,6 +5546,9 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   .restaurant-hero,
   .restaurant-specials-section,
   .restaurant-info-section,
+  .digital-hero,
+  .digital-modules-section,
+  .digital-proof-section,
   .funnel-hero,
   .funnel-offer-section,
   .funnel-proof-section,
@@ -5353,6 +5669,44 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   }
 
   .restaurant-order-card {
+    padding: 28px 18px;
+  }
+
+  .digital-hero {
+    min-height: auto;
+    padding: 44px 16px 28px;
+  }
+
+  .digital-hero h1 {
+    font-size: clamp(42px, 14vw, 70px);
+  }
+
+  .digital-stage {
+    min-height: 320px;
+  }
+
+  .digital-access-card {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: auto;
+    margin-top: 12px;
+  }
+
+  .digital-proof-strip,
+  .catalog-digital-pro,
+  .digital-module-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .digital-bundle-section,
+  .digital-modules-section,
+  .digital-proof-section,
+  .digital-access-section {
+    padding: 44px 16px;
+  }
+
+  .digital-access-panel {
     padding: 28px 18px;
   }
 

@@ -403,6 +403,46 @@
       ],
       editableSlots: ["menu categories", "dishes", "prices", "photos", "combos", "pickup/delivery", "hours", "location", "contact info", "order CTAs", "section order"],
     },
+    {
+      id: "digital-products-store",
+      name: "Digital Products Pro",
+      category: "digital",
+      bestFor: ["courses", "ebooks", "templates", "software", "memberships", "creator products", "downloadable packs"],
+      style: {
+        tone: "modern, expert, productized, fast-access, conversion-focused",
+        layoutDensity: "medium",
+        imageStyle: "digital product mockups, course modules, dashboard cards, creator bundles, clean proof panels",
+        defaultColors: { background: "#f7fbff", surface: "#ffffff", primary: "#111827", secondary: "#475569", accent: "#6366f1" },
+        fonts: { heading: "Inter", body: "Inter" },
+      },
+      sections: [
+        { type: "digital_header", fields: { logo: "{{logo_url}}", businessName: "{{business_name}}", navItems: ["Offer", "Products", "Modules", "Access"], ctaLabel: "{{access_cta_label}}" } },
+        { type: "digital_hero", fields: { headline: "{{digital_headline}}", subheadline: "{{digital_slogan}}", primaryButton: "{{access_cta_label}}", secondaryButton: "{{view_products_cta}}" } },
+        { type: "digital_bundle", fields: { title: "{{bundle_title}}", products: "{{featured_products}}" } },
+        { type: "digital_modules", fields: { title: "{{modules_title}}", modules: "{{included_modules}}" } },
+        { type: "digital_proof", fields: { title: "{{proof_title}}", items: "{{trust_points}}" } },
+        { type: "digital_access", fields: { title: "{{access_title}}", text: "{{access_text}}" } },
+      ],
+      aiPrompt: "Use a premium digital products website, not a generic store. Generate a productized offer for courses, ebooks, templates, software, memberships or downloadable packs. Show instant access, modules included, bonuses, license/support notes, proof, FAQ-style objections, product cards and clear buy/get-access CTAs. Preserve the digital product structure; only adapt copy, colors, products, modules, pricing labels and CTAs to the business.",
+      catalogModel: {
+        catalogType: "digital_offer_catalog",
+        productCardStyle: "digital offer cards with instant access, included modules, bonuses, license/support note, price and get-access CTA",
+        collectionLayout: "expert hero, offer bundle, module grid, product cards, proof, access panel",
+        filters: ["product_type", "level", "access", "bundle", "support"],
+        productDetailModel: "digital product detail with modules, deliverables, bonuses, license, access and guarantee",
+        upsellModel: "bundles, pro templates, memberships, support packages and premium access",
+        customerFeeling: "premium creator or software store built for immediate access and trust",
+      },
+      visualDifference: "Digital product layout with expert hero, instant-access offer cards, modules, bonuses, proof and access CTA.",
+      clientSelectionCard: { title: "Digital Products", category: "digital", bestForLabel: "courses, ebooks, templates, software, memberships", difference: "Instant access, bundles, modules, proof and digital CTAs.", previewTags: ["digital", "course", "software"] },
+      pages: [
+        { name: "Home", purpose: "Digital product offer and conversion", usesSections: ["digital_header", "digital_hero", "digital_bundle", "digital_modules", "digital_proof", "digital_access"] },
+        { name: "Products", purpose: "Digital product catalog", catalogType: "digital_offer_catalog", layout: "offer cards with bundles and access notes", filters: ["product_type", "level", "bundle"] },
+        { name: "Access", purpose: "Modules, bonuses and what happens after purchase", layout: "module grid, bonuses, support, license notes" },
+        { name: "Contact", purpose: "Questions, support and custom access", layout: "contact, support note, access questions" },
+      ],
+      editableSlots: ["headline", "slogan", "digital products", "modules", "bonuses", "pricing labels", "access notes", "support", "license", "proof", "CTAs", "section order"],
+    },
   ];
 
   const INTENT_RULES = [
@@ -470,7 +510,7 @@
       intent: "digital_products",
       templateId: "digital-products-store",
       catalogType: "digital_offer_catalog",
-      keywords: ["curso", "courses", "ebook", "templates", "software", "membresia", "membresía"],
+      keywords: ["curso", "cursos", "course", "courses", "ebook", "e-book", "templates", "plantillas", "software", "app", "saas", "membresia", "membresía", "membership", "digital", "descarga", "download", "pdf", "pack", "coaching online", "masterclass"],
     },
     {
       intent: "fashion",
@@ -627,6 +667,8 @@
     const primaryCatalogType = selected[0]?.catalogType || primary[0]?.rule?.catalogType || "";
     const fallbackIds = normalized.includes("restaurant") || normalized.includes("restaurante") || normalized.includes("comida") || /restaurant|menu|food/.test(primaryCatalogType)
       ? ["restaurant-food-business", "lead-funnel-pro", "home-services-premium", "booking-appointment-pro"]
+      : normalized.includes("digital") || normalized.includes("curso") || /digital|pricing|software|course/.test(primaryCatalogType)
+        ? ["digital-products-store", "lead-funnel-pro", "apple-premium-product", "corporate-company-pro"]
       : normalized.includes("marketplace") || /marketplace|listing|dense/.test(primaryCatalogType)
       ? ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro"]
       : normalized.includes("servicio") || normalized.includes("service") || /service|booking/.test(primaryCatalogType)

@@ -669,6 +669,20 @@ const TEMPLATE_PREVIEW_CHOICES = [
     },
   },
   {
+    templateId: "digital-products-store",
+    name: "Digital Products",
+    names: { en: "Digital Products", es: "Productos digitales", fr: "Produits digitaux", pt: "Produtos digitais" },
+    catalogType: "digital_offer_catalog",
+    image: "/templates-preview/screenshots/premium.png",
+    description: "Creator/SaaS-style digital product site with bundles, modules, proof, and instant access CTA.",
+    descriptions: {
+      en: "Creator/SaaS-style digital product site with bundles, modules, proof, and instant access CTA.",
+      es: "Sitio para productos digitales con bundles, modulos, prueba social y CTA de acceso inmediato.",
+      fr: "Site pour produits digitaux avec bundles, modules, preuves et CTA d'acces immediat.",
+      pt: "Site para produtos digitais com bundles, modulos, prova e CTA de acesso imediato.",
+    },
+  },
+  {
     templateId: "home-services-premium",
     name: "Local Services Premium",
     names: { en: "Local Services Premium", es: "Servicios locales premium", fr: "Services locaux premium", pt: "Servicos locais premium" },
@@ -1788,11 +1802,14 @@ function rankedFallbackChoices(selectedTemplateId = "") {
   const selectedCatalog = selected?.catalogType || "";
   const commerceHeavy = /marketplace|dense|listing/.test(selectedCatalog);
   const restaurantHeavy = /restaurant|menu|food/.test(selectedCatalog);
+  const digitalHeavy = /digital|pricing|software|course/.test(selectedCatalog);
   const serviceHeavy = /service|booking/.test(selectedCatalog);
   const ordered = commerceHeavy
     ? ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro", "apple-premium-product"]
     : restaurantHeavy
       ? ["restaurant-food-business", "lead-funnel-pro", "home-services-premium", "booking-appointment-pro"]
+    : digitalHeavy
+      ? ["digital-products-store", "lead-funnel-pro", "apple-premium-product", "corporate-company-pro"]
     : serviceHeavy
       ? ["home-services-premium", "lead-funnel-pro", "local-services-pro-plus", "booking-appointment-pro"]
       : ["lead-funnel-pro", "corporate-company-pro", "apple-premium-product", "fashion-drop-pro"];
@@ -4423,9 +4440,10 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isHomeServicesTemplate = catalogType === "home_services_quote_catalog" || /home-services-premium/i.test(template.id || "");
   const isBookingTemplate = catalogType === "booking_menu_catalog" || /booking-appointment-pro/i.test(template.id || "");
   const isRestaurantTemplate = catalogType === "restaurant_menu_catalog" || catalogType === "menu_catalog" || /restaurant-food-business/i.test(template.id || "");
+  const isDigitalTemplate = catalogType === "digital_offer_catalog" || /digital-products-store/i.test(template.id || "");
   const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate;
-  const primaryCta = isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
-  const secondaryCta = isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
+  const primaryCta = isDigitalTemplate ? copy.getAccess : isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
+  const secondaryCta = isDigitalTemplate ? copy.viewProducts : isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
   if (isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate) {
     catalogItems.forEach((item) => {
       item.price_type = "quote_only";
@@ -4433,6 +4451,16 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       item.price_label = isRestaurantTemplate ? copy.menuPrice : isBookingTemplate ? copy.fromQuote : copy.askPrice;
       item.button_label = isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : copy.claimOffer;
       item.track_inventory = false;
+    });
+  }
+  if (isDigitalTemplate) {
+    catalogItems.forEach((item, index) => {
+      item.price_type = "fixed";
+      item.category = digitalCategoryForIndex(index, copy);
+      item.price_label = item.price_label && item.price_label !== copy.priceNotSet ? item.price_label : copy.digitalPrice;
+      item.button_label = copy.getAccess;
+      item.track_inventory = false;
+      item.shipping_label = copy.instantAccess;
     });
   }
   const instantPages = isMarketplaceTemplate
@@ -4449,6 +4477,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
               ? buildBookingAppointmentInstantPages(copy, name, description, payload)
               : isRestaurantTemplate
                 ? buildRestaurantMenuInstantPages(copy, name, description, payload)
+                : isDigitalTemplate
+                  ? buildDigitalProductsInstantPages(copy, name, description, payload)
             : isLeadFunnelTemplate
               ? buildLeadFunnelInstantPages(copy, name, description, payload)
           : buildDefaultInstantPages(copy, name, description, payload);
@@ -4520,6 +4550,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       { label: copy.specials, page_key: "catalog" },
       { label: copy.hoursLocation, page_key: "about" },
       { label: copy.orderNow, page_key: "contact" },
+    ] : isDigitalTemplate ? [
+      { label: copy.offer, page_key: "home" },
+      { label: copy.products, page_key: "catalog" },
+      { label: copy.modules, page_key: "about" },
+      { label: copy.getAccess, page_key: "contact" },
     ] : isHomeServicesTemplate ? [
       { label: copy.services, page_key: "home" },
       { label: copy.serviceAreas, page_key: "catalog" },
@@ -4562,7 +4597,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         description: template.visualDifference || copy.fastBase,
         theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: primaryCta, secondary_label: secondaryCta, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
         layout_mode_id: template.id || "instant_storefront",
-        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : isBookingTemplate ? "appointment_booking" : isRestaurantTemplate ? "restaurant_menu_story" : "split_showcase",
+        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : isBookingTemplate ? "appointment_booking" : isRestaurantTemplate ? "restaurant_menu_story" : isDigitalTemplate ? "digital_product_launch" : "split_showcase",
         product_layout: catalogType,
       },
     ],
@@ -5014,6 +5049,94 @@ function buildRestaurantMenuInstantPages(copy, name, description, payload = {}) 
   ];
 }
 
+function buildDigitalProductsInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.offer,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "digital_hero",
+          type: "DigitalHero",
+          order: 1,
+          editable: {
+            headline: copy.digitalHeadline(name),
+            subtitle: copy.digitalSubheadline(description),
+            primary_button: copy.getAccess,
+            secondary_button: copy.viewProducts,
+            image_url: heroImage,
+            images: [],
+          },
+          settings: { layout: "digital_product_launch", spacing: "cinematic", container_width: "wide" },
+        },
+        {
+          id: "digital_bundle",
+          type: "DigitalBundle",
+          order: 2,
+          editable: { title: copy.digitalBundleTitle, text: copy.digitalBundleText, images: [] },
+          settings: { layout: "bundle_cards", columns: 3, spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "digital_modules",
+          type: "DigitalModules",
+          order: 3,
+          editable: { title: copy.digitalModulesTitle, text: copy.digitalModulesText, items: copy.digitalModuleItems },
+          settings: { layout: "module_grid", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "digital_proof",
+          type: "DigitalProof",
+          order: 4,
+          editable: { title: copy.digitalProofTitle, text: copy.digitalProofText, items: copy.digitalProofItems },
+          settings: { layout: "proof_panel", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "digital_access",
+          type: "DigitalAccessPanel",
+          order: 5,
+          editable: { title: copy.digitalAccessTitle, text: copy.digitalAccessText },
+          settings: { layout: "access_panel", spacing: "balanced", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.products,
+      slug: copy.shopSlug,
+      order: 2,
+      sections: [
+        {
+          id: "digital_catalog",
+          type: "ProductGrid",
+          order: 1,
+          editable: { title: copy.digitalBundleTitle, text: copy.digitalBundleText, images: [] },
+          settings: { layout: "digital_offer_cards", columns: 3, spacing: "spacious", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.modules,
+      slug: copy.modulesSlug,
+      order: 3,
+      sections: [
+        { id: "digital_modules_page", type: "DigitalModules", order: 1, editable: { title: copy.digitalModulesTitle, text: copy.digitalModulesText, items: copy.digitalModuleItems }, settings: { layout: "module_grid", container_width: "wide" } },
+        { id: "digital_proof_page", type: "DigitalProof", order: 2, editable: { title: copy.digitalProofTitle, text: copy.digitalProofText, items: copy.digitalProofItems }, settings: { layout: "proof_panel", container_width: "wide" } },
+      ],
+    },
+    {
+      page_key: "contact",
+      title: copy.getAccess,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [{ id: "digital_access_page", type: "DigitalAccessPanel", order: 1, editable: { title: copy.digitalAccessTitle, text: copy.digitalAccessText }, settings: { layout: "access_panel", container_width: "wide" } }],
+    },
+  ];
+}
+
 function buildHomeServicesPremiumInstantPages(copy, name, description, payload = {}) {
   const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
   return [
@@ -5411,6 +5534,11 @@ function restaurantCategoryForIndex(index, copy) {
   return categories[index % categories.length];
 }
 
+function digitalCategoryForIndex(index, copy) {
+  const categories = copy.digitalCategories || ["Course", "Template", "Toolkit", "Membership"];
+  return categories[index % categories.length];
+}
+
 function marketplaceCategories(schema) {
   const items = marketplaceItems(schema);
   const fromItems = [...new Set(items.map((item) => item.category).filter(Boolean))];
@@ -5557,6 +5685,23 @@ function instantLocaleCopy(language) {
       premiumSpecsTitle: "Everything important, easy to compare",
       premiumSpecsText: "Highlight materials, warranty, delivery, support, personalization, or service quality without clutter.",
       premiumSpecItems: ["Refined presentation", "Editable product story", "Premium support", "Ready to publish"],
+      modules: "Modules",
+      modulesSlug: "/modules",
+      viewProducts: "View products",
+      digitalPrice: "Price editable",
+      digitalHeadline: (name) => `${name} digital products, ready for instant access`,
+      digitalSubheadline: (description) => description || "A polished digital product store for courses, templates, software, memberships and downloadable packs.",
+      digitalBundleTitle: "Digital offers built to sell",
+      digitalBundleText: "Present products as clear bundles with instant access, deliverables, bonuses and support notes.",
+      digitalModulesTitle: "What customers get inside",
+      digitalModulesText: "Show modules, downloads, lessons, templates, licenses and support in a clean structure.",
+      digitalModuleItems: ["Core training", "Downloadable resources", "Templates and tools", "Bonus material", "Access instructions", "Support notes"],
+      digitalProofTitle: "Trust before checkout",
+      digitalProofText: "Use proof, outcomes, guarantees or creator credibility to make the purchase feel safe.",
+      digitalProofItems: ["Instant access", "Editable modules", "Clear license", "Support-ready", "Bundle value", "Simple checkout"],
+      digitalAccessTitle: "Get access and start immediately",
+      digitalAccessText: "After purchase or request, customers know exactly what they receive, how access works and where to get support.",
+      digitalCategories: ["Course", "Template", "Toolkit", "Membership", "Software", "Bundle"],
       newDrop: "New drop",
       collections: "Collections",
       lookbook: "Lookbook",
@@ -5710,6 +5855,23 @@ function instantLocaleCopy(language) {
       premiumSpecsTitle: "Lo importante, fácil de comparar",
       premiumSpecsText: "Destaca materiales, garantía, entrega, soporte, personalización o calidad del servicio sin llenar la página de ruido.",
       premiumSpecItems: ["Presentación refinada", "Historia editable", "Soporte premium", "Listo para publicar"],
+      modules: "Modulos",
+      modulesSlug: "/modulos",
+      viewProducts: "Ver productos",
+      digitalPrice: "Precio editable",
+      digitalHeadline: (name) => `${name}: productos digitales con acceso inmediato`,
+      digitalSubheadline: (description) => description || "Tienda pulida para cursos, plantillas, software, membresias y packs descargables.",
+      digitalBundleTitle: "Ofertas digitales listas para vender",
+      digitalBundleText: "Presenta productos como bundles claros con acceso inmediato, entregables, bonos y soporte.",
+      digitalModulesTitle: "Que recibe el cliente",
+      digitalModulesText: "Muestra modulos, descargas, lecciones, plantillas, licencias y soporte de forma clara.",
+      digitalModuleItems: ["Entrenamiento principal", "Recursos descargables", "Plantillas y herramientas", "Material bonus", "Instrucciones de acceso", "Notas de soporte"],
+      digitalProofTitle: "Confianza antes del checkout",
+      digitalProofText: "Usa prueba social, resultados, garantia o autoridad del creador para que la compra se sienta segura.",
+      digitalProofItems: ["Acceso inmediato", "Modulos editables", "Licencia clara", "Soporte listo", "Valor del bundle", "Checkout simple"],
+      digitalAccessTitle: "Obtén acceso y empieza de inmediato",
+      digitalAccessText: "Despues de comprar o solicitar, el cliente sabe exactamente que recibe, como entra y donde pide soporte.",
+      digitalCategories: ["Curso", "Plantilla", "Toolkit", "Membresia", "Software", "Bundle"],
       newDrop: "Nuevo drop",
       collections: "Colecciones",
       lookbook: "Lookbook",
@@ -5863,6 +6025,23 @@ function instantLocaleCopy(language) {
       premiumSpecsTitle: "L'essentiel, facile à comparer",
       premiumSpecsText: "Mettez en avant matériaux, garantie, livraison, support, personnalisation ou qualité de service sans surcharge.",
       premiumSpecItems: ["Présentation raffinée", "Histoire modifiable", "Support premium", "Prêt à publier"],
+      modules: "Modules",
+      modulesSlug: "/modules",
+      viewProducts: "Voir les produits",
+      digitalPrice: "Prix modifiable",
+      digitalHeadline: (name) => `${name}: produits digitaux avec acces immediat`,
+      digitalSubheadline: (description) => description || "Boutique soignee pour cours, templates, logiciel, abonnements et packs telechargeables.",
+      digitalBundleTitle: "Offres digitales pretes a vendre",
+      digitalBundleText: "Presentez les produits en bundles clairs avec acces immediat, livrables, bonus et support.",
+      digitalModulesTitle: "Ce que le client recoit",
+      digitalModulesText: "Affichez modules, telechargements, lecons, templates, licences et support dans une structure claire.",
+      digitalModuleItems: ["Formation principale", "Ressources telechargeables", "Templates et outils", "Bonus", "Instructions d'acces", "Notes de support"],
+      digitalProofTitle: "Confiance avant le paiement",
+      digitalProofText: "Utilisez preuves, resultats, garantie ou credibilite du createur pour rassurer l'achat.",
+      digitalProofItems: ["Acces immediat", "Modules modifiables", "Licence claire", "Support pret", "Valeur du bundle", "Paiement simple"],
+      digitalAccessTitle: "Obtenir l'acces et commencer tout de suite",
+      digitalAccessText: "Apres achat ou demande, le client sait exactement ce qu'il recoit, comment acceder et ou demander support.",
+      digitalCategories: ["Cours", "Template", "Toolkit", "Abonnement", "Logiciel", "Bundle"],
       newDrop: "Nouveau drop",
       collections: "Collections",
       lookbook: "Lookbook",
@@ -6016,6 +6195,23 @@ function instantLocaleCopy(language) {
       premiumSpecsTitle: "O importante, fácil de comparar",
       premiumSpecsText: "Destaque materiais, garantia, entrega, suporte, personalização ou qualidade do serviço sem poluir a página.",
       premiumSpecItems: ["Apresentação refinada", "História editável", "Suporte premium", "Pronto para publicar"],
+      modules: "Modulos",
+      modulesSlug: "/modulos",
+      viewProducts: "Ver produtos",
+      digitalPrice: "Preco editavel",
+      digitalHeadline: (name) => `${name}: produtos digitais com acesso imediato`,
+      digitalSubheadline: (description) => description || "Loja polida para cursos, templates, software, assinaturas e packs baixaveis.",
+      digitalBundleTitle: "Ofertas digitais prontas para vender",
+      digitalBundleText: "Apresente produtos como bundles claros com acesso imediato, entregaveis, bonus e suporte.",
+      digitalModulesTitle: "O que o cliente recebe",
+      digitalModulesText: "Mostre modulos, downloads, aulas, templates, licencas e suporte em uma estrutura clara.",
+      digitalModuleItems: ["Treinamento principal", "Recursos baixaveis", "Templates e ferramentas", "Material bonus", "Instrucoes de acesso", "Notas de suporte"],
+      digitalProofTitle: "Confianca antes do checkout",
+      digitalProofText: "Use provas, resultados, garantia ou autoridade do criador para tornar a compra segura.",
+      digitalProofItems: ["Acesso imediato", "Modulos editaveis", "Licenca clara", "Suporte pronto", "Valor do bundle", "Checkout simples"],
+      digitalAccessTitle: "Obtenha acesso e comece agora",
+      digitalAccessText: "Depois da compra ou solicitacao, o cliente sabe exatamente o que recebe, como acessar e onde pedir suporte.",
+      digitalCategories: ["Curso", "Template", "Toolkit", "Assinatura", "Software", "Bundle"],
       newDrop: "Novo drop",
       collections: "Coleções",
       lookbook: "Lookbook",
@@ -7211,6 +7407,11 @@ function renderSection(section, schema) {
     RestaurantSpecials: renderRestaurantSpecials,
     RestaurantInfo: renderRestaurantInfo,
     RestaurantOrderPanel: renderRestaurantOrderPanel,
+    DigitalHero: renderDigitalHero,
+    DigitalBundle: renderDigitalBundle,
+    DigitalModules: renderDigitalModules,
+    DigitalProof: renderDigitalProof,
+    DigitalAccessPanel: renderDigitalAccessPanel,
     HomeServiceHero: renderHomeServiceHero,
     HomeServiceCategories: renderHomeServiceCategories,
     HomeServiceAreas: renderHomeServiceAreas,
@@ -7591,6 +7792,91 @@ function restaurantMenuCategories(schema, fallback = []) {
 function restaurantVisualPlaceholder(schema) {
   const initials = String(schema.business?.name || "RM").slice(0, 2).toUpperCase();
   return `<div class="restaurant-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
+}
+
+function renderDigitalHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = marketplaceItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url);
+  const image = editable.image_url || heroItem?.image_url || "";
+  return `<section class="digital-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="digital-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || labels.digitalProducts)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.getAccess)}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewProducts)}</a>
+      </div>
+      <div class="digital-proof-strip">${labels.digitalProofItems.slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    </div>
+    <div class="digital-stage">
+      <div class="digital-stage-visual">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(schema.business?.name || "")}">` : digitalVisualPlaceholder(schema)}</div>
+      <article class="digital-access-card">
+        <small>${escapeHtml(labels.instantAccess)}</small>
+        <strong>${escapeHtml(labels.getAccess)}</strong>
+        <span>${escapeHtml(labels.digitalAccessShort)}</span>
+      </article>
+    </div>
+  </section>`;
+}
+
+function renderDigitalBundle(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="digital-bundle-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading">
+      <span class="rendered-kicker">${escapeHtml(labels.digitalProducts)}</span>
+      <h2>${escapeHtml(editable.title || labels.digitalBundleTitle)}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    ${renderDigitalOfferCatalog(marketplaceItems(schema), schema)}
+  </section>`;
+}
+
+function renderDigitalModules(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.digitalModuleItems;
+  return `<section class="digital-modules-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.modules)}</span><h2>${escapeHtml(editable.title || labels.digitalModulesTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="digital-module-grid">${items.map((item, index) => `<article><small>0${index + 1}</small><strong>${escapeHtml(item)}</strong><span>${escapeHtml(index % 2 ? labels.downloadable : labels.bonus)}</span></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderDigitalProof(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.digitalProofItems;
+  return `<section class="digital-proof-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.proof)}</span><h2>${escapeHtml(editable.title || labels.digitalProofTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div>${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderDigitalAccessPanel(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="digital-access-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="digital-access-panel">
+      <span class="rendered-kicker">${escapeHtml(labels.instantAccess)}</span>
+      <h2>${escapeHtml(editable.title || labels.digitalAccessTitle)}</h2>
+      <p>${escapeHtml(editable.text || labels.digitalAccessText)}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(labels.getAccess)}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(labels.contact)}</a>
+      </div>
+    </div>
+  </section>`;
+}
+
+function digitalVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "DP").slice(0, 2).toUpperCase();
+  return `<div class="digital-visual-placeholder">
+    <span>${escapeHtml(initials)}</span>
+    <small>${escapeHtml(catalogLocaleLabels(schema).instantAccess)}</small>
+  </div>`;
 }
 
 function renderHomeServiceHero(section, schema) {
@@ -8056,12 +8342,21 @@ function renderLuxuryGalleryCatalog(items) {
   </article>`).join("")}</div>`;
 }
 
-function renderDigitalOfferCatalog(items) {
-  const labels = catalogLocaleLabels(arguments[1]);
-  return `<div class="catalog-digital">${items.map((item) => `<article>
-    <span>${labels.instantAccess}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p>
-    <ul><li>${labels.downloadable}</li><li>${labels.bonus}</li><li>${labels.lifetime}</li></ul>
-    <b>${escapeHtml(item.price_label)}</b><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.getAccess)}</a>
+function renderDigitalOfferCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-digital-pro">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    <div class="digital-card-top">
+      <small>${escapeHtml(item.category || labels.digitalProducts)}</small>
+      <span>${escapeHtml(labels.instantAccess)}</span>
+    </div>
+    ${renderResilientImage(item.image_url, item.name, item.name)}
+    <h3>${escapeHtml(item.name)}</h3>
+    <p>${escapeHtml(item.description)}</p>
+    <ul><li>${escapeHtml(labels.downloadable)}</li><li>${escapeHtml(labels.bonus)}</li><li>${escapeHtml(labels.lifetime)}</li></ul>
+    <div class="digital-card-bottom">
+      <strong>${escapeHtml(productPriceLabel(item))}</strong>
+      <a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.getAccess)}</a>
+    </div>
   </article>`).join("")}</div>`;
 }
 
@@ -8172,6 +8467,7 @@ function catalogLocaleLabels(schema) {
       search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", signature: "Signature", detail: "Detail", curated: "Curated", flagship: "Flagship", premiumSpecs: ["Presentation", "Quality", "Support", "Delivery"],
       sellerVerified: "Seller verified", used: "Used", newItem: "New", localPickup: "Local pickup", makeOffer: "Make offer", contactSeller: "Contact seller",
       newDrop: "New drop", limitedSelection: "Limited selection", instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
+      digitalProducts: "Digital products", viewProducts: "View products", modules: "Modules", digitalAccessShort: "Downloads, modules and support notes.", digitalBundleTitle: "Digital offers built to sell", digitalModulesTitle: "What customers get inside", digitalProofTitle: "Trust before checkout", digitalAccessTitle: "Get access and start immediately", digitalAccessText: "Customers know exactly what they receive, how access works and where to get support.", digitalModuleItems: ["Core training", "Downloadable resources", "Templates and tools", "Bonus material", "Access instructions", "Support notes"], digitalProofItems: ["Instant access", "Editable modules", "Clear license", "Support-ready", "Bundle value", "Simple checkout"],
       collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
       company: "Company", services: "Services", process: "Process", proof: "Proof", capability: "Capability", requestConsultation: "Request consultation", viewServices: "View services", corporateProcessItems: ["Discovery", "Strategy", "Delivery", "Support"], corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
       localExperts: "Local experts", callNow: "Call now", fastResponse: "Fast local response", serviceAreas: "Service areas", workProof: "Work proof", workSlug: "work", service: "Service", quoteOnly: "Quote only", serviceAreaReady: "Area-ready", quoteExpectation: "Tell us what you need and get a clear next step.", homeServiceHeadline: (name) => `${name} handles the job right the first time`, homeServiceSubheadline: (description) => description || "Trusted local service with clear communication, reliable scheduling, and quote-first service.", homeServiceCategoriesTitle: "Services built for real local needs", homeServiceCategoriesText: "Organize every service into clear quote-ready options that customers can understand quickly.", homeServiceAreasTitle: "Serving the areas that matter", homeServiceAreasText: "Show cities, neighborhoods, response expectations and emergency availability in one clean section.", serviceAreaItems: ["Nearby neighborhoods", "Same-day options", "Emergency calls", "Recurring service", "Licensed work", "Clear estimates"], beforeAfterTitle: "Real work, visible results", beforeAfterText: "Use job photos, before-and-after proof and finished projects to build trust before the first call.", homeServiceTrustTitle: "Why customers call first", homeServiceTrustText: "Trust signals, reviews and response expectations make the next step feel safe.", homeServiceTrustItems: ["Licensed and insured", "Clear estimates", "On-time arrivals", "Before/after proof", "Local references", "Clean follow-up"], homeServiceQuoteTitle: "Request a clear quote", homeServiceQuoteText: "Share the job details, preferred time and location. The business can respond by phone, WhatsApp or email.",
@@ -8186,6 +8482,7 @@ function catalogLocaleLabels(schema) {
       search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", signature: "Principal", detail: "Detalle", curated: "Curado", flagship: "Producto estrella", premiumSpecs: ["Presentacion", "Calidad", "Soporte", "Entrega"],
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Nuevo", localPickup: "Retiro local", makeOffer: "Hacer oferta", contactSeller: "Contactar vendedor",
       newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
+      digitalProducts: "Productos digitales", viewProducts: "Ver productos", modules: "Modulos", digitalAccessShort: "Descargas, modulos y notas de soporte.", digitalBundleTitle: "Ofertas digitales listas para vender", digitalModulesTitle: "Que recibe el cliente", digitalProofTitle: "Confianza antes del checkout", digitalAccessTitle: "Obten acceso y empieza de inmediato", digitalAccessText: "El cliente sabe exactamente que recibe, como entra y donde pide soporte.", digitalModuleItems: ["Entrenamiento principal", "Recursos descargables", "Plantillas y herramientas", "Material bonus", "Instrucciones de acceso", "Notas de soporte"], digitalProofItems: ["Acceso inmediato", "Modulos editables", "Licencia clara", "Soporte listo", "Valor del bundle", "Checkout simple"],
       collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
       company: "Empresa", services: "Servicios", process: "Proceso", proof: "Prueba", capability: "Capacidad", requestConsultation: "Solicitar consulta", viewServices: "Ver servicios", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Soporte"], corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
       localExperts: "Expertos locales", callNow: "Llamar ahora", fastResponse: "Respuesta local rapida", serviceAreas: "Areas de servicio", workProof: "Trabajos", workSlug: "trabajos", service: "Servicio", quoteOnly: "Cotizacion", serviceAreaReady: "Disponible por zona", quoteExpectation: "Cuenta que necesitas y recibe el siguiente paso claro.", homeServiceHeadline: (name) => `${name} resuelve el trabajo bien desde el primer intento`, homeServiceSubheadline: (description) => description || "Servicio local confiable con comunicacion clara, agenda ordenada y cotizacion primero.", homeServiceCategoriesTitle: "Servicios para necesidades locales reales", homeServiceCategoriesText: "Organiza cada servicio en opciones claras para cotizar sin confundir al cliente.", homeServiceAreasTitle: "Atendemos las zonas importantes", homeServiceAreasText: "Muestra ciudades, vecindarios, tiempos de respuesta y disponibilidad de emergencia en una seccion clara.", serviceAreaItems: ["Zonas cercanas", "Opciones el mismo dia", "Emergencias", "Servicio recurrente", "Trabajo autorizado", "Estimados claros"], beforeAfterTitle: "Trabajo real, resultados visibles", beforeAfterText: "Usa fotos, antes/despues y proyectos terminados para generar confianza antes de la llamada.", homeServiceTrustTitle: "Por que llaman primero", homeServiceTrustText: "Senales de confianza, resenas y expectativas de respuesta hacen que el siguiente paso sea seguro.", homeServiceTrustItems: ["Licencia y seguro", "Estimados claros", "Llegadas puntuales", "Antes/despues", "Referencias locales", "Seguimiento limpio"], homeServiceQuoteTitle: "Solicita una cotizacion clara", homeServiceQuoteText: "Comparte el trabajo, horario preferido y ubicacion. El negocio puede responder por telefono, WhatsApp o email.",
@@ -8200,6 +8497,7 @@ function catalogLocaleLabels(schema) {
       search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace", signature: "Signature", detail: "Detail", curated: "Soigne", flagship: "Produit phare", premiumSpecs: ["Presentation", "Qualite", "Support", "Livraison"],
       sellerVerified: "Vendeur vérifié", used: "Occasion", newItem: "Neuf", localPickup: "Retrait local", makeOffer: "Faire une offre", contactSeller: "Contacter le vendeur",
       newDrop: "Nouvelle collection", limitedSelection: "Sélection limitée", instantAccess: "Accès immédiat", downloadable: "Contenu téléchargeable", bonus: "Ressources bonus", lifetime: "Accès à vie", getAccess: "Obtenir l'accès",
+      digitalProducts: "Produits digitaux", viewProducts: "Voir les produits", modules: "Modules", digitalAccessShort: "Telechargements, modules et notes de support.", digitalBundleTitle: "Offres digitales pretes a vendre", digitalModulesTitle: "Ce que le client recoit", digitalProofTitle: "Confiance avant paiement", digitalAccessTitle: "Obtenir l'acces et commencer tout de suite", digitalAccessText: "Le client sait exactement ce qu'il recoit, comment acceder et ou demander du support.", digitalModuleItems: ["Formation principale", "Ressources telechargeables", "Modeles et outils", "Bonus", "Instructions d'acces", "Notes de support"], digitalProofItems: ["Acces immediat", "Modules modifiables", "Licence claire", "Support pret", "Valeur du bundle", "Paiement simple"],
       collections: "Collections", lookbook: "Lookbook", fit: "Guide des tailles", drop: "Drop", fitGuide: "Guide des tailles", fitGuideItems: ["Notes de taille", "Suggestions de style", "Conseils d'entretien", "Livraison et retours"], fashionCollections: ["Nouveautes", "Essentiels", "Pieces fortes", "Accessoires", "Drop limite", "Meilleures ventes"],
       company: "Entreprise", services: "Services", process: "Processus", proof: "Preuve", capability: "Capacite", requestConsultation: "Demander une consultation", viewServices: "Voir les services", corporateProcessItems: ["Diagnostic", "Strategie", "Livraison", "Support"], corporateProofItems: ["Livraison fiable", "Communication claire", "Standards professionnels"],
       localExperts: "Experts locaux", callNow: "Appeler", fastResponse: "Reponse locale rapide", serviceAreas: "Zones desservies", workProof: "Realisations", workSlug: "realisations", service: "Service", quoteOnly: "Sur devis", serviceAreaReady: "Zone couverte", quoteExpectation: "Expliquez le besoin et recevez une prochaine etape claire.", homeServiceHeadline: (name) => `${name} realise le travail correctement des le depart`, homeServiceSubheadline: (description) => description || "Service local fiable avec communication claire, planning simple et devis avant intervention.", homeServiceCategoriesTitle: "Services pour des besoins locaux reels", homeServiceCategoriesText: "Organisez chaque service en options claires et faciles a demander.", homeServiceAreasTitle: "Nous couvrons les zones importantes", homeServiceAreasText: "Affichez les villes, quartiers, delais de reponse et options d'urgence.", serviceAreaItems: ["Quartiers proches", "Options le jour meme", "Urgences", "Service recurrent", "Travail autorise", "Devis clairs"], beforeAfterTitle: "Travail reel, resultats visibles", beforeAfterText: "Utilisez photos, avant/apres et projets termines pour creer la confiance.", homeServiceTrustTitle: "Pourquoi les clients appellent d'abord", homeServiceTrustText: "Avis, preuves et delais de reponse rendent la demande plus rassurante.", homeServiceTrustItems: ["Assure et autorise", "Devis clairs", "Arrivees ponctuelles", "Avant/apres", "References locales", "Suivi propre"], homeServiceQuoteTitle: "Demander un devis clair", homeServiceQuoteText: "Partagez le besoin, l'horaire prefere et la localisation. L'entreprise peut repondre par telephone, WhatsApp ou email.",
@@ -8214,6 +8512,7 @@ function catalogLocaleLabels(schema) {
       search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace", signature: "Principal", detail: "Detalhe", curated: "Curado", flagship: "Produto principal", premiumSpecs: ["Apresentacao", "Qualidade", "Suporte", "Entrega"],
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Novo", localPickup: "Retirada local", makeOffer: "Fazer oferta", contactSeller: "Contatar vendedor",
       newDrop: "Novo drop", limitedSelection: "Seleção limitada", instantAccess: "Acesso imediato", downloadable: "Conteúdo baixável", bonus: "Recursos bônus", lifetime: "Acesso vitalício", getAccess: "Obter acesso",
+      digitalProducts: "Produtos digitais", viewProducts: "Ver produtos", modules: "Modulos", digitalAccessShort: "Downloads, modulos e notas de suporte.", digitalBundleTitle: "Ofertas digitais prontas para vender", digitalModulesTitle: "O que o cliente recebe", digitalProofTitle: "Confianca antes do checkout", digitalAccessTitle: "Obtenha acesso e comece imediatamente", digitalAccessText: "O cliente sabe exatamente o que recebe, como acessar e onde pedir suporte.", digitalModuleItems: ["Treinamento principal", "Recursos para download", "Templates e ferramentas", "Material bonus", "Instrucoes de acesso", "Notas de suporte"], digitalProofItems: ["Acesso imediato", "Modulos editaveis", "Licenca clara", "Suporte pronto", "Valor do bundle", "Checkout simples"],
       collections: "Colecoes", lookbook: "Lookbook", fit: "Guia de tamanhos", drop: "Drop", fitGuide: "Guia de tamanhos", fitGuideItems: ["Notas de tamanho e caimento", "Sugestoes de estilo", "Cuidados com a peca", "Envios e devolucoes"], fashionCollections: ["Novidades", "Essenciais", "Pecas destaque", "Acessorios", "Drop limitado", "Mais vendidos"],
       company: "Empresa", services: "Servicos", process: "Processo", proof: "Prova", capability: "Capacidade", requestConsultation: "Solicitar consulta", viewServices: "Ver servicos", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Suporte"], corporateProofItems: ["Entrega confiavel", "Comunicacao clara", "Padroes profissionais"],
       localExperts: "Especialistas locais", callNow: "Ligar agora", fastResponse: "Resposta local rapida", serviceAreas: "Areas atendidas", workProof: "Trabalhos", workSlug: "trabalhos", service: "Servico", quoteOnly: "Orcamento", serviceAreaReady: "Area atendida", quoteExpectation: "Conte o que precisa e receba o proximo passo claro.", homeServiceHeadline: (name) => `${name} resolve o servico certo desde o primeiro contato`, homeServiceSubheadline: (description) => description || "Servico local confiavel com comunicacao clara, agenda simples e orcamento primeiro.", homeServiceCategoriesTitle: "Servicos para necessidades locais reais", homeServiceCategoriesText: "Organize cada servico em opcoes claras para solicitar orcamento sem confusao.", homeServiceAreasTitle: "Atendemos as areas importantes", homeServiceAreasText: "Mostre cidades, bairros, expectativa de resposta e disponibilidade de emergencia.", serviceAreaItems: ["Bairros proximos", "Opcoes no mesmo dia", "Emergencias", "Servico recorrente", "Trabalho autorizado", "Estimativas claras"], beforeAfterTitle: "Trabalho real, resultado visivel", beforeAfterText: "Use fotos, antes/depois e projetos finalizados para gerar confianca antes da chamada.", homeServiceTrustTitle: "Por que os clientes ligam primeiro", homeServiceTrustText: "Provas, avaliacoes e expectativa de resposta deixam o proximo passo seguro.", homeServiceTrustItems: ["Licenciado e segurado", "Estimativas claras", "Pontualidade", "Antes/depois", "Referencias locais", "Acompanhamento claro"], homeServiceQuoteTitle: "Solicite um orcamento claro", homeServiceQuoteText: "Compartilhe o servico, horario preferido e localizacao. A empresa pode responder por telefone, WhatsApp ou email.",

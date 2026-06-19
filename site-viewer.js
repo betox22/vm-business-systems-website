@@ -90,6 +90,11 @@ function renderSection(section, schema) {
   if (section.type === "RestaurantSpecials") return renderRestaurantSpecials(section, schema);
   if (section.type === "RestaurantInfo") return renderRestaurantInfo(section, schema);
   if (section.type === "RestaurantOrderPanel") return renderRestaurantOrderPanel(section, schema);
+  if (section.type === "DigitalHero") return renderDigitalHero(section, schema);
+  if (section.type === "DigitalBundle") return renderDigitalBundle(section, schema);
+  if (section.type === "DigitalModules") return renderDigitalModules(section, schema);
+  if (section.type === "DigitalProof") return renderDigitalProof(section, schema);
+  if (section.type === "DigitalAccessPanel") return renderDigitalAccessPanel(section, schema);
   if (section.type === "HomeServiceHero") return renderHomeServiceHero(section, schema);
   if (section.type === "HomeServiceCategories") return renderHomeServiceCategories(section, schema);
   if (section.type === "HomeServiceAreas") return renderHomeServiceAreas(section, schema);
@@ -699,8 +704,10 @@ function renderProductGrid(section, schema) {
               ? renderBookingMenuCatalog(catalogItems, schema)
               : catalogType === "restaurant_menu_catalog" || catalogType === "menu_catalog"
                 ? renderRestaurantMenuCatalog(catalogItems, schema)
-            : catalogType === "lead_funnel_offer_catalog"
-              ? renderLeadFunnelOfferCatalog(catalogItems, schema)
+                : catalogType === "digital_offer_catalog"
+                  ? renderDigitalOfferCatalog(catalogItems, schema)
+                  : catalogType === "lead_funnel_offer_catalog"
+                    ? renderLeadFunnelOfferCatalog(catalogItems, schema)
       : "";
   return `<section class="rendered-section ${sectionClass(section)}">
     <div class="section-heading">
@@ -794,6 +801,106 @@ function renderRestaurantMenuCatalog(items, schema) {
   </article>`).join("")}</div>`;
 }
 
+function renderDigitalHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = publicCatalogItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url);
+  const image = editable.image_url || heroItem?.image_url || "";
+  return `<section class="digital-hero ${sectionClass(section)}">
+    <div class="digital-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || labels.digitalProducts)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.getAccess)}</button>
+        <button class="rendered-button secondary" data-open-lead type="button">${escapeHtml(editable.secondary_button || labels.viewProducts)}</button>
+      </div>
+      <div class="digital-proof-strip">${labels.digitalProofItems.slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    </div>
+    <div class="digital-stage">
+      <div class="digital-stage-visual">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(schema.business?.name || "")}">` : digitalVisualPlaceholder(schema)}</div>
+      <article class="digital-access-card">
+        <small>${escapeHtml(labels.instantAccess)}</small>
+        <strong>${escapeHtml(labels.getAccess)}</strong>
+        <span>${escapeHtml(labels.digitalAccessShort)}</span>
+      </article>
+    </div>
+  </section>`;
+}
+
+function renderDigitalBundle(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="digital-bundle-section ${sectionClass(section)}">
+    <div class="section-heading">
+      <span class="rendered-kicker">${escapeHtml(labels.digitalProducts)}</span>
+      <h2>${escapeHtml(editable.title || labels.digitalBundleTitle)}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+    </div>
+    ${renderDigitalOfferCatalog(publicCatalogItems(schema), schema)}
+  </section>`;
+}
+
+function renderDigitalModules(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.digitalModuleItems;
+  return `<section class="digital-modules-section ${sectionClass(section)}">
+    <div><span class="rendered-kicker">${escapeHtml(labels.modules)}</span><h2>${escapeHtml(editable.title || labels.digitalModulesTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="digital-module-grid">${items.map((item, index) => `<article><small>0${index + 1}</small><strong>${escapeHtml(item)}</strong><span>${escapeHtml(index % 2 ? labels.downloadable : labels.bonus)}</span></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderDigitalProof(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.digitalProofItems;
+  return `<section class="digital-proof-section ${sectionClass(section)}">
+    <div><span class="rendered-kicker">${escapeHtml(labels.proof)}</span><h2>${escapeHtml(editable.title || labels.digitalProofTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div>${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderDigitalAccessPanel(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="digital-access-section ${sectionClass(section)}">
+    <div class="digital-access-panel">
+      <span class="rendered-kicker">${escapeHtml(labels.instantAccess)}</span>
+      <h2>${escapeHtml(editable.title || labels.digitalAccessTitle)}</h2>
+      <p>${escapeHtml(editable.text || labels.digitalAccessText)}</p>
+      <div class="rendered-actions">
+        <button class="rendered-button" data-open-lead type="button">${escapeHtml(labels.getAccess)}</button>
+        <button class="rendered-button secondary" data-open-lead type="button">${escapeHtml(labels.contact)}</button>
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderDigitalOfferCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-digital-pro">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    <div class="digital-card-top"><small>${escapeHtml(item.category || labels.digitalProducts)}</small><span>${escapeHtml(labels.instantAccess)}</span></div>
+    ${renderResilientImage(item.image_url, item.name, item.name)}
+    <h3>${escapeHtml(item.name)}</h3>
+    <p>${escapeHtml(item.description)}</p>
+    <ul><li>${escapeHtml(labels.downloadable)}</li><li>${escapeHtml(labels.bonus)}</li><li>${escapeHtml(labels.lifetime)}</li></ul>
+    <div class="digital-card-bottom">
+      <strong>${escapeHtml(item.price_label || labels.request)}</strong>
+      <button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.getAccess)}</button>
+    </div>
+  </article>`).join("")}</div>`;
+}
+
+function digitalVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "DP").slice(0, 2).toUpperCase();
+  return `<div class="digital-visual-placeholder">
+    <span>${escapeHtml(initials)}</span>
+    <small>${escapeHtml(catalogLocaleLabels(schema).instantAccess)}</small>
+  </div>`;
+}
+
 function renderLeadFunnelOfferCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-lead-offers">${items.slice(0, 3).map((item, index) => `<article class="${index === 1 ? "featured" : ""}">
@@ -832,6 +939,7 @@ function catalogLocaleLabels(schema) {
       searchFilters: "Search & filters", price: "Price", rating: "Rating", delivery: "Delivery", deal: "Deal", fastShip: "Fast ship",
       search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", view: "View", request: "Ask now", signature: "Signature", detail: "Detail", curated: "Curated", flagship: "Flagship", premiumSpecs: ["Presentation", "Quality", "Support", "Delivery"],
       newDrop: "New drop", collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
+      instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access", digitalProducts: "Digital products", viewProducts: "View products", modules: "Modules", digitalAccessShort: "Downloads, modules and support notes.", digitalBundleTitle: "Digital offers built to sell", digitalModulesTitle: "What customers get inside", digitalProofTitle: "Trust before checkout", digitalAccessTitle: "Get access and start immediately", digitalAccessText: "Customers know exactly what they receive, how access works and where to get support.", digitalModuleItems: ["Core training", "Downloadable resources", "Templates and tools", "Bonus material", "Access instructions", "Support notes"], digitalProofItems: ["Instant access", "Editable modules", "Clear license", "Support-ready", "Bundle value", "Simple checkout"],
       company: "Company", services: "Services", process: "Process", proof: "Proof", capability: "Capability", requestConsultation: "Request consultation", viewServices: "View services", corporateProcessItems: ["Discovery", "Strategy", "Delivery", "Support"], corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
       localExperts: "Local experts", callNow: "Call now", freeQuote: "Free quote", before: "Before", after: "After", fastResponse: "Fast local response", serviceAreas: "Service areas", workProof: "Work proof", service: "Service", quoteOnly: "Quote only", serviceAreaReady: "Area-ready", quoteExpectation: "Tell us what you need and get a clear next step.", serviceAreaItems: ["Nearby neighborhoods", "Same-day options", "Emergency calls", "Recurring service", "Licensed work", "Clear estimates"], homeServiceTrustItems: ["Licensed and insured", "Clear estimates", "On-time arrivals", "Before/after proof", "Local references", "Clean follow-up"],
       appointments: "Appointments", availability: "Availability", team: "Team", bookNow: "Book now", nextAvailable: "Next available", slot: "Slot", confirmation: "Confirmation-ready", staffPick: "Staff pick", fromQuote: "From quote", bookingContactFallback: "Confirm the preferred service, time and contact method.", availabilityItems: ["Today / tomorrow windows", "Morning appointments", "Afternoon appointments", "Weekend options", "Consultation calls", "Follow-up visits"], bookingTeamItems: ["Pick a service", "Choose a preferred time", "Receive confirmation", "Arrive prepared"], bookingProofItems: ["Clear durations", "Easy confirmation", "Service details upfront"],
@@ -843,6 +951,7 @@ function catalogLocaleLabels(schema) {
       searchFilters: "Busqueda y filtros", price: "Precio", rating: "Calificacion", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rapido",
       search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", view: "Ver", request: "Consultar", signature: "Principal", detail: "Detalle", curated: "Curado", flagship: "Producto estrella", premiumSpecs: ["Presentacion", "Calidad", "Soporte", "Entrega"],
       newDrop: "Nuevo drop", collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
+      instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso", digitalProducts: "Productos digitales", viewProducts: "Ver productos", modules: "Modulos", digitalAccessShort: "Descargas, modulos y notas de soporte.", digitalBundleTitle: "Ofertas digitales listas para vender", digitalModulesTitle: "Que recibe el cliente", digitalProofTitle: "Confianza antes del checkout", digitalAccessTitle: "Obten acceso y empieza de inmediato", digitalAccessText: "El cliente sabe exactamente que recibe, como entra y donde pide soporte.", digitalModuleItems: ["Entrenamiento principal", "Recursos descargables", "Plantillas y herramientas", "Material bonus", "Instrucciones de acceso", "Notas de soporte"], digitalProofItems: ["Acceso inmediato", "Modulos editables", "Licencia clara", "Soporte listo", "Valor del bundle", "Checkout simple"],
       company: "Empresa", services: "Servicios", process: "Proceso", proof: "Prueba", capability: "Capacidad", requestConsultation: "Solicitar consulta", viewServices: "Ver servicios", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Soporte"], corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
       localExperts: "Expertos locales", callNow: "Llamar ahora", freeQuote: "Cotizacion gratis", before: "Antes", after: "Despues", fastResponse: "Respuesta local rapida", serviceAreas: "Areas de servicio", workProof: "Trabajos", service: "Servicio", quoteOnly: "Cotizacion", serviceAreaReady: "Disponible por zona", quoteExpectation: "Cuenta que necesitas y recibe el siguiente paso claro.", serviceAreaItems: ["Zonas cercanas", "Opciones el mismo dia", "Emergencias", "Servicio recurrente", "Trabajo autorizado", "Estimados claros"], homeServiceTrustItems: ["Licencia y seguro", "Estimados claros", "Llegadas puntuales", "Antes/despues", "Referencias locales", "Seguimiento limpio"],
       appointments: "Citas", availability: "Disponibilidad", team: "Equipo", bookNow: "Reservar ahora", nextAvailable: "Proxima disponibilidad", slot: "Horario", confirmation: "Listo para confirmar", staffPick: "Recomendado", fromQuote: "Desde cotizacion", bookingContactFallback: "Confirma el servicio, horario y metodo de contacto preferido.", availabilityItems: ["Hoy / manana", "Citas en la manana", "Citas en la tarde", "Opciones fin de semana", "Consultas por llamada", "Visitas de seguimiento"], bookingTeamItems: ["Elige un servicio", "Selecciona horario preferido", "Recibe confirmacion", "Llega preparado"], bookingProofItems: ["Duraciones claras", "Confirmacion simple", "Detalles antes de reservar"],
@@ -854,6 +963,7 @@ function catalogLocaleLabels(schema) {
       searchFilters: "Recherche et filtres", price: "Prix", rating: "Note", delivery: "Livraison", deal: "Offre", fastShip: "Livraison rapide",
       search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace", view: "Voir", request: "Demander", signature: "Signature", detail: "Detail", curated: "Soigne", flagship: "Produit phare", premiumSpecs: ["Presentation", "Qualite", "Support", "Livraison"],
       newDrop: "Nouvelle collection", collections: "Collections", lookbook: "Lookbook", fit: "Guide des tailles", drop: "Drop", fitGuide: "Guide des tailles", fitGuideItems: ["Notes de taille", "Suggestions de style", "Conseils d'entretien", "Livraison et retours"], fashionCollections: ["Nouveautes", "Essentiels", "Pieces fortes", "Accessoires", "Drop limite", "Meilleures ventes"],
+      instantAccess: "Acces immediat", downloadable: "Contenu telechargeable", bonus: "Ressources bonus", lifetime: "Acces a vie", getAccess: "Obtenir l'acces", digitalProducts: "Produits digitaux", viewProducts: "Voir les produits", modules: "Modules", digitalAccessShort: "Telechargements, modules et notes de support.", digitalBundleTitle: "Offres digitales pretes a vendre", digitalModulesTitle: "Ce que le client recoit", digitalProofTitle: "Confiance avant paiement", digitalAccessTitle: "Obtenir l'acces et commencer tout de suite", digitalAccessText: "Le client sait exactement ce qu'il recoit, comment acceder et ou demander du support.", digitalModuleItems: ["Formation principale", "Ressources telechargeables", "Modeles et outils", "Bonus", "Instructions d'acces", "Notes de support"], digitalProofItems: ["Acces immediat", "Modules modifiables", "Licence claire", "Support pret", "Valeur du bundle", "Paiement simple"],
       company: "Entreprise", services: "Services", process: "Processus", proof: "Preuve", capability: "Capacite", requestConsultation: "Demander une consultation", viewServices: "Voir les services", corporateProcessItems: ["Diagnostic", "Strategie", "Livraison", "Support"], corporateProofItems: ["Livraison fiable", "Communication claire", "Standards professionnels"],
       localExperts: "Experts locaux", callNow: "Appeler", freeQuote: "Devis gratuit", before: "Avant", after: "Apres", fastResponse: "Reponse locale rapide", serviceAreas: "Zones desservies", workProof: "Realisations", service: "Service", quoteOnly: "Sur devis", serviceAreaReady: "Zone couverte", quoteExpectation: "Expliquez le besoin et recevez une prochaine etape claire.", serviceAreaItems: ["Quartiers proches", "Options le jour meme", "Urgences", "Service recurrent", "Travail autorise", "Devis clairs"], homeServiceTrustItems: ["Assure et autorise", "Devis clairs", "Arrivees ponctuelles", "Avant/apres", "References locales", "Suivi propre"],
       appointments: "Rendez-vous", availability: "Disponibilite", team: "Equipe", bookNow: "Reserver", nextAvailable: "Prochaine disponibilite", slot: "Creneau", confirmation: "Pret a confirmer", staffPick: "Recommande", fromQuote: "Sur devis", bookingContactFallback: "Confirmez le service, le creneau et le mode de contact prefere.", availabilityItems: ["Aujourd'hui / demain", "Matin", "Apres-midi", "Week-end", "Appels de consultation", "Suivis"], bookingTeamItems: ["Choisir un service", "Choisir un creneau", "Recevoir confirmation", "Arriver prepare"], bookingProofItems: ["Durees claires", "Confirmation simple", "Details avant reservation"],
@@ -865,6 +975,7 @@ function catalogLocaleLabels(schema) {
       searchFilters: "Busca e filtros", price: "Preco", rating: "Avaliacao", delivery: "Entrega", deal: "Oferta", fastShip: "Entrega rapida",
       search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace", view: "Ver", request: "Consultar", signature: "Principal", detail: "Detalhe", curated: "Curado", flagship: "Produto principal", premiumSpecs: ["Apresentacao", "Qualidade", "Suporte", "Entrega"],
       newDrop: "Novo drop", collections: "Colecoes", lookbook: "Lookbook", fit: "Guia de tamanhos", drop: "Drop", fitGuide: "Guia de tamanhos", fitGuideItems: ["Notas de tamanho e caimento", "Sugestoes de estilo", "Cuidados com a peca", "Envios e devolucoes"], fashionCollections: ["Novidades", "Essenciais", "Pecas destaque", "Acessorios", "Drop limitado", "Mais vendidos"],
+      instantAccess: "Acesso imediato", downloadable: "Conteudo para download", bonus: "Recursos bonus", lifetime: "Acesso vitalicio", getAccess: "Obter acesso", digitalProducts: "Produtos digitais", viewProducts: "Ver produtos", modules: "Modulos", digitalAccessShort: "Downloads, modulos e notas de suporte.", digitalBundleTitle: "Ofertas digitais prontas para vender", digitalModulesTitle: "O que o cliente recebe", digitalProofTitle: "Confianca antes do checkout", digitalAccessTitle: "Obtenha acesso e comece imediatamente", digitalAccessText: "O cliente sabe exatamente o que recebe, como acessar e onde pedir suporte.", digitalModuleItems: ["Treinamento principal", "Recursos para download", "Templates e ferramentas", "Material bonus", "Instrucoes de acesso", "Notas de suporte"], digitalProofItems: ["Acesso imediato", "Modulos editaveis", "Licenca clara", "Suporte pronto", "Valor do bundle", "Checkout simples"],
       company: "Empresa", services: "Servicos", process: "Processo", proof: "Prova", capability: "Capacidade", requestConsultation: "Solicitar consulta", viewServices: "Ver servicos", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Suporte"], corporateProofItems: ["Entrega confiavel", "Comunicacao clara", "Padroes profissionais"],
       localExperts: "Especialistas locais", callNow: "Ligar agora", freeQuote: "Orcamento gratis", before: "Antes", after: "Depois", fastResponse: "Resposta local rapida", serviceAreas: "Areas atendidas", workProof: "Trabalhos", service: "Servico", quoteOnly: "Orcamento", serviceAreaReady: "Area atendida", quoteExpectation: "Conte o que precisa e receba o proximo passo claro.", serviceAreaItems: ["Bairros proximos", "Opcoes no mesmo dia", "Emergencias", "Servico recorrente", "Trabalho autorizado", "Estimativas claras"], homeServiceTrustItems: ["Licenciado e segurado", "Estimativas claras", "Pontualidade", "Antes/depois", "Referencias locais", "Acompanhamento claro"],
       appointments: "Agendamentos", availability: "Disponibilidade", team: "Equipe", bookNow: "Agendar agora", nextAvailable: "Proxima disponibilidade", slot: "Horario", confirmation: "Pronto para confirmar", staffPick: "Recomendado", fromQuote: "Sob orcamento", bookingContactFallback: "Confirme o servico, horario e metodo de contato preferido.", availabilityItems: ["Hoje / amanha", "Horarios de manha", "Horarios a tarde", "Fim de semana", "Chamadas de consulta", "Retornos"], bookingTeamItems: ["Escolha um servico", "Escolha horario preferido", "Receba confirmacao", "Chegue preparado"], bookingProofItems: ["Duracoes claras", "Confirmacao simples", "Detalhes antes de agendar"],
