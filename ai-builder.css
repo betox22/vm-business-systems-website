@@ -4546,6 +4546,359 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   font-weight: 950;
 }
 
+.template-real-estate-listings-pro,
+.layout-real-estate-listings-pro {
+  --listing-blue: color-mix(in srgb, var(--site-accent) 76%, #0284c7);
+  --listing-ink: color-mix(in srgb, var(--site-primary) 92%, #020617);
+}
+
+.listing-pro-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(380px, 1.08fr);
+  gap: clamp(30px, 6vw, 84px);
+  align-items: center;
+  min-height: 78vh;
+  padding: clamp(44px, 7vw, 108px) clamp(18px, 5vw, 76px);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 82% 14%, color-mix(in srgb, var(--site-accent) 20%, transparent), transparent 30%),
+    linear-gradient(135deg, color-mix(in srgb, var(--site-bg) 88%, white), color-mix(in srgb, var(--site-secondary) 16%, var(--site-bg)));
+}
+
+.listing-pro-copy {
+  max-width: 780px;
+}
+
+.listing-pro-hero h1 {
+  margin: 0 0 18px;
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(48px, 7vw, 94px);
+  line-height: 0.96;
+  letter-spacing: 0;
+  color: var(--site-text);
+}
+
+.listing-pro-hero p {
+  max-width: 680px;
+  margin: 0 0 20px;
+  color: var(--site-muted);
+  font-size: clamp(18px, 1.8vw, 23px);
+  line-height: 1.55;
+}
+
+.listing-search-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  max-width: 760px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--site-primary) 10%, transparent);
+  border-radius: calc(var(--brand-radius) + 12px);
+  background: color-mix(in srgb, var(--site-surface) 94%, transparent);
+  box-shadow: 0 20px 70px color-mix(in srgb, var(--site-primary) 10%, transparent);
+}
+
+.listing-search-bar span {
+  padding-left: 12px;
+  color: var(--site-muted);
+  font-weight: 900;
+}
+
+.listing-search-bar input {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--site-text);
+  font: inherit;
+  outline: 0;
+}
+
+.listing-search-bar button {
+  border: 0;
+  border-radius: var(--brand-radius);
+  padding: 13px 18px;
+  background: var(--site-primary);
+  color: var(--brand-button-text, #fff);
+  font-weight: 950;
+}
+
+.listing-quick-filters,
+.listing-card-top,
+.listing-card-bottom,
+.listing-spec-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.listing-quick-filters {
+  margin-top: 16px;
+}
+
+.listing-quick-filters span,
+.listing-filter-grid article,
+.listing-trust-section > div:last-child span {
+  border: 1px solid color-mix(in srgb, var(--site-primary) 10%, transparent);
+  border-radius: var(--brand-radius);
+  background: color-mix(in srgb, var(--site-surface) 90%, transparent);
+  box-shadow: 0 12px 34px color-mix(in srgb, var(--site-primary) 6%, transparent);
+}
+
+.listing-quick-filters span {
+  padding: 10px 12px;
+  font-weight: 900;
+}
+
+.listing-pro-stage {
+  position: relative;
+  min-height: clamp(430px, 52vw, 650px);
+}
+
+.listing-map-card {
+  height: 100%;
+  min-height: inherit;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--site-primary) 10%, transparent);
+  border-radius: calc(var(--brand-radius) + 18px);
+  background:
+    radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--site-accent) 24%, transparent), transparent 28%),
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--site-primary) 6%, transparent) 0 1px, transparent 1px 34px),
+    var(--site-surface);
+  box-shadow: 0 30px 90px color-mix(in srgb, var(--site-primary) 16%, transparent);
+}
+
+.listing-map-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.listing-floating-card {
+  position: absolute;
+  right: clamp(14px, 3vw, 34px);
+  bottom: clamp(14px, 3vw, 34px);
+  width: min(310px, 74%);
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--site-surface) 70%, transparent);
+  border-radius: var(--brand-radius);
+  background: color-mix(in srgb, var(--site-surface) 92%, transparent);
+  box-shadow: 0 20px 62px color-mix(in srgb, var(--site-primary) 18%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.listing-floating-card small,
+.listing-card-top small {
+  color: var(--site-accent);
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.listing-floating-card strong {
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: 23px;
+}
+
+.listing-filter-section,
+.listing-featured-section,
+.listing-area-section,
+.listing-trust-section,
+.listing-contact-section {
+  padding: clamp(54px, 7vw, 98px) clamp(18px, 5vw, 76px);
+}
+
+.listing-filter-section,
+.listing-area-section,
+.listing-trust-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) minmax(340px, 1.22fr);
+  gap: clamp(24px, 5vw, 76px);
+  align-items: start;
+}
+
+.listing-filter-section h2,
+.listing-area-section h2,
+.listing-trust-section h2,
+.listing-contact-card h2 {
+  margin: 0 0 14px;
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(36px, 5vw, 74px);
+  line-height: 0.98;
+}
+
+.listing-filter-section p,
+.listing-area-section p,
+.listing-trust-section p,
+.listing-contact-card p {
+  margin: 0;
+  color: var(--site-muted);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.listing-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.listing-filter-grid article {
+  min-height: 126px;
+  display: grid;
+  align-content: space-between;
+  padding: 18px;
+}
+
+.catalog-real-estate-listings {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.catalog-real-estate-listings article {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--site-primary) 10%, transparent);
+  border-radius: var(--brand-radius);
+  background: var(--site-surface);
+  box-shadow: 0 18px 58px color-mix(in srgb, var(--site-primary) 8%, transparent);
+}
+
+.catalog-real-estate-listings article.featured {
+  grid-column: span 2;
+}
+
+.listing-image,
+.listing-image .listing-visual-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+}
+
+.listing-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.listing-card-body {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.listing-card-top {
+  justify-content: space-between;
+}
+
+.listing-card-top span,
+.listing-spec-row span {
+  padding: 7px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--site-accent) 12%, transparent);
+  color: var(--site-primary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.catalog-real-estate-listings h3 {
+  margin: 0;
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(23px, 2.2vw, 32px);
+  line-height: 1.02;
+}
+
+.catalog-real-estate-listings p {
+  margin: 0;
+  color: var(--site-muted);
+  line-height: 1.5;
+}
+
+.listing-card-bottom {
+  justify-content: space-between;
+}
+
+.listing-card-bottom strong {
+  font-size: 22px;
+}
+
+.listing-area-map {
+  position: relative;
+  min-height: 420px;
+  border: 1px solid color-mix(in srgb, var(--site-primary) 10%, transparent);
+  border-radius: calc(var(--brand-radius) + 14px);
+  background:
+    radial-gradient(circle at 28% 28%, color-mix(in srgb, var(--site-accent) 20%, transparent), transparent 26%),
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--site-primary) 6%, transparent) 0 1px, transparent 1px 38px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--site-primary) 6%, transparent) 0 1px, transparent 1px 38px),
+    color-mix(in srgb, var(--site-surface) 96%, var(--site-bg));
+  overflow: hidden;
+}
+
+.listing-area-map span {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  transform: translate(-50%, -50%);
+  padding: 10px 12px;
+  border-radius: 999px;
+  background: var(--site-primary);
+  color: var(--site-surface);
+  font-weight: 900;
+  box-shadow: 0 18px 42px color-mix(in srgb, var(--site-primary) 24%, transparent);
+}
+
+.listing-trust-section > div:last-child {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.listing-trust-section > div:last-child span {
+  padding: 18px;
+  font-weight: 900;
+}
+
+.listing-contact-section {
+  background: color-mix(in srgb, var(--site-primary) 94%, #020617);
+}
+
+.listing-contact-card {
+  max-width: 980px;
+  margin-inline: auto;
+  padding: clamp(30px, 5vw, 62px);
+  border-radius: calc(var(--brand-radius) + 10px);
+  background: var(--site-surface);
+  box-shadow: 0 28px 90px color-mix(in srgb, black 24%, transparent);
+}
+
+.listing-visual-placeholder {
+  height: 100%;
+  min-height: inherit;
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  background:
+    radial-gradient(circle at 35% 24%, color-mix(in srgb, var(--site-accent) 28%, transparent), transparent 32%),
+    linear-gradient(135deg, color-mix(in srgb, var(--site-surface) 88%, transparent), color-mix(in srgb, var(--site-accent) 10%, var(--site-surface)));
+}
+
+.listing-visual-placeholder span {
+  width: clamp(140px, 20vw, 220px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 28px;
+  background: var(--site-primary);
+  color: var(--site-surface);
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(44px, 7vw, 78px);
+  font-weight: 950;
+}
+
 .template-digital-products-store,
 .layout-digital-products-store {
   --digital-ink: color-mix(in srgb, var(--site-primary) 86%, #020617);
@@ -5549,6 +5902,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   .digital-hero,
   .digital-modules-section,
   .digital-proof-section,
+  .listing-pro-hero,
+  .listing-filter-section,
+  .listing-area-section,
+  .listing-trust-section,
   .funnel-hero,
   .funnel-offer-section,
   .funnel-proof-section,
@@ -5707,6 +6064,62 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   }
 
   .digital-access-panel {
+    padding: 28px 18px;
+  }
+
+  .listing-pro-hero {
+    min-height: auto;
+    padding: 44px 16px 28px;
+  }
+
+  .listing-pro-hero h1 {
+    font-size: clamp(42px, 14vw, 70px);
+  }
+
+  .listing-search-bar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .listing-search-bar span {
+    padding-left: 0;
+  }
+
+  .listing-pro-stage {
+    min-height: 320px;
+  }
+
+  .listing-floating-card {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: auto;
+    margin-top: 12px;
+  }
+
+  .listing-filter-grid,
+  .catalog-real-estate-listings,
+  .listing-trust-section > div:last-child {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-real-estate-listings article.featured {
+    grid-column: auto;
+  }
+
+  .listing-filter-section,
+  .listing-featured-section,
+  .listing-area-section,
+  .listing-trust-section,
+  .listing-contact-section {
+    padding: 44px 16px;
+  }
+
+  .listing-area-map {
+    min-height: 320px;
+  }
+
+  .listing-contact-card {
     padding: 28px 18px;
   }
 

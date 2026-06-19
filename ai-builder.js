@@ -683,6 +683,20 @@ const TEMPLATE_PREVIEW_CHOICES = [
     },
   },
   {
+    templateId: "real-estate-listings-pro",
+    name: "Real Estate / Listings",
+    names: { en: "Real Estate / Listings", es: "Propiedades / listings", fr: "Immobilier / annonces", pt: "Imoveis / anuncios" },
+    catalogType: "real_estate_listing_catalog",
+    image: "/templates-preview/screenshots/marketplace.png",
+    description: "Search-first listing site with filters, location, price/spec cards, area panel, and inquiry CTAs.",
+    descriptions: {
+      en: "Search-first listing site with filters, location, price/spec cards, area panel, and inquiry CTAs.",
+      es: "Sitio de listings con busqueda, filtros, ubicacion, cards con precio/especificaciones y CTA de consulta.",
+      fr: "Site d'annonces avec recherche, filtres, localisation, cartes prix/specs et CTA de demande.",
+      pt: "Site de anuncios com busca, filtros, localizacao, cards com preco/especificacoes e CTA de consulta.",
+    },
+  },
+  {
     templateId: "home-services-premium",
     name: "Local Services Premium",
     names: { en: "Local Services Premium", es: "Servicios locales premium", fr: "Services locaux premium", pt: "Servicos locais premium" },
@@ -1801,11 +1815,14 @@ function rankedFallbackChoices(selectedTemplateId = "") {
   const selected = templatePreviewMeta(selectedTemplateId);
   const selectedCatalog = selected?.catalogType || "";
   const commerceHeavy = /marketplace|dense|listing/.test(selectedCatalog);
+  const listingHeavy = /real_estate|listing/.test(selectedCatalog);
   const restaurantHeavy = /restaurant|menu|food/.test(selectedCatalog);
   const digitalHeavy = /digital|pricing|software|course/.test(selectedCatalog);
   const serviceHeavy = /service|booking/.test(selectedCatalog);
   const ordered = commerceHeavy
-    ? ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro", "apple-premium-product"]
+    ? listingHeavy
+      ? ["real-estate-listings-pro", "listing-marketplace-pro", "mega-marketplace", "corporate-company-pro"]
+      : ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro", "apple-premium-product"]
     : restaurantHeavy
       ? ["restaurant-food-business", "lead-funnel-pro", "home-services-premium", "booking-appointment-pro"]
     : digitalHeavy
@@ -4441,9 +4458,10 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isBookingTemplate = catalogType === "booking_menu_catalog" || /booking-appointment-pro/i.test(template.id || "");
   const isRestaurantTemplate = catalogType === "restaurant_menu_catalog" || catalogType === "menu_catalog" || /restaurant-food-business/i.test(template.id || "");
   const isDigitalTemplate = catalogType === "digital_offer_catalog" || /digital-products-store/i.test(template.id || "");
-  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate;
-  const primaryCta = isDigitalTemplate ? copy.getAccess : isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
-  const secondaryCta = isDigitalTemplate ? copy.viewProducts : isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
+  const isRealEstateListingTemplate = catalogType === "real_estate_listing_catalog" || /real-estate-listings-pro/i.test(template.id || "");
+  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate || isRealEstateListingTemplate;
+  const primaryCta = isRealEstateListingTemplate ? copy.searchListings : isDigitalTemplate ? copy.getAccess : isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
+  const secondaryCta = isRealEstateListingTemplate ? copy.viewListings : isDigitalTemplate ? copy.viewProducts : isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
   if (isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate) {
     catalogItems.forEach((item) => {
       item.price_type = "quote_only";
@@ -4463,6 +4481,17 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       item.shipping_label = copy.instantAccess;
     });
   }
+  if (isRealEstateListingTemplate) {
+    catalogItems.forEach((item, index) => {
+      item.price_type = "quote_only";
+      item.category = listingCategoryForIndex(index, copy);
+      item.price_label = item.price_label && item.price_label !== copy.priceNotSet ? item.price_label : copy.listingPrice;
+      item.button_label = copy.inquireNow;
+      item.shipping_label = listingLocationForIndex(index, copy);
+      item.deal_label = index === 0 ? copy.featuredListing : index % 2 ? copy.newListing : copy.availableNow;
+      item.track_inventory = false;
+    });
+  }
   const instantPages = isMarketplaceTemplate
     ? buildMarketplaceInstantPages(copy, name, description, payload)
     : isPremiumTemplate
@@ -4479,6 +4508,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
                 ? buildRestaurantMenuInstantPages(copy, name, description, payload)
                 : isDigitalTemplate
                   ? buildDigitalProductsInstantPages(copy, name, description, payload)
+                  : isRealEstateListingTemplate
+                    ? buildRealEstateListingsInstantPages(copy, name, description, payload)
             : isLeadFunnelTemplate
               ? buildLeadFunnelInstantPages(copy, name, description, payload)
           : buildDefaultInstantPages(copy, name, description, payload);
@@ -4555,6 +4586,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       { label: copy.products, page_key: "catalog" },
       { label: copy.modules, page_key: "about" },
       { label: copy.getAccess, page_key: "contact" },
+    ] : isRealEstateListingTemplate ? [
+      { label: copy.search, page_key: "home" },
+      { label: copy.listings, page_key: "catalog" },
+      { label: copy.areas, page_key: "about" },
+      { label: copy.inquireNow, page_key: "contact" },
     ] : isHomeServicesTemplate ? [
       { label: copy.services, page_key: "home" },
       { label: copy.serviceAreas, page_key: "catalog" },
@@ -5137,6 +5173,102 @@ function buildDigitalProductsInstantPages(copy, name, description, payload = {})
   ];
 }
 
+function buildRealEstateListingsInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.search,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "listing_hero",
+          type: "ListingHero",
+          order: 1,
+          editable: {
+            headline: copy.listingHeadline(name),
+            subtitle: description || copy.listingSubheadline(),
+            primary_button: copy.searchListings,
+            secondary_button: copy.viewListings,
+            search_placeholder: copy.listingSearchPlaceholder,
+            image_url: heroImage,
+            images: [],
+          },
+          settings: { layout: "search_map", spacing: "compact", container_width: "wide" },
+        },
+        {
+          id: "listing_filters",
+          type: "ListingFilters",
+          order: 2,
+          editable: { title: copy.listingFiltersTitle, text: copy.listingFiltersText, items: copy.listingCategories },
+          settings: { layout: "filter_bar", spacing: "compact", container_width: "wide" },
+        },
+        {
+          id: "featured_listings",
+          type: "ListingFeatured",
+          order: 3,
+          editable: { title: copy.featuredListingsTitle, text: copy.featuredListingsText, images: [] },
+          settings: { layout: "listing_cards", columns: 3, spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "area_map",
+          type: "ListingAreaPanel",
+          order: 4,
+          editable: { title: copy.listingAreaTitle, text: copy.listingAreaText, items: copy.listingLocations },
+          settings: { layout: "map_panel", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "listing_trust",
+          type: "ListingTrust",
+          order: 5,
+          editable: { title: copy.listingTrustTitle, text: copy.listingTrustText, items: copy.listingTrustItems },
+          settings: { layout: "trust_row", spacing: "compact", container_width: "wide" },
+        },
+        {
+          id: "listing_contact",
+          type: "ListingContact",
+          order: 6,
+          editable: { title: copy.listingContactTitle, text: copy.listingContactText, images: [] },
+          settings: { layout: "inquiry_panel", spacing: "balanced", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.listings,
+      slug: copy.listingsSlug,
+      order: 2,
+      sections: [
+        {
+          id: "listings_catalog",
+          type: "ProductGrid",
+          order: 1,
+          editable: { title: copy.featuredListingsTitle, text: copy.featuredListingsText, images: [] },
+          settings: { layout: "listing_catalog", columns: 3, spacing: "compact", container_width: "wide", card_density: "comfortable", card_gap: "comfortable" },
+        },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.areas,
+      slug: copy.areasSlug,
+      order: 3,
+      sections: [
+        { id: "areas", type: "ListingAreaPanel", order: 1, editable: { title: copy.listingAreaTitle, text: copy.listingAreaText, items: copy.listingLocations }, settings: { layout: "map_panel", container_width: "wide" } },
+        { id: "trust", type: "ListingTrust", order: 2, editable: { title: copy.listingTrustTitle, text: copy.listingTrustText, items: copy.listingTrustItems }, settings: { layout: "trust_row", container_width: "wide" } },
+      ],
+    },
+    {
+      page_key: "contact",
+      title: copy.inquireNow,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [{ id: "contact", type: "ListingContact", order: 1, editable: { title: copy.listingContactTitle, text: copy.listingContactText }, settings: { layout: "inquiry_panel", container_width: "wide" } }],
+    },
+  ];
+}
+
 function buildHomeServicesPremiumInstantPages(copy, name, description, payload = {}) {
   const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
   return [
@@ -5539,6 +5671,16 @@ function digitalCategoryForIndex(index, copy) {
   return categories[index % categories.length];
 }
 
+function listingCategoryForIndex(index, copy) {
+  const categories = copy.listingCategories || ["Homes", "Rentals", "Commercial", "Featured"];
+  return categories[index % categories.length];
+}
+
+function listingLocationForIndex(index, copy) {
+  const locations = copy.listingLocations || ["Central area", "North side", "West district", "Near downtown"];
+  return locations[index % locations.length];
+}
+
 function marketplaceCategories(schema) {
   const items = marketplaceItems(schema);
   const fromItems = [...new Set(items.map((item) => item.category).filter(Boolean))];
@@ -5628,6 +5770,33 @@ function instantLocaleCopy(language) {
       whyBuyHere: "Why customers buy here",
       trustText: "Clear delivery, secure checkout, support, and simple returns.",
       marketplaceCategories: ["Electronics", "Home", "Fashion", "Beauty", "Sports", "Deals"],
+      listings: "Listings",
+      areas: "Areas",
+      listingsSlug: "/listings",
+      areasSlug: "/areas",
+      searchListings: "Search listings",
+      viewListings: "View listings",
+      inquireNow: "Inquire now",
+      featuredListing: "Featured listing",
+      newListing: "New listing",
+      availableNow: "Available now",
+      listingPrice: "Price on request",
+      listingHeadline: (name) => `Find the right listing with ${name}`,
+      listingSubheadline: () => "Search premium listings by location, price, category and specs with a clear inquiry path.",
+      listingSearchPlaceholder: "Search by location, type, price or keyword",
+      listingFiltersTitle: "Search with the right filters",
+      listingFiltersText: "Help customers narrow options by category, location, price and availability before they inquire.",
+      featuredListingsTitle: "Featured listings",
+      featuredListingsText: "A polished selection of active listings with price, location, specs and inquiry CTAs.",
+      listingAreaTitle: "Explore the best areas",
+      listingAreaText: "Use area cards, neighborhood notes or service zones to make discovery feel local and clear.",
+      listingTrustTitle: "Confidence before the inquiry",
+      listingTrustText: "Show verified details, clear contact paths and updated availability before the customer reaches out.",
+      listingContactTitle: "Ask about a listing",
+      listingContactText: "Send the preferred listing, budget, location and contact method. The business can respond with availability or next steps.",
+      listingCategories: ["Homes", "Rentals", "Commercial", "Land", "Cars", "Featured"],
+      listingLocations: ["Downtown", "North area", "West district", "Near schools", "Waterfront", "Business zone"],
+      listingTrustItems: ["Verified details", "Updated availability", "Clear pricing", "Local support", "Fast response", "Easy comparison"],
       company: "Company",
       services: "Services",
       process: "Process",
@@ -5798,6 +5967,33 @@ function instantLocaleCopy(language) {
       whyBuyHere: "Por que comprar aqui",
       trustText: "Entrega clara, checkout seguro, soporte y devoluciones simples.",
       marketplaceCategories: ["Electronica", "Hogar", "Moda", "Belleza", "Deportes", "Ofertas"],
+      listings: "Listings",
+      areas: "Zonas",
+      listingsSlug: "/listings",
+      areasSlug: "/zonas",
+      searchListings: "Buscar listings",
+      viewListings: "Ver listings",
+      inquireNow: "Consultar ahora",
+      featuredListing: "Listing destacado",
+      newListing: "Nuevo listing",
+      availableNow: "Disponible",
+      listingPrice: "Precio a consultar",
+      listingHeadline: (name) => `Encuentra el listing ideal con ${name}`,
+      listingSubheadline: () => "Busca propiedades, alquileres, autos o clasificados por ubicacion, precio, categoria y detalles.",
+      listingSearchPlaceholder: "Buscar por ubicacion, tipo, precio o palabra clave",
+      listingFiltersTitle: "Busca con filtros claros",
+      listingFiltersText: "Ayuda al cliente a comparar por categoria, zona, precio y disponibilidad antes de consultar.",
+      featuredListingsTitle: "Listings destacados",
+      featuredListingsText: "Una seleccion pulida de listings activos con precio, ubicacion, detalles y CTA de consulta.",
+      listingAreaTitle: "Explora las mejores zonas",
+      listingAreaText: "Usa tarjetas de zona, notas de ubicacion o areas de servicio para que la busqueda sea clara.",
+      listingTrustTitle: "Confianza antes de consultar",
+      listingTrustText: "Muestra detalles verificados, contacto claro y disponibilidad actualizada.",
+      listingContactTitle: "Pregunta por un listing",
+      listingContactText: "Envia el listing, presupuesto, ubicacion y metodo de contacto. El negocio puede responder con disponibilidad o siguiente paso.",
+      listingCategories: ["Casas", "Alquileres", "Comercial", "Terrenos", "Autos", "Destacados"],
+      listingLocations: ["Centro", "Zona norte", "Distrito oeste", "Cerca de escuelas", "Frente al agua", "Zona comercial"],
+      listingTrustItems: ["Detalles verificados", "Disponibilidad actualizada", "Precios claros", "Soporte local", "Respuesta rapida", "Comparacion simple"],
       company: "Empresa",
       services: "Servicios",
       process: "Proceso",
@@ -5968,6 +6164,33 @@ function instantLocaleCopy(language) {
       whyBuyHere: "Pourquoi acheter ici",
       trustText: "Livraison claire, paiement securise, support et retours simples.",
       marketplaceCategories: ["Electronique", "Maison", "Mode", "Beaute", "Sport", "Offres"],
+      listings: "Annonces",
+      areas: "Zones",
+      listingsSlug: "/annonces",
+      areasSlug: "/zones",
+      searchListings: "Rechercher",
+      viewListings: "Voir les annonces",
+      inquireNow: "Demander",
+      featuredListing: "Annonce en avant",
+      newListing: "Nouvelle annonce",
+      availableNow: "Disponible",
+      listingPrice: "Prix sur demande",
+      listingHeadline: (name) => `Trouvez la bonne annonce avec ${name}`,
+      listingSubheadline: () => "Recherchez par localisation, prix, categorie et details avec un chemin de demande clair.",
+      listingSearchPlaceholder: "Rechercher par lieu, type, prix ou mot-cle",
+      listingFiltersTitle: "Rechercher avec les bons filtres",
+      listingFiltersText: "Aidez les clients a comparer par categorie, zone, prix et disponibilite.",
+      featuredListingsTitle: "Annonces en avant",
+      featuredListingsText: "Une selection claire d'annonces actives avec prix, localisation, details et CTA.",
+      listingAreaTitle: "Explorer les meilleures zones",
+      listingAreaText: "Utilisez des cartes de zones et notes locales pour clarifier la recherche.",
+      listingTrustTitle: "Confiance avant la demande",
+      listingTrustText: "Affichez details verifies, contact clair et disponibilite mise a jour.",
+      listingContactTitle: "Demander une annonce",
+      listingContactText: "Envoyez l'annonce, le budget, la localisation et le contact prefere.",
+      listingCategories: ["Maisons", "Locations", "Commercial", "Terrain", "Voitures", "En avant"],
+      listingLocations: ["Centre", "Zone nord", "Quartier ouest", "Pres des ecoles", "Bord de l'eau", "Zone business"],
+      listingTrustItems: ["Details verifies", "Disponibilite a jour", "Prix clairs", "Support local", "Reponse rapide", "Comparaison simple"],
       company: "Entreprise",
       services: "Services",
       process: "Processus",
@@ -6138,6 +6361,33 @@ function instantLocaleCopy(language) {
       whyBuyHere: "Por que comprar aqui",
       trustText: "Entrega clara, checkout seguro, suporte e devolucoes simples.",
       marketplaceCategories: ["Eletronicos", "Casa", "Moda", "Beleza", "Esportes", "Ofertas"],
+      listings: "Anuncios",
+      areas: "Areas",
+      listingsSlug: "/anuncios",
+      areasSlug: "/areas",
+      searchListings: "Buscar anuncios",
+      viewListings: "Ver anuncios",
+      inquireNow: "Consultar agora",
+      featuredListing: "Anuncio destaque",
+      newListing: "Novo anuncio",
+      availableNow: "Disponivel",
+      listingPrice: "Preco sob consulta",
+      listingHeadline: (name) => `Encontre o anuncio ideal com ${name}`,
+      listingSubheadline: () => "Busque imoveis, alugueis, carros ou classificados por localizacao, preco, categoria e detalhes.",
+      listingSearchPlaceholder: "Buscar por localizacao, tipo, preco ou palavra-chave",
+      listingFiltersTitle: "Busca com filtros claros",
+      listingFiltersText: "Ajude o cliente a comparar por categoria, area, preco e disponibilidade.",
+      featuredListingsTitle: "Anuncios em destaque",
+      featuredListingsText: "Uma selecao de anuncios ativos com preco, localizacao, detalhes e CTA de consulta.",
+      listingAreaTitle: "Explore as melhores areas",
+      listingAreaText: "Use cards de area e notas locais para deixar a busca clara.",
+      listingTrustTitle: "Confianca antes da consulta",
+      listingTrustText: "Mostre detalhes verificados, contato claro e disponibilidade atualizada.",
+      listingContactTitle: "Perguntar sobre um anuncio",
+      listingContactText: "Envie o anuncio, orcamento, localizacao e metodo de contato preferido.",
+      listingCategories: ["Casas", "Alugueis", "Comercial", "Terrenos", "Carros", "Destaques"],
+      listingLocations: ["Centro", "Zona norte", "Distrito oeste", "Perto de escolas", "Frente a agua", "Zona comercial"],
+      listingTrustItems: ["Detalhes verificados", "Disponibilidade atualizada", "Precos claros", "Suporte local", "Resposta rapida", "Comparacao simples"],
       company: "Empresa",
       services: "Servicos",
       process: "Processo",
@@ -7412,6 +7662,12 @@ function renderSection(section, schema) {
     DigitalModules: renderDigitalModules,
     DigitalProof: renderDigitalProof,
     DigitalAccessPanel: renderDigitalAccessPanel,
+    ListingHero: renderListingHero,
+    ListingFilters: renderListingFilters,
+    ListingFeatured: renderListingFeatured,
+    ListingAreaPanel: renderListingAreaPanel,
+    ListingTrust: renderListingTrust,
+    ListingContact: renderListingContact,
     HomeServiceHero: renderHomeServiceHero,
     HomeServiceCategories: renderHomeServiceCategories,
     HomeServiceAreas: renderHomeServiceAreas,
@@ -7879,6 +8135,115 @@ function digitalVisualPlaceholder(schema) {
   </div>`;
 }
 
+function renderListingHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = marketplaceItems(schema);
+  const image = editable.image_url || items.find((item) => item.image_url)?.image_url || "";
+  return `<section class="listing-pro-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="listing-pro-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.location || labels.areas)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <label class="listing-search-bar">
+        <span>${escapeHtml(labels.search)}</span>
+        <input readonly value="" placeholder="${escapeAttribute(editable.search_placeholder || labels.listingSearchPlaceholder)}">
+        <button type="button">${escapeHtml(editable.primary_button || labels.searchListings)}</button>
+      </label>
+      <div class="listing-quick-filters">${listingCategories(schema).slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    </div>
+    <div class="listing-pro-stage">
+      <div class="listing-map-card">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(schema.business?.name || "")}">` : listingVisualPlaceholder(schema)}</div>
+      <article class="listing-floating-card">
+        <small>${escapeHtml(labels.featuredListing)}</small>
+        <strong>${escapeHtml(items[0]?.name || labels.featuredListingsTitle)}</strong>
+        <span>${escapeHtml(items[0]?.shipping_label || listingLocationForIndex(0, labels))}</span>
+        <b>${escapeHtml(productPriceLabel(items[0] || { price_label: labels.listingPrice }))}</b>
+      </article>
+    </div>
+  </section>`;
+}
+
+function renderListingFilters(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const categories = Array.isArray(editable.items) && editable.items.length ? editable.items : listingCategories(schema);
+  return `<section class="listing-filter-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.searchFilters)}</span><h2>${escapeHtml(editable.title || labels.listingFiltersTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="listing-filter-grid">${categories.slice(0, 6).map((item, index) => `<article><strong>${escapeHtml(item)}</strong><span>${escapeHtml(index % 2 ? labels.availableNow : labels.featuredListing)}</span></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderListingFeatured(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="listing-featured-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.listings)}</span><h2>${escapeHtml(editable.title || labels.featuredListingsTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    ${renderRealEstateListingCatalog(marketplaceItems(schema), schema)}
+  </section>`;
+}
+
+function renderListingAreaPanel(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const locations = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.listingLocations;
+  return `<section class="listing-area-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.areas)}</span><h2>${escapeHtml(editable.title || labels.listingAreaTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="listing-area-map">${locations.slice(0, 6).map((item, index) => `<span style="--x:${18 + (index * 13) % 64}%;--y:${18 + (index * 19) % 58}%">${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderListingTrust(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.listingTrustItems;
+  return `<section class="listing-trust-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.trustTitle)}</span><h2>${escapeHtml(editable.title || labels.listingTrustTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div>${items.slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderListingContact(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="listing-contact-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="listing-contact-card">
+      <span class="rendered-kicker">${escapeHtml(labels.inquireNow)}</span>
+      <h2>${escapeHtml(editable.title || labels.listingContactTitle)}</h2>
+      <p>${escapeHtml(editable.text || labels.listingContactText)}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(labels.inquireNow)}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(labels.contact)}</a>
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderRealEstateListingCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-real-estate-listings">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    <div class="listing-image">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : listingVisualPlaceholder(schema)}</div>
+    <div class="listing-card-body">
+      <div class="listing-card-top"><small>${escapeHtml(item.deal_label || labels.availableNow)}</small><span>${escapeHtml(item.category || labels.listings)}</span></div>
+      <h3>${escapeHtml(item.name)}</h3>
+      <p>${escapeHtml(item.description)}</p>
+      <div class="listing-spec-row"><span>${escapeHtml(item.shipping_label || listingLocationForIndex(index, labels))}</span><span>${escapeHtml(index % 2 ? "3 bd" : "2 bd")}</span><span>${escapeHtml(index % 3 ? "2 ba" : "1 ba")}</span></div>
+      <div class="listing-card-bottom"><strong>${escapeHtml(productPriceLabel(item))}</strong><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.inquireNow)}</a></div>
+    </div>
+  </article>`).join("")}</div>`;
+}
+
+function listingCategories(schema) {
+  const fromItems = [...new Set(marketplaceItems(schema).map((item) => item.category).filter(Boolean))];
+  const labels = catalogLocaleLabels(schema);
+  return [...new Set([...fromItems, ...(labels.listingCategories || [])])];
+}
+
+function listingVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "LS").slice(0, 2).toUpperCase();
+  return `<div class="listing-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).listings)}</small></div>`;
+}
+
 function renderHomeServiceHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -8223,6 +8588,7 @@ function renderCatalogByType(catalogType, items, schema) {
     premium_editorial_catalog: renderPremiumEditorialCatalog,
     dense_marketplace_catalog: renderMarketplaceCatalog,
     listing_marketplace_catalog: renderClassifiedMarketplaceCatalog,
+    real_estate_listing_catalog: renderRealEstateListingCatalog,
     editorial_minimal_grid: renderMinimalProductGrid,
     lookbook_collection_catalog: renderFashionLookbookCatalog,
     luxury_gallery_catalog: renderLuxuryGalleryCatalog,
@@ -8466,6 +8832,7 @@ function catalogLocaleLabels(schema) {
       searchFilters: "Search & filters", category: "Category", brand: "Brand", price: "Price", rating: "Rating", delivery: "Delivery", deal: "Deal", fastShip: "Fast ship",
       search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", signature: "Signature", detail: "Detail", curated: "Curated", flagship: "Flagship", premiumSpecs: ["Presentation", "Quality", "Support", "Delivery"],
       sellerVerified: "Seller verified", used: "Used", newItem: "New", localPickup: "Local pickup", makeOffer: "Make offer", contactSeller: "Contact seller",
+      listings: "Listings", areas: "Areas", searchListings: "Search listings", viewListings: "View listings", inquireNow: "Inquire now", featuredListing: "Featured listing", newListing: "New listing", availableNow: "Available now", listingPrice: "Price on request", listingSearchPlaceholder: "Search by location, type, price or keyword", listingFiltersTitle: "Search with the right filters", listingFiltersText: "Help customers narrow options by category, location, price and availability.", featuredListingsTitle: "Featured listings", featuredListingsText: "Active listings with price, location, specs and inquiry CTAs.", listingAreaTitle: "Explore the best areas", listingAreaText: "Area cards and location notes make discovery feel local.", listingTrustTitle: "Confidence before the inquiry", listingTrustText: "Verified details, contact paths and updated availability.", listingContactTitle: "Ask about a listing", listingContactText: "Send listing, budget, location and preferred contact method.", listingCategories: ["Homes", "Rentals", "Commercial", "Land", "Cars", "Featured"], listingLocations: ["Downtown", "North area", "West district", "Near schools", "Waterfront", "Business zone"], listingTrustItems: ["Verified details", "Updated availability", "Clear pricing", "Local support", "Fast response", "Easy comparison"],
       newDrop: "New drop", limitedSelection: "Limited selection", instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
       digitalProducts: "Digital products", viewProducts: "View products", modules: "Modules", digitalAccessShort: "Downloads, modules and support notes.", digitalBundleTitle: "Digital offers built to sell", digitalModulesTitle: "What customers get inside", digitalProofTitle: "Trust before checkout", digitalAccessTitle: "Get access and start immediately", digitalAccessText: "Customers know exactly what they receive, how access works and where to get support.", digitalModuleItems: ["Core training", "Downloadable resources", "Templates and tools", "Bonus material", "Access instructions", "Support notes"], digitalProofItems: ["Instant access", "Editable modules", "Clear license", "Support-ready", "Bundle value", "Simple checkout"],
       collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
@@ -8481,6 +8848,7 @@ function catalogLocaleLabels(schema) {
       searchFilters: "Busqueda y filtros", category: "Categoria", brand: "Marca", price: "Precio", rating: "Calificacion", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rapido",
       search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", signature: "Principal", detail: "Detalle", curated: "Curado", flagship: "Producto estrella", premiumSpecs: ["Presentacion", "Calidad", "Soporte", "Entrega"],
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Nuevo", localPickup: "Retiro local", makeOffer: "Hacer oferta", contactSeller: "Contactar vendedor",
+      listings: "Listings", areas: "Zonas", searchListings: "Buscar listings", viewListings: "Ver listings", inquireNow: "Consultar ahora", featuredListing: "Listing destacado", newListing: "Nuevo listing", availableNow: "Disponible", listingPrice: "Precio a consultar", listingSearchPlaceholder: "Buscar por ubicacion, tipo, precio o palabra clave", listingFiltersTitle: "Busca con filtros claros", listingFiltersText: "Ayuda al cliente a comparar por categoria, zona, precio y disponibilidad.", featuredListingsTitle: "Listings destacados", featuredListingsText: "Listings activos con precio, ubicacion, detalles y CTA de consulta.", listingAreaTitle: "Explora las mejores zonas", listingAreaText: "Tarjetas de zona y notas de ubicacion hacen la busqueda mas clara.", listingTrustTitle: "Confianza antes de consultar", listingTrustText: "Detalles verificados, contacto claro y disponibilidad actualizada.", listingContactTitle: "Pregunta por un listing", listingContactText: "Envia el listing, presupuesto, ubicacion y metodo de contacto.", listingCategories: ["Casas", "Alquileres", "Comercial", "Terrenos", "Autos", "Destacados"], listingLocations: ["Centro", "Zona norte", "Distrito oeste", "Cerca de escuelas", "Frente al agua", "Zona comercial"], listingTrustItems: ["Detalles verificados", "Disponibilidad actualizada", "Precios claros", "Soporte local", "Respuesta rapida", "Comparacion simple"],
       newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
       digitalProducts: "Productos digitales", viewProducts: "Ver productos", modules: "Modulos", digitalAccessShort: "Descargas, modulos y notas de soporte.", digitalBundleTitle: "Ofertas digitales listas para vender", digitalModulesTitle: "Que recibe el cliente", digitalProofTitle: "Confianza antes del checkout", digitalAccessTitle: "Obten acceso y empieza de inmediato", digitalAccessText: "El cliente sabe exactamente que recibe, como entra y donde pide soporte.", digitalModuleItems: ["Entrenamiento principal", "Recursos descargables", "Plantillas y herramientas", "Material bonus", "Instrucciones de acceso", "Notas de soporte"], digitalProofItems: ["Acceso inmediato", "Modulos editables", "Licencia clara", "Soporte listo", "Valor del bundle", "Checkout simple"],
       collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
@@ -8496,6 +8864,7 @@ function catalogLocaleLabels(schema) {
       searchFilters: "Recherche et filtres", category: "Catégorie", brand: "Marque", price: "Prix", rating: "Note", delivery: "Livraison", deal: "Offre", fastShip: "Livraison rapide",
       search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace", signature: "Signature", detail: "Detail", curated: "Soigne", flagship: "Produit phare", premiumSpecs: ["Presentation", "Qualite", "Support", "Livraison"],
       sellerVerified: "Vendeur vérifié", used: "Occasion", newItem: "Neuf", localPickup: "Retrait local", makeOffer: "Faire une offre", contactSeller: "Contacter le vendeur",
+      listings: "Annonces", areas: "Zones", searchListings: "Rechercher", viewListings: "Voir les annonces", inquireNow: "Demander", featuredListing: "Annonce en avant", newListing: "Nouvelle annonce", availableNow: "Disponible", listingPrice: "Prix sur demande", listingSearchPlaceholder: "Rechercher par lieu, type, prix ou mot-cle", listingFiltersTitle: "Rechercher avec les bons filtres", listingFiltersText: "Aidez les clients a comparer par categorie, zone, prix et disponibilite.", featuredListingsTitle: "Annonces en avant", featuredListingsText: "Annonces actives avec prix, localisation, details et CTA.", listingAreaTitle: "Explorer les meilleures zones", listingAreaText: "Cartes de zones et notes locales pour clarifier la recherche.", listingTrustTitle: "Confiance avant la demande", listingTrustText: "Details verifies, contact clair et disponibilite mise a jour.", listingContactTitle: "Demander une annonce", listingContactText: "Envoyez l'annonce, le budget, la localisation et le contact prefere.", listingCategories: ["Maisons", "Locations", "Commercial", "Terrain", "Voitures", "En avant"], listingLocations: ["Centre", "Zone nord", "Quartier ouest", "Pres des ecoles", "Bord de l'eau", "Zone business"], listingTrustItems: ["Details verifies", "Disponibilite a jour", "Prix clairs", "Support local", "Reponse rapide", "Comparaison simple"],
       newDrop: "Nouvelle collection", limitedSelection: "Sélection limitée", instantAccess: "Accès immédiat", downloadable: "Contenu téléchargeable", bonus: "Ressources bonus", lifetime: "Accès à vie", getAccess: "Obtenir l'accès",
       digitalProducts: "Produits digitaux", viewProducts: "Voir les produits", modules: "Modules", digitalAccessShort: "Telechargements, modules et notes de support.", digitalBundleTitle: "Offres digitales pretes a vendre", digitalModulesTitle: "Ce que le client recoit", digitalProofTitle: "Confiance avant paiement", digitalAccessTitle: "Obtenir l'acces et commencer tout de suite", digitalAccessText: "Le client sait exactement ce qu'il recoit, comment acceder et ou demander du support.", digitalModuleItems: ["Formation principale", "Ressources telechargeables", "Modeles et outils", "Bonus", "Instructions d'acces", "Notes de support"], digitalProofItems: ["Acces immediat", "Modules modifiables", "Licence claire", "Support pret", "Valeur du bundle", "Paiement simple"],
       collections: "Collections", lookbook: "Lookbook", fit: "Guide des tailles", drop: "Drop", fitGuide: "Guide des tailles", fitGuideItems: ["Notes de taille", "Suggestions de style", "Conseils d'entretien", "Livraison et retours"], fashionCollections: ["Nouveautes", "Essentiels", "Pieces fortes", "Accessoires", "Drop limite", "Meilleures ventes"],
@@ -8511,6 +8880,7 @@ function catalogLocaleLabels(schema) {
       searchFilters: "Busca e filtros", category: "Categoria", brand: "Marca", price: "Preço", rating: "Avaliação", delivery: "Entrega", deal: "Oferta", fastShip: "Envio rápido",
       search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace", signature: "Principal", detail: "Detalhe", curated: "Curado", flagship: "Produto principal", premiumSpecs: ["Apresentacao", "Qualidade", "Suporte", "Entrega"],
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Novo", localPickup: "Retirada local", makeOffer: "Fazer oferta", contactSeller: "Contatar vendedor",
+      listings: "Anuncios", areas: "Areas", searchListings: "Buscar anuncios", viewListings: "Ver anuncios", inquireNow: "Consultar agora", featuredListing: "Anuncio destaque", newListing: "Novo anuncio", availableNow: "Disponivel", listingPrice: "Preco sob consulta", listingSearchPlaceholder: "Buscar por localizacao, tipo, preco ou palavra-chave", listingFiltersTitle: "Busca com filtros claros", listingFiltersText: "Ajude o cliente a comparar por categoria, area, preco e disponibilidade.", featuredListingsTitle: "Anuncios em destaque", featuredListingsText: "Anuncios ativos com preco, localizacao, detalhes e CTA de consulta.", listingAreaTitle: "Explore as melhores areas", listingAreaText: "Cards de area e notas locais deixam a busca clara.", listingTrustTitle: "Confianca antes da consulta", listingTrustText: "Detalhes verificados, contato claro e disponibilidade atualizada.", listingContactTitle: "Perguntar sobre um anuncio", listingContactText: "Envie o anuncio, orcamento, localizacao e metodo de contato.", listingCategories: ["Casas", "Alugueis", "Comercial", "Terrenos", "Carros", "Destaques"], listingLocations: ["Centro", "Zona norte", "Distrito oeste", "Perto de escolas", "Frente a agua", "Zona comercial"], listingTrustItems: ["Detalhes verificados", "Disponibilidade atualizada", "Precos claros", "Suporte local", "Resposta rapida", "Comparacao simples"],
       newDrop: "Novo drop", limitedSelection: "Seleção limitada", instantAccess: "Acesso imediato", downloadable: "Conteúdo baixável", bonus: "Recursos bônus", lifetime: "Acesso vitalício", getAccess: "Obter acesso",
       digitalProducts: "Produtos digitais", viewProducts: "Ver produtos", modules: "Modulos", digitalAccessShort: "Downloads, modulos e notas de suporte.", digitalBundleTitle: "Ofertas digitais prontas para vender", digitalModulesTitle: "O que o cliente recebe", digitalProofTitle: "Confianca antes do checkout", digitalAccessTitle: "Obtenha acesso e comece imediatamente", digitalAccessText: "O cliente sabe exatamente o que recebe, como acessar e onde pedir suporte.", digitalModuleItems: ["Treinamento principal", "Recursos para download", "Templates e ferramentas", "Material bonus", "Instrucoes de acesso", "Notas de suporte"], digitalProofItems: ["Acesso imediato", "Modulos editaveis", "Licenca clara", "Suporte pronto", "Valor do bundle", "Checkout simples"],
       collections: "Colecoes", lookbook: "Lookbook", fit: "Guia de tamanhos", drop: "Drop", fitGuide: "Guia de tamanhos", fitGuideItems: ["Notas de tamanho e caimento", "Sugestoes de estilo", "Cuidados com a peca", "Envios e devolucoes"], fashionCollections: ["Novidades", "Essenciais", "Pecas destaque", "Acessorios", "Drop limitado", "Mais vendidos"],

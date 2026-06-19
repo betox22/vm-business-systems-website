@@ -443,6 +443,47 @@
       ],
       editableSlots: ["headline", "slogan", "digital products", "modules", "bonuses", "pricing labels", "access notes", "support", "license", "proof", "CTAs", "section order"],
     },
+    {
+      id: "real-estate-listings-pro",
+      name: "Real Estate / Listings Pro",
+      category: "listings",
+      bestFor: ["real estate", "rentals", "cars", "classifieds", "equipment", "premium listings", "property marketplace"],
+      style: {
+        tone: "trustworthy, searchable, premium, location-aware, comparison-friendly",
+        layoutDensity: "medium-high",
+        imageStyle: "large listing photos, map panels, filter chips, specs, location and price badges",
+        defaultColors: { background: "#f6f8fb", surface: "#ffffff", primary: "#0f172a", secondary: "#475569", accent: "#0ea5e9" },
+        fonts: { heading: "Inter", body: "Inter" },
+      },
+      sections: [
+        { type: "listings_header", fields: { logo: "{{logo_url}}", businessName: "{{business_name}}", navItems: ["Search", "Featured", "Areas", "Contact"], ctaLabel: "{{inquire_cta_label}}" } },
+        { type: "listings_hero", fields: { headline: "{{listing_headline}}", subheadline: "{{listing_slogan}}", searchPlaceholder: "{{listing_search_placeholder}}", primaryButton: "{{search_cta_label}}" } },
+        { type: "listing_filters", fields: { categories: "{{listing_categories}}", priceRanges: "{{price_ranges}}", locations: "{{locations}}" } },
+        { type: "featured_listings", fields: { title: "{{featured_listings_title}}", products: "{{featured_products}}" } },
+        { type: "area_map", fields: { title: "{{area_title}}", text: "{{area_text}}" } },
+        { type: "listing_trust", fields: { title: "{{trust_title}}", items: "{{trust_points}}" } },
+        { type: "listing_contact", fields: { title: "{{contact_title}}", text: "{{contact_text}}" } },
+      ],
+      aiPrompt: "Use a premium real-estate/listings website layout, not a generic product store. Generate searchable listing copy for properties, cars, rentals, equipment, or premium classifieds. Include a large search hero, filters, location/area emphasis, listing cards with price, location and specs, featured listings, map/area panel, trust signals, and inquiry CTAs. Preserve this listing structure; only adapt copy, colors, listing types, specs, locations, prices and CTAs to the business.",
+      catalogModel: {
+        catalogType: "real_estate_listing_catalog",
+        productCardStyle: "large listing cards with photo, price, location, specs, badges and inquire CTA",
+        collectionLayout: "search hero, filters, featured listings, map/area panel, trust, inquiry panel",
+        filters: ["location", "price", "type", "bedrooms_or_specs", "status"],
+        productDetailModel: "listing detail with gallery, specs, location, seller/agent info and inquiry CTA",
+        upsellModel: "similar listings, featured areas and saved searches",
+        customerFeeling: "premium listing marketplace with strong search and comparison flow",
+      },
+      visualDifference: "Search-first listing layout with filters, map/area panel, listing specs, price/location badges and inquiry CTAs.",
+      clientSelectionCard: { title: "Real Estate / Listings", category: "listings", bestForLabel: "properties, rentals, cars, classifieds", difference: "Search, filters, location, map feel and listing cards.", previewTags: ["listings", "real estate", "classifieds"] },
+      pages: [
+        { name: "Home", purpose: "Listing search and discovery", usesSections: ["listings_header", "listings_hero", "listing_filters", "featured_listings", "area_map", "listing_trust", "listing_contact"] },
+        { name: "Listings", purpose: "Searchable listing catalog", catalogType: "real_estate_listing_catalog", layout: "filters, cards, price, location and specs", filters: ["location", "price", "type", "status"] },
+        { name: "Areas", purpose: "Locations, neighborhoods or service area", layout: "map-style area panel and location cards" },
+        { name: "Contact", purpose: "Inquiry, showing request or seller contact", layout: "lead form, phone, WhatsApp, email" },
+      ],
+      editableSlots: ["headline", "search placeholder", "listing categories", "locations", "price ranges", "listings", "photos", "prices", "specs", "badges", "map/area text", "inquiry CTAs", "contact info", "section order"],
+    },
   ];
 
   const INTENT_RULES = [
@@ -457,6 +498,12 @@
       templateId: "listing-marketplace-pro",
       catalogType: "listing_marketplace_catalog",
       keywords: ["tipo ebay", "como ebay", "ebay style", "productos usados", "listings", "clasificados", "vendedores", "condicion del producto", "condición del producto"],
+    },
+    {
+      intent: "real_estate_listings",
+      templateId: "real-estate-listings-pro",
+      catalogType: "real_estate_listing_catalog",
+      keywords: ["real estate", "bienes raices", "bienes raíces", "inmuebles", "propiedades", "casas", "apartamentos", "alquiler", "renta", "rentals", "zillow", "realtor", "mls", "carros", "autos", "vehiculos", "vehículos", "auto trader", "autotrader", "clasificados premium", "listings premium", "equipos usados", "maquinaria"],
     },
     {
       intent: "restaurant",
@@ -669,8 +716,8 @@
       ? ["restaurant-food-business", "lead-funnel-pro", "home-services-premium", "booking-appointment-pro"]
       : normalized.includes("digital") || normalized.includes("curso") || /digital|pricing|software|course/.test(primaryCatalogType)
         ? ["digital-products-store", "lead-funnel-pro", "apple-premium-product", "corporate-company-pro"]
-      : normalized.includes("marketplace") || /marketplace|listing|dense/.test(primaryCatalogType)
-      ? ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro"]
+      : normalized.includes("marketplace") || /real_estate|listing|dense/.test(primaryCatalogType)
+      ? ["real-estate-listings-pro", "mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro"]
       : normalized.includes("servicio") || normalized.includes("service") || /service|booking/.test(primaryCatalogType)
         ? ["home-services-premium", "lead-funnel-pro", "local-services-pro-plus", "booking-appointment-pro"]
         : ["lead-funnel-pro", "corporate-company-pro", "apple-premium-product", "fashion-drop-pro"];
