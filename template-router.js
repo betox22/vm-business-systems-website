@@ -243,6 +243,48 @@
       editableSlots: ["promise headline", "benefits", "offer stack", "bonuses", "proof", "testimonials", "FAQ", "guarantee", "contact info", "CTAs", "section order"],
     },
     {
+      id: "home-services-premium",
+      name: "Local Services Premium",
+      category: "services",
+      bestFor: ["contractors", "cleaning", "construction", "hvac", "electricians", "plumbers", "mechanics", "landscaping", "security", "home services"],
+      style: {
+        tone: "trusted local expert, direct, premium, quote-focused",
+        layoutDensity: "medium-high",
+        imageStyle: "real jobsite photos, team in uniform, before and after proof, service vehicles, local trust",
+        defaultColors: { background: "#f5f7f2", surface: "#ffffff", primary: "#15231d", secondary: "#5c6b61", accent: "#f59e0b" },
+        fonts: { heading: "Inter", body: "Inter" },
+      },
+      sections: [
+        { type: "home_service_header", fields: { logo: "{{logo_url}}", businessName: "{{business_name}}", navItems: ["Services", "Areas", "Work", "Reviews", "Quote"], ctaLabel: "{{quote_cta_label}}" } },
+        { type: "home_service_hero", fields: { headline: "{{local_service_headline}}", subheadline: "{{local_service_slogan}}", phone: "{{phone}}", primaryButton: "{{quote_cta_label}}", secondaryButton: "{{call_cta_label}}" } },
+        { type: "home_service_categories", fields: { title: "{{service_section_title}}", services: "{{featured_products}}" } },
+        { type: "home_service_area", fields: { title: "{{service_area_title}}", text: "{{service_area_text}}", areas: "{{service_areas}}" } },
+        { type: "before_after_gallery", fields: { title: "{{before_after_title}}", images: "{{photo_urls}}" } },
+        { type: "trust_reviews", fields: { title: "{{trust_title}}", items: "{{testimonials}}" } },
+        { type: "quote_panel", fields: { title: "{{contact_title}}", text: "{{contact_text}}" } },
+      ],
+      aiPrompt: "Use a premium local service website layout for contractors, cleaning, construction, HVAC, plumbing, electrical, mechanics, landscaping, security or other local pros. Make the hero phone/WhatsApp and quote CTA obvious. Generate service categories, service area copy, before/after proof, trust/reviews, emergency or same-day wording when appropriate, and a clear quote request flow. Do not make it look like a marketplace or generic company site.",
+      catalogModel: {
+        catalogType: "home_services_quote_catalog",
+        productCardStyle: "service cards with problem solved, service area, quote-only CTA, trust note and optional starting price",
+        collectionLayout: "local hero with phone, service categories, areas served, before/after proof, reviews, quote panel",
+        filters: ["service_type", "service_area", "urgency", "quote_only", "availability"],
+        productDetailModel: "service detail with scope, what is included, preparation, before/after proof, quote CTA",
+        upsellModel: "maintenance plans, emergency add-ons, bundles and recurring service",
+        customerFeeling: "reliable local pro ready to call or request a quote",
+      },
+      visualDifference: "Premium local service conversion page with phone-first hero, quote CTAs, service areas, before/after proof, trust reviews and no ecommerce cart.",
+      clientSelectionCard: { title: "Local Services Premium", category: "services", bestForLabel: "contractors, cleaning, HVAC, repairs, local pros", difference: "Phone-first local service page with proof, areas and quote flow.", previewTags: ["local", "quotes", "services"] },
+      pages: [
+        { name: "Home", purpose: "Local service quote conversion", usesSections: ["home_service_header", "home_service_hero", "home_service_categories", "home_service_area", "before_after_gallery", "trust_reviews", "quote_panel"] },
+        { name: "Services", purpose: "Service catalog", catalogType: "home_services_quote_catalog", layout: "service cards with quote CTA", filters: ["service_type", "area", "urgency"] },
+        { name: "Areas", purpose: "Service area proof", layout: "cities, neighborhoods, emergency notes and response expectations" },
+        { name: "Work", purpose: "Before and after gallery", layout: "proof gallery and customer outcomes" },
+        { name: "Quote", purpose: "Quote request", layout: "contact, phone, WhatsApp, quote expectations" },
+      ],
+      editableSlots: ["services", "service areas", "phone", "WhatsApp", "quote CTA", "before/after photos", "reviews", "trust badges", "response time", "contact info"],
+    },
+    {
       id: "local-services-pro-plus",
       name: "Local Services Pro",
       category: "services",
@@ -346,6 +388,12 @@
       templateId: "booking-appointment-pro",
       catalogType: "booking_menu_catalog",
       keywords: ["barberia", "barbería", "barbershop", "salon", "spa", "citas", "reservas", "appointments"],
+    },
+    {
+      intent: "home_local_service",
+      templateId: "home-services-premium",
+      catalogType: "home_services_quote_catalog",
+      keywords: ["contratista", "contractor", "construccion", "construcción", "construction", "limpieza", "cleaning", "plomeria", "plomería", "plumbing", "electricista", "electrician", "hvac", "aire acondicionado", "air conditioning", "mecanico", "mecánico", "mechanic", "landscaping", "jardineria", "jardinería", "seguridad", "security", "servicio local", "local service", "reparacion", "reparación", "repair", "presupuesto", "cotizacion", "cotización", "quote", "same day", "emergencia", "emergency"],
     },
     {
       intent: "corporate_company",
@@ -539,7 +587,7 @@
     const fallbackIds = normalized.includes("marketplace") || /marketplace|listing|dense/.test(primaryCatalogType)
       ? ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro"]
       : normalized.includes("servicio") || normalized.includes("service") || /service|booking/.test(primaryCatalogType)
-        ? ["lead-funnel-pro", "local-services-pro-plus", "booking-appointment-pro", "corporate-company-pro"]
+        ? ["home-services-premium", "lead-funnel-pro", "local-services-pro-plus", "booking-appointment-pro"]
         : ["lead-funnel-pro", "corporate-company-pro", "apple-premium-product", "fashion-drop-pro"];
 
     fallbackIds.forEach((templateId) => {

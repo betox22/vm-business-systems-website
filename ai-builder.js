@@ -655,6 +655,20 @@ const TEMPLATE_PREVIEW_CHOICES = [
     },
   },
   {
+    templateId: "home-services-premium",
+    name: "Local Services Premium",
+    names: { en: "Local Services Premium", es: "Servicios locales premium", fr: "Services locaux premium", pt: "Servicos locais premium" },
+    catalogType: "home_services_quote_catalog",
+    image: "/templates-preview/screenshots/services.png",
+    description: "Premium local service site with phone-first hero, service areas, proof, reviews, and quote flow.",
+    descriptions: {
+      en: "Premium local service site with phone-first hero, service areas, proof, reviews, and quote flow.",
+      es: "Pagina premium para servicios locales con telefono visible, areas, prueba, resenas y cotizacion.",
+      fr: "Site premium de services locaux avec telephone visible, zones, preuves, avis et devis.",
+      pt: "Site premium para servicos locais com telefone visivel, areas, provas, avaliacoes e orcamento.",
+    },
+  },
+  {
     templateId: "local-services-pro-plus",
     name: "Local Services",
     names: { en: "Local Services", es: "Servicios locales", fr: "Services locaux", pt: "Servicos locais" },
@@ -1763,7 +1777,7 @@ function rankedFallbackChoices(selectedTemplateId = "") {
   const ordered = commerceHeavy
     ? ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro", "apple-premium-product"]
     : serviceHeavy
-      ? ["lead-funnel-pro", "local-services-pro-plus", "booking-appointment-pro", "corporate-company-pro"]
+      ? ["home-services-premium", "lead-funnel-pro", "local-services-pro-plus", "booking-appointment-pro"]
       : ["lead-funnel-pro", "corporate-company-pro", "apple-premium-product", "fashion-drop-pro"];
   return ordered.map((templateId) => templatePreviewMeta(templateId)).filter(Boolean);
 }
@@ -4389,14 +4403,15 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isFashionTemplate = catalogType === "lookbook_collection_catalog" || /fashion-drop-pro/i.test(template.id || "");
   const isCorporateTemplate = catalogType === "company_services_catalog" || /corporate-company-pro/i.test(template.id || "");
   const isLeadFunnelTemplate = catalogType === "lead_funnel_offer_catalog" || /lead-funnel-pro/i.test(template.id || "");
-  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate;
-  const primaryCta = isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
-  const secondaryCta = isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
-  if (isLeadFunnelTemplate) {
+  const isHomeServicesTemplate = catalogType === "home_services_quote_catalog" || /home-services-premium/i.test(template.id || "");
+  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate;
+  const primaryCta = isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
+  const secondaryCta = isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
+  if (isLeadFunnelTemplate || isHomeServicesTemplate) {
     catalogItems.forEach((item) => {
       item.price_type = "quote_only";
       item.price_label = copy.askPrice;
-      item.button_label = copy.claimOffer;
+      item.button_label = isHomeServicesTemplate ? copy.freeQuote : copy.claimOffer;
       item.track_inventory = false;
     });
   }
@@ -4408,8 +4423,10 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         ? buildFashionDropInstantPages(copy, name, description, payload)
         : isCorporateTemplate
           ? buildCorporateCompanyInstantPages(copy, name, description, payload)
-          : isLeadFunnelTemplate
-            ? buildLeadFunnelInstantPages(copy, name, description, payload)
+          : isHomeServicesTemplate
+            ? buildHomeServicesPremiumInstantPages(copy, name, description, payload)
+            : isLeadFunnelTemplate
+              ? buildLeadFunnelInstantPages(copy, name, description, payload)
           : buildDefaultInstantPages(copy, name, description, payload);
   return {
     schema_version: "1.0",
@@ -4444,7 +4461,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       catalog_type: catalogType,
       intent: templateSelection?.intent || payload.templateIntent || "",
       navigation: { show_cart: !isBusinessWebsite, show_header: true, sticky_header: true },
-      checkout: { mode: isBusinessWebsite ? "lead_capture" : isOnlineShop ? "cart_setup_required" : "quote_or_cart", primary_action: isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : isOnlineShop ? copy.shopNow : copy.requestOrder },
+      checkout: { mode: isBusinessWebsite ? "lead_capture" : isOnlineShop ? "cart_setup_required" : "quote_or_cart", primary_action: primaryCta },
     },
     integrations: { contact: { whatsapp_enabled: true, email_enabled: true }, analytics: { enabled: false, provider: "" }, payments: { enabled: false, mode: "setup_required" } },
     custom_logic: { enabled: false, risk_level: "restricted", automations: "" },
@@ -4474,6 +4491,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       { label: copy.benefits, page_key: "catalog" },
       { label: copy.proof, page_key: "about" },
       { label: copy.contact, page_key: "contact" },
+    ] : isHomeServicesTemplate ? [
+      { label: copy.services, page_key: "home" },
+      { label: copy.serviceAreas, page_key: "catalog" },
+      { label: copy.workProof, page_key: "about" },
+      { label: copy.freeQuote, page_key: "contact" },
     ] : [
       { label: copy.home, page_key: "home" },
       { label: copy.shop, page_key: "catalog" },
@@ -4504,9 +4526,9 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         id: "instant-modern",
         name: template.name || copy.modernCommercial,
         description: template.visualDifference || copy.fastBase,
-        theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: primaryCta, secondary_label: copy.contactVerb, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
+        theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: primaryCta, secondary_label: secondaryCta, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
         layout_mode_id: template.id || "instant_storefront",
-        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : "split_showcase",
+        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : "split_showcase",
         product_layout: catalogType,
       },
     ],
@@ -4859,6 +4881,96 @@ function buildCorporateCompanyInstantPages(copy, name, description, payload = {}
       slug: copy.contactSlug,
       order: 4,
       sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: copy.letsTalk, text: copy.corporateContactText }, settings: { layout: "simple" } }],
+    },
+  ];
+}
+
+function buildHomeServicesPremiumInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.services,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "home_service_hero",
+          type: "HomeServiceHero",
+          order: 1,
+          editable: {
+            headline: copy.homeServiceHeadline(name),
+            subtitle: copy.homeServiceSubheadline(description),
+            primary_button: copy.freeQuote,
+            secondary_button: copy.callNow,
+            image_url: heroImage,
+            images: [],
+          },
+          settings: { layout: "phone_first_quote" },
+        },
+        {
+          id: "home_service_categories",
+          type: "HomeServiceCategories",
+          order: 2,
+          editable: { title: copy.homeServiceCategoriesTitle, text: copy.homeServiceCategoriesText, images: [] },
+          settings: { layout: "service_tiles", columns: 3 },
+        },
+        {
+          id: "home_service_areas",
+          type: "HomeServiceAreas",
+          order: 3,
+          editable: { title: copy.homeServiceAreasTitle, text: copy.homeServiceAreasText, items: copy.serviceAreaItems, images: [] },
+          settings: { layout: "area_map_panel" },
+        },
+        {
+          id: "home_service_gallery",
+          type: "HomeServiceGallery",
+          order: 4,
+          editable: { title: copy.beforeAfterTitle, text: copy.beforeAfterText, images: [] },
+          settings: { layout: "before_after" },
+        },
+        {
+          id: "home_service_trust",
+          type: "HomeServiceTrust",
+          order: 5,
+          editable: { title: copy.homeServiceTrustTitle, text: copy.homeServiceTrustText, items: copy.homeServiceTrustItems, images: [] },
+          settings: { layout: "review_panel" },
+        },
+        {
+          id: "home_service_quote",
+          type: "HomeServiceQuote",
+          order: 6,
+          editable: { title: copy.homeServiceQuoteTitle, text: copy.homeServiceQuoteText, images: [] },
+          settings: { layout: "quote_panel" },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.serviceAreas,
+      slug: copy.servicesSlug,
+      order: 2,
+      sections: [
+        { id: "services_grid", type: "ProductGrid", order: 1, editable: { title: copy.homeServiceCategoriesTitle, text: copy.homeServiceCategoriesText, images: [] }, settings: { layout: "home_services_quote", columns: 3 } },
+        { id: "areas", type: "HomeServiceAreas", order: 2, editable: { title: copy.homeServiceAreasTitle, text: copy.homeServiceAreasText, items: copy.serviceAreaItems, images: [] }, settings: { layout: "area_map_panel" } },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.workProof,
+      slug: copy.workSlug,
+      order: 3,
+      sections: [
+        { id: "work", type: "HomeServiceGallery", order: 1, editable: { title: copy.beforeAfterTitle, text: copy.beforeAfterText, images: [] }, settings: { layout: "before_after" } },
+        { id: "trust", type: "HomeServiceTrust", order: 2, editable: { title: copy.homeServiceTrustTitle, text: copy.homeServiceTrustText, items: copy.homeServiceTrustItems, images: [] }, settings: { layout: "review_panel" } },
+      ],
+    },
+    {
+      page_key: "contact",
+      title: copy.freeQuote,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [{ id: "quote", type: "HomeServiceQuote", order: 1, editable: { title: copy.homeServiceQuoteTitle, text: copy.homeServiceQuoteText, images: [] }, settings: { layout: "quote_panel" } }],
     },
   ];
 }
@@ -6785,6 +6897,12 @@ function renderSection(section, schema) {
     CorporateServices: renderCorporateServices,
     CorporateProcess: renderCorporateProcess,
     CorporateProof: renderCorporateProof,
+    HomeServiceHero: renderHomeServiceHero,
+    HomeServiceCategories: renderHomeServiceCategories,
+    HomeServiceAreas: renderHomeServiceAreas,
+    HomeServiceGallery: renderHomeServiceGallery,
+    HomeServiceTrust: renderHomeServiceTrust,
+    HomeServiceQuote: renderHomeServiceQuote,
     FunnelHero: renderFunnelHero,
     FunnelBenefits: renderFunnelBenefits,
     FunnelOffer: renderFunnelOffer,
@@ -7038,6 +7156,92 @@ function corporateVisualPlaceholder(schema) {
   return `<div class="corporate-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
 }
 
+function renderHomeServiceHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const image = editable.image_url || marketplaceItems(schema).find((item) => item.image_url)?.image_url || "";
+  const phone = schema.contact?.phone || schema.contact?.whatsapp || labels.callNow;
+  return `<section class="home-service-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="home-service-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.location || labels.localExperts)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="home-service-actions">
+        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.freeQuote)}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.callNow)}</a>
+      </div>
+      <div class="home-service-phone"><strong>${escapeHtml(phone)}</strong><span>${escapeHtml(labels.fastResponse)}</span></div>
+    </div>
+    <div class="home-service-hero-visual">${image ? `<img src="${escapeAttribute(image)}" alt="">` : homeServiceVisualPlaceholder(schema)}</div>
+    <div class="home-service-proof">${labels.homeServiceTrustItems.slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderHomeServiceCategories(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="home-service-categories ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).services)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    ${renderHomeServicesCatalog(marketplaceItems(schema), schema)}
+  </section>`;
+}
+
+function renderHomeServiceAreas(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.serviceAreaItems;
+  return `<section class="home-service-areas ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.serviceAreas)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="home-service-area-map">${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderHomeServiceGallery(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = marketplaceItems(schema).slice(0, 4);
+  return `<section class="home-service-gallery ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.workProof)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="home-service-work-grid">${items.map((item, index) => `<article>
+      ${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : homeServiceWorkPlaceholder(item, schema)}
+      <div><small>${escapeHtml(index % 2 ? labels.after : labels.before)}</small><strong>${escapeHtml(item.name)}</strong></div>
+    </article>`).join("")}</div>
+  </section>`;
+}
+
+function renderHomeServiceTrust(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.homeServiceTrustItems;
+  return `<section class="home-service-trust ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.proof)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div>${items.map((item) => `<blockquote>${escapeHtml(item)}</blockquote>`).join("")}</div>
+  </section>`;
+}
+
+function renderHomeServiceQuote(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const phone = schema.contact?.phone || schema.contact?.whatsapp || labels.callNow;
+  return `<section class="home-service-quote ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><h2>${escapeHtml(editable.title || labels.freeQuote)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="home-service-quote-card">
+      <strong>${escapeHtml(phone)}</strong>
+      <span>${escapeHtml(labels.quoteExpectation)}</span>
+      <a class="rendered-button" href="#">${escapeHtml(labels.freeQuote)}</a>
+    </div>
+  </section>`;
+}
+
+function homeServiceVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "LS").slice(0, 2).toUpperCase();
+  return `<div class="home-service-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
+}
+
+function homeServiceWorkPlaceholder(item, schema) {
+  const initials = String(item?.name || schema.business?.name || "OK").slice(0, 2).toUpperCase();
+  return `<div class="home-service-work-placeholder">${escapeHtml(initials)}</div>`;
+}
+
 function renderFunnelHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -7241,6 +7445,7 @@ function renderCatalogByType(catalogType, items, schema) {
     booking_menu_catalog: renderBookingMenuCatalog,
     service_area_catalog: renderLocalServiceCatalog,
     company_services_catalog: renderCorporateServicesCatalog,
+    home_services_quote_catalog: renderHomeServicesCatalog,
     lead_funnel_offer_catalog: renderLeadFunnelOfferCatalog,
     practice_area_catalog: renderProfessionalServicesCatalog,
     project_gallery_catalog: renderBeforeAfterProjectCatalog,
@@ -7312,6 +7517,17 @@ function renderCorporateServicesCatalog(items, schema) {
     <h3>${escapeHtml(item.name)}</h3>
     <p>${escapeHtml(item.description)}</p>
     <a class="rendered-button secondary" href="#">${escapeHtml(item.button_label || labels.requestConsultation)}</a>
+  </article>`).join("")}</div>`;
+}
+
+function renderHomeServicesCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-home-services">${items.map((item, index) => `<article>
+    <small>${escapeHtml(item.category || `${labels.service} 0${index + 1}`)}</small>
+    <h3>${escapeHtml(item.name)}</h3>
+    <p>${escapeHtml(item.description)}</p>
+    <div><span>${escapeHtml(labels.serviceAreaReady)}</span><span>${escapeHtml(labels.quoteOnly)}</span></div>
+    <a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.freeQuote)}</a>
   </article>`).join("")}</div>`;
 }
 
@@ -7444,6 +7660,7 @@ function catalogLocaleLabels(schema) {
       newDrop: "New drop", limitedSelection: "Limited selection", instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
       collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
       company: "Company", services: "Services", process: "Process", proof: "Proof", capability: "Capability", requestConsultation: "Request consultation", viewServices: "View services", corporateProcessItems: ["Discovery", "Strategy", "Delivery", "Support"], corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
+      localExperts: "Local experts", callNow: "Call now", fastResponse: "Fast local response", serviceAreas: "Service areas", workProof: "Work proof", workSlug: "work", service: "Service", quoteOnly: "Quote only", serviceAreaReady: "Area-ready", quoteExpectation: "Tell us what you need and get a clear next step.", homeServiceHeadline: (name) => `${name} handles the job right the first time`, homeServiceSubheadline: (description) => description || "Trusted local service with clear communication, reliable scheduling, and quote-first service.", homeServiceCategoriesTitle: "Services built for real local needs", homeServiceCategoriesText: "Organize every service into clear quote-ready options that customers can understand quickly.", homeServiceAreasTitle: "Serving the areas that matter", homeServiceAreasText: "Show cities, neighborhoods, response expectations and emergency availability in one clean section.", serviceAreaItems: ["Nearby neighborhoods", "Same-day options", "Emergency calls", "Recurring service", "Licensed work", "Clear estimates"], beforeAfterTitle: "Real work, visible results", beforeAfterText: "Use job photos, before-and-after proof and finished projects to build trust before the first call.", homeServiceTrustTitle: "Why customers call first", homeServiceTrustText: "Trust signals, reviews and response expectations make the next step feel safe.", homeServiceTrustItems: ["Licensed and insured", "Clear estimates", "On-time arrivals", "Before/after proof", "Local references", "Clean follow-up"], homeServiceQuoteTitle: "Request a clear quote", homeServiceQuoteText: "Share the job details, preferred time and location. The business can respond by phone, WhatsApp or email.",
       offer: "Offer", benefits: "Benefits", faq: "FAQ", claimOffer: "Start now", seeProof: "See proof", nextStep: "Next step", quickRequest: "Send a quick request and get a clear response.", bestValue: "Best value", outcomeFocused: "Outcome-focused", fastNextStep: "Fast next step", editableOffer: "Editable offer", faqAnswer: "This can be adjusted to match the business, offer, and customer objections.", funnelBenefitsItems: ["Clear promise", "Simple next step", "Qualified leads", "Editable sections", "Proof-first structure", "Fast launch"], funnelProofItems: ["Specific outcome", "Simple process", "Fast response", "Clear pricing conversation"], funnelFaqItems: [{ question: "What happens next?", answer: "The business follows up with the next step." }, { question: "Can it be customized?", answer: "Yes, the offer and page content are editable." }, { question: "Is this a store?", answer: "No, it is focused on leads." }],
       main: "Main", popular: "Popular", marketPrice: "Market price", fromQuote: "From quote", book: "Book", freeQuote: "Free quote", practiceArea: "Practice area", scheduleConsultation: "Schedule consultation",
       before: "Before", after: "After", viewProject: "View project", plan: "Plan", custom: "Custom", start: "Start", ticketOffer: "Ticket / offer", reserve: "Reserve", package: "Package", applyNow: "Apply now", view: "View", request: "Ask now",
@@ -7455,6 +7672,7 @@ function catalogLocaleLabels(schema) {
       newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
       collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
       company: "Empresa", services: "Servicios", process: "Proceso", proof: "Prueba", capability: "Capacidad", requestConsultation: "Solicitar consulta", viewServices: "Ver servicios", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Soporte"], corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
+      localExperts: "Expertos locales", callNow: "Llamar ahora", fastResponse: "Respuesta local rapida", serviceAreas: "Areas de servicio", workProof: "Trabajos", workSlug: "trabajos", service: "Servicio", quoteOnly: "Cotizacion", serviceAreaReady: "Disponible por zona", quoteExpectation: "Cuenta que necesitas y recibe el siguiente paso claro.", homeServiceHeadline: (name) => `${name} resuelve el trabajo bien desde el primer intento`, homeServiceSubheadline: (description) => description || "Servicio local confiable con comunicacion clara, agenda ordenada y cotizacion primero.", homeServiceCategoriesTitle: "Servicios para necesidades locales reales", homeServiceCategoriesText: "Organiza cada servicio en opciones claras para cotizar sin confundir al cliente.", homeServiceAreasTitle: "Atendemos las zonas importantes", homeServiceAreasText: "Muestra ciudades, vecindarios, tiempos de respuesta y disponibilidad de emergencia en una seccion clara.", serviceAreaItems: ["Zonas cercanas", "Opciones el mismo dia", "Emergencias", "Servicio recurrente", "Trabajo autorizado", "Estimados claros"], beforeAfterTitle: "Trabajo real, resultados visibles", beforeAfterText: "Usa fotos, antes/despues y proyectos terminados para generar confianza antes de la llamada.", homeServiceTrustTitle: "Por que llaman primero", homeServiceTrustText: "Senales de confianza, resenas y expectativas de respuesta hacen que el siguiente paso sea seguro.", homeServiceTrustItems: ["Licencia y seguro", "Estimados claros", "Llegadas puntuales", "Antes/despues", "Referencias locales", "Seguimiento limpio"], homeServiceQuoteTitle: "Solicita una cotizacion clara", homeServiceQuoteText: "Comparte el trabajo, horario preferido y ubicacion. El negocio puede responder por telefono, WhatsApp o email.",
       offer: "Oferta", benefits: "Beneficios", faq: "Preguntas", claimOffer: "Empezar ahora", seeProof: "Ver prueba", nextStep: "Siguiente paso", quickRequest: "Envia una solicitud rapida y recibe una respuesta clara.", bestValue: "Mejor opcion", outcomeFocused: "Enfocado en resultado", fastNextStep: "Siguiente paso rapido", editableOffer: "Oferta editable", faqAnswer: "Esto se puede ajustar al negocio, la oferta y las dudas del cliente.", funnelBenefitsItems: ["Promesa clara", "Siguiente paso simple", "Leads calificados", "Secciones editables", "Estructura con prueba", "Lanzamiento rapido"], funnelProofItems: ["Resultado especifico", "Proceso simple", "Respuesta rapida", "Conversacion clara sobre precios"], funnelFaqItems: [{ question: "Que pasa despues?", answer: "El negocio responde con el siguiente paso." }, { question: "Se puede personalizar?", answer: "Si, la oferta y el contenido son editables." }, { question: "Esto es una tienda?", answer: "No, esta enfocado en leads." }],
       main: "Principal", popular: "Popular", marketPrice: "Precio de mercado", fromQuote: "Desde cotizacion", book: "Reservar", freeQuote: "Cotizacion gratis", practiceArea: "Area de practica", scheduleConsultation: "Agendar consulta",
       before: "Antes", after: "Despues", viewProject: "Ver proyecto", plan: "Plan", custom: "Personalizado", start: "Empezar", ticketOffer: "Ticket / oferta", reserve: "Reservar", package: "Paquete", applyNow: "Aplicar ahora", view: "Ver", request: "Consultar",
@@ -7466,6 +7684,7 @@ function catalogLocaleLabels(schema) {
       newDrop: "Nouvelle collection", limitedSelection: "Sélection limitée", instantAccess: "Accès immédiat", downloadable: "Contenu téléchargeable", bonus: "Ressources bonus", lifetime: "Accès à vie", getAccess: "Obtenir l'accès",
       collections: "Collections", lookbook: "Lookbook", fit: "Guide des tailles", drop: "Drop", fitGuide: "Guide des tailles", fitGuideItems: ["Notes de taille", "Suggestions de style", "Conseils d'entretien", "Livraison et retours"], fashionCollections: ["Nouveautes", "Essentiels", "Pieces fortes", "Accessoires", "Drop limite", "Meilleures ventes"],
       company: "Entreprise", services: "Services", process: "Processus", proof: "Preuve", capability: "Capacite", requestConsultation: "Demander une consultation", viewServices: "Voir les services", corporateProcessItems: ["Diagnostic", "Strategie", "Livraison", "Support"], corporateProofItems: ["Livraison fiable", "Communication claire", "Standards professionnels"],
+      localExperts: "Experts locaux", callNow: "Appeler", fastResponse: "Reponse locale rapide", serviceAreas: "Zones desservies", workProof: "Realisations", workSlug: "realisations", service: "Service", quoteOnly: "Sur devis", serviceAreaReady: "Zone couverte", quoteExpectation: "Expliquez le besoin et recevez une prochaine etape claire.", homeServiceHeadline: (name) => `${name} realise le travail correctement des le depart`, homeServiceSubheadline: (description) => description || "Service local fiable avec communication claire, planning simple et devis avant intervention.", homeServiceCategoriesTitle: "Services pour des besoins locaux reels", homeServiceCategoriesText: "Organisez chaque service en options claires et faciles a demander.", homeServiceAreasTitle: "Nous couvrons les zones importantes", homeServiceAreasText: "Affichez les villes, quartiers, delais de reponse et options d'urgence.", serviceAreaItems: ["Quartiers proches", "Options le jour meme", "Urgences", "Service recurrent", "Travail autorise", "Devis clairs"], beforeAfterTitle: "Travail reel, resultats visibles", beforeAfterText: "Utilisez photos, avant/apres et projets termines pour creer la confiance.", homeServiceTrustTitle: "Pourquoi les clients appellent d'abord", homeServiceTrustText: "Avis, preuves et delais de reponse rendent la demande plus rassurante.", homeServiceTrustItems: ["Assure et autorise", "Devis clairs", "Arrivees ponctuelles", "Avant/apres", "References locales", "Suivi propre"], homeServiceQuoteTitle: "Demander un devis clair", homeServiceQuoteText: "Partagez le besoin, l'horaire prefere et la localisation. L'entreprise peut repondre par telephone, WhatsApp ou email.",
       offer: "Offre", benefits: "Benefices", faq: "FAQ", claimOffer: "Commencer", seeProof: "Voir les preuves", nextStep: "Prochaine etape", quickRequest: "Envoyez une demande rapide et recevez une reponse claire.", bestValue: "Meilleur choix", outcomeFocused: "Oriente resultat", fastNextStep: "Etape rapide", editableOffer: "Offre modifiable", faqAnswer: "Cela peut etre ajuste au business, a l'offre et aux objections client.", funnelBenefitsItems: ["Promesse claire", "Etape simple", "Leads qualifies", "Sections modifiables", "Structure avec preuves", "Lancement rapide"], funnelProofItems: ["Resultat specifique", "Processus simple", "Reponse rapide", "Prix clarifies"], funnelFaqItems: [{ question: "Que se passe-t-il ensuite ?", answer: "L'entreprise repond avec la prochaine etape." }, { question: "Peut-on personnaliser ?", answer: "Oui, l'offre et le contenu sont modifiables." }, { question: "Est-ce une boutique ?", answer: "Non, c'est centre sur les leads." }],
       main: "Principal", popular: "Populaire", marketPrice: "Prix du marché", fromQuote: "Sur devis", book: "Réserver", freeQuote: "Devis gratuit", practiceArea: "Domaine d'expertise", scheduleConsultation: "Planifier une consultation",
       before: "Avant", after: "Après", viewProject: "Voir le projet", plan: "Offre", custom: "Sur mesure", start: "Commencer", ticketOffer: "Billet / offre", reserve: "Réserver", package: "Forfait", applyNow: "Postuler", view: "Voir", request: "Demander",
@@ -7477,6 +7696,7 @@ function catalogLocaleLabels(schema) {
       newDrop: "Novo drop", limitedSelection: "Seleção limitada", instantAccess: "Acesso imediato", downloadable: "Conteúdo baixável", bonus: "Recursos bônus", lifetime: "Acesso vitalício", getAccess: "Obter acesso",
       collections: "Colecoes", lookbook: "Lookbook", fit: "Guia de tamanhos", drop: "Drop", fitGuide: "Guia de tamanhos", fitGuideItems: ["Notas de tamanho e caimento", "Sugestoes de estilo", "Cuidados com a peca", "Envios e devolucoes"], fashionCollections: ["Novidades", "Essenciais", "Pecas destaque", "Acessorios", "Drop limitado", "Mais vendidos"],
       company: "Empresa", services: "Servicos", process: "Processo", proof: "Prova", capability: "Capacidade", requestConsultation: "Solicitar consulta", viewServices: "Ver servicos", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Suporte"], corporateProofItems: ["Entrega confiavel", "Comunicacao clara", "Padroes profissionais"],
+      localExperts: "Especialistas locais", callNow: "Ligar agora", fastResponse: "Resposta local rapida", serviceAreas: "Areas atendidas", workProof: "Trabalhos", workSlug: "trabalhos", service: "Servico", quoteOnly: "Orcamento", serviceAreaReady: "Area atendida", quoteExpectation: "Conte o que precisa e receba o proximo passo claro.", homeServiceHeadline: (name) => `${name} resolve o servico certo desde o primeiro contato`, homeServiceSubheadline: (description) => description || "Servico local confiavel com comunicacao clara, agenda simples e orcamento primeiro.", homeServiceCategoriesTitle: "Servicos para necessidades locais reais", homeServiceCategoriesText: "Organize cada servico em opcoes claras para solicitar orcamento sem confusao.", homeServiceAreasTitle: "Atendemos as areas importantes", homeServiceAreasText: "Mostre cidades, bairros, expectativa de resposta e disponibilidade de emergencia.", serviceAreaItems: ["Bairros proximos", "Opcoes no mesmo dia", "Emergencias", "Servico recorrente", "Trabalho autorizado", "Estimativas claras"], beforeAfterTitle: "Trabalho real, resultado visivel", beforeAfterText: "Use fotos, antes/depois e projetos finalizados para gerar confianca antes da chamada.", homeServiceTrustTitle: "Por que os clientes ligam primeiro", homeServiceTrustText: "Provas, avaliacoes e expectativa de resposta deixam o proximo passo seguro.", homeServiceTrustItems: ["Licenciado e segurado", "Estimativas claras", "Pontualidade", "Antes/depois", "Referencias locais", "Acompanhamento claro"], homeServiceQuoteTitle: "Solicite um orcamento claro", homeServiceQuoteText: "Compartilhe o servico, horario preferido e localizacao. A empresa pode responder por telefone, WhatsApp ou email.",
       offer: "Oferta", benefits: "Beneficios", faq: "FAQ", claimOffer: "Comecar agora", seeProof: "Ver prova", nextStep: "Proximo passo", quickRequest: "Envie uma solicitacao rapida e receba uma resposta clara.", bestValue: "Melhor opcao", outcomeFocused: "Foco em resultado", fastNextStep: "Proximo passo rapido", editableOffer: "Oferta editavel", faqAnswer: "Isto pode ser ajustado ao negocio, oferta e duvidas do cliente.", funnelBenefitsItems: ["Promessa clara", "Proximo passo simples", "Leads qualificados", "Secoes editaveis", "Estrutura com prova", "Lancamento rapido"], funnelProofItems: ["Resultado especifico", "Processo simples", "Resposta rapida", "Conversa clara sobre preco"], funnelFaqItems: [{ question: "O que acontece depois?", answer: "O negocio responde com o proximo passo." }, { question: "Pode personalizar?", answer: "Sim, a oferta e o conteudo sao editaveis." }, { question: "Isso e uma loja?", answer: "Nao, e focado em leads." }],
       main: "Principal", popular: "Popular", marketPrice: "Preço de mercado", fromQuote: "Sob orçamento", book: "Reservar", freeQuote: "Orçamento grátis", practiceArea: "Área de atuação", scheduleConsultation: "Agendar consulta",
       before: "Antes", after: "Depois", viewProject: "Ver projeto", plan: "Plano", custom: "Personalizado", start: "Começar", ticketOffer: "Ingresso / oferta", reserve: "Reservar", package: "Pacote", applyNow: "Aplicar agora", view: "Ver", request: "Consultar",
