@@ -84,6 +84,11 @@ function renderSection(section, schema) {
   if (section.type === "CorporateServices") return renderCorporateServices(section, schema);
   if (section.type === "CorporateProcess") return renderCorporateProcess(section, schema);
   if (section.type === "CorporateProof") return renderCorporateProof(section, schema);
+  if (section.type === "FunnelHero") return renderFunnelHero(section, schema);
+  if (section.type === "FunnelBenefits") return renderFunnelBenefits(section, schema);
+  if (section.type === "FunnelOffer") return renderFunnelOffer(section, schema);
+  if (section.type === "FunnelProof") return renderFunnelProof(section, schema);
+  if (section.type === "FunnelFAQ") return renderFunnelFAQ(section, schema);
   if (section.type === "MarketplaceHero") return renderMarketplaceHero(section, schema);
   if (section.type === "CategoryRail") return renderCategoryRail(section, schema);
   if (section.type === "DealRow") return renderDealRow(section, schema);
@@ -310,6 +315,72 @@ function corporateVisualPlaceholder(schema) {
   return `<div class="corporate-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
 }
 
+function renderFunnelHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const image = editable.image_url || publicCatalogItems(schema).find((item) => item.image_url)?.image_url || "";
+  return `<section class="funnel-hero ${sectionClass(section)}">
+    <div class="funnel-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || labels.offer)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.claimOffer)}</button>
+        <button class="rendered-button secondary" data-open-lead type="button">${escapeHtml(editable.secondary_button || labels.seeProof)}</button>
+      </div>
+    </div>
+    <div class="funnel-hero-card">
+      <div class="funnel-hero-visual">${image ? `<img src="${escapeAttribute(image)}" alt="">` : funnelVisualPlaceholder(schema)}</div>
+      <div class="funnel-mini-form"><strong>${escapeHtml(labels.nextStep)}</strong><span>${escapeHtml(labels.quickRequest)}</span><button data-open-lead type="button">${escapeHtml(labels.claimOffer)}</button></div>
+    </div>
+    <div class="funnel-proof-strip">${labels.funnelProofItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderFunnelBenefits(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.funnelBenefitsItems;
+  return `<section class="funnel-benefits-section ${sectionClass(section)}">
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.benefits)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="funnel-benefit-grid">${items.map((item, index) => `<article><small>0${index + 1}</small><strong>${escapeHtml(item)}</strong></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderFunnelOffer(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="funnel-offer-section ${sectionClass(section)}">
+    <div><span class="rendered-kicker">${escapeHtml(labels.offer)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}${editable.guarantee ? `<strong>${escapeHtml(editable.guarantee)}</strong>` : ""}</div>
+    ${renderLeadFunnelOfferCatalog(publicCatalogItems(schema), schema)}
+  </section>`;
+}
+
+function renderFunnelProof(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.funnelProofItems;
+  return `<section class="funnel-proof-section ${sectionClass(section)}">
+    <div><span class="rendered-kicker">${escapeHtml(labels.proof)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div>${items.map((item) => `<blockquote>${escapeHtml(item)}</blockquote>`).join("")}</div>
+  </section>`;
+}
+
+function renderFunnelFAQ(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.funnelFaqItems;
+  return `<section class="funnel-faq-section ${sectionClass(section)}">
+    <div><span class="rendered-kicker">${escapeHtml(labels.faq)}</span><h2>${escapeHtml(editable.title || "")}</h2></div>
+    <div class="funnel-faq-list">${items.map((item) => `<article><strong>${escapeHtml(item)}</strong><p>${escapeHtml(labels.faqAnswer)}</p></article>`).join("")}</div>
+  </section>`;
+}
+
+function funnelVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "LF").slice(0, 2).toUpperCase();
+  return `<div class="funnel-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
+}
+
 function renderMarketplaceHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -361,10 +432,12 @@ function renderProductGrid(section, schema) {
     ? renderMarketplaceCatalog(catalogItems, schema)
     : catalogType === "premium_editorial_catalog"
       ? renderPremiumEditorialCatalog(catalogItems, schema)
-      : catalogType === "lookbook_collection_catalog"
-        ? renderFashionLookbookCatalog(catalogItems, schema)
-        : catalogType === "company_services_catalog"
-          ? renderCorporateServicesCatalog(catalogItems, schema)
+        : catalogType === "lookbook_collection_catalog"
+          ? renderFashionLookbookCatalog(catalogItems, schema)
+          : catalogType === "company_services_catalog"
+            ? renderCorporateServicesCatalog(catalogItems, schema)
+            : catalogType === "lead_funnel_offer_catalog"
+              ? renderLeadFunnelOfferCatalog(catalogItems, schema)
       : "";
   return `<section class="rendered-section ${sectionClass(section)}">
     <div class="section-heading">
@@ -421,6 +494,17 @@ function renderCorporateServicesCatalog(items, schema) {
   </article>`).join("")}</div>`;
 }
 
+function renderLeadFunnelOfferCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-lead-offers">${items.slice(0, 3).map((item, index) => `<article class="${index === 1 ? "featured" : ""}">
+    <small>${escapeHtml(index === 1 ? labels.bestValue : labels.offer)}</small>
+    <h3>${escapeHtml(item.name)}</h3>
+    <p>${escapeHtml(item.description)}</p>
+    <ul><li>${escapeHtml(labels.outcomeFocused)}</li><li>${escapeHtml(labels.fastNextStep)}</li><li>${escapeHtml(labels.editableOffer)}</li></ul>
+    <button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.claimOffer)}</button>
+  </article>`).join("")}</div>`;
+}
+
 function renderCatalogCard(item, className, badge, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<article class="${className}">
@@ -449,6 +533,7 @@ function catalogLocaleLabels(schema) {
       search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", view: "View", request: "Ask now", signature: "Signature", detail: "Detail", curated: "Curated", flagship: "Flagship", premiumSpecs: ["Presentation", "Quality", "Support", "Delivery"],
       newDrop: "New drop", collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
       company: "Company", services: "Services", process: "Process", proof: "Proof", capability: "Capability", requestConsultation: "Request consultation", viewServices: "View services", corporateProcessItems: ["Discovery", "Strategy", "Delivery", "Support"], corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
+      offer: "Offer", benefits: "Benefits", faq: "FAQ", claimOffer: "Claim this offer", seeProof: "See proof", nextStep: "Next step", quickRequest: "Answer a few details and request the first draft.", bestValue: "Best value", outcomeFocused: "Outcome-focused structure", fastNextStep: "Fast contact path", editableOffer: "Editable offer details", faqAnswer: "This can be adjusted from the editor before publishing.", funnelBenefitsItems: ["Clear promise", "Focused offer", "Simple next step"], funnelProofItems: ["Built around conversion", "Designed for lead capture", "Easy to edit"], funnelFaqItems: ["What happens after I request it?", "Can I change the offer later?", "Can this work without online checkout?"],
       fallbackCategories: ["Electronics", "Home", "Fashion", "Beauty", "Sports", "Deals"],
     },
     es: {
@@ -456,6 +541,7 @@ function catalogLocaleLabels(schema) {
       search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", view: "Ver", request: "Consultar", signature: "Principal", detail: "Detalle", curated: "Curado", flagship: "Producto estrella", premiumSpecs: ["Presentacion", "Calidad", "Soporte", "Entrega"],
       newDrop: "Nuevo drop", collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
       company: "Empresa", services: "Servicios", process: "Proceso", proof: "Prueba", capability: "Capacidad", requestConsultation: "Solicitar consulta", viewServices: "Ver servicios", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Soporte"], corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
+      offer: "Oferta", benefits: "Beneficios", faq: "Preguntas", claimOffer: "Solicitar esta oferta", seeProof: "Ver pruebas", nextStep: "Siguiente paso", quickRequest: "Responde unos datos y solicita la primera version.", bestValue: "Mejor opcion", outcomeFocused: "Estructura enfocada en resultados", fastNextStep: "Contacto rapido", editableOffer: "Oferta editable", faqAnswer: "Esto se puede ajustar desde el editor antes de publicar.", funnelBenefitsItems: ["Promesa clara", "Oferta enfocada", "Siguiente paso simple"], funnelProofItems: ["Construida para convertir", "Disenada para captar clientes", "Facil de editar"], funnelFaqItems: ["Que pasa despues de solicitar?", "Puedo cambiar la oferta luego?", "Sirve sin checkout online?"],
       fallbackCategories: ["Electronica", "Hogar", "Moda", "Belleza", "Deportes", "Ofertas"],
     },
     fr: {
@@ -463,6 +549,7 @@ function catalogLocaleLabels(schema) {
       search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace", view: "Voir", request: "Demander", signature: "Signature", detail: "Detail", curated: "Soigne", flagship: "Produit phare", premiumSpecs: ["Presentation", "Qualite", "Support", "Livraison"],
       newDrop: "Nouvelle collection", collections: "Collections", lookbook: "Lookbook", fit: "Guide des tailles", drop: "Drop", fitGuide: "Guide des tailles", fitGuideItems: ["Notes de taille", "Suggestions de style", "Conseils d'entretien", "Livraison et retours"], fashionCollections: ["Nouveautes", "Essentiels", "Pieces fortes", "Accessoires", "Drop limite", "Meilleures ventes"],
       company: "Entreprise", services: "Services", process: "Processus", proof: "Preuve", capability: "Capacite", requestConsultation: "Demander une consultation", viewServices: "Voir les services", corporateProcessItems: ["Diagnostic", "Strategie", "Livraison", "Support"], corporateProofItems: ["Livraison fiable", "Communication claire", "Standards professionnels"],
+      offer: "Offre", benefits: "Benefices", faq: "FAQ", claimOffer: "Demander cette offre", seeProof: "Voir les preuves", nextStep: "Etape suivante", quickRequest: "Repondez a quelques details et demandez la premiere version.", bestValue: "Meilleure option", outcomeFocused: "Structure orientee resultat", fastNextStep: "Contact rapide", editableOffer: "Offre modifiable", faqAnswer: "Cela peut etre ajuste dans l'editeur avant publication.", funnelBenefitsItems: ["Promesse claire", "Offre ciblee", "Prochaine etape simple"], funnelProofItems: ["Concu pour convertir", "Pense pour capter des prospects", "Facile a modifier"], funnelFaqItems: ["Que se passe-t-il apres la demande?", "Puis-je modifier l'offre ensuite?", "Cela fonctionne sans paiement en ligne?"],
       fallbackCategories: ["Electronique", "Maison", "Mode", "Beaute", "Sport", "Offres"],
     },
     pt: {
@@ -470,6 +557,7 @@ function catalogLocaleLabels(schema) {
       search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace", view: "Ver", request: "Consultar", signature: "Principal", detail: "Detalhe", curated: "Curado", flagship: "Produto principal", premiumSpecs: ["Apresentacao", "Qualidade", "Suporte", "Entrega"],
       newDrop: "Novo drop", collections: "Colecoes", lookbook: "Lookbook", fit: "Guia de tamanhos", drop: "Drop", fitGuide: "Guia de tamanhos", fitGuideItems: ["Notas de tamanho e caimento", "Sugestoes de estilo", "Cuidados com a peca", "Envios e devolucoes"], fashionCollections: ["Novidades", "Essenciais", "Pecas destaque", "Acessorios", "Drop limitado", "Mais vendidos"],
       company: "Empresa", services: "Servicos", process: "Processo", proof: "Prova", capability: "Capacidade", requestConsultation: "Solicitar consulta", viewServices: "Ver servicos", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Suporte"], corporateProofItems: ["Entrega confiavel", "Comunicacao clara", "Padroes profissionais"],
+      offer: "Oferta", benefits: "Beneficios", faq: "FAQ", claimOffer: "Solicitar esta oferta", seeProof: "Ver provas", nextStep: "Proximo passo", quickRequest: "Responda alguns detalhes e solicite a primeira versao.", bestValue: "Melhor opcao", outcomeFocused: "Estrutura focada em resultado", fastNextStep: "Contato rapido", editableOffer: "Oferta editavel", faqAnswer: "Isso pode ser ajustado no editor antes de publicar.", funnelBenefitsItems: ["Promessa clara", "Oferta focada", "Proximo passo simples"], funnelProofItems: ["Criado para converter", "Pensado para capturar leads", "Facil de editar"], funnelFaqItems: ["O que acontece depois da solicitacao?", "Posso mudar a oferta depois?", "Funciona sem checkout online?"],
       fallbackCategories: ["Eletronicos", "Casa", "Moda", "Beleza", "Esportes", "Ofertas"],
     },
   };

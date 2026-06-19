@@ -3341,6 +3341,292 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   font-size: clamp(52px, 8vw, 94px);
 }
 
+.template-lead-funnel-pro,
+.layout-lead-funnel-pro {
+  background:
+    radial-gradient(circle at 80% 8%, color-mix(in srgb, var(--site-accent) 18%, transparent), transparent 34%),
+    linear-gradient(180deg, color-mix(in srgb, var(--site-accent) 6%, var(--site-bg)) 0%, var(--site-bg) 46%, color-mix(in srgb, var(--site-primary) 6%, var(--site-bg)) 100%);
+}
+
+.funnel-hero {
+  min-height: clamp(680px, 88vh, 920px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.78fr);
+  grid-template-rows: 1fr auto;
+  gap: clamp(26px, 5vw, 76px);
+  align-items: center;
+  padding: clamp(62px, 8vw, 112px) clamp(18px, 6vw, 92px) clamp(28px, 4vw, 56px);
+  color: var(--site-text);
+}
+
+.funnel-hero-copy {
+  display: grid;
+  gap: 20px;
+}
+
+.funnel-hero h1 {
+  margin: 0;
+  max-width: 900px;
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(52px, 8vw, 116px);
+  line-height: 0.92;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.funnel-hero p {
+  margin: 0;
+  max-width: 660px;
+  color: var(--site-muted);
+  font-size: clamp(18px, 2vw, 25px);
+  line-height: 1.42;
+}
+
+.funnel-hero-card {
+  display: grid;
+  gap: 14px;
+}
+
+.funnel-hero-visual {
+  min-height: clamp(360px, 44vw, 560px);
+  overflow: hidden;
+  border-radius: var(--brand-radius);
+  background: color-mix(in srgb, var(--site-primary) 92%, black);
+  box-shadow: 0 34px 90px color-mix(in srgb, var(--site-accent) 20%, transparent);
+}
+
+.funnel-hero-visual img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.funnel-mini-form {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--site-text) 10%, transparent);
+  border-radius: var(--brand-radius);
+  background: var(--site-surface);
+  box-shadow: 0 20px 60px color-mix(in srgb, var(--site-text) 8%, transparent);
+}
+
+.funnel-mini-form span {
+  color: var(--site-muted);
+}
+
+.funnel-mini-form button {
+  border: 0;
+  border-radius: calc(var(--brand-radius) - 2px);
+  padding: 12px 14px;
+  background: var(--site-accent);
+  color: var(--site-surface);
+  font-weight: 850;
+}
+
+.funnel-proof-strip {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.funnel-proof-strip span {
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--site-text) 10%, transparent);
+  border-radius: var(--brand-radius);
+  background: color-mix(in srgb, var(--site-primary) 7%, var(--site-surface));
+  font-weight: 850;
+}
+
+.funnel-benefits-section,
+.funnel-offer-section,
+.funnel-proof-section,
+.funnel-faq-section {
+  padding: clamp(52px, 7vw, 98px) clamp(18px, 6vw, 92px);
+}
+
+.funnel-benefit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.funnel-benefit-grid article {
+  min-height: 170px;
+  display: grid;
+  align-content: space-between;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--site-text) 10%, transparent);
+  border-radius: var(--brand-radius);
+  background: var(--site-surface);
+  box-shadow: 0 16px 50px color-mix(in srgb, var(--site-text) 6%, transparent);
+}
+
+.funnel-benefit-grid small,
+.catalog-lead-offers small {
+  color: var(--site-accent);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.funnel-benefit-grid strong {
+  font-size: clamp(21px, 2.2vw, 34px);
+  line-height: 1.02;
+}
+
+.funnel-offer-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(340px, 1.28fr);
+  gap: clamp(26px, 5vw, 76px);
+  align-items: start;
+}
+
+.funnel-offer-section h2,
+.funnel-proof-section h2,
+.funnel-faq-section h2 {
+  margin: 0 0 18px;
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(40px, 6vw, 88px);
+  line-height: 0.96;
+  letter-spacing: 0;
+}
+
+.funnel-offer-section p,
+.funnel-proof-section p {
+  margin: 0 0 18px;
+  color: var(--site-muted);
+  font-size: clamp(17px, 1.7vw, 22px);
+  line-height: 1.5;
+}
+
+.funnel-offer-section > div:first-child > strong {
+  display: inline-block;
+  padding: 12px 14px;
+  border-radius: 999px;
+  color: var(--site-primary);
+  background: color-mix(in srgb, var(--site-accent) 16%, var(--site-surface));
+}
+
+.catalog-lead-offers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.catalog-lead-offers article {
+  min-height: 320px;
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid color-mix(in srgb, var(--site-text) 10%, transparent);
+  border-radius: var(--brand-radius);
+  background: var(--site-surface);
+  box-shadow: 0 18px 54px color-mix(in srgb, var(--site-text) 7%, transparent);
+}
+
+.catalog-lead-offers article.featured {
+  background: color-mix(in srgb, var(--site-primary) 92%, black);
+  color: var(--site-surface);
+  transform: translateY(-14px);
+}
+
+.catalog-lead-offers article.featured p,
+.catalog-lead-offers article.featured li {
+  color: color-mix(in srgb, var(--site-surface) 78%, transparent);
+}
+
+.catalog-lead-offers h3 {
+  margin: 0;
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(24px, 2.5vw, 38px);
+  line-height: 1;
+}
+
+.catalog-lead-offers p {
+  margin: 0;
+  color: var(--site-muted);
+  line-height: 1.5;
+}
+
+.catalog-lead-offers ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--site-muted);
+}
+
+.funnel-proof-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(320px, 1.18fr);
+  gap: clamp(24px, 5vw, 70px);
+  background: color-mix(in srgb, var(--site-accent) 8%, transparent);
+}
+
+.funnel-proof-section > div:last-child {
+  display: grid;
+  gap: 14px;
+}
+
+.funnel-proof-section blockquote {
+  margin: 0;
+  padding: 20px;
+  border-left: 4px solid var(--site-accent);
+  border-radius: var(--brand-radius);
+  background: var(--site-surface);
+  box-shadow: 0 14px 44px color-mix(in srgb, var(--site-text) 6%, transparent);
+  font-weight: 800;
+}
+
+.funnel-faq-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.66fr) minmax(320px, 1.34fr);
+  gap: clamp(24px, 5vw, 70px);
+}
+
+.funnel-faq-list {
+  display: grid;
+  gap: 10px;
+}
+
+.funnel-faq-list article {
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--site-text) 10%, transparent);
+  border-radius: var(--brand-radius);
+  background: var(--site-surface);
+}
+
+.funnel-faq-list p {
+  margin: 8px 0 0;
+  color: var(--site-muted);
+  line-height: 1.5;
+}
+
+.funnel-visual-placeholder {
+  min-height: inherit;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--site-primary) 90%, black), color-mix(in srgb, var(--site-accent) 62%, var(--site-primary)));
+}
+
+.funnel-visual-placeholder span {
+  width: clamp(150px, 22vw, 240px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+  color: var(--site-surface);
+  font-family: var(--site-heading), Inter, sans-serif;
+  font-size: clamp(48px, 7vw, 84px);
+}
+
 .catalog-luxury {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -4016,8 +4302,42 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   .catalog-lookbook,
   .marketplace-deal-hero,
   .marketplace-trust-strip,
-  .marketplace-trust-strip > div:last-child {
+  .marketplace-trust-strip > div:last-child,
+  .funnel-hero,
+  .funnel-offer-section,
+  .funnel-proof-section,
+  .funnel-faq-section {
     grid-template-columns: 1fr;
+  }
+
+  .funnel-hero {
+    min-height: auto;
+    padding: 44px 16px 28px;
+  }
+
+  .funnel-hero h1 {
+    font-size: clamp(42px, 14vw, 70px);
+  }
+
+  .funnel-hero-visual {
+    min-height: 300px;
+  }
+
+  .funnel-proof-strip,
+  .funnel-benefit-grid,
+  .catalog-lead-offers {
+    grid-template-columns: 1fr;
+  }
+
+  .funnel-benefits-section,
+  .funnel-offer-section,
+  .funnel-proof-section,
+  .funnel-faq-section {
+    padding: 44px 16px;
+  }
+
+  .catalog-lead-offers article.featured {
+    transform: none;
   }
 
   .marketplace-hero {

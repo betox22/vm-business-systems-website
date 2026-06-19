@@ -202,6 +202,47 @@
       editableSlots: ["headline", "positioning", "services", "process", "proof points", "team", "photos", "contact info", "CTAs", "section order"],
     },
     {
+      id: "lead-funnel-pro",
+      name: "Landing / Lead Funnel Pro",
+      category: "business",
+      bestFor: ["landing page", "lead generation", "consulting", "course", "clinic", "campaign", "high-ticket services", "quote requests"],
+      style: {
+        tone: "persuasive, focused, benefit-led, conversion-oriented",
+        layoutDensity: "medium",
+        imageStyle: "hero proof image, outcome visuals, client transformation and trust assets",
+        defaultColors: { background: "#fffdf8", surface: "#ffffff", primary: "#171717", secondary: "#6b5f52", accent: "#f97316" },
+        fonts: { heading: "Inter", body: "Inter" },
+      },
+      sections: [
+        { type: "funnel_header", fields: { logo: "{{logo_url}}", businessName: "{{business_name}}", navItems: ["Offer", "Benefits", "Proof", "FAQ"], ctaLabel: "{{primary_cta_label}}" } },
+        { type: "funnel_hero", fields: { headline: "{{ai_generated_offer_headline}}", subheadline: "{{ai_generated_offer_positioning}}", primaryButton: "{{primary_cta_label}}", secondaryButton: "{{secondary_cta_label}}", image: "{{hero_image}}" } },
+        { type: "funnel_benefits", fields: { title: "{{benefits_title}}", benefits: "{{ai_generated_benefits}}" } },
+        { type: "funnel_offer", fields: { title: "{{offer_title}}", offerItems: "{{featured_services}}", guarantee: "{{guarantee_text}}" } },
+        { type: "funnel_proof", fields: { title: "{{proof_title}}", testimonials: "{{proof_points}}" } },
+        { type: "funnel_faq", fields: { title: "{{faq_title}}", questions: "{{faq_items}}" } },
+        { type: "contact", fields: { title: "{{contact_title}}", text: "{{contact_text}}" } },
+      ],
+      aiPrompt: "Use a high-converting lead funnel landing page, not a store and not a marketplace. Generate a sharp promise, benefit-driven copy, offer stack, proof/testimonials, objections/FAQ, urgency only when appropriate, and one primary lead capture CTA. This template is for service offers, campaigns, courses, clinics, consultants, financing, insurance, high-ticket packages, and businesses that need leads or quote requests. Preserve the funnel structure; only adapt copy, visuals, colors, offer details, proof points, and CTAs to the business.",
+      catalogModel: {
+        catalogType: "lead_funnel_offer_catalog",
+        productCardStyle: "offer cards with benefit, outcome, quote/apply CTA and optional bonus",
+        collectionLayout: "promise hero, benefits, offer stack, proof, FAQ, lead capture",
+        filters: ["offer", "audience", "outcome"],
+        productDetailModel: "offer detail with outcome, who it is for, what is included, proof and apply CTA",
+        upsellModel: "bonus modules, packages and follow-up consultation",
+        customerFeeling: "focused landing page built to request a quote, apply, book or start",
+      },
+      visualDifference: "Conversion-first landing page with one offer, strong promise, benefits, offer stack, proof, FAQ and direct lead capture. No shopping UI.",
+      clientSelectionCard: { title: "Lead Funnel", category: "business", bestForLabel: "offers, campaigns, services, courses, clinics", difference: "One offer, strong CTA, benefits, proof and FAQ.", previewTags: ["landing", "leads", "funnel"] },
+      pages: [
+        { name: "Home", purpose: "Lead capture conversion", usesSections: ["funnel_header", "funnel_hero", "funnel_benefits", "funnel_offer", "funnel_proof", "funnel_faq", "contact"] },
+        { name: "Offer", purpose: "Offer details and benefits", catalogType: "lead_funnel_offer_catalog", layout: "offer stack with lead CTA", filters: ["offer", "outcome"] },
+        { name: "Proof", purpose: "Testimonials, outcomes and objections", layout: "proof, FAQ, trust and guarantee" },
+        { name: "Contact", purpose: "Lead capture or quote request", layout: "form, WhatsApp, phone and next step" },
+      ],
+      editableSlots: ["promise headline", "benefits", "offer stack", "bonuses", "proof", "testimonials", "FAQ", "guarantee", "contact info", "CTAs", "section order"],
+    },
+    {
       id: "local-services-pro-plus",
       name: "Local Services Pro",
       category: "services",
@@ -311,6 +352,12 @@
       templateId: "corporate-company-pro",
       catalogType: "company_services_catalog",
       keywords: ["empresa", "company", "corporate", "corporativo", "pagina web", "página web", "website", "b2b", "agencia", "agency", "consulting", "consultoria", "consultoría", "firma", "industrial", "manufacturing", "business website"],
+    },
+    {
+      intent: "lead_funnel",
+      templateId: "lead-funnel-pro",
+      catalogType: "lead_funnel_offer_catalog",
+      keywords: ["landing", "landing page", "funnel", "embudo", "captar clientes", "captar leads", "leads", "campaña", "campaign", "oferta", "offer", "paquete", "programa", "curso", "course", "clinica", "clínica", "estetica", "estética", "seguro", "insurance", "financiamiento", "financing", "aplicar", "apply", "book call", "agenda una llamada", "solicitar cotizacion", "solicitar cotización", "alta conversion", "alta conversión"],
     },
     {
       intent: "local_service",
@@ -492,8 +539,8 @@
     const fallbackIds = normalized.includes("marketplace") || /marketplace|listing|dense/.test(primaryCatalogType)
       ? ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro"]
       : normalized.includes("servicio") || normalized.includes("service") || /service|booking/.test(primaryCatalogType)
-        ? ["local-services-pro-plus", "booking-appointment-pro", "apple-premium-product"]
-        : ["apple-premium-product", "fashion-drop-pro", "mega-marketplace"];
+        ? ["lead-funnel-pro", "local-services-pro-plus", "booking-appointment-pro", "corporate-company-pro"]
+        : ["lead-funnel-pro", "corporate-company-pro", "apple-premium-product", "fashion-drop-pro"];
 
     fallbackIds.forEach((templateId) => {
       const template = templates.find((item) => item.id === templateId);

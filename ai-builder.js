@@ -641,6 +641,20 @@ const TEMPLATE_PREVIEW_CHOICES = [
     },
   },
   {
+    templateId: "lead-funnel-pro",
+    name: "Lead Funnel",
+    names: { en: "Lead Funnel", es: "Landing de conversion", fr: "Landing de conversion", pt: "Landing de conversao" },
+    catalogType: "lead_funnel_offer_catalog",
+    image: "/templates-preview/screenshots/services.png",
+    description: "Focused landing page for one offer, benefits, proof, FAQ, and lead capture.",
+    descriptions: {
+      en: "Focused landing page for one offer, benefits, proof, FAQ, and lead capture.",
+      es: "Landing enfocada en una oferta, beneficios, prueba, preguntas frecuentes y captacion de leads.",
+      fr: "Landing centree sur une offre, benefices, preuves, FAQ et capture de leads.",
+      pt: "Landing focada em uma oferta, beneficios, prova, FAQ e captacao de leads.",
+    },
+  },
+  {
     templateId: "local-services-pro-plus",
     name: "Local Services",
     names: { en: "Local Services", es: "Servicios locales", fr: "Services locaux", pt: "Servicos locais" },
@@ -1749,8 +1763,8 @@ function rankedFallbackChoices(selectedTemplateId = "") {
   const ordered = commerceHeavy
     ? ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro", "apple-premium-product"]
     : serviceHeavy
-      ? ["local-services-pro-plus", "booking-appointment-pro", "corporate-company-pro", "apple-premium-product"]
-      : ["corporate-company-pro", "apple-premium-product", "fashion-drop-pro", "mega-marketplace"];
+      ? ["lead-funnel-pro", "local-services-pro-plus", "booking-appointment-pro", "corporate-company-pro"]
+      : ["lead-funnel-pro", "corporate-company-pro", "apple-premium-product", "fashion-drop-pro"];
   return ordered.map((templateId) => templatePreviewMeta(templateId)).filter(Boolean);
 }
 
@@ -4374,6 +4388,18 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isPremiumTemplate = catalogType === "premium_editorial_catalog" || /apple-premium-product/i.test(template.id || "");
   const isFashionTemplate = catalogType === "lookbook_collection_catalog" || /fashion-drop-pro/i.test(template.id || "");
   const isCorporateTemplate = catalogType === "company_services_catalog" || /corporate-company-pro/i.test(template.id || "");
+  const isLeadFunnelTemplate = catalogType === "lead_funnel_offer_catalog" || /lead-funnel-pro/i.test(template.id || "");
+  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate;
+  const primaryCta = isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
+  const secondaryCta = isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
+  if (isLeadFunnelTemplate) {
+    catalogItems.forEach((item) => {
+      item.price_type = "quote_only";
+      item.price_label = copy.askPrice;
+      item.button_label = copy.claimOffer;
+      item.track_inventory = false;
+    });
+  }
   const instantPages = isMarketplaceTemplate
     ? buildMarketplaceInstantPages(copy, name, description, payload)
     : isPremiumTemplate
@@ -4382,10 +4408,12 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         ? buildFashionDropInstantPages(copy, name, description, payload)
         : isCorporateTemplate
           ? buildCorporateCompanyInstantPages(copy, name, description, payload)
+          : isLeadFunnelTemplate
+            ? buildLeadFunnelInstantPages(copy, name, description, payload)
           : buildDefaultInstantPages(copy, name, description, payload);
   return {
     schema_version: "1.0",
-    site_type: isCorporateTemplate ? "business_website" : "online_store",
+    site_type: isBusinessWebsite ? "business_website" : "online_store",
     business: {
       name,
       description,
@@ -4399,8 +4427,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       colors,
       fonts: brand.fontPairing,
       buttons: {
-        primary_label: copy.shopNow,
-        secondary_label: copy.viewCatalog,
+        primary_label: primaryCta,
+        secondary_label: secondaryCta,
         background: brand.buttonColor,
         text: brand.buttonTextColor,
         radius: brand.borderRadius,
@@ -4415,8 +4443,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       template_id: template.id || "",
       catalog_type: catalogType,
       intent: templateSelection?.intent || payload.templateIntent || "",
-      navigation: { show_cart: !isCorporateTemplate, show_header: true, sticky_header: true },
-      checkout: { mode: isCorporateTemplate ? "lead_capture" : isOnlineShop ? "cart_setup_required" : "quote_or_cart", primary_action: isCorporateTemplate ? copy.requestConsultation : isOnlineShop ? copy.shopNow : copy.requestOrder },
+      navigation: { show_cart: !isBusinessWebsite, show_header: true, sticky_header: true },
+      checkout: { mode: isBusinessWebsite ? "lead_capture" : isOnlineShop ? "cart_setup_required" : "quote_or_cart", primary_action: isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : isOnlineShop ? copy.shopNow : copy.requestOrder },
     },
     integrations: { contact: { whatsapp_enabled: true, email_enabled: true }, analytics: { enabled: false, provider: "" }, payments: { enabled: false, mode: "setup_required" } },
     custom_logic: { enabled: false, risk_level: "restricted", automations: "" },
@@ -4440,6 +4468,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       { label: copy.company, page_key: "home" },
       { label: copy.services, page_key: "catalog" },
       { label: copy.process, page_key: "about" },
+      { label: copy.contact, page_key: "contact" },
+    ] : isLeadFunnelTemplate ? [
+      { label: copy.offer, page_key: "home" },
+      { label: copy.benefits, page_key: "catalog" },
+      { label: copy.proof, page_key: "about" },
       { label: copy.contact, page_key: "contact" },
     ] : [
       { label: copy.home, page_key: "home" },
@@ -4471,9 +4504,9 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         id: "instant-modern",
         name: template.name || copy.modernCommercial,
         description: template.visualDifference || copy.fastBase,
-        theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: isCorporateTemplate ? copy.requestConsultation : copy.shopNow, secondary_label: copy.contactVerb, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
+        theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: primaryCta, secondary_label: copy.contactVerb, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
         layout_mode_id: template.id || "instant_storefront",
-        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : "split_showcase",
+        hero_layout: isPremiumTemplate ? "premium_center_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : "split_showcase",
         product_layout: catalogType,
       },
     ],
@@ -4830,6 +4863,133 @@ function buildCorporateCompanyInstantPages(copy, name, description, payload = {}
   ];
 }
 
+function buildLeadFunnelInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.offer,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "funnel_hero",
+          type: "FunnelHero",
+          order: 1,
+          editable: {
+            headline: copy.funnelHeadline(name),
+            subtitle: copy.funnelSubheadline(description),
+            primary_button: copy.claimOffer,
+            secondary_button: copy.seeProof,
+            image_url: heroImage,
+            images: [],
+          },
+          settings: { layout: "conversion_funnel" },
+        },
+        {
+          id: "funnel_benefits",
+          type: "FunnelBenefits",
+          order: 2,
+          editable: {
+            title: copy.funnelBenefitsTitle,
+            text: copy.funnelBenefitsText,
+            items: copy.funnelBenefitsItems,
+            images: [],
+          },
+          settings: { layout: "benefit_stack", columns: 3 },
+        },
+        {
+          id: "funnel_offer",
+          type: "FunnelOffer",
+          order: 3,
+          editable: {
+            title: copy.funnelOfferTitle,
+            text: copy.funnelOfferText,
+            guarantee: copy.funnelGuarantee,
+            images: [],
+          },
+          settings: { layout: "offer_stack" },
+        },
+        {
+          id: "funnel_proof",
+          type: "FunnelProof",
+          order: 4,
+          editable: {
+            title: copy.funnelProofTitle,
+            text: copy.funnelProofText,
+            items: copy.funnelProofItems,
+            images: [],
+          },
+          settings: { layout: "proof_wall" },
+        },
+        {
+          id: "funnel_faq",
+          type: "FunnelFAQ",
+          order: 5,
+          editable: {
+            title: copy.funnelFaqTitle,
+            items: copy.funnelFaqItems,
+            images: [],
+          },
+          settings: { layout: "objection_handling" },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.benefits,
+      slug: copy.offerSlug,
+      order: 2,
+      sections: [
+        {
+          id: "offer_stack",
+          type: "ProductGrid",
+          order: 1,
+          editable: { title: copy.funnelOfferTitle, text: copy.funnelOfferText, images: [] },
+          settings: { layout: "lead_offer_stack", columns: 3 },
+        },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.proof,
+      slug: copy.proofSlug,
+      order: 3,
+      sections: [
+        {
+          id: "proof",
+          type: "FunnelProof",
+          order: 1,
+          editable: { title: copy.funnelProofTitle, text: copy.funnelProofText, items: copy.funnelProofItems, images: [] },
+          settings: { layout: "proof_wall" },
+        },
+        {
+          id: "faq",
+          type: "FunnelFAQ",
+          order: 2,
+          editable: { title: copy.funnelFaqTitle, items: copy.funnelFaqItems, images: [] },
+          settings: { layout: "objection_handling" },
+        },
+      ],
+    },
+    {
+      page_key: "contact",
+      title: copy.contact,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [
+        {
+          id: "contact",
+          type: "Contact",
+          order: 1,
+          editable: { title: copy.letsTalk, text: copy.funnelContactText, images: [] },
+          settings: { layout: "lead_capture" },
+        },
+      ],
+    },
+  ];
+}
+
 function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
   return [
     {
@@ -5007,6 +5167,32 @@ function instantLocaleCopy(language) {
       corporateProofText: "Use this section for credibility, experience, certifications, client types, or operating standards.",
       corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
       corporateContactText: "Send a message to discuss services, availability, pricing, or a custom project.",
+      offer: "Offer",
+      benefits: "Benefits",
+      proof: "Proof",
+      faq: "FAQ",
+      offerSlug: "/offer",
+      proofSlug: "/proof",
+      claimOffer: "Start now",
+      seeProof: "See proof",
+      funnelHeadline: (name) => `${name} turns interest into real customers`,
+      funnelSubheadline: (description) => description || "A focused landing page built around one clear offer, proof, and a direct next step.",
+      funnelBenefitsTitle: "Why this offer works",
+      funnelBenefitsText: "Show the most important outcomes clearly so visitors understand the value before they contact you.",
+      funnelBenefitsItems: ["Clear promise", "Simple next step", "Built for qualified leads", "Easy to edit", "Proof-first structure", "Fast launch"],
+      funnelOfferTitle: "Everything needed to take the next step",
+      funnelOfferText: "Present the offer, package, consultation, or service in a focused stack that keeps attention on conversion.",
+      funnelGuarantee: "Clear expectations before the customer commits.",
+      funnelProofTitle: "Proof that removes doubt",
+      funnelProofText: "Use results, testimonials, standards, or before-and-after outcomes to build confidence.",
+      funnelProofItems: ["Specific customer outcome", "Simple process", "Fast response", "Clear pricing conversation"],
+      funnelFaqTitle: "Questions before starting",
+      funnelFaqItems: [
+        { question: "What happens after I send a request?", answer: "The business follows up with the next step, quote, booking, or consultation." },
+        { question: "Can the offer be customized?", answer: "Yes. The offer, copy, sections, and contact path are editable." },
+        { question: "Is this a store?", answer: "No. This version is focused on leads, applications, bookings, or quote requests." },
+      ],
+      funnelContactText: "Send a request and the business can follow up with the next step, quote, or booking details.",
       premiumHeadline: (name) => `Meet ${name}`,
       premiumSubheadline: (description) => description || "A refined product experience built to feel simple, confident, and memorable.",
       premiumPrimary: "Explore products",
@@ -5111,6 +5297,32 @@ function instantLocaleCopy(language) {
       corporateProofText: "Usa esta seccion para credibilidad, experiencia, certificaciones, tipos de clientes o estandares de trabajo.",
       corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
       corporateContactText: "Envia un mensaje para hablar de servicios, disponibilidad, precios o un proyecto personalizado.",
+      offer: "Oferta",
+      benefits: "Beneficios",
+      proof: "Prueba",
+      faq: "Preguntas",
+      offerSlug: "/oferta",
+      proofSlug: "/prueba",
+      claimOffer: "Empezar ahora",
+      seeProof: "Ver prueba",
+      funnelHeadline: (name) => `${name} convierte interes en clientes reales`,
+      funnelSubheadline: (description) => description || "Una landing enfocada en una oferta clara, prueba y un siguiente paso directo.",
+      funnelBenefitsTitle: "Por que esta oferta funciona",
+      funnelBenefitsText: "Muestra los resultados principales para que el visitante entienda el valor antes de contactar.",
+      funnelBenefitsItems: ["Promesa clara", "Siguiente paso simple", "Pensado para leads calificados", "Facil de editar", "Estructura con prueba", "Lanzamiento rapido"],
+      funnelOfferTitle: "Todo lo necesario para dar el siguiente paso",
+      funnelOfferText: "Presenta la oferta, paquete, consulta o servicio en una estructura enfocada en conversion.",
+      funnelGuarantee: "Expectativas claras antes de que el cliente se comprometa.",
+      funnelProofTitle: "Prueba que elimina dudas",
+      funnelProofText: "Usa resultados, testimonios, estandares o antes/despues para crear confianza.",
+      funnelProofItems: ["Resultado especifico para el cliente", "Proceso simple", "Respuesta rapida", "Conversacion clara sobre precios"],
+      funnelFaqTitle: "Preguntas antes de empezar",
+      funnelFaqItems: [
+        { question: "Que pasa despues de enviar la solicitud?", answer: "El negocio responde con el proximo paso, cotizacion, cita o consulta." },
+        { question: "La oferta se puede personalizar?", answer: "Si. La oferta, textos, secciones y ruta de contacto son editables." },
+        { question: "Esto es una tienda?", answer: "No. Esta version esta enfocada en leads, solicitudes, reservas o cotizaciones." },
+      ],
+      funnelContactText: "Envia una solicitud y el negocio puede responder con el siguiente paso, cotizacion o detalles de reserva.",
       premiumHeadline: (name) => `Conoce ${name}`,
       premiumSubheadline: (description) => description || "Una experiencia de producto refinada, simple, segura y memorable.",
       premiumPrimary: "Explorar productos",
@@ -5215,6 +5427,32 @@ function instantLocaleCopy(language) {
       corporateProofText: "Utilisez cette section pour la credibilite, l'experience, les certifications, les types de clients ou les standards.",
       corporateProofItems: ["Livraison fiable", "Communication claire", "Standards professionnels"],
       corporateContactText: "Envoyez un message pour discuter des services, disponibilites, prix ou d'un projet sur mesure.",
+      offer: "Offre",
+      benefits: "Benefices",
+      proof: "Preuves",
+      faq: "FAQ",
+      offerSlug: "/offre",
+      proofSlug: "/preuves",
+      claimOffer: "Commencer",
+      seeProof: "Voir les preuves",
+      funnelHeadline: (name) => `${name} transforme l'interet en vrais clients`,
+      funnelSubheadline: (description) => description || "Une landing centree sur une offre claire, des preuves et une prochaine etape directe.",
+      funnelBenefitsTitle: "Pourquoi cette offre fonctionne",
+      funnelBenefitsText: "Montrez les resultats importants pour que le visiteur comprenne la valeur avant de contacter.",
+      funnelBenefitsItems: ["Promesse claire", "Prochaine etape simple", "Leads qualifies", "Facile a modifier", "Structure orientee preuves", "Lancement rapide"],
+      funnelOfferTitle: "Tout pour passer a l'etape suivante",
+      funnelOfferText: "Presentez l'offre, le forfait, la consultation ou le service dans une structure orientee conversion.",
+      funnelGuarantee: "Des attentes claires avant l'engagement du client.",
+      funnelProofTitle: "Des preuves qui reduisent le doute",
+      funnelProofText: "Utilisez resultats, temoignages, standards ou avant/apres pour creer la confiance.",
+      funnelProofItems: ["Resultat client specifique", "Processus simple", "Reponse rapide", "Discussion claire sur les prix"],
+      funnelFaqTitle: "Questions avant de commencer",
+      funnelFaqItems: [
+        { question: "Que se passe-t-il apres la demande ?", answer: "L'entreprise repond avec la prochaine etape, le devis, le rendez-vous ou la consultation." },
+        { question: "L'offre peut-elle etre personnalisee ?", answer: "Oui. L'offre, les textes, sections et contact sont modifiables." },
+        { question: "Est-ce une boutique ?", answer: "Non. Cette version vise les leads, demandes, reservations ou devis." },
+      ],
+      funnelContactText: "Envoyez une demande et l'entreprise pourra repondre avec la prochaine etape, un devis ou une reservation.",
       premiumHeadline: (name) => `Découvrez ${name}`,
       premiumSubheadline: (description) => description || "Une expérience produit raffinée, simple, confiante et mémorable.",
       premiumPrimary: "Explorer les produits",
@@ -5319,6 +5557,32 @@ function instantLocaleCopy(language) {
       corporateProofText: "Use esta secao para credibilidade, experiencia, certificacoes, tipos de clientes ou padroes de trabalho.",
       corporateProofItems: ["Entrega confiavel", "Comunicacao clara", "Padroes profissionais"],
       corporateContactText: "Envie uma mensagem para falar sobre servicos, disponibilidade, precos ou um projeto personalizado.",
+      offer: "Oferta",
+      benefits: "Beneficios",
+      proof: "Prova",
+      faq: "FAQ",
+      offerSlug: "/oferta",
+      proofSlug: "/prova",
+      claimOffer: "Comecar agora",
+      seeProof: "Ver prova",
+      funnelHeadline: (name) => `${name} transforma interesse em clientes reais`,
+      funnelSubheadline: (description) => description || "Uma landing focada em uma oferta clara, prova e proximo passo direto.",
+      funnelBenefitsTitle: "Por que esta oferta funciona",
+      funnelBenefitsText: "Mostre os resultados principais para que o visitante entenda o valor antes de entrar em contato.",
+      funnelBenefitsItems: ["Promessa clara", "Proximo passo simples", "Feito para leads qualificados", "Facil de editar", "Estrutura com prova", "Lancamento rapido"],
+      funnelOfferTitle: "Tudo para dar o proximo passo",
+      funnelOfferText: "Apresente a oferta, pacote, consulta ou servico em uma estrutura focada em conversao.",
+      funnelGuarantee: "Expectativas claras antes do cliente se comprometer.",
+      funnelProofTitle: "Prova que reduz duvidas",
+      funnelProofText: "Use resultados, depoimentos, padroes ou antes/depois para criar confianca.",
+      funnelProofItems: ["Resultado especifico para o cliente", "Processo simples", "Resposta rapida", "Conversa clara sobre preco"],
+      funnelFaqTitle: "Perguntas antes de comecar",
+      funnelFaqItems: [
+        { question: "O que acontece depois de enviar a solicitacao?", answer: "O negocio responde com o proximo passo, orcamento, agendamento ou consulta." },
+        { question: "A oferta pode ser personalizada?", answer: "Sim. A oferta, textos, secoes e caminho de contato sao editaveis." },
+        { question: "Isso e uma loja?", answer: "Nao. Esta versao foca em leads, solicitacoes, reservas ou orcamentos." },
+      ],
+      funnelContactText: "Envie uma solicitacao e o negocio pode responder com o proximo passo, orcamento ou detalhes de agendamento.",
       premiumHeadline: (name) => `Conheça ${name}`,
       premiumSubheadline: (description) => description || "Uma experiência de produto refinada, simples, confiante e memorável.",
       premiumPrimary: "Explorar produtos",
@@ -6521,6 +6785,11 @@ function renderSection(section, schema) {
     CorporateServices: renderCorporateServices,
     CorporateProcess: renderCorporateProcess,
     CorporateProof: renderCorporateProof,
+    FunnelHero: renderFunnelHero,
+    FunnelBenefits: renderFunnelBenefits,
+    FunnelOffer: renderFunnelOffer,
+    FunnelProof: renderFunnelProof,
+    FunnelFAQ: renderFunnelFAQ,
     MarketplaceHero: renderMarketplaceHero,
     CategoryRail: renderCategoryRail,
     DealRow: renderDealRow,
@@ -6769,6 +7038,81 @@ function corporateVisualPlaceholder(schema) {
   return `<div class="corporate-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
 }
 
+function renderFunnelHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const image = editable.image_url || marketplaceItems(schema).find((item) => item.image_url)?.image_url || "";
+  return `<section class="funnel-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="funnel-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || labels.offer)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.claimOffer)}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.seeProof)}</a>
+      </div>
+    </div>
+    <div class="funnel-hero-card">
+      <div class="funnel-hero-visual">${image ? `<img src="${escapeAttribute(image)}" alt="">` : funnelVisualPlaceholder(schema)}</div>
+      <div class="funnel-mini-form">
+        <strong>${escapeHtml(labels.nextStep)}</strong>
+        <span>${escapeHtml(labels.quickRequest)}</span>
+        <button type="button">${escapeHtml(labels.claimOffer)}</button>
+      </div>
+    </div>
+    <div class="funnel-proof-strip">${(labels.funnelProofItems || []).slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderFunnelBenefits(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.funnelBenefitsItems;
+  return `<section class="funnel-benefits-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.benefits)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="funnel-benefit-grid">${items.map((item, index) => `<article><small>0${index + 1}</small><strong>${escapeHtml(item)}</strong></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderFunnelOffer(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="funnel-offer-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div>
+      <span class="rendered-kicker">${escapeHtml(labels.offer)}</span>
+      <h2>${escapeHtml(editable.title || "")}</h2>
+      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+      ${editable.guarantee ? `<strong>${escapeHtml(editable.guarantee)}</strong>` : ""}
+    </div>
+    ${renderLeadFunnelOfferCatalog(marketplaceItems(schema), schema)}
+  </section>`;
+}
+
+function renderFunnelProof(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.funnelProofItems;
+  return `<section class="funnel-proof-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.proof)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div>${items.map((item) => `<blockquote>${escapeHtml(item)}</blockquote>`).join("")}</div>
+  </section>`;
+}
+
+function renderFunnelFAQ(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.funnelFaqItems;
+  return `<section class="funnel-faq-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.faq)}</span><h2>${escapeHtml(editable.title || "")}</h2></div>
+    <div class="funnel-faq-list">${items.map((item, index) => `<article><strong>${escapeHtml(item.question || item)}</strong><p>${escapeHtml(item.answer || labels.faqAnswer)}</p></article>`).join("")}</div>
+  </section>`;
+}
+
+function funnelVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "LF").slice(0, 2).toUpperCase();
+  return `<div class="funnel-visual-placeholder"><span>${escapeHtml(initials)}</span></div>`;
+}
+
 function renderMarketplaceHero(section, schema) {
   const editable = section.editable || {};
   const items = marketplaceItems(schema);
@@ -6897,6 +7241,7 @@ function renderCatalogByType(catalogType, items, schema) {
     booking_menu_catalog: renderBookingMenuCatalog,
     service_area_catalog: renderLocalServiceCatalog,
     company_services_catalog: renderCorporateServicesCatalog,
+    lead_funnel_offer_catalog: renderLeadFunnelOfferCatalog,
     practice_area_catalog: renderProfessionalServicesCatalog,
     project_gallery_catalog: renderBeforeAfterProjectCatalog,
     pricing_plan_catalog: renderPricingPlanCatalog,
@@ -6967,6 +7312,21 @@ function renderCorporateServicesCatalog(items, schema) {
     <h3>${escapeHtml(item.name)}</h3>
     <p>${escapeHtml(item.description)}</p>
     <a class="rendered-button secondary" href="#">${escapeHtml(item.button_label || labels.requestConsultation)}</a>
+  </article>`).join("")}</div>`;
+}
+
+function renderLeadFunnelOfferCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-lead-offers">${items.slice(0, 3).map((item, index) => `<article class="${index === 1 ? "featured" : ""}">
+    <small>${escapeHtml(index === 1 ? labels.bestValue : labels.offer)}</small>
+    <h3>${escapeHtml(item.name)}</h3>
+    <p>${escapeHtml(item.description)}</p>
+    <ul>
+      <li>${escapeHtml(labels.outcomeFocused)}</li>
+      <li>${escapeHtml(labels.fastNextStep)}</li>
+      <li>${escapeHtml(labels.editableOffer)}</li>
+    </ul>
+    <a class="rendered-button ${index === 1 ? "" : "secondary"}" href="#">${escapeHtml(item.button_label || labels.claimOffer)}</a>
   </article>`).join("")}</div>`;
 }
 
@@ -7084,6 +7444,7 @@ function catalogLocaleLabels(schema) {
       newDrop: "New drop", limitedSelection: "Limited selection", instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
       collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
       company: "Company", services: "Services", process: "Process", proof: "Proof", capability: "Capability", requestConsultation: "Request consultation", viewServices: "View services", corporateProcessItems: ["Discovery", "Strategy", "Delivery", "Support"], corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
+      offer: "Offer", benefits: "Benefits", faq: "FAQ", claimOffer: "Start now", seeProof: "See proof", nextStep: "Next step", quickRequest: "Send a quick request and get a clear response.", bestValue: "Best value", outcomeFocused: "Outcome-focused", fastNextStep: "Fast next step", editableOffer: "Editable offer", faqAnswer: "This can be adjusted to match the business, offer, and customer objections.", funnelBenefitsItems: ["Clear promise", "Simple next step", "Qualified leads", "Editable sections", "Proof-first structure", "Fast launch"], funnelProofItems: ["Specific outcome", "Simple process", "Fast response", "Clear pricing conversation"], funnelFaqItems: [{ question: "What happens next?", answer: "The business follows up with the next step." }, { question: "Can it be customized?", answer: "Yes, the offer and page content are editable." }, { question: "Is this a store?", answer: "No, it is focused on leads." }],
       main: "Main", popular: "Popular", marketPrice: "Market price", fromQuote: "From quote", book: "Book", freeQuote: "Free quote", practiceArea: "Practice area", scheduleConsultation: "Schedule consultation",
       before: "Before", after: "After", viewProject: "View project", plan: "Plan", custom: "Custom", start: "Start", ticketOffer: "Ticket / offer", reserve: "Reserve", package: "Package", applyNow: "Apply now", view: "View", request: "Ask now",
     },
@@ -7094,6 +7455,7 @@ function catalogLocaleLabels(schema) {
       newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
       collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
       company: "Empresa", services: "Servicios", process: "Proceso", proof: "Prueba", capability: "Capacidad", requestConsultation: "Solicitar consulta", viewServices: "Ver servicios", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Soporte"], corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
+      offer: "Oferta", benefits: "Beneficios", faq: "Preguntas", claimOffer: "Empezar ahora", seeProof: "Ver prueba", nextStep: "Siguiente paso", quickRequest: "Envia una solicitud rapida y recibe una respuesta clara.", bestValue: "Mejor opcion", outcomeFocused: "Enfocado en resultado", fastNextStep: "Siguiente paso rapido", editableOffer: "Oferta editable", faqAnswer: "Esto se puede ajustar al negocio, la oferta y las dudas del cliente.", funnelBenefitsItems: ["Promesa clara", "Siguiente paso simple", "Leads calificados", "Secciones editables", "Estructura con prueba", "Lanzamiento rapido"], funnelProofItems: ["Resultado especifico", "Proceso simple", "Respuesta rapida", "Conversacion clara sobre precios"], funnelFaqItems: [{ question: "Que pasa despues?", answer: "El negocio responde con el siguiente paso." }, { question: "Se puede personalizar?", answer: "Si, la oferta y el contenido son editables." }, { question: "Esto es una tienda?", answer: "No, esta enfocado en leads." }],
       main: "Principal", popular: "Popular", marketPrice: "Precio de mercado", fromQuote: "Desde cotizacion", book: "Reservar", freeQuote: "Cotizacion gratis", practiceArea: "Area de practica", scheduleConsultation: "Agendar consulta",
       before: "Antes", after: "Despues", viewProject: "Ver proyecto", plan: "Plan", custom: "Personalizado", start: "Empezar", ticketOffer: "Ticket / oferta", reserve: "Reservar", package: "Paquete", applyNow: "Aplicar ahora", view: "Ver", request: "Consultar",
     },
@@ -7104,6 +7466,7 @@ function catalogLocaleLabels(schema) {
       newDrop: "Nouvelle collection", limitedSelection: "Sélection limitée", instantAccess: "Accès immédiat", downloadable: "Contenu téléchargeable", bonus: "Ressources bonus", lifetime: "Accès à vie", getAccess: "Obtenir l'accès",
       collections: "Collections", lookbook: "Lookbook", fit: "Guide des tailles", drop: "Drop", fitGuide: "Guide des tailles", fitGuideItems: ["Notes de taille", "Suggestions de style", "Conseils d'entretien", "Livraison et retours"], fashionCollections: ["Nouveautes", "Essentiels", "Pieces fortes", "Accessoires", "Drop limite", "Meilleures ventes"],
       company: "Entreprise", services: "Services", process: "Processus", proof: "Preuve", capability: "Capacite", requestConsultation: "Demander une consultation", viewServices: "Voir les services", corporateProcessItems: ["Diagnostic", "Strategie", "Livraison", "Support"], corporateProofItems: ["Livraison fiable", "Communication claire", "Standards professionnels"],
+      offer: "Offre", benefits: "Benefices", faq: "FAQ", claimOffer: "Commencer", seeProof: "Voir les preuves", nextStep: "Prochaine etape", quickRequest: "Envoyez une demande rapide et recevez une reponse claire.", bestValue: "Meilleur choix", outcomeFocused: "Oriente resultat", fastNextStep: "Etape rapide", editableOffer: "Offre modifiable", faqAnswer: "Cela peut etre ajuste au business, a l'offre et aux objections client.", funnelBenefitsItems: ["Promesse claire", "Etape simple", "Leads qualifies", "Sections modifiables", "Structure avec preuves", "Lancement rapide"], funnelProofItems: ["Resultat specifique", "Processus simple", "Reponse rapide", "Prix clarifies"], funnelFaqItems: [{ question: "Que se passe-t-il ensuite ?", answer: "L'entreprise repond avec la prochaine etape." }, { question: "Peut-on personnaliser ?", answer: "Oui, l'offre et le contenu sont modifiables." }, { question: "Est-ce une boutique ?", answer: "Non, c'est centre sur les leads." }],
       main: "Principal", popular: "Populaire", marketPrice: "Prix du marché", fromQuote: "Sur devis", book: "Réserver", freeQuote: "Devis gratuit", practiceArea: "Domaine d'expertise", scheduleConsultation: "Planifier une consultation",
       before: "Avant", after: "Après", viewProject: "Voir le projet", plan: "Offre", custom: "Sur mesure", start: "Commencer", ticketOffer: "Billet / offre", reserve: "Réserver", package: "Forfait", applyNow: "Postuler", view: "Voir", request: "Demander",
     },
@@ -7114,6 +7477,7 @@ function catalogLocaleLabels(schema) {
       newDrop: "Novo drop", limitedSelection: "Seleção limitada", instantAccess: "Acesso imediato", downloadable: "Conteúdo baixável", bonus: "Recursos bônus", lifetime: "Acesso vitalício", getAccess: "Obter acesso",
       collections: "Colecoes", lookbook: "Lookbook", fit: "Guia de tamanhos", drop: "Drop", fitGuide: "Guia de tamanhos", fitGuideItems: ["Notas de tamanho e caimento", "Sugestoes de estilo", "Cuidados com a peca", "Envios e devolucoes"], fashionCollections: ["Novidades", "Essenciais", "Pecas destaque", "Acessorios", "Drop limitado", "Mais vendidos"],
       company: "Empresa", services: "Servicos", process: "Processo", proof: "Prova", capability: "Capacidade", requestConsultation: "Solicitar consulta", viewServices: "Ver servicos", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Suporte"], corporateProofItems: ["Entrega confiavel", "Comunicacao clara", "Padroes profissionais"],
+      offer: "Oferta", benefits: "Beneficios", faq: "FAQ", claimOffer: "Comecar agora", seeProof: "Ver prova", nextStep: "Proximo passo", quickRequest: "Envie uma solicitacao rapida e receba uma resposta clara.", bestValue: "Melhor opcao", outcomeFocused: "Foco em resultado", fastNextStep: "Proximo passo rapido", editableOffer: "Oferta editavel", faqAnswer: "Isto pode ser ajustado ao negocio, oferta e duvidas do cliente.", funnelBenefitsItems: ["Promessa clara", "Proximo passo simples", "Leads qualificados", "Secoes editaveis", "Estrutura com prova", "Lancamento rapido"], funnelProofItems: ["Resultado especifico", "Processo simples", "Resposta rapida", "Conversa clara sobre preco"], funnelFaqItems: [{ question: "O que acontece depois?", answer: "O negocio responde com o proximo passo." }, { question: "Pode personalizar?", answer: "Sim, a oferta e o conteudo sao editaveis." }, { question: "Isso e uma loja?", answer: "Nao, e focado em leads." }],
       main: "Principal", popular: "Popular", marketPrice: "Preço de mercado", fromQuote: "Sob orçamento", book: "Reservar", freeQuote: "Orçamento grátis", practiceArea: "Área de atuação", scheduleConsultation: "Agendar consulta",
       before: "Antes", after: "Depois", viewProject: "Ver projeto", plan: "Plano", custom: "Personalizado", start: "Começar", ticketOffer: "Ingresso / oferta", reserve: "Reservar", package: "Pacote", applyNow: "Aplicar agora", view: "Ver", request: "Consultar",
     },
