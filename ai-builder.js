@@ -1950,35 +1950,54 @@ async function handleWebsiteIntentAnswer(message) {
     pt: "Detectando o melhor template...",
   });
   setThinking(true);
+  guidedState.websiteIntent = message;
+  if (!guidedState.industry) guidedState.industry = inferIndustryFromPrompt(message);
+  if (!guidedState.preferredTone) guidedState.preferredTone = extractStyleHint(message);
+  let selection = {
+    templateId: "apple-premium-product",
+    template: null,
+    intent: "default_minimal",
+    catalogType: "premium_editorial_catalog",
+    reason: "Using a safe premium starter while template detection finishes",
+  };
   try {
-    const selection = await selectTemplateFromFreeText(message);
-    forcedTemplateSelection = selection;
-    guidedState.websiteIntent = message;
-    if (!guidedState.industry) guidedState.industry = inferIndustryFromPrompt(message);
-    if (!guidedState.preferredTone) guidedState.preferredTone = extractStyleHint(message);
-    appendTemplateDetectionMessage(selection);
-    await appendTemplatePreviewChoices(selection, message);
-    guidedStep = nextSmartGuidedStep("websiteIntent");
-    appendUnderstandingCard({ updates: inferGuidedUpdatesFromAnyMessage(message), sourceMessage: message });
-    appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
-    guidedStatusText.textContent = langText({
-      en: "Template detected. Let us continue with the business details.",
-      es: "Template detectado. Sigamos con los datos del negocio.",
-      fr: "Template détecté. Continuons avec les détails de l'entreprise.",
-      pt: "Template detectado. Vamos continuar com os dados do negócio.",
-    });
+    selection = await withTimeout(selectTemplateFromFreeText(message), 2500);
   } catch (error) {
-    guidedState.websiteIntent = message;
-    guidedStep = nextSmartGuidedStep("websiteIntent");
-    appendChatMessage("assistant", t("localFallbackMessage"), "alert");
     console.warn("Luma template intent detection failed; continuing locally.", error);
-    appendUnderstandingCard({ updates: inferGuidedUpdatesFromAnyMessage(message), sourceMessage: message });
-    appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
-    guidedStatusText.textContent = t("localFallback");
   }
+  forcedTemplateSelection = selection;
+  appendTemplateDetectionMessage(selection);
+  guidedStep = nextSmartGuidedStep("websiteIntent");
+  appendUnderstandingCard({ updates: inferGuidedUpdatesFromAnyMessage(message), sourceMessage: message });
+  appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
+  guidedStatusText.textContent = langText({
+    en: "Template selected. Continue with the business details.",
+    es: "Template seleccionado. Sigamos con los datos del negocio.",
+    fr: "Template sélectionné. Continuons avec les détails de l'entreprise.",
+    pt: "Template selecionado. Vamos continuar com os dados do negócio.",
+  });
   setThinking(false);
   renderGuidedSummary();
   refreshQuickChips();
+  saveGuidedDraft();
+  appendTemplatePreviewChoices(selection, message).catch((error) => {
+    console.warn("Template preview choices failed; setup can continue.", error);
+  });
+}
+
+function withTimeout(promise, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => reject(new Error("Operation timed out")), timeoutMs);
+    Promise.resolve(promise)
+      .then((value) => {
+        window.clearTimeout(timeout);
+        resolve(value);
+      })
+      .catch((error) => {
+        window.clearTimeout(timeout);
+        reject(error);
+      });
+  });
 }
 
 async function selectTemplateFromFreeText(message) {
