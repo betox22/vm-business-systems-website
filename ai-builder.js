@@ -62,7 +62,7 @@ const I18N = {
     livePreviewKicker: "Live draft",
     livePreviewTitle: "Luma is choosing the right structure",
     livePreviewText: "The preview adapts from your answers before the full editable site is generated.",
-    finalReviewTitle: "Your website brief",
+    finalReviewTitle: "Luma's build plan",
     generateMyWebsite: "Generate my website",
     keepChatting: "Keep chatting",
     thinking: "Luma is thinking...",
@@ -72,7 +72,7 @@ const I18N = {
     voiceUnsupported: "Voice input is not supported in this browser.",
     voiceListening: "Listening... speak now.",
     voiceReady: "Voice transcript ready. Review it and press Send.",
-    summaryHelper: "Review the essentials, add optional logo/photos, then let Luma generate the draft.",
+    summaryHelper: "Luma turns your answers into a template-backed, editable website plan before generating.",
     editDetails: "Edit details",
     reviewDetails: "Review brief",
     selectedLanguage: "Selected language",
@@ -162,7 +162,7 @@ const I18N = {
     livePreviewKicker: "Borrador en vivo",
     livePreviewTitle: "Luma esta eligiendo la estructura correcta",
     livePreviewText: "El preview se adapta con tus respuestas antes de generar el sitio editable completo.",
-    finalReviewTitle: "Resumen de tu pagina",
+    finalReviewTitle: "Plan de construccion de Luma",
     generateMyWebsite: "Generar mi pagina",
     keepChatting: "Seguir conversando",
     thinking: "Luma esta pensando...",
@@ -172,7 +172,7 @@ const I18N = {
     voiceUnsupported: "La entrada por voz no esta disponible en este navegador.",
     voiceListening: "Escuchando... habla ahora.",
     voiceReady: "Transcripcion lista. Revisala y presiona Enviar.",
-    summaryHelper: "Revisa lo esencial, agrega logo/fotos si tienes, y deja que Luma genere la primera version.",
+    summaryHelper: "Luma convierte tus respuestas en un plan editable basado en templates antes de generar.",
     editDetails: "Editar detalles",
     reviewDetails: "Revisar resumen",
     selectedLanguage: "Idioma seleccionado",
@@ -262,7 +262,7 @@ const I18N = {
     livePreviewKicker: "Brouillon live",
     livePreviewTitle: "Luma choisit la bonne structure",
     livePreviewText: "L'apercu s'adapte a vos reponses avant de generer le site complet modifiable.",
-    finalReviewTitle: "Brief de votre site",
+    finalReviewTitle: "Plan de creation de Luma",
     generateMyWebsite: "Générer mon site",
     keepChatting: "Continuer la discussion",
     thinking: "Luma réfléchit...",
@@ -272,7 +272,7 @@ const I18N = {
     voiceUnsupported: "La saisie vocale n'est pas prise en charge dans ce navigateur.",
     voiceListening: "Écoute en cours... parlez maintenant.",
     voiceReady: "Transcription prête. Vérifiez-la puis appuyez sur Envoyer.",
-    summaryHelper: "Vérifiez l'essentiel, ajoutez logo/photos si disponibles, puis laissez Luma générer le brouillon.",
+    summaryHelper: "Luma transforme vos reponses en plan modifiable base sur un template avant la generation.",
     editDetails: "Modifier les details",
     reviewDetails: "Vérifier le brief",
     selectedLanguage: "Langue sélectionnée",
@@ -362,7 +362,7 @@ const I18N = {
     livePreviewKicker: "Rascunho ao vivo",
     livePreviewTitle: "A Luma esta escolhendo a estrutura certa",
     livePreviewText: "O preview se adapta com suas respostas antes de gerar o site editavel completo.",
-    finalReviewTitle: "Resumo do seu site",
+    finalReviewTitle: "Plano de construcao da Luma",
     generateMyWebsite: "Gerar meu site",
     keepChatting: "Continuar conversando",
     thinking: "Luma está pensando...",
@@ -372,7 +372,7 @@ const I18N = {
     voiceUnsupported: "Entrada por voz não é compatível com este navegador.",
     voiceListening: "Ouvindo... fale agora.",
     voiceReady: "Transcrição pronta. Revise e pressione Enviar.",
-    summaryHelper: "Revise o essencial, envie logo/fotos se tiver, e deixe a Luma gerar o rascunho.",
+    summaryHelper: "A Luma transforma suas respostas em um plano editavel baseado em templates antes de gerar.",
     editDetails: "Editar detalhes",
     reviewDetails: "Revisar resumo",
     selectedLanguage: "Idioma selecionado",
@@ -3666,68 +3666,150 @@ function renderGuidedSummary() {
 
 function renderGuidedBriefReview() {
   if (!guidedBriefReview) return;
-  const services = arrayValue(guidedState.servicesProducts).slice(0, 4).join(", ");
-  const colors = arrayValue(guidedState.preferredColors).length
-    ? arrayValue(guidedState.preferredColors).join(", ")
-    : arrayValue(guidedState.logoPalette).length
-      ? arrayValue(guidedState.logoPalette).join(", ")
-      : t("letAiDecide");
-  const rows = [
-    {
-      label: t("businessName"),
-      value: guidedState.businessName || t("newClientWebsite"),
-    },
-    {
-      label: t("websiteIntent"),
-      value: guidedState.websiteIntent || forcedTemplateSelection?.templateId || t("letAiDecide"),
-    },
-    {
-      label: t("servicesProducts"),
-      value: services || guidedState.businessDescription || t("letAiDecide"),
-    },
-    {
-      label: t("preferredColors"),
-      value: colors,
-    },
-    {
-      label: t("contactInfo"),
-      value: contactInfoCompactLabel(guidedState.contactInfo) || langText({
-        en: "Can be added later",
-        es: "Se puede agregar luego",
-        fr: "Peut etre ajoute ensuite",
-        pt: "Pode ser adicionado depois",
-      }),
-    },
-    {
-      label: t("salesMode"),
-      value: guidedState.salesMode || t("letAiDecide"),
-    },
+  syncTemplateSelectionFromGuidedContext();
+  const plan = forcedTemplateSelection?.templateId ? ensureSitePlan() : buildSitePlan({
+    templateId: "",
+    template: {},
+    catalogType: "",
+  });
+  const templateMeta = templatePreviewMeta(plan.templateId) || templatePreviewMeta(forcedTemplateSelection?.templateId || "");
+  const templateName = localizedTemplateName(templateMeta) || plan.templateName || langText({
+    en: "Template pending",
+    es: "Template pendiente",
+    fr: "Template a definir",
+    pt: "Template pendente",
+  });
+  const templateDescription = localizedTemplateDescription(templateMeta) || plan.strategy || langText({
+    en: "Luma will choose the final visual base from the full business context.",
+    es: "Luma elegira la base visual final usando todo el contexto del negocio.",
+    fr: "Luma choisira la base visuelle finale avec tout le contexte.",
+    pt: "A Luma escolhera a base visual final usando todo o contexto.",
+  });
+  const businessFocus = aiBuildFocusLine();
+  const catalogStrategy = aiCatalogStrategyLine(plan);
+  const visualStrategy = aiVisualStrategyLine(plan);
+  const sourceSignals = aiSourceSignalList();
+  const editableItems = [
+    langText({ en: "headlines and sections", es: "titulos y secciones", fr: "titres et sections", pt: "titulos e secoes" }),
+    langText({ en: "catalog/products", es: "catalogo/productos", fr: "catalogue/produits", pt: "catalogo/produtos" }),
+    langText({ en: "colors, logo and images", es: "colores, logo e imagenes", fr: "couleurs, logo et images", pt: "cores, logo e imagens" }),
+    langText({ en: "buttons and contact flow", es: "botones y flujo de contacto", fr: "boutons et parcours contact", pt: "botoes e fluxo de contato" }),
   ];
   guidedBriefReview.innerHTML = `
-    <div class="brief-ready-card">
-      <span>${escapeHtml(langText({ en: "Ready to generate", es: "Listo para generar", fr: "Pret a generer", pt: "Pronto para gerar" }))}</span>
-      <strong>${escapeHtml(langText({
-        en: "Luma has enough context to create the first full draft.",
-        es: "Luma ya tiene contexto suficiente para crear la primera version completa.",
-        fr: "Luma a assez de contexte pour creer le premier brouillon complet.",
-        pt: "A Luma ja tem contexto suficiente para criar o primeiro rascunho completo.",
-      }))}</strong>
-      <p>${escapeHtml(langText({
-        en: "Logo/photos are optional. If you upload a logo, Luma extracts its palette and uses it as visual direction.",
-        es: "Logo/fotos son opcionales. Si subes un logo, Luma extrae su paleta y la usa como direccion visual.",
-        fr: "Logo/photos sont optionnels. Si vous importez un logo, Luma extrait sa palette et l'utilise comme direction visuelle.",
-        pt: "Logo/fotos sao opcionais. Se voce enviar um logo, a Luma extrai a paleta e usa como direcao visual.",
-      }))}</p>
+    <div class="ai-build-card">
+      <div class="ai-build-card-head">
+        <span>${escapeHtml(langText({ en: "AI build decision", es: "Decision de construccion IA", fr: "Decision IA", pt: "Decisao IA" }))}</span>
+        <strong>${escapeHtml(templateName)}</strong>
+      </div>
+      <p>${escapeHtml(templateDescription)}</p>
+      <div class="ai-build-reason">
+        <b>${escapeHtml(langText({ en: "Why this base", es: "Por que esta base", fr: "Pourquoi cette base", pt: "Por que esta base" }))}</b>
+        <span>${escapeHtml(catalogStrategy)}</span>
+      </div>
     </div>
-    <div class="brief-chip-grid">
-      ${rows.map((row) => `
+    <div class="ai-build-focus">
+      <strong>${escapeHtml(businessFocus)}</strong>
+      <span>${escapeHtml(visualStrategy)}</span>
+    </div>
+    <div class="ai-build-pages">
+      ${plan.pages.slice(0, 4).map((page, index) => `
         <article>
-          <span>${escapeHtml(row.label)}</span>
-          <strong>${escapeHtml(row.value)}</strong>
+          <b>${index + 1}</b>
+          <div>
+            <strong>${escapeHtml(page.title)}</strong>
+            <span>${escapeHtml(page.purpose)}</span>
+          </div>
         </article>
       `).join("")}
     </div>
+    <div class="ai-build-grid">
+      <section>
+        <span>${escapeHtml(langText({ en: "Luma will use", es: "Luma usara", fr: "Luma utilisera", pt: "A Luma usara" }))}</span>
+        ${sourceSignals.map((item) => `<strong>${escapeHtml(item)}</strong>`).join("")}
+      </section>
+      <section>
+        <span>${escapeHtml(langText({ en: "Editable after generation", es: "Editable despues de generar", fr: "Modifiable apres generation", pt: "Editavel apos gerar" }))}</span>
+        ${editableItems.map((item) => `<strong>${escapeHtml(item)}</strong>`).join("")}
+      </section>
+    </div>
   `;
+}
+
+function aiBuildFocusLine() {
+  const name = guidedState.businessName || t("newClientWebsite");
+  const products = arrayValue(guidedState.servicesProducts).filter(Boolean).slice(0, 3);
+  if (products.length) {
+    return langText({
+      en: `${name}: Luma is shaping the site around ${products.join(", ")}.`,
+      es: `${name}: Luma esta armando el sitio alrededor de ${products.join(", ")}.`,
+      fr: `${name} : Luma structure le site autour de ${products.join(", ")}.`,
+      pt: `${name}: a Luma esta montando o site em torno de ${products.join(", ")}.`,
+    });
+  }
+  return langText({
+    en: `${name}: Luma will use the conversation as strategy, not as raw page copy.`,
+    es: `${name}: Luma usara la conversacion como estrategia, no como texto crudo en la pagina.`,
+    fr: `${name} : Luma utilisera la conversation comme strategie, pas comme texte brut.`,
+    pt: `${name}: a Luma usara a conversa como estrategia, nao como texto bruto.`,
+  });
+}
+
+function aiCatalogStrategyLine(plan) {
+  const catalog = `${plan.catalogType || forcedTemplateSelection?.catalogType || ""}`.toLowerCase();
+  if (/dense|marketplace/.test(catalog)) {
+    return langText({
+      en: "The products look varied, so Luma is using a search-first marketplace structure instead of a single-product landing.",
+      es: "Los productos se ven variados, asi que Luma usa una estructura tipo marketplace con busqueda, no una landing de producto unico.",
+      fr: "Les produits semblent varies, donc Luma utilise une structure marketplace avec recherche.",
+      pt: "Os produtos parecem variados, entao a Luma usa uma estrutura marketplace com busca.",
+    });
+  }
+  if (/premium_editorial/.test(catalog)) {
+    return langText({
+      en: "The offer looks focused, so Luma is using a premium product-line presentation with strong story and conversion sections.",
+      es: "La oferta se ve enfocada, asi que Luma usa una presentacion premium de linea de producto con historia y conversion.",
+      fr: "L'offre semble ciblee, donc Luma utilise une presentation premium de gamme produit.",
+      pt: "A oferta parece focada, entao a Luma usa uma apresentacao premium de linha de produto.",
+    });
+  }
+  if (/service|booking|lead|legal|medical/.test(catalog)) {
+    return langText({
+      en: "The request is service-led, so Luma is prioritizing trust, proof, process and a clear contact path.",
+      es: "La solicitud es de servicios, asi que Luma prioriza confianza, prueba, proceso y contacto claro.",
+      fr: "La demande est orientee service, donc Luma priorise confiance, preuves et contact clair.",
+      pt: "O pedido e de servicos, entao a Luma prioriza confianca, prova, processo e contato.",
+    });
+  }
+  return langText({
+    en: "Luma is matching the structure to the business type and will keep the generated site editable.",
+    es: "Luma esta ajustando la estructura al tipo de negocio y mantendra el sitio editable.",
+    fr: "Luma adapte la structure au type d'entreprise et gardera le site modifiable.",
+    pt: "A Luma esta ajustando a estrutura ao tipo de negocio e mantera o site editavel.",
+  });
+}
+
+function aiVisualStrategyLine(plan) {
+  const colorSource = arrayValue(guidedState.logoPalette).length
+    ? langText({ en: "logo palette", es: "paleta del logo", fr: "palette du logo", pt: "paleta do logo" })
+    : arrayValue(guidedState.preferredColors).length
+      ? arrayValue(guidedState.preferredColors).join(", ")
+      : t("letAiDecide");
+  return langText({
+    en: `Design direction: ${guidedState.preferredTone || "AI-selected"} tone, ${colorSource} colors, customer-facing copy rewritten from the brief.`,
+    es: `Direccion visual: tono ${guidedState.preferredTone || "elegido por IA"}, colores ${colorSource}, copy comercial reescrito desde el brief.`,
+    fr: `Direction visuelle : ton ${guidedState.preferredTone || "choisi par IA"}, couleurs ${colorSource}, copy reecrit depuis le brief.`,
+    pt: `Direcao visual: tom ${guidedState.preferredTone || "escolhido por IA"}, cores ${colorSource}, copy comercial reescrito do briefing.`,
+  });
+}
+
+function aiSourceSignalList() {
+  const signals = [];
+  if (guidedState.businessDescription) signals.push(langText({ en: "business description", es: "descripcion del negocio", fr: "description business", pt: "descricao do negocio" }));
+  if (arrayValue(guidedState.servicesProducts).length) signals.push(langText({ en: "products/services", es: "productos/servicios", fr: "produits/services", pt: "produtos/servicos" }));
+  if (guidedState.salesMode) signals.push(langText({ en: "sales flow", es: "flujo de venta", fr: "flux de vente", pt: "fluxo de venda" }));
+  if (guidedState.logoUrl || arrayValue(guidedState.logoPalette).length) signals.push(langText({ en: "logo and palette", es: "logo y paleta", fr: "logo et palette", pt: "logo e paleta" }));
+  if (guidedState.contactInfo && Object.keys(guidedState.contactInfo).length) signals.push(langText({ en: "contact routes", es: "vias de contacto", fr: "contacts", pt: "contatos" }));
+  return signals.length ? signals : [langText({ en: "conversation context", es: "contexto de la conversacion", fr: "contexte conversation", pt: "contexto da conversa" })];
 }
 
 function renderSitePlanInChatIfNeeded() {
