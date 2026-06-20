@@ -4,7 +4,7 @@
   const PRO_TEMPLATES = [
     {
       id: "apple-premium-product",
-      name: "Premium Product / Apple Style",
+      name: "Premium Product Showcase",
       category: "ecommerce",
       bestFor: ["premium products", "technology", "beauty devices", "single hero product", "luxury retail"],
       style: {
@@ -31,10 +31,10 @@
         filters: ["category", "new", "best_seller"],
         productDetailModel: "gallery-first premium product detail with benefits, specs, social proof, sticky CTA",
         upsellModel: "complete the set and recommended accessories",
-        customerFeeling: "Apple-style premium product page, polished and simple",
+        customerFeeling: "Premium product page, polished and simple",
       },
       visualDifference: "Hero-first, spacious, cinematic product storytelling with minimal navigation and premium copy.",
-      clientSelectionCard: { title: "Premium Product", category: "ecommerce", bestForLabel: "Apple-style products, tech, premium brands", difference: "Spacious product storytelling, refined sections, premium CTAs.", previewTags: ["apple", "premium", "product-led"] },
+      clientSelectionCard: { title: "Premium Product", category: "ecommerce", bestForLabel: "flagship products, tech, premium brands", difference: "Spacious product storytelling, refined sections, premium CTAs.", previewTags: ["premium", "showcase", "product-led"] },
       pages: [
         { name: "Home", purpose: "Premium product story and conversion", usesSections: ["header_minimal", "hero_centered_product", "feature_spotlight", "featured_products", "trust_strip", "footer"] },
         { name: "Catalog", purpose: "Curated premium catalog", catalogType: "editorial_minimal_grid", layout: "featured hero product plus curated cards", filters: ["category", "new", "best_seller"] },
@@ -298,7 +298,7 @@
     },
     {
       id: "mega-marketplace",
-      name: "Mega Marketplace / Amazon Style",
+      name: "Mega Catalog Marketplace",
       category: "ecommerce",
       bestFor: ["large catalog", "electronics", "general store", "multi-category retail", "dropshipping"],
       style: {
@@ -325,7 +325,7 @@
         filters: ["category", "brand", "price", "rating", "availability", "shipping_speed"],
         productDetailModel: "marketplace detail with specs, reviews, Q&A, shipping estimate, bundles",
         upsellModel: "frequently bought together, deal bundles, recently viewed",
-        customerFeeling: "Amazon-style product discovery and comparison",
+        customerFeeling: "Large catalog product discovery and comparison",
       },
       visualDifference: "Dense search-first shopping experience with categories, filters, deals, ratings and quick comparison.",
       clientSelectionCard: { title: "Mega Marketplace", category: "ecommerce", bestForLabel: "large stores, many products, categories", difference: "Dense catalog, search, deals, ratings, filters.", previewTags: ["amazon", "marketplace", "dense"] },
@@ -339,7 +339,7 @@
     },
     {
       id: "listing-marketplace-pro",
-      name: "Listing Marketplace / eBay Style",
+      name: "Seller Listing Marketplace",
       category: "ecommerce",
       bestFor: ["multi-seller marketplace", "used products", "classifieds", "resale", "listings"],
       style: {
@@ -357,7 +357,7 @@
         { type: "seller_trust", fields: { title: "{{seller_trust_title}}", items: "{{trust_points}}" } },
         { type: "footer", fields: { businessName: "{{business_name}}", description: "{{short_description}}" } },
       ],
-      aiPrompt: "Use an eBay-style listing marketplace. Generate listing-focused headlines, seller trust copy, condition labels, category searches, and editable listing/product text.",
+      aiPrompt: "Use a seller-listing marketplace layout. Generate listing-focused headlines, seller trust copy, condition labels, category searches, and editable listing/product text.",
       catalogModel: {
         catalogType: "listing_marketplace_catalog",
         productCardStyle: "horizontal listing cards with seller, condition, location, price, message/offer button",
@@ -365,10 +365,10 @@
         filters: ["category", "condition", "seller", "location", "price", "availability"],
         productDetailModel: "listing detail with seller profile, condition, location, message seller, related listings",
         upsellModel: "similar listings and seller recommendations",
-        customerFeeling: "eBay-style listings and comparison marketplace",
+        customerFeeling: "Seller listings and comparison marketplace",
       },
       visualDifference: "Listing-first marketplace with seller data, product condition, offer CTA, location and saved searches.",
-      clientSelectionCard: { title: "Listing Marketplace", category: "ecommerce", bestForLabel: "eBay-style listings, used products, sellers", difference: "Seller listings, condition filters, comparison feed.", previewTags: ["ebay", "listings", "multi-seller"] },
+      clientSelectionCard: { title: "Listing Marketplace", category: "ecommerce", bestForLabel: "seller listings, used products, multi-seller catalogs", difference: "Seller listings, condition filters, comparison feed.", previewTags: ["listings", "multi-seller", "classifieds"] },
       pages: [
         { name: "Home", purpose: "Listing marketplace entry", usesSections: ["listing_header", "hero_listings", "saved_searches", "listing_grid", "seller_trust", "footer"] },
         { name: "Listings", purpose: "Searchable listing feed", catalogType: "listing_marketplace_catalog", layout: "filters and listing feed", filters: ["category", "condition", "seller", "location", "price"] },
@@ -378,7 +378,7 @@
     },
     {
       id: "fashion-drop-pro",
-      name: "Fashion Drop / Shopify Boutique",
+      name: "Editorial Fashion Drop",
       category: "ecommerce",
       bestFor: ["fashion", "streetwear", "beauty", "accessories", "boutique", "drops"],
       style: {
@@ -396,7 +396,7 @@
         { type: "social_proof", fields: { title: "{{social_title}}", items: "{{testimonials}}" } },
         { type: "footer", fields: { businessName: "{{business_name}}", description: "{{short_description}}" } },
       ],
-      aiPrompt: "Use a premium Shopify boutique fashion layout without copying any brand. Generate a bold editorial clothing drop with a strong lifestyle hero, collection navigation, featured drop story, lookbook strip, large product cards, size/fit guidance, complete-the-look upsells, and confident fashion CTAs. This template is for clothing stores, boutiques, streetwear, sneakers, accessories, fashion drops, and visual brands. Preserve the fashion structure; only adapt colors, copy, imagery, products, collections, and CTAs to the business.",
+      aiPrompt: "Use a premium editorial boutique fashion layout without copying any brand. Generate a bold editorial clothing drop with a strong lifestyle hero, collection navigation, featured drop story, lookbook strip, large product cards, size/fit guidance, complete-the-look upsells, and confident fashion CTAs. This template is for clothing stores, boutiques, streetwear, sneakers, accessories, fashion drops, and visual brands. Preserve the fashion structure; only adapt colors, copy, imagery, products, collections, and CTAs to the business.",
       catalogModel: {
         catalogType: "lookbook_collection_catalog",
         productCardStyle: "editorial cards with collection tag, lifestyle image, product name, drop price, quick shop",
@@ -404,7 +404,7 @@
         filters: ["collection", "size", "color", "new_drop", "best_seller"],
         productDetailModel: "fashion PDP with gallery, size guide, fit notes, styled-with products",
         upsellModel: "complete the look and related drops",
-        customerFeeling: "Shopify boutique with editorial fashion energy",
+        customerFeeling: "Editorial boutique with fashion launch energy",
       },
       visualDifference: "Editorial fashion layout with lifestyle hero, collection storytelling, lookbook strip, large visual product cards, fit/size guide and complete-the-look modules.",
       clientSelectionCard: { title: "Fashion Drop", category: "ecommerce", bestForLabel: "fashion, boutique, beauty, accessories", difference: "Editorial drops, lookbook, visual collection storytelling.", previewTags: ["shopify", "fashion", "lookbook"] },
@@ -919,7 +919,7 @@
     classified.name = "Classified Marketplace";
     classified.category = "ecommerce";
     classified.bestFor = ["used products", "classified listings", "multi-seller catalog"];
-    classified.aiPrompt = "Build an eBay-style classified marketplace with seller listings, condition labels, search, filters, and trust.";
+    classified.aiPrompt = "Build a classified marketplace with seller listings, condition labels, search, filters, and trust.";
     classified.visualDifference = "Listing-first marketplace with seller cards, product condition, location, saved searches, and offer CTAs.";
     classified.catalogModel = {
       ...(classified.catalogModel || {}),
@@ -929,7 +929,7 @@
       filters: ["category", "condition", "seller", "location", "price", "availability"],
       productDetailModel: "classified listing detail with seller info, condition, message seller, related listings",
       upsellModel: "similar listings and seller recommendations",
-      customerFeeling: "eBay-style listings, second-hand discovery, seller marketplace",
+      customerFeeling: "Classified listings, second-hand discovery, seller marketplace",
     };
     classified.clientSelectionCard = {
       title: "Classified Marketplace",
