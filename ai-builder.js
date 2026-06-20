@@ -988,14 +988,55 @@ let builderAvatarAssistant = null;
 
 document.body.classList.toggle("embedded-chat", isEmbeddedClientSetup);
 
-initBuilderAvatarAssistant();
-initLanguageControls();
-initVoiceInput();
-updateAssistantAudioToggle();
-setAssistantState("happy");
-captureStudioAuthRedirect();
-hydrateFromSelectedRequest();
-initGuidedIntake();
+registerCriticalGuidedControls();
+safeBootStep("avatar", initBuilderAvatarAssistant);
+safeBootStep("language", initLanguageControls);
+safeBootStep("voice", initVoiceInput);
+safeBootStep("audio-toggle", updateAssistantAudioToggle);
+safeBootStep("assistant-state", () => setAssistantState("happy"));
+safeBootStep("auth-redirect", captureStudioAuthRedirect);
+safeBootStep("request-hydration", hydrateFromSelectedRequest);
+safeBootStep("guided-intake", initGuidedIntake);
+
+function safeBootStep(label, callback) {
+  try {
+    callback();
+  } catch (error) {
+    console.error(`Luma boot step failed: ${label}`, error);
+    if (guidedStatusText) {
+      guidedStatusText.textContent = langText({
+        en: "Luma loaded with a recoverable issue. You can keep answering.",
+        es: "Luma cargó con un problema recuperable. Puedes seguir respondiendo.",
+        fr: "Luma a chargé avec un problème récupérable. Vous pouvez continuer.",
+        pt: "A Luma carregou com um problema recuperável. Você pode continuar.",
+      });
+    }
+  }
+}
+
+function registerCriticalGuidedControls() {
+  document.addEventListener("click", (event) => {
+    const target = event.target?.closest?.("#guidedSendButton, #guidedSkipButton, #switchManualFormButton, #backToChatButton");
+    if (!target) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (target.id === "guidedSendButton") {
+      handleGuidedSendAction(event);
+    } else if (target.id === "guidedSkipButton") {
+      skipGuidedQuestion();
+    } else if (target.id === "switchManualFormButton") {
+      switchToManualForm();
+    } else if (target.id === "backToChatButton") {
+      switchBackToChat();
+    }
+  }, true);
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || event.target?.id !== "guidedReply") return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    handleGuidedSendAction(event);
+  }, true);
+}
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
