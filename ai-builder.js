@@ -74,7 +74,7 @@ const I18N = {
     voiceReady: "Voice transcript ready. Review it and press Send.",
     summaryHelper: "Luma turns your answers into a template-backed, editable website plan before generating.",
     editDetails: "Edit details",
-    reviewDetails: "Review brief",
+    reviewDetails: "Review details",
     selectedLanguage: "Selected language",
     businessName: "Client/business name",
     businessDescription: "Business/design context",
@@ -274,7 +274,7 @@ const I18N = {
     voiceReady: "Transcription prête. Vérifiez-la puis appuyez sur Envoyer.",
     summaryHelper: "Luma transforme vos reponses en plan modifiable base sur un template avant la generation.",
     editDetails: "Modifier les details",
-    reviewDetails: "Vérifier le brief",
+    reviewDetails: "Vérifier les détails",
     selectedLanguage: "Langue sélectionnée",
     businessName: "Nom de l'entreprise",
     businessDescription: "Description de l'entreprise",
@@ -1604,6 +1604,14 @@ function textSuggestsSingleProductShowcase(value) {
     && !textSuggestsBroadMarketplace(text);
 }
 
+function textSuggestsPremiumProductPreference(value) {
+  const text = normalizeTemplateIntentText(value);
+  if (!text || textSuggestsBroadMarketplace(text)) return false;
+  return textSuggestsSingleProductShowcase(text)
+    || textSuggestsFocusedProductLine(text)
+    || /\b(linea de|coleccion de|producto especializado|producto de nicho|flagship|single product|one product|limited collection|curated collection)\b/.test(text);
+}
+
 function isGenericCommerceIntent(value) {
   const text = normalizeTemplateIntentText(value);
   if (!text || textSuggestsBroadMarketplace(text) || textSuggestsFocusedProductLine(text) || textSuggestsSingleProductShowcase(text)) return false;
@@ -1628,7 +1636,7 @@ function inferTemplateIdFromText(value) {
   if (/servicio|service|contractor|limpieza|roofing|repair|reparacion|cotizacion|quote/.test(text)) return "local-services-pro-plus";
   if (/ropa|fashion|moda|boutique|streetwear|zapato|sneaker|accesorio/.test(text)) return "fashion-drop-pro";
   if (/lujo|luxury|alta gama|exclusivo|joyeria|relojes|arte|coleccionable/.test(text)) return "luxury-high-ticket-pro";
-  if (textSuggestsSingleProductShowcase(text) || /premium|minimal|minimalista|limpio/.test(text)) return "apple-premium-product";
+  if (textSuggestsPremiumProductPreference(text)) return "apple-premium-product";
   if (/empresa|company|corporate|corporativo|pagina web|website|agencia|firma/.test(text)) return "corporate-company-pro";
   return "";
 }
@@ -2375,16 +2383,16 @@ async function sendGuidedReply() {
       "assistant",
       currentSchema
         ? langText({
-            en: "Perfect, I added those adjustments to the brief. Press “Generate my website” to create a new version with only those changes.",
-            es: "Perfecto, ya agregué esos ajustes al brief. Presiona “Generar mi página” para crear una nueva versión cambiando solo eso.",
-            fr: "Parfait, j'ai ajouté ces ajustements au brief. Appuyez sur « Générer mon site » pour créer une version qui change seulement cela.",
-            pt: "Perfeito, adicionei esses ajustes ao briefing. Pressione “Gerar meu site” para criar uma versão mudando apenas isso.",
+            en: "Perfect, I added those adjustments to the build plan. Press “Generate my website” to create a new version with only those changes.",
+            es: "Perfecto, ya agregué esos ajustes al plan. Presiona “Generar mi página” para crear una nueva versión cambiando solo eso.",
+            fr: "Parfait, j'ai ajouté ces ajustements au plan. Appuyez sur « Générer mon site » pour créer une version qui change seulement cela.",
+            pt: "Perfeito, adicionei esses ajustes ao plano. Pressione “Gerar meu site” para criar uma versão mudando apenas isso.",
           })
         : langText({
-            en: "Perfect, I added that to the brief. Anything else you want to change or add before I generate?",
-            es: "Perfecto, agregué eso al brief. ¿Quieres modificar algo más o agregar otro detalle antes de generar?",
-            fr: "Parfait, j'ai ajouté cela au brief. Voulez-vous modifier ou ajouter autre chose avant de générer?",
-            pt: "Perfeito, adicionei isso ao briefing. Quer mudar ou adicionar mais alguma coisa antes de gerar?",
+            en: "Perfect, I added that to the plan. Anything else you want to change or add before I generate?",
+            es: "Perfecto, agregué eso al plan. ¿Quieres modificar algo más o agregar otro detalle antes de generar?",
+            fr: "Parfait, j'ai ajouté cela au plan. Voulez-vous modifier ou ajouter autre chose avant de générer?",
+            pt: "Perfeito, adicionei isso ao plano. Quer mudar ou adicionar mais alguma coisa antes de gerar?",
           }),
       "success",
     );
@@ -3795,10 +3803,10 @@ function aiVisualStrategyLine(plan) {
       ? arrayValue(guidedState.preferredColors).join(", ")
       : t("letAiDecide");
   return langText({
-    en: `Design direction: ${guidedState.preferredTone || "AI-selected"} tone, ${colorSource} colors, customer-facing copy rewritten from the brief.`,
-    es: `Direccion visual: tono ${guidedState.preferredTone || "elegido por IA"}, colores ${colorSource}, copy comercial reescrito desde el brief.`,
-    fr: `Direction visuelle : ton ${guidedState.preferredTone || "choisi par IA"}, couleurs ${colorSource}, copy reecrit depuis le brief.`,
-    pt: `Direcao visual: tom ${guidedState.preferredTone || "escolhido por IA"}, cores ${colorSource}, copy comercial reescrito do briefing.`,
+    en: `Design direction: ${guidedState.preferredTone || "AI-selected"} tone, ${colorSource} colors, customer-facing copy rewritten from the conversation.`,
+    es: `Direccion visual: tono ${guidedState.preferredTone || "elegido por IA"}, colores ${colorSource}, copy comercial reescrito desde la conversacion.`,
+    fr: `Direction visuelle : ton ${guidedState.preferredTone || "choisi par IA"}, couleurs ${colorSource}, copy reecrit depuis la conversation.`,
+    pt: `Direcao visual: tom ${guidedState.preferredTone || "escolhido por IA"}, cores ${colorSource}, copy comercial reescrito da conversa.`,
   });
 }
 
