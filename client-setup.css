@@ -472,8 +472,8 @@ body.public-client-setup.generated-preview-open {
   position: relative;
   height: 100%;
   min-height: 0;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  display: flex;
+  flex-direction: column;
   gap: 0;
   overflow: hidden;
   padding: 0;
@@ -579,6 +579,115 @@ body.public-client-setup.generated-preview-open {
   background: #ffffff;
   font-size: 11px;
   font-weight: 900;
+}
+
+.public-client-setup .live-site-preview-card {
+  flex: 0 0 auto;
+  margin: 10px 16px 0;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(99, 102, 241, 0.07)),
+    #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
+
+.public-client-setup .live-preview-browser {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.public-client-setup .live-preview-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.public-client-setup .live-preview-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.public-client-setup .live-preview-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #d0d5dd;
+}
+
+.public-client-setup .live-preview-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 12px;
+  align-items: center;
+  border-radius: 14px;
+  padding: 12px;
+  background: #101827;
+  color: #ffffff;
+}
+
+.public-client-setup .live-preview-hero strong {
+  display: block;
+  font-size: 17px;
+  line-height: 1.05;
+}
+
+.public-client-setup .live-preview-hero span {
+  display: block;
+  margin-top: 5px;
+  color: #c9d7e6;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.public-client-setup .live-preview-visual {
+  height: 76px;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 68% 28%, rgba(45, 212, 191, 0.8), transparent 34%),
+    linear-gradient(135deg, rgba(20, 184, 166, 0.35), rgba(124, 58, 237, 0.28));
+}
+
+.public-client-setup .live-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.public-client-setup .live-preview-grid span {
+  min-height: 42px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 10px;
+  padding: 8px;
+  color: #344054;
+  background: rgba(255, 255, 255, 0.78);
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.public-client-setup .live-preview-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.public-client-setup .live-preview-footer b {
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: #063b36;
+  background: #ccfbf1;
 }
 
 .public-client-setup .site-plan-card {
@@ -716,6 +825,7 @@ body.public-client-setup.generated-preview-open {
 }
 
 .public-client-setup .guided-chat {
+  flex: 1 1 auto;
   align-content: start;
   gap: 12px;
   max-height: none;
@@ -769,6 +879,7 @@ body.public-client-setup.generated-preview-open {
 }
 
 .public-client-setup .guided-thinking {
+  flex: 0 0 auto;
   width: fit-content;
   margin: 0 16px 8px;
   padding: 8px 10px;
@@ -784,6 +895,7 @@ body.public-client-setup.generated-preview-open {
 }
 
 .public-client-setup .chat-status-card {
+  flex: 0 0 auto;
   margin: 0 16px 10px;
   padding: 0;
   border: 0;
@@ -822,6 +934,7 @@ body.public-client-setup.generated-preview-open {
 }
 
 .public-client-setup .quick-chip-row {
+  flex: 0 0 auto;
   padding: 0 16px 8px;
   gap: 7px;
 }
@@ -838,6 +951,7 @@ body.public-client-setup.generated-preview-open {
 }
 
 .public-client-setup .chat-composer {
+  flex: 0 0 auto;
   z-index: 2;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

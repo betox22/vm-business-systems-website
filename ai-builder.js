@@ -436,7 +436,7 @@ const I18N = {
 
 const GUIDED_QUESTIONS = {
   en: {
-    websiteIntent: "What kind of website do you want to create?",
+    websiteIntent: "What do you need this website to do: sell online, show a catalog, explain your business, take bookings, receive quote requests, or something else?",
     businessName: "First, what is the name of your business?",
     businessDescription: "To understand the direction, tell me what the business sells or does. I will use this as design context, not as text to copy literally.",
     industry: "What industry or category best fits it?",
@@ -452,7 +452,7 @@ const GUIDED_QUESTIONS = {
     review: "Review the summary. If it looks right, generate the site.",
   },
   es: {
-    websiteIntent: "Que tipo de pagina quieres crear?",
+    websiteIntent: "Para que necesitas esta pagina: vender online, mostrar catalogo, explicar tu negocio, recibir reservas, recibir cotizaciones o algo diferente?",
     businessName: "Primero, ¿cómo se llama tu negocio?",
     businessDescription: "Para entender la dirección, dime qué vende u ofrece tu negocio. Lo usaré como contexto de diseño, no como texto literal para poner en la página.",
     industry: "En que industria o categoria lo pondrias?",
@@ -468,7 +468,7 @@ const GUIDED_QUESTIONS = {
     review: "Revisa el resumen. Si esta bien, genera el sitio.",
   },
   fr: {
-    websiteIntent: "Quel type de site voulez-vous creer?",
+    websiteIntent: "Que doit faire ce site: vendre en ligne, afficher un catalogue, présenter l'entreprise, prendre des réservations, recevoir des devis ou autre chose?",
     businessName: "Quel est le nom de l'entreprise?",
     businessDescription: "Pour comprendre la direction, dites-moi ce que l'entreprise vend ou propose. Je l'utiliserai comme contexte de design, pas comme texte à copier tel quel.",
     industry: "Dans quel secteur ou catégorie la placeriez-vous?",
@@ -484,7 +484,7 @@ const GUIDED_QUESTIONS = {
     review: "Vérifiez le résumé. Si tout est bon, générez le site.",
   },
   pt: {
-    websiteIntent: "Que tipo de site voce quer criar?",
+    websiteIntent: "O que este site precisa fazer: vender online, mostrar catálogo, explicar o negócio, receber agendamentos, receber orçamentos ou outra coisa?",
     businessName: "Qual é o nome do negócio?",
     businessDescription: "Para entender a direção, diga o que o negócio vende ou oferece. Vou usar isso como contexto de design, não como texto literal para o site.",
     industry: "Em qual setor ou categoria ele se encaixa?",
@@ -520,6 +520,7 @@ let assistantVoiceEnabled = localStorage.getItem("gnuDevAssistantVoice") === "on
 let forcedTemplateSelection = null;
 let restoredGuidedDraftInfo = null;
 let guidedCoachCard = null;
+let liveSitePreviewCard = null;
 let guidedState = {
   websiteIntent: "",
   businessName: "",
@@ -1155,17 +1156,17 @@ function guidedStage(step = guidedStep) {
   if (step === "websiteIntent") {
     return {
       index: 1,
-      title: langText({ en: "Choose the direction", es: "Elegir la dirección", fr: "Choisir la direction", pt: "Escolher a direção" }),
+      title: langText({ en: "Define the business goal", es: "Definir el objetivo", fr: "Définir l'objectif", pt: "Definir o objetivo" }),
       body: langText({
-        en: "Describe the site naturally. Luma will detect the best template and show visual options.",
-        es: "Describe la página naturalmente. Luma detecta el mejor template y muestra opciones visuales.",
-        fr: "Décrivez le site naturellement. Luma détecte le meilleur template et montre des options visuelles.",
-        pt: "Descreva o site naturalmente. A Luma detecta o melhor template e mostra opções visuais.",
+        en: "Start with the outcome. Luma will decide whether this should be a store, catalog, booking flow, lead page, company site or marketplace.",
+        es: "Empieza por el objetivo. Luma decide si conviene tienda, catalogo, reservas, captacion, pagina de empresa o marketplace.",
+        fr: "Commencez par l'objectif. Luma décide si le mieux est boutique, catalogue, réservation, leads, site d'entreprise ou marketplace.",
+        pt: "Comece pelo objetivo. A Luma decide se deve ser loja, catálogo, agendamento, captação, site empresarial ou marketplace.",
       }),
       examples: [
-        langText({ en: "Online store like Amazon", es: "Tienda online tipo Amazon", fr: "Boutique type Amazon", pt: "Loja tipo Amazon" }),
-        langText({ en: "Booking site for a barbershop", es: "Barbería con citas", fr: "Site de réservation pour salon", pt: "Barbearia com agendamento" }),
-        langText({ en: "Cyberpunk fashion store", es: "Tienda cyberpunk de ropa", fr: "Boutique mode cyberpunk", pt: "Loja cyberpunk de roupas" }),
+        langText({ en: "Sell products online", es: "Vender productos online", fr: "Vendre en ligne", pt: "Vender online" }),
+        langText({ en: "Show a catalog and receive quotes", es: "Mostrar catalogo y recibir cotizaciones", fr: "Catalogue et devis", pt: "Mostrar catalogo e receber orçamentos" }),
+        langText({ en: "Explain my company and get leads", es: "Explicar mi empresa y captar clientes", fr: "Présenter l'entreprise et capter des leads", pt: "Explicar a empresa e captar contatos" }),
       ],
     };
   }
@@ -1278,6 +1279,83 @@ function renderGuidedCoachCard() {
       guidedReply.focus();
     });
   });
+}
+
+function ensureLiveSitePreviewCard() {
+  if (liveSitePreviewCard || !guidedChatCard || !guidedChat) return liveSitePreviewCard;
+  liveSitePreviewCard = document.createElement("section");
+  liveSitePreviewCard.className = "live-site-preview-card";
+  liveSitePreviewCard.setAttribute("aria-label", "Live website draft preview");
+  guidedChatCard.insertBefore(liveSitePreviewCard, guidedChat);
+  return liveSitePreviewCard;
+}
+
+function renderLiveSitePreview() {
+  const card = ensureLiveSitePreviewCard();
+  if (!card) return;
+  const services = arrayValue(guidedState.servicesProducts).filter(Boolean);
+  const items = (services.length ? services : livePreviewFallbackItems()).slice(0, 3);
+  const name = guidedState.businessName || langText({
+    en: "Your business",
+    es: "Tu negocio",
+    fr: "Votre entreprise",
+    pt: "Seu negócio",
+  });
+  const intent = guidedState.websiteIntent || langText({
+    en: "Website goal will appear here",
+    es: "El objetivo aparecera aqui",
+    fr: "L'objectif apparaîtra ici",
+    pt: "O objetivo aparecera aqui",
+  });
+  const description = guidedState.businessDescription || forcedTemplateSelection?.template?.clientSelectionCard?.difference || langText({
+    en: "Luma updates this live draft as you answer.",
+    es: "Luma actualiza este borrador mientras respondes.",
+    fr: "Luma met à jour ce brouillon pendant vos réponses.",
+    pt: "A Luma atualiza este rascunho enquanto você responde.",
+  });
+  const contact = contactInfoCompactLabel(guidedState.contactInfo) || langText({
+    en: "Contact pending",
+    es: "Contacto pendiente",
+    fr: "Contact à compléter",
+    pt: "Contato pendente",
+  });
+  const colorHint = arrayValue(guidedState.preferredColors).join(", ") || (guidedState.logoPalette || []).join(", ") || langText({
+    en: "AI palette",
+    es: "Paleta IA",
+    fr: "Palette IA",
+    pt: "Paleta IA",
+  });
+  card.innerHTML = `
+    <div class="live-preview-browser">
+      <div class="live-preview-topbar">
+        <span class="live-preview-dots"><i></i><i></i><i></i></span>
+        <span>${escapeHtml(langText({ en: "Live draft", es: "Borrador vivo", fr: "Brouillon live", pt: "Rascunho ao vivo" }))}</span>
+      </div>
+      <div class="live-preview-hero">
+        <div>
+          <strong>${escapeHtml(name)}</strong>
+          <span>${escapeHtml(intent)}</span>
+          <span>${escapeHtml(description).slice(0, 150)}</span>
+        </div>
+        <div class="live-preview-visual" aria-hidden="true"></div>
+      </div>
+      <div class="live-preview-grid">
+        ${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
+      </div>
+      <div class="live-preview-footer">
+        <span>${escapeHtml(colorHint)}</span>
+        <b>${escapeHtml(contact)}</b>
+      </div>
+    </div>
+  `;
+}
+
+function livePreviewFallbackItems() {
+  return [
+    langText({ en: "Main offer", es: "Oferta principal", fr: "Offre principale", pt: "Oferta principal" }),
+    langText({ en: "Proof section", es: "Prueba/confianza", fr: "Preuve/confiance", pt: "Prova/confiança" }),
+    langText({ en: "Contact CTA", es: "Boton de contacto", fr: "CTA contact", pt: "CTA contato" }),
+  ];
 }
 
 function applyI18n() {
@@ -2250,7 +2328,7 @@ function insertQuickChip(value) {
 
 function refreshQuickChips() {
   const chipsByStep = {
-    websiteIntent: ["Online store", "Marketplace", "Restaurant", "Services", "Booking", "Digital products"],
+    websiteIntent: ["Sell online", "Show catalog", "Business info site", "Booking", "Request quotes", "Marketplace"],
     preferredTone: ["Elegant", "Modern", "Premium", "Warm", "Professional", "Let AI decide"],
     preferredColors: ["Let AI choose", "Use my logo colors", "I have specific colors"],
     salesMode: ["Sell online", "Request quotes", "Calls/messages", "All of the above", "Not sure"],
@@ -2368,6 +2446,8 @@ function translateChip(value) {
       "Let AI decide": "Que IA decida",
       "Let AI choose": "Que IA elija",
       "Online store": "Tienda online",
+      "Show catalog": "Mostrar catalogo",
+      "Business info site": "Pagina informativa",
       Marketplace: "Marketplace",
       Restaurant: "Restaurante",
       Services: "Servicios",
@@ -2399,6 +2479,10 @@ function translateChip(value) {
       Professional: "Professionnel",
       "Let AI decide": "Laisser l'IA décider",
       "Let AI choose": "Laisser l'IA choisir",
+      "Show catalog": "Afficher un catalogue",
+      "Business info site": "Site d'information",
+      Marketplace: "Marketplace",
+      Booking: "Réservation",
       "Use my logo colors": "Utiliser les couleurs du logo",
       "I have specific colors": "J'ai des couleurs précises",
       "Sell online": "Vendre en ligne",
@@ -2425,6 +2509,10 @@ function translateChip(value) {
       Professional: "Profissional",
       "Let AI decide": "Deixar a IA decidir",
       "Let AI choose": "Deixar a IA escolher",
+      "Show catalog": "Mostrar catalogo",
+      "Business info site": "Site informativo",
+      Marketplace: "Marketplace",
+      Booking: "Agendamento",
       "Use my logo colors": "Usar as cores do logo",
       "I have specific colors": "Tenho cores especificas",
       "Sell online": "Vender online",
@@ -2993,6 +3081,7 @@ function renderGuidedSummary() {
   currentInfoPreview.textContent = compactCollectedPreview();
   currentInfoMeta.textContent = conversationProgressLabel();
   renderGuidedCoachCard();
+  renderLiveSitePreview();
   renderAssetPreviews();
   renderSelectedDomainState();
   updateAssetPromptVisibility();
