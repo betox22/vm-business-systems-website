@@ -7170,6 +7170,300 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   color: #fff7ed;
 }
 
+.template-b2b-saas-enterprise-pro,
+.layout-b2b-saas-enterprise-pro {
+  background: #f5f7fb;
+  color: #0f172a;
+}
+
+.template-b2b-saas-enterprise-pro .rendered-nav,
+.layout-b2b-saas-enterprise-pro .rendered-nav {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(37, 99, 235, 0.16);
+  color: #0f172a;
+}
+
+.enterprise-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(380px, 1.08fr);
+  gap: clamp(30px, 5vw, 76px);
+  align-items: center;
+  min-height: 760px;
+  padding: clamp(58px, 8vw, 108px) clamp(22px, 6vw, 86px);
+  background:
+    radial-gradient(circle at 82% 20%, rgba(37, 99, 235, 0.2), transparent 34%),
+    radial-gradient(circle at 20% 82%, rgba(14, 165, 233, 0.18), transparent 30%),
+    linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%);
+  overflow: hidden;
+}
+
+.enterprise-hero-copy h1 {
+  margin: 14px 0 20px;
+  max-width: 800px;
+  color: #0f172a;
+  font-size: clamp(50px, 7vw, 96px);
+  line-height: 0.96;
+}
+
+.enterprise-hero-copy p,
+.enterprise-use-cases-section p,
+.enterprise-integrations-section p,
+.enterprise-proof-section p,
+.enterprise-pricing-section p,
+.enterprise-demo-section p,
+.b2b-card-body p,
+.b2b-card-body li {
+  color: #475569;
+  line-height: 1.7;
+}
+
+.enterprise-hero-copy .rendered-kicker,
+.enterprise-solutions-section .rendered-kicker,
+.enterprise-use-cases-section .rendered-kicker,
+.enterprise-integrations-section .rendered-kicker,
+.enterprise-proof-section .rendered-kicker,
+.enterprise-pricing-section .rendered-kicker,
+.enterprise-demo-section .rendered-kicker {
+  color: #2563eb;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.enterprise-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.enterprise-metric-strip span,
+.enterprise-proof-grid span,
+.enterprise-integration-map span {
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #1e3a8a;
+  font-weight: 850;
+}
+
+.enterprise-metric-strip b {
+  display: block;
+  color: #0f172a;
+  font-size: 1.35rem;
+}
+
+.enterprise-dashboard,
+.catalog-b2b-solutions article,
+.enterprise-use-case-grid article {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.12);
+}
+
+.enterprise-dashboard {
+  border-radius: 28px;
+  padding: 16px;
+}
+
+.enterprise-dashboard-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 14px;
+}
+
+.enterprise-dashboard-top span {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+}
+
+.enterprise-dashboard-top b {
+  margin-left: auto;
+  color: #2563eb;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.enterprise-dashboard-main,
+.enterprise-visual-placeholder {
+  min-height: 390px;
+  border-radius: 22px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 20%, rgba(56, 189, 248, 0.34), transparent 32%),
+    linear-gradient(145deg, #0f172a, #1d4ed8);
+  color: #eff6ff;
+}
+
+.enterprise-dashboard-main img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.enterprise-visual-placeholder {
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.enterprise-visual-placeholder span {
+  display: block;
+  font-size: 72px;
+  font-weight: 900;
+}
+
+.enterprise-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.enterprise-dashboard-grid span {
+  border-radius: 12px;
+  padding: 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  text-align: center;
+  font-weight: 850;
+}
+
+.enterprise-solutions-section,
+.enterprise-use-cases-section,
+.enterprise-integrations-section,
+.enterprise-proof-section,
+.enterprise-pricing-section {
+  padding: clamp(54px, 8vw, 104px) clamp(22px, 6vw, 86px);
+  background: #ffffff;
+}
+
+.enterprise-use-cases-section,
+.enterprise-integrations-section,
+.enterprise-proof-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+  gap: clamp(26px, 5vw, 64px);
+  align-items: center;
+}
+
+.enterprise-integrations-section {
+  background: #eff6ff;
+}
+
+.enterprise-use-case-grid,
+.enterprise-proof-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.enterprise-use-case-grid article {
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.enterprise-use-case-grid b {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 18px;
+  border-radius: 14px;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.enterprise-use-case-grid strong,
+.b2b-card-body h3 {
+  display: block;
+  color: #0f172a;
+  font-size: 1.18rem;
+  margin: 8px 0 10px;
+}
+
+.enterprise-integration-map {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.catalog-b2b-solutions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.catalog-b2b-solutions article {
+  border-radius: 22px;
+}
+
+.catalog-b2b-solutions article.featured {
+  grid-column: span 2;
+}
+
+.b2b-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 0;
+}
+
+.b2b-card-top small {
+  color: #2563eb;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.b2b-card-top span {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.b2b-card-body {
+  padding: 22px;
+}
+
+.b2b-card-body h3 {
+  font-size: 1.45rem;
+}
+
+.b2b-card-body ul {
+  margin: 16px 0;
+  padding-left: 18px;
+}
+
+.b2b-card-body > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.enterprise-demo-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  margin: clamp(44px, 6vw, 76px) clamp(22px, 6vw, 86px);
+  padding: clamp(30px, 5vw, 64px);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(56, 189, 248, 0.26), transparent 34%),
+    linear-gradient(135deg, #0f172a, #1d4ed8);
+  color: #eff6ff;
+}
+
+.enterprise-demo-section h2,
+.enterprise-demo-section p {
+  color: #eff6ff;
+}
+
 @media (max-width: 760px) {
   .catalog-marketplace,
   .listing-card,
@@ -7196,6 +7490,11 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   .professional-proof-section,
   .professional-team-section,
   .professional-consultation-section,
+  .enterprise-hero,
+  .enterprise-use-cases-section,
+  .enterprise-integrations-section,
+  .enterprise-proof-section,
+  .enterprise-demo-section,
   .listing-pro-hero,
   .listing-filter-section,
   .listing-area-section,
@@ -7364,6 +7663,41 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   }
 
   .professional-consultation-section {
+    margin: 28px 16px 56px;
+    padding: 28px 18px;
+  }
+
+  .enterprise-hero {
+    min-height: auto;
+    padding: 44px 16px 28px;
+  }
+
+  .enterprise-hero h1 {
+    font-size: clamp(42px, 14vw, 70px);
+  }
+
+  .enterprise-metric-strip,
+  .enterprise-dashboard-grid,
+  .catalog-b2b-solutions,
+  .enterprise-use-case-grid,
+  .enterprise-proof-grid,
+  .enterprise-integration-map {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-b2b-solutions article.featured {
+    grid-column: auto;
+  }
+
+  .enterprise-solutions-section,
+  .enterprise-use-cases-section,
+  .enterprise-integrations-section,
+  .enterprise-proof-section,
+  .enterprise-pricing-section {
+    padding: 44px 16px;
+  }
+
+  .enterprise-demo-section {
     margin: 28px 16px 56px;
     padding: 28px 18px;
   }

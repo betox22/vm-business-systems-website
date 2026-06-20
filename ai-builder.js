@@ -641,6 +641,20 @@ const TEMPLATE_PREVIEW_CHOICES = [
     },
   },
   {
+    templateId: "b2b-saas-enterprise-pro",
+    name: "B2B SaaS / Enterprise",
+    names: { en: "B2B SaaS / Enterprise", es: "B2B SaaS / Empresarial", fr: "B2B SaaS / Entreprise", pt: "B2B SaaS / Empresarial" },
+    catalogType: "b2b_solution_catalog",
+    image: "/templates-preview/screenshots/b2b.png",
+    description: "Enterprise software style for SaaS, automation, IT services, integrations, dashboards, and B2B systems.",
+    descriptions: {
+      en: "Enterprise software style for SaaS, automation, IT services, integrations, dashboards, and B2B systems.",
+      es: "Estilo software empresarial para SaaS, automatizacion, IT, integraciones, dashboards y sistemas B2B.",
+      fr: "Style logiciel entreprise pour SaaS, automatisation, IT, integrations, dashboards et systemes B2B.",
+      pt: "Estilo software empresarial para SaaS, automacao, IT, integracoes, dashboards e sistemas B2B.",
+    },
+  },
+  {
     templateId: "mega-marketplace",
     name: "Mega Marketplace",
     names: { en: "Mega Marketplace", es: "Mega marketplace", fr: "Mega marketplace", pt: "Mega marketplace" },
@@ -4519,9 +4533,10 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isEducationTemplate = catalogType === "education_course_catalog" || /education-course-academy-pro/i.test(template.id || "");
   const isClinicTemplate = catalogType === "medical_wellness_service_catalog" || /medical-wellness-clinic-pro/i.test(template.id || "");
   const isProfessionalTemplate = catalogType === "legal_professional_services_catalog" || /legal-professional-services-pro/i.test(template.id || "");
-  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate || isRealEstateListingTemplate || isLuxuryHighTicketTemplate || isEducationTemplate || isClinicTemplate || isProfessionalTemplate;
-  const primaryCta = isProfessionalTemplate ? copy.scheduleConsultation : isClinicTemplate ? copy.bookConsultation : isEducationTemplate ? copy.enrollNow : isLuxuryHighTicketTemplate ? copy.requestPrivateViewing : isRealEstateListingTemplate ? copy.searchListings : isDigitalTemplate ? copy.getAccess : isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
-  const secondaryCta = isProfessionalTemplate ? copy.viewServices : isClinicTemplate ? copy.viewTreatments : isEducationTemplate ? copy.viewCurriculum : isLuxuryHighTicketTemplate ? copy.viewCollection : isRealEstateListingTemplate ? copy.viewListings : isDigitalTemplate ? copy.viewProducts : isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
+  const isB2BTemplate = catalogType === "b2b_solution_catalog" || /b2b-saas-enterprise-pro/i.test(template.id || "");
+  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate || isRealEstateListingTemplate || isLuxuryHighTicketTemplate || isEducationTemplate || isClinicTemplate || isProfessionalTemplate || isB2BTemplate;
+  const primaryCta = isB2BTemplate ? copy.requestDemo : isProfessionalTemplate ? copy.scheduleConsultation : isClinicTemplate ? copy.bookConsultation : isEducationTemplate ? copy.enrollNow : isLuxuryHighTicketTemplate ? copy.requestPrivateViewing : isRealEstateListingTemplate ? copy.searchListings : isDigitalTemplate ? copy.getAccess : isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
+  const secondaryCta = isB2BTemplate ? copy.viewSolutions : isProfessionalTemplate ? copy.viewServices : isClinicTemplate ? copy.viewTreatments : isEducationTemplate ? copy.viewCurriculum : isLuxuryHighTicketTemplate ? copy.viewCollection : isRealEstateListingTemplate ? copy.viewListings : isDigitalTemplate ? copy.viewProducts : isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
   if (isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate) {
     catalogItems.forEach((item) => {
       item.price_type = "quote_only";
@@ -4596,6 +4611,17 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       item.track_inventory = false;
     });
   }
+  if (isB2BTemplate) {
+    catalogItems.forEach((item, index) => {
+      item.price_type = "quote_only";
+      item.category = enterpriseCategoryForIndex(index, copy);
+      item.price_label = copy.customPlan;
+      item.button_label = copy.requestDemo;
+      item.shipping_label = enterpriseTimelineForIndex(index, copy);
+      item.deal_label = index === 0 ? copy.enterpriseReady : index % 2 ? copy.integrationReady : copy.roiFocused;
+      item.track_inventory = false;
+    });
+  }
   const instantPages = isMarketplaceTemplate
     ? buildMarketplaceInstantPages(copy, name, description, payload)
     : isPremiumTemplate
@@ -4608,6 +4634,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
             ? buildMedicalWellnessInstantPages(copy, name, description, payload)
             : isProfessionalTemplate
               ? buildLegalProfessionalInstantPages(copy, name, description, payload)
+              : isB2BTemplate
+                ? buildB2BEnterpriseInstantPages(copy, name, description, payload)
             : isFashionTemplate
             ? buildFashionDropInstantPages(copy, name, description, payload)
             : isCorporateTemplate
@@ -4688,6 +4716,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       { label: copy.process, page_key: "about" },
       { label: copy.proof, page_key: "about" },
       { label: copy.scheduleConsultation, page_key: "contact" },
+    ] : isB2BTemplate ? [
+      { label: copy.solutions, page_key: "home" },
+      { label: copy.useCases, page_key: "about" },
+      { label: copy.integrations, page_key: "about" },
+      { label: copy.requestDemo, page_key: "contact" },
     ] : isFashionTemplate ? [
       { label: copy.newDrop, page_key: "home" },
       { label: copy.collections, page_key: "catalog" },
@@ -4760,7 +4793,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         description: template.visualDifference || copy.fastBase,
         theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: primaryCta, secondary_label: secondaryCta, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
         layout_mode_id: template.id || "instant_storefront",
-        hero_layout: isPremiumTemplate ? "premium_center_stage" : isLuxuryHighTicketTemplate ? "private_luxury_showroom" : isClinicTemplate ? "clinic_care_stage" : isProfessionalTemplate ? "professional_authority" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : isBookingTemplate ? "appointment_booking" : isRestaurantTemplate ? "restaurant_menu_story" : isDigitalTemplate ? "digital_product_launch" : "split_showcase",
+        hero_layout: isPremiumTemplate ? "premium_center_stage" : isLuxuryHighTicketTemplate ? "private_luxury_showroom" : isClinicTemplate ? "clinic_care_stage" : isProfessionalTemplate ? "professional_authority" : isB2BTemplate ? "enterprise_dashboard" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : isBookingTemplate ? "appointment_booking" : isRestaurantTemplate ? "restaurant_menu_story" : isDigitalTemplate ? "digital_product_launch" : "split_showcase",
         product_layout: catalogType,
       },
     ],
@@ -5678,6 +5711,33 @@ function buildLegalProfessionalInstantPages(copy, name, description, payload = {
   ];
 }
 
+function buildB2BEnterpriseInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.solutions,
+      slug: "/",
+      order: 1,
+      sections: [
+        { id: "enterprise_hero", type: "EnterpriseHero", order: 1, editable: { headline: copy.enterpriseHeadline(name), subtitle: copy.enterpriseSubheadline(description), primary_button: copy.requestDemo, secondary_button: copy.viewSolutions, image_url: heroImage, badge: copy.enterprisePlatform, images: [] }, settings: { layout: "enterprise_dashboard", spacing: "spacious", container_width: "wide" } },
+        { id: "enterprise_solutions", type: "EnterpriseSolutions", order: 2, editable: { title: copy.enterpriseSolutionsTitle, text: copy.enterpriseSolutionsText, images: [] }, settings: { layout: "solution_cards", columns: 3, spacing: "balanced", container_width: "wide" } },
+        { id: "enterprise_use_cases", type: "EnterpriseUseCases", order: 3, editable: { title: copy.enterpriseUseCasesTitle, text: copy.enterpriseUseCasesText, items: copy.enterpriseUseCaseItems, images: [] }, settings: { layout: "use_case_matrix", spacing: "balanced", container_width: "wide" } },
+        { id: "enterprise_integrations", type: "EnterpriseIntegrations", order: 4, editable: { title: copy.enterpriseIntegrationsTitle, text: copy.enterpriseIntegrationsText, items: copy.enterpriseIntegrationItems, images: [] }, settings: { layout: "integration_map", spacing: "balanced", container_width: "wide" } },
+        { id: "enterprise_proof", type: "EnterpriseProof", order: 5, editable: { title: copy.enterpriseProofTitle, text: copy.enterpriseProofText, items: copy.enterpriseProofItems, images: [] }, settings: { layout: "roi_proof", spacing: "balanced", container_width: "wide" } },
+        { id: "enterprise_pricing", type: "EnterprisePricing", order: 6, editable: { title: copy.enterprisePricingTitle, text: copy.enterprisePricingText, images: [] }, settings: { layout: "pricing_packages", spacing: "balanced", container_width: "wide" } },
+        { id: "enterprise_demo", type: "EnterpriseDemo", order: 7, editable: { title: copy.enterpriseDemoTitle, text: copy.enterpriseDemoText, primary_button: copy.requestDemo, images: [] }, settings: { layout: "demo_cta", spacing: "spacious", container_width: "wide" } },
+      ],
+    },
+    { page_key: "catalog", title: copy.solutions, slug: copy.solutionsSlug, order: 2, sections: [{ id: "enterprise_catalog", type: "ProductGrid", order: 1, editable: { title: copy.enterpriseSolutionsTitle, text: copy.enterpriseSolutionsText, images: [] }, settings: { layout: "b2b_solution", columns: 3, spacing: "balanced", container_width: "wide" } }] },
+    { page_key: "about", title: copy.useCases, slug: copy.useCasesSlug, order: 3, sections: [
+      { id: "use_cases", type: "EnterpriseUseCases", order: 1, editable: { title: copy.enterpriseUseCasesTitle, text: copy.enterpriseUseCasesText, items: copy.enterpriseUseCaseItems, images: [] }, settings: { layout: "use_case_matrix", container_width: "wide" } },
+      { id: "integrations", type: "EnterpriseIntegrations", order: 2, editable: { title: copy.enterpriseIntegrationsTitle, text: copy.enterpriseIntegrationsText, items: copy.enterpriseIntegrationItems, images: [] }, settings: { layout: "integration_map", container_width: "wide" } },
+    ] },
+    { page_key: "contact", title: copy.requestDemo, slug: copy.contactSlug, order: 4, sections: [{ id: "demo", type: "EnterpriseDemo", order: 1, editable: { title: copy.enterpriseDemoTitle, text: copy.enterpriseDemoText, primary_button: copy.requestDemo, images: [] }, settings: { layout: "demo_cta", container_width: "wide" } }] },
+  ];
+}
+
 function buildDigitalProductsInstantPages(copy, name, description, payload = {}) {
   const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
   return [
@@ -6304,6 +6364,16 @@ function professionalEngagementForIndex(index, copy) {
   return engagements[index % engagements.length];
 }
 
+function enterpriseCategoryForIndex(index, copy) {
+  const categories = copy.enterpriseCategories || ["Automation", "Analytics", "CRM", "Operations", "Integrations", "Security"];
+  return categories[index % categories.length];
+}
+
+function enterpriseTimelineForIndex(index, copy) {
+  const timelines = copy.enterpriseTimelines || ["Demo first", "2 week setup", "API-ready", "Managed rollout"];
+  return timelines[index % timelines.length];
+}
+
 function listingLocationForIndex(index, copy) {
   const locations = copy.listingLocations || ["Central area", "North side", "West district", "Near downtown"];
   return locations[index % locations.length];
@@ -6410,6 +6480,37 @@ function instantLocaleCopy(language) {
       professionalConsultationText: "Send the service needed, urgency, preferred schedule and contact method. The firm can confirm the next step.",
       professionalCategories: ["Legal", "Tax", "Accounting", "Insurance", "Consulting", "Compliance"],
       professionalEngagements: ["Initial review", "Document review", "Strategy call", "Ongoing advisory"],
+      enterprisePlatform: "Enterprise platform",
+      requestDemo: "Request demo",
+      viewSolutions: "View solutions",
+      solutions: "Solutions",
+      useCases: "Use cases",
+      integrations: "Integrations",
+      customPlan: "Custom plan",
+      enterpriseReady: "Enterprise-ready",
+      integrationReady: "Integration-ready",
+      roiFocused: "ROI-focused",
+      enterpriseHeadline: (name) => `${name} systems that help teams move faster`,
+      enterpriseSubheadline: (description) => description || "A premium B2B website for software, automation, integrations, dashboards and enterprise services.",
+      enterpriseSolutionsTitle: "Solutions built for operational teams",
+      enterpriseSolutionsText: "Present products, services or packages as clear business solutions with demo-first next steps.",
+      enterpriseUseCasesTitle: "Use cases by workflow",
+      enterpriseUseCasesText: "Show how the solution fits sales, operations, support, finance, leadership or field teams.",
+      enterpriseUseCaseItems: ["Automate manual work", "Centralize reporting", "Connect business tools", "Improve team visibility", "Reduce operational delays", "Scale service delivery"],
+      enterpriseIntegrationsTitle: "Integrations and rollout",
+      enterpriseIntegrationsText: "Make technical buyers comfortable with APIs, CRM, ERP, payments, analytics and support workflows.",
+      enterpriseIntegrationItems: ["CRM", "ERP", "Payments", "Analytics", "Support desk", "Custom API"],
+      enterpriseProofTitle: "Business proof before the demo",
+      enterpriseProofText: "Use security, implementation, ROI, response time and support signals.",
+      enterpriseProofItems: ["Secure workflows", "Implementation support", "Clear ROI path", "Admin controls", "API-ready", "Team onboarding"],
+      enterprisePricingTitle: "Packages that can start simple and scale",
+      enterprisePricingText: "Use this area for starter, growth and enterprise packages without exposing internal costs.",
+      enterpriseDemoTitle: "Book a demo or request a solution review",
+      enterpriseDemoText: "Send team size, current tools, workflow problem and preferred contact method. The team can qualify the lead.",
+      enterpriseCategories: ["Automation", "Analytics", "CRM", "Operations", "Integrations", "Security"],
+      enterpriseTimelines: ["Demo first", "2 week setup", "API-ready", "Managed rollout"],
+      solutionsSlug: "/solutions",
+      useCasesSlug: "/use-cases",
       home: "Home",
       overview: "Overview",
       products: "Products",
@@ -6715,6 +6816,37 @@ function instantLocaleCopy(language) {
       professionalConsultationText: "Envia el servicio requerido, urgencia, horario preferido y metodo de contacto. La firma confirma el siguiente paso.",
       professionalCategories: ["Legal", "Impuestos", "Contabilidad", "Seguros", "Consultoria", "Compliance"],
       professionalEngagements: ["Revision inicial", "Revision documental", "Llamada estrategica", "Asesoria continua"],
+      enterprisePlatform: "Plataforma empresarial",
+      requestDemo: "Solicitar demo",
+      viewSolutions: "Ver soluciones",
+      solutions: "Soluciones",
+      useCases: "Casos de uso",
+      integrations: "Integraciones",
+      customPlan: "Plan personalizado",
+      enterpriseReady: "Listo para empresa",
+      integrationReady: "Listo para integrar",
+      roiFocused: "Enfocado en ROI",
+      enterpriseHeadline: (name) => `${name} sistemas para que los equipos avancen mas rapido`,
+      enterpriseSubheadline: (description) => description || "Una pagina B2B premium para software, automatizacion, integraciones, dashboards y servicios empresariales.",
+      enterpriseSolutionsTitle: "Soluciones para equipos operativos",
+      enterpriseSolutionsText: "Presenta productos, servicios o paquetes como soluciones de negocio con siguiente paso hacia demo.",
+      enterpriseUseCasesTitle: "Casos de uso por flujo de trabajo",
+      enterpriseUseCasesText: "Muestra como la solucion encaja en ventas, operaciones, soporte, finanzas, direccion o equipos de campo.",
+      enterpriseUseCaseItems: ["Automatizar trabajo manual", "Centralizar reportes", "Conectar herramientas", "Mejorar visibilidad", "Reducir demoras", "Escalar operaciones"],
+      enterpriseIntegrationsTitle: "Integraciones e implementacion",
+      enterpriseIntegrationsText: "Da confianza tecnica con APIs, CRM, ERP, pagos, analitica y flujos de soporte.",
+      enterpriseIntegrationItems: ["CRM", "ERP", "Pagos", "Analitica", "Soporte", "API personalizada"],
+      enterpriseProofTitle: "Pruebas antes de la demo",
+      enterpriseProofText: "Usa seguridad, implementacion, ROI, respuesta y soporte como senales de confianza.",
+      enterpriseProofItems: ["Flujos seguros", "Soporte de implementacion", "Ruta clara de ROI", "Controles admin", "API lista", "Onboarding"],
+      enterprisePricingTitle: "Paquetes para empezar simple y escalar",
+      enterprisePricingText: "Usa esta area para paquetes starter, growth y enterprise sin mostrar costos internos.",
+      enterpriseDemoTitle: "Agenda una demo o revision de solucion",
+      enterpriseDemoText: "Envia tamano del equipo, herramientas actuales, problema del flujo y metodo de contacto.",
+      enterpriseCategories: ["Automatizacion", "Analitica", "CRM", "Operaciones", "Integraciones", "Seguridad"],
+      enterpriseTimelines: ["Demo primero", "Setup 2 semanas", "API lista", "Implementacion guiada"],
+      solutionsSlug: "/soluciones",
+      useCasesSlug: "/casos-de-uso",
       home: "Inicio",
       overview: "Vista general",
       products: "Productos",
@@ -7020,6 +7152,37 @@ function instantLocaleCopy(language) {
       professionalConsultationText: "Envoyez le service requis, l'urgence, le moment prefere et le contact. Le cabinet confirme la suite.",
       professionalCategories: ["Juridique", "Fiscalite", "Comptabilite", "Assurance", "Conseil", "Conformite"],
       professionalEngagements: ["Analyse initiale", "Analyse documents", "Appel strategie", "Conseil continu"],
+      enterprisePlatform: "Plateforme entreprise",
+      requestDemo: "Demander une demo",
+      viewSolutions: "Voir les solutions",
+      solutions: "Solutions",
+      useCases: "Cas d'usage",
+      integrations: "Integrations",
+      customPlan: "Plan personnalise",
+      enterpriseReady: "Pret entreprise",
+      integrationReady: "Pret integration",
+      roiFocused: "Oriente ROI",
+      enterpriseHeadline: (name) => `${name} aide les equipes a avancer plus vite`,
+      enterpriseSubheadline: (description) => description || "Un site B2B premium pour logiciel, automatisation, integrations, dashboards et services entreprise.",
+      enterpriseSolutionsTitle: "Solutions pour equipes operationnelles",
+      enterpriseSolutionsText: "Presentez produits, services ou packages comme solutions business avec demande de demo.",
+      enterpriseUseCasesTitle: "Cas d'usage par workflow",
+      enterpriseUseCasesText: "Montrez comment la solution s'adapte aux ventes, operations, support, finance ou direction.",
+      enterpriseUseCaseItems: ["Automatiser le travail manuel", "Centraliser les rapports", "Connecter les outils", "Ameliorer la visibilite", "Reduire les delais", "Scaler les operations"],
+      enterpriseIntegrationsTitle: "Integrations et deploiement",
+      enterpriseIntegrationsText: "Rassurez les acheteurs techniques avec APIs, CRM, ERP, paiements, analytics et support.",
+      enterpriseIntegrationItems: ["CRM", "ERP", "Paiements", "Analytics", "Support", "API custom"],
+      enterpriseProofTitle: "Preuves avant la demo",
+      enterpriseProofText: "Utilisez securite, implementation, ROI, reponse et support comme preuves.",
+      enterpriseProofItems: ["Workflows securises", "Support deploiement", "ROI clair", "Controles admin", "API prete", "Onboarding equipe"],
+      enterprisePricingTitle: "Packages simples a scaler",
+      enterprisePricingText: "Starter, growth et enterprise sans exposer les couts internes.",
+      enterpriseDemoTitle: "Reserver une demo ou analyse solution",
+      enterpriseDemoText: "Envoyez taille d'equipe, outils actuels, probleme workflow et contact.",
+      enterpriseCategories: ["Automatisation", "Analytics", "CRM", "Operations", "Integrations", "Securite"],
+      enterpriseTimelines: ["Demo d'abord", "Setup 2 semaines", "API prete", "Deploiement guide"],
+      solutionsSlug: "/solutions",
+      useCasesSlug: "/cas-usage",
       home: "Accueil",
       overview: "Aperçu",
       products: "Produits",
@@ -7302,6 +7465,37 @@ function instantLocaleCopy(language) {
       professionalConsultationText: "Envie o servico requerido, urgencia, horario preferido e metodo de contato. A firma confirma o proximo passo.",
       professionalCategories: ["Juridico", "Impostos", "Contabilidade", "Seguros", "Consultoria", "Compliance"],
       professionalEngagements: ["Revisao inicial", "Revisao documental", "Chamada estrategica", "Consultoria continua"],
+      enterprisePlatform: "Plataforma empresarial",
+      requestDemo: "Solicitar demo",
+      viewSolutions: "Ver solucoes",
+      solutions: "Solucoes",
+      useCases: "Casos de uso",
+      integrations: "Integracoes",
+      customPlan: "Plano personalizado",
+      enterpriseReady: "Pronto para empresa",
+      integrationReady: "Pronto para integrar",
+      roiFocused: "Focado em ROI",
+      enterpriseHeadline: (name) => `${name} sistemas para equipes avancarem mais rapido`,
+      enterpriseSubheadline: (description) => description || "Um site B2B premium para software, automacao, integracoes, dashboards e servicos empresariais.",
+      enterpriseSolutionsTitle: "Solucoes para equipes operacionais",
+      enterpriseSolutionsText: "Apresente produtos, servicos ou pacotes como solucoes de negocio com proximo passo para demo.",
+      enterpriseUseCasesTitle: "Casos de uso por workflow",
+      enterpriseUseCasesText: "Mostre como a solucao se encaixa em vendas, operacoes, suporte, financeiro ou lideranca.",
+      enterpriseUseCaseItems: ["Automatizar trabalho manual", "Centralizar relatorios", "Conectar ferramentas", "Melhorar visibilidade", "Reduzir atrasos", "Escalar operacoes"],
+      enterpriseIntegrationsTitle: "Integracoes e implementacao",
+      enterpriseIntegrationsText: "De confianca tecnica com APIs, CRM, ERP, pagamentos, analytics e suporte.",
+      enterpriseIntegrationItems: ["CRM", "ERP", "Pagamentos", "Analytics", "Suporte", "API custom"],
+      enterpriseProofTitle: "Provas antes da demo",
+      enterpriseProofText: "Use seguranca, implementacao, ROI, resposta e suporte como sinais de confianca.",
+      enterpriseProofItems: ["Workflows seguros", "Suporte de implementacao", "ROI claro", "Controles admin", "API pronta", "Onboarding"],
+      enterprisePricingTitle: "Pacotes para comecar simples e escalar",
+      enterprisePricingText: "Use starter, growth e enterprise sem expor custos internos.",
+      enterpriseDemoTitle: "Agende uma demo ou revisao da solucao",
+      enterpriseDemoText: "Envie tamanho da equipe, ferramentas atuais, problema do fluxo e contato.",
+      enterpriseCategories: ["Automacao", "Analytics", "CRM", "Operacoes", "Integracoes", "Seguranca"],
+      enterpriseTimelines: ["Demo primeiro", "Setup 2 semanas", "API pronta", "Implementacao guiada"],
+      solutionsSlug: "/solucoes",
+      useCasesSlug: "/casos-de-uso",
       home: "Início",
       overview: "Visão geral",
       products: "Produtos",
@@ -8702,6 +8896,13 @@ function renderSection(section, schema) {
     ProfessionalTeam: renderProfessionalTeam,
     ProfessionalFAQ: renderProfessionalFAQ,
     ProfessionalConsultation: renderProfessionalConsultation,
+    EnterpriseHero: renderEnterpriseHero,
+    EnterpriseSolutions: renderEnterpriseSolutions,
+    EnterpriseUseCases: renderEnterpriseUseCases,
+    EnterpriseIntegrations: renderEnterpriseIntegrations,
+    EnterpriseProof: renderEnterpriseProof,
+    EnterprisePricing: renderEnterprisePricing,
+    EnterpriseDemo: renderEnterpriseDemo,
     ListingHero: renderListingHero,
     ListingFilters: renderListingFilters,
     ListingFeatured: renderListingFeatured,
@@ -9546,6 +9747,71 @@ function professionalVisualPlaceholder(schema) {
   return `<div class="professional-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).professionalFirm)}</small></div>`;
 }
 
+function renderEnterpriseHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = marketplaceItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url) || items[0];
+  const image = editable.image_url || heroItem?.image_url || "";
+  return `<section class="enterprise-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="enterprise-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(editable.badge || labels.enterprisePlatform)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions"><a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.requestDemo)}</a><a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewSolutions)}</a></div>
+      <div class="enterprise-metric-strip">${(labels.enterpriseProofItems || []).slice(0, 3).map((item, index) => `<span><b>${index === 0 ? "99%" : index === 1 ? "2x" : "24/7"}</b>${escapeHtml(item)}</span>`).join("")}</div>
+    </div>
+    <div class="enterprise-dashboard">
+      <div class="enterprise-dashboard-top"><span></span><span></span><span></span><b>${escapeHtml(labels.integrations)}</b></div>
+      <div class="enterprise-dashboard-main">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(heroItem?.name || schema.business?.name || "")}">` : enterpriseVisualPlaceholder(schema)}</div>
+      <div class="enterprise-dashboard-grid">${(labels.enterpriseIntegrationItems || []).slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    </div>
+  </section>`;
+}
+
+function renderEnterpriseSolutions(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="enterprise-solutions-section ${sectionClass(section)}" ${sectionAttrs(section)}><div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).solutions)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>${renderB2BSolutionCatalog(marketplaceItems(schema), schema)}</section>`;
+}
+
+function renderEnterpriseUseCases(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.enterpriseUseCaseItems;
+  return `<section class="enterprise-use-cases-section ${sectionClass(section)}" ${sectionAttrs(section)}><div><span class="rendered-kicker">${escapeHtml(labels.useCases)}</span><h2>${escapeHtml(editable.title || labels.enterpriseUseCasesTitle)}</h2><p>${escapeHtml(editable.text || labels.enterpriseUseCasesText)}</p></div><div class="enterprise-use-case-grid">${items.slice(0, 6).map((item, index) => `<article><b>0${index + 1}</b><strong>${escapeHtml(item)}</strong><span>${escapeHtml(index % 2 ? labels.integrationReady : labels.roiFocused)}</span></article>`).join("")}</div></section>`;
+}
+
+function renderEnterpriseIntegrations(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.enterpriseIntegrationItems;
+  return `<section class="enterprise-integrations-section ${sectionClass(section)}" ${sectionAttrs(section)}><div><span class="rendered-kicker">${escapeHtml(labels.integrations)}</span><h2>${escapeHtml(editable.title || labels.enterpriseIntegrationsTitle)}</h2><p>${escapeHtml(editable.text || labels.enterpriseIntegrationsText)}</p></div><div class="enterprise-integration-map">${items.slice(0, 8).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></section>`;
+}
+
+function renderEnterpriseProof(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.enterpriseProofItems;
+  return `<section class="enterprise-proof-section ${sectionClass(section)}" ${sectionAttrs(section)}><div><span class="rendered-kicker">${escapeHtml(labels.proof)}</span><h2>${escapeHtml(editable.title || labels.enterpriseProofTitle)}</h2><p>${escapeHtml(editable.text || labels.enterpriseProofText)}</p></div><div class="enterprise-proof-grid">${items.slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></section>`;
+}
+
+function renderEnterprisePricing(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="enterprise-pricing-section ${sectionClass(section)}" ${sectionAttrs(section)}><div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.customPlan)}</span><h2>${escapeHtml(editable.title || labels.enterprisePricingTitle)}</h2><p>${escapeHtml(editable.text || labels.enterprisePricingText)}</p></div>${renderB2BSolutionCatalog(marketplaceItems(schema).slice(0, 3), schema)}</section>`;
+}
+
+function renderEnterpriseDemo(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="enterprise-demo-section ${sectionClass(section)}" ${sectionAttrs(section)}><div><span class="rendered-kicker">${escapeHtml(labels.requestDemo)}</span><h2>${escapeHtml(editable.title || labels.enterpriseDemoTitle)}</h2><p>${escapeHtml(editable.text || labels.enterpriseDemoText)}</p></div><a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.requestDemo)}</a></section>`;
+}
+
+function enterpriseVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "B2").slice(0, 2).toUpperCase();
+  return `<div class="enterprise-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).enterprisePlatform)}</small></div>`;
+}
+
 function renderListingHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -10007,6 +10273,7 @@ function renderCatalogByType(catalogType, items, schema) {
     education_course_catalog: renderEducationCourseCatalog,
     medical_wellness_service_catalog: renderMedicalWellnessCatalog,
     legal_professional_services_catalog: renderLegalProfessionalCatalog,
+    b2b_solution_catalog: renderB2BSolutionCatalog,
     digital_offer_catalog: renderDigitalOfferCatalog,
     restaurant_menu_catalog: renderRestaurantMenuCatalog,
     menu_catalog: renderRestaurantMenuCatalog,
@@ -10199,6 +10466,14 @@ function renderLegalProfessionalCatalog(items, schema) {
       </ul>
       <div><strong>${escapeHtml(productPriceLabel(item) || labels.consultationBased)}</strong><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.scheduleConsultation)}</a></div>
     </div>
+  </article>`).join("")}</div>`;
+}
+
+function renderB2BSolutionCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-b2b-solutions">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    <div class="b2b-card-top"><small>${escapeHtml(item.deal_label || (index % 2 ? labels.integrationReady : labels.enterpriseReady))}</small><span>${escapeHtml(item.shipping_label || labels.enterpriseTimelines?.[index % (labels.enterpriseTimelines?.length || 1)] || "")}</span></div>
+    <div class="b2b-card-body"><small>${escapeHtml(item.category || labels.solutions)}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><ul><li>${escapeHtml(labels.roiFocused)}</li><li>${escapeHtml(labels.integrationReady)}</li><li>${escapeHtml(labels.enterpriseReady)}</li></ul><div><strong>${escapeHtml(productPriceLabel(item) || labels.customPlan)}</strong><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.requestDemo)}</a></div></div>
   </article>`).join("")}</div>`;
 }
 
@@ -10401,7 +10676,13 @@ function catalogLocaleLabels(schema) {
       professionalFirm: "Firma profissional", scheduleConsultation: "Agendar consulta", consultationBased: "Sob consulta", confidential: "Confidencial", seniorAdvisor: "Consultor senior", caseReview: "Revisao do caso", businessReady: "Pronto para empresa", practiceAreasTitle: "Areas de atuacao e servicos", professionalProcessTitle: "Um processo de consultoria claro", professionalProcessText: "Revisao, estrategia, plano de acao e acompanhamento.", professionalProcessItems: ["Revisao inicial", "Analise documental", "Chamada estrategica", "Plano de acao", "Acompanhamento", "Consultoria continua"], professionalProofTitle: "Confianca antes do contato", professionalProofText: "Credenciais, confidencialidade e padroes profissionais.", professionalProofItems: ["Processo confidencial", "Revisao senior", "Passos claros", "Consultoria empresarial", "Suporte documental", "Contato rapido"], professionalTeamTitle: "Consultores que cuidam dos detalhes", professionalTeamText: "Mostre pessoas e padroes por tras do servico.", professionalTeamItems: ["Consultores experientes", "Consulta privada", "Documentacao clara", "Acompanhamento"], professionalFaqTitle: "Perguntas antes da consulta", professionalFaqItems: ["O que devo preparar?", "Como funciona a primeira consulta?", "Podem revisar documentos?", "Pode virar consultoria continua?"], professionalConsultationTitle: "Solicite consulta ou revisao documental", professionalConsultationText: "Envie o servico, urgencia, horario preferido e contato.", professionalEngagements: ["Revisao inicial", "Revisao documental", "Chamada estrategica", "Consultoria continua"],
     },
   };
-  return { ...labels.en, ...(labels[language] || {}), ...professionalLabels.en, ...(professionalLabels[language] || {}) };
+  const enterpriseLabels = {
+    en: { enterprisePlatform: "Enterprise platform", requestDemo: "Request demo", viewSolutions: "View solutions", solutions: "Solutions", useCases: "Use cases", integrations: "Integrations", customPlan: "Custom plan", enterpriseReady: "Enterprise-ready", integrationReady: "Integration-ready", roiFocused: "ROI-focused", enterpriseSolutionsTitle: "Solutions built for operational teams", enterpriseUseCasesTitle: "Use cases by workflow", enterpriseUseCasesText: "Show how the solution fits key business teams.", enterpriseUseCaseItems: ["Automate manual work", "Centralize reporting", "Connect business tools", "Improve team visibility", "Reduce operational delays", "Scale service delivery"], enterpriseIntegrationsTitle: "Integrations and rollout", enterpriseIntegrationsText: "APIs, CRM, ERP, payments, analytics and support workflows.", enterpriseIntegrationItems: ["CRM", "ERP", "Payments", "Analytics", "Support desk", "Custom API"], enterpriseProofTitle: "Business proof before the demo", enterpriseProofText: "Security, rollout, ROI and support signals.", enterpriseProofItems: ["Secure workflows", "Implementation support", "Clear ROI path", "Admin controls", "API-ready", "Team onboarding"], enterprisePricingTitle: "Packages that can start simple and scale", enterprisePricingText: "Starter, growth and enterprise packages.", enterpriseDemoTitle: "Book a demo or request a solution review", enterpriseDemoText: "Send team size, current tools, workflow problem and preferred contact method.", enterpriseTimelines: ["Demo first", "2 week setup", "API-ready", "Managed rollout"] },
+    es: { enterprisePlatform: "Plataforma empresarial", requestDemo: "Solicitar demo", viewSolutions: "Ver soluciones", solutions: "Soluciones", useCases: "Casos de uso", integrations: "Integraciones", customPlan: "Plan personalizado", enterpriseReady: "Listo para empresa", integrationReady: "Listo para integrar", roiFocused: "Enfocado en ROI", enterpriseSolutionsTitle: "Soluciones para equipos operativos", enterpriseUseCasesTitle: "Casos de uso por flujo de trabajo", enterpriseUseCasesText: "Muestra como encaja la solucion en equipos clave.", enterpriseUseCaseItems: ["Automatizar trabajo manual", "Centralizar reportes", "Conectar herramientas", "Mejorar visibilidad", "Reducir demoras", "Escalar operaciones"], enterpriseIntegrationsTitle: "Integraciones e implementacion", enterpriseIntegrationsText: "APIs, CRM, ERP, pagos, analitica y soporte.", enterpriseIntegrationItems: ["CRM", "ERP", "Pagos", "Analitica", "Soporte", "API personalizada"], enterpriseProofTitle: "Pruebas antes de la demo", enterpriseProofText: "Seguridad, implementacion, ROI y soporte.", enterpriseProofItems: ["Flujos seguros", "Soporte de implementacion", "Ruta clara de ROI", "Controles admin", "API lista", "Onboarding"], enterprisePricingTitle: "Paquetes para empezar simple y escalar", enterprisePricingText: "Paquetes starter, growth y enterprise.", enterpriseDemoTitle: "Agenda una demo o revision de solucion", enterpriseDemoText: "Envia tamano del equipo, herramientas actuales, problema y contacto.", enterpriseTimelines: ["Demo primero", "Setup 2 semanas", "API lista", "Implementacion guiada"] },
+    fr: { enterprisePlatform: "Plateforme entreprise", requestDemo: "Demander une demo", viewSolutions: "Voir les solutions", solutions: "Solutions", useCases: "Cas d'usage", integrations: "Integrations", customPlan: "Plan personnalise", enterpriseReady: "Pret entreprise", integrationReady: "Pret integration", roiFocused: "Oriente ROI", enterpriseSolutionsTitle: "Solutions pour equipes operationnelles", enterpriseUseCasesTitle: "Cas d'usage par workflow", enterpriseUseCasesText: "Montrez l'adaptation aux equipes cles.", enterpriseUseCaseItems: ["Automatiser le travail manuel", "Centraliser les rapports", "Connecter les outils", "Ameliorer la visibilite", "Reduire les delais", "Scaler les operations"], enterpriseIntegrationsTitle: "Integrations et deploiement", enterpriseIntegrationsText: "APIs, CRM, ERP, paiements, analytics et support.", enterpriseIntegrationItems: ["CRM", "ERP", "Paiements", "Analytics", "Support", "API custom"], enterpriseProofTitle: "Preuves avant la demo", enterpriseProofText: "Securite, deploiement, ROI et support.", enterpriseProofItems: ["Workflows securises", "Support deploiement", "ROI clair", "Controles admin", "API prete", "Onboarding"], enterprisePricingTitle: "Packages simples a scaler", enterprisePricingText: "Starter, growth et enterprise.", enterpriseDemoTitle: "Reserver une demo ou analyse solution", enterpriseDemoText: "Envoyez equipe, outils, probleme et contact.", enterpriseTimelines: ["Demo d'abord", "Setup 2 semaines", "API prete", "Deploiement guide"] },
+    pt: { enterprisePlatform: "Plataforma empresarial", requestDemo: "Solicitar demo", viewSolutions: "Ver solucoes", solutions: "Solucoes", useCases: "Casos de uso", integrations: "Integracoes", customPlan: "Plano personalizado", enterpriseReady: "Pronto para empresa", integrationReady: "Pronto para integrar", roiFocused: "Focado em ROI", enterpriseSolutionsTitle: "Solucoes para equipes operacionais", enterpriseUseCasesTitle: "Casos de uso por workflow", enterpriseUseCasesText: "Mostre como a solucao se encaixa em equipes chave.", enterpriseUseCaseItems: ["Automatizar trabalho manual", "Centralizar relatorios", "Conectar ferramentas", "Melhorar visibilidade", "Reduzir atrasos", "Escalar operacoes"], enterpriseIntegrationsTitle: "Integracoes e implementacao", enterpriseIntegrationsText: "APIs, CRM, ERP, pagamentos, analytics e suporte.", enterpriseIntegrationItems: ["CRM", "ERP", "Pagamentos", "Analytics", "Suporte", "API custom"], enterpriseProofTitle: "Provas antes da demo", enterpriseProofText: "Seguranca, implementacao, ROI e suporte.", enterpriseProofItems: ["Workflows seguros", "Suporte de implementacao", "ROI claro", "Controles admin", "API pronta", "Onboarding"], enterprisePricingTitle: "Pacotes para comecar simples e escalar", enterprisePricingText: "Starter, growth e enterprise.", enterpriseDemoTitle: "Agende uma demo ou revisao da solucao", enterpriseDemoText: "Envie equipe, ferramentas, problema e contato.", enterpriseTimelines: ["Demo primeiro", "Setup 2 semanas", "API pronta", "Implementacao guiada"] },
+  };
+  return { ...labels.en, ...(labels[language] || {}), ...professionalLabels.en, ...(professionalLabels[language] || {}), ...enterpriseLabels.en, ...(enterpriseLabels[language] || {}) };
 }
 
 function renderFeatureBand(section) {

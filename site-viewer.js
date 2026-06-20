@@ -121,6 +121,13 @@ function renderSection(section, schema) {
   if (section.type === "ProfessionalTeam") return renderProfessionalTeam(section, schema);
   if (section.type === "ProfessionalFAQ") return renderProfessionalFAQ(section, schema);
   if (section.type === "ProfessionalConsultation") return renderProfessionalConsultation(section, schema);
+  if (section.type === "EnterpriseHero") return renderEnterpriseHero(section, schema);
+  if (section.type === "EnterpriseSolutions") return renderEnterpriseSolutions(section, schema);
+  if (section.type === "EnterpriseUseCases") return renderEnterpriseUseCases(section, schema);
+  if (section.type === "EnterpriseIntegrations") return renderEnterpriseIntegrations(section, schema);
+  if (section.type === "EnterpriseProof") return renderEnterpriseProof(section, schema);
+  if (section.type === "EnterprisePricing") return renderEnterprisePricing(section, schema);
+  if (section.type === "EnterpriseDemo") return renderEnterpriseDemo(section, schema);
   if (section.type === "ListingHero") return renderListingHero(section, schema);
   if (section.type === "ListingFilters") return renderListingFilters(section, schema);
   if (section.type === "ListingFeatured") return renderListingFeatured(section, schema);
@@ -746,6 +753,8 @@ function renderProductGrid(section, schema) {
                         ? renderMedicalWellnessCatalog(catalogItems, schema)
                         : catalogType === "legal_professional_services_catalog"
                           ? renderLegalProfessionalCatalog(catalogItems, schema)
+                          : catalogType === "b2b_solution_catalog"
+                            ? renderB2BSolutionCatalog(catalogItems, schema)
                   : catalogType === "real_estate_listing_catalog"
                     ? renderRealEstateListingCatalog(catalogItems, schema)
                   : catalogType === "lead_funnel_offer_catalog"
@@ -1003,6 +1012,14 @@ function renderLegalProfessionalCatalog(items, schema) {
       <ul><li>${escapeHtml(labels.caseReview)}</li><li>${escapeHtml(labels.confidential)}</li><li>${escapeHtml(labels.businessReady)}</li></ul>
       <div><strong>${escapeHtml(item.price_label || labels.consultationBased)}</strong><button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.scheduleConsultation)}</button></div>
     </div>
+  </article>`).join("")}</div>`;
+}
+
+function renderB2BSolutionCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-b2b-solutions">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    <div class="b2b-card-top"><small>${escapeHtml(item.deal_label || (index % 2 ? labels.integrationReady : labels.enterpriseReady))}</small><span>${escapeHtml(item.shipping_label || labels.enterpriseTimelines?.[index % (labels.enterpriseTimelines?.length || 1)] || "")}</span></div>
+    <div class="b2b-card-body"><small>${escapeHtml(item.category || labels.solutions)}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><ul><li>${escapeHtml(labels.roiFocused)}</li><li>${escapeHtml(labels.integrationReady)}</li><li>${escapeHtml(labels.enterpriseReady)}</li></ul><div><strong>${escapeHtml(item.price_label || labels.customPlan)}</strong><button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.requestDemo)}</button></div></div>
   </article>`).join("")}</div>`;
 }
 
@@ -1328,6 +1345,58 @@ function professionalVisualPlaceholder(schema) {
   return `<div class="professional-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).professionalFirm)}</small></div>`;
 }
 
+function renderEnterpriseHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = publicCatalogItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url) || items[0];
+  const image = editable.image_url || heroItem?.image_url || "";
+  return `<section class="enterprise-hero ${sectionClass(section)}"><div class="enterprise-hero-copy"><span class="rendered-kicker">${escapeHtml(editable.badge || labels.enterprisePlatform)}</span><h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1><p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p><div class="rendered-actions"><button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.requestDemo)}</button><button class="rendered-button secondary" data-open-lead type="button">${escapeHtml(editable.secondary_button || labels.viewSolutions)}</button></div><div class="enterprise-metric-strip">${(labels.enterpriseProofItems || []).slice(0, 3).map((item, index) => `<span><b>${index === 0 ? "99%" : index === 1 ? "2x" : "24/7"}</b>${escapeHtml(item)}</span>`).join("")}</div></div><div class="enterprise-dashboard"><div class="enterprise-dashboard-top"><span></span><span></span><span></span><b>${escapeHtml(labels.integrations)}</b></div><div class="enterprise-dashboard-main">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(heroItem?.name || schema.business?.name || "")}">` : enterpriseVisualPlaceholder(schema)}</div><div class="enterprise-dashboard-grid">${(labels.enterpriseIntegrationItems || []).slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div></section>`;
+}
+
+function renderEnterpriseSolutions(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="enterprise-solutions-section ${sectionClass(section)}"><div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).solutions)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>${renderB2BSolutionCatalog(publicCatalogItems(schema), schema)}</section>`;
+}
+
+function renderEnterpriseUseCases(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.enterpriseUseCaseItems;
+  return `<section class="enterprise-use-cases-section ${sectionClass(section)}"><div><span class="rendered-kicker">${escapeHtml(labels.useCases)}</span><h2>${escapeHtml(editable.title || labels.enterpriseUseCasesTitle)}</h2><p>${escapeHtml(editable.text || labels.enterpriseUseCasesText)}</p></div><div class="enterprise-use-case-grid">${items.slice(0, 6).map((item, index) => `<article><b>0${index + 1}</b><strong>${escapeHtml(item)}</strong><span>${escapeHtml(index % 2 ? labels.integrationReady : labels.roiFocused)}</span></article>`).join("")}</div></section>`;
+}
+
+function renderEnterpriseIntegrations(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.enterpriseIntegrationItems;
+  return `<section class="enterprise-integrations-section ${sectionClass(section)}"><div><span class="rendered-kicker">${escapeHtml(labels.integrations)}</span><h2>${escapeHtml(editable.title || labels.enterpriseIntegrationsTitle)}</h2><p>${escapeHtml(editable.text || labels.enterpriseIntegrationsText)}</p></div><div class="enterprise-integration-map">${items.slice(0, 8).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></section>`;
+}
+
+function renderEnterpriseProof(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.enterpriseProofItems;
+  return `<section class="enterprise-proof-section ${sectionClass(section)}"><div><span class="rendered-kicker">${escapeHtml(labels.proof)}</span><h2>${escapeHtml(editable.title || labels.enterpriseProofTitle)}</h2><p>${escapeHtml(editable.text || labels.enterpriseProofText)}</p></div><div class="enterprise-proof-grid">${items.slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></section>`;
+}
+
+function renderEnterprisePricing(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="enterprise-pricing-section ${sectionClass(section)}"><div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.customPlan)}</span><h2>${escapeHtml(editable.title || labels.enterprisePricingTitle)}</h2><p>${escapeHtml(editable.text || labels.enterprisePricingText)}</p></div>${renderB2BSolutionCatalog(publicCatalogItems(schema).slice(0, 3), schema)}</section>`;
+}
+
+function renderEnterpriseDemo(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="enterprise-demo-section ${sectionClass(section)}"><div><span class="rendered-kicker">${escapeHtml(labels.requestDemo)}</span><h2>${escapeHtml(editable.title || labels.enterpriseDemoTitle)}</h2><p>${escapeHtml(editable.text || labels.enterpriseDemoText)}</p></div><button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.requestDemo)}</button></section>`;
+}
+
+function enterpriseVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "B2").slice(0, 2).toUpperCase();
+  return `<div class="enterprise-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).enterprisePlatform)}</small></div>`;
+}
+
 function renderListingHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -1510,7 +1579,13 @@ function catalogLocaleLabels(schema) {
       professionalFirm: "Firma profissional", scheduleConsultation: "Agendar consulta", consultationBased: "Sob consulta", confidential: "Confidencial", seniorAdvisor: "Consultor senior", caseReview: "Revisao do caso", businessReady: "Pronto para empresa", practiceAreasTitle: "Areas de atuacao e servicos", professionalProcessTitle: "Um processo de consultoria claro", professionalProcessText: "Revisao, estrategia, plano de acao e acompanhamento.", professionalProcessItems: ["Revisao inicial", "Analise documental", "Chamada estrategica", "Plano de acao", "Acompanhamento", "Consultoria continua"], professionalProofTitle: "Confianca antes do contato", professionalProofText: "Credenciais, confidencialidade e padroes profissionais.", professionalProofItems: ["Processo confidencial", "Revisao senior", "Passos claros", "Consultoria empresarial", "Suporte documental", "Contato rapido"], professionalTeamTitle: "Consultores que cuidam dos detalhes", professionalTeamText: "Mostre pessoas e padroes por tras do servico.", professionalTeamItems: ["Consultores experientes", "Consulta privada", "Documentacao clara", "Acompanhamento"], professionalFaqTitle: "Perguntas antes da consulta", professionalFaqItems: ["O que devo preparar?", "Como funciona a primeira consulta?", "Podem revisar documentos?", "Pode virar consultoria continua?"], professionalConsultationTitle: "Solicite consulta ou revisao documental", professionalConsultationText: "Envie o servico, urgencia, horario preferido e contato.", professionalEngagements: ["Revisao inicial", "Revisao documental", "Chamada estrategica", "Consultoria continua"],
     },
   };
-  return { ...labels.en, ...(labels[language] || {}), ...professionalLabels.en, ...(professionalLabels[language] || {}) };
+  const enterpriseLabels = {
+    en: { enterprisePlatform: "Enterprise platform", requestDemo: "Request demo", viewSolutions: "View solutions", solutions: "Solutions", useCases: "Use cases", integrations: "Integrations", customPlan: "Custom plan", enterpriseReady: "Enterprise-ready", integrationReady: "Integration-ready", roiFocused: "ROI-focused", enterpriseSolutionsTitle: "Solutions built for operational teams", enterpriseUseCasesTitle: "Use cases by workflow", enterpriseUseCasesText: "Show how the solution fits key business teams.", enterpriseUseCaseItems: ["Automate manual work", "Centralize reporting", "Connect business tools", "Improve team visibility", "Reduce operational delays", "Scale service delivery"], enterpriseIntegrationsTitle: "Integrations and rollout", enterpriseIntegrationsText: "APIs, CRM, ERP, payments, analytics and support workflows.", enterpriseIntegrationItems: ["CRM", "ERP", "Payments", "Analytics", "Support desk", "Custom API"], enterpriseProofTitle: "Business proof before the demo", enterpriseProofText: "Security, rollout, ROI and support signals.", enterpriseProofItems: ["Secure workflows", "Implementation support", "Clear ROI path", "Admin controls", "API-ready", "Team onboarding"], enterprisePricingTitle: "Packages that can start simple and scale", enterprisePricingText: "Starter, growth and enterprise packages.", enterpriseDemoTitle: "Book a demo or request a solution review", enterpriseDemoText: "Send team size, current tools, workflow problem and preferred contact method.", enterpriseTimelines: ["Demo first", "2 week setup", "API-ready", "Managed rollout"] },
+    es: { enterprisePlatform: "Plataforma empresarial", requestDemo: "Solicitar demo", viewSolutions: "Ver soluciones", solutions: "Soluciones", useCases: "Casos de uso", integrations: "Integraciones", customPlan: "Plan personalizado", enterpriseReady: "Listo para empresa", integrationReady: "Listo para integrar", roiFocused: "Enfocado en ROI", enterpriseSolutionsTitle: "Soluciones para equipos operativos", enterpriseUseCasesTitle: "Casos de uso por flujo de trabajo", enterpriseUseCasesText: "Muestra como encaja la solucion en equipos clave.", enterpriseUseCaseItems: ["Automatizar trabajo manual", "Centralizar reportes", "Conectar herramientas", "Mejorar visibilidad", "Reducir demoras", "Escalar operaciones"], enterpriseIntegrationsTitle: "Integraciones e implementacion", enterpriseIntegrationsText: "APIs, CRM, ERP, pagos, analitica y soporte.", enterpriseIntegrationItems: ["CRM", "ERP", "Pagos", "Analitica", "Soporte", "API personalizada"], enterpriseProofTitle: "Pruebas antes de la demo", enterpriseProofText: "Seguridad, implementacion, ROI y soporte.", enterpriseProofItems: ["Flujos seguros", "Soporte de implementacion", "Ruta clara de ROI", "Controles admin", "API lista", "Onboarding"], enterprisePricingTitle: "Paquetes para empezar simple y escalar", enterprisePricingText: "Paquetes starter, growth y enterprise.", enterpriseDemoTitle: "Agenda una demo o revision de solucion", enterpriseDemoText: "Envia tamano del equipo, herramientas actuales, problema y contacto.", enterpriseTimelines: ["Demo primero", "Setup 2 semanas", "API lista", "Implementacion guiada"] },
+    fr: { enterprisePlatform: "Plateforme entreprise", requestDemo: "Demander une demo", viewSolutions: "Voir les solutions", solutions: "Solutions", useCases: "Cas d'usage", integrations: "Integrations", customPlan: "Plan personnalise", enterpriseReady: "Pret entreprise", integrationReady: "Pret integration", roiFocused: "Oriente ROI", enterpriseSolutionsTitle: "Solutions pour equipes operationnelles", enterpriseUseCasesTitle: "Cas d'usage par workflow", enterpriseUseCasesText: "Montrez l'adaptation aux equipes cles.", enterpriseUseCaseItems: ["Automatiser le travail manuel", "Centraliser les rapports", "Connecter les outils", "Ameliorer la visibilite", "Reduire les delais", "Scaler les operations"], enterpriseIntegrationsTitle: "Integrations et deploiement", enterpriseIntegrationsText: "APIs, CRM, ERP, paiements, analytics et support.", enterpriseIntegrationItems: ["CRM", "ERP", "Paiements", "Analytics", "Support", "API custom"], enterpriseProofTitle: "Preuves avant la demo", enterpriseProofText: "Securite, deploiement, ROI et support.", enterpriseProofItems: ["Workflows securises", "Support deploiement", "ROI clair", "Controles admin", "API prete", "Onboarding"], enterprisePricingTitle: "Packages simples a scaler", enterprisePricingText: "Starter, growth et enterprise.", enterpriseDemoTitle: "Reserver une demo ou analyse solution", enterpriseDemoText: "Envoyez equipe, outils, probleme et contact.", enterpriseTimelines: ["Demo d'abord", "Setup 2 semaines", "API prete", "Deploiement guide"] },
+    pt: { enterprisePlatform: "Plataforma empresarial", requestDemo: "Solicitar demo", viewSolutions: "Ver solucoes", solutions: "Solucoes", useCases: "Casos de uso", integrations: "Integracoes", customPlan: "Plano personalizado", enterpriseReady: "Pronto para empresa", integrationReady: "Pronto para integrar", roiFocused: "Focado em ROI", enterpriseSolutionsTitle: "Solucoes para equipes operacionais", enterpriseUseCasesTitle: "Casos de uso por workflow", enterpriseUseCasesText: "Mostre como a solucao se encaixa em equipes chave.", enterpriseUseCaseItems: ["Automatizar trabalho manual", "Centralizar relatorios", "Conectar ferramentas", "Melhorar visibilidade", "Reduzir atrasos", "Escalar operacoes"], enterpriseIntegrationsTitle: "Integracoes e implementacao", enterpriseIntegrationsText: "APIs, CRM, ERP, pagamentos, analytics e suporte.", enterpriseIntegrationItems: ["CRM", "ERP", "Pagamentos", "Analytics", "Suporte", "API custom"], enterpriseProofTitle: "Provas antes da demo", enterpriseProofText: "Seguranca, implementacao, ROI e suporte.", enterpriseProofItems: ["Workflows seguros", "Suporte de implementacao", "ROI claro", "Controles admin", "API pronta", "Onboarding"], enterprisePricingTitle: "Pacotes para comecar simples e escalar", enterprisePricingText: "Starter, growth e enterprise.", enterpriseDemoTitle: "Agende uma demo ou revisao da solucao", enterpriseDemoText: "Envie equipe, ferramentas, problema e contato.", enterpriseTimelines: ["Demo primeiro", "Setup 2 semanas", "API pronta", "Implementacao guiada"] },
+  };
+  return { ...labels.en, ...(labels[language] || {}), ...professionalLabels.en, ...(professionalLabels[language] || {}), ...enterpriseLabels.en, ...(enterpriseLabels[language] || {}) };
 }
 
 function renderResilientImage(url, alt = "", fallbackText = "") {
