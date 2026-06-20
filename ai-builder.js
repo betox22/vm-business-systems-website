@@ -626,7 +626,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Premium Product",
     names: { en: "Premium Product", es: "Producto premium", fr: "Produit premium", pt: "Produto premium" },
     catalogType: "premium_editorial_catalog",
-    image: "/templates-preview/screenshots/apple.png",
+    image: "/templates-preview/screenshots/premium.png",
     description: "Premium product showcase with spacious hero, refined copy, and polished sections.",
     descriptions: {
       en: "Premium product showcase with spacious hero, refined copy, and polished sections.",
@@ -1453,7 +1453,7 @@ function renderLiveSitePreview() {
 
 function livePreviewTemplateProfile() {
   const templateId = inferLivePreviewTemplateId();
-  const meta = templatePreviewMeta(templateId) || templatePreviewMeta("apple-premium-product");
+  const meta = templatePreviewMeta(templateId) || templatePreviewMeta("mega-marketplace");
   const catalogType = forcedTemplateSelection?.catalogType || meta?.catalogType || "";
   const common = {
     templateId,
@@ -1558,7 +1558,7 @@ function inferLivePreviewTemplateId() {
   if (textSuggestsBroadMarketplace(text) && forcedTemplateSelection?.templateId !== "mega-marketplace") return "mega-marketplace";
   if (inferred) return inferred;
   if (forcedTemplateSelection?.templateId) return forcedTemplateSelection.templateId;
-  return "apple-premium-product";
+  return "mega-marketplace";
 }
 
 function guidedTemplateContextText(extra = "") {
@@ -2484,11 +2484,11 @@ async function handleWebsiteIntentAnswer(message) {
     return;
   }
   let selection = {
-    templateId: "apple-premium-product",
+    templateId: "",
     template: null,
-    intent: "default_minimal",
-    catalogType: "premium_editorial_catalog",
-    reason: "Using a safe premium starter while template detection finishes",
+    intent: "default_pending",
+    catalogType: "",
+    reason: "Waiting for enough business context before locking a template",
   };
   try {
     selection = await withTimeout(selectTemplateFromFreeText(message), 2500);
@@ -2533,11 +2533,11 @@ function withTimeout(promise, timeoutMs) {
 async function selectTemplateFromFreeText(message) {
   if (!window.TemplateRouter?.selectTemplateFromPrompt) {
     return {
-      templateId: "minimal-store",
+      templateId: "mega-marketplace",
       template: null,
-      intent: "default_minimal",
-      catalogType: "editorial_minimal_grid",
-      reason: "Template router unavailable; using default template",
+      intent: "default_marketplace_discovery",
+      catalogType: "dense_marketplace_catalog",
+      reason: "Template router unavailable; using marketplace discovery template",
     };
   }
   return window.TemplateRouter.selectTemplateFromPrompt(message);
@@ -4597,7 +4597,14 @@ async function selectTemplateForPayload(payload) {
   const inferredTemplateId = inferTemplateIdFromText(prompt);
   const shouldOverrideForced = inferredTemplateId
     && inferredTemplateId !== forcedTemplateSelection?.templateId
-    && (textSuggestsBroadMarketplace(prompt) || textSuggestsSingleProductShowcase(prompt) || forcedTemplateSelection?.intent === "default_minimal");
+    && (
+      textSuggestsBroadMarketplace(prompt)
+      || textSuggestsFocusedProductLine(prompt)
+      || textSuggestsSingleProductShowcase(prompt)
+      || forcedTemplateSelection?.intent === "default_minimal"
+      || forcedTemplateSelection?.intent === "default_pending"
+      || forcedTemplateSelection?.intent === "default_marketplace_discovery"
+    );
   if (window.TemplateRouter.getTemplateById && (shouldOverrideForced || (!forcedTemplateSelection?.templateId && inferredTemplateId))) {
     const template = await window.TemplateRouter.getTemplateById(inferredTemplateId);
     if (template) {

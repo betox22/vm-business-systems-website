@@ -23,7 +23,7 @@
         { type: "trust_strip", fields: { items: "{{trust_points}}" } },
         { type: "footer", fields: { businessName: "{{business_name}}", description: "{{short_description}}", socialLinks: "{{social_links}}" } },
       ],
-      aiPrompt: "Use a premium Apple-level product presentation layout without copying any brand. Generate a cinematic centered hero, refined product slogan, large product visual area, editorial story sections, feature spotlight, curated small catalog, comparison/spec strip, calm CTAs, and premium trust copy. This template is for small catalogs, flagship products, luxury portfolios, technology products, beauty devices, creator portfolios, and high-presentation offers. Preserve the premium structure; only adapt colors, copy, products, imagery, and CTAs to the business.",
+      aiPrompt: "Use a premium flagship product presentation layout without copying any brand. Generate a cinematic centered hero, refined product slogan, large product visual area, editorial story sections, feature spotlight, curated small catalog, comparison/spec strip, calm CTAs, and premium trust copy. This template is for small catalogs, flagship products, luxury portfolios, technology products, beauty devices, creator portfolios, and high-presentation offers. Preserve the premium structure; only adapt colors, copy, products, imagery, and CTAs to the business.",
       catalogModel: {
         catalogType: "premium_editorial_catalog",
         productCardStyle: "large editorial cards with product imagery, short benefit, price, refined CTA, and minimal metadata",
@@ -964,9 +964,9 @@
     const normalized = normalizeText(userPrompt);
     const matchedRule = selectBestIntentRule(normalized);
     const rule = matchedRule || {
-      intent: "default_minimal",
-      templateId: "apple-premium-product",
-      catalogType: "premium_editorial_catalog",
+      intent: "default_marketplace_discovery",
+      templateId: "mega-marketplace",
+      catalogType: "dense_marketplace_catalog",
       keywords: [],
     };
     const template = templates.find((item) => item.id === rule.templateId) || templates.find((item) => item.id === "minimal-store") || templates[0];
@@ -978,7 +978,7 @@
       catalogType,
       reason: matchedRule
         ? `Matched keywords for ${rule.intent}`
-        : "No exact intent matched; using a safe minimal ecommerce template",
+        : "No exact intent matched; using a broad marketplace discovery template until the catalog is clearer",
     };
   }
 
@@ -995,7 +995,7 @@
 
     const primary = scored.length
       ? scored
-      : [{ rule: { intent: "default_minimal", templateId: "apple-premium-product", catalogType: "premium_editorial_catalog" }, score: 0, matches: [] }];
+      : [{ rule: { intent: "default_marketplace_discovery", templateId: "mega-marketplace", catalogType: "dense_marketplace_catalog" }, score: 0, matches: [] }];
 
     const selected = [];
     const addRule = (rule, score = 0, reason = "") => {
