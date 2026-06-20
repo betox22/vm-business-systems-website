@@ -4,131 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Luma AI Website Builder</title>
-    <link rel="stylesheet" href="/client.css?v=3">
+    <meta http-equiv="refresh" content="0; url=/start/">
+    <link rel="canonical" href="/start/">
   </head>
-  <body class="client-landing-body">
-    <main class="client-landing">
-      <nav class="client-nav" aria-label="Public navigation">
-        <div class="client-brand">
-          <span class="client-brand-mark">LU</span>
-          <span>Luma</span>
-        </div>
-        <label class="client-language">
-          <span data-client-i18n="language">Language</span>
-          <select id="clientLanguage">
-            <option value="en">English</option>
-            <option value="es">Español</option>
-            <option value="fr">Français</option>
-            <option value="pt">Português</option>
-          </select>
-        </label>
-      </nav>
-
-      <section class="client-hero">
-        <div class="client-hero-copy">
-          <span class="client-kicker" data-client-i18n="kicker">AI guided website setup</span>
-          <h1 data-client-i18n="title">Build your business website with AI</h1>
-          <p data-client-i18n="subtitle">Talk to Luma, your AI website assistant. Answer a few simple questions, upload your logo or photos if you have them, and get a professional editable website draft in minutes.</p>
-          <div class="client-actions">
-            <a id="startWithGnuDev" class="client-button primary" href="/client/setup/">
-              <span data-client-i18n="start">Start with Luma</span>
-            </a>
-            <a id="useManualForm" class="client-button secondary" href="/client/setup/?manual=1">
-              <span data-client-i18n="how">Use manual form</span>
-            </a>
-          </div>
-          <div class="client-trust-row" aria-label="Highlights">
-            <span data-client-i18n="trustVoice">Type or use voice</span>
-            <span data-client-i18n="trustAssets">Upload logo and photos</span>
-            <span data-client-i18n="trustEditable">Review and edit before generating</span>
-          </div>
-        </div>
-
-        <div class="mascot-stage" aria-hidden="true">
-          <div class="mascot-card">
-            <img src="/public/brand/gnu-dev-assistant.png" alt="">
-          </div>
-          <div class="speech-card">
-            <strong data-client-i18n="bubbleTitle">Luma is ready</strong>
-            <p data-client-i18n="bubbleText">A friendly chat collects the details and turns them into a website draft.</p>
-          </div>
-        </div>
-      </section>
-
-      <section id="how-it-works" class="how-section">
-        <div class="how-inner">
-          <h2 data-client-i18n="howTitle">A Faster Way To Start Online</h2>
-          <div class="how-grid">
-            <article class="how-card">
-              <span class="how-number">1</span>
-              <strong data-client-i18n="step1Title">Talk, don't build</strong>
-              <p data-client-i18n="step1Text">Describe your business naturally. Luma turns your answers into a website brief.</p>
-            </article>
-            <article class="how-card">
-              <span class="how-number">2</span>
-              <strong data-client-i18n="step2Title">AI-generated design</strong>
-              <p data-client-i18n="step2Text">Get layout, copy, colors, sections, and catalog suggestions.</p>
-            </article>
-            <article class="how-card">
-              <span class="how-number">3</span>
-              <strong data-client-i18n="step3Title">Editable before publishing</strong>
-              <p data-client-i18n="step3Text">Review and adjust everything before your site goes live.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-    </main>
-    <div id="clientChatModal" class="client-chat-modal" hidden role="dialog" aria-modal="true" aria-label="Luma chat">
-      <div class="client-chat-frame-shell">
-        <button id="closeClientChat" class="client-chat-close" type="button" aria-label="Close">×</button>
-        <iframe id="clientChatFrame" title="Luma AI website assistant"></iframe>
-      </div>
-    </div>
-    <button id="testerFeedbackButton" class="tester-feedback-button" type="button" data-client-i18n="feedbackOpen">Feedback</button>
-    <section id="testerFeedbackPanel" class="tester-feedback-panel" hidden aria-label="Tester feedback">
-      <div class="tester-feedback-card">
-        <button id="testerFeedbackClose" class="tester-feedback-close" type="button" data-client-i18n="feedbackClose">Close</button>
-        <span class="client-kicker">Beta</span>
-        <h2 data-client-i18n="feedbackTitle">Help us improve Luma</h2>
-        <p data-client-i18n="feedbackText">After testing, tell us what felt confusing, missing, slow, or useful.</p>
-        <form id="testerFeedbackForm" class="tester-feedback-form">
-          <label>
-            <span data-client-i18n="feedbackName">Name</span>
-            <input name="name" data-client-i18n-placeholder="feedbackNamePlaceholder" placeholder="Your name">
-          </label>
-          <label>
-            <span data-client-i18n="feedbackEmail">Email</span>
-            <input name="email" type="email" data-client-i18n-placeholder="feedbackEmailPlaceholder" placeholder="you@email.com">
-          </label>
-          <label>
-            <span data-client-i18n="feedbackRating">Overall impression</span>
-            <select name="rating">
-              <option value="good">Good</option>
-              <option value="confusing">Confusing</option>
-              <option value="missing">Missing something</option>
-              <option value="broken">Something broke</option>
-            </select>
-          </label>
-          <label>
-            <span data-client-i18n="feedbackStage">What did you test?</span>
-            <select name="stage">
-              <option value="landing">Landing page</option>
-              <option value="chat">Luma chat</option>
-              <option value="generation">Website generation</option>
-              <option value="preview">Generated preview</option>
-              <option value="client_portal">Client portal</option>
-            </select>
-          </label>
-          <label class="tester-feedback-wide">
-            <span data-client-i18n="feedbackMessage">What should we improve?</span>
-            <textarea name="message" rows="4" required data-client-i18n-placeholder="feedbackMessagePlaceholder" placeholder="Write anything you noticed..."></textarea>
-          </label>
-          <button class="client-button primary" type="submit" data-client-i18n="feedbackSubmit">Send feedback</button>
-          <p id="testerFeedbackStatus" class="tester-feedback-status"></p>
-        </form>
-      </div>
-    </section>
-    <script src="/luma-config.js?v=1781138876"></script>
-    <script src="/client-start.js?v=21"></script>
+  <body>
+    <script>
+      const target = new URL("/start/", window.location.origin);
+      target.search = window.location.search;
+      window.location.replace(target.toString());
+    </script>
+    <a href="/start/">Continue to Luma</a>
   </body>
 </html>

@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Luma AI Website Builder</title>
     <link rel="stylesheet" href="/css/avatar-assistant.css?v=4">
-    <link rel="stylesheet" href="/client.css?v=10">
+    <link rel="stylesheet" href="/client.css?v=11">
   </head>
-  <body class="client-landing-body start-minimal-body">
+  <body class="client-landing-body start-minimal-body start-product-body">
     <main class="client-landing">
       <nav class="client-nav" aria-label="Public navigation">
         <div class="client-brand">
@@ -25,30 +25,131 @@
         </label>
       </nav>
 
-      <section class="client-hero client-hero-minimal">
-        <div class="luma-orbit" aria-hidden="true">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-        <div class="client-hero-copy">
-          <span class="client-kicker" data-client-i18n="kicker">AI guided website setup</span>
-          <h1 data-client-i18n="title">Create your online store or business website by talking to AI</h1>
-          <p data-client-i18n="subtitle">Tell Luma what kind of site you want — marketplace, restaurant menu, booking page, service business, digital products, or online store — and get an editable draft built around your brand.</p>
+      <section class="client-hero client-hero-premium">
+        <div class="client-hero-copy landing-product-copy">
+          <span class="client-kicker" data-client-i18n="kicker">AI website and store builder</span>
+          <h1 data-client-i18n="title">Launch a professional website or store from one conversation</h1>
+          <p data-client-i18n="subtitle">Show Luma your business idea, brand, products, services and goals. Luma chooses the right structure, prepares copy and catalog details, then hands you an editable draft.</p>
           <div class="client-actions">
             <a id="startWithGnuDev" class="client-button primary" href="/client/setup/">
               <span data-client-i18n="start">Start with Luma</span>
             </a>
+            <a class="client-button secondary" href="#templateExamples">
+              <span data-client-i18n="viewExamples">View examples</span>
+            </a>
           </div>
-          <div class="client-trust-row" aria-label="Highlights">
-            <span data-client-i18n="trustVoice">Type or use voice</span>
-            <span data-client-i18n="trustAssets">Upload logo and photos</span>
-            <span data-client-i18n="trustEditable">Review and edit before generating</span>
+          <div class="client-trust-row landing-proof-row" aria-label="Highlights">
+            <span data-client-i18n="trustTemplates">Pro templates</span>
+            <span data-client-i18n="trustAi">AI guided brief</span>
+            <span data-client-i18n="trustEditable">Fully editable</span>
+          </div>
+
+          <div class="landing-preview-board" aria-label="Website examples">
+            <article class="landing-preview-card landing-preview-card-large" data-template-preview="marketplace-style">
+              <img src="/templates-preview/screenshots/amazon.png" alt="Marketplace template preview">
+              <div>
+                <strong data-client-i18n="sampleMarketplace">Marketplace store</strong>
+                <span data-client-i18n="sampleMarketplaceText">Catalog, promos, search and product categories.</span>
+              </div>
+            </article>
+            <article class="landing-preview-card" data-template-preview="luxury-product-store">
+              <img src="/templates-preview/screenshots/apple.png" alt="Premium product template preview">
+              <div>
+                <strong data-client-i18n="samplePremium">Premium product</strong>
+                <span data-client-i18n="samplePremiumText">Editorial product storytelling and clean conversion.</span>
+              </div>
+            </article>
+            <article class="landing-preview-card" data-template-preview="restaurant-food-business">
+              <img src="/templates-preview/screenshots/premium.png" alt="Restaurant template preview">
+              <div>
+                <strong data-client-i18n="sampleRestaurant">Restaurant and menu</strong>
+                <span data-client-i18n="sampleRestaurantText">Menu sections, specials and local ordering flow.</span>
+              </div>
+            </article>
           </div>
         </div>
 
-        <div class="mascot-stage avatar-stage">
-          <div id="landingAvatarAssistant"></div>
+        <aside class="luma-side-guide" aria-label="Luma guide">
+          <div class="luma-guide-top">
+            <span class="client-kicker" data-client-i18n="guideKicker">Your AI guide</span>
+            <h2 data-client-i18n="guideTitle">Luma collects the details and builds the first draft.</h2>
+            <p data-client-i18n="guideText">Answer naturally. Luma detects what is missing, suggests the best template and keeps the final site editable.</p>
+          </div>
+          <div class="luma-guide-avatar">
+            <div id="landingAvatarAssistant"></div>
+          </div>
+          <div class="luma-guide-steps">
+            <span data-client-i18n="guideStep1">Understands your business</span>
+            <span data-client-i18n="guideStep2">Chooses the right template</span>
+            <span data-client-i18n="guideStep3">Drafts pages, sections and catalog</span>
+          </div>
+          <button class="luma-guide-button" type="button" data-start-luma>
+            <span data-client-i18n="start">Start with Luma</span>
+          </button>
+        </aside>
+      </section>
+
+      <section id="templateExamples" class="landing-showcase-section" aria-label="Template examples">
+        <div class="landing-section-heading">
+          <span class="client-kicker" data-client-i18n="examplesKicker">What Luma can build</span>
+          <h2 data-client-i18n="examplesTitle">Real starting points, adapted by AI to each business.</h2>
+          <p data-client-i18n="examplesText">These are not fixed forms. They are structured bases Luma can choose, rewrite and personalize around the client's industry, tone, catalog and goals.</p>
+        </div>
+        <div class="landing-showcase-grid">
+          <article class="landing-showcase-card">
+            <img src="/templates-preview/screenshots/amazon.png" alt="Marketplace storefront preview">
+            <div>
+              <span data-client-i18n="tagMarketplace">Marketplace</span>
+              <strong data-client-i18n="cardMarketplaceTitle">Amazon-style store</strong>
+              <p data-client-i18n="cardMarketplaceText">Large catalog, departments, offers and fast product discovery.</p>
+              <button type="button" data-template-intent="marketplace" data-template-id="marketplace-style" data-catalog-type="marketplace" data-client-i18n="useThisDirection">Use this direction</button>
+            </div>
+          </article>
+          <article class="landing-showcase-card">
+            <img src="/templates-preview/screenshots/apple.png" alt="Premium product page preview">
+            <div>
+              <span data-client-i18n="tagPremium">Premium</span>
+              <strong data-client-i18n="cardPremiumTitle">Apple-style product launch</strong>
+              <p data-client-i18n="cardPremiumText">Focused product story, strong visuals and high-end presentation.</p>
+              <button type="button" data-template-intent="premium store" data-template-id="luxury-product-store" data-catalog-type="single_product" data-client-i18n="useThisDirection">Use this direction</button>
+            </div>
+          </article>
+          <article class="landing-showcase-card">
+            <img src="/templates-preview/screenshots/industrial.png" alt="Industrial supplier preview">
+            <div>
+              <span data-client-i18n="tagB2B">B2B</span>
+              <strong data-client-i18n="cardIndustrialTitle">Industrial supplier</strong>
+              <p data-client-i18n="cardIndustrialText">Quote-first catalog, capabilities, specs and procurement flow.</p>
+              <button type="button" data-template-intent="industrial supplier" data-template-id="manufacturing-industrial-supplier-pro" data-catalog-type="industrial_supplier_catalog" data-client-i18n="useThisDirection">Use this direction</button>
+            </div>
+          </article>
+          <article class="landing-showcase-card">
+            <img src="/templates-preview/screenshots/services.png" alt="Local services preview">
+            <div>
+              <span data-client-i18n="tagServices">Services</span>
+              <strong data-client-i18n="cardServicesTitle">Service business</strong>
+              <p data-client-i18n="cardServicesText">Trust, packages, service areas and quote requests.</p>
+              <button type="button" data-template-intent="service business" data-template-id="local-business-pro" data-catalog-type="services" data-client-i18n="useThisDirection">Use this direction</button>
+            </div>
+          </article>
+          <article class="landing-showcase-card">
+            <img src="/templates-preview/screenshots/booking.png" alt="Appointment booking preview">
+            <div>
+              <span data-client-i18n="tagBooking">Booking</span>
+              <strong data-client-i18n="cardBookingTitle">Appointment booking</strong>
+              <p data-client-i18n="cardBookingText">Services, schedules, staff highlights and booking CTAs.</p>
+              <button type="button" data-template-intent="appointment booking" data-template-id="appointment-booking" data-catalog-type="booking" data-client-i18n="useThisDirection">Use this direction</button>
+            </div>
+          </article>
+          <article class="landing-showcase-card">
+            <img src="/templates-preview/screenshots/b2b.png" alt="B2B website preview">
+            <div>
+              <span data-client-i18n="tagCompany">Company</span>
+              <strong data-client-i18n="cardCompanyTitle">Company website</strong>
+              <p data-client-i18n="cardCompanyText">Authority, offerings, proof and lead capture without a store.</p>
+              <button type="button" data-template-intent="company website" data-template-id="professional-services" data-catalog-type="services" data-client-i18n="useThisDirection">Use this direction</button>
+            </div>
+          </article>
         </div>
       </section>
 
@@ -106,6 +207,6 @@
     <script src="/luma-config.js?v=1781138876"></script>
     <script src="/js/avatar-state-manager.js?v=2"></script>
     <script src="/js/avatar-assistant.js?v=4"></script>
-    <script src="/client-start.js?v=21"></script>
+    <script src="/client-start.js?v=22"></script>
   </body>
 </html>
