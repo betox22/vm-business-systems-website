@@ -613,6 +613,20 @@ const TEMPLATE_PREVIEW_CHOICES = [
     },
   },
   {
+    templateId: "medical-wellness-clinic-pro",
+    name: "Clinic / Wellness",
+    names: { en: "Clinic / Wellness", es: "Clinica / Wellness", fr: "Clinique / Wellness", pt: "Clinica / Wellness" },
+    catalogType: "medical_wellness_service_catalog",
+    image: "/templates-preview/screenshots/clinic.png",
+    description: "Premium clinic style for medical, aesthetic, dental, wellness, therapy, and consultation-based businesses.",
+    descriptions: {
+      en: "Premium clinic style for medical, aesthetic, dental, wellness, therapy, and consultation-based businesses.",
+      es: "Estilo clinica premium para negocios medicos, esteticos, dentales, wellness, terapia y consultas.",
+      fr: "Style clinique premium pour activites medicales, esthetiques, dentaires, wellness, therapie et consultation.",
+      pt: "Estilo clinica premium para negocios medicos, esteticos, dentarios, wellness, terapia e consultas.",
+    },
+  },
+  {
     templateId: "mega-marketplace",
     name: "Mega Marketplace",
     names: { en: "Mega Marketplace", es: "Mega marketplace", fr: "Mega marketplace", pt: "Mega marketplace" },
@@ -4489,9 +4503,10 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isRealEstateListingTemplate = catalogType === "real_estate_listing_catalog" || /real-estate-listings-pro/i.test(template.id || "");
   const isLuxuryHighTicketTemplate = catalogType === "luxury_high_ticket_catalog" || /luxury-high-ticket-pro/i.test(template.id || "");
   const isEducationTemplate = catalogType === "education_course_catalog" || /education-course-academy-pro/i.test(template.id || "");
-  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate || isRealEstateListingTemplate || isLuxuryHighTicketTemplate || isEducationTemplate;
-  const primaryCta = isEducationTemplate ? copy.enrollNow : isLuxuryHighTicketTemplate ? copy.requestPrivateViewing : isRealEstateListingTemplate ? copy.searchListings : isDigitalTemplate ? copy.getAccess : isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
-  const secondaryCta = isEducationTemplate ? copy.viewCurriculum : isLuxuryHighTicketTemplate ? copy.viewCollection : isRealEstateListingTemplate ? copy.viewListings : isDigitalTemplate ? copy.viewProducts : isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
+  const isClinicTemplate = catalogType === "medical_wellness_service_catalog" || /medical-wellness-clinic-pro/i.test(template.id || "");
+  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate || isRealEstateListingTemplate || isLuxuryHighTicketTemplate || isEducationTemplate || isClinicTemplate;
+  const primaryCta = isClinicTemplate ? copy.bookConsultation : isEducationTemplate ? copy.enrollNow : isLuxuryHighTicketTemplate ? copy.requestPrivateViewing : isRealEstateListingTemplate ? copy.searchListings : isDigitalTemplate ? copy.getAccess : isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
+  const secondaryCta = isClinicTemplate ? copy.viewTreatments : isEducationTemplate ? copy.viewCurriculum : isLuxuryHighTicketTemplate ? copy.viewCollection : isRealEstateListingTemplate ? copy.viewListings : isDigitalTemplate ? copy.viewProducts : isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
   if (isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate) {
     catalogItems.forEach((item) => {
       item.price_type = "quote_only";
@@ -4544,6 +4559,17 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       item.track_inventory = false;
     });
   }
+  if (isClinicTemplate) {
+    catalogItems.forEach((item, index) => {
+      item.price_type = "quote_only";
+      item.category = clinicCategoryForIndex(index, copy);
+      item.price_label = copy.consultationBased;
+      item.button_label = copy.bookConsultation;
+      item.shipping_label = clinicDurationForIndex(index, copy);
+      item.deal_label = index === 0 ? copy.popularTreatment : index % 2 ? copy.specialistLed : copy.personalizedPlan;
+      item.track_inventory = false;
+    });
+  }
   const instantPages = isMarketplaceTemplate
     ? buildMarketplaceInstantPages(copy, name, description, payload)
     : isPremiumTemplate
@@ -4552,7 +4578,9 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         ? buildLuxuryHighTicketInstantPages(copy, name, description, payload)
         : isEducationTemplate
           ? buildEducationAcademyInstantPages(copy, name, description, payload)
-          : isFashionTemplate
+          : isClinicTemplate
+            ? buildMedicalWellnessInstantPages(copy, name, description, payload)
+            : isFashionTemplate
             ? buildFashionDropInstantPages(copy, name, description, payload)
             : isCorporateTemplate
               ? buildCorporateCompanyInstantPages(copy, name, description, payload)
@@ -4622,6 +4650,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       { label: copy.products, page_key: "catalog" },
       { label: copy.provenance, page_key: "about" },
       { label: copy.privateInquiry, page_key: "contact" },
+    ] : isClinicTemplate ? [
+      { label: copy.treatments, page_key: "home" },
+      { label: copy.services, page_key: "catalog" },
+      { label: copy.results, page_key: "about" },
+      { label: copy.bookConsultation, page_key: "contact" },
     ] : isFashionTemplate ? [
       { label: copy.newDrop, page_key: "home" },
       { label: copy.collections, page_key: "catalog" },
@@ -4694,7 +4727,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         description: template.visualDifference || copy.fastBase,
         theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: primaryCta, secondary_label: secondaryCta, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
         layout_mode_id: template.id || "instant_storefront",
-        hero_layout: isPremiumTemplate ? "premium_center_stage" : isLuxuryHighTicketTemplate ? "private_luxury_showroom" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : isBookingTemplate ? "appointment_booking" : isRestaurantTemplate ? "restaurant_menu_story" : isDigitalTemplate ? "digital_product_launch" : "split_showcase",
+        hero_layout: isPremiumTemplate ? "premium_center_stage" : isLuxuryHighTicketTemplate ? "private_luxury_showroom" : isClinicTemplate ? "clinic_care_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : isBookingTemplate ? "appointment_booking" : isRestaurantTemplate ? "restaurant_menu_story" : isDigitalTemplate ? "digital_product_launch" : "split_showcase",
         product_layout: catalogType,
       },
     ],
@@ -5402,6 +5435,111 @@ function buildEducationAcademyInstantPages(copy, name, description, payload = {}
   ];
 }
 
+function buildMedicalWellnessInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.treatments,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "clinic_hero",
+          type: "ClinicHero",
+          order: 1,
+          editable: {
+            headline: copy.clinicHeadline(name),
+            subtitle: copy.clinicSubheadline(description),
+            primary_button: copy.bookConsultation,
+            secondary_button: copy.viewTreatments,
+            image_url: heroImage,
+            badge: copy.clinicCare,
+            images: [],
+          },
+          settings: { layout: "clinic_care_stage", spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "clinic_services",
+          type: "ClinicServices",
+          order: 2,
+          editable: { title: copy.treatmentsTitle, text: copy.treatmentsText, images: [] },
+          settings: { layout: "treatment_cards", columns: 3, spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "clinic_path",
+          type: "ClinicTreatmentPath",
+          order: 3,
+          editable: { title: copy.carePathTitle, text: copy.carePathText, items: copy.carePathItems, images: [] },
+          settings: { layout: "care_path", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "clinic_trust",
+          type: "ClinicTrust",
+          order: 4,
+          editable: { title: copy.clinicTrustTitle, text: copy.clinicTrustText, items: copy.clinicTrustItems, images: [] },
+          settings: { layout: "trust_credentials", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "clinic_results",
+          type: "ClinicResults",
+          order: 5,
+          editable: { title: copy.resultsTitle, text: copy.resultsText, items: copy.resultItems, images: [] },
+          settings: { layout: "results_proof", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "clinic_team",
+          type: "ClinicTeam",
+          order: 6,
+          editable: { title: copy.clinicTeamTitle, text: copy.clinicTeamText, items: copy.clinicTeamItems, image_url: heroImage, images: [] },
+          settings: { layout: "specialist_team", spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "clinic_booking",
+          type: "ClinicBooking",
+          order: 7,
+          editable: { title: copy.clinicBookingTitle, text: copy.clinicBookingText, primary_button: copy.bookConsultation, images: [] },
+          settings: { layout: "booking_cta", spacing: "spacious", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.services,
+      slug: copy.servicesSlug,
+      order: 2,
+      sections: [
+        {
+          id: "clinic_catalog",
+          type: "ProductGrid",
+          order: 1,
+          editable: { title: copy.treatmentsTitle, text: copy.treatmentsText, images: [] },
+          settings: { layout: "medical_wellness", columns: 3, spacing: "balanced", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.results,
+      slug: copy.resultsSlug,
+      order: 3,
+      sections: [
+        { id: "results", type: "ClinicResults", order: 1, editable: { title: copy.resultsTitle, text: copy.resultsText, items: copy.resultItems, images: [] }, settings: { layout: "results_proof", container_width: "wide" } },
+        { id: "team", type: "ClinicTeam", order: 2, editable: { title: copy.clinicTeamTitle, text: copy.clinicTeamText, items: copy.clinicTeamItems, image_url: heroImage, images: [] }, settings: { layout: "specialist_team", container_width: "wide" } },
+      ],
+    },
+    {
+      page_key: "contact",
+      title: copy.bookConsultation,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [
+        { id: "booking", type: "ClinicBooking", order: 1, editable: { title: copy.clinicBookingTitle, text: copy.clinicBookingText, primary_button: copy.bookConsultation, images: [] }, settings: { layout: "booking_cta", container_width: "wide" } },
+      ],
+    },
+  ];
+}
+
 function buildDigitalProductsInstantPages(copy, name, description, payload = {}) {
   const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
   return [
@@ -6008,6 +6146,16 @@ function educationDurationForIndex(index, copy) {
   return durations[index % durations.length];
 }
 
+function clinicCategoryForIndex(index, copy) {
+  const categories = copy.clinicCategories || ["Aesthetic care", "Wellness", "Dental", "Therapy", "Nutrition", "Consultation"];
+  return categories[index % categories.length];
+}
+
+function clinicDurationForIndex(index, copy) {
+  const durations = copy.clinicDurations || ["30 min consult", "45 min session", "Personal plan", "Follow-up ready"];
+  return durations[index % durations.length];
+}
+
 function listingLocationForIndex(index, copy) {
   const locations = copy.listingLocations || ["Central area", "North side", "West district", "Near downtown"];
   return locations[index % locations.length];
@@ -6060,6 +6208,35 @@ function instantLocaleCopy(language) {
       restaurantInfoItems: ["Open hours", "Pickup", "Delivery", "Dine-in", "Catering", "WhatsApp orders"],
       restaurantOrderTitle: "Place an order or ask a question",
       restaurantOrderText: "Send the preferred dishes, pickup or delivery option, and contact method. The business can confirm by phone, WhatsApp or email.",
+      clinicCare: "Personalized care",
+      treatments: "Treatments",
+      results: "Results",
+      bookConsultation: "Book consultation",
+      viewTreatments: "View treatments",
+      consultationBased: "Consultation-based",
+      popularTreatment: "Popular treatment",
+      specialistLed: "Specialist-led",
+      personalizedPlan: "Personalized plan",
+      clinicHeadline: (name) => `${name} care designed around your next step`,
+      clinicSubheadline: (description) => description || "A calm, professional clinic website built around trust, treatments, results, specialists, and easy booking.",
+      treatmentsTitle: "Treatments and services",
+      treatmentsText: "Present the services customers can request, compare, and book with clear next steps.",
+      carePathTitle: "A clear path from first question to care",
+      carePathText: "Show how the clinic evaluates needs, recommends the right treatment, and follows up with confidence.",
+      carePathItems: ["Initial consultation", "Personalized plan", "Treatment session", "Progress check", "Aftercare guidance", "Next visit"],
+      clinicTrustTitle: "Trust signals patients look for",
+      clinicTrustText: "Use credentials, safety notes, specialist experience, transparent expectations and response times.",
+      clinicTrustItems: ["Specialist guidance", "Safety-first process", "Clear expectations", "Private consultation", "Aftercare notes", "Fast response"],
+      resultsTitle: "Results with realistic expectations",
+      resultsText: "Use this area for before/after proof, transformation notes, case examples or expected outcomes.",
+      resultItems: ["Visible progress", "Before/after proof", "Personal plan", "Follow-up support", "Clear preparation", "Aftercare included"],
+      clinicTeamTitle: "Specialists who guide the process",
+      clinicTeamText: "Introduce the provider, clinical standards, certifications or care philosophy behind the services.",
+      clinicTeamItems: ["Credentialed team", "Consultation-first", "Patient education", "Care follow-up"],
+      clinicBookingTitle: "Book a consultation or ask a question",
+      clinicBookingText: "Send the treatment, concern, preferred schedule and contact method. The clinic can confirm next steps.",
+      clinicCategories: ["Aesthetic care", "Wellness", "Dental", "Therapy", "Nutrition", "Consultation"],
+      clinicDurations: ["30 min consult", "45 min session", "Personal plan", "Follow-up ready"],
       home: "Home",
       overview: "Overview",
       products: "Products",
@@ -6311,6 +6488,35 @@ function instantLocaleCopy(language) {
       restaurantInfoItems: ["Horarios", "Pickup", "Delivery", "En el local", "Catering", "Pedidos por WhatsApp"],
       restaurantOrderTitle: "Haz un pedido o pregunta",
       restaurantOrderText: "Envia platos preferidos, opcion de pickup o delivery y metodo de contacto. El negocio puede confirmar por telefono, WhatsApp o email.",
+      clinicCare: "Cuidado personalizado",
+      treatments: "Tratamientos",
+      results: "Resultados",
+      bookConsultation: "Agendar consulta",
+      viewTreatments: "Ver tratamientos",
+      consultationBased: "Segun consulta",
+      popularTreatment: "Tratamiento popular",
+      specialistLed: "Guiado por especialista",
+      personalizedPlan: "Plan personalizado",
+      clinicHeadline: (name) => `${name} cuida cada paso de tu tratamiento`,
+      clinicSubheadline: (description) => description || "Una pagina profesional para clinicas y wellness enfocada en confianza, tratamientos, resultados, especialistas y reservas.",
+      treatmentsTitle: "Tratamientos y servicios",
+      treatmentsText: "Presenta los servicios que el cliente puede revisar, comparar y reservar con pasos claros.",
+      carePathTitle: "Un camino claro desde la primera pregunta hasta la atencion",
+      carePathText: "Muestra como la clinica evalua necesidades, recomienda el tratamiento correcto y da seguimiento.",
+      carePathItems: ["Consulta inicial", "Plan personalizado", "Sesion de tratamiento", "Revision de progreso", "Guia de cuidado", "Proxima visita"],
+      clinicTrustTitle: "Senales de confianza que el paciente busca",
+      clinicTrustText: "Usa credenciales, seguridad, experiencia, expectativas claras y tiempos de respuesta.",
+      clinicTrustItems: ["Guia especializada", "Proceso seguro", "Expectativas claras", "Consulta privada", "Cuidado posterior", "Respuesta rapida"],
+      resultsTitle: "Resultados con expectativas reales",
+      resultsText: "Usa esta seccion para antes/despues, notas de transformacion, casos o resultados esperados.",
+      resultItems: ["Progreso visible", "Prueba antes/despues", "Plan personal", "Seguimiento", "Preparacion clara", "Cuidado posterior"],
+      clinicTeamTitle: "Especialistas que guian el proceso",
+      clinicTeamText: "Presenta al proveedor, estandares clinicos, certificaciones o filosofia de atencion.",
+      clinicTeamItems: ["Equipo certificado", "Consulta primero", "Educacion al paciente", "Seguimiento"],
+      clinicBookingTitle: "Agenda una consulta o haz una pregunta",
+      clinicBookingText: "Envia el tratamiento, inquietud, horario preferido y metodo de contacto. La clinica confirma el siguiente paso.",
+      clinicCategories: ["Estetica", "Wellness", "Dental", "Terapia", "Nutricion", "Consulta"],
+      clinicDurations: ["Consulta 30 min", "Sesion 45 min", "Plan personal", "Seguimiento"],
       home: "Inicio",
       overview: "Vista general",
       products: "Productos",
@@ -6562,6 +6768,35 @@ function instantLocaleCopy(language) {
       restaurantInfoItems: ["Horaires", "Retrait", "Livraison", "Sur place", "Traiteur", "Commandes WhatsApp"],
       restaurantOrderTitle: "Commander ou poser une question",
       restaurantOrderText: "Envoyez les plats souhaites, retrait ou livraison et le contact prefere. L'entreprise peut confirmer par telephone, WhatsApp ou email.",
+      clinicCare: "Soin personnalise",
+      treatments: "Soins",
+      results: "Resultats",
+      bookConsultation: "Reserver une consultation",
+      viewTreatments: "Voir les soins",
+      consultationBased: "Selon consultation",
+      popularTreatment: "Soin populaire",
+      specialistLed: "Guide par specialiste",
+      personalizedPlan: "Plan personnalise",
+      clinicHeadline: (name) => `${name} accompagne chaque etape de votre soin`,
+      clinicSubheadline: (description) => description || "Un site professionnel de clinique ou wellness axe sur la confiance, les soins, les resultats, les specialistes et la reservation.",
+      treatmentsTitle: "Soins et services",
+      treatmentsText: "Presentez les services que le client peut consulter, comparer et reserver clairement.",
+      carePathTitle: "Un parcours clair de la premiere question au soin",
+      carePathText: "Montrez comment la clinique evalue les besoins, recommande le bon soin et assure le suivi.",
+      carePathItems: ["Consultation initiale", "Plan personnalise", "Session de soin", "Suivi des progres", "Conseils apres-soin", "Prochaine visite"],
+      clinicTrustTitle: "Signaux de confiance attendus",
+      clinicTrustText: "Ajoutez diplomes, securite, experience, attentes claires et delais de reponse.",
+      clinicTrustItems: ["Guidage specialise", "Processus securise", "Attentes claires", "Consultation privee", "Apres-soin", "Reponse rapide"],
+      resultsTitle: "Resultats avec attentes realistes",
+      resultsText: "Utilisez cette section pour avant/apres, cas, notes de transformation ou resultats attendus.",
+      resultItems: ["Progres visible", "Preuve avant/apres", "Plan personnel", "Suivi", "Preparation claire", "Apres-soin inclus"],
+      clinicTeamTitle: "Specialistes qui guident le processus",
+      clinicTeamText: "Presentez le praticien, les standards, certifications ou philosophie de soin.",
+      clinicTeamItems: ["Equipe certifiee", "Consultation d'abord", "Education patient", "Suivi"],
+      clinicBookingTitle: "Reserver ou poser une question",
+      clinicBookingText: "Envoyez le soin, le besoin, l'horaire prefere et le contact. La clinique confirme la suite.",
+      clinicCategories: ["Esthetique", "Wellness", "Dentaire", "Therapie", "Nutrition", "Consultation"],
+      clinicDurations: ["Consultation 30 min", "Session 45 min", "Plan personnel", "Suivi pret"],
       home: "Accueil",
       overview: "Aperçu",
       products: "Produits",
@@ -6790,6 +7025,35 @@ function instantLocaleCopy(language) {
       restaurantInfoItems: ["Horarios", "Pickup", "Delivery", "No local", "Catering", "Pedidos por WhatsApp"],
       restaurantOrderTitle: "Fazer pedido ou perguntar",
       restaurantOrderText: "Envie os pratos desejados, opcao de pickup ou delivery e metodo de contato. O negocio pode confirmar por telefone, WhatsApp ou email.",
+      clinicCare: "Cuidado personalizado",
+      treatments: "Tratamentos",
+      results: "Resultados",
+      bookConsultation: "Agendar consulta",
+      viewTreatments: "Ver tratamentos",
+      consultationBased: "Sob consulta",
+      popularTreatment: "Tratamento popular",
+      specialistLed: "Com especialista",
+      personalizedPlan: "Plano personalizado",
+      clinicHeadline: (name) => `${name} cuida de cada etapa do seu tratamento`,
+      clinicSubheadline: (description) => description || "Um site profissional de clinica ou wellness focado em confianca, tratamentos, resultados, especialistas e agendamento.",
+      treatmentsTitle: "Tratamentos e servicos",
+      treatmentsText: "Apresente os servicos que o cliente pode revisar, comparar e agendar com passos claros.",
+      carePathTitle: "Um caminho claro da primeira pergunta ao cuidado",
+      carePathText: "Mostre como a clinica avalia necessidades, recomenda o tratamento certo e acompanha o cliente.",
+      carePathItems: ["Consulta inicial", "Plano personalizado", "Sessao de tratamento", "Revisao de progresso", "Orientacao pos-cuidado", "Proxima visita"],
+      clinicTrustTitle: "Sinais de confianca para o paciente",
+      clinicTrustText: "Use credenciais, seguranca, experiencia, expectativas claras e tempos de resposta.",
+      clinicTrustItems: ["Guia especializada", "Processo seguro", "Expectativas claras", "Consulta privada", "Pos-cuidado", "Resposta rapida"],
+      resultsTitle: "Resultados com expectativas reais",
+      resultsText: "Use esta secao para antes/depois, notas de transformacao, casos ou resultados esperados.",
+      resultItems: ["Progresso visivel", "Prova antes/depois", "Plano pessoal", "Acompanhamento", "Preparacao clara", "Pos-cuidado incluso"],
+      clinicTeamTitle: "Especialistas que guiam o processo",
+      clinicTeamText: "Apresente o profissional, padroes clinicos, certificacoes ou filosofia de cuidado.",
+      clinicTeamItems: ["Equipe certificada", "Consulta primeiro", "Educacao do paciente", "Acompanhamento"],
+      clinicBookingTitle: "Agende uma consulta ou pergunte",
+      clinicBookingText: "Envie o tratamento, duvida, horario preferido e metodo de contato. A clinica confirma o proximo passo.",
+      clinicCategories: ["Estetica", "Wellness", "Dental", "Terapia", "Nutricao", "Consulta"],
+      clinicDurations: ["Consulta 30 min", "Sessao 45 min", "Plano pessoal", "Acompanhamento"],
       home: "Início",
       overview: "Visão geral",
       products: "Produtos",
@@ -8176,6 +8440,13 @@ function renderSection(section, schema) {
     AcademyOutcomes: renderAcademyOutcomes,
     AcademyInstructor: renderAcademyInstructor,
     AcademyEnroll: renderAcademyEnroll,
+    ClinicHero: renderClinicHero,
+    ClinicServices: renderClinicServices,
+    ClinicTreatmentPath: renderClinicTreatmentPath,
+    ClinicTrust: renderClinicTrust,
+    ClinicResults: renderClinicResults,
+    ClinicTeam: renderClinicTeam,
+    ClinicBooking: renderClinicBooking,
     ListingHero: renderListingHero,
     ListingFilters: renderListingFilters,
     ListingFeatured: renderListingFeatured,
@@ -8840,6 +9111,96 @@ function academyVisualPlaceholder(schema) {
   return `<div class="academy-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).courseAcademy)}</small></div>`;
 }
 
+function renderClinicHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = marketplaceItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url) || items[0];
+  const image = editable.image_url || heroItem?.image_url || "";
+  return `<section class="clinic-pro-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="clinic-pro-copy">
+      <span class="rendered-kicker">${escapeHtml(editable.badge || labels.clinicCare)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.bookConsultation)}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewTreatments)}</a>
+      </div>
+      <div class="clinic-proof-strip">${(labels.clinicTrustItems || []).slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    </div>
+    <div class="clinic-pro-stage">
+      <div class="clinic-appointment-card">
+        <div class="clinic-appointment-top"><span>${escapeHtml(labels.bookConsultation)}</span><b>${escapeHtml(labels.consultationBased)}</b></div>
+        <div class="clinic-appointment-media">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(heroItem?.name || schema.business?.name || "")}">` : clinicVisualPlaceholder(schema)}</div>
+        <div class="clinic-slots">${(labels.clinicDurations || []).slice(0, 3).map((item, index) => `<span class="${index === 1 ? "active" : ""}">${escapeHtml(item)}</span>`).join("")}</div>
+      </div>
+      <div class="clinic-floating-card"><small>${escapeHtml(labels.popularTreatment)}</small><strong>${escapeHtml(heroItem?.name || labels.treatmentsTitle)}</strong><span>${escapeHtml(heroItem?.shipping_label || labels.clinicDurations?.[0] || "")}</span></div>
+    </div>
+  </section>`;
+}
+
+function renderClinicServices(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="clinic-services-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).treatments)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    ${renderMedicalWellnessCatalog(marketplaceItems(schema), schema)}
+  </section>`;
+}
+
+function renderClinicTreatmentPath(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.carePathItems;
+  return `<section class="clinic-path-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.clinicCare)}</span><h2>${escapeHtml(editable.title || labels.carePathTitle)}</h2><p>${escapeHtml(editable.text || labels.carePathText)}</p></div>
+    <div class="clinic-path-list">${items.slice(0, 6).map((item, index) => `<article><span>0${index + 1}</span><strong>${escapeHtml(item)}</strong><p>${escapeHtml(index % 2 ? labels.personalizedPlan : labels.specialistLed)}</p></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderClinicTrust(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.clinicTrustItems;
+  return `<section class="clinic-trust-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.clinicCare)}</span><h2>${escapeHtml(editable.title || labels.clinicTrustTitle)}</h2><p>${escapeHtml(editable.text || labels.clinicTrustText)}</p></div>
+    <div class="clinic-trust-grid">${items.slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderClinicResults(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.resultItems;
+  return `<section class="clinic-results-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="clinic-results-copy"><span class="rendered-kicker">${escapeHtml(labels.results)}</span><h2>${escapeHtml(editable.title || labels.resultsTitle)}</h2><p>${escapeHtml(editable.text || labels.resultsText)}</p></div>
+    <div class="clinic-results-board">${items.slice(0, 4).map((item, index) => `<article><b>${index === 0 ? "01" : `0${index + 1}`}</b><strong>${escapeHtml(item)}</strong><span>${escapeHtml(index % 2 ? labels.clinicCare : labels.consultationBased)}</span></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderClinicTeam(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.clinicTeamItems;
+  return `<section class="clinic-team-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="clinic-team-media">${editable.image_url ? `<img src="${escapeAttribute(editable.image_url)}" alt="${escapeAttribute(editable.title || "")}">` : clinicVisualPlaceholder(schema)}</div>
+    <div><span class="rendered-kicker">${escapeHtml(labels.specialistLed)}</span><h2>${escapeHtml(editable.title || labels.clinicTeamTitle)}</h2><p>${escapeHtml(editable.text || labels.clinicTeamText)}</p><div class="clinic-mini-proof">${items.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div>
+  </section>`;
+}
+
+function renderClinicBooking(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="clinic-booking-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.bookConsultation)}</span><h2>${escapeHtml(editable.title || labels.clinicBookingTitle)}</h2><p>${escapeHtml(editable.text || labels.clinicBookingText)}</p></div>
+    <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.bookConsultation)}</a>
+  </section>`;
+}
+
+function clinicVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "CL").slice(0, 2).toUpperCase();
+  return `<div class="clinic-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).clinicCare)}</small></div>`;
+}
+
 function renderListingHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -9299,6 +9660,7 @@ function renderCatalogByType(catalogType, items, schema) {
     luxury_gallery_catalog: renderLuxuryGalleryCatalog,
     luxury_high_ticket_catalog: renderLuxuryHighTicketCatalog,
     education_course_catalog: renderEducationCourseCatalog,
+    medical_wellness_service_catalog: renderMedicalWellnessCatalog,
     digital_offer_catalog: renderDigitalOfferCatalog,
     restaurant_menu_catalog: renderRestaurantMenuCatalog,
     menu_catalog: renderRestaurantMenuCatalog,
@@ -9451,6 +9813,28 @@ function renderEducationCourseCatalog(items, schema) {
   </article>`).join("")}</div>`;
 }
 
+function renderMedicalWellnessCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-medical-wellness">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    <div class="clinic-card-top">
+      <small>${escapeHtml(item.deal_label || (index % 2 ? labels.specialistLed : labels.popularTreatment))}</small>
+      <span>${escapeHtml(item.shipping_label || labels.clinicDurations?.[index % (labels.clinicDurations?.length || 1)] || "")}</span>
+    </div>
+    <div class="clinic-card-visual">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : clinicVisualPlaceholder(schema)}</div>
+    <div class="clinic-card-body">
+      <small>${escapeHtml(item.category || labels.treatments)}</small>
+      <h3>${escapeHtml(item.name)}</h3>
+      <p>${escapeHtml(item.description)}</p>
+      <ul>
+        <li>${escapeHtml(labels.specialistLed)}</li>
+        <li>${escapeHtml(labels.personalizedPlan)}</li>
+        <li>${escapeHtml(labels.clinicCare)}</li>
+      </ul>
+      <div><strong>${escapeHtml(productPriceLabel(item) || labels.consultationBased)}</strong><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.bookConsultation)}</a></div>
+    </div>
+  </article>`).join("")}</div>`;
+}
+
 function renderDigitalOfferCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-digital-pro">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
@@ -9576,7 +9960,7 @@ function catalogLocaleLabels(schema) {
       search: "Search", searchPlaceholder: "Search products, brands, or categories", searchButton: "Search", shopNow: "Shop now", categories: "Categories", dealTitle: "Top picks", dealText: "Featured products, deals, and fast shipping options.", results: "Results", sortBy: "Sort by", featured: "Featured", secureCheckout: "Secure checkout", support: "Support", easyReturns: "Easy returns", trustTitle: "Marketplace trust", signature: "Signature", detail: "Detail", curated: "Curated", flagship: "Flagship", premiumSpecs: ["Presentation", "Quality", "Support", "Delivery"],
       sellerVerified: "Seller verified", used: "Used", newItem: "New", localPickup: "Local pickup", makeOffer: "Make offer", contactSeller: "Contact seller",
       listings: "Listings", areas: "Areas", searchListings: "Search listings", viewListings: "View listings", inquireNow: "Inquire now", featuredListing: "Featured listing", newListing: "New listing", availableNow: "Available now", listingPrice: "Price on request", listingSearchPlaceholder: "Search by location, type, price or keyword", listingFiltersTitle: "Search with the right filters", listingFiltersText: "Help customers narrow options by category, location, price and availability.", featuredListingsTitle: "Featured listings", featuredListingsText: "Active listings with price, location, specs and inquiry CTAs.", listingAreaTitle: "Explore the best areas", listingAreaText: "Area cards and location notes make discovery feel local.", listingTrustTitle: "Confidence before the inquiry", listingTrustText: "Verified details, contact paths and updated availability.", listingContactTitle: "Ask about a listing", listingContactText: "Send listing, budget, location and preferred contact method.", listingCategories: ["Homes", "Rentals", "Commercial", "Land", "Cars", "Featured"], listingLocations: ["Downtown", "North area", "West district", "Near schools", "Waterfront", "Business zone"], listingTrustItems: ["Verified details", "Updated availability", "Clear pricing", "Local support", "Fast response", "Easy comparison"],
-      newDrop: "New drop", limitedSelection: "Limited selection", collection: "Collection", provenance: "Provenance", privateInquiry: "Private inquiry", requestPrivateViewing: "Request private viewing", viewCollection: "View collection", priceOnRequest: "Price on request", limitedPiece: "Limited piece", authenticated: "Authenticated", privateService: "Private service", signaturePiece: "Signature piece", luxuryProvenanceTitle: "Provenance, authenticity and service", luxuryProvenanceText: "Confidence signals for high-ticket buyers before they inquire.", luxuryPrivateTitle: "Private appointment", luxuryPrivateText: "Request availability, preferred piece and contact method.", luxuryContactTitle: "Request a private consultation", luxuryContactText: "Send the piece, occasion, preferred timing and contact method.", luxuryProofItems: ["Verified provenance", "Limited availability", "Private advisor", "Insured handling", "Secure inquiry", "Concierge follow-up"], courseAcademy: "Course academy", programs: "Programs", curriculum: "Curriculum", enroll: "Enroll", enrollNow: "Enroll now", viewCurriculum: "View curriculum", coursePrice: "Enrollment price", featuredProgram: "Featured program", beginnerFriendly: "Beginner friendly", certificateReady: "Certificate-ready", outcomes: "Outcomes", instructor: "Instructor", outcomesTitle: "What students should be able to do", outcomesText: "Clear results, skills and confidence markers.", instructorTitle: "Expert guidance", instructorText: "Instructor credibility, method and support.", learningPathItems: ["Foundation", "Practice", "Apply", "Feedback", "Complete", "Next step"], learningOutcomeItems: ["Clear skill progression", "Practical assignments", "Editable curriculum", "Student-ready proof", "Support notes", "Launch-ready offer"], instructorTrustItems: ["Expert-led lessons", "Structured modules", "Support path", "Student outcomes"], educationDurations: ["4 weeks", "6 modules", "Live cohort", "Self-paced"], structuredModules: "Structured modules", practicalOutcome: "Practical outcome", flexibleAccess: "Flexible access", instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
+      newDrop: "New drop", limitedSelection: "Limited selection", collection: "Collection", provenance: "Provenance", privateInquiry: "Private inquiry", requestPrivateViewing: "Request private viewing", viewCollection: "View collection", priceOnRequest: "Price on request", limitedPiece: "Limited piece", authenticated: "Authenticated", privateService: "Private service", signaturePiece: "Signature piece", luxuryProvenanceTitle: "Provenance, authenticity and service", luxuryProvenanceText: "Confidence signals for high-ticket buyers before they inquire.", luxuryPrivateTitle: "Private appointment", luxuryPrivateText: "Request availability, preferred piece and contact method.", luxuryContactTitle: "Request a private consultation", luxuryContactText: "Send the piece, occasion, preferred timing and contact method.", luxuryProofItems: ["Verified provenance", "Limited availability", "Private advisor", "Insured handling", "Secure inquiry", "Concierge follow-up"], courseAcademy: "Course academy", programs: "Programs", curriculum: "Curriculum", enroll: "Enroll", enrollNow: "Enroll now", viewCurriculum: "View curriculum", coursePrice: "Enrollment price", featuredProgram: "Featured program", beginnerFriendly: "Beginner friendly", certificateReady: "Certificate-ready", outcomes: "Outcomes", instructor: "Instructor", outcomesTitle: "What students should be able to do", outcomesText: "Clear results, skills and confidence markers.", instructorTitle: "Expert guidance", instructorText: "Instructor credibility, method and support.", learningPathItems: ["Foundation", "Practice", "Apply", "Feedback", "Complete", "Next step"], learningOutcomeItems: ["Clear skill progression", "Practical assignments", "Editable curriculum", "Student-ready proof", "Support notes", "Launch-ready offer"], instructorTrustItems: ["Expert-led lessons", "Structured modules", "Support path", "Student outcomes"], educationDurations: ["4 weeks", "6 modules", "Live cohort", "Self-paced"], clinicCare: "Personalized care", treatments: "Treatments", results: "Results", bookConsultation: "Book consultation", viewTreatments: "View treatments", consultationBased: "Consultation-based", popularTreatment: "Popular treatment", specialistLed: "Specialist-led", personalizedPlan: "Personalized plan", treatmentsTitle: "Treatments and services", carePathTitle: "Clear care path", carePathText: "Consultation, plan, treatment and follow-up in one easy path.", carePathItems: ["Consultation", "Personal plan", "Treatment", "Progress check", "Aftercare", "Next visit"], clinicTrustTitle: "Trust and safety first", clinicTrustText: "Credentials, expectations and response details before booking.", clinicTrustItems: ["Specialist guidance", "Safety-first process", "Clear expectations", "Private consultation", "Aftercare notes", "Fast response"], resultsTitle: "Results with realistic expectations", resultsText: "Proof, transformation notes and follow-up details.", resultItems: ["Visible progress", "Before/after proof", "Personal plan", "Follow-up support"], clinicTeamTitle: "Specialists who guide the process", clinicTeamText: "Clinical standards, provider credibility and care philosophy.", clinicTeamItems: ["Credentialed team", "Consultation-first", "Patient education", "Care follow-up"], clinicBookingTitle: "Book a consultation or ask a question", clinicBookingText: "Send the preferred treatment, concern, schedule and contact method.", clinicDurations: ["30 min consult", "45 min session", "Personal plan", "Follow-up ready"], structuredModules: "Structured modules", practicalOutcome: "Practical outcome", flexibleAccess: "Flexible access", instantAccess: "Instant access", downloadable: "Downloadable content", bonus: "Bonus resources", lifetime: "Lifetime access", getAccess: "Get access",
       digitalProducts: "Digital products", viewProducts: "View products", modules: "Modules", digitalAccessShort: "Downloads, modules and support notes.", digitalBundleTitle: "Digital offers built to sell", digitalModulesTitle: "What customers get inside", digitalProofTitle: "Trust before checkout", digitalAccessTitle: "Get access and start immediately", digitalAccessText: "Customers know exactly what they receive, how access works and where to get support.", digitalModuleItems: ["Core training", "Downloadable resources", "Templates and tools", "Bonus material", "Access instructions", "Support notes"], digitalProofItems: ["Instant access", "Editable modules", "Clear license", "Support-ready", "Bundle value", "Simple checkout"],
       collections: "Collections", lookbook: "Lookbook", fit: "Fit guide", drop: "Drop", fitGuide: "Fit guide", fitGuideItems: ["Size and fit notes", "Styling suggestions", "Care details", "Shipping and returns"], fashionCollections: ["New arrivals", "Essentials", "Statement pieces", "Accessories", "Limited drop", "Best sellers"],
       company: "Company", services: "Services", process: "Process", proof: "Proof", capability: "Capability", requestConsultation: "Request consultation", viewServices: "View services", corporateProcessItems: ["Discovery", "Strategy", "Delivery", "Support"], corporateProofItems: ["Reliable delivery", "Clear communication", "Professional standards"],
@@ -9592,7 +9976,7 @@ function catalogLocaleLabels(schema) {
       search: "Buscar", searchPlaceholder: "Buscar productos, marcas o categorias", searchButton: "Buscar", shopNow: "Comprar ahora", categories: "Categorias", dealTitle: "Productos destacados", dealText: "Productos destacados, ofertas y opciones de envio rapido.", results: "Resultados", sortBy: "Ordenar por", featured: "Destacados", secureCheckout: "Checkout seguro", support: "Soporte", easyReturns: "Devoluciones simples", trustTitle: "Confianza marketplace", signature: "Principal", detail: "Detalle", curated: "Curado", flagship: "Producto estrella", premiumSpecs: ["Presentacion", "Calidad", "Soporte", "Entrega"],
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Nuevo", localPickup: "Retiro local", makeOffer: "Hacer oferta", contactSeller: "Contactar vendedor",
       listings: "Listings", areas: "Zonas", searchListings: "Buscar listings", viewListings: "Ver listings", inquireNow: "Consultar ahora", featuredListing: "Listing destacado", newListing: "Nuevo listing", availableNow: "Disponible", listingPrice: "Precio a consultar", listingSearchPlaceholder: "Buscar por ubicacion, tipo, precio o palabra clave", listingFiltersTitle: "Busca con filtros claros", listingFiltersText: "Ayuda al cliente a comparar por categoria, zona, precio y disponibilidad.", featuredListingsTitle: "Listings destacados", featuredListingsText: "Listings activos con precio, ubicacion, detalles y CTA de consulta.", listingAreaTitle: "Explora las mejores zonas", listingAreaText: "Tarjetas de zona y notas de ubicacion hacen la busqueda mas clara.", listingTrustTitle: "Confianza antes de consultar", listingTrustText: "Detalles verificados, contacto claro y disponibilidad actualizada.", listingContactTitle: "Pregunta por un listing", listingContactText: "Envia el listing, presupuesto, ubicacion y metodo de contacto.", listingCategories: ["Casas", "Alquileres", "Comercial", "Terrenos", "Autos", "Destacados"], listingLocations: ["Centro", "Zona norte", "Distrito oeste", "Cerca de escuelas", "Frente al agua", "Zona comercial"], listingTrustItems: ["Detalles verificados", "Disponibilidad actualizada", "Precios claros", "Soporte local", "Respuesta rapida", "Comparacion simple"],
-      newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", collection: "Coleccion", provenance: "Provenance", privateInquiry: "Consulta privada", requestPrivateViewing: "Solicitar cita privada", viewCollection: "Ver coleccion", priceOnRequest: "Precio bajo consulta", limitedPiece: "Pieza limitada", authenticated: "Autenticada", privateService: "Servicio privado", signaturePiece: "Pieza protagonista", luxuryProvenanceTitle: "Provenance, autenticidad y servicio", luxuryProvenanceText: "Senales de confianza para compradores de alto valor antes de consultar.", luxuryPrivateTitle: "Cita privada", luxuryPrivateText: "Solicita disponibilidad, pieza preferida y metodo de contacto.", luxuryContactTitle: "Solicita una consulta privada", luxuryContactText: "Envia la pieza, ocasion, horario preferido y metodo de contacto.", luxuryProofItems: ["Provenance verificada", "Disponibilidad limitada", "Asesor privado", "Manejo asegurado", "Consulta segura", "Seguimiento concierge"], courseAcademy: "Academia de cursos", programs: "Programas", curriculum: "Curriculum", enroll: "Inscripcion", enrollNow: "Inscribirme", viewCurriculum: "Ver curriculum", coursePrice: "Precio de inscripcion", featuredProgram: "Programa destacado", beginnerFriendly: "Ideal para empezar", certificateReady: "Con certificado", outcomes: "Resultados", instructor: "Instructor", outcomesTitle: "Lo que el estudiante debe lograr", outcomesText: "Resultados, habilidades y senales claras de avance.", instructorTitle: "Guia experta", instructorText: "Credibilidad del instructor, metodo y soporte.", learningPathItems: ["Base", "Practica", "Aplicacion", "Soporte", "Resultado", "Siguiente paso"], learningOutcomeItems: ["Progreso claro", "Practicas accionables", "Curriculum editable", "Prueba para estudiantes", "Notas de soporte", "Oferta lista"], instructorTrustItems: ["Clases expertas", "Modulos estructurados", "Ruta de soporte", "Resultados"], educationDurations: ["4 semanas", "6 modulos", "Cohorte en vivo", "A tu ritmo"], structuredModules: "Modulos estructurados", practicalOutcome: "Resultado practico", flexibleAccess: "Acceso flexible", instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
+      newDrop: "Nuevo drop", limitedSelection: "Seleccion limitada", collection: "Coleccion", provenance: "Provenance", privateInquiry: "Consulta privada", requestPrivateViewing: "Solicitar cita privada", viewCollection: "Ver coleccion", priceOnRequest: "Precio bajo consulta", limitedPiece: "Pieza limitada", authenticated: "Autenticada", privateService: "Servicio privado", signaturePiece: "Pieza protagonista", luxuryProvenanceTitle: "Provenance, autenticidad y servicio", luxuryProvenanceText: "Senales de confianza para compradores de alto valor antes de consultar.", luxuryPrivateTitle: "Cita privada", luxuryPrivateText: "Solicita disponibilidad, pieza preferida y metodo de contacto.", luxuryContactTitle: "Solicita una consulta privada", luxuryContactText: "Envia la pieza, ocasion, horario preferido y metodo de contacto.", luxuryProofItems: ["Provenance verificada", "Disponibilidad limitada", "Asesor privado", "Manejo asegurado", "Consulta segura", "Seguimiento concierge"], courseAcademy: "Academia de cursos", programs: "Programas", curriculum: "Curriculum", enroll: "Inscripcion", enrollNow: "Inscribirme", viewCurriculum: "Ver curriculum", coursePrice: "Precio de inscripcion", featuredProgram: "Programa destacado", beginnerFriendly: "Ideal para empezar", certificateReady: "Con certificado", outcomes: "Resultados", instructor: "Instructor", outcomesTitle: "Lo que el estudiante debe lograr", outcomesText: "Resultados, habilidades y senales claras de avance.", instructorTitle: "Guia experta", instructorText: "Credibilidad del instructor, metodo y soporte.", learningPathItems: ["Base", "Practica", "Aplicacion", "Soporte", "Resultado", "Siguiente paso"], learningOutcomeItems: ["Progreso claro", "Practicas accionables", "Curriculum editable", "Prueba para estudiantes", "Notas de soporte", "Oferta lista"], instructorTrustItems: ["Clases expertas", "Modulos estructurados", "Ruta de soporte", "Resultados"], educationDurations: ["4 semanas", "6 modulos", "Cohorte en vivo", "A tu ritmo"], clinicCare: "Cuidado personalizado", treatments: "Tratamientos", results: "Resultados", bookConsultation: "Agendar consulta", viewTreatments: "Ver tratamientos", consultationBased: "Segun consulta", popularTreatment: "Tratamiento popular", specialistLed: "Guiado por especialista", personalizedPlan: "Plan personalizado", treatmentsTitle: "Tratamientos y servicios", carePathTitle: "Ruta clara de atencion", carePathText: "Consulta, plan, tratamiento y seguimiento en un camino simple.", carePathItems: ["Consulta", "Plan personal", "Tratamiento", "Revision", "Cuidado posterior", "Proxima visita"], clinicTrustTitle: "Confianza y seguridad primero", clinicTrustText: "Credenciales, expectativas y respuesta antes de reservar.", clinicTrustItems: ["Guia especializada", "Proceso seguro", "Expectativas claras", "Consulta privada", "Cuidado posterior", "Respuesta rapida"], resultsTitle: "Resultados con expectativas reales", resultsText: "Pruebas, notas de transformacion y seguimiento.", resultItems: ["Progreso visible", "Antes/despues", "Plan personal", "Seguimiento"], clinicTeamTitle: "Especialistas que guian el proceso", clinicTeamText: "Estandares clinicos, credibilidad y filosofia de atencion.", clinicTeamItems: ["Equipo certificado", "Consulta primero", "Educacion al paciente", "Seguimiento"], clinicBookingTitle: "Agenda una consulta o pregunta", clinicBookingText: "Envia tratamiento, inquietud, horario y metodo de contacto.", clinicDurations: ["Consulta 30 min", "Sesion 45 min", "Plan personal", "Seguimiento"], structuredModules: "Modulos estructurados", practicalOutcome: "Resultado practico", flexibleAccess: "Acceso flexible", instantAccess: "Acceso inmediato", downloadable: "Contenido descargable", bonus: "Recursos extra", lifetime: "Acceso de por vida", getAccess: "Obtener acceso",
       digitalProducts: "Productos digitales", viewProducts: "Ver productos", modules: "Modulos", digitalAccessShort: "Descargas, modulos y notas de soporte.", digitalBundleTitle: "Ofertas digitales listas para vender", digitalModulesTitle: "Que recibe el cliente", digitalProofTitle: "Confianza antes del checkout", digitalAccessTitle: "Obten acceso y empieza de inmediato", digitalAccessText: "El cliente sabe exactamente que recibe, como entra y donde pide soporte.", digitalModuleItems: ["Entrenamiento principal", "Recursos descargables", "Plantillas y herramientas", "Material bonus", "Instrucciones de acceso", "Notas de soporte"], digitalProofItems: ["Acceso inmediato", "Modulos editables", "Licencia clara", "Soporte listo", "Valor del bundle", "Checkout simple"],
       collections: "Colecciones", lookbook: "Lookbook", fit: "Guia de tallas", drop: "Drop", fitGuide: "Guia de tallas", fitGuideItems: ["Notas de talla y ajuste", "Sugerencias de estilo", "Cuidados de la prenda", "Envios y devoluciones"], fashionCollections: ["Novedades", "Esenciales", "Piezas destacadas", "Accesorios", "Drop limitado", "Mas vendidos"],
       company: "Empresa", services: "Servicios", process: "Proceso", proof: "Prueba", capability: "Capacidad", requestConsultation: "Solicitar consulta", viewServices: "Ver servicios", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Soporte"], corporateProofItems: ["Entrega confiable", "Comunicacion clara", "Estandares profesionales"],
@@ -9608,7 +9992,7 @@ function catalogLocaleLabels(schema) {
       search: "Recherche", searchPlaceholder: "Rechercher produits, marques ou categories", searchButton: "Rechercher", shopNow: "Acheter", categories: "Categories", dealTitle: "Selections", dealText: "Produits mis en avant, offres et options de livraison rapide.", results: "Resultats", sortBy: "Trier par", featured: "Mis en avant", secureCheckout: "Paiement securise", support: "Support", easyReturns: "Retours simples", trustTitle: "Confiance marketplace", signature: "Signature", detail: "Detail", curated: "Soigne", flagship: "Produit phare", premiumSpecs: ["Presentation", "Qualite", "Support", "Livraison"],
       sellerVerified: "Vendeur vérifié", used: "Occasion", newItem: "Neuf", localPickup: "Retrait local", makeOffer: "Faire une offre", contactSeller: "Contacter le vendeur",
       listings: "Annonces", areas: "Zones", searchListings: "Rechercher", viewListings: "Voir les annonces", inquireNow: "Demander", featuredListing: "Annonce en avant", newListing: "Nouvelle annonce", availableNow: "Disponible", listingPrice: "Prix sur demande", listingSearchPlaceholder: "Rechercher par lieu, type, prix ou mot-cle", listingFiltersTitle: "Rechercher avec les bons filtres", listingFiltersText: "Aidez les clients a comparer par categorie, zone, prix et disponibilite.", featuredListingsTitle: "Annonces en avant", featuredListingsText: "Annonces actives avec prix, localisation, details et CTA.", listingAreaTitle: "Explorer les meilleures zones", listingAreaText: "Cartes de zones et notes locales pour clarifier la recherche.", listingTrustTitle: "Confiance avant la demande", listingTrustText: "Details verifies, contact clair et disponibilite mise a jour.", listingContactTitle: "Demander une annonce", listingContactText: "Envoyez l'annonce, le budget, la localisation et le contact prefere.", listingCategories: ["Maisons", "Locations", "Commercial", "Terrain", "Voitures", "En avant"], listingLocations: ["Centre", "Zone nord", "Quartier ouest", "Pres des ecoles", "Bord de l'eau", "Zone business"], listingTrustItems: ["Details verifies", "Disponibilite a jour", "Prix clairs", "Support local", "Reponse rapide", "Comparaison simple"],
-      newDrop: "Nouvelle collection", limitedSelection: "Sélection limitée", courseAcademy: "Academie de cours", programs: "Programmes", curriculum: "Programme", enroll: "Inscription", enrollNow: "S'inscrire", viewCurriculum: "Voir le programme", coursePrice: "Prix d'inscription", featuredProgram: "Programme phare", beginnerFriendly: "Pour debuter", certificateReady: "Certificat pret", outcomes: "Resultats", instructor: "Instructeur", outcomesTitle: "Ce que l'etudiant doit savoir faire", outcomesText: "Resultats, competences et progression claire.", instructorTitle: "Guidage expert", instructorText: "Credibilite, methode et support.", learningPathItems: ["Bases", "Pratique", "Application", "Support", "Resultat", "Suite"], learningOutcomeItems: ["Progression claire", "Exercices pratiques", "Programme modifiable", "Preuve etudiante", "Notes support", "Offre prete"], instructorTrustItems: ["Cours experts", "Modules structures", "Support", "Resultats"], educationDurations: ["4 semaines", "6 modules", "Cohorte live", "A son rythme"], structuredModules: "Modules structures", practicalOutcome: "Resultat pratique", flexibleAccess: "Acces flexible", instantAccess: "Accès immédiat", downloadable: "Contenu téléchargeable", bonus: "Ressources bonus", lifetime: "Accès à vie", getAccess: "Obtenir l'accès",
+      newDrop: "Nouvelle collection", limitedSelection: "Sélection limitée", courseAcademy: "Academie de cours", programs: "Programmes", curriculum: "Programme", enroll: "Inscription", enrollNow: "S'inscrire", viewCurriculum: "Voir le programme", coursePrice: "Prix d'inscription", featuredProgram: "Programme phare", beginnerFriendly: "Pour debuter", certificateReady: "Certificat pret", outcomes: "Resultats", instructor: "Instructeur", outcomesTitle: "Ce que l'etudiant doit savoir faire", outcomesText: "Resultats, competences et progression claire.", instructorTitle: "Guidage expert", instructorText: "Credibilite, methode et support.", learningPathItems: ["Bases", "Pratique", "Application", "Support", "Resultat", "Suite"], learningOutcomeItems: ["Progression claire", "Exercices pratiques", "Programme modifiable", "Preuve etudiante", "Notes support", "Offre prete"], instructorTrustItems: ["Cours experts", "Modules structures", "Support", "Resultats"], educationDurations: ["4 semaines", "6 modules", "Cohorte live", "A son rythme"], clinicCare: "Soin personnalise", treatments: "Soins", results: "Resultats", bookConsultation: "Reserver une consultation", viewTreatments: "Voir les soins", consultationBased: "Selon consultation", popularTreatment: "Soin populaire", specialistLed: "Guide par specialiste", personalizedPlan: "Plan personnalise", treatmentsTitle: "Soins et services", carePathTitle: "Parcours de soin clair", carePathText: "Consultation, plan, soin et suivi dans un parcours simple.", carePathItems: ["Consultation", "Plan personnel", "Soin", "Suivi", "Apres-soin", "Prochaine visite"], clinicTrustTitle: "Confiance et securite", clinicTrustText: "Diplomes, attentes et reponse avant reservation.", clinicTrustItems: ["Guidage specialise", "Processus securise", "Attentes claires", "Consultation privee", "Apres-soin", "Reponse rapide"], resultsTitle: "Resultats realistes", resultsText: "Preuves, notes de transformation et suivi.", resultItems: ["Progres visible", "Avant/apres", "Plan personnel", "Suivi"], clinicTeamTitle: "Specialistes qui guident le processus", clinicTeamText: "Standards cliniques, credibilite et philosophie de soin.", clinicTeamItems: ["Equipe certifiee", "Consultation d'abord", "Education patient", "Suivi"], clinicBookingTitle: "Reserver ou poser une question", clinicBookingText: "Envoyez soin, besoin, horaire et contact.", clinicDurations: ["Consultation 30 min", "Session 45 min", "Plan personnel", "Suivi pret"], structuredModules: "Modules structures", practicalOutcome: "Resultat pratique", flexibleAccess: "Acces flexible", instantAccess: "Accès immédiat", downloadable: "Contenu téléchargeable", bonus: "Ressources bonus", lifetime: "Accès à vie", getAccess: "Obtenir l'accès",
       digitalProducts: "Produits digitaux", viewProducts: "Voir les produits", modules: "Modules", digitalAccessShort: "Telechargements, modules et notes de support.", digitalBundleTitle: "Offres digitales pretes a vendre", digitalModulesTitle: "Ce que le client recoit", digitalProofTitle: "Confiance avant paiement", digitalAccessTitle: "Obtenir l'acces et commencer tout de suite", digitalAccessText: "Le client sait exactement ce qu'il recoit, comment acceder et ou demander du support.", digitalModuleItems: ["Formation principale", "Ressources telechargeables", "Modeles et outils", "Bonus", "Instructions d'acces", "Notes de support"], digitalProofItems: ["Acces immediat", "Modules modifiables", "Licence claire", "Support pret", "Valeur du bundle", "Paiement simple"],
       collections: "Collections", lookbook: "Lookbook", fit: "Guide des tailles", drop: "Drop", fitGuide: "Guide des tailles", fitGuideItems: ["Notes de taille", "Suggestions de style", "Conseils d'entretien", "Livraison et retours"], fashionCollections: ["Nouveautes", "Essentiels", "Pieces fortes", "Accessoires", "Drop limite", "Meilleures ventes"],
       company: "Entreprise", services: "Services", process: "Processus", proof: "Preuve", capability: "Capacite", requestConsultation: "Demander une consultation", viewServices: "Voir les services", corporateProcessItems: ["Diagnostic", "Strategie", "Livraison", "Support"], corporateProofItems: ["Livraison fiable", "Communication claire", "Standards professionnels"],
@@ -9624,7 +10008,7 @@ function catalogLocaleLabels(schema) {
       search: "Buscar", searchPlaceholder: "Buscar produtos, marcas ou categorias", searchButton: "Buscar", shopNow: "Comprar agora", categories: "Categorias", dealTitle: "Destaques", dealText: "Produtos em destaque, ofertas e opcoes de entrega rapida.", results: "Resultados", sortBy: "Ordenar por", featured: "Destaques", secureCheckout: "Checkout seguro", support: "Suporte", easyReturns: "Devolucoes simples", trustTitle: "Confianca marketplace", signature: "Principal", detail: "Detalhe", curated: "Curado", flagship: "Produto principal", premiumSpecs: ["Apresentacao", "Qualidade", "Suporte", "Entrega"],
       sellerVerified: "Vendedor verificado", used: "Usado", newItem: "Novo", localPickup: "Retirada local", makeOffer: "Fazer oferta", contactSeller: "Contatar vendedor",
       listings: "Anuncios", areas: "Areas", searchListings: "Buscar anuncios", viewListings: "Ver anuncios", inquireNow: "Consultar agora", featuredListing: "Anuncio destaque", newListing: "Novo anuncio", availableNow: "Disponivel", listingPrice: "Preco sob consulta", listingSearchPlaceholder: "Buscar por localizacao, tipo, preco ou palavra-chave", listingFiltersTitle: "Busca com filtros claros", listingFiltersText: "Ajude o cliente a comparar por categoria, area, preco e disponibilidade.", featuredListingsTitle: "Anuncios em destaque", featuredListingsText: "Anuncios ativos com preco, localizacao, detalhes e CTA de consulta.", listingAreaTitle: "Explore as melhores areas", listingAreaText: "Cards de area e notas locais deixam a busca clara.", listingTrustTitle: "Confianca antes da consulta", listingTrustText: "Detalhes verificados, contato claro e disponibilidade atualizada.", listingContactTitle: "Perguntar sobre um anuncio", listingContactText: "Envie o anuncio, orcamento, localizacao e metodo de contato.", listingCategories: ["Casas", "Alugueis", "Comercial", "Terrenos", "Carros", "Destaques"], listingLocations: ["Centro", "Zona norte", "Distrito oeste", "Perto de escolas", "Frente a agua", "Zona comercial"], listingTrustItems: ["Detalhes verificados", "Disponibilidade atualizada", "Precos claros", "Suporte local", "Resposta rapida", "Comparacao simples"],
-      newDrop: "Novo drop", limitedSelection: "Seleção limitada", courseAcademy: "Academia de cursos", programs: "Programas", curriculum: "Curriculo", enroll: "Inscricao", enrollNow: "Inscrever-se", viewCurriculum: "Ver curriculo", coursePrice: "Preco de inscricao", featuredProgram: "Programa destaque", beginnerFriendly: "Para iniciantes", certificateReady: "Com certificado", outcomes: "Resultados", instructor: "Instrutor", outcomesTitle: "O que o aluno deve conseguir fazer", outcomesText: "Resultados, habilidades e progresso claro.", instructorTitle: "Guia especialista", instructorText: "Credibilidade, metodo e suporte.", learningPathItems: ["Base", "Pratica", "Aplicacao", "Suporte", "Resultado", "Proximo passo"], learningOutcomeItems: ["Progressao clara", "Atividades praticas", "Curriculo editavel", "Prova para alunos", "Notas de suporte", "Oferta pronta"], instructorTrustItems: ["Aulas especialistas", "Modulos estruturados", "Suporte", "Resultados"], educationDurations: ["4 semanas", "6 modulos", "Turma ao vivo", "No seu ritmo"], structuredModules: "Modulos estruturados", practicalOutcome: "Resultado pratico", flexibleAccess: "Acesso flexivel", instantAccess: "Acesso imediato", downloadable: "Conteúdo baixável", bonus: "Recursos bônus", lifetime: "Acesso vitalício", getAccess: "Obter acesso",
+      newDrop: "Novo drop", limitedSelection: "Seleção limitada", courseAcademy: "Academia de cursos", programs: "Programas", curriculum: "Curriculo", enroll: "Inscricao", enrollNow: "Inscrever-se", viewCurriculum: "Ver curriculo", coursePrice: "Preco de inscricao", featuredProgram: "Programa destaque", beginnerFriendly: "Para iniciantes", certificateReady: "Com certificado", outcomes: "Resultados", instructor: "Instrutor", outcomesTitle: "O que o aluno deve conseguir fazer", outcomesText: "Resultados, habilidades e progresso claro.", instructorTitle: "Guia especialista", instructorText: "Credibilidade, metodo e suporte.", learningPathItems: ["Base", "Pratica", "Aplicacao", "Suporte", "Resultado", "Proximo passo"], learningOutcomeItems: ["Progressao clara", "Atividades praticas", "Curriculo editavel", "Prova para alunos", "Notas de suporte", "Oferta pronta"], instructorTrustItems: ["Aulas especialistas", "Modulos estruturados", "Suporte", "Resultados"], educationDurations: ["4 semanas", "6 modulos", "Turma ao vivo", "No seu ritmo"], clinicCare: "Cuidado personalizado", treatments: "Tratamentos", results: "Resultados", bookConsultation: "Agendar consulta", viewTreatments: "Ver tratamentos", consultationBased: "Sob consulta", popularTreatment: "Tratamento popular", specialistLed: "Com especialista", personalizedPlan: "Plano personalizado", treatmentsTitle: "Tratamentos e servicos", carePathTitle: "Caminho de cuidado claro", carePathText: "Consulta, plano, tratamento e acompanhamento em um caminho simples.", carePathItems: ["Consulta", "Plano pessoal", "Tratamento", "Revisao", "Pos-cuidado", "Proxima visita"], clinicTrustTitle: "Confianca e seguranca", clinicTrustText: "Credenciais, expectativas e resposta antes de agendar.", clinicTrustItems: ["Guia especializada", "Processo seguro", "Expectativas claras", "Consulta privada", "Pos-cuidado", "Resposta rapida"], resultsTitle: "Resultados realistas", resultsText: "Provas, notas de transformacao e acompanhamento.", resultItems: ["Progresso visivel", "Antes/depois", "Plano pessoal", "Acompanhamento"], clinicTeamTitle: "Especialistas que guiam o processo", clinicTeamText: "Padroes clinicos, credibilidade e filosofia de cuidado.", clinicTeamItems: ["Equipe certificada", "Consulta primeiro", "Educacao do paciente", "Acompanhamento"], clinicBookingTitle: "Agende uma consulta ou pergunte", clinicBookingText: "Envie tratamento, duvida, horario e contato.", clinicDurations: ["Consulta 30 min", "Sessao 45 min", "Plano pessoal", "Acompanhamento"], structuredModules: "Modulos estruturados", practicalOutcome: "Resultado pratico", flexibleAccess: "Acesso flexivel", instantAccess: "Acesso imediato", downloadable: "Conteúdo baixável", bonus: "Recursos bônus", lifetime: "Acesso vitalício", getAccess: "Obter acesso",
       digitalProducts: "Produtos digitais", viewProducts: "Ver produtos", modules: "Modulos", digitalAccessShort: "Downloads, modulos e notas de suporte.", digitalBundleTitle: "Ofertas digitais prontas para vender", digitalModulesTitle: "O que o cliente recebe", digitalProofTitle: "Confianca antes do checkout", digitalAccessTitle: "Obtenha acesso e comece imediatamente", digitalAccessText: "O cliente sabe exatamente o que recebe, como acessar e onde pedir suporte.", digitalModuleItems: ["Treinamento principal", "Recursos para download", "Templates e ferramentas", "Material bonus", "Instrucoes de acesso", "Notas de suporte"], digitalProofItems: ["Acesso imediato", "Modulos editaveis", "Licenca clara", "Suporte pronto", "Valor do bundle", "Checkout simples"],
       collections: "Colecoes", lookbook: "Lookbook", fit: "Guia de tamanhos", drop: "Drop", fitGuide: "Guia de tamanhos", fitGuideItems: ["Notas de tamanho e caimento", "Sugestoes de estilo", "Cuidados com a peca", "Envios e devolucoes"], fashionCollections: ["Novidades", "Essenciais", "Pecas destaque", "Acessorios", "Drop limitado", "Mais vendidos"],
       company: "Empresa", services: "Servicos", process: "Processo", proof: "Prova", capability: "Capacidade", requestConsultation: "Solicitar consulta", viewServices: "Ver servicos", corporateProcessItems: ["Diagnostico", "Estrategia", "Entrega", "Suporte"], corporateProofItems: ["Entrega confiavel", "Comunicacao clara", "Padroes profissionais"],
