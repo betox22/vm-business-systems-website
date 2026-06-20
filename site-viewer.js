@@ -128,6 +128,12 @@ function renderSection(section, schema) {
   if (section.type === "EnterpriseProof") return renderEnterpriseProof(section, schema);
   if (section.type === "EnterprisePricing") return renderEnterprisePricing(section, schema);
   if (section.type === "EnterpriseDemo") return renderEnterpriseDemo(section, schema);
+  if (section.type === "IndustrialHero") return renderIndustrialHero(section, schema);
+  if (section.type === "IndustrialSpecCatalog") return renderIndustrialSpecCatalog(section, schema);
+  if (section.type === "IndustrialCapabilities") return renderIndustrialCapabilities(section, schema);
+  if (section.type === "IndustrialCertifications") return renderIndustrialCertifications(section, schema);
+  if (section.type === "IndustrialSupplyChain") return renderIndustrialSupplyChain(section, schema);
+  if (section.type === "IndustrialQuotePanel") return renderIndustrialQuotePanel(section, schema);
   if (section.type === "ListingHero") return renderListingHero(section, schema);
   if (section.type === "ListingFilters") return renderListingFilters(section, schema);
   if (section.type === "ListingFeatured") return renderListingFeatured(section, schema);
@@ -755,6 +761,8 @@ function renderProductGrid(section, schema) {
                           ? renderLegalProfessionalCatalog(catalogItems, schema)
                           : catalogType === "b2b_solution_catalog"
                             ? renderB2BSolutionCatalog(catalogItems, schema)
+                            : catalogType === "industrial_supplier_catalog"
+                              ? renderIndustrialSupplierCatalog(catalogItems, schema)
                   : catalogType === "real_estate_listing_catalog"
                     ? renderRealEstateListingCatalog(catalogItems, schema)
                   : catalogType === "lead_funnel_offer_catalog"
@@ -1021,6 +1029,14 @@ function renderB2BSolutionCatalog(items, schema) {
     <div class="b2b-card-top"><small>${escapeHtml(item.deal_label || (index % 2 ? labels.integrationReady : labels.enterpriseReady))}</small><span>${escapeHtml(item.shipping_label || labels.enterpriseTimelines?.[index % (labels.enterpriseTimelines?.length || 1)] || "")}</span></div>
     <div class="b2b-card-body"><small>${escapeHtml(item.category || labels.solutions)}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><ul><li>${escapeHtml(labels.roiFocused)}</li><li>${escapeHtml(labels.integrationReady)}</li><li>${escapeHtml(labels.enterpriseReady)}</li></ul><div><strong>${escapeHtml(item.price_label || labels.customPlan)}</strong><button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.requestDemo)}</button></div></div>
   </article>`).join("")}</div>`;
+}
+
+function renderIndustrialSupplierCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-industrial-supplier">${items.map((item, index) => {
+    const specs = item.specs || {};
+    return `<article class="${index === 0 ? "featured" : ""}"><div class="industrial-card-head"><small>${escapeHtml(item.deal_label || (index % 2 ? labels.bulkReady : labels.certified))}</small><b>${escapeHtml(specs.sku || item.sku || `IND-${String(index + 1).padStart(3, "0")}`)}</b></div><div class="industrial-card-visual">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : industrialVisualPlaceholder(schema)}</div><div class="industrial-card-body"><span>${escapeHtml(item.category || labels.industrialSupplier)}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><dl><div><dt>MOQ</dt><dd>${escapeHtml(specs.moq || (index % 2 ? "100+" : "25+"))}</dd></div><div><dt>${escapeHtml(labels.delivery)}</dt><dd>${escapeHtml(specs.lead_time || item.shipping_label || labels.industrialLeadTimes?.[index % (labels.industrialLeadTimes?.length || 1)] || "")}</dd></div><div><dt>Material</dt><dd>${escapeHtml(specs.material || labels.industrialMaterials?.[index % (labels.industrialMaterials?.length || 1)] || labels.specReady)}</dd></div></dl><div><strong>${escapeHtml(item.price_label || labels.quoteRequired)}</strong><button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.requestQuote)}</button></div></div></article>`;
+  }).join("")}</div>`;
 }
 
 function digitalVisualPlaceholder(schema) {
@@ -1397,6 +1413,52 @@ function enterpriseVisualPlaceholder(schema) {
   return `<div class="enterprise-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).enterprisePlatform)}</small></div>`;
 }
 
+function renderIndustrialHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = publicCatalogItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url) || items[0];
+  const image = editable.image_url || heroItem?.image_url || "";
+  return `<section class="industrial-hero ${sectionClass(section)}"><div class="industrial-hero-copy"><span class="rendered-kicker">${escapeHtml(editable.badge || labels.industrialSupplier)}</span><h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1><p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p><div class="rendered-actions"><button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.requestQuote)}</button><button class="rendered-button secondary" data-open-lead type="button">${escapeHtml(editable.secondary_button || labels.viewSpecs)}</button></div><div class="industrial-proof-strip">${(labels.industrialCertificationItems || []).slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div><div class="industrial-rfq-dashboard"><div class="industrial-dashboard-top"><span></span><span></span><span></span><b>${escapeHtml(labels.requestQuote)}</b></div><div class="industrial-dashboard-body"><div class="industrial-product-visual">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(heroItem?.name || schema.business?.name || "")}">` : industrialVisualPlaceholder(schema)}</div><div class="industrial-spec-table">${(items.length ? items : [{ name: labels.industrialCatalogTitle }, { name: labels.certifications }, { name: labels.supplyChain }]).slice(0, 4).map((item, index) => `<div><b>${escapeHtml(item.specs?.sku || `IND-${String(index + 1).padStart(3, "0")}`)}</b><span>${escapeHtml(item.name)}</span><small>${escapeHtml(item.shipping_label || labels.industrialLeadTimes?.[index % (labels.industrialLeadTimes?.length || 1)] || "")}</small></div>`).join("")}</div></div></div></section>`;
+}
+
+function renderIndustrialSpecCatalog(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="industrial-catalog-section ${sectionClass(section)}"><div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).viewSpecs)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>${renderIndustrialSupplierCatalog(publicCatalogItems(schema), schema)}</section>`;
+}
+
+function renderIndustrialCapabilities(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.industrialCapabilityItems;
+  return `<section class="industrial-capabilities-section ${sectionClass(section)}"><div><span class="rendered-kicker">${escapeHtml(labels.capabilities)}</span><h2>${escapeHtml(editable.title || labels.industrialCapabilitiesTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialCapabilitiesText)}</p></div><div class="industrial-capability-grid">${items.slice(0, 6).map((item, index) => `<article><b>0${index + 1}</b><strong>${escapeHtml(item)}</strong><span>${escapeHtml(index % 2 ? labels.bulkReady : labels.specReady)}</span></article>`).join("")}</div></section>`;
+}
+
+function renderIndustrialCertifications(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.industrialCertificationItems;
+  return `<section class="industrial-certifications-section ${sectionClass(section)}"><div><span class="rendered-kicker">${escapeHtml(labels.certifications)}</span><h2>${escapeHtml(editable.title || labels.industrialCertificationsTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialCertificationsText)}</p></div><div class="industrial-cert-grid">${items.slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></section>`;
+}
+
+function renderIndustrialSupplyChain(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.industrialSupplyItems;
+  return `<section class="industrial-supply-section ${sectionClass(section)}"><div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.supplyChain)}</span><h2>${escapeHtml(editable.title || labels.industrialSupplyTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialSupplyText)}</p></div><div class="industrial-supply-line">${items.slice(0, 6).map((item, index) => `<article><small>STEP ${index + 1}</small><strong>${escapeHtml(item)}</strong></article>`).join("")}</div></section>`;
+}
+
+function renderIndustrialQuotePanel(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="industrial-quote-section ${sectionClass(section)}"><div class="industrial-quote-card"><div><span class="rendered-kicker">${escapeHtml(labels.requestQuote)}</span><h2>${escapeHtml(editable.title || labels.industrialQuoteTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialQuoteText)}</p></div><div class="industrial-rfq-fields"><span>SKU / Spec</span><span>Quantity / MOQ</span><span>Material</span><span>Deadline</span></div><button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.requestQuote)}</button></div></section>`;
+}
+
+function industrialVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "IN").slice(0, 2).toUpperCase();
+  return `<div class="industrial-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).industrialSupplier)}</small></div>`;
+}
+
 function renderListingHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -1585,7 +1647,13 @@ function catalogLocaleLabels(schema) {
     fr: { enterprisePlatform: "Plateforme entreprise", requestDemo: "Demander une demo", viewSolutions: "Voir les solutions", solutions: "Solutions", useCases: "Cas d'usage", integrations: "Integrations", customPlan: "Plan personnalise", enterpriseReady: "Pret entreprise", integrationReady: "Pret integration", roiFocused: "Oriente ROI", enterpriseSolutionsTitle: "Solutions pour equipes operationnelles", enterpriseUseCasesTitle: "Cas d'usage par workflow", enterpriseUseCasesText: "Montrez l'adaptation aux equipes cles.", enterpriseUseCaseItems: ["Automatiser le travail manuel", "Centraliser les rapports", "Connecter les outils", "Ameliorer la visibilite", "Reduire les delais", "Scaler les operations"], enterpriseIntegrationsTitle: "Integrations et deploiement", enterpriseIntegrationsText: "APIs, CRM, ERP, paiements, analytics et support.", enterpriseIntegrationItems: ["CRM", "ERP", "Paiements", "Analytics", "Support", "API custom"], enterpriseProofTitle: "Preuves avant la demo", enterpriseProofText: "Securite, deploiement, ROI et support.", enterpriseProofItems: ["Workflows securises", "Support deploiement", "ROI clair", "Controles admin", "API prete", "Onboarding"], enterprisePricingTitle: "Packages simples a scaler", enterprisePricingText: "Starter, growth et enterprise.", enterpriseDemoTitle: "Reserver une demo ou analyse solution", enterpriseDemoText: "Envoyez equipe, outils, probleme et contact.", enterpriseTimelines: ["Demo d'abord", "Setup 2 semaines", "API prete", "Deploiement guide"] },
     pt: { enterprisePlatform: "Plataforma empresarial", requestDemo: "Solicitar demo", viewSolutions: "Ver solucoes", solutions: "Solucoes", useCases: "Casos de uso", integrations: "Integracoes", customPlan: "Plano personalizado", enterpriseReady: "Pronto para empresa", integrationReady: "Pronto para integrar", roiFocused: "Focado em ROI", enterpriseSolutionsTitle: "Solucoes para equipes operacionais", enterpriseUseCasesTitle: "Casos de uso por workflow", enterpriseUseCasesText: "Mostre como a solucao se encaixa em equipes chave.", enterpriseUseCaseItems: ["Automatizar trabalho manual", "Centralizar relatorios", "Conectar ferramentas", "Melhorar visibilidade", "Reduzir atrasos", "Escalar operacoes"], enterpriseIntegrationsTitle: "Integracoes e implementacao", enterpriseIntegrationsText: "APIs, CRM, ERP, pagamentos, analytics e suporte.", enterpriseIntegrationItems: ["CRM", "ERP", "Pagamentos", "Analytics", "Suporte", "API custom"], enterpriseProofTitle: "Provas antes da demo", enterpriseProofText: "Seguranca, implementacao, ROI e suporte.", enterpriseProofItems: ["Workflows seguros", "Suporte de implementacao", "ROI claro", "Controles admin", "API pronta", "Onboarding"], enterprisePricingTitle: "Pacotes para comecar simples e escalar", enterprisePricingText: "Starter, growth e enterprise.", enterpriseDemoTitle: "Agende uma demo ou revisao da solucao", enterpriseDemoText: "Envie equipe, ferramentas, problema e contato.", enterpriseTimelines: ["Demo primeiro", "Setup 2 semanas", "API pronta", "Implementacao guiada"] },
   };
-  return { ...labels.en, ...(labels[language] || {}), ...professionalLabels.en, ...(professionalLabels[language] || {}), ...enterpriseLabels.en, ...(enterpriseLabels[language] || {}) };
+  const industrialLabels = {
+    en: { industrialSupplier: "Industrial supplier", requestQuote: "Request quote", viewSpecs: "View specs", capabilities: "Capabilities", certifications: "Certifications", supplyChain: "Supply chain", quoteRequired: "Quote required", certified: "Certified", bulkReady: "Bulk-ready", specReady: "Spec-ready", industrialCapabilitiesTitle: "Capabilities buyers need to verify", industrialCapabilitiesText: "Custom specs, bulk ordering, quality control and B2B support.", industrialCapabilityItems: ["Custom specs", "Bulk ordering", "Quality control", "Fast sourcing", "Replacement parts", "B2B support"], industrialCertificationsTitle: "Certifications, quality and documentation", industrialCertificationsText: "Documentation, safety data, warranty and compliance notes.", industrialCertificationItems: ["ISO-ready docs", "Material specs", "Warranty notes", "Safety data", "Compliance support", "Batch tracking"], industrialSupplyTitle: "Supply chain and fulfillment", industrialSupplyText: "Lead times, MOQ planning, freight support and repeat orders.", industrialSupplyItems: ["Lead times", "MOQ planning", "Freight support", "Warehouse-ready", "Vendor sourcing", "Repeat orders"], industrialQuoteTitle: "Request a quote with specs", industrialQuoteText: "Send product, quantities, material, deadline and delivery needs.", industrialLeadTimes: ["Quote first", "Bulk order", "2-4 week lead", "Custom spec"], industrialMaterials: ["Steel", "Aluminum", "Composite", "Safety-rated"] },
+    es: { industrialSupplier: "Proveedor industrial", requestQuote: "Solicitar cotizacion", viewSpecs: "Ver especificaciones", capabilities: "Capacidades", certifications: "Certificaciones", supplyChain: "Cadena de suministro", quoteRequired: "Cotizacion requerida", certified: "Certificado", bulkReady: "Listo por volumen", specReady: "Specs listas", industrialCapabilitiesTitle: "Capacidades que compras necesita validar", industrialCapabilitiesText: "Specs personalizadas, compras por volumen, control de calidad y soporte B2B.", industrialCapabilityItems: ["Specs personalizadas", "Ordenes por volumen", "Control de calidad", "Sourcing rapido", "Repuestos", "Soporte B2B"], industrialCertificationsTitle: "Certificaciones, calidad y documentacion", industrialCertificationsText: "Documentacion, datos de seguridad, garantia y cumplimiento.", industrialCertificationItems: ["Docs ISO", "Specs de material", "Garantia", "Datos de seguridad", "Soporte compliance", "Trazabilidad"], industrialSupplyTitle: "Suministro y fulfillment", industrialSupplyText: "Tiempos, MOQ, flete y ordenes recurrentes.", industrialSupplyItems: ["Tiempos de entrega", "Plan MOQ", "Soporte de flete", "Listo para almacen", "Sourcing", "Ordenes repetidas"], industrialQuoteTitle: "Solicita una cotizacion con especificaciones", industrialQuoteText: "Envia producto, cantidades, material, fecha limite y entrega.", industrialLeadTimes: ["Cotizar primero", "Orden por volumen", "2-4 semanas", "Spec personalizada"], industrialMaterials: ["Acero", "Aluminio", "Compuesto", "Certificado"] },
+    fr: { industrialSupplier: "Fournisseur industriel", requestQuote: "Demander un devis", viewSpecs: "Voir les specs", capabilities: "Capacites", certifications: "Certifications", supplyChain: "Supply chain", quoteRequired: "Devis requis", certified: "Certifie", bulkReady: "Pret volume", specReady: "Specs pretes", industrialCapabilitiesTitle: "Capacites a verifier", industrialCapabilitiesText: "Specs custom, commandes volume, qualite et support B2B.", industrialCapabilityItems: ["Specs custom", "Commandes volume", "Controle qualite", "Sourcing rapide", "Pieces rechange", "Support B2B"], industrialCertificationsTitle: "Certifications, qualite et documentation", industrialCertificationsText: "Docs, securite, garantie et conformite.", industrialCertificationItems: ["Docs ISO", "Specs materiaux", "Garantie", "Donnees securite", "Support conformite", "Tracabilite"], industrialSupplyTitle: "Supply chain et fulfillment", industrialSupplyText: "Delais, MOQ, fret et commandes recurrentes.", industrialSupplyItems: ["Delais", "Plan MOQ", "Support fret", "Pret entrepot", "Sourcing", "Commandes repetees"], industrialQuoteTitle: "Demander un devis avec specs", industrialQuoteText: "Envoyez produit, quantites, materiau, delai et livraison.", industrialLeadTimes: ["Devis d'abord", "Commande volume", "2-4 semaines", "Spec custom"], industrialMaterials: ["Acier", "Aluminium", "Composite", "Certifie"] },
+    pt: { industrialSupplier: "Fornecedor industrial", requestQuote: "Solicitar cotacao", viewSpecs: "Ver especificacoes", capabilities: "Capacidades", certifications: "Certificacoes", supplyChain: "Cadeia de suprimentos", quoteRequired: "Cotacao requerida", certified: "Certificado", bulkReady: "Pronto para volume", specReady: "Specs prontas", industrialCapabilitiesTitle: "Capacidades que compras precisa validar", industrialCapabilitiesText: "Specs customizadas, compras em volume, qualidade e suporte B2B.", industrialCapabilityItems: ["Specs customizadas", "Pedidos em volume", "Controle de qualidade", "Sourcing rapido", "Pecas reposicao", "Suporte B2B"], industrialCertificationsTitle: "Certificacoes, qualidade e documentacao", industrialCertificationsText: "Documentacao, seguranca, garantia e compliance.", industrialCertificationItems: ["Docs ISO", "Specs de material", "Garantia", "Dados seguranca", "Suporte compliance", "Rastreabilidade"], industrialSupplyTitle: "Suprimentos e fulfillment", industrialSupplyText: "Prazos, MOQ, frete e pedidos recorrentes.", industrialSupplyItems: ["Prazos", "Planejamento MOQ", "Suporte frete", "Pronto para estoque", "Sourcing", "Pedidos repetidos"], industrialQuoteTitle: "Solicite cotacao com especificacoes", industrialQuoteText: "Envie produto, quantidades, material, prazo e entrega.", industrialLeadTimes: ["Cotar primeiro", "Pedido volume", "2-4 semanas", "Spec custom"], industrialMaterials: ["Aco", "Aluminio", "Composto", "Certificado"] },
+  };
+  return { ...labels.en, ...(labels[language] || {}), ...professionalLabels.en, ...(professionalLabels[language] || {}), ...enterpriseLabels.en, ...(enterpriseLabels[language] || {}), ...industrialLabels.en, ...(industrialLabels[language] || {}) };
 }
 
 function renderResilientImage(url, alt = "", fallbackText = "") {
