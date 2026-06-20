@@ -1396,35 +1396,53 @@ function renderLiveSitePreview() {
   });
   const navItems = livePreviewNavItems(profile);
   card.innerHTML = `
-    <div class="live-preview-browser live-template-${escapeAttribute(profile.kind)}">
-      <div class="live-preview-topbar">
-        <span class="live-preview-dots"><i></i><i></i><i></i></span>
-        <span>${escapeHtml(profile.label)}</span>
-      </div>
-      <div class="live-preview-nav">
+    <div class="live-preview-page live-template-${escapeAttribute(profile.kind)}">
+      <header class="live-page-header">
         <strong>${escapeHtml(name)}</strong>
-        <span>${navItems.map((item) => escapeHtml(item)).join(" · ")}</span>
-      </div>
-      <div class="live-preview-hero">
-        <div>
+        <nav>${navItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</nav>
+        <button type="button">${escapeHtml(profile.cta)}</button>
+      </header>
+      <section class="live-page-hero">
+        <div class="live-page-hero-copy">
           <em>${escapeHtml(profile.kicker)}</em>
-          <strong>${escapeHtml(name)}</strong>
-          <span>${escapeHtml(intent)}</span>
-          <span>${escapeHtml(description).slice(0, 150)}</span>
-          <button type="button">${escapeHtml(profile.cta)}</button>
+          <h1>${escapeHtml(name)}</h1>
+          <p>${escapeHtml(description).slice(0, 220)}</p>
+          <div class="live-page-actions">
+            <button type="button">${escapeHtml(profile.cta)}</button>
+            <span>${escapeHtml(intent)}</span>
+          </div>
         </div>
-        <div class="live-preview-visual" aria-hidden="true">
+        <div class="live-page-visual" aria-hidden="true">
           <img src="${escapeAttribute(profile.image)}" alt="">
         </div>
-      </div>
+      </section>
       ${livePreviewTemplateModules(profile, items)}
-      <div class="live-preview-grid">
-        ${items.slice(0, 3).map((item, index) => `<span><b>${escapeHtml(profile.itemLabels[index] || profile.itemLabels[0])}</b>${escapeHtml(item)}</span>`).join("")}
-      </div>
-      <div class="live-preview-footer">
-        <span>${escapeHtml(colorHint)}</span>
-        <b>${escapeHtml(contact)}</b>
-      </div>
+      <section class="live-page-section">
+        <div class="live-page-section-head">
+          <span>${escapeHtml(profile.sectionKicker)}</span>
+          <h2>${escapeHtml(profile.sectionTitle)}</h2>
+        </div>
+        <div class="live-page-card-grid">
+          ${items.slice(0, 6).map((item, index) => `
+            <article>
+              <i>${escapeHtml(profile.itemLabels[index % profile.itemLabels.length] || profile.itemLabels[0])}</i>
+              <strong>${escapeHtml(item)}</strong>
+              <span>${escapeHtml(livePreviewItemMicrocopy(profile, index))}</span>
+            </article>
+          `).join("")}
+        </div>
+      </section>
+      <section class="live-page-proof">
+        <div>
+          <span>${escapeHtml(langText({ en: "Brand direction", es: "Direccion de marca", fr: "Direction de marque", pt: "Direcao da marca" }))}</span>
+          <strong>${escapeHtml(colorHint)}</strong>
+        </div>
+        <div>
+          <span>${escapeHtml(langText({ en: "Contact / next step", es: "Contacto / siguiente paso", fr: "Contact / prochaine etape", pt: "Contato / proximo passo" }))}</span>
+          <strong>${escapeHtml(contact)}</strong>
+        </div>
+      </section>
+      <footer class="live-page-footer">${escapeHtml(profile.label)} · ${escapeHtml(langText({ en: "Editable draft preview", es: "Preview editable", fr: "Apercu modifiable", pt: "Preview editavel" }))}</footer>
     </div>
   `;
 }
@@ -1442,6 +1460,8 @@ function livePreviewTemplateProfile() {
       langText({ en: "Featured", es: "Destacado", fr: "Phare", pt: "Destaque" }),
       langText({ en: "CTA", es: "Accion", fr: "Action", pt: "Acao" }),
     ],
+    sectionKicker: langText({ en: "Page structure", es: "Estructura de pagina", fr: "Structure de page", pt: "Estrutura da pagina" }),
+    sectionTitle: langText({ en: "Editable sections ready for this business", es: "Secciones editables listas para este negocio", fr: "Sections modifiables pour cette entreprise", pt: "Secoes editaveis para este negocio" }),
   };
   if (/mega-marketplace|marketplace-style/.test(templateId) || /dense_marketplace/.test(catalogType)) {
     return {
@@ -1449,6 +1469,8 @@ function livePreviewTemplateProfile() {
       kind: "marketplace",
       kicker: langText({ en: "Search-first catalog", es: "Catalogo con busqueda", fr: "Catalogue avec recherche", pt: "Catalogo com busca" }),
       cta: langText({ en: "Shop deals", es: "Ver ofertas", fr: "Voir offres", pt: "Ver ofertas" }),
+      sectionKicker: langText({ en: "Catalog structure", es: "Estructura del catalogo", fr: "Structure catalogue", pt: "Estrutura do catalogo" }),
+      sectionTitle: langText({ en: "Categories, offers and product discovery", es: "Categorias, ofertas y descubrimiento de productos", fr: "Categories, offres et decouverte produit", pt: "Categorias, ofertas e descoberta de produtos" }),
       itemLabels: [
         langText({ en: "Category", es: "Categoria", fr: "Categorie", pt: "Categoria" }),
         langText({ en: "Deal", es: "Oferta", fr: "Offre", pt: "Oferta" }),
@@ -1462,6 +1484,8 @@ function livePreviewTemplateProfile() {
       kind: "listings",
       kicker: langText({ en: "Seller listings", es: "Listados de vendedores", fr: "Annonces vendeurs", pt: "Anuncios de vendedores" }),
       cta: langText({ en: "Compare listings", es: "Comparar listados", fr: "Comparer", pt: "Comparar" }),
+      sectionKicker: langText({ en: "Listing flow", es: "Flujo de listados", fr: "Flux annonces", pt: "Fluxo de anuncios" }),
+      sectionTitle: langText({ en: "Seller trust, filters and comparison", es: "Confianza, filtros y comparacion", fr: "Confiance, filtres et comparaison", pt: "Confianca, filtros e comparacao" }),
       itemLabels: [
         langText({ en: "Listing", es: "Listado", fr: "Annonce", pt: "Anuncio" }),
         langText({ en: "Condition", es: "Condicion", fr: "Etat", pt: "Condicao" }),
@@ -1475,6 +1499,8 @@ function livePreviewTemplateProfile() {
       kind: "fashion",
       kicker: langText({ en: "Editorial collection", es: "Coleccion editorial", fr: "Collection editoriale", pt: "Colecao editorial" }),
       cta: langText({ en: "Explore drop", es: "Ver coleccion", fr: "Voir collection", pt: "Ver colecao" }),
+      sectionKicker: langText({ en: "Collection story", es: "Historia de coleccion", fr: "Histoire collection", pt: "Historia da colecao" }),
+      sectionTitle: langText({ en: "Drops, looks and visual product cards", es: "Drops, looks y productos visuales", fr: "Drops, looks et fiches visuelles", pt: "Drops, looks e cards visuais" }),
       itemLabels: [
         langText({ en: "Collection", es: "Coleccion", fr: "Collection", pt: "Colecao" }),
         langText({ en: "Look", es: "Look", fr: "Look", pt: "Look" }),
@@ -1488,6 +1514,8 @@ function livePreviewTemplateProfile() {
       kind: "restaurant",
       kicker: langText({ en: "Menu and ordering", es: "Menu y pedidos", fr: "Menu et commande", pt: "Menu e pedidos" }),
       cta: langText({ en: "View menu", es: "Ver menu", fr: "Voir menu", pt: "Ver menu" }),
+      sectionKicker: langText({ en: "Menu system", es: "Sistema de menu", fr: "Systeme menu", pt: "Sistema de menu" }),
+      sectionTitle: langText({ en: "Signature dishes, specials and ordering", es: "Platos, especiales y pedidos", fr: "Plats, specials et commande", pt: "Pratos, especiais e pedidos" }),
       itemLabels: [
         langText({ en: "Dish", es: "Plato", fr: "Plat", pt: "Prato" }),
         langText({ en: "Special", es: "Especial", fr: "Special", pt: "Especial" }),
@@ -1501,6 +1529,8 @@ function livePreviewTemplateProfile() {
       kind: "service",
       kicker: langText({ en: "Trust and conversion", es: "Confianza y conversion", fr: "Confiance et conversion", pt: "Confianca e conversao" }),
       cta: langText({ en: "Request quote", es: "Solicitar cotizacion", fr: "Demander devis", pt: "Pedir orcamento" }),
+      sectionKicker: langText({ en: "Service path", es: "Ruta del servicio", fr: "Parcours service", pt: "Caminho do servico" }),
+      sectionTitle: langText({ en: "Proof, process and fast contact", es: "Prueba, proceso y contacto rapido", fr: "Preuves, processus et contact", pt: "Prova, processo e contato rapido" }),
       itemLabels: [
         langText({ en: "Service", es: "Servicio", fr: "Service", pt: "Servico" }),
         langText({ en: "Proof", es: "Prueba", fr: "Preuve", pt: "Prova" }),
@@ -1513,6 +1543,8 @@ function livePreviewTemplateProfile() {
     kind: "premium",
     kicker: langText({ en: "Premium showcase", es: "Presentacion premium", fr: "Presentation premium", pt: "Apresentacao premium" }),
     cta: langText({ en: "Explore product", es: "Ver producto", fr: "Voir produit", pt: "Ver produto" }),
+    sectionKicker: langText({ en: "Product story", es: "Historia del producto", fr: "Histoire produit", pt: "Historia do produto" }),
+    sectionTitle: langText({ en: "Hero, story and feature highlights", es: "Hero, historia y detalles clave", fr: "Hero, histoire et points forts", pt: "Hero, historia e destaques" }),
   };
 }
 
@@ -1559,20 +1591,51 @@ function livePreviewTemplateModules(profile, items) {
   const safeItems = items.length ? items : livePreviewFallbackItems();
   if (profile.kind === "marketplace") {
     return `
-      <div class="live-preview-search"><span>${escapeHtml(langText({ en: "Search products, categories, brands", es: "Buscar productos, categorias, marcas", fr: "Rechercher produits, categories, marques", pt: "Buscar produtos, categorias, marcas" }))}</span><b>${escapeHtml(langText({ en: "Deals", es: "Ofertas", fr: "Offres", pt: "Ofertas" }))}</b></div>
-      <div class="live-preview-rail">${safeItems.slice(0, 5).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+      <section class="live-page-search"><span>${escapeHtml(langText({ en: "Search products, categories, brands", es: "Buscar productos, categorias, marcas", fr: "Rechercher produits, categories, marques", pt: "Buscar produtos, categorias, marcas" }))}</span><b>${escapeHtml(langText({ en: "Deals", es: "Ofertas", fr: "Offres", pt: "Ofertas" }))}</b></section>
+      <section class="live-page-rail">${safeItems.slice(0, 5).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</section>
     `;
   }
   if (profile.kind === "fashion") {
-    return `<div class="live-preview-lookbook">${safeItems.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>`;
+    return `<section class="live-page-lookbook">${safeItems.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</section>`;
   }
   if (profile.kind === "restaurant") {
-    return `<div class="live-preview-menu">${safeItems.slice(0, 4).map((item, index) => `<span><b>${escapeHtml(item)}</b><em>${escapeHtml(index % 2 ? "popular" : "signature")}</em></span>`).join("")}</div>`;
+    return `<section class="live-page-menu">${safeItems.slice(0, 4).map((item, index) => `<span><b>${escapeHtml(item)}</b><em>${escapeHtml(index % 2 ? "popular" : "signature")}</em></span>`).join("")}</section>`;
   }
   if (profile.kind === "service") {
-    return `<div class="live-preview-proof"><span>${escapeHtml(langText({ en: "Process", es: "Proceso", fr: "Processus", pt: "Processo" }))}</span><span>${escapeHtml(langText({ en: "Trust proof", es: "Prueba de confianza", fr: "Preuve de confiance", pt: "Prova de confianca" }))}</span><span>${escapeHtml(langText({ en: "Fast contact", es: "Contacto rapido", fr: "Contact rapide", pt: "Contato rapido" }))}</span></div>`;
+    return `<section class="live-page-proof-row"><span>${escapeHtml(langText({ en: "Process", es: "Proceso", fr: "Processus", pt: "Processo" }))}</span><span>${escapeHtml(langText({ en: "Trust proof", es: "Prueba de confianza", fr: "Preuve de confiance", pt: "Prova de confianca" }))}</span><span>${escapeHtml(langText({ en: "Fast contact", es: "Contacto rapido", fr: "Contact rapide", pt: "Contato rapido" }))}</span></section>`;
   }
-  return `<div class="live-preview-premium-strip"><span>${escapeHtml(langText({ en: "Hero", es: "Hero", fr: "Hero", pt: "Hero" }))}</span><span>${escapeHtml(langText({ en: "Story", es: "Historia", fr: "Histoire", pt: "Historia" }))}</span><span>${escapeHtml(langText({ en: "Feature", es: "Detalle", fr: "Detail", pt: "Detalhe" }))}</span></div>`;
+  return `<section class="live-page-premium-strip"><span>${escapeHtml(langText({ en: "Hero", es: "Hero", fr: "Hero", pt: "Hero" }))}</span><span>${escapeHtml(langText({ en: "Story", es: "Historia", fr: "Histoire", pt: "Historia" }))}</span><span>${escapeHtml(langText({ en: "Feature", es: "Detalle", fr: "Detail", pt: "Detalhe" }))}</span></section>`;
+}
+
+function livePreviewItemMicrocopy(profile, index) {
+  const copy = {
+    marketplace: [
+      langText({ en: "Prepared for category browsing and quick discovery.", es: "Preparado para categorias y busqueda rapida.", fr: "Pret pour categories et decouverte rapide.", pt: "Pronto para categorias e descoberta rapida." }),
+      langText({ en: "Deal-ready product block.", es: "Bloque listo para ofertas.", fr: "Bloc pret pour offres.", pt: "Bloco pronto para ofertas." }),
+      langText({ en: "Filterable and editable.", es: "Filtrable y editable.", fr: "Filtrable et modifiable.", pt: "Filtravel e editavel." }),
+    ],
+    fashion: [
+      langText({ en: "Visual collection card.", es: "Card visual de coleccion.", fr: "Carte collection visuelle.", pt: "Card visual de colecao." }),
+      langText({ en: "Lookbook-ready section.", es: "Seccion lista para lookbook.", fr: "Section lookbook.", pt: "Secao pronta para lookbook." }),
+      langText({ en: "Drop and fit details.", es: "Drop y detalles de talla.", fr: "Drop et tailles.", pt: "Drop e tamanhos." }),
+    ],
+    restaurant: [
+      langText({ en: "Menu item with order path.", es: "Producto de menu con pedido.", fr: "Plat avec commande.", pt: "Item de menu com pedido." }),
+      langText({ en: "Specials and combos.", es: "Especiales y combos.", fr: "Specials et menus.", pt: "Especiais e combos." }),
+      langText({ en: "Pickup or delivery CTA.", es: "CTA para pickup o delivery.", fr: "CTA retrait/livraison.", pt: "CTA retirada/entrega." }),
+    ],
+    service: [
+      langText({ en: "Service benefit and proof.", es: "Beneficio y prueba.", fr: "Benefice et preuve.", pt: "Beneficio e prova." }),
+      langText({ en: "Process step.", es: "Paso del proceso.", fr: "Etape processus.", pt: "Etapa do processo." }),
+      langText({ en: "Quote-ready contact.", es: "Contacto listo para cotizar.", fr: "Contact pret pour devis.", pt: "Contato pronto para orcamento." }),
+    ],
+  };
+  const list = copy[profile.kind] || [
+    langText({ en: "Editable section preview.", es: "Seccion editable.", fr: "Section modifiable.", pt: "Secao editavel." }),
+    langText({ en: "Premium detail block.", es: "Bloque premium.", fr: "Bloc premium.", pt: "Bloco premium." }),
+    langText({ en: "Conversion-ready CTA.", es: "CTA listo para convertir.", fr: "CTA pret a convertir.", pt: "CTA pronto para converter." }),
+  ];
+  return list[index % list.length];
 }
 
 function livePreviewFallbackItems() {

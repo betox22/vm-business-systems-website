@@ -653,13 +653,318 @@ body.public-client-setup.generated-preview-open {
 }
 
 .public-client-setup .guided-live-stage .live-site-preview-card {
-  width: min(100%, 1060px);
+  width: 100%;
   margin: 0;
-  border-radius: 28px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.public-client-setup .live-preview-page {
+  min-height: 1180px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.13);
+}
+
+.public-client-setup .live-page-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  min-height: 74px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 0 clamp(18px, 3vw, 38px);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+}
+
+.public-client-setup .live-page-header strong {
+  color: #101828;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.public-client-setup .live-page-header nav {
+  display: flex;
+  justify-content: center;
+  gap: clamp(12px, 2vw, 26px);
+  overflow: hidden;
+}
+
+.public-client-setup .live-page-header nav span {
+  color: #475467;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.public-client-setup .live-page-header button,
+.public-client-setup .live-page-actions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 16px;
+  color: #062f2c;
+  background: #99f6e4;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.public-client-setup .live-page-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 42%);
+  gap: clamp(24px, 4vw, 58px);
+  align-items: center;
+  min-height: 560px;
+  padding: clamp(42px, 6vw, 86px) clamp(24px, 5vw, 70px);
+  color: #ffffff;
+  background: linear-gradient(135deg, #020617, #111827 55%, #134e4a);
+}
+
+.public-client-setup .live-page-hero-copy em {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 7px 10px;
+  color: #99f6e4;
+  background: rgba(20, 184, 166, 0.14);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.public-client-setup .live-page-hero-copy h1 {
+  max-width: 780px;
+  margin: 18px 0 0;
+  color: #ffffff;
+  font-size: clamp(46px, 6vw, 92px);
+  font-weight: 950;
+  letter-spacing: 0;
+  line-height: 0.94;
+}
+
+.public-client-setup .live-page-hero-copy p {
+  max-width: 680px;
+  margin: 22px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: clamp(15px, 1.4vw, 20px);
+  line-height: 1.55;
+}
+
+.public-client-setup .live-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.public-client-setup .live-page-actions span {
+  max-width: 420px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.public-client-setup .live-page-visual {
+  min-height: 380px;
+  overflow: hidden;
+  border-radius: 30px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(240, 253, 250, 0.78)),
-    #ffffff;
-  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.14);
+    radial-gradient(circle at 68% 28%, rgba(45, 212, 191, 0.8), transparent 34%),
+    linear-gradient(135deg, rgba(20, 184, 166, 0.35), rgba(124, 58, 237, 0.28));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 28px 74px rgba(0, 0, 0, 0.24);
+}
+
+.public-client-setup .live-page-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.82;
+  mix-blend-mode: screen;
+}
+
+.public-client-setup .live-page-search,
+.public-client-setup .live-page-rail,
+.public-client-setup .live-page-lookbook,
+.public-client-setup .live-page-menu,
+.public-client-setup .live-page-proof-row,
+.public-client-setup .live-page-premium-strip,
+.public-client-setup .live-page-section,
+.public-client-setup .live-page-proof {
+  margin: 0;
+  padding: clamp(28px, 4vw, 56px) clamp(24px, 5vw, 70px);
+}
+
+.public-client-setup .live-page-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+}
+
+.public-client-setup .live-page-search span {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  padding: 14px 18px;
+  color: #667085;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.public-client-setup .live-page-search b {
+  border-radius: 999px;
+  padding: 11px 15px;
+  color: #713f12;
+  background: #fef3c7;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.public-client-setup .live-page-rail,
+.public-client-setup .live-page-lookbook,
+.public-client-setup .live-page-menu,
+.public-client-setup .live-page-proof-row,
+.public-client-setup .live-page-premium-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.public-client-setup .live-page-rail span,
+.public-client-setup .live-page-lookbook span,
+.public-client-setup .live-page-menu span,
+.public-client-setup .live-page-proof-row span,
+.public-client-setup .live-page-premium-strip span {
+  min-height: 120px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 20px;
+  padding: 18px;
+  color: #344054;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+}
+
+.public-client-setup .live-page-lookbook span:nth-child(odd) {
+  min-height: 190px;
+  background: linear-gradient(135deg, #fff7ed, #fce7f3);
+}
+
+.public-client-setup .live-page-section-head span {
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.public-client-setup .live-page-section-head h2 {
+  max-width: 780px;
+  margin: 8px 0 24px;
+  color: #101828;
+  font-size: clamp(30px, 3.2vw, 54px);
+  line-height: 1;
+}
+
+.public-client-setup .live-page-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.public-client-setup .live-page-card-grid article {
+  min-height: 180px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  padding: 20px;
+  background: #f8fafc;
+}
+
+.public-client-setup .live-page-card-grid i {
+  display: block;
+  color: #0f766e;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.public-client-setup .live-page-card-grid strong {
+  display: block;
+  margin-top: 14px;
+  color: #101828;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.public-client-setup .live-page-card-grid span {
+  display: block;
+  margin-top: 12px;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.public-client-setup .live-page-proof {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  background: #101828;
+}
+
+.public-client-setup .live-page-proof div {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 20px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.public-client-setup .live-page-proof span {
+  display: block;
+  color: #99f6e4;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.public-client-setup .live-page-proof strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 17px;
+}
+
+.public-client-setup .live-page-footer {
+  padding: 22px clamp(24px, 5vw, 70px);
+  color: #667085;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.public-client-setup .live-template-fashion .live-page-hero {
+  background: linear-gradient(135deg, #140f1f, #3b1636 55%, #111827);
+}
+
+.public-client-setup .live-template-marketplace .live-page-hero {
+  background: linear-gradient(135deg, #111827, #1f2937 52%, #78350f);
+}
+
+.public-client-setup .live-template-restaurant .live-page-hero {
+  background: linear-gradient(135deg, #2f1608, #713f12 52%, #111827);
+}
+
+.public-client-setup .live-template-service .live-page-hero {
+  background: linear-gradient(135deg, #071b2f, #0f766e 52%, #172554);
 }
 
 .public-client-setup .live-preview-browser {
@@ -1533,6 +1838,91 @@ body.public-client-setup.generated-preview-open {
 
   .public-client-setup .live-stage-header {
     display: none;
+  }
+
+  .public-client-setup .live-preview-page {
+    min-height: 0;
+    border-radius: 18px;
+  }
+
+  .public-client-setup .live-page-header {
+    min-height: 48px;
+    grid-template-columns: 1fr auto;
+    padding: 0 12px;
+  }
+
+  .public-client-setup .live-page-header nav {
+    display: none;
+  }
+
+  .public-client-setup .live-page-header button {
+    min-height: 30px;
+    padding: 7px 10px;
+    font-size: 10px;
+  }
+
+  .public-client-setup .live-page-hero {
+    min-height: 190px;
+    grid-template-columns: 1fr 96px;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .public-client-setup .live-page-hero-copy h1 {
+    font-size: 24px;
+  }
+
+  .public-client-setup .live-page-hero-copy p,
+  .public-client-setup .live-page-actions span,
+  .public-client-setup .live-page-hero-copy em,
+  .public-client-setup .live-page-actions button {
+    display: none;
+  }
+
+  .public-client-setup .live-page-visual {
+    min-height: 110px;
+    border-radius: 16px;
+  }
+
+  .public-client-setup .live-page-search,
+  .public-client-setup .live-page-rail,
+  .public-client-setup .live-page-lookbook,
+  .public-client-setup .live-page-menu,
+  .public-client-setup .live-page-proof-row,
+  .public-client-setup .live-page-premium-strip,
+  .public-client-setup .live-page-section,
+  .public-client-setup .live-page-proof,
+  .public-client-setup .live-page-footer {
+    padding: 12px;
+  }
+
+  .public-client-setup .live-page-search,
+  .public-client-setup .live-page-rail,
+  .public-client-setup .live-page-lookbook,
+  .public-client-setup .live-page-menu,
+  .public-client-setup .live-page-proof-row,
+  .public-client-setup .live-page-premium-strip,
+  .public-client-setup .live-page-card-grid,
+  .public-client-setup .live-page-proof {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .public-client-setup .live-page-card-grid article,
+  .public-client-setup .live-page-rail span,
+  .public-client-setup .live-page-lookbook span,
+  .public-client-setup .live-page-menu span,
+  .public-client-setup .live-page-proof-row span,
+  .public-client-setup .live-page-premium-strip span {
+    min-height: 72px;
+    border-radius: 12px;
+    padding: 10px;
+    font-size: 10px;
+  }
+
+  .public-client-setup .live-page-section-head h2 {
+    margin-bottom: 10px;
+    font-size: 18px;
   }
 
   .public-client-setup .guided-chat-card {
