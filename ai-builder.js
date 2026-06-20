@@ -533,6 +533,8 @@ let forcedTemplateSelection = null;
 let restoredGuidedDraftInfo = null;
 let guidedCoachCard = null;
 let liveSitePreviewCard = null;
+let guidedSendLocked = false;
+let guidedLastSendAt = 0;
 let guidedState = {
   websiteIntent: "",
   businessName: "",
@@ -946,6 +948,7 @@ const guidedChatCard = document.querySelector(".guided-chat-card");
 const liveSitePreviewMount = document.querySelector("#liveSitePreviewMount");
 const guidedChat = document.querySelector("#guidedChat");
 const guidedReply = document.querySelector("#guidedReply");
+const guidedSendButton = document.querySelector("#guidedSendButton");
 const guidedStatusText = document.querySelector("#guidedStatusText");
 const guidedStepLabel = document.querySelector("#guidedStepLabel");
 const guidedGenerateButton = document.querySelector("#guidedGenerateButton");
@@ -1074,13 +1077,19 @@ assistantAudioToggle.addEventListener("click", toggleAssistantAudio);
 reviewDetailsButton.addEventListener("click", openReviewDetails);
 keepChattingButton.addEventListener("click", keepChatting);
 checkDomainButton?.addEventListener("click", checkDesiredDomainOptions);
-document.querySelector("#guidedSendButton").addEventListener("click", sendGuidedReply);
+guidedSendButton?.addEventListener("pointerdown", handleGuidedSendAction);
+guidedSendButton?.addEventListener("click", handleGuidedSendAction);
+document.addEventListener("click", (event) => {
+  if (event.target?.closest?.("#guidedSendButton")) {
+    handleGuidedSendAction(event);
+  }
+});
 document.querySelector("#guidedSkipButton").addEventListener("click", skipGuidedQuestion);
 guidedGenerateButton.addEventListener("click", handleGuidedGenerateButton);
 guidedReply.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
-    sendGuidedReply();
+    handleGuidedSendAction(event);
   }
 });
 guidedReply.addEventListener("input", updateAssetPromptVisibility);
@@ -1841,6 +1850,20 @@ function continuePendingStudioAction() {
   }
 }
 
+async function handleGuidedSendAction(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  const now = Date.now();
+  if (guidedSendLocked || now - guidedLastSendAt < 350) return;
+  guidedLastSendAt = now;
+  guidedSendLocked = true;
+  try {
+    await sendGuidedReply();
+  } finally {
+    guidedSendLocked = false;
+  }
+}
+
 async function sendGuidedReply() {
   const message = guidedReply.value.trim();
   if (!message) return;
@@ -2323,6 +2346,12 @@ function letAiDecide(field) {
 
 function insertQuickChip(value) {
   const translated = translateChip(value);
+  if (guidedStep === "websiteIntent") {
+    guidedReply.value = translated;
+    updateAssetPromptVisibility();
+    handleGuidedSendAction();
+    return;
+  }
   if (value === "Yes, correct") {
     guidedStep = nextSmartGuidedStep(guidedStep);
     appendChatMessage("user", translated);
