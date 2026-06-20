@@ -1628,7 +1628,7 @@ function inferTemplateIdFromText(value) {
   if (/servicio|service|contractor|limpieza|roofing|repair|reparacion|cotizacion|quote/.test(text)) return "local-services-pro-plus";
   if (/ropa|fashion|moda|boutique|streetwear|zapato|sneaker|accesorio/.test(text)) return "fashion-drop-pro";
   if (/lujo|luxury|alta gama|exclusivo|joyeria|relojes|arte|coleccionable/.test(text)) return "luxury-high-ticket-pro";
-  if (textSuggestsSingleProductShowcase(text) || /premium|minimal|minimalista|limpio|tipo apple|apple style/.test(text)) return "apple-premium-product";
+  if (textSuggestsSingleProductShowcase(text) || /premium|minimal|minimalista|limpio/.test(text)) return "apple-premium-product";
   if (/empresa|company|corporate|corporativo|pagina web|website|agencia|firma/.test(text)) return "corporate-company-pro";
   return "";
 }

@@ -860,7 +860,7 @@
       intent: "minimal_premium",
       templateId: "apple-premium-product",
       catalogType: "premium_editorial_catalog",
-      keywords: ["tipo apple", "apple style", "minimal", "premium", "limpio", "simple", "producto premium", "minimalista", "portafolio", "portfolio", "producto estrella", "productos extravagantes", "presentacion excelente", "excelente presentacion"],
+      keywords: ["premium minimalista", "minimal", "premium", "limpio", "simple", "producto premium", "minimalista", "portafolio", "portfolio", "producto estrella", "productos extravagantes", "presentacion excelente", "excelente presentacion"],
     },
     {
       intent: "luxury",
