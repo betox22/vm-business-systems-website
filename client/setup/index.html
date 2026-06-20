@@ -280,19 +280,19 @@
           <div class="studio-auth-avatar">
             <img class="assistant-avatar large" src="/public/brand/gnu-dev-assistant.png" alt="Luma">
           </div>
-          <span>Guarda tu progreso</span>
-          <h2>Tu primer borrador está listo para seguir editando</h2>
-          <p>Crea una cuenta para guardar este sitio, manejar productos, precios, inventario y continuar con Luma sin perder nada.</p>
+          <span data-i18n="accountGateKicker">Guarda tu progreso</span>
+          <h2 data-i18n="accountGateTitle">Tu primer borrador está listo para seguir editando</h2>
+          <p data-i18n="accountGateText">Crea una cuenta para guardar este sitio, manejar productos, precios, inventario y continuar con Luma sin perder nada.</p>
           <div class="studio-auth-actions">
-            <button id="studioGoogleAuthButton" type="button">Continuar con Google</button>
-            <button id="studioAppleAuthButton" type="button">Continuar con Apple</button>
-            <button id="studioEmailAuthButton" type="button">Continuar con email</button>
+            <button id="studioGoogleAuthButton" type="button" data-i18n="continueGoogle">Continuar con Google</button>
+            <button id="studioAppleAuthButton" type="button" data-i18n="continueApple">Continuar con Apple</button>
+            <button id="studioEmailAuthButton" type="button" data-i18n="continueEmail">Continuar con email</button>
           </div>
           <form id="studioEmailAuthForm" class="studio-email-auth" hidden>
             <label>Email<input id="studioAuthEmail" type="email" placeholder="tu@email.com"></label>
-            <button type="submit">Enviar enlace</button>
+            <button type="submit" data-i18n="saveEmailContinue">Guardar email</button>
           </form>
-          <button id="studioAuthDemoButton" class="studio-auth-demo" type="button">Seguir viendo demo</button>
+          <button id="studioAuthDemoButton" class="studio-auth-demo" type="button" data-i18n="continueDemo">Seguir viendo demo</button>
         </div>
       </section>
     </main>
@@ -301,6 +301,6 @@
     <script src="/template-router.js?v=4"></script>
     <script src="/js/avatar-state-manager.js?v=1"></script>
     <script src="/js/avatar-assistant.js?v=2"></script>
-    <script src="/ai-builder.js?v=76"></script>
+    <script src="/ai-builder.js?v=77"></script>
   </body>
 </html>

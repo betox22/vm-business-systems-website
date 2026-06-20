@@ -1035,13 +1035,14 @@ body.start-minimal-body .speech-card {
   position: fixed;
   inset: 0;
   z-index: 50;
-  display: grid;
-  place-items: center;
-  padding: 22px;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  padding: 18px;
   background:
-    radial-gradient(circle at 68% 12%, rgba(20, 184, 166, 0.16), transparent 32%),
-    rgba(15, 23, 42, 0.62);
-  backdrop-filter: blur(10px);
+    linear-gradient(90deg, rgba(3, 8, 17, 0.14), rgba(3, 8, 17, 0.62)),
+    rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(7px);
 }
 
 .client-chat-modal[hidden] {
@@ -1050,13 +1051,14 @@ body.start-minimal-body .speech-card {
 
 .client-chat-frame-shell {
   position: relative;
-  width: min(500px, 100%);
-  height: min(690px, calc(100vh - 44px));
+  width: min(620px, calc(100vw - 36px));
+  height: calc(100dvh - 36px);
   border: 1px solid rgba(255, 255, 255, 0.32);
-  border-radius: 28px;
+  border-radius: 26px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 34px 120px rgba(0, 0, 0, 0.38);
+  box-shadow: -24px 0 90px rgba(0, 0, 0, 0.34);
+  animation: lumaSidePanelIn 240ms ease-out;
 }
 
 .client-chat-frame-shell iframe {
@@ -1106,6 +1108,17 @@ body.start-minimal-body .speech-card {
   line-height: 1;
   cursor: pointer;
   backdrop-filter: blur(8px);
+}
+
+@keyframes lumaSidePanelIn {
+  from {
+    opacity: 0;
+    transform: translateX(34px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .tester-feedback-button {

@@ -114,6 +114,14 @@ const I18N = {
     replyPlaceholder: "Type your answer...",
     photoUrlsPlaceholder: "One image URL per line",
     salesModePlaceholder: "online sales, quotes, or both",
+    accountGateKicker: "Save your progress",
+    accountGateTitle: "Connect an account before generating",
+    accountGateText: "Use Google, Apple, or email so your draft is saved and you can edit products, prices, images and content later.",
+    continueGoogle: "Continue with Google",
+    continueApple: "Continue with Apple",
+    continueEmail: "Continue with email",
+    saveEmailContinue: "Save email",
+    continueDemo: "Keep viewing demo",
     sendingAssistant: "Luma is reviewing your answer...",
     summaryUpdated: "Details updated.",
     devFallbackMissingKey: "Luma is using a simplified response while the AI service finishes connecting.",
@@ -202,6 +210,14 @@ const I18N = {
     replyPlaceholder: "Escribe tu respuesta...",
     photoUrlsPlaceholder: "Una URL de imagen por linea",
     salesModePlaceholder: "ventas online, cotizaciones, o ambos",
+    accountGateKicker: "Guarda tu progreso",
+    accountGateTitle: "Conecta una cuenta antes de generar",
+    accountGateText: "Usa Google, Apple o email para guardar tu borrador y luego editar productos, precios, imagenes y contenido.",
+    continueGoogle: "Continuar con Google",
+    continueApple: "Continuar con Apple",
+    continueEmail: "Continuar con email",
+    saveEmailContinue: "Guardar email",
+    continueDemo: "Seguir viendo demo",
     sendingAssistant: "Luma esta revisando tu respuesta...",
     summaryUpdated: "Detalles actualizados.",
     devFallbackMissingKey: "Luma está usando una respuesta simplificada mientras el servicio de IA termina de conectar.",
@@ -290,6 +306,14 @@ const I18N = {
     replyPlaceholder: "Écrivez votre réponse...",
     photoUrlsPlaceholder: "Une URL d'image par ligne",
     salesModePlaceholder: "vente en ligne, devis, ou les deux",
+    accountGateKicker: "Sauvegardez votre progression",
+    accountGateTitle: "Connectez un compte avant de générer",
+    accountGateText: "Utilisez Google, Apple ou email pour sauvegarder le brouillon et modifier ensuite produits, prix, images et contenu.",
+    continueGoogle: "Continuer avec Google",
+    continueApple: "Continuer avec Apple",
+    continueEmail: "Continuer avec email",
+    saveEmailContinue: "Sauvegarder l'email",
+    continueDemo: "Continuer la démo",
     sendingAssistant: "Luma analyse votre réponse...",
     summaryUpdated: "Détails mis à jour.",
     devFallbackMissingKey: "Luma utilise une réponse simplifiée pendant que le service IA se connecte.",
@@ -378,6 +402,14 @@ const I18N = {
     replyPlaceholder: "Digite sua resposta...",
     photoUrlsPlaceholder: "Uma URL de imagem por linha",
     salesModePlaceholder: "vendas online, orçamentos, ou ambos",
+    accountGateKicker: "Salve seu progresso",
+    accountGateTitle: "Conecte uma conta antes de gerar",
+    accountGateText: "Use Google, Apple ou email para salvar o rascunho e editar produtos, preços, imagens e conteúdo depois.",
+    continueGoogle: "Continuar com Google",
+    continueApple: "Continuar com Apple",
+    continueEmail: "Continuar com email",
+    saveEmailContinue: "Salvar email",
+    continueDemo: "Continuar vendo demo",
     sendingAssistant: "Luma está revisando sua resposta...",
     summaryUpdated: "Detalhes atualizados.",
     devFallbackMissingKey: "A Luma está usando uma resposta simplificada enquanto o serviço de IA termina de conectar.",
@@ -413,7 +445,7 @@ const GUIDED_QUESTIONS = {
     targetAudience: "Who is the main customer? You can also let AI decide.",
     preferredTone: "What style should it feel like: elegant, modern, friendly, premium? Or should AI decide?",
     preferredColors: "Any preferred colors, or do you want to upload a logo so I can extract a palette from it?",
-    contactInfo: "What contact details should appear: email, phone, Instagram, or WhatsApp?",
+    contactInfo: "What contact details should appear on the site, and what email should we use to save your draft/account? You can also continue with Google or Apple before generating.",
     salesMode: "Should the site support online sales, quote requests, in-person visits, or a mix?",
     hasLogoPhotos: "Do you have a logo or photos ready to use?",
     desiredDomain: "What domain would you like? You can write a name like lunastore.com or skip it for now.",
@@ -429,7 +461,7 @@ const GUIDED_QUESTIONS = {
     targetAudience: "A quien le vendes principalmente? Tambien puedes dejar que IA decida.",
     preferredTone: "Que estilo quieres: elegante, moderno, cercano, premium? O dejo que IA decida?",
     preferredColors: "¿Tienes colores preferidos o quieres subir un logo para sacar una paleta desde ahí?",
-    contactInfo: "Que contacto quieres mostrar: email, telefono, Instagram o WhatsApp?",
+    contactInfo: "Que contacto quieres mostrar en la pagina y que email usamos para guardar tu borrador/cuenta? Tambien puedes continuar con Google o Apple antes de generar.",
     salesMode: "¿Quieres ventas online, solicitudes de cotización, visitas presenciales o una mezcla?",
     hasLogoPhotos: "Tienes logo o fotos listas para usar?",
     desiredDomain: "Que dominio te gustaria? Puedes escribir algo como lunastore.com o saltarlo por ahora.",
@@ -445,7 +477,7 @@ const GUIDED_QUESTIONS = {
     targetAudience: "Qui est le client principal? Vous pouvez aussi laisser l'IA décider.",
     preferredTone: "Quel style voulez-vous: élégant, moderne, chaleureux, premium? Ou l'IA décide?",
     preferredColors: "Avez-vous des couleurs préférées, ou voulez-vous importer un logo pour que j'en extraie une palette?",
-    contactInfo: "Quelles coordonnées afficher: email, téléphone, Instagram ou WhatsApp?",
+    contactInfo: "Quelles coordonnées afficher sur le site, et quel email utiliser pour sauvegarder le brouillon/compte? Vous pouvez aussi continuer avec Google ou Apple avant de générer.",
     salesMode: "Le site doit-il proposer la vente en ligne, les demandes de devis, les visites en personne, ou un mélange?",
     hasLogoPhotos: "Avez-vous un logo ou des photos prêts à utiliser?",
     desiredDomain: "Quel domaine souhaitez-vous? Vous pouvez écrire lunastore.com ou ignorer pour l'instant.",
@@ -461,7 +493,7 @@ const GUIDED_QUESTIONS = {
     targetAudience: "Quem é o cliente principal? Você também pode deixar a IA decidir.",
     preferredTone: "Qual estilo você quer: elegante, moderno, próximo, premium? Ou a IA decide?",
     preferredColors: "Tem cores preferidas, ou quer enviar um logo para eu extrair uma paleta dele?",
-    contactInfo: "Quais contatos devem aparecer: email, telefone, Instagram ou WhatsApp?",
+    contactInfo: "Quais contatos devem aparecer no site, e qual email usamos para salvar seu rascunho/conta? Você também pode continuar com Google ou Apple antes de gerar.",
     salesMode: "O site deve aceitar vendas online, pedidos de orçamento, visitas presenciais, ou uma mistura?",
     hasLogoPhotos: "Você tem logo ou fotos prontas para usar?",
     desiredDomain: "Qual domínio você gostaria? Pode escrever lunastore.com ou pular por enquanto.",
@@ -2805,7 +2837,33 @@ async function handleGuidedGenerateButton() {
     renderGuidedSummary();
     return;
   }
+  if (isPublicClientSetup && !hasStudioAccountSession()) {
+    promptAccountBeforeGenerate();
+    return;
+  }
   await reviewAndGenerateFromGuided();
+}
+
+function promptAccountBeforeGenerate() {
+  syncGuidedStateFromSummary();
+  normalizeGuidedStateBeforeGenerate();
+  applyGuidedStateToForm();
+  persistPendingStudioAccountAction("generate");
+  openStudioAuthGate("generate");
+  const email = guidedState.contactInfo?.email || guidedState.contactInfo?.contact || "";
+  if (studioAuthEmail && email) studioAuthEmail.value = email;
+  appendChatMessage("assistant", langText({
+    en: "Before I generate it, connect an account so your draft is saved and you can come back later. You can use Google, Apple, or email.",
+    es: "Antes de generarla, conecta una cuenta para guardar tu borrador y poder volver luego. Puedes usar Google, Apple o email.",
+    fr: "Avant de générer, connectez un compte pour sauvegarder le brouillon et revenir plus tard. Vous pouvez utiliser Google, Apple ou email.",
+    pt: "Antes de gerar, conecte uma conta para salvar o rascunho e voltar depois. Você pode usar Google, Apple ou email.",
+  }), "success");
+  guidedStatusText.textContent = langText({
+    en: "Connect an account to save and generate the draft.",
+    es: "Conecta una cuenta para guardar y generar el borrador.",
+    fr: "Connectez un compte pour sauvegarder et générer le brouillon.",
+    pt: "Conecte uma conta para salvar e gerar o rascunho.",
+  });
 }
 
 function normalizeGuidedStateBeforeGenerate() {
@@ -7988,6 +8046,7 @@ function hasStudioAccountSession() {
   return Boolean(
     localStorage.getItem("lumaClientAccessToken") ||
     sessionStorage.getItem("lumaClientAccessToken") ||
+    localStorage.getItem("lumaPendingClientEmail") ||
     localStorage.getItem("vm_portal_preview_token") ||
     sessionStorage.getItem("vm_portal_preview_token"),
   );
