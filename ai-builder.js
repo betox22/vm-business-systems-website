@@ -72,7 +72,8 @@ const I18N = {
     voiceUnsupported: "Voice input is not supported in this browser.",
     voiceListening: "Listening... speak now.",
     voiceReady: "Voice transcript ready. Review it and press Send.",
-    summaryHelper: "Review the essentials. Tap any field to edit it before Luma generates your draft.",
+    summaryHelper: "Review the essentials, add optional logo/photos, then let Luma generate the draft.",
+    editDetails: "Edit details",
     reviewDetails: "Review brief",
     selectedLanguage: "Selected language",
     businessName: "Client/business name",
@@ -171,7 +172,8 @@ const I18N = {
     voiceUnsupported: "La entrada por voz no esta disponible en este navegador.",
     voiceListening: "Escuchando... habla ahora.",
     voiceReady: "Transcripcion lista. Revisala y presiona Enviar.",
-    summaryHelper: "Revisa lo esencial. Toca cualquier campo para editarlo antes de que Luma genere tu primera version.",
+    summaryHelper: "Revisa lo esencial, agrega logo/fotos si tienes, y deja que Luma genere la primera version.",
+    editDetails: "Editar detalles",
     reviewDetails: "Revisar resumen",
     selectedLanguage: "Idioma seleccionado",
     businessName: "Nombre del negocio",
@@ -270,7 +272,8 @@ const I18N = {
     voiceUnsupported: "La saisie vocale n'est pas prise en charge dans ce navigateur.",
     voiceListening: "Écoute en cours... parlez maintenant.",
     voiceReady: "Transcription prête. Vérifiez-la puis appuyez sur Envoyer.",
-    summaryHelper: "Vérifiez l'essentiel. Touchez un champ pour le modifier avant que Luma génère le brouillon.",
+    summaryHelper: "Vérifiez l'essentiel, ajoutez logo/photos si disponibles, puis laissez Luma générer le brouillon.",
+    editDetails: "Modifier les details",
     reviewDetails: "Vérifier le brief",
     selectedLanguage: "Langue sélectionnée",
     businessName: "Nom de l'entreprise",
@@ -369,7 +372,8 @@ const I18N = {
     voiceUnsupported: "Entrada por voz não é compatível com este navegador.",
     voiceListening: "Ouvindo... fale agora.",
     voiceReady: "Transcrição pronta. Revise e pressione Enviar.",
-    summaryHelper: "Revise o essencial. Toque em qualquer campo para editar antes da Luma gerar o rascunho.",
+    summaryHelper: "Revise o essencial, envie logo/fotos se tiver, e deixe a Luma gerar o rascunho.",
+    editDetails: "Editar detalhes",
     reviewDetails: "Revisar resumo",
     selectedLanguage: "Idioma selecionado",
     businessName: "Nome do negócio",
@@ -971,6 +975,10 @@ const brandKitPanel = document.querySelector("#brandKitPanel");
 const guidedAssetPrompt = document.querySelector("#guidedAssetPrompt");
 const chatLogoUploadButton = document.querySelector("#chatLogoUploadButton");
 const chatPhotoUploadButton = document.querySelector("#chatPhotoUploadButton");
+const guidedBriefReview = document.querySelector("#guidedBriefReview");
+const summaryLogoUploadButton = document.querySelector("#summaryLogoUploadButton");
+const summaryPhotoUploadButton = document.querySelector("#summaryPhotoUploadButton");
+const editDetailsButton = document.querySelector("#editDetailsButton");
 const checkDomainButton = document.querySelector("#checkDomainButton");
 const domainCheckStatus = document.querySelector("#domainCheckStatus");
 const domainResults = document.querySelector("#domainResults");
@@ -1148,6 +1156,9 @@ guidedLogoUpload.addEventListener("change", handleGuidedLogoUpload);
 guidedPhotoUpload.addEventListener("change", handleGuidedPhotoUpload);
 chatLogoUploadButton?.addEventListener("click", () => guidedLogoUpload.click());
 chatPhotoUploadButton?.addEventListener("click", () => guidedPhotoUpload.click());
+summaryLogoUploadButton?.addEventListener("click", () => guidedLogoUpload.click());
+summaryPhotoUploadButton?.addEventListener("click", () => guidedPhotoUpload.click());
+editDetailsButton?.addEventListener("click", openReviewDetails);
 guidedMicButton.addEventListener("click", startVoiceInput);
 languageSelector.addEventListener("change", () => setSelectedLanguage(languageSelector.value));
 summaryLanguageSelector.addEventListener("change", () => setSelectedLanguage(summaryLanguageSelector.value));
@@ -3409,11 +3420,78 @@ function renderGuidedSummary() {
   currentInfoMeta.textContent = conversationProgressLabel();
   renderGuidedCoachCard();
   renderLiveSitePreview();
+  renderGuidedBriefReview();
   renderAssetPreviews();
   renderSelectedDomainState();
   updateAssetPromptVisibility();
   renderSitePlanInChatIfNeeded();
   saveGuidedDraft();
+}
+
+function renderGuidedBriefReview() {
+  if (!guidedBriefReview) return;
+  const services = arrayValue(guidedState.servicesProducts).slice(0, 4).join(", ");
+  const colors = arrayValue(guidedState.preferredColors).length
+    ? arrayValue(guidedState.preferredColors).join(", ")
+    : arrayValue(guidedState.logoPalette).length
+      ? arrayValue(guidedState.logoPalette).join(", ")
+      : t("letAiDecide");
+  const rows = [
+    {
+      label: t("businessName"),
+      value: guidedState.businessName || t("newClientWebsite"),
+    },
+    {
+      label: t("websiteIntent"),
+      value: guidedState.websiteIntent || forcedTemplateSelection?.templateId || t("letAiDecide"),
+    },
+    {
+      label: t("servicesProducts"),
+      value: services || guidedState.businessDescription || t("letAiDecide"),
+    },
+    {
+      label: t("preferredColors"),
+      value: colors,
+    },
+    {
+      label: t("contactInfo"),
+      value: contactInfoCompactLabel(guidedState.contactInfo) || langText({
+        en: "Can be added later",
+        es: "Se puede agregar luego",
+        fr: "Peut etre ajoute ensuite",
+        pt: "Pode ser adicionado depois",
+      }),
+    },
+    {
+      label: t("salesMode"),
+      value: guidedState.salesMode || t("letAiDecide"),
+    },
+  ];
+  guidedBriefReview.innerHTML = `
+    <div class="brief-ready-card">
+      <span>${escapeHtml(langText({ en: "Ready to generate", es: "Listo para generar", fr: "Pret a generer", pt: "Pronto para gerar" }))}</span>
+      <strong>${escapeHtml(langText({
+        en: "Luma has enough context to create the first full draft.",
+        es: "Luma ya tiene contexto suficiente para crear la primera version completa.",
+        fr: "Luma a assez de contexte pour creer le premier brouillon complet.",
+        pt: "A Luma ja tem contexto suficiente para criar o primeiro rascunho completo.",
+      }))}</strong>
+      <p>${escapeHtml(langText({
+        en: "Logo/photos are optional. If you upload a logo, Luma extracts its palette and uses it as visual direction.",
+        es: "Logo/fotos son opcionales. Si subes un logo, Luma extrae su paleta y la usa como direccion visual.",
+        fr: "Logo/photos sont optionnels. Si vous importez un logo, Luma extrait sa palette et l'utilise comme direction visuelle.",
+        pt: "Logo/fotos sao opcionais. Se voce enviar um logo, a Luma extrai a paleta e usa como direcao visual.",
+      }))}</p>
+    </div>
+    <div class="brief-chip-grid">
+      ${rows.map((row) => `
+        <article>
+          <span>${escapeHtml(row.label)}</span>
+          <strong>${escapeHtml(row.value)}</strong>
+        </article>
+      `).join("")}
+    </div>
+  `;
 }
 
 function renderSitePlanInChatIfNeeded() {

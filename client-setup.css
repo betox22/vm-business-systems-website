@@ -1721,8 +1721,98 @@ body.public-client-setup.generated-preview-open {
   line-height: 1.45;
 }
 
+.public-client-setup .guided-brief-review {
+  display: grid;
+  gap: 12px;
+}
+
+.public-client-setup .brief-ready-card {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 4px;
+  border: 1px solid rgba(20, 184, 166, 0.18);
+  border-radius: 20px;
+  padding: 16px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(45, 212, 191, 0.22), transparent 38%),
+    linear-gradient(135deg, rgba(240, 253, 250, 0.96), rgba(255, 255, 255, 0.95));
+}
+
+.public-client-setup .brief-ready-card span {
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.public-client-setup .brief-ready-card strong {
+  color: #101828;
+  font-size: 18px;
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+.public-client-setup .brief-ready-card p {
+  margin: 0;
+  color: #475467;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.public-client-setup .brief-chip-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 9px;
+}
+
+.public-client-setup .brief-chip-grid article {
+  display: grid;
+  gap: 5px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(248, 250, 252, 0.86);
+}
+
+.public-client-setup .brief-chip-grid article span {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.public-client-setup .brief-chip-grid article strong {
+  color: #101828;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.public-client-setup .summary-asset-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.public-client-setup .summary-asset-actions #editDetailsButton {
+  grid-column: 1 / -1;
+  justify-self: center;
+  color: #0f766e;
+  font-weight: 950;
+}
+
 .public-client-setup .mobile-review-details {
   display: block;
+}
+
+.public-client-setup.final-review-mode:not(.review-details-open) .mobile-review-details {
+  display: none;
+}
+
+.public-client-setup.review-details-open .guided-brief-review,
+.public-client-setup.review-details-open .summary-asset-actions {
+  display: none;
 }
 
 .public-client-setup .mobile-review-details summary {

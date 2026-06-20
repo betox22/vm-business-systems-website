@@ -6,7 +6,7 @@
     <title>Luma Guided Setup</title>
     <link rel="stylesheet" href="/css/avatar-assistant.css?v=2">
     <link rel="stylesheet" href="/ai-builder.css?v=76">
-    <link rel="stylesheet" href="/client-setup.css?v=19">
+    <link rel="stylesheet" href="/client-setup.css?v=20">
   </head>
   <body class="public-client-setup guided-modal-open" data-context="client-setup">
     <main class="ai-shell">
@@ -151,6 +151,12 @@
                     <p data-i18n="summaryHelper">Review the essentials. Tap any field to edit it before Luma generates your draft.</p>
                   </div>
                   <img class="assistant-avatar tiny" src="/public/brand/gnu-dev-assistant.png" alt="">
+                </div>
+                <div id="guidedBriefReview" class="guided-brief-review"></div>
+                <div class="summary-asset-actions">
+                  <button id="summaryLogoUploadButton" class="secondary-action" type="button" data-i18n="uploadLogo">Upload logo optional</button>
+                  <button id="summaryPhotoUploadButton" class="secondary-action" type="button" data-i18n="uploadPhotos">Upload photos optional</button>
+                  <button id="editDetailsButton" class="text-action" type="button" data-i18n="editDetails">Edit details</button>
                 </div>
                 <details class="mobile-review-details" open>
                   <summary data-i18n="reviewDetails">Review details</summary>
@@ -310,6 +316,6 @@
     <script src="/template-router.js?v=5"></script>
     <script src="/js/avatar-state-manager.js?v=1"></script>
     <script src="/js/avatar-assistant.js?v=2"></script>
-    <script src="/ai-builder.js?v=85"></script>
+    <script src="/ai-builder.js?v=86"></script>
   </body>
 </html>
