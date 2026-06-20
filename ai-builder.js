@@ -1373,7 +1373,6 @@ function renderLiveSitePreview() {
   const card = ensureLiveSitePreviewCard();
   if (!card) return;
   const services = arrayValue(guidedState.servicesProducts).filter(Boolean);
-  const items = (services.length ? services : livePreviewFallbackItems()).slice(0, 6);
   const name = guidedState.businessName || langText({
     en: "Your business",
     es: "Tu negocio",
@@ -1381,18 +1380,12 @@ function renderLiveSitePreview() {
     pt: "Seu negócio",
   });
   const profile = livePreviewTemplateProfile();
-  const intent = guidedState.websiteIntent || langText({
-    en: "Website goal will appear here",
-    es: "El objetivo aparecera aqui",
-    fr: "L'objectif apparaîtra ici",
-    pt: "O objetivo aparecera aqui",
-  });
-  const description = guidedState.businessDescription || forcedTemplateSelection?.template?.clientSelectionCard?.difference || langText({
-    en: "Luma updates this live draft as you answer.",
-    es: "Luma actualiza este borrador mientras respondes.",
-    fr: "Luma met à jour ce brouillon pendant vos réponses.",
-    pt: "A Luma atualiza este rascunho enquanto você responde.",
-  });
+  const items = sanitizePublicProductList(services.length ? services : livePreviewFallbackItems(), {
+    business_description: guidedState.businessDescription,
+    industry: guidedState.industry,
+    selectedLanguage,
+  }, instantLocaleCopy(selectedLanguage), selectedLanguage, profile.templateId).slice(0, 6);
+  const publicCopy = livePreviewPublicCopy(profile, items);
   const contact = contactInfoCompactLabel(guidedState.contactInfo) || langText({
     en: "Contact pending",
     es: "Contacto pendiente",
@@ -1416,11 +1409,11 @@ function renderLiveSitePreview() {
       <section class="live-page-hero">
         <div class="live-page-hero-copy">
           <em>${escapeHtml(profile.kicker)}</em>
-          <h1>${escapeHtml(name)}</h1>
-          <p>${escapeHtml(description).slice(0, 220)}</p>
+          <h1>${escapeHtml(publicCopy.headline)}</h1>
+          <p>${escapeHtml(publicCopy.subtitle)}</p>
           <div class="live-page-actions">
             <button type="button">${escapeHtml(profile.cta)}</button>
-            <span>${escapeHtml(intent)}</span>
+            <span>${escapeHtml(publicCopy.supportingLine)}</span>
           </div>
         </div>
         <div class="live-page-visual" aria-hidden="true">
@@ -1575,6 +1568,136 @@ function inferLivePreviewTemplateId() {
   if (/barber|cita|booking|reserva|appointment|salon/.test(text)) return "booking-appointment-pro";
   if (/servicio|service|contractor|limpieza|roofing|legal|consulta|clinic|clinica/.test(text)) return "local-services-pro-plus";
   return "apple-premium-product";
+}
+
+function livePreviewPublicCopy(profile, items = []) {
+  const name = guidedState.businessName || langText({
+    en: "Your business",
+    es: "Tu negocio",
+    fr: "Votre entreprise",
+    pt: "Seu negocio",
+  });
+  const productFocus = publicProductFocus(items, guidedState.industry);
+  const templates = {
+    marketplace: {
+      headline: langText({
+        en: `${name} makes discovery feel simple`,
+        es: `${name} convierte descubrir productos en algo simple`,
+        fr: `${name} rend la decouverte simple`,
+        pt: `${name} torna a descoberta simples`,
+      }),
+      subtitle: langText({
+        en: `A search-first shopping experience for ${productFocus}, built with clear categories, featured finds, and a fast path to buy or ask.`,
+        es: `Una experiencia de compra con busqueda clara para ${productFocus}, con categorias ordenadas, destacados y una ruta rapida para comprar o preguntar.`,
+        fr: `Une experience d'achat claire pour ${productFocus}, avec categories, selections et parcours rapide vers l'achat ou la demande.`,
+        pt: `Uma experiencia de compra clara para ${productFocus}, com categorias, destaques e caminho rapido para comprar ou perguntar.`,
+      }),
+      supportingLine: langText({
+        en: "Luma is shaping this as a catalog with search, categories, featured offers and editable product sections.",
+        es: "Luma lo esta armando como catalogo con busqueda, categorias, ofertas destacadas y secciones editables.",
+        fr: "Luma le structure comme catalogue avec recherche, categories, offres et sections modifiables.",
+        pt: "A Luma esta estruturando como catalogo com busca, categorias, ofertas e secoes editaveis.",
+      }),
+    },
+    fashion: {
+      headline: langText({
+        en: `${name} gets a collection-led storefront`,
+        es: `${name} se presenta como una tienda visual por colecciones`,
+        fr: `${name} devient une boutique visuelle par collections`,
+        pt: `${name} vira uma loja visual por colecoes`,
+      }),
+      subtitle: langText({
+        en: `An editorial storefront for ${productFocus}, with drops, looks, product cards and a clean path to shop.`,
+        es: `Una tienda editorial para ${productFocus}, con drops, looks, tarjetas de producto y una ruta clara para comprar.`,
+        fr: `Une boutique editoriale pour ${productFocus}, avec drops, looks, fiches produit et achat clair.`,
+        pt: `Uma loja editorial para ${productFocus}, com drops, looks, cards de produto e compra clara.`,
+      }),
+      supportingLine: langText({
+        en: "The client notes guide the visual direction; the page copy is rewritten as customer-facing retail copy.",
+        es: "Las notas del cliente guian la direccion visual; el texto se reescribe como copy comercial para compradores.",
+        fr: "Les notes client guident la direction visuelle; le texte devient un copy commercial.",
+        pt: "As notas do cliente guiam a direcao visual; o texto vira copy comercial.",
+      }),
+    },
+    restaurant: {
+      headline: langText({
+        en: `${name} gets a menu that sells`,
+        es: `${name} obtiene un menu pensado para vender`,
+        fr: `${name} obtient un menu pense pour vendre`,
+        pt: `${name} ganha um menu feito para vender`,
+      }),
+      subtitle: langText({
+        en: "A warm food experience with signature items, specials, hours, location and quick ordering.",
+        es: "Una experiencia calida con platos destacados, especiales, horarios, ubicacion y pedidos rapidos.",
+        fr: "Une experience chaleureuse avec plats signature, offres, horaires, adresse et commande rapide.",
+        pt: "Uma experiencia acolhedora com destaques, especiais, horarios, localizacao e pedidos rapidos.",
+      }),
+      supportingLine: langText({
+        en: "Luma is turning the intake into a menu structure, not pasting internal notes onto the page.",
+        es: "Luma convierte la informacion en estructura de menu, no pega notas internas en la pagina.",
+        fr: "Luma transforme les infos en structure de menu, sans coller les notes internes.",
+        pt: "A Luma transforma as informacoes em menu, sem colar notas internas.",
+      }),
+    },
+    service: {
+      headline: langText({
+        en: `${name} gets a trust-first website`,
+        es: `${name} obtiene una pagina enfocada en confianza`,
+        fr: `${name} obtient un site axe confiance`,
+        pt: `${name} ganha um site focado em confianca`,
+      }),
+      subtitle: langText({
+        en: `A clear service page for ${productFocus}, with proof, process, contact options and quote-ready sections.`,
+        es: `Una pagina clara para ${productFocus}, con pruebas, proceso, contacto y secciones listas para cotizar.`,
+        fr: `Une page claire pour ${productFocus}, avec preuves, processus, contact et demande de devis.`,
+        pt: `Uma pagina clara para ${productFocus}, com provas, processo, contato e orcamento.`,
+      }),
+      supportingLine: langText({
+        en: "Luma is translating the brief into positioning, proof and conversion sections.",
+        es: "Luma traduce el brief en posicionamiento, prueba y secciones de conversion.",
+        fr: "Luma traduit le brief en positionnement, preuves et conversion.",
+        pt: "A Luma traduz o briefing em posicionamento, prova e conversao.",
+      }),
+    },
+    premium: {
+      headline: langText({
+        en: `${name} gets a polished brand showcase`,
+        es: `${name} obtiene una presentacion de marca pulida`,
+        fr: `${name} obtient une presentation de marque soignee`,
+        pt: `${name} ganha uma apresentacao de marca polida`,
+      }),
+      subtitle: langText({
+        en: `A premium presentation for ${productFocus}, with refined messaging, strong visuals and editable story sections.`,
+        es: `Una presentacion premium para ${productFocus}, con mensaje refinado, visuales fuertes y secciones editables.`,
+        fr: `Une presentation premium pour ${productFocus}, avec message raffine, visuels forts et sections modifiables.`,
+        pt: `Uma apresentacao premium para ${productFocus}, com mensagem refinada, visual forte e secoes editaveis.`,
+      }),
+      supportingLine: langText({
+        en: "The preview uses designer-written copy inferred from the intake, not the raw answer.",
+        es: "El preview usa copy escrito como disenador a partir del intake, no la respuesta cruda.",
+        fr: "L'apercu utilise un copy deduit du brief, pas la reponse brute.",
+        pt: "O preview usa copy criado a partir do briefing, nao a resposta bruta.",
+      }),
+    },
+  };
+  return templates[profile.kind] || templates.premium;
+}
+
+function publicProductFocus(items = [], fallback = "") {
+  const cleanItems = arrayValue(items)
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .slice(0, 2);
+  if (cleanItems.length) {
+    const joiner = selectedLanguage === "en" ? " and " : selectedLanguage === "fr" ? " et " : " y ";
+    return cleanItems.join(joiner);
+  }
+  return fallback || langText({
+    en: "the right products and services",
+    es: "los productos y servicios correctos",
+    fr: "les bons produits et services",
+    pt: "os produtos e servicos certos",
+  });
 }
 
 function livePreviewNavItems(profile) {
@@ -3752,10 +3875,18 @@ function guidedStateForApi() {
     sectionsPreference: guidedState.sectionsPreference,
     sitePlan: guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan() : null),
     sitePlanApproved: Boolean(guidedState.sitePlanApproved),
+    publicCopyPolicy: {
+      mode: "designer_rewrite",
+      visibleCopyMustBeOriginal: true,
+      intakeIsStrategyOnly: true,
+      forbiddenLiteralSources: ["businessDescription", "chat answers", "client notes", "internal requirements"],
+      instruction:
+        "Treat all intake answers as private creative direction. Do not paste them into visible website copy. Rewrite them into concise, polished, customer-facing titles, slogans, paragraphs, CTAs, product descriptions, and section labels in selectedLanguage.",
+    },
     source: "ai_guided_setup",
     status: "ready_to_generate",
     brandContextNote:
-      "Intake answers describe what the client wants and should guide design strategy. Do not copy internal context literally into visible website copy unless it sounds natural for the brand.",
+      "Intake answers describe what the client wants and should guide design strategy only. Never copy internal context, raw client notes, requirements, or rough answers literally into visible website copy.",
   };
   const revisionInstructions = buildRevisionInstructions();
   if (revisionInstructions) {
@@ -4313,9 +4444,11 @@ function buildTemplateInstructions(selection) {
     editableSlots: template.editableSlots || [],
     copyGenerationRules: [
       "If payload.sitePlan exists, treat it as the approved structure contract for pages, major sections, and conversion flow.",
-      "Generate a strong brand headline, slogan, section titles, CTAs, product/service descriptions, trust copy, and footer copy from the business description.",
+      "Generate a strong brand headline, slogan, section titles, CTAs, product/service descriptions, trust copy, and footer copy from the business context.",
       "All generated visible copy must remain editable in the JSON under section.editable, catalog_items, theme, navigation, business, or global_components.",
-      "Use businessDescription and chat intake as strategy/context, not as literal page text unless it reads naturally for a customer.",
+      "Never paste businessDescription, chat answers, intake notes, internal requirements, or client wording verbatim into visible page copy.",
+      "Use businessDescription and chat intake only as strategic context. Rewrite every visible headline, paragraph, CTA and section title as polished customer-facing marketing copy.",
+      "If the client answer contains rough notes, product lists, spelling mistakes, internal instructions, or phrases like 'quiero', 'debe', 'necesito', convert them into professional copy or keep them out of the page.",
       "If the client gave only rough details, invent polished but safe placeholder copy that matches the selected language and mark it as editable.",
       "Keep the selected template's layout personality and catalog model. Do not flatten every template into the same hero/grid structure.",
       "Use website_config.brand and CSS brand tokens for all colors. Do not copy hardcoded template default colors when a logo or brand palette exists.",
@@ -4330,7 +4463,7 @@ function buildTemplateInstructions(selection) {
     sectionOrder: sections,
     pages,
     instruction:
-      "Use this template as the structural base. Replace placeholders with business-specific titles, slogans, section copy, products, services, colors, images, and CTAs. Keep every generated element editable, and preserve the unique layout pattern instead of turning all templates into the same generic page.",
+      "Use this template as the structural base. Replace placeholders with business-specific titles, slogans, section copy, products, services, colors, images, and CTAs. Intake text is design strategy only: do not copy it verbatim into visible website copy. Keep every generated element editable, and preserve the unique layout pattern instead of turning all templates into the same generic page.",
   };
 }
 
@@ -5039,6 +5172,135 @@ function buildInstantTemplateResult(payload, error, templateSelection) {
   };
 }
 
+function professionalPublicDescription({ payload = {}, template = {}, catalogType = "", copy = {}, name = "", products = [], language = selectedLanguage }) {
+  const templateText = `${catalogType} ${template.id || ""} ${template.category || ""}`.toLowerCase();
+  const focus = productFocusForLanguage(products, payload.industry, language);
+  const descriptions = {
+    en: {
+      marketplace: `A search-first shopping experience for ${focus}, with clear categories, featured finds, and a fast path to buy or ask.`,
+      fashion: `A visual storefront for ${focus}, built around collections, product storytelling, and a clean path to shop.`,
+      restaurant: "A warm menu experience with signature items, specials, hours, location, and a simple ordering path.",
+      service: `A trust-first service website for ${focus}, with proof, process, contact options, and quote-ready sections.`,
+      premium: `A polished brand experience for ${focus}, with refined messaging, strong visuals, and editable story sections.`,
+      company: `A professional business website for ${focus}, built around clarity, trust, services, and direct contact.`,
+    },
+    es: {
+      marketplace: `Una experiencia de compra con busqueda clara para ${focus}, con categorias ordenadas, destacados y una ruta rapida para comprar o preguntar.`,
+      fashion: `Una tienda visual para ${focus}, pensada alrededor de colecciones, narrativa de producto y una ruta clara para comprar.`,
+      restaurant: "Una experiencia calida de menu con platos destacados, especiales, horarios, ubicacion y pedidos simples.",
+      service: `Una pagina enfocada en confianza para ${focus}, con pruebas, proceso, contacto y secciones listas para cotizar.`,
+      premium: `Una experiencia de marca pulida para ${focus}, con mensaje refinado, visuales fuertes y secciones editables.`,
+      company: `Una pagina profesional para ${focus}, enfocada en claridad, confianza, servicios y contacto directo.`,
+    },
+    fr: {
+      marketplace: `Une experience d'achat claire pour ${focus}, avec categories, selections et parcours rapide vers l'achat ou la demande.`,
+      fashion: `Une boutique visuelle pour ${focus}, construite autour des collections, du storytelling produit et d'un achat clair.`,
+      restaurant: "Une experience menu chaleureuse avec plats signature, offres, horaires, adresse et commande simple.",
+      service: `Un site de service axe confiance pour ${focus}, avec preuves, processus, contact et demande de devis.`,
+      premium: `Une experience de marque soignee pour ${focus}, avec message raffine, visuels forts et sections modifiables.`,
+      company: `Un site professionnel pour ${focus}, centre sur la clarte, la confiance, les services et le contact direct.`,
+    },
+    pt: {
+      marketplace: `Uma experiencia de compra clara para ${focus}, com categorias, destaques e caminho rapido para comprar ou perguntar.`,
+      fashion: `Uma loja visual para ${focus}, feita em torno de colecoes, narrativa de produto e compra clara.`,
+      restaurant: "Uma experiencia acolhedora de menu com destaques, especiais, horarios, localizacao e pedido simples.",
+      service: `Um site focado em confianca para ${focus}, com provas, processo, contato e secoes prontas para orcamento.`,
+      premium: `Uma experiencia de marca polida para ${focus}, com mensagem refinada, visual forte e secoes editaveis.`,
+      company: `Um site profissional para ${focus}, focado em clareza, confianca, servicos e contato direto.`,
+    },
+  };
+  const lang = descriptions[language] ? language : "en";
+  const set = descriptions[lang];
+  if (/marketplace|dense|listing|store|shop|catalog/.test(templateText)) return set.marketplace;
+  if (/fashion|lookbook|collection/.test(templateText)) return set.fashion;
+  if (/restaurant|menu|food/.test(templateText)) return set.restaurant;
+  if (/service|booking|clinic|legal|professional|home_services|quote/.test(templateText)) return set.service;
+  if (/company|corporate|b2b|industrial|enterprise/.test(templateText)) return set.company;
+  return set.premium || copy.defaultDescription || name;
+}
+
+function productFocusForLanguage(products = [], fallback = "", language = selectedLanguage) {
+  const clean = arrayValue(products)
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .slice(0, 2);
+  if (clean.length) {
+    const joiner = language === "en" ? " and " : language === "fr" ? " et " : " y ";
+    return clean.join(joiner);
+  }
+  const fallbacks = {
+    en: "the right products and services",
+    es: "los productos y servicios correctos",
+    fr: "les bons produits et services",
+    pt: "os produtos e servicos certos",
+  };
+  return fallback || fallbacks[language] || fallbacks.en;
+}
+
+function sanitizePublicProductList(products = [], payload = {}, copy = {}, language = selectedLanguage, templateHint = "") {
+  const cleaned = arrayValue(products)
+    .map((item) => cleanPublicItemLabel(item))
+    .filter(Boolean)
+    .slice(0, 8);
+  if (cleaned.length >= 2) return cleaned;
+  const inferred = inferredPublicCatalogLabels({
+    text: `${payload.business_description || ""} ${payload.industry || ""} ${arrayValue(products).join(" ")} ${templateHint || ""}`,
+    language,
+  });
+  return inferred.length ? inferred : arrayValue(copy.defaultProducts).slice(0, 4);
+}
+
+function cleanPublicItemLabel(value) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  if (text.length > 48) return "";
+  if (/[.!?¿]/.test(text)) return "";
+  if (/\b(quiero|necesito|debe|deberia|página|pagina|website|marketplace|cliente|contacto|ubicaci[oó]n|telefono|tel[eé]fono|whatsapp|productos?|servicios?|vendo|vende|ofrece|online|etc)\b/i.test(text) && text.split(/\s+/).length > 3) {
+    return "";
+  }
+  return text;
+}
+
+function inferredPublicCatalogLabels({ text = "", language = selectedLanguage } = {}) {
+  const lower = String(text || "").toLowerCase();
+  const labels = {
+    es: {
+      fashion: ["Ropa seleccionada", "Accesorios", "Novedades"],
+      marketplace: ["Hallazgos especiales", "Gadgets utiles", "Coleccionables"],
+      restaurant: ["Platos destacados", "Especiales", "Bebidas"],
+      service: ["Servicio principal", "Paquetes", "Consulta"],
+      default: ["Oferta destacada", "Categorias clave", "Novedades"],
+    },
+    en: {
+      fashion: ["Selected apparel", "Accessories", "New arrivals"],
+      marketplace: ["Special finds", "Useful gadgets", "Collectibles"],
+      restaurant: ["Signature dishes", "Specials", "Drinks"],
+      service: ["Main service", "Packages", "Consultation"],
+      default: ["Featured offer", "Key categories", "New arrivals"],
+    },
+    fr: {
+      fashion: ["Vetements selectionnes", "Accessoires", "Nouveautes"],
+      marketplace: ["Trouvailles speciales", "Gadgets utiles", "Objets de collection"],
+      restaurant: ["Plats signature", "Specials", "Boissons"],
+      service: ["Service principal", "Forfaits", "Consultation"],
+      default: ["Offre phare", "Categories cles", "Nouveautes"],
+    },
+    pt: {
+      fashion: ["Roupas selecionadas", "Acessorios", "Novidades"],
+      marketplace: ["Achados especiais", "Gadgets uteis", "Colecionaveis"],
+      restaurant: ["Pratos destaque", "Especiais", "Bebidas"],
+      service: ["Servico principal", "Pacotes", "Consulta"],
+      default: ["Oferta destaque", "Categorias chave", "Novidades"],
+    },
+  };
+  const set = labels[language] || labels.en;
+  if (/ropa|moda|fashion|camisa|zapato|sneaker|clothing|apparel/.test(lower)) return set.fashion;
+  if (/comida|restaurante|menu|food|restaurant|cafe/.test(lower)) return set.restaurant;
+  if (/servicio|service|consulta|booking|cita|quote|cotiz/.test(lower)) return set.service;
+  if (/carro|anime|gadget|juguete|curioso|raro|marketplace|store|shop|tienda|producto/.test(lower)) return set.marketplace;
+  return set.default;
+}
+
 function buildInstantTemplateSchema(payload, templateSelection) {
   const language = payload.selectedLanguage || selectedLanguage || "en";
   const template = templateSelection?.template || payload.selectedTemplate || {};
@@ -5048,12 +5310,16 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     : payload.templateInstructions || {};
   const copy = instantLocaleCopy(language);
   const name = payload.business_name || copy.newStore;
-  const description = payload.business_description || copy.defaultDescription;
+  const products = sanitizePublicProductList(
+    arrayValue(payload.services_products).length ? arrayValue(payload.services_products) : copy.defaultProducts,
+    payload,
+    copy,
+    language,
+    `${catalogType} ${template.id || ""}`,
+  );
+  const description = professionalPublicDescription({ payload, template, catalogType, copy, name, products, language });
   const salesText = `${payload.salesMode || ""} ${payload.sales_mode || ""} ${payload.templateIntent || ""} ${template.category || ""} ${template.id || ""}`.toLowerCase();
   const isOnlineShop = /sell online|online sales|shop|store|tienda|ecommerce|cart|checkout|vender|comprar/.test(salesText);
-  const products = arrayValue(payload.services_products).length
-    ? arrayValue(payload.services_products)
-    : copy.defaultProducts;
   const brand = normalizeBrand(payload.brand || createBrandSystem({
     logoUrl: payload.assets?.find((asset) => asset.asset_type === "logo")?.url || "",
     extractedColors: payload.logoPalette,
