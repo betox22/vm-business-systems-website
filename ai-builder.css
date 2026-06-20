@@ -7532,7 +7532,7 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 }
 
 .industrial-proof-strip span,
-.industrial-cert-grid span,
+.industrial-catalog-stats span,
 .industrial-rfq-fields span {
   border: 1px solid rgba(17, 24, 39, 0.12);
   border-radius: 8px;
@@ -7543,8 +7543,7 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 }
 
 .industrial-rfq-dashboard,
-.catalog-industrial-supplier article,
-.industrial-capability-grid article,
+.catalog-industrial-supplier,
 .industrial-quote-card {
   border: 1px solid rgba(17, 24, 39, 0.14);
   background: rgba(255, 255, 255, 0.92);
@@ -7649,90 +7648,116 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   padding: clamp(54px, 8vw, 104px) clamp(22px, 6vw, 86px);
 }
 
-.catalog-industrial-supplier {
+.industrial-catalog-header {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: end;
+  margin-bottom: 22px;
+}
+
+.industrial-catalog-header h2 {
+  max-width: 860px;
+  margin: 8px 0 10px;
+  color: #111827;
+  font-size: clamp(34px, 5vw, 70px);
+  line-height: 0.96;
+  text-transform: uppercase;
+}
+
+.industrial-catalog-header p {
+  max-width: 760px;
+}
+
+.industrial-catalog-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.catalog-industrial-supplier {
+  overflow: hidden;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.industrial-table-head,
+.catalog-industrial-supplier article {
+  display: grid;
+  grid-template-columns: 112px minmax(260px, 1fr) 88px 128px 128px 150px;
+  gap: 0;
+  align-items: stretch;
+}
+
+.industrial-table-head {
+  background: #111827;
+  color: #f5b301;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.industrial-table-head span,
+.catalog-industrial-supplier article > * {
+  display: grid;
+  align-content: center;
+  border-right: 1px solid rgba(17, 24, 39, 0.1);
+  padding: 14px;
+}
+
+.industrial-table-head span {
+  border-color: rgba(245, 179, 1, 0.2);
 }
 
 .catalog-industrial-supplier article {
-  display: grid;
-  border-radius: 14px;
-  overflow: hidden;
+  border-top: 1px solid rgba(17, 24, 39, 0.1);
+  background: #fff;
 }
 
 .catalog-industrial-supplier article.featured {
-  grid-column: span 2;
+  background:
+    linear-gradient(90deg, rgba(245, 179, 1, 0.14), transparent 34%),
+    #fff;
 }
 
-.industrial-card-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px;
-  background: #111827;
-  color: #f8fafc;
-}
-
-.industrial-card-head small {
-  color: #f5b301;
-  font-weight: 950;
-  text-transform: uppercase;
-}
-
-.industrial-card-visual {
-  min-height: 220px;
-  background: #374151;
-}
-
-.industrial-card-body {
-  display: grid;
-  gap: 12px;
-  padding: 18px;
-}
-
-.industrial-card-body > span {
+.catalog-industrial-supplier article > b {
   color: #8a5d00;
-  font-size: 0.76rem;
-  font-weight: 950;
-  text-transform: uppercase;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.86rem;
 }
 
-.industrial-card-body h3 {
-  margin: 0;
+.catalog-industrial-supplier article strong {
   color: #111827;
-  font-size: clamp(22px, 2.4vw, 34px);
-  line-height: 1;
+  font-size: 1rem;
 }
 
-.industrial-card-body dl {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin: 0;
-}
-
-.industrial-card-body dl div {
-  border: 1px solid rgba(17, 24, 39, 0.1);
-  border-radius: 8px;
-  padding: 9px;
-  background: #f4f1e8;
-}
-
-.industrial-card-body dt {
+.catalog-industrial-supplier article small {
+  margin-top: 5px;
   color: #6b7280;
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   font-weight: 900;
-  text-transform: uppercase;
 }
 
-.industrial-card-body dd {
-  margin: 4px 0 0;
+.catalog-industrial-supplier article p {
+  margin: 8px 0 0;
+  color: #4b5563;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.catalog-industrial-supplier article > span {
   color: #111827;
   font-weight: 950;
 }
 
-.industrial-card-body > div:last-child,
+.catalog-industrial-supplier .rendered-button {
+  align-self: center;
+  justify-self: center;
+  width: calc(100% - 18px);
+  padding: 10px 12px;
+}
+
 .industrial-quote-card {
   display: flex;
   justify-content: space-between;
@@ -7749,34 +7774,51 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   background: #ffffff;
 }
 
-.industrial-capability-grid,
-.industrial-cert-grid {
+.industrial-capability-board,
+.industrial-doc-stack {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.industrial-capability-grid article {
+  gap: 0;
+  border: 1px solid rgba(17, 24, 39, 0.12);
   border-radius: 14px;
-  padding: 22px;
+  overflow: hidden;
+  background: #fff;
 }
 
-.industrial-capability-grid b {
+.industrial-capability-board div,
+.industrial-doc-stack article {
+  display: grid;
+  grid-template-columns: 58px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 92px;
+  border-right: 1px solid rgba(17, 24, 39, 0.1);
+  border-bottom: 1px solid rgba(17, 24, 39, 0.1);
+  padding: 18px;
+}
+
+.industrial-capability-board b,
+.industrial-doc-stack b {
   display: inline-grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: 8px;
   background: #111827;
   color: #f5b301;
-  margin-bottom: 16px;
+  font-size: 0.8rem;
 }
 
-.industrial-capability-grid strong {
-  display: block;
+.industrial-capability-board strong,
+.industrial-doc-stack span {
   color: #111827;
-  font-size: 1.14rem;
-  margin-bottom: 10px;
+  font-weight: 950;
+}
+
+.industrial-capability-board span,
+.industrial-doc-stack small {
+  color: #6b7280;
+  font-weight: 900;
 }
 
 .industrial-supply-line {
@@ -8080,12 +8122,34 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   }
 
   .industrial-spec-table div,
+  .industrial-catalog-header,
+  .industrial-catalog-stats,
+  .industrial-table-head,
+  .catalog-industrial-supplier article,
   .catalog-industrial-supplier,
   .industrial-card-body dl,
-  .industrial-capability-grid,
-  .industrial-cert-grid,
+  .industrial-capability-board,
+  .industrial-doc-stack,
   .industrial-rfq-fields {
     grid-template-columns: 1fr;
+  }
+
+  .industrial-table-head {
+    display: none;
+  }
+
+  .catalog-industrial-supplier article {
+    border-top: 8px solid #111827;
+  }
+
+  .catalog-industrial-supplier article > * {
+    border-right: 0;
+    border-bottom: 1px solid rgba(17, 24, 39, 0.1);
+  }
+
+  .industrial-capability-board div,
+  .industrial-doc-stack article {
+    grid-template-columns: 46px 1fr;
   }
 
   .catalog-industrial-supplier article.featured {
