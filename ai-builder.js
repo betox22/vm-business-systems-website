@@ -59,6 +59,9 @@ const I18N = {
     selectedTemplate: "Selected template",
     catalogType: "Catalog type",
     currentInfo: "A few details collected so far.",
+    livePreviewKicker: "Live draft",
+    livePreviewTitle: "Your site is forming here",
+    livePreviewText: "As you answer, Luma updates this preview in the workspace.",
     finalReviewTitle: "Your website brief",
     generateMyWebsite: "Generate my website",
     keepChatting: "Keep chatting",
@@ -155,6 +158,9 @@ const I18N = {
     selectedTemplate: "Template seleccionado",
     catalogType: "Tipo de catalogo",
     currentInfo: "Algunos detalles recopilados hasta ahora.",
+    livePreviewKicker: "Borrador en vivo",
+    livePreviewTitle: "Tu sitio se va formando aqui",
+    livePreviewText: "Mientras respondes, Luma actualiza este preview en tu area de trabajo.",
     finalReviewTitle: "Resumen de tu pagina",
     generateMyWebsite: "Generar mi pagina",
     keepChatting: "Seguir conversando",
@@ -251,6 +257,9 @@ const I18N = {
     selectedTemplate: "Template sélectionné",
     catalogType: "Type de catalogue",
     currentInfo: "Quelques détails collectés jusqu'ici.",
+    livePreviewKicker: "Brouillon live",
+    livePreviewTitle: "Votre site se forme ici",
+    livePreviewText: "Pendant vos réponses, Luma met à jour cet aperçu dans l'espace de travail.",
     finalReviewTitle: "Brief de votre site",
     generateMyWebsite: "Générer mon site",
     keepChatting: "Continuer la discussion",
@@ -347,6 +356,9 @@ const I18N = {
     selectedTemplate: "Template selecionado",
     catalogType: "Tipo de catálogo",
     currentInfo: "Alguns detalhes coletados até agora.",
+    livePreviewKicker: "Rascunho ao vivo",
+    livePreviewTitle: "Seu site se forma aqui",
+    livePreviewText: "Enquanto você responde, a Luma atualiza este preview na área de trabalho.",
     finalReviewTitle: "Resumo do seu site",
     generateMyWebsite: "Gerar meu site",
     keepChatting: "Continuar conversando",
@@ -931,6 +943,7 @@ const quickModeButton = document.querySelector("#quickModeButton");
 const guidedModeButton = document.querySelector("#guidedModeButton");
 const guidedPanel = document.querySelector("#guidedPanel");
 const guidedChatCard = document.querySelector(".guided-chat-card");
+const liveSitePreviewMount = document.querySelector("#liveSitePreviewMount");
 const guidedChat = document.querySelector("#guidedChat");
 const guidedReply = document.querySelector("#guidedReply");
 const guidedStatusText = document.querySelector("#guidedStatusText");
@@ -1282,11 +1295,16 @@ function renderGuidedCoachCard() {
 }
 
 function ensureLiveSitePreviewCard() {
-  if (liveSitePreviewCard || !guidedChatCard || !guidedChat) return liveSitePreviewCard;
-  liveSitePreviewCard = document.createElement("section");
-  liveSitePreviewCard.className = "live-site-preview-card";
-  liveSitePreviewCard.setAttribute("aria-label", "Live website draft preview");
-  guidedChatCard.insertBefore(liveSitePreviewCard, guidedChat);
+  if (!liveSitePreviewCard) {
+    liveSitePreviewCard = document.createElement("section");
+    liveSitePreviewCard.className = "live-site-preview-card";
+    liveSitePreviewCard.setAttribute("aria-label", "Live website draft preview");
+  }
+  if (liveSitePreviewMount && liveSitePreviewCard.parentElement !== liveSitePreviewMount) {
+    liveSitePreviewMount.appendChild(liveSitePreviewCard);
+  } else if (!liveSitePreviewMount && guidedChatCard && guidedChat && liveSitePreviewCard.parentElement !== guidedChatCard) {
+    guidedChatCard.insertBefore(liveSitePreviewCard, guidedChat);
+  }
   return liveSitePreviewCard;
 }
 

@@ -6,7 +6,7 @@
     <title>Luma Guided Setup</title>
     <link rel="stylesheet" href="/css/avatar-assistant.css?v=2">
     <link rel="stylesheet" href="/ai-builder.css?v=76">
-    <link rel="stylesheet" href="/client-setup.css?v=16">
+    <link rel="stylesheet" href="/client-setup.css?v=17">
   </head>
   <body class="public-client-setup guided-modal-open" data-context="client-setup">
     <main class="ai-shell">
@@ -91,6 +91,15 @@
             </div>
 
             <div class="guided-layout">
+              <section class="guided-live-stage" aria-label="Live website preview">
+                <div class="live-stage-header">
+                  <span data-i18n="livePreviewKicker">Live draft</span>
+                  <strong data-i18n="livePreviewTitle">Your site is forming here</strong>
+                  <p data-i18n="livePreviewText">As you answer, Luma updates this preview in the workspace.</p>
+                </div>
+                <div id="liveSitePreviewMount" class="live-site-preview-mount"></div>
+              </section>
+
               <div class="guided-chat-card">
                 <div id="guidedChat" class="guided-chat" aria-live="polite"></div>
                 <div id="guidedThinking" class="guided-thinking">
@@ -301,6 +310,6 @@
     <script src="/template-router.js?v=4"></script>
     <script src="/js/avatar-state-manager.js?v=1"></script>
     <script src="/js/avatar-assistant.js?v=2"></script>
-    <script src="/ai-builder.js?v=78"></script>
+    <script src="/ai-builder.js?v=79"></script>
   </body>
 </html>

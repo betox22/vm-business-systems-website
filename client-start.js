@@ -388,17 +388,17 @@ startLandingLumaLoop();
 startButton.addEventListener("click", (event) => {
   event.preventDefault();
   setLandingLumaState("happy");
-  openLumaChat();
+  goToIntegratedSetup();
 });
 lumaGuideButton?.addEventListener("click", (event) => {
   event.preventDefault();
   setLandingLumaState("happy");
-  openLumaChat();
+  goToIntegratedSetup();
 });
 templateIntentButtons.forEach((button) => {
   button.addEventListener("click", () => {
     setLandingLumaState("thinking");
-    openLumaChat(false, {
+    goToIntegratedSetup(false, {
       intent: button.dataset.templateIntent || "",
       templateId: button.dataset.templateId || "",
       catalogType: button.dataset.catalogType || "",
@@ -408,7 +408,7 @@ templateIntentButtons.forEach((button) => {
 });
 manualButton?.addEventListener("click", (event) => {
   event.preventDefault();
-  openLumaChat(true);
+  goToIntegratedSetup(true);
 });
 
 closeChatButton.addEventListener("click", closeLumaChat);
@@ -490,7 +490,7 @@ async function submitTesterFeedback(event) {
   }
 }
 
-function openLumaChat(manual = false, intent = {}) {
+function buildSetupUrl(manual = false, intent = {}, embedded = false) {
   const apiQuery = PUBLIC_BACKEND_URL ? `&api=${encodeURIComponent(PUBLIC_BACKEND_URL)}` : "";
   const intentQuery = [
     intent.prompt ? `prompt=${encodeURIComponent(intent.prompt)}` : "",
@@ -498,7 +498,15 @@ function openLumaChat(manual = false, intent = {}) {
     intent.catalogType ? `catalogType=${encodeURIComponent(intent.catalogType)}` : "",
     intent.intent ? `intent=${encodeURIComponent(intent.intent)}` : "",
   ].filter(Boolean).join("&");
-  const nextSrc = `/client/setup/?lang=${selectedLanguage}&embedded=1&build=${PUBLIC_BUILD_ID}${apiQuery}${manual ? "&manual=1" : ""}${intentQuery ? `&${intentQuery}` : ""}`;
+  return `/client/setup/?lang=${selectedLanguage}${embedded ? "&embedded=1" : ""}&build=${PUBLIC_BUILD_ID}${apiQuery}${manual ? "&manual=1" : ""}${intentQuery ? `&${intentQuery}` : ""}`;
+}
+
+function goToIntegratedSetup(manual = false, intent = {}) {
+  window.location.href = buildSetupUrl(manual, intent, false);
+}
+
+function openLumaChat(manual = false, intent = {}) {
+  const nextSrc = buildSetupUrl(manual, intent, true);
   if (chatFrame.getAttribute("src") !== nextSrc) {
     chatFrame.src = nextSrc;
   }
