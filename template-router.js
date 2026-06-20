@@ -903,6 +903,11 @@
       || /(carros|autos|juguetes|anime|gadgets).*(ropa|accesorios)/.test(normalizedPrompt);
   }
 
+  function suggestsFocusedProductLine(normalizedPrompt) {
+    return /\b(linea de|linea para|product line|same niche|mismo nicho|mismo tipo|una categoria|varios modelos|modelos para|parachoques|bumper|4x4|off road|pickup|camioneta|camionetas)\b/.test(normalizedPrompt)
+      && !suggestsBroadMarketplace(normalizedPrompt);
+  }
+
   async function loadTemplates() {
     if (templateCache) return templateCache;
     const response = await fetch(TEMPLATE_LIBRARY_URL, { cache: "no-store" });
@@ -1035,6 +1040,9 @@
   function selectBestIntentRule(normalizedPrompt) {
     if (suggestsBroadMarketplace(normalizedPrompt)) {
       return INTENT_RULES.find((rule) => rule.intent === "amazon_marketplace") || null;
+    }
+    if (suggestsFocusedProductLine(normalizedPrompt)) {
+      return INTENT_RULES.find((rule) => rule.intent === "minimal_premium") || null;
     }
     const scored = INTENT_RULES.map((rule) => {
       const matches = rule.keywords.filter((keyword) => normalizedPrompt.includes(normalizeText(keyword)));

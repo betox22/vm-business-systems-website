@@ -1592,16 +1592,30 @@ function textSuggestsBroadMarketplace(value) {
     || /(carros|autos|juguetes|anime|gadgets).*(ropa|accesorios)/.test(text);
 }
 
+function textSuggestsFocusedProductLine(value) {
+  const text = normalizeTemplateIntentText(value);
+  return /\b(linea de|linea para|product line|same niche|mismo nicho|mismo tipo|una categoria|una categoria|varios modelos|modelos para|parachoques|bumper|4x4|off road|pickup|camioneta|camionetas)\b/.test(text)
+    && !textSuggestsBroadMarketplace(text);
+}
+
 function textSuggestsSingleProductShowcase(value) {
   const text = normalizeTemplateIntentText(value);
   return /\b(un solo producto|solo un producto|producto unico|producto estrella|flagship|single product|one product|producto premium|showcase|presentacion premium|portafolio|portfolio)\b/.test(text)
     && !textSuggestsBroadMarketplace(text);
 }
 
+function isGenericCommerceIntent(value) {
+  const text = normalizeTemplateIntentText(value);
+  if (!text || textSuggestsBroadMarketplace(text) || textSuggestsFocusedProductLine(text) || textSuggestsSingleProductShowcase(text)) return false;
+  const generic = /^(sell products online|vender productos online|venta online|ventas online|online sales|online store|tienda online|tienda|store|shop|ecommerce|e-commerce|catalogo|catalog|marketplace|vender|comprar online)$/;
+  return generic.test(text) || (text.split(/\s+/).length <= 5 && /\b(vender|venta|online|store|shop|tienda|ecommerce|catalogo|catalog|marketplace)\b/.test(text));
+}
+
 function inferTemplateIdFromText(value) {
   const text = normalizeTemplateIntentText(value);
   if (!text) return "";
   if (textSuggestsBroadMarketplace(text)) return "mega-marketplace";
+  if (textSuggestsFocusedProductLine(text)) return "apple-premium-product";
   if (/tipo ebay|como ebay|clasificados|listados|vendedores|usado|seller|listing/.test(text)) return "listing-marketplace-pro";
   if (/restaurante|restaurant|menu|comida|food|cafe|cafeteria|delivery|pedidos/.test(text)) return "restaurant-food-business";
   if (/barber|barberia|salon|spa|cita|booking|reserva|appointment/.test(text)) return "booking-appointment-pro";
@@ -1625,8 +1639,10 @@ function syncTemplateSelectionFromGuidedContext(extra = "") {
   if (!inferredTemplateId || forcedTemplateSelection?.templateId === inferredTemplateId) return;
   const shouldOverride = !forcedTemplateSelection?.templateId
     || textSuggestsBroadMarketplace(text)
+    || textSuggestsFocusedProductLine(text)
     || textSuggestsSingleProductShowcase(text)
     || forcedTemplateSelection.intent === "default_minimal"
+    || forcedTemplateSelection.intent === "provisional_needs_catalog_context"
     || forcedTemplateSelection.intent === "guided_context_template";
   if (!shouldOverride) return;
   const meta = templatePreviewMeta(inferredTemplateId);
@@ -2444,6 +2460,29 @@ async function handleWebsiteIntentAnswer(message) {
   guidedState.websiteIntent = message;
   if (!guidedState.industry) guidedState.industry = inferIndustryFromPrompt(message);
   if (!guidedState.preferredTone) guidedState.preferredTone = extractStyleHint(message);
+  if (isGenericCommerceIntent(message)) {
+    forcedTemplateSelection = {
+      templateId: "",
+      template: null,
+      intent: "provisional_needs_catalog_context",
+      catalogType: "",
+      reason: "Commerce intent detected; waiting for product range before selecting the visual base",
+    };
+    guidedStep = nextSmartGuidedStep("websiteIntent");
+    appendUnderstandingCard({ updates: inferGuidedUpdatesFromAnyMessage(message), sourceMessage: message });
+    appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
+    guidedStatusText.textContent = langText({
+      en: "Commerce intent noted. Luma will choose the template after understanding the product range.",
+      es: "Intencion de venta detectada. Luma elegira el template al entender el tipo de productos.",
+      fr: "Intention de vente notee. Luma choisira le template apres avoir compris la gamme de produits.",
+      pt: "Intencao de venda detectada. A Luma escolhera o template apos entender os produtos.",
+    });
+    setThinking(false);
+    renderGuidedSummary();
+    refreshQuickChips();
+    saveGuidedDraft();
+    return;
+  }
   let selection = {
     templateId: "apple-premium-product",
     template: null,
