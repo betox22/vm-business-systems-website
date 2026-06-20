@@ -627,6 +627,20 @@ const TEMPLATE_PREVIEW_CHOICES = [
     },
   },
   {
+    templateId: "legal-professional-services-pro",
+    name: "Legal / Professional",
+    names: { en: "Legal / Professional", es: "Legal / Profesional", fr: "Juridique / Professionnel", pt: "Juridico / Profissional" },
+    catalogType: "legal_professional_services_catalog",
+    image: "/templates-preview/screenshots/professional.png",
+    description: "Premium professional firm style for legal, accounting, tax, consulting, insurance, and B2B advisory.",
+    descriptions: {
+      en: "Premium professional firm style for legal, accounting, tax, consulting, insurance, and B2B advisory.",
+      es: "Estilo firma profesional premium para abogados, contadores, impuestos, consultoria, seguros y asesoria B2B.",
+      fr: "Style cabinet professionnel premium pour juridique, comptabilite, fiscalite, conseil, assurance et B2B.",
+      pt: "Estilo firma profissional premium para juridico, contabilidade, impostos, consultoria, seguros e B2B.",
+    },
+  },
+  {
     templateId: "mega-marketplace",
     name: "Mega Marketplace",
     names: { en: "Mega Marketplace", es: "Mega marketplace", fr: "Mega marketplace", pt: "Mega marketplace" },
@@ -4504,9 +4518,10 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isLuxuryHighTicketTemplate = catalogType === "luxury_high_ticket_catalog" || /luxury-high-ticket-pro/i.test(template.id || "");
   const isEducationTemplate = catalogType === "education_course_catalog" || /education-course-academy-pro/i.test(template.id || "");
   const isClinicTemplate = catalogType === "medical_wellness_service_catalog" || /medical-wellness-clinic-pro/i.test(template.id || "");
-  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate || isRealEstateListingTemplate || isLuxuryHighTicketTemplate || isEducationTemplate || isClinicTemplate;
-  const primaryCta = isClinicTemplate ? copy.bookConsultation : isEducationTemplate ? copy.enrollNow : isLuxuryHighTicketTemplate ? copy.requestPrivateViewing : isRealEstateListingTemplate ? copy.searchListings : isDigitalTemplate ? copy.getAccess : isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
-  const secondaryCta = isClinicTemplate ? copy.viewTreatments : isEducationTemplate ? copy.viewCurriculum : isLuxuryHighTicketTemplate ? copy.viewCollection : isRealEstateListingTemplate ? copy.viewListings : isDigitalTemplate ? copy.viewProducts : isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
+  const isProfessionalTemplate = catalogType === "legal_professional_services_catalog" || /legal-professional-services-pro/i.test(template.id || "");
+  const isBusinessWebsite = isCorporateTemplate || isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate || isRealEstateListingTemplate || isLuxuryHighTicketTemplate || isEducationTemplate || isClinicTemplate || isProfessionalTemplate;
+  const primaryCta = isProfessionalTemplate ? copy.scheduleConsultation : isClinicTemplate ? copy.bookConsultation : isEducationTemplate ? copy.enrollNow : isLuxuryHighTicketTemplate ? copy.requestPrivateViewing : isRealEstateListingTemplate ? copy.searchListings : isDigitalTemplate ? copy.getAccess : isRestaurantTemplate ? copy.orderNow : isBookingTemplate ? copy.bookNow : isHomeServicesTemplate ? copy.freeQuote : isCorporateTemplate ? copy.requestConsultation : isLeadFunnelTemplate ? copy.claimOffer : copy.shopNow;
+  const secondaryCta = isProfessionalTemplate ? copy.viewServices : isClinicTemplate ? copy.viewTreatments : isEducationTemplate ? copy.viewCurriculum : isLuxuryHighTicketTemplate ? copy.viewCollection : isRealEstateListingTemplate ? copy.viewListings : isDigitalTemplate ? copy.viewProducts : isRestaurantTemplate ? copy.viewMenu : isBookingTemplate ? copy.viewServices : isHomeServicesTemplate ? copy.callNow : isLeadFunnelTemplate ? copy.seeProof : copy.viewCatalog;
   if (isLeadFunnelTemplate || isHomeServicesTemplate || isBookingTemplate || isRestaurantTemplate) {
     catalogItems.forEach((item) => {
       item.price_type = "quote_only";
@@ -4570,6 +4585,17 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       item.track_inventory = false;
     });
   }
+  if (isProfessionalTemplate) {
+    catalogItems.forEach((item, index) => {
+      item.price_type = "quote_only";
+      item.category = professionalCategoryForIndex(index, copy);
+      item.price_label = copy.consultationBased;
+      item.button_label = copy.scheduleConsultation;
+      item.shipping_label = professionalEngagementForIndex(index, copy);
+      item.deal_label = index === 0 ? copy.confidential : index % 2 ? copy.seniorAdvisor : copy.caseReview;
+      item.track_inventory = false;
+    });
+  }
   const instantPages = isMarketplaceTemplate
     ? buildMarketplaceInstantPages(copy, name, description, payload)
     : isPremiumTemplate
@@ -4580,6 +4606,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
           ? buildEducationAcademyInstantPages(copy, name, description, payload)
           : isClinicTemplate
             ? buildMedicalWellnessInstantPages(copy, name, description, payload)
+            : isProfessionalTemplate
+              ? buildLegalProfessionalInstantPages(copy, name, description, payload)
             : isFashionTemplate
             ? buildFashionDropInstantPages(copy, name, description, payload)
             : isCorporateTemplate
@@ -4655,6 +4683,11 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       { label: copy.services, page_key: "catalog" },
       { label: copy.results, page_key: "about" },
       { label: copy.bookConsultation, page_key: "contact" },
+    ] : isProfessionalTemplate ? [
+      { label: copy.services, page_key: "home" },
+      { label: copy.process, page_key: "about" },
+      { label: copy.proof, page_key: "about" },
+      { label: copy.scheduleConsultation, page_key: "contact" },
     ] : isFashionTemplate ? [
       { label: copy.newDrop, page_key: "home" },
       { label: copy.collections, page_key: "catalog" },
@@ -4727,7 +4760,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         description: template.visualDifference || copy.fastBase,
         theme: { colors, fonts: brand.fontPairing, buttons: { primary_label: primaryCta, secondary_label: secondaryCta, background: brand.buttonColor, text: brand.buttonTextColor, radius: brand.borderRadius }, radius: Number.parseInt(brand.borderRadius, 10) || 10, shadow: brand.shadowStyle },
         layout_mode_id: template.id || "instant_storefront",
-        hero_layout: isPremiumTemplate ? "premium_center_stage" : isLuxuryHighTicketTemplate ? "private_luxury_showroom" : isClinicTemplate ? "clinic_care_stage" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : isBookingTemplate ? "appointment_booking" : isRestaurantTemplate ? "restaurant_menu_story" : isDigitalTemplate ? "digital_product_launch" : "split_showcase",
+        hero_layout: isPremiumTemplate ? "premium_center_stage" : isLuxuryHighTicketTemplate ? "private_luxury_showroom" : isClinicTemplate ? "clinic_care_stage" : isProfessionalTemplate ? "professional_authority" : isFashionTemplate ? "fashion_editorial_drop" : isCorporateTemplate ? "corporate_editorial" : isLeadFunnelTemplate ? "conversion_funnel" : isHomeServicesTemplate ? "local_service_quote" : isBookingTemplate ? "appointment_booking" : isRestaurantTemplate ? "restaurant_menu_story" : isDigitalTemplate ? "digital_product_launch" : "split_showcase",
         product_layout: catalogType,
       },
     ],
@@ -5540,6 +5573,111 @@ function buildMedicalWellnessInstantPages(copy, name, description, payload = {})
   ];
 }
 
+function buildLegalProfessionalInstantPages(copy, name, description, payload = {}) {
+  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  return [
+    {
+      page_key: "home",
+      title: copy.services,
+      slug: "/",
+      order: 1,
+      sections: [
+        {
+          id: "professional_hero",
+          type: "ProfessionalHero",
+          order: 1,
+          editable: {
+            headline: copy.professionalHeadline(name),
+            subtitle: copy.professionalSubheadline(description),
+            primary_button: copy.scheduleConsultation,
+            secondary_button: copy.viewServices,
+            image_url: heroImage,
+            badge: copy.professionalFirm,
+            images: [],
+          },
+          settings: { layout: "professional_authority", spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "professional_services",
+          type: "ProfessionalPracticeAreas",
+          order: 2,
+          editable: { title: copy.practiceAreasTitle, text: copy.practiceAreasText, images: [] },
+          settings: { layout: "practice_area_cards", columns: 3, spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "professional_process",
+          type: "ProfessionalProcess",
+          order: 3,
+          editable: { title: copy.professionalProcessTitle, text: copy.professionalProcessText, items: copy.professionalProcessItems, images: [] },
+          settings: { layout: "advisory_process", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "professional_proof",
+          type: "ProfessionalProof",
+          order: 4,
+          editable: { title: copy.professionalProofTitle, text: copy.professionalProofText, items: copy.professionalProofItems, images: [] },
+          settings: { layout: "trust_proof", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "professional_team",
+          type: "ProfessionalTeam",
+          order: 5,
+          editable: { title: copy.professionalTeamTitle, text: copy.professionalTeamText, items: copy.professionalTeamItems, image_url: heroImage, images: [] },
+          settings: { layout: "advisor_team", spacing: "spacious", container_width: "wide" },
+        },
+        {
+          id: "professional_faq",
+          type: "ProfessionalFAQ",
+          order: 6,
+          editable: { title: copy.professionalFaqTitle, items: copy.professionalFaqItems, images: [] },
+          settings: { layout: "firm_faq", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "professional_consultation",
+          type: "ProfessionalConsultation",
+          order: 7,
+          editable: { title: copy.professionalConsultationTitle, text: copy.professionalConsultationText, primary_button: copy.scheduleConsultation, images: [] },
+          settings: { layout: "consultation_cta", spacing: "spacious", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "catalog",
+      title: copy.services,
+      slug: copy.servicesSlug,
+      order: 2,
+      sections: [
+        {
+          id: "professional_catalog",
+          type: "ProductGrid",
+          order: 1,
+          editable: { title: copy.practiceAreasTitle, text: copy.practiceAreasText, images: [] },
+          settings: { layout: "legal_professional", columns: 3, spacing: "balanced", container_width: "wide" },
+        },
+      ],
+    },
+    {
+      page_key: "about",
+      title: copy.process,
+      slug: copy.processSlug,
+      order: 3,
+      sections: [
+        { id: "process", type: "ProfessionalProcess", order: 1, editable: { title: copy.professionalProcessTitle, text: copy.professionalProcessText, items: copy.professionalProcessItems, images: [] }, settings: { layout: "advisory_process", container_width: "wide" } },
+        { id: "proof", type: "ProfessionalProof", order: 2, editable: { title: copy.professionalProofTitle, text: copy.professionalProofText, items: copy.professionalProofItems, images: [] }, settings: { layout: "trust_proof", container_width: "wide" } },
+      ],
+    },
+    {
+      page_key: "contact",
+      title: copy.scheduleConsultation,
+      slug: copy.contactSlug,
+      order: 4,
+      sections: [
+        { id: "consultation", type: "ProfessionalConsultation", order: 1, editable: { title: copy.professionalConsultationTitle, text: copy.professionalConsultationText, primary_button: copy.scheduleConsultation, images: [] }, settings: { layout: "consultation_cta", container_width: "wide" } },
+      ],
+    },
+  ];
+}
+
 function buildDigitalProductsInstantPages(copy, name, description, payload = {}) {
   const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
   return [
@@ -6156,6 +6294,16 @@ function clinicDurationForIndex(index, copy) {
   return durations[index % durations.length];
 }
 
+function professionalCategoryForIndex(index, copy) {
+  const categories = copy.professionalCategories || ["Legal", "Tax", "Accounting", "Insurance", "Consulting", "Compliance"];
+  return categories[index % categories.length];
+}
+
+function professionalEngagementForIndex(index, copy) {
+  const engagements = copy.professionalEngagements || ["Initial review", "Document review", "Strategy call", "Ongoing advisory"];
+  return engagements[index % engagements.length];
+}
+
 function listingLocationForIndex(index, copy) {
   const locations = copy.listingLocations || ["Central area", "North side", "West district", "Near downtown"];
   return locations[index % locations.length];
@@ -6237,6 +6385,31 @@ function instantLocaleCopy(language) {
       clinicBookingText: "Send the treatment, concern, preferred schedule and contact method. The clinic can confirm next steps.",
       clinicCategories: ["Aesthetic care", "Wellness", "Dental", "Therapy", "Nutrition", "Consultation"],
       clinicDurations: ["30 min consult", "45 min session", "Personal plan", "Follow-up ready"],
+      professionalFirm: "Professional firm",
+      scheduleConsultation: "Schedule consultation",
+      confidential: "Confidential",
+      seniorAdvisor: "Senior advisor",
+      caseReview: "Case review",
+      businessReady: "Business-ready",
+      professionalHeadline: (name) => `${name} guidance for decisions that matter`,
+      professionalSubheadline: (description) => description || "A premium professional services website built around trust, clear practice areas, process, proof, and consultation requests.",
+      practiceAreasTitle: "Practice areas and services",
+      practiceAreasText: "Show the services clients can review, compare and request with a clear consultation path.",
+      professionalProcessTitle: "A clear advisory process",
+      professionalProcessText: "Help clients understand how the firm reviews the situation, recommends next steps and follows through.",
+      professionalProcessItems: ["Initial review", "Document check", "Strategy call", "Action plan", "Follow-up", "Ongoing advisory"],
+      professionalProofTitle: "Proof clients need before they contact you",
+      professionalProofText: "Use credentials, confidentiality, response expectations and professional standards.",
+      professionalProofItems: ["Confidential process", "Senior review", "Clear next steps", "Business-ready advice", "Document support", "Responsive contact"],
+      professionalTeamTitle: "Advisors who handle the details",
+      professionalTeamText: "Introduce the attorney, accountant, consultant or advisor standards behind the service.",
+      professionalTeamItems: ["Experienced advisors", "Private consultation", "Clear documentation", "Follow-through"],
+      professionalFaqTitle: "Questions before the consultation",
+      professionalFaqItems: ["What should I prepare?", "How does the first consultation work?", "Can you review documents?", "Can this become ongoing advisory?"],
+      professionalConsultationTitle: "Request a consultation or document review",
+      professionalConsultationText: "Send the service needed, urgency, preferred schedule and contact method. The firm can confirm the next step.",
+      professionalCategories: ["Legal", "Tax", "Accounting", "Insurance", "Consulting", "Compliance"],
+      professionalEngagements: ["Initial review", "Document review", "Strategy call", "Ongoing advisory"],
       home: "Home",
       overview: "Overview",
       products: "Products",
@@ -6517,6 +6690,31 @@ function instantLocaleCopy(language) {
       clinicBookingText: "Envia el tratamiento, inquietud, horario preferido y metodo de contacto. La clinica confirma el siguiente paso.",
       clinicCategories: ["Estetica", "Wellness", "Dental", "Terapia", "Nutricion", "Consulta"],
       clinicDurations: ["Consulta 30 min", "Sesion 45 min", "Plan personal", "Seguimiento"],
+      professionalFirm: "Firma profesional",
+      scheduleConsultation: "Agendar consulta",
+      confidential: "Confidencial",
+      seniorAdvisor: "Asesor senior",
+      caseReview: "Revision de caso",
+      businessReady: "Listo para empresa",
+      professionalHeadline: (name) => `${name} asesoria para decisiones importantes`,
+      professionalSubheadline: (description) => description || "Una pagina profesional premium enfocada en confianza, areas de practica, proceso, pruebas y solicitudes de consulta.",
+      practiceAreasTitle: "Areas de practica y servicios",
+      practiceAreasText: "Muestra los servicios que el cliente puede revisar, comparar y solicitar con una ruta clara de consulta.",
+      professionalProcessTitle: "Un proceso de asesoria claro",
+      professionalProcessText: "Ayuda al cliente a entender como se revisa su situacion, se recomiendan pasos y se da seguimiento.",
+      professionalProcessItems: ["Revision inicial", "Chequeo de documentos", "Llamada estrategica", "Plan de accion", "Seguimiento", "Asesoria continua"],
+      professionalProofTitle: "Confianza antes del contacto",
+      professionalProofText: "Usa credenciales, confidencialidad, expectativas de respuesta y estandares profesionales.",
+      professionalProofItems: ["Proceso confidencial", "Revision senior", "Pasos claros", "Asesoria empresarial", "Soporte documental", "Contacto rapido"],
+      professionalTeamTitle: "Asesores que manejan los detalles",
+      professionalTeamText: "Presenta al abogado, contador, consultor o asesor y los estandares detras del servicio.",
+      professionalTeamItems: ["Asesores expertos", "Consulta privada", "Documentacion clara", "Seguimiento"],
+      professionalFaqTitle: "Preguntas antes de la consulta",
+      professionalFaqItems: ["Que debo preparar?", "Como funciona la primera consulta?", "Pueden revisar documentos?", "Puede ser asesoria continua?"],
+      professionalConsultationTitle: "Solicita una consulta o revision de documentos",
+      professionalConsultationText: "Envia el servicio requerido, urgencia, horario preferido y metodo de contacto. La firma confirma el siguiente paso.",
+      professionalCategories: ["Legal", "Impuestos", "Contabilidad", "Seguros", "Consultoria", "Compliance"],
+      professionalEngagements: ["Revision inicial", "Revision documental", "Llamada estrategica", "Asesoria continua"],
       home: "Inicio",
       overview: "Vista general",
       products: "Productos",
@@ -6797,6 +6995,31 @@ function instantLocaleCopy(language) {
       clinicBookingText: "Envoyez le soin, le besoin, l'horaire prefere et le contact. La clinique confirme la suite.",
       clinicCategories: ["Esthetique", "Wellness", "Dentaire", "Therapie", "Nutrition", "Consultation"],
       clinicDurations: ["Consultation 30 min", "Session 45 min", "Plan personnel", "Suivi pret"],
+      professionalFirm: "Cabinet professionnel",
+      scheduleConsultation: "Reserver une consultation",
+      confidential: "Confidentiel",
+      seniorAdvisor: "Conseiller senior",
+      caseReview: "Analyse du dossier",
+      businessReady: "Pret pour entreprise",
+      professionalHeadline: (name) => `${name} vous guide dans les decisions importantes`,
+      professionalSubheadline: (description) => description || "Un site professionnel premium axe sur la confiance, les services, le processus, les preuves et les demandes de consultation.",
+      practiceAreasTitle: "Services et domaines d'expertise",
+      practiceAreasText: "Presentez les services que les clients peuvent comprendre, comparer et demander clairement.",
+      professionalProcessTitle: "Un processus de conseil clair",
+      professionalProcessText: "Expliquez comment le cabinet analyse la situation, recommande les prochaines etapes et assure le suivi.",
+      professionalProcessItems: ["Analyse initiale", "Verification documents", "Appel strategie", "Plan d'action", "Suivi", "Conseil continu"],
+      professionalProofTitle: "Preuves avant la prise de contact",
+      professionalProofText: "Ajoutez credentials, confidentialite, attentes de reponse et standards professionnels.",
+      professionalProofItems: ["Processus confidentiel", "Analyse senior", "Etapes claires", "Conseil entreprise", "Support documents", "Contact rapide"],
+      professionalTeamTitle: "Des conseillers qui gerent les details",
+      professionalTeamText: "Presentez avocat, comptable, consultant ou conseiller et les standards du service.",
+      professionalTeamItems: ["Conseillers experimentes", "Consultation privee", "Documentation claire", "Suivi"],
+      professionalFaqTitle: "Questions avant la consultation",
+      professionalFaqItems: ["Que dois-je preparer?", "Comment se passe la premiere consultation?", "Pouvez-vous analyser des documents?", "Peut-on faire un accompagnement continu?"],
+      professionalConsultationTitle: "Demander une consultation ou analyse de documents",
+      professionalConsultationText: "Envoyez le service requis, l'urgence, le moment prefere et le contact. Le cabinet confirme la suite.",
+      professionalCategories: ["Juridique", "Fiscalite", "Comptabilite", "Assurance", "Conseil", "Conformite"],
+      professionalEngagements: ["Analyse initiale", "Analyse documents", "Appel strategie", "Conseil continu"],
       home: "Accueil",
       overview: "Aperçu",
       products: "Produits",
@@ -7054,6 +7277,31 @@ function instantLocaleCopy(language) {
       clinicBookingText: "Envie o tratamento, duvida, horario preferido e metodo de contato. A clinica confirma o proximo passo.",
       clinicCategories: ["Estetica", "Wellness", "Dental", "Terapia", "Nutricao", "Consulta"],
       clinicDurations: ["Consulta 30 min", "Sessao 45 min", "Plano pessoal", "Acompanhamento"],
+      professionalFirm: "Firma profissional",
+      scheduleConsultation: "Agendar consulta",
+      confidential: "Confidencial",
+      seniorAdvisor: "Consultor senior",
+      caseReview: "Revisao do caso",
+      businessReady: "Pronto para empresa",
+      professionalHeadline: (name) => `${name} orienta decisoes importantes`,
+      professionalSubheadline: (description) => description || "Um site profissional premium focado em confianca, areas de servico, processo, provas e pedidos de consulta.",
+      practiceAreasTitle: "Areas de atuacao e servicos",
+      practiceAreasText: "Mostre os servicos que o cliente pode revisar, comparar e solicitar com uma rota clara de consulta.",
+      professionalProcessTitle: "Um processo de consultoria claro",
+      professionalProcessText: "Ajude o cliente a entender como a firma revisa a situacao, recomenda proximos passos e acompanha.",
+      professionalProcessItems: ["Revisao inicial", "Analise documental", "Chamada estrategica", "Plano de acao", "Acompanhamento", "Consultoria continua"],
+      professionalProofTitle: "Confianca antes do contato",
+      professionalProofText: "Use credenciais, confidencialidade, expectativas de resposta e padroes profissionais.",
+      professionalProofItems: ["Processo confidencial", "Revisao senior", "Passos claros", "Consultoria empresarial", "Suporte documental", "Contato rapido"],
+      professionalTeamTitle: "Consultores que cuidam dos detalhes",
+      professionalTeamText: "Apresente advogado, contador, consultor ou assessor e os padroes do servico.",
+      professionalTeamItems: ["Consultores experientes", "Consulta privada", "Documentacao clara", "Acompanhamento"],
+      professionalFaqTitle: "Perguntas antes da consulta",
+      professionalFaqItems: ["O que devo preparar?", "Como funciona a primeira consulta?", "Podem revisar documentos?", "Pode virar consultoria continua?"],
+      professionalConsultationTitle: "Solicite uma consulta ou revisao documental",
+      professionalConsultationText: "Envie o servico requerido, urgencia, horario preferido e metodo de contato. A firma confirma o proximo passo.",
+      professionalCategories: ["Juridico", "Impostos", "Contabilidade", "Seguros", "Consultoria", "Compliance"],
+      professionalEngagements: ["Revisao inicial", "Revisao documental", "Chamada estrategica", "Consultoria continua"],
       home: "Início",
       overview: "Visão geral",
       products: "Produtos",
@@ -8447,6 +8695,13 @@ function renderSection(section, schema) {
     ClinicResults: renderClinicResults,
     ClinicTeam: renderClinicTeam,
     ClinicBooking: renderClinicBooking,
+    ProfessionalHero: renderProfessionalHero,
+    ProfessionalPracticeAreas: renderProfessionalPracticeAreas,
+    ProfessionalProcess: renderProfessionalProcess,
+    ProfessionalProof: renderProfessionalProof,
+    ProfessionalTeam: renderProfessionalTeam,
+    ProfessionalFAQ: renderProfessionalFAQ,
+    ProfessionalConsultation: renderProfessionalConsultation,
     ListingHero: renderListingHero,
     ListingFilters: renderListingFilters,
     ListingFeatured: renderListingFeatured,
@@ -9201,6 +9456,96 @@ function clinicVisualPlaceholder(schema) {
   return `<div class="clinic-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).clinicCare)}</small></div>`;
 }
 
+function renderProfessionalHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = marketplaceItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url) || items[0];
+  const image = editable.image_url || heroItem?.image_url || "";
+  return `<section class="professional-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="professional-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(editable.badge || labels.professionalFirm)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.scheduleConsultation)}</a>
+        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewServices)}</a>
+      </div>
+      <div class="professional-proof-strip">${(labels.professionalProofItems || []).slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    </div>
+    <div class="professional-stage">
+      <div class="professional-case-card">
+        <div class="professional-case-top"><span>${escapeHtml(labels.scheduleConsultation)}</span><b>${escapeHtml(labels.confidential)}</b></div>
+        <div class="professional-case-visual">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(heroItem?.name || schema.business?.name || "")}">` : professionalVisualPlaceholder(schema)}</div>
+        <div class="professional-document-list">${(labels.professionalProcessItems || []).slice(0, 4).map((item, index) => `<span><b>0${index + 1}</b>${escapeHtml(item)}</span>`).join("")}</div>
+      </div>
+      <div class="professional-floating-card"><small>${escapeHtml(labels.caseReview)}</small><strong>${escapeHtml(heroItem?.name || labels.practiceAreasTitle)}</strong><span>${escapeHtml(heroItem?.shipping_label || labels.professionalEngagements?.[0] || "")}</span></div>
+    </div>
+  </section>`;
+}
+
+function renderProfessionalPracticeAreas(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="professional-services-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).services)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    ${renderLegalProfessionalCatalog(marketplaceItems(schema), schema)}
+  </section>`;
+}
+
+function renderProfessionalProcess(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.professionalProcessItems;
+  return `<section class="professional-process-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.process)}</span><h2>${escapeHtml(editable.title || labels.professionalProcessTitle)}</h2><p>${escapeHtml(editable.text || labels.professionalProcessText)}</p></div>
+    <div class="professional-process-list">${items.slice(0, 6).map((item, index) => `<article><span>0${index + 1}</span><strong>${escapeHtml(item)}</strong><p>${escapeHtml(index % 2 ? labels.businessReady : labels.confidential)}</p></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderProfessionalProof(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.professionalProofItems;
+  return `<section class="professional-proof-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.proof)}</span><h2>${escapeHtml(editable.title || labels.professionalProofTitle)}</h2><p>${escapeHtml(editable.text || labels.professionalProofText)}</p></div>
+    <div class="professional-proof-grid">${items.slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+  </section>`;
+}
+
+function renderProfessionalTeam(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.professionalTeamItems;
+  return `<section class="professional-team-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="professional-team-media">${editable.image_url ? `<img src="${escapeAttribute(editable.image_url)}" alt="${escapeAttribute(editable.title || "")}">` : professionalVisualPlaceholder(schema)}</div>
+    <div><span class="rendered-kicker">${escapeHtml(labels.seniorAdvisor)}</span><h2>${escapeHtml(editable.title || labels.professionalTeamTitle)}</h2><p>${escapeHtml(editable.text || labels.professionalTeamText)}</p><div class="professional-mini-proof">${items.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div>
+  </section>`;
+}
+
+function renderProfessionalFAQ(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.professionalFaqItems;
+  return `<section class="professional-faq-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.faq)}</span><h2>${escapeHtml(editable.title || labels.professionalFaqTitle)}</h2></div>
+    <div class="professional-faq-list">${items.slice(0, 5).map((item) => `<article><strong>${escapeHtml(item)}</strong><p>${escapeHtml(labels.professionalConsultationText)}</p></article>`).join("")}</div>
+  </section>`;
+}
+
+function renderProfessionalConsultation(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="professional-consultation-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.scheduleConsultation)}</span><h2>${escapeHtml(editable.title || labels.professionalConsultationTitle)}</h2><p>${escapeHtml(editable.text || labels.professionalConsultationText)}</p></div>
+    <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.scheduleConsultation)}</a>
+  </section>`;
+}
+
+function professionalVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "PF").slice(0, 2).toUpperCase();
+  return `<div class="professional-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).professionalFirm)}</small></div>`;
+}
+
 function renderListingHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -9661,6 +10006,7 @@ function renderCatalogByType(catalogType, items, schema) {
     luxury_high_ticket_catalog: renderLuxuryHighTicketCatalog,
     education_course_catalog: renderEducationCourseCatalog,
     medical_wellness_service_catalog: renderMedicalWellnessCatalog,
+    legal_professional_services_catalog: renderLegalProfessionalCatalog,
     digital_offer_catalog: renderDigitalOfferCatalog,
     restaurant_menu_catalog: renderRestaurantMenuCatalog,
     menu_catalog: renderRestaurantMenuCatalog,
@@ -9831,6 +10177,27 @@ function renderMedicalWellnessCatalog(items, schema) {
         <li>${escapeHtml(labels.clinicCare)}</li>
       </ul>
       <div><strong>${escapeHtml(productPriceLabel(item) || labels.consultationBased)}</strong><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.bookConsultation)}</a></div>
+    </div>
+  </article>`).join("")}</div>`;
+}
+
+function renderLegalProfessionalCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-legal-professional">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    <div class="professional-card-top">
+      <small>${escapeHtml(item.deal_label || (index % 2 ? labels.seniorAdvisor : labels.confidential))}</small>
+      <span>${escapeHtml(item.shipping_label || labels.professionalEngagements?.[index % (labels.professionalEngagements?.length || 1)] || "")}</span>
+    </div>
+    <div class="professional-card-body">
+      <small>${escapeHtml(item.category || labels.professionalFirm)}</small>
+      <h3>${escapeHtml(item.name)}</h3>
+      <p>${escapeHtml(item.description)}</p>
+      <ul>
+        <li>${escapeHtml(labels.caseReview)}</li>
+        <li>${escapeHtml(labels.confidential)}</li>
+        <li>${escapeHtml(labels.businessReady)}</li>
+      </ul>
+      <div><strong>${escapeHtml(productPriceLabel(item) || labels.consultationBased)}</strong><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.scheduleConsultation)}</a></div>
     </div>
   </article>`).join("")}</div>`;
 }
@@ -10020,7 +10387,21 @@ function catalogLocaleLabels(schema) {
       before: "Antes", after: "Depois", viewProject: "Ver projeto", plan: "Plano", custom: "Personalizado", start: "Começar", ticketOffer: "Ingresso / oferta", reserve: "Reservar", package: "Pacote", applyNow: "Aplicar agora", view: "Ver", request: "Consultar",
     },
   };
-  return { ...labels.en, ...(labels[language] || {}) };
+  const professionalLabels = {
+    en: {
+      professionalFirm: "Professional firm", scheduleConsultation: "Schedule consultation", consultationBased: "Consultation-based", confidential: "Confidential", seniorAdvisor: "Senior advisor", caseReview: "Case review", businessReady: "Business-ready", practiceAreasTitle: "Practice areas and services", professionalProcessTitle: "A clear advisory process", professionalProcessText: "Review, strategy, action plan and follow-up.", professionalProcessItems: ["Initial review", "Document check", "Strategy call", "Action plan", "Follow-up", "Ongoing advisory"], professionalProofTitle: "Proof clients need before contact", professionalProofText: "Credentials, confidentiality and professional standards.", professionalProofItems: ["Confidential process", "Senior review", "Clear next steps", "Business-ready advice", "Document support", "Responsive contact"], professionalTeamTitle: "Advisors who handle the details", professionalTeamText: "Show the people and standards behind the service.", professionalTeamItems: ["Experienced advisors", "Private consultation", "Clear documentation", "Follow-through"], professionalFaqTitle: "Questions before consultation", professionalFaqItems: ["What should I prepare?", "How does the first consultation work?", "Can you review documents?", "Can this become ongoing advisory?"], professionalConsultationTitle: "Request a consultation or document review", professionalConsultationText: "Send the service needed, urgency, preferred schedule and contact method.", professionalEngagements: ["Initial review", "Document review", "Strategy call", "Ongoing advisory"],
+    },
+    es: {
+      professionalFirm: "Firma profesional", scheduleConsultation: "Agendar consulta", consultationBased: "Segun consulta", confidential: "Confidencial", seniorAdvisor: "Asesor senior", caseReview: "Revision de caso", businessReady: "Listo para empresa", practiceAreasTitle: "Areas de practica y servicios", professionalProcessTitle: "Un proceso de asesoria claro", professionalProcessText: "Revision, estrategia, plan de accion y seguimiento.", professionalProcessItems: ["Revision inicial", "Chequeo documental", "Llamada estrategica", "Plan de accion", "Seguimiento", "Asesoria continua"], professionalProofTitle: "Confianza antes del contacto", professionalProofText: "Credenciales, confidencialidad y estandares profesionales.", professionalProofItems: ["Proceso confidencial", "Revision senior", "Pasos claros", "Asesoria empresarial", "Soporte documental", "Contacto rapido"], professionalTeamTitle: "Asesores que manejan los detalles", professionalTeamText: "Muestra las personas y estandares detras del servicio.", professionalTeamItems: ["Asesores expertos", "Consulta privada", "Documentacion clara", "Seguimiento"], professionalFaqTitle: "Preguntas antes de la consulta", professionalFaqItems: ["Que debo preparar?", "Como funciona la primera consulta?", "Pueden revisar documentos?", "Puede ser asesoria continua?"], professionalConsultationTitle: "Solicita una consulta o revision documental", professionalConsultationText: "Envia el servicio requerido, urgencia, horario y metodo de contacto.", professionalEngagements: ["Revision inicial", "Revision documental", "Llamada estrategica", "Asesoria continua"],
+    },
+    fr: {
+      professionalFirm: "Cabinet professionnel", scheduleConsultation: "Reserver une consultation", consultationBased: "Selon consultation", confidential: "Confidentiel", seniorAdvisor: "Conseiller senior", caseReview: "Analyse du dossier", businessReady: "Pret pour entreprise", practiceAreasTitle: "Services et domaines d'expertise", professionalProcessTitle: "Un processus de conseil clair", professionalProcessText: "Analyse, strategie, plan d'action et suivi.", professionalProcessItems: ["Analyse initiale", "Verification documents", "Appel strategie", "Plan d'action", "Suivi", "Conseil continu"], professionalProofTitle: "Preuves avant contact", professionalProofText: "Credentials, confidentialite et standards professionnels.", professionalProofItems: ["Processus confidentiel", "Analyse senior", "Etapes claires", "Conseil entreprise", "Support documents", "Contact rapide"], professionalTeamTitle: "Des conseillers qui gerent les details", professionalTeamText: "Montrez les personnes et standards derriere le service.", professionalTeamItems: ["Conseillers experimentes", "Consultation privee", "Documentation claire", "Suivi"], professionalFaqTitle: "Questions avant la consultation", professionalFaqItems: ["Que dois-je preparer?", "Comment se passe la premiere consultation?", "Pouvez-vous analyser des documents?", "Accompagnement continu possible?"], professionalConsultationTitle: "Demander une consultation ou analyse", professionalConsultationText: "Envoyez le service requis, l'urgence, le moment prefere et le contact.", professionalEngagements: ["Analyse initiale", "Analyse documents", "Appel strategie", "Conseil continu"],
+    },
+    pt: {
+      professionalFirm: "Firma profissional", scheduleConsultation: "Agendar consulta", consultationBased: "Sob consulta", confidential: "Confidencial", seniorAdvisor: "Consultor senior", caseReview: "Revisao do caso", businessReady: "Pronto para empresa", practiceAreasTitle: "Areas de atuacao e servicos", professionalProcessTitle: "Um processo de consultoria claro", professionalProcessText: "Revisao, estrategia, plano de acao e acompanhamento.", professionalProcessItems: ["Revisao inicial", "Analise documental", "Chamada estrategica", "Plano de acao", "Acompanhamento", "Consultoria continua"], professionalProofTitle: "Confianca antes do contato", professionalProofText: "Credenciais, confidencialidade e padroes profissionais.", professionalProofItems: ["Processo confidencial", "Revisao senior", "Passos claros", "Consultoria empresarial", "Suporte documental", "Contato rapido"], professionalTeamTitle: "Consultores que cuidam dos detalhes", professionalTeamText: "Mostre pessoas e padroes por tras do servico.", professionalTeamItems: ["Consultores experientes", "Consulta privada", "Documentacao clara", "Acompanhamento"], professionalFaqTitle: "Perguntas antes da consulta", professionalFaqItems: ["O que devo preparar?", "Como funciona a primeira consulta?", "Podem revisar documentos?", "Pode virar consultoria continua?"], professionalConsultationTitle: "Solicite consulta ou revisao documental", professionalConsultationText: "Envie o servico, urgencia, horario preferido e contato.", professionalEngagements: ["Revisao inicial", "Revisao documental", "Chamada estrategica", "Consultoria continua"],
+    },
+  };
+  return { ...labels.en, ...(labels[language] || {}), ...professionalLabels.en, ...(professionalLabels[language] || {}) };
 }
 
 function renderFeatureBand(section) {

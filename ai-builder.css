@@ -6856,6 +6856,320 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
     linear-gradient(135deg, #ccfbf1, #f0fdfa);
 }
 
+.template-legal-professional-services-pro,
+.layout-legal-professional-services-pro {
+  background: #f7f3ec;
+  color: #111827;
+}
+
+.template-legal-professional-services-pro .rendered-nav,
+.layout-legal-professional-services-pro .rendered-nav {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(184, 132, 60, 0.22);
+  color: #111827;
+}
+
+.professional-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+  gap: clamp(30px, 5vw, 76px);
+  align-items: center;
+  min-height: 760px;
+  padding: clamp(58px, 8vw, 108px) clamp(22px, 6vw, 86px);
+  background:
+    radial-gradient(circle at 84% 16%, rgba(184, 132, 60, 0.18), transparent 34%),
+    linear-gradient(135deg, #fffaf2 0%, #f3eadb 100%);
+  overflow: hidden;
+}
+
+.professional-hero-copy h1 {
+  margin: 14px 0 20px;
+  max-width: 780px;
+  color: #111827;
+  font-size: clamp(50px, 7vw, 94px);
+  line-height: 0.96;
+}
+
+.professional-hero-copy p,
+.professional-process-section p,
+.professional-proof-section p,
+.professional-team-section p,
+.professional-consultation-section p,
+.professional-card-body p,
+.professional-card-body li,
+.professional-faq-list p {
+  color: #5f6673;
+  line-height: 1.7;
+}
+
+.professional-hero-copy .rendered-kicker,
+.professional-services-section .rendered-kicker,
+.professional-process-section .rendered-kicker,
+.professional-proof-section .rendered-kicker,
+.professional-team-section .rendered-kicker,
+.professional-faq-section .rendered-kicker,
+.professional-consultation-section .rendered-kicker {
+  color: #9a6a2f;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.professional-proof-strip,
+.professional-mini-proof,
+.professional-proof-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.professional-proof-strip span,
+.professional-mini-proof span,
+.professional-proof-grid span {
+  border: 1px solid rgba(184, 132, 60, 0.22);
+  border-radius: 999px;
+  padding: 9px 13px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #7a4f1d;
+  font-weight: 850;
+}
+
+.professional-stage {
+  position: relative;
+  min-height: 540px;
+}
+
+.professional-case-card,
+.catalog-legal-professional article,
+.professional-process-list article,
+.professional-faq-list article {
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 28px 80px rgba(17, 24, 39, 0.12);
+}
+
+.professional-case-card {
+  border-radius: 24px;
+  padding: 18px;
+}
+
+.professional-case-top,
+.professional-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.professional-case-top {
+  padding: 4px 4px 16px;
+}
+
+.professional-case-top span,
+.professional-card-top small,
+.professional-floating-card small {
+  color: #9a6a2f;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.professional-case-top b,
+.professional-card-top span {
+  color: #5f6673;
+  font-size: 0.9rem;
+}
+
+.professional-case-visual,
+.professional-visual-placeholder,
+.professional-team-media {
+  min-height: 390px;
+  border-radius: 18px;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(17, 24, 39, 0.94), rgba(48, 37, 27, 0.94)),
+    radial-gradient(circle at 78% 22%, rgba(184, 132, 60, 0.44), transparent 34%);
+  color: #fff7ed;
+}
+
+.professional-case-visual img,
+.professional-team-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.professional-visual-placeholder {
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.professional-visual-placeholder span {
+  display: block;
+  font-size: 72px;
+  font-weight: 900;
+}
+
+.professional-document-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.professional-document-list span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 12px;
+  padding: 12px 10px;
+  background: #fbf6ed;
+  color: #111827;
+  font-weight: 800;
+}
+
+.professional-document-list b {
+  color: #9a6a2f;
+}
+
+.professional-floating-card {
+  position: absolute;
+  left: -18px;
+  bottom: 26px;
+  width: min(320px, 82%);
+  padding: 18px;
+  border: 1px solid rgba(184, 132, 60, 0.22);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 22px 52px rgba(17, 24, 39, 0.14);
+}
+
+.professional-floating-card strong,
+.professional-floating-card span {
+  display: block;
+}
+
+.professional-services-section,
+.professional-process-section,
+.professional-proof-section,
+.professional-team-section,
+.professional-faq-section {
+  padding: clamp(54px, 8vw, 104px) clamp(22px, 6vw, 86px);
+  background: #ffffff;
+}
+
+.professional-process-section,
+.professional-team-section {
+  background: #f8efe2;
+}
+
+.professional-process-section,
+.professional-proof-section,
+.professional-team-section {
+  display: grid;
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+  gap: clamp(26px, 5vw, 64px);
+  align-items: center;
+}
+
+.professional-process-list,
+.professional-faq-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.professional-process-list article,
+.professional-faq-list article {
+  border-radius: 18px;
+  padding: 24px;
+}
+
+.professional-process-list article > span {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 18px;
+  border-radius: 14px;
+  background: #f2dfbd;
+  color: #7a4f1d;
+  font-weight: 900;
+}
+
+.catalog-legal-professional {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.catalog-legal-professional article {
+  border-radius: 20px;
+}
+
+.catalog-legal-professional article.featured {
+  grid-column: span 2;
+}
+
+.professional-card-top {
+  padding: 18px 18px 0;
+}
+
+.professional-card-body {
+  padding: 22px;
+}
+
+.professional-card-body h3,
+.professional-process-list strong,
+.professional-faq-list strong {
+  display: block;
+  color: #111827;
+  font-size: 1.15rem;
+  margin: 8px 0 10px;
+}
+
+.professional-card-body h3 {
+  font-size: 1.45rem;
+}
+
+.professional-card-body ul {
+  margin: 16px 0;
+  padding-left: 18px;
+}
+
+.professional-card-body > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.professional-team-section {
+  grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.08fr);
+}
+
+.professional-consultation-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  margin: clamp(44px, 6vw, 76px) clamp(22px, 6vw, 86px);
+  padding: clamp(30px, 5vw, 64px);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(184, 132, 60, 0.22), transparent 34%),
+    linear-gradient(135deg, #111827, #3b2f24);
+  color: #fff7ed;
+}
+
+.professional-consultation-section h2,
+.professional-consultation-section p {
+  color: #fff7ed;
+}
+
 @media (max-width: 760px) {
   .catalog-marketplace,
   .listing-card,
@@ -6877,6 +7191,11 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   .digital-hero,
   .digital-modules-section,
   .digital-proof-section,
+  .professional-hero,
+  .professional-process-section,
+  .professional-proof-section,
+  .professional-team-section,
+  .professional-consultation-section,
   .listing-pro-hero,
   .listing-filter-section,
   .listing-area-section,
@@ -7001,6 +7320,51 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   }
 
   .restaurant-order-card {
+    padding: 28px 18px;
+  }
+
+  .professional-hero {
+    min-height: auto;
+    padding: 44px 16px 28px;
+  }
+
+  .professional-hero h1 {
+    font-size: clamp(42px, 14vw, 70px);
+  }
+
+  .professional-stage {
+    min-height: 320px;
+  }
+
+  .professional-floating-card {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    width: auto;
+    margin-top: 12px;
+  }
+
+  .professional-document-list,
+  .catalog-legal-professional,
+  .professional-process-list,
+  .professional-faq-list {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-legal-professional article.featured {
+    grid-column: auto;
+  }
+
+  .professional-services-section,
+  .professional-process-section,
+  .professional-proof-section,
+  .professional-team-section,
+  .professional-faq-section {
+    padding: 44px 16px;
+  }
+
+  .professional-consultation-section {
+    margin: 28px 16px 56px;
     padding: 28px 18px;
   }
 

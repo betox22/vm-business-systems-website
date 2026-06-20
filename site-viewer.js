@@ -114,6 +114,13 @@ function renderSection(section, schema) {
   if (section.type === "ClinicResults") return renderClinicResults(section, schema);
   if (section.type === "ClinicTeam") return renderClinicTeam(section, schema);
   if (section.type === "ClinicBooking") return renderClinicBooking(section, schema);
+  if (section.type === "ProfessionalHero") return renderProfessionalHero(section, schema);
+  if (section.type === "ProfessionalPracticeAreas") return renderProfessionalPracticeAreas(section, schema);
+  if (section.type === "ProfessionalProcess") return renderProfessionalProcess(section, schema);
+  if (section.type === "ProfessionalProof") return renderProfessionalProof(section, schema);
+  if (section.type === "ProfessionalTeam") return renderProfessionalTeam(section, schema);
+  if (section.type === "ProfessionalFAQ") return renderProfessionalFAQ(section, schema);
+  if (section.type === "ProfessionalConsultation") return renderProfessionalConsultation(section, schema);
   if (section.type === "ListingHero") return renderListingHero(section, schema);
   if (section.type === "ListingFilters") return renderListingFilters(section, schema);
   if (section.type === "ListingFeatured") return renderListingFeatured(section, schema);
@@ -737,6 +744,8 @@ function renderProductGrid(section, schema) {
                       ? renderEducationCourseCatalog(catalogItems, schema)
                       : catalogType === "medical_wellness_service_catalog"
                         ? renderMedicalWellnessCatalog(catalogItems, schema)
+                        : catalogType === "legal_professional_services_catalog"
+                          ? renderLegalProfessionalCatalog(catalogItems, schema)
                   : catalogType === "real_estate_listing_catalog"
                     ? renderRealEstateListingCatalog(catalogItems, schema)
                   : catalogType === "lead_funnel_offer_catalog"
@@ -976,6 +985,23 @@ function renderMedicalWellnessCatalog(items, schema) {
       <p>${escapeHtml(item.description)}</p>
       <ul><li>${escapeHtml(labels.specialistLed)}</li><li>${escapeHtml(labels.personalizedPlan)}</li><li>${escapeHtml(labels.clinicCare)}</li></ul>
       <div><strong>${escapeHtml(item.price_label || labels.consultationBased)}</strong><button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.bookConsultation)}</button></div>
+    </div>
+  </article>`).join("")}</div>`;
+}
+
+function renderLegalProfessionalCatalog(items, schema) {
+  const labels = catalogLocaleLabels(schema);
+  return `<div class="catalog-legal-professional">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    <div class="professional-card-top">
+      <small>${escapeHtml(item.deal_label || (index % 2 ? labels.seniorAdvisor : labels.confidential))}</small>
+      <span>${escapeHtml(item.shipping_label || labels.professionalEngagements?.[index % (labels.professionalEngagements?.length || 1)] || "")}</span>
+    </div>
+    <div class="professional-card-body">
+      <small>${escapeHtml(item.category || labels.professionalFirm)}</small>
+      <h3>${escapeHtml(item.name)}</h3>
+      <p>${escapeHtml(item.description)}</p>
+      <ul><li>${escapeHtml(labels.caseReview)}</li><li>${escapeHtml(labels.confidential)}</li><li>${escapeHtml(labels.businessReady)}</li></ul>
+      <div><strong>${escapeHtml(item.price_label || labels.consultationBased)}</strong><button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.scheduleConsultation)}</button></div>
     </div>
   </article>`).join("")}</div>`;
 }
@@ -1227,6 +1253,81 @@ function clinicVisualPlaceholder(schema) {
   return `<div class="clinic-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).clinicCare)}</small></div>`;
 }
 
+function renderProfessionalHero(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = publicCatalogItems(schema);
+  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url) || items[0];
+  const image = editable.image_url || heroItem?.image_url || "";
+  return `<section class="professional-hero ${sectionClass(section)}">
+    <div class="professional-hero-copy">
+      <span class="rendered-kicker">${escapeHtml(editable.badge || labels.professionalFirm)}</span>
+      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <div class="rendered-actions">
+        <button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.scheduleConsultation)}</button>
+        <button class="rendered-button secondary" data-open-lead type="button">${escapeHtml(editable.secondary_button || labels.viewServices)}</button>
+      </div>
+      <div class="professional-proof-strip">${(labels.professionalProofItems || []).slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    </div>
+    <div class="professional-stage">
+      <div class="professional-case-card">
+        <div class="professional-case-top"><span>${escapeHtml(labels.scheduleConsultation)}</span><b>${escapeHtml(labels.confidential)}</b></div>
+        <div class="professional-case-visual">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(heroItem?.name || schema.business?.name || "")}">` : professionalVisualPlaceholder(schema)}</div>
+        <div class="professional-document-list">${(labels.professionalProcessItems || []).slice(0, 4).map((item, index) => `<span><b>0${index + 1}</b>${escapeHtml(item)}</span>`).join("")}</div>
+      </div>
+      <div class="professional-floating-card"><small>${escapeHtml(labels.caseReview)}</small><strong>${escapeHtml(heroItem?.name || labels.practiceAreasTitle)}</strong><span>${escapeHtml(heroItem?.shipping_label || labels.professionalEngagements?.[0] || "")}</span></div>
+    </div>
+  </section>`;
+}
+
+function renderProfessionalPracticeAreas(section, schema) {
+  const editable = section.editable || {};
+  return `<section class="professional-services-section ${sectionClass(section)}">
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).services)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    ${renderLegalProfessionalCatalog(publicCatalogItems(schema), schema)}
+  </section>`;
+}
+
+function renderProfessionalProcess(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.professionalProcessItems;
+  return `<section class="professional-process-section ${sectionClass(section)}"><div><span class="rendered-kicker">${escapeHtml(labels.process)}</span><h2>${escapeHtml(editable.title || labels.professionalProcessTitle)}</h2><p>${escapeHtml(editable.text || labels.professionalProcessText)}</p></div><div class="professional-process-list">${items.slice(0, 6).map((item, index) => `<article><span>0${index + 1}</span><strong>${escapeHtml(item)}</strong><p>${escapeHtml(index % 2 ? labels.businessReady : labels.confidential)}</p></article>`).join("")}</div></section>`;
+}
+
+function renderProfessionalProof(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.professionalProofItems;
+  return `<section class="professional-proof-section ${sectionClass(section)}"><div><span class="rendered-kicker">${escapeHtml(labels.proof)}</span><h2>${escapeHtml(editable.title || labels.professionalProofTitle)}</h2><p>${escapeHtml(editable.text || labels.professionalProofText)}</p></div><div class="professional-proof-grid">${items.slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></section>`;
+}
+
+function renderProfessionalTeam(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.professionalTeamItems;
+  return `<section class="professional-team-section ${sectionClass(section)}"><div class="professional-team-media">${editable.image_url ? `<img src="${escapeAttribute(editable.image_url)}" alt="${escapeAttribute(editable.title || "")}">` : professionalVisualPlaceholder(schema)}</div><div><span class="rendered-kicker">${escapeHtml(labels.seniorAdvisor)}</span><h2>${escapeHtml(editable.title || labels.professionalTeamTitle)}</h2><p>${escapeHtml(editable.text || labels.professionalTeamText)}</p><div class="professional-mini-proof">${items.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div></section>`;
+}
+
+function renderProfessionalFAQ(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.professionalFaqItems;
+  return `<section class="professional-faq-section ${sectionClass(section)}"><div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.faq)}</span><h2>${escapeHtml(editable.title || labels.professionalFaqTitle)}</h2></div><div class="professional-faq-list">${items.slice(0, 5).map((item) => `<article><strong>${escapeHtml(item)}</strong><p>${escapeHtml(labels.professionalConsultationText)}</p></article>`).join("")}</div></section>`;
+}
+
+function renderProfessionalConsultation(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  return `<section class="professional-consultation-section ${sectionClass(section)}"><div><span class="rendered-kicker">${escapeHtml(labels.scheduleConsultation)}</span><h2>${escapeHtml(editable.title || labels.professionalConsultationTitle)}</h2><p>${escapeHtml(editable.text || labels.professionalConsultationText)}</p></div><button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.scheduleConsultation)}</button></section>`;
+}
+
+function professionalVisualPlaceholder(schema) {
+  const initials = String(schema.business?.name || "PF").slice(0, 2).toUpperCase();
+  return `<div class="professional-visual-placeholder"><span>${escapeHtml(initials)}</span><small>${escapeHtml(catalogLocaleLabels(schema).professionalFirm)}</small></div>`;
+}
+
 function renderListingHero(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
@@ -1395,7 +1496,21 @@ function catalogLocaleLabels(schema) {
       fallbackCategories: ["Eletronicos", "Casa", "Moda", "Beleza", "Esportes", "Ofertas"],
     },
   };
-  return { ...labels.en, ...(labels[language] || {}) };
+  const professionalLabels = {
+    en: {
+      professionalFirm: "Professional firm", scheduleConsultation: "Schedule consultation", consultationBased: "Consultation-based", confidential: "Confidential", seniorAdvisor: "Senior advisor", caseReview: "Case review", businessReady: "Business-ready", practiceAreasTitle: "Practice areas and services", professionalProcessTitle: "A clear advisory process", professionalProcessText: "Review, strategy, action plan and follow-up.", professionalProcessItems: ["Initial review", "Document check", "Strategy call", "Action plan", "Follow-up", "Ongoing advisory"], professionalProofTitle: "Proof clients need before contact", professionalProofText: "Credentials, confidentiality and professional standards.", professionalProofItems: ["Confidential process", "Senior review", "Clear next steps", "Business-ready advice", "Document support", "Responsive contact"], professionalTeamTitle: "Advisors who handle the details", professionalTeamText: "Show the people and standards behind the service.", professionalTeamItems: ["Experienced advisors", "Private consultation", "Clear documentation", "Follow-through"], professionalFaqTitle: "Questions before consultation", professionalFaqItems: ["What should I prepare?", "How does the first consultation work?", "Can you review documents?", "Can this become ongoing advisory?"], professionalConsultationTitle: "Request a consultation or document review", professionalConsultationText: "Send the service needed, urgency, preferred schedule and contact method.", professionalEngagements: ["Initial review", "Document review", "Strategy call", "Ongoing advisory"],
+    },
+    es: {
+      professionalFirm: "Firma profesional", scheduleConsultation: "Agendar consulta", consultationBased: "Segun consulta", confidential: "Confidencial", seniorAdvisor: "Asesor senior", caseReview: "Revision de caso", businessReady: "Listo para empresa", practiceAreasTitle: "Areas de practica y servicios", professionalProcessTitle: "Un proceso de asesoria claro", professionalProcessText: "Revision, estrategia, plan de accion y seguimiento.", professionalProcessItems: ["Revision inicial", "Chequeo documental", "Llamada estrategica", "Plan de accion", "Seguimiento", "Asesoria continua"], professionalProofTitle: "Confianza antes del contacto", professionalProofText: "Credenciales, confidencialidad y estandares profesionales.", professionalProofItems: ["Proceso confidencial", "Revision senior", "Pasos claros", "Asesoria empresarial", "Soporte documental", "Contacto rapido"], professionalTeamTitle: "Asesores que manejan los detalles", professionalTeamText: "Muestra las personas y estandares detras del servicio.", professionalTeamItems: ["Asesores expertos", "Consulta privada", "Documentacion clara", "Seguimiento"], professionalFaqTitle: "Preguntas antes de la consulta", professionalFaqItems: ["Que debo preparar?", "Como funciona la primera consulta?", "Pueden revisar documentos?", "Puede ser asesoria continua?"], professionalConsultationTitle: "Solicita una consulta o revision documental", professionalConsultationText: "Envia el servicio requerido, urgencia, horario y metodo de contacto.", professionalEngagements: ["Revision inicial", "Revision documental", "Llamada estrategica", "Asesoria continua"],
+    },
+    fr: {
+      professionalFirm: "Cabinet professionnel", scheduleConsultation: "Reserver une consultation", consultationBased: "Selon consultation", confidential: "Confidentiel", seniorAdvisor: "Conseiller senior", caseReview: "Analyse du dossier", businessReady: "Pret pour entreprise", practiceAreasTitle: "Services et domaines d'expertise", professionalProcessTitle: "Un processus de conseil clair", professionalProcessText: "Analyse, strategie, plan d'action et suivi.", professionalProcessItems: ["Analyse initiale", "Verification documents", "Appel strategie", "Plan d'action", "Suivi", "Conseil continu"], professionalProofTitle: "Preuves avant contact", professionalProofText: "Credentials, confidentialite et standards professionnels.", professionalProofItems: ["Processus confidentiel", "Analyse senior", "Etapes claires", "Conseil entreprise", "Support documents", "Contact rapide"], professionalTeamTitle: "Des conseillers qui gerent les details", professionalTeamText: "Montrez les personnes et standards derriere le service.", professionalTeamItems: ["Conseillers experimentes", "Consultation privee", "Documentation claire", "Suivi"], professionalFaqTitle: "Questions avant la consultation", professionalFaqItems: ["Que dois-je preparer?", "Comment se passe la premiere consultation?", "Pouvez-vous analyser des documents?", "Accompagnement continu possible?"], professionalConsultationTitle: "Demander une consultation ou analyse", professionalConsultationText: "Envoyez le service requis, l'urgence, le moment prefere et le contact.", professionalEngagements: ["Analyse initiale", "Analyse documents", "Appel strategie", "Conseil continu"],
+    },
+    pt: {
+      professionalFirm: "Firma profissional", scheduleConsultation: "Agendar consulta", consultationBased: "Sob consulta", confidential: "Confidencial", seniorAdvisor: "Consultor senior", caseReview: "Revisao do caso", businessReady: "Pronto para empresa", practiceAreasTitle: "Areas de atuacao e servicos", professionalProcessTitle: "Um processo de consultoria claro", professionalProcessText: "Revisao, estrategia, plano de acao e acompanhamento.", professionalProcessItems: ["Revisao inicial", "Analise documental", "Chamada estrategica", "Plano de acao", "Acompanhamento", "Consultoria continua"], professionalProofTitle: "Confianca antes do contato", professionalProofText: "Credenciais, confidencialidade e padroes profissionais.", professionalProofItems: ["Processo confidencial", "Revisao senior", "Passos claros", "Consultoria empresarial", "Suporte documental", "Contato rapido"], professionalTeamTitle: "Consultores que cuidam dos detalhes", professionalTeamText: "Mostre pessoas e padroes por tras do servico.", professionalTeamItems: ["Consultores experientes", "Consulta privada", "Documentacao clara", "Acompanhamento"], professionalFaqTitle: "Perguntas antes da consulta", professionalFaqItems: ["O que devo preparar?", "Como funciona a primeira consulta?", "Podem revisar documentos?", "Pode virar consultoria continua?"], professionalConsultationTitle: "Solicite consulta ou revisao documental", professionalConsultationText: "Envie o servico, urgencia, horario preferido e contato.", professionalEngagements: ["Revisao inicial", "Revisao documental", "Chamada estrategica", "Consultoria continua"],
+    },
+  };
+  return { ...labels.en, ...(labels[language] || {}), ...professionalLabels.en, ...(professionalLabels[language] || {}) };
 }
 
 function renderResilientImage(url, alt = "", fallbackText = "") {
