@@ -745,7 +745,14 @@
       intent: "amazon_marketplace",
       templateId: "mega-marketplace",
       catalogType: "dense_marketplace_catalog",
-      keywords: ["tipo amazon", "como amazon", "amazon style", "mega marketplace", "marketplace", "muchas categorias", "muchas categorías", "muchos productos", "busqueda y filtros", "búsqueda y filtros", "multi category", "multi-categoria"],
+      keywords: [
+        "tipo amazon", "como amazon", "amazon style", "mega marketplace", "marketplace",
+        "muchas categorias", "muchas categorías", "muchos productos", "busqueda y filtros", "búsqueda y filtros",
+        "multi category", "multi-categoria", "catalogo grande", "catálogo grande", "catalogo variado", "catálogo variado",
+        "productos variados", "variedad", "variado", "de todo", "todo tipo", "cosas raras", "cosas inusuales",
+        "inusual", "unusual", "nada comun", "nada común", "poco comun", "poco común", "dificil de encontrar",
+        "difícil de encontrar", "curiosidades", "gadgets", "anime", "juguetes", "accesorios para carros",
+      ],
     },
     {
       intent: "classified_marketplace",
@@ -890,6 +897,12 @@
       .trim();
   }
 
+  function suggestsBroadMarketplace(normalizedPrompt) {
+    return /\b(de todo|todo tipo|variedad|variado|variados|productos variados|catalogo grande|catalogo variado|cosas raras|cosas inusuales|inusual|unusual|nada comun|poco comun|dificil de encontrar|curiosidades|gadgets|anime|juguetes)\b/.test(normalizedPrompt)
+      || /(ropa|accesorios).*(carros|autos|juguetes|anime|gadgets)/.test(normalizedPrompt)
+      || /(carros|autos|juguetes|anime|gadgets).*(ropa|accesorios)/.test(normalizedPrompt);
+  }
+
   async function loadTemplates() {
     if (templateCache) return templateCache;
     const response = await fetch(TEMPLATE_LIBRARY_URL, { cache: "no-store" });
@@ -1020,6 +1033,9 @@
   }
 
   function selectBestIntentRule(normalizedPrompt) {
+    if (suggestsBroadMarketplace(normalizedPrompt)) {
+      return INTENT_RULES.find((rule) => rule.intent === "amazon_marketplace") || null;
+    }
     const scored = INTENT_RULES.map((rule) => {
       const matches = rule.keywords.filter((keyword) => normalizedPrompt.includes(normalizeText(keyword)));
       const exactWeight = matches.reduce((score, keyword) => score + Math.max(1, normalizeText(keyword).split(" ").length), 0);

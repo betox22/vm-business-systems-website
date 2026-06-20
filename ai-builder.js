@@ -60,8 +60,8 @@ const I18N = {
     catalogType: "Catalog type",
     currentInfo: "A few details collected so far.",
     livePreviewKicker: "Live draft",
-    livePreviewTitle: "Your site is forming here",
-    livePreviewText: "As you answer, Luma updates this preview in the workspace.",
+    livePreviewTitle: "Luma is choosing the right structure",
+    livePreviewText: "The preview adapts from your answers before the full editable site is generated.",
     finalReviewTitle: "Your website brief",
     generateMyWebsite: "Generate my website",
     keepChatting: "Keep chatting",
@@ -160,8 +160,8 @@ const I18N = {
     catalogType: "Tipo de catalogo",
     currentInfo: "Algunos detalles recopilados hasta ahora.",
     livePreviewKicker: "Borrador en vivo",
-    livePreviewTitle: "Tu sitio se va formando aqui",
-    livePreviewText: "Mientras respondes, Luma actualiza este preview en tu area de trabajo.",
+    livePreviewTitle: "Luma esta eligiendo la estructura correcta",
+    livePreviewText: "El preview se adapta con tus respuestas antes de generar el sitio editable completo.",
     finalReviewTitle: "Resumen de tu pagina",
     generateMyWebsite: "Generar mi pagina",
     keepChatting: "Seguir conversando",
@@ -260,8 +260,8 @@ const I18N = {
     catalogType: "Type de catalogue",
     currentInfo: "Quelques détails collectés jusqu'ici.",
     livePreviewKicker: "Brouillon live",
-    livePreviewTitle: "Votre site se forme ici",
-    livePreviewText: "Pendant vos réponses, Luma met à jour cet aperçu dans l'espace de travail.",
+    livePreviewTitle: "Luma choisit la bonne structure",
+    livePreviewText: "L'apercu s'adapte a vos reponses avant de generer le site complet modifiable.",
     finalReviewTitle: "Brief de votre site",
     generateMyWebsite: "Générer mon site",
     keepChatting: "Continuer la discussion",
@@ -360,8 +360,8 @@ const I18N = {
     catalogType: "Tipo de catálogo",
     currentInfo: "Alguns detalhes coletados até agora.",
     livePreviewKicker: "Rascunho ao vivo",
-    livePreviewTitle: "Seu site se forma aqui",
-    livePreviewText: "Enquanto você responde, a Luma atualiza este preview na área de trabalho.",
+    livePreviewTitle: "A Luma esta escolhendo a estrutura certa",
+    livePreviewText: "O preview se adapta com suas respostas antes de gerar o site editavel completo.",
     finalReviewTitle: "Resumo do seu site",
     generateMyWebsite: "Gerar meu site",
     keepChatting: "Continuar conversando",
@@ -1553,21 +1553,92 @@ function livePreviewTemplateProfile() {
 }
 
 function inferLivePreviewTemplateId() {
+  const text = guidedTemplateContextText();
+  const inferred = inferTemplateIdFromText(text);
+  if (textSuggestsBroadMarketplace(text) && forcedTemplateSelection?.templateId !== "mega-marketplace") return "mega-marketplace";
+  if (inferred) return inferred;
   if (forcedTemplateSelection?.templateId) return forcedTemplateSelection.templateId;
-  const text = [
+  return "apple-premium-product";
+}
+
+function guidedTemplateContextText(extra = "") {
+  return [
     guidedState.websiteIntent,
+    guidedState.businessName,
     guidedState.industry,
     guidedState.businessDescription,
     arrayValue(guidedState.servicesProducts).join(" "),
+    guidedState.targetAudience,
     guidedState.preferredTone,
+    arrayValue(guidedState.preferredColors).join(" "),
+    guidedState.salesMode,
+    extra,
   ].join(" ").toLowerCase();
+}
+
+function normalizeTemplateIntentText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function textSuggestsBroadMarketplace(value) {
+  const text = normalizeTemplateIntentText(value);
+  return /\b(de todo|todo tipo|variedad|variado|variados|productos variados|catalogo grande|catalogo variado|muchos productos|muchas categorias|multi categoria|cosas raras|cosas inusuales|inusual|unusual|nada comun|poco comun|dificil de encontrar|curiosidades|gadgets|anime|juguetes)\b/.test(text)
+    || /(ropa|accesorios).*(carros|autos|juguetes|anime|gadgets)/.test(text)
+    || /(carros|autos|juguetes|anime|gadgets).*(ropa|accesorios)/.test(text);
+}
+
+function textSuggestsSingleProductShowcase(value) {
+  const text = normalizeTemplateIntentText(value);
+  return /\b(un solo producto|solo un producto|producto unico|producto estrella|flagship|single product|one product|producto premium|showcase|presentacion premium|portafolio|portfolio)\b/.test(text)
+    && !textSuggestsBroadMarketplace(text);
+}
+
+function inferTemplateIdFromText(value) {
+  const text = normalizeTemplateIntentText(value);
+  if (!text) return "";
+  if (textSuggestsBroadMarketplace(text)) return "mega-marketplace";
+  if (/tipo ebay|como ebay|clasificados|listados|vendedores|usado|seller|listing/.test(text)) return "listing-marketplace-pro";
+  if (/restaurante|restaurant|menu|comida|food|cafe|cafeteria|delivery|pedidos/.test(text)) return "restaurant-food-business";
+  if (/barber|barberia|salon|spa|cita|booking|reserva|appointment/.test(text)) return "booking-appointment-pro";
+  if (/abogado|legal|lawyer|contador|tax|impuestos|consultoria|consulting|seguros|asesor/.test(text)) return "legal-professional-services-pro";
+  if (/clinica|clinic|med spa|wellness|dental|doctor|estetica|salud|therapy|skincare/.test(text)) return "medical-wellness-clinic-pro";
+  if (/saas|software|enterprise|automatizacion|platform|plataforma|dashboard|crm|erp|integraciones|api/.test(text)) return "b2b-saas-enterprise-pro";
+  if (/industrial|manufactur|fabrica|maquinaria|repuestos|proveedor industrial|suministros/.test(text)) return "manufacturing-industrial-supplier-pro";
+  if (/curso|course|academy|academia|bootcamp|training|clases|masterclass|workshop/.test(text)) return "education-course-academy-pro";
+  if (/digital|ebook|templates|plantillas|descarga|download|membresia|membership/.test(text)) return "digital-products-store";
+  if (/servicio|service|contractor|limpieza|roofing|repair|reparacion|cotizacion|quote/.test(text)) return "local-services-pro-plus";
   if (/ropa|fashion|moda|boutique|streetwear|zapato|sneaker|accesorio/.test(text)) return "fashion-drop-pro";
-  if (/marketplace|muchos productos|catalogo grande|categorias|categorías|buscar|filtro/.test(text)) return "mega-marketplace";
-  if (/listado|clasificado|vendedor|usado|seller|listing/.test(text)) return "listing-marketplace-pro";
-  if (/restaurante|restaurant|menu|comida|food|cafe|café/.test(text)) return "restaurant-food-business";
-  if (/barber|cita|booking|reserva|appointment|salon/.test(text)) return "booking-appointment-pro";
-  if (/servicio|service|contractor|limpieza|roofing|legal|consulta|clinic|clinica/.test(text)) return "local-services-pro-plus";
-  return "apple-premium-product";
+  if (/lujo|luxury|alta gama|exclusivo|joyeria|relojes|arte|coleccionable/.test(text)) return "luxury-high-ticket-pro";
+  if (textSuggestsSingleProductShowcase(text) || /premium|minimal|minimalista|limpio|tipo apple|apple style/.test(text)) return "apple-premium-product";
+  if (/empresa|company|corporate|corporativo|pagina web|website|agencia|firma/.test(text)) return "corporate-company-pro";
+  return "";
+}
+
+function syncTemplateSelectionFromGuidedContext(extra = "") {
+  const text = guidedTemplateContextText(extra);
+  const inferredTemplateId = inferTemplateIdFromText(text);
+  if (!inferredTemplateId || forcedTemplateSelection?.templateId === inferredTemplateId) return;
+  const shouldOverride = !forcedTemplateSelection?.templateId
+    || textSuggestsBroadMarketplace(text)
+    || textSuggestsSingleProductShowcase(text)
+    || forcedTemplateSelection.intent === "default_minimal"
+    || forcedTemplateSelection.intent === "guided_context_template";
+  if (!shouldOverride) return;
+  const meta = templatePreviewMeta(inferredTemplateId);
+  forcedTemplateSelection = {
+    templateId: inferredTemplateId,
+    template: forcedTemplateSelection?.templateId === inferredTemplateId ? forcedTemplateSelection.template : null,
+    catalogType: meta?.catalogType || "",
+    intent: "guided_context_template",
+    reason: "Updated from the full guided intake context",
+  };
+  guidedState.sitePlan = null;
+  guidedState.sitePlanApproved = false;
 }
 
 function livePreviewPublicCopy(profile, items = []) {
@@ -2336,6 +2407,7 @@ async function sendGuidedReply() {
     guidedHistory.push({ role: "user", content: message });
     guidedHistory.push({ role: "assistant", content: assistantMessage });
     mergeGuidedUpdates({ ...broadLocalUpdates, ...updatedFields });
+    syncTemplateSelectionFromGuidedContext(message);
     const serverNextStep = result.next_step || result.nextStep || "";
     guidedStep = result.readyToGenerate ? "review" : nextSmartGuidedStep(serverNextStep || guidedStep);
     const serverNextQuestion = result.nextQuestion || result.next_question;
@@ -2349,6 +2421,7 @@ async function sendGuidedReply() {
   } catch (error) {
     const updates = { ...broadLocalUpdates, ...inferGuidedUpdates(guidedStep, message) };
     mergeGuidedUpdates(updates);
+    syncTemplateSelectionFromGuidedContext(message);
     guidedStep = nextSmartGuidedStep(guidedStep);
     console.warn("Luma intake assistant request failed; continuing locally.", error);
     appendUnderstandingCard({ updates, sourceMessage: message });
@@ -3519,6 +3592,7 @@ function applyGuidedStateToForm() {
 }
 
 function renderGuidedSummary() {
+  syncTemplateSelectionFromGuidedContext();
   document.querySelectorAll("[data-summary-field]").forEach((field) => {
     const key = field.dataset.summaryField;
     const value = guidedState[key];
@@ -4389,6 +4463,32 @@ async function createDomainOrderIfNeeded(payload, result) {
 
 async function selectTemplateForPayload(payload) {
   if (!window.TemplateRouter?.selectTemplateFromPrompt) return null;
+  const prompt = [
+    payload.business_name,
+    payload.business_description,
+    payload.industry,
+    arrayValue(payload.services_products).join(" "),
+    payload.target_audience,
+    payload.preferred_tone,
+    arrayValue(payload.preferred_colors).join(" "),
+    payload.salesMode || guidedState.salesMode,
+  ].join(" ");
+  const inferredTemplateId = inferTemplateIdFromText(prompt);
+  const shouldOverrideForced = inferredTemplateId
+    && inferredTemplateId !== forcedTemplateSelection?.templateId
+    && (textSuggestsBroadMarketplace(prompt) || textSuggestsSingleProductShowcase(prompt) || forcedTemplateSelection?.intent === "default_minimal");
+  if (window.TemplateRouter.getTemplateById && (shouldOverrideForced || (!forcedTemplateSelection?.templateId && inferredTemplateId))) {
+    const template = await window.TemplateRouter.getTemplateById(inferredTemplateId);
+    if (template) {
+      return {
+        templateId: inferredTemplateId,
+        template,
+        intent: "guided_context_template",
+        catalogType: template.catalogModel?.catalogType || templatePreviewMeta(inferredTemplateId)?.catalogType || "",
+        reason: "Selected from the complete guided intake context",
+      };
+    }
+  }
   if (forcedTemplateSelection?.templateId && window.TemplateRouter.getTemplateById) {
     const template = await window.TemplateRouter.getTemplateById(forcedTemplateSelection.templateId);
     if (template) {
@@ -4399,15 +4499,6 @@ async function selectTemplateForPayload(payload) {
       };
     }
   }
-  const prompt = [
-    payload.business_name,
-    payload.business_description,
-    payload.industry,
-    arrayValue(payload.services_products).join(" "),
-    payload.target_audience,
-    payload.preferred_tone,
-    arrayValue(payload.preferred_colors).join(" "),
-  ].join(" ");
   try {
     return await window.TemplateRouter.selectTemplateFromPrompt(prompt);
   } catch (error) {
@@ -5238,16 +5329,23 @@ function productFocusForLanguage(products = [], fallback = "", language = select
 }
 
 function sanitizePublicProductList(products = [], payload = {}, copy = {}, language = selectedLanguage, templateHint = "") {
+  const sourceText = `${payload.business_description || ""} ${payload.industry || ""} ${arrayValue(products).join(" ")} ${templateHint || ""}`;
+  const sourceSuggestsBroadMarketplace = textSuggestsBroadMarketplace(sourceText);
   const cleaned = arrayValue(products)
     .map((item) => cleanPublicItemLabel(item))
     .filter(Boolean)
     .slice(0, 8);
-  if (cleaned.length >= 2) return cleaned;
+  if (cleaned.length >= 2 && !sourceSuggestsBroadMarketplace) return cleaned;
   const inferred = inferredPublicCatalogLabels({
-    text: `${payload.business_description || ""} ${payload.industry || ""} ${arrayValue(products).join(" ")} ${templateHint || ""}`,
+    text: sourceText,
     language,
   });
-  return inferred.length ? inferred : arrayValue(copy.defaultProducts).slice(0, 4);
+  if (inferred.length) {
+    return sourceSuggestsBroadMarketplace
+      ? [...new Set([...inferred, ...cleaned.filter((item) => item.split(/\s+/).length <= 3)])].slice(0, 6)
+      : inferred;
+  }
+  return cleaned.length ? cleaned : arrayValue(copy.defaultProducts).slice(0, 4);
 }
 
 function cleanPublicItemLabel(value) {
@@ -5255,6 +5353,7 @@ function cleanPublicItemLabel(value) {
   if (!text) return "";
   if (text.length > 48) return "";
   if (/[.!?¿]/.test(text)) return "";
+  if (textSuggestsBroadMarketplace(text) && text.split(/\s+/).length > 3) return "";
   if (/\b(quiero|necesito|debe|deberia|página|pagina|website|marketplace|cliente|contacto|ubicaci[oó]n|telefono|tel[eé]fono|whatsapp|productos?|servicios?|vendo|vende|ofrece|online|etc)\b/i.test(text) && text.split(/\s+/).length > 3) {
     return "";
   }
@@ -8893,6 +8992,7 @@ function adjustGeneratedDraftWithLuma() {
 }
 
 async function collectPayload() {
+  if (isPublicClientSetup) syncTemplateSelectionFromGuidedContext();
   const data = new FormData(form);
   const contactInfo = parseKeyValueLines(data.get("contact_info")?.toString() || "");
   const logoUrl = data.get("logo_url")?.toString().trim();
