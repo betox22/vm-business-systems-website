@@ -7,6 +7,109 @@ from .config import get_settings
 from .schemas import AiWebsiteBuilderRequest, WebsiteSchema
 
 
+RENDERABLE_SECTION_TYPES = [
+    "Hero",
+    "ProductGrid",
+    "ServiceList",
+    "FeatureBand",
+    "About",
+    "Gallery",
+    "Testimonials",
+    "Contact",
+    "Footer",
+    "PremiumHero",
+    "ProductStory",
+    "FeatureShowcase",
+    "EditorialGallery",
+    "SpecStrip",
+    "FashionHero",
+    "FashionCollectionRail",
+    "FashionDropStory",
+    "FashionLookbook",
+    "FashionFitGuide",
+    "CorporateHero",
+    "CorporateServices",
+    "CorporateProcess",
+    "CorporateProof",
+    "RestaurantHero",
+    "RestaurantCategoryRail",
+    "RestaurantSignatureMenu",
+    "RestaurantSpecials",
+    "RestaurantInfo",
+    "RestaurantOrderPanel",
+    "DigitalHero",
+    "DigitalBundle",
+    "DigitalModules",
+    "DigitalProof",
+    "DigitalAccessPanel",
+    "LuxuryHero",
+    "LuxurySignature",
+    "LuxuryCollection",
+    "LuxuryProvenance",
+    "LuxuryPrivateService",
+    "LuxuryContact",
+    "AcademyHero",
+    "AcademyLearningPath",
+    "AcademyPrograms",
+    "AcademyOutcomes",
+    "AcademyInstructor",
+    "AcademyEnroll",
+    "ClinicHero",
+    "ClinicServices",
+    "ClinicTreatmentPath",
+    "ClinicTrust",
+    "ClinicResults",
+    "ClinicTeam",
+    "ClinicBooking",
+    "ProfessionalHero",
+    "ProfessionalPracticeAreas",
+    "ProfessionalProcess",
+    "ProfessionalProof",
+    "ProfessionalTeam",
+    "ProfessionalFAQ",
+    "ProfessionalConsultation",
+    "EnterpriseHero",
+    "EnterpriseSolutions",
+    "EnterpriseUseCases",
+    "EnterpriseIntegrations",
+    "EnterpriseProof",
+    "EnterprisePricing",
+    "EnterpriseDemo",
+    "IndustrialHero",
+    "IndustrialSpecCatalog",
+    "IndustrialCapabilities",
+    "IndustrialCertifications",
+    "IndustrialSupplyChain",
+    "IndustrialQuotePanel",
+    "ListingHero",
+    "ListingFilters",
+    "ListingFeatured",
+    "ListingAreaPanel",
+    "ListingTrust",
+    "ListingContact",
+    "HomeServiceHero",
+    "HomeServiceCategories",
+    "HomeServiceAreas",
+    "HomeServiceGallery",
+    "HomeServiceTrust",
+    "HomeServiceQuote",
+    "BookingHero",
+    "BookingServices",
+    "BookingAvailability",
+    "BookingTeam",
+    "BookingContact",
+    "FunnelHero",
+    "FunnelOffer",
+    "FunnelBenefits",
+    "FunnelProof",
+    "FunnelFAQ",
+    "MarketplaceHero",
+    "CategoryRail",
+    "DealRow",
+    "TrustStrip",
+]
+
+
 WEBSITE_SCHEMA_JSON_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
@@ -22,6 +125,8 @@ WEBSITE_SCHEMA_JSON_SCHEMA = {
         "pages",
         "global_components",
         "design_variants",
+        "selected_template",
+        "catalog_model",
         "products_services",
         "contact",
         "editable_fields",
@@ -198,17 +303,7 @@ WEBSITE_SCHEMA_JSON_SCHEMA = {
                                 "id": {"type": "string"},
                                 "type": {
                                     "type": "string",
-                                    "enum": [
-                                        "Hero",
-                                        "ProductGrid",
-                                        "ServiceList",
-                                        "FeatureBand",
-                                        "About",
-                                        "Gallery",
-                                        "Testimonials",
-                                        "Contact",
-                                        "Footer",
-                                    ],
+                                    "enum": RENDERABLE_SECTION_TYPES,
                                 },
                                 "order": {"type": "integer"},
                                 "editable": {
@@ -334,6 +429,36 @@ WEBSITE_SCHEMA_JSON_SCHEMA = {
                 },
             },
         },
+        "selected_template": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["id", "name", "intent", "catalogType", "visualDifference"],
+            "properties": {
+                "id": {"type": "string"},
+                "name": {"type": "string"},
+                "intent": {"type": "string"},
+                "catalogType": {"type": "string"},
+                "visualDifference": {"type": "string"},
+            },
+        },
+        "catalog_model": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": [
+                "catalogType",
+                "productCardStyle",
+                "collectionLayout",
+                "productDetailModel",
+                "customerFeeling",
+            ],
+            "properties": {
+                "catalogType": {"type": "string"},
+                "productCardStyle": {"type": "string"},
+                "collectionLayout": {"type": "string"},
+                "productDetailModel": {"type": "string"},
+                "customerFeeling": {"type": "string"},
+            },
+        },
         "products_services": {
             "type": "array",
             "items": {
@@ -387,14 +512,22 @@ def generate_ai_website_schema(payload: AiWebsiteBuilderRequest) -> tuple[Websit
                     "and conversion-focused web designer. Generate an editable website schema, never static "
                     "HTML. Your job is to design the store as if it were being prepared for a professional "
                     "client presentation. Think visually before writing JSON: infer the brand personality, "
+                    "business model, catalog complexity, purchase flow, trust needs, and best layout pattern. "
+                    "The user's intake answers are strategy notes, not website copy. Never copy rough client "
+                    "answers, internal notes, requirements, or planning text verbatim into visible website copy. "
+                    "Rewrite everything as polished public-facing copy in the selected language. "
                     "Use the selected template when provided. Do not invent a full page structure from zero "
                     "when selectedTemplate is present: keep its section order and use its catalogModel.catalogType "
                     "as the catalog experience. Fill template placeholders with business-specific copy, products, "
                     "services, categories, CTAs, contact info, images, and colors. The app renderer controls layout "
                     "quality from catalogType, so your job is content, page labels, product/service data, and "
                     "editable text. "
-                    "If selectedTemplate.id is marketplace-style, make it feel Amazon-like. If it is "
-                    "classified-marketplace, make it feel eBay/listing-like with condition/seller cues. "
+                    "If the selected template is a broad marketplace, create a dense retail discovery experience "
+                    "with categories, featured rows, trust strips, search-oriented copy, deal/collection language, "
+                    "and operational ecommerce CTAs. If it is a listing marketplace, create seller/listing cues, "
+                    "filters, condition/location metadata, and inquiry paths. If it is a premium product template, "
+                    "create a focused product-line showcase with large visuals, benefits, proof, specs, and refined "
+                    "purchase or inquiry CTAs. Do not mention or imitate any external brand by name. Infer "
                     "price position, likely photography style, audience expectations, trust needs, and the "
                     "emotional color language from the business description. Choose colors because they are "
                     "appropriate for that type of business, not because the user typed them. If preferred "
@@ -409,7 +542,7 @@ def generate_ai_website_schema(payload: AiWebsiteBuilderRequest) -> tuple[Websit
                     "bold_launch, trust_first, image_right, image_left, centered_hero, masonry, grid, simple. "
                     "Use warm boutique layouts for food/beauty/fashion/gifts, clean trust layouts for "
                     "services, bold launch layouts for new brands, and efficient catalog layouts for retail. "
-                    "Always create Home, Catalog or Services, About, and Contact pages. Generate exactly "
+                    "Always create Home, Catalog or Services, About, and Contact pages. "
                     "If the business sells products, mentions tienda, store, ecommerce, online sales, catalog, "
                     "inventory, products, accessories, food, fashion, gifts, electronics, beauty, or retail, "
                     "treat it as an online store: create a Catalog/Tienda page, product grids, cart-oriented CTAs, "
@@ -427,6 +560,9 @@ def generate_ai_website_schema(payload: AiWebsiteBuilderRequest) -> tuple[Websit
                     "presentation. Each variant must be usable immediately by a renderer without new AI calls. "
                     "Every editable object must include all required editable keys, even when blank. "
                     "Every settings object must include layout, source, and columns. "
+                    "Return selected_template and catalog_model as first-class schema metadata. selected_template.id "
+                    "must match the provided templateId when present. catalog_model.catalogType must match the "
+                    "provided catalogType when present. "
                     f"The selectedLanguage is '{selected_language}'. All visible website copy, catalog/service "
                     "descriptions, CTAs, navigation labels, section titles, preview content, footer text, "
                     "and generated product/service wording must be written in that language. JSON keys must "
@@ -443,7 +579,12 @@ def generate_ai_website_schema(payload: AiWebsiteBuilderRequest) -> tuple[Websit
                     "and muted. If the user gives color words, interpret them professionally. Also return "
                     "exactly three design_variants so the operator can choose different layouts before editing. "
                     "If templateId, catalogType, selectedTemplate, or templateIntent are present, use them as "
-                    "hard guidance and preserve the intended catalog experience. "
+                    "hard guidance and preserve the intended catalog experience. Use rich renderer section types "
+                    "that fit the selected template when appropriate, such as MarketplaceHero, CategoryRail, DealRow, "
+                    "PremiumHero, FashionHero, RestaurantHero, CorporateHero, ClinicHero, EnterpriseHero, or their "
+                    "matching supporting sections. Do not collapse everything into a generic Hero/ProductGrid page. "
+                    "Do not copy intake answers literally into headlines or paragraphs; synthesize them into "
+                    "professional marketing copy. "
                     f"Generate every visible value in selectedLanguage='{selected_language}'. Keep JSON keys in English.\n"
                     f"{json.dumps(payload.model_dump(), ensure_ascii=False)}"
                 ),

@@ -115,10 +115,6 @@ QUESTION_BY_LANGUAGE = {
 
 def guide_intake(payload: IntakeAssistantRequest) -> IntakeAssistantResponse:
     selected_language = _language(payload.current.selected_language)
-    quick_response = _quick_intake_response(payload, selected_language)
-    if quick_response:
-        return quick_response
-
     settings = get_settings()
     if not settings.openai_api_key:
         return _development_fallback(payload)
