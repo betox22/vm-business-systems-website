@@ -1362,13 +1362,14 @@ function renderLiveSitePreview() {
   const card = ensureLiveSitePreviewCard();
   if (!card) return;
   const services = arrayValue(guidedState.servicesProducts).filter(Boolean);
-  const items = (services.length ? services : livePreviewFallbackItems()).slice(0, 3);
+  const items = (services.length ? services : livePreviewFallbackItems()).slice(0, 6);
   const name = guidedState.businessName || langText({
     en: "Your business",
     es: "Tu negocio",
     fr: "Votre entreprise",
     pt: "Seu negócio",
   });
+  const profile = livePreviewTemplateProfile();
   const intent = guidedState.websiteIntent || langText({
     en: "Website goal will appear here",
     es: "El objetivo aparecera aqui",
@@ -1393,22 +1394,32 @@ function renderLiveSitePreview() {
     fr: "Palette IA",
     pt: "Paleta IA",
   });
+  const navItems = livePreviewNavItems(profile);
   card.innerHTML = `
-    <div class="live-preview-browser">
+    <div class="live-preview-browser live-template-${escapeAttribute(profile.kind)}">
       <div class="live-preview-topbar">
         <span class="live-preview-dots"><i></i><i></i><i></i></span>
-        <span>${escapeHtml(langText({ en: "Live draft", es: "Borrador vivo", fr: "Brouillon live", pt: "Rascunho ao vivo" }))}</span>
+        <span>${escapeHtml(profile.label)}</span>
+      </div>
+      <div class="live-preview-nav">
+        <strong>${escapeHtml(name)}</strong>
+        <span>${navItems.map((item) => escapeHtml(item)).join(" · ")}</span>
       </div>
       <div class="live-preview-hero">
         <div>
+          <em>${escapeHtml(profile.kicker)}</em>
           <strong>${escapeHtml(name)}</strong>
           <span>${escapeHtml(intent)}</span>
           <span>${escapeHtml(description).slice(0, 150)}</span>
+          <button type="button">${escapeHtml(profile.cta)}</button>
         </div>
-        <div class="live-preview-visual" aria-hidden="true"></div>
+        <div class="live-preview-visual" aria-hidden="true">
+          <img src="${escapeAttribute(profile.image)}" alt="">
+        </div>
       </div>
+      ${livePreviewTemplateModules(profile, items)}
       <div class="live-preview-grid">
-        ${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
+        ${items.slice(0, 3).map((item, index) => `<span><b>${escapeHtml(profile.itemLabels[index] || profile.itemLabels[0])}</b>${escapeHtml(item)}</span>`).join("")}
       </div>
       <div class="live-preview-footer">
         <span>${escapeHtml(colorHint)}</span>
@@ -1416,6 +1427,152 @@ function renderLiveSitePreview() {
       </div>
     </div>
   `;
+}
+
+function livePreviewTemplateProfile() {
+  const templateId = inferLivePreviewTemplateId();
+  const meta = templatePreviewMeta(templateId) || templatePreviewMeta("apple-premium-product");
+  const catalogType = forcedTemplateSelection?.catalogType || meta?.catalogType || "";
+  const common = {
+    templateId,
+    label: localizedTemplateName(meta),
+    image: meta?.image || "/templates-preview/screenshots/premium.png",
+    itemLabels: [
+      langText({ en: "Offer", es: "Oferta", fr: "Offre", pt: "Oferta" }),
+      langText({ en: "Featured", es: "Destacado", fr: "Phare", pt: "Destaque" }),
+      langText({ en: "CTA", es: "Accion", fr: "Action", pt: "Acao" }),
+    ],
+  };
+  if (/mega-marketplace|marketplace-style/.test(templateId) || /dense_marketplace/.test(catalogType)) {
+    return {
+      ...common,
+      kind: "marketplace",
+      kicker: langText({ en: "Search-first catalog", es: "Catalogo con busqueda", fr: "Catalogue avec recherche", pt: "Catalogo com busca" }),
+      cta: langText({ en: "Shop deals", es: "Ver ofertas", fr: "Voir offres", pt: "Ver ofertas" }),
+      itemLabels: [
+        langText({ en: "Category", es: "Categoria", fr: "Categorie", pt: "Categoria" }),
+        langText({ en: "Deal", es: "Oferta", fr: "Offre", pt: "Oferta" }),
+        langText({ en: "Product", es: "Producto", fr: "Produit", pt: "Produto" }),
+      ],
+    };
+  }
+  if (/listing|real-estate/.test(templateId) || /listing|classified|real_estate/.test(catalogType)) {
+    return {
+      ...common,
+      kind: "listings",
+      kicker: langText({ en: "Seller listings", es: "Listados de vendedores", fr: "Annonces vendeurs", pt: "Anuncios de vendedores" }),
+      cta: langText({ en: "Compare listings", es: "Comparar listados", fr: "Comparer", pt: "Comparar" }),
+      itemLabels: [
+        langText({ en: "Listing", es: "Listado", fr: "Annonce", pt: "Anuncio" }),
+        langText({ en: "Condition", es: "Condicion", fr: "Etat", pt: "Condicao" }),
+        langText({ en: "Seller", es: "Vendedor", fr: "Vendeur", pt: "Vendedor" }),
+      ],
+    };
+  }
+  if (/fashion/.test(templateId) || /lookbook|collection/.test(catalogType)) {
+    return {
+      ...common,
+      kind: "fashion",
+      kicker: langText({ en: "Editorial collection", es: "Coleccion editorial", fr: "Collection editoriale", pt: "Colecao editorial" }),
+      cta: langText({ en: "Explore drop", es: "Ver coleccion", fr: "Voir collection", pt: "Ver colecao" }),
+      itemLabels: [
+        langText({ en: "Collection", es: "Coleccion", fr: "Collection", pt: "Colecao" }),
+        langText({ en: "Look", es: "Look", fr: "Look", pt: "Look" }),
+        langText({ en: "Drop", es: "Drop", fr: "Drop", pt: "Drop" }),
+      ],
+    };
+  }
+  if (/restaurant/.test(templateId) || /restaurant|menu|food/.test(catalogType)) {
+    return {
+      ...common,
+      kind: "restaurant",
+      kicker: langText({ en: "Menu and ordering", es: "Menu y pedidos", fr: "Menu et commande", pt: "Menu e pedidos" }),
+      cta: langText({ en: "View menu", es: "Ver menu", fr: "Voir menu", pt: "Ver menu" }),
+      itemLabels: [
+        langText({ en: "Dish", es: "Plato", fr: "Plat", pt: "Prato" }),
+        langText({ en: "Special", es: "Especial", fr: "Special", pt: "Especial" }),
+        langText({ en: "Order", es: "Pedido", fr: "Commande", pt: "Pedido" }),
+      ],
+    };
+  }
+  if (/booking|services|clinic|legal|corporate|lead-funnel|local/.test(templateId) || /service|booking|lead|company|legal|medical/.test(catalogType)) {
+    return {
+      ...common,
+      kind: "service",
+      kicker: langText({ en: "Trust and conversion", es: "Confianza y conversion", fr: "Confiance et conversion", pt: "Confianca e conversao" }),
+      cta: langText({ en: "Request quote", es: "Solicitar cotizacion", fr: "Demander devis", pt: "Pedir orcamento" }),
+      itemLabels: [
+        langText({ en: "Service", es: "Servicio", fr: "Service", pt: "Servico" }),
+        langText({ en: "Proof", es: "Prueba", fr: "Preuve", pt: "Prova" }),
+        langText({ en: "Process", es: "Proceso", fr: "Processus", pt: "Processo" }),
+      ],
+    };
+  }
+  return {
+    ...common,
+    kind: "premium",
+    kicker: langText({ en: "Premium showcase", es: "Presentacion premium", fr: "Presentation premium", pt: "Apresentacao premium" }),
+    cta: langText({ en: "Explore product", es: "Ver producto", fr: "Voir produit", pt: "Ver produto" }),
+  };
+}
+
+function inferLivePreviewTemplateId() {
+  if (forcedTemplateSelection?.templateId) return forcedTemplateSelection.templateId;
+  const text = [
+    guidedState.websiteIntent,
+    guidedState.industry,
+    guidedState.businessDescription,
+    arrayValue(guidedState.servicesProducts).join(" "),
+    guidedState.preferredTone,
+  ].join(" ").toLowerCase();
+  if (/ropa|fashion|moda|boutique|streetwear|zapato|sneaker|accesorio/.test(text)) return "fashion-drop-pro";
+  if (/marketplace|muchos productos|catalogo grande|categorias|categorías|buscar|filtro/.test(text)) return "mega-marketplace";
+  if (/listado|clasificado|vendedor|usado|seller|listing/.test(text)) return "listing-marketplace-pro";
+  if (/restaurante|restaurant|menu|comida|food|cafe|café/.test(text)) return "restaurant-food-business";
+  if (/barber|cita|booking|reserva|appointment|salon/.test(text)) return "booking-appointment-pro";
+  if (/servicio|service|contractor|limpieza|roofing|legal|consulta|clinic|clinica/.test(text)) return "local-services-pro-plus";
+  return "apple-premium-product";
+}
+
+function livePreviewNavItems(profile) {
+  const sets = {
+    marketplace: ["Shop", "Categories", "Deals", "Cart"],
+    listings: ["Search", "Listings", "Sellers", "Contact"],
+    fashion: ["New drop", "Collections", "Lookbook", "Fit"],
+    restaurant: ["Menu", "Specials", "Order", "Location"],
+    service: ["Services", "Process", "Proof", "Contact"],
+    premium: ["Overview", "Features", "Story", "Buy"],
+  };
+  return (sets[profile.kind] || sets.premium).map((item) => translatePreviewNav(item));
+}
+
+function translatePreviewNav(item) {
+  const dictionary = {
+    es: { Shop: "Tienda", Categories: "Categorias", Deals: "Ofertas", Cart: "Carrito", Search: "Buscar", Listings: "Listados", Sellers: "Vendedores", Contact: "Contacto", "New drop": "Nuevo drop", Collections: "Colecciones", Lookbook: "Lookbook", Fit: "Tallas", Menu: "Menu", Specials: "Especiales", Order: "Pedir", Location: "Ubicacion", Services: "Servicios", Process: "Proceso", Proof: "Prueba", Overview: "Inicio", Features: "Detalles", Story: "Historia", Buy: "Comprar" },
+    fr: { Shop: "Boutique", Categories: "Categories", Deals: "Offres", Cart: "Panier", Search: "Recherche", Listings: "Annonces", Sellers: "Vendeurs", Contact: "Contact", "New drop": "Nouveautes", Collections: "Collections", Lookbook: "Lookbook", Fit: "Tailles", Menu: "Menu", Specials: "Specials", Order: "Commander", Location: "Adresse", Services: "Services", Process: "Processus", Proof: "Preuves", Overview: "Accueil", Features: "Details", Story: "Histoire", Buy: "Acheter" },
+    pt: { Shop: "Loja", Categories: "Categorias", Deals: "Ofertas", Cart: "Carrinho", Search: "Busca", Listings: "Anuncios", Sellers: "Vendedores", Contact: "Contato", "New drop": "Novo drop", Collections: "Colecoes", Lookbook: "Lookbook", Fit: "Tamanhos", Menu: "Menu", Specials: "Especiais", Order: "Pedir", Location: "Localizacao", Services: "Servicos", Process: "Processo", Proof: "Prova", Overview: "Inicio", Features: "Detalhes", Story: "Historia", Buy: "Comprar" },
+  };
+  return dictionary[selectedLanguage]?.[item] || item;
+}
+
+function livePreviewTemplateModules(profile, items) {
+  const safeItems = items.length ? items : livePreviewFallbackItems();
+  if (profile.kind === "marketplace") {
+    return `
+      <div class="live-preview-search"><span>${escapeHtml(langText({ en: "Search products, categories, brands", es: "Buscar productos, categorias, marcas", fr: "Rechercher produits, categories, marques", pt: "Buscar produtos, categorias, marcas" }))}</span><b>${escapeHtml(langText({ en: "Deals", es: "Ofertas", fr: "Offres", pt: "Ofertas" }))}</b></div>
+      <div class="live-preview-rail">${safeItems.slice(0, 5).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    `;
+  }
+  if (profile.kind === "fashion") {
+    return `<div class="live-preview-lookbook">${safeItems.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>`;
+  }
+  if (profile.kind === "restaurant") {
+    return `<div class="live-preview-menu">${safeItems.slice(0, 4).map((item, index) => `<span><b>${escapeHtml(item)}</b><em>${escapeHtml(index % 2 ? "popular" : "signature")}</em></span>`).join("")}</div>`;
+  }
+  if (profile.kind === "service") {
+    return `<div class="live-preview-proof"><span>${escapeHtml(langText({ en: "Process", es: "Proceso", fr: "Processus", pt: "Processo" }))}</span><span>${escapeHtml(langText({ en: "Trust proof", es: "Prueba de confianza", fr: "Preuve de confiance", pt: "Prova de confianca" }))}</span><span>${escapeHtml(langText({ en: "Fast contact", es: "Contacto rapido", fr: "Contact rapide", pt: "Contato rapido" }))}</span></div>`;
+  }
+  return `<div class="live-preview-premium-strip"><span>${escapeHtml(langText({ en: "Hero", es: "Hero", fr: "Hero", pt: "Hero" }))}</span><span>${escapeHtml(langText({ en: "Story", es: "Historia", fr: "Histoire", pt: "Historia" }))}</span><span>${escapeHtml(langText({ en: "Feature", es: "Detalle", fr: "Detail", pt: "Detalhe" }))}</span></div>`;
 }
 
 function livePreviewFallbackItems() {
