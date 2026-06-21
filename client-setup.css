@@ -1910,7 +1910,11 @@ body.public-client-setup.generated-preview-open {
   box-shadow: 0 20px 70px rgba(15, 23, 42, 0.22);
 }
 
-.public-client-setup.final-review-mode .guided-chat-card {
+.public-client-setup.final-review-mode .luma-coach-card,
+.public-client-setup.final-review-mode .guided-chat,
+.public-client-setup.final-review-mode .chat-status-card,
+.public-client-setup.final-review-mode .quick-chip-row,
+.public-client-setup.final-review-mode .chat-composer {
   display: none;
 }
 
@@ -2604,9 +2608,15 @@ body.public-client-setup.generated-preview-open {
     display: none;
   }
 
-  .public-client-setup.review-details-open .guided-chat-card,
-  .public-client-setup.final-review-mode .guided-chat-card {
+  .public-client-setup.review-details-open .guided-chat-card {
     display: none;
+  }
+
+  .public-client-setup.final-review-mode .guided-chat-card {
+    display: flex;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
   }
 
   .public-client-setup.review-details-open .guided-layout,

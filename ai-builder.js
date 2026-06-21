@@ -530,6 +530,7 @@ let currentBusinessId = null;
 let currentGenerationId = null;
 let currentRequestId = null;
 let currentCatalogItems = [];
+let isGeneratingWebsite = false;
 let guidedStep = "websiteIntent";
 let guidedHistory = [];
 let assistantState = "neutral";
@@ -3699,7 +3700,10 @@ async function reviewAndGenerateFromGuided() {
   guidedGenerateButton.disabled = false;
 }
 
-async function handleGuidedGenerateButton() {
+async function handleGuidedGenerateButton(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  if (isGeneratingWebsite) return;
   syncGuidedStateFromSummary();
   const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
   if (requiredMissing.length) {
@@ -3727,7 +3731,15 @@ async function handleGuidedGenerateButton() {
   guidedStep = "review";
   document.body.classList.remove("review-details-open");
   renderGuidedSummary();
-  await reviewAndGenerateFromGuided();
+  guidedGenerateButton.disabled = true;
+  guidedGenerateButton.textContent = t("generating");
+  guidedStatusText.textContent = t("generatingLong");
+  isGeneratingWebsite = true;
+  try {
+    await reviewAndGenerateFromGuided();
+  } finally {
+    isGeneratingWebsite = false;
+  }
 }
 
 function promptAccountBeforeGenerate() {
