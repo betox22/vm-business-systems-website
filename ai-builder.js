@@ -1373,6 +1373,10 @@ function renderLiveSitePreview() {
   const card = ensureLiveSitePreviewCard();
   if (!card) return;
   syncTemplateSelectionFromGuidedContext();
+  if (!hasEnoughContextForTemplatePreview()) {
+    card.innerHTML = renderNeutralLiveWorkspace();
+    return;
+  }
   try {
     const selection = livePreviewTemplateSelection();
     const schema = buildInstantTemplateSchema(livePreviewPayload(), selection);
@@ -1460,13 +1464,74 @@ function renderLiveSitePreview() {
   `;
 }
 
+function hasEnoughContextForTemplatePreview() {
+  const intent = normalizeTemplateIntentText(guidedState.websiteIntent);
+  const description = normalizeTemplateIntentText(guidedState.businessDescription);
+  const services = arrayValue(guidedState.servicesProducts).join(" ");
+  const commerceSignal = normalizeTemplateIntentText(`${intent} ${description} ${services}`);
+  const hasIntent = intent.length >= 6 || /tienda|store|shop|marketplace|catalogo|servicio|service|reserva|booking|restaurante|restaurant|pagina|website|landing/.test(commerceSignal);
+  const hasOffer = arrayValue(guidedState.servicesProducts).length > 0 || description.length >= 18 || textSuggestsBroadMarketplace(commerceSignal) || textSuggestsFocusedProductLine(commerceSignal);
+  return Boolean(hasIntent && hasOffer);
+}
+
+function renderNeutralLiveWorkspace() {
+  const steps = [
+    {
+      title: langText({ en: "Business goal", es: "Objetivo del negocio", fr: "Objectif business", pt: "Objetivo do negocio" }),
+      text: guidedState.websiteIntent || langText({ en: "Waiting for what you want to create", es: "Esperando que quieres crear", fr: "En attente du type de site", pt: "Esperando o que voce quer criar" }),
+      active: Boolean(guidedState.websiteIntent),
+    },
+    {
+      title: langText({ en: "Offer / catalog", es: "Oferta / catalogo", fr: "Offre / catalogue", pt: "Oferta / catalogo" }),
+      text: arrayValue(guidedState.servicesProducts).join(", ") || guidedState.businessDescription || langText({ en: "No template selected yet", es: "Aun no hay template elegido", fr: "Pas encore de template", pt: "Ainda sem template escolhido" }),
+      active: arrayValue(guidedState.servicesProducts).length > 0 || Boolean(guidedState.businessDescription),
+    },
+    {
+      title: langText({ en: "Visual base", es: "Base visual", fr: "Base visuelle", pt: "Base visual" }),
+      text: langText({ en: "Luma will choose this after understanding the business.", es: "Luma elegira esto despues de entender el negocio.", fr: "Luma choisira apres avoir compris le business.", pt: "A Luma escolhera depois de entender o negocio." }),
+      active: false,
+    },
+  ];
+  return `
+    <div class="neutral-live-workspace">
+      <div class="neutral-live-orbit" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+      <section class="neutral-live-copy">
+        <span>${escapeHtml(langText({ en: "No template selected yet", es: "Aun no hay plantilla seleccionada", fr: "Aucun template choisi", pt: "Nenhum template selecionado" }))}</span>
+        <h2>${escapeHtml(langText({ en: "Luma is learning what to build", es: "Luma esta entendiendo que construir", fr: "Luma comprend quoi construire", pt: "A Luma esta entendendo o que construir" }))}</h2>
+        <p>${escapeHtml(langText({
+          en: "Once the business type and offer are clear, Luma will select the right structure and show the real preview here.",
+          es: "Cuando el tipo de negocio y la oferta esten claros, Luma elegira la estructura correcta y mostrara aqui el preview real.",
+          fr: "Quand le type de business et l'offre seront clairs, Luma choisira la bonne structure et affichera l'apercu ici.",
+          pt: "Quando o tipo de negocio e a oferta estiverem claros, a Luma escolhera a estrutura certa e mostrara o preview real aqui.",
+        }))}</p>
+      </section>
+      <div class="neutral-live-steps">
+        ${steps.map((step, index) => `
+          <article class="${step.active ? "active" : ""}">
+            <b>${index + 1}</b>
+            <div>
+              <strong>${escapeHtml(step.title)}</strong>
+              <span>${escapeHtml(step.text)}</span>
+            </div>
+          </article>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
 function livePreviewTemplateSelection() {
   const profile = livePreviewTemplateProfile();
   const meta = templatePreviewMeta(profile.templateId) || templatePreviewMeta("mega-marketplace");
+  const forcedMatchesProfile = forcedTemplateSelection?.templateId === profile.templateId;
   return {
     templateId: meta?.templateId || profile.templateId || "mega-marketplace",
-    template: forcedTemplateSelection?.template || { id: meta?.templateId || profile.templateId || "mega-marketplace", name: localizedTemplateName(meta), catalogModel: { catalogType: meta?.catalogType || profile.catalogType || "dense_marketplace_catalog" } },
-    intent: forcedTemplateSelection?.intent || "live_preview_template",
+    template: forcedMatchesProfile && forcedTemplateSelection?.template
+      ? forcedTemplateSelection.template
+      : { id: meta?.templateId || profile.templateId || "mega-marketplace", name: localizedTemplateName(meta), catalogModel: { catalogType: meta?.catalogType || profile.catalogType || "dense_marketplace_catalog" } },
+    intent: forcedMatchesProfile ? forcedTemplateSelection?.intent || "live_preview_template" : "live_preview_template",
     catalogType: meta?.catalogType || profile.catalogType || "dense_marketplace_catalog",
     reason: "Live preview selected from guided context",
   };
@@ -1497,7 +1562,9 @@ function livePreviewPayload() {
 function livePreviewTemplateProfile() {
   const templateId = inferLivePreviewTemplateId();
   const meta = templatePreviewMeta(templateId) || templatePreviewMeta("mega-marketplace");
-  const catalogType = forcedTemplateSelection?.catalogType || meta?.catalogType || "";
+  const catalogType = forcedTemplateSelection?.templateId === templateId
+    ? forcedTemplateSelection?.catalogType || meta?.catalogType || ""
+    : meta?.catalogType || "";
   const common = {
     templateId,
     label: localizedTemplateName(meta),
@@ -1597,8 +1664,8 @@ function livePreviewTemplateProfile() {
 
 function inferLivePreviewTemplateId() {
   const text = guidedTemplateContextText();
+  if (textSuggestsBroadMarketplace(text)) return "mega-marketplace";
   const inferred = inferTemplateIdFromText(text);
-  if (textSuggestsBroadMarketplace(text) && forcedTemplateSelection?.templateId !== "mega-marketplace") return "mega-marketplace";
   if (inferred) return inferred;
   if (forcedTemplateSelection?.templateId) return forcedTemplateSelection.templateId;
   return "mega-marketplace";
@@ -2551,19 +2618,28 @@ async function handleWebsiteIntentAnswer(message) {
   guidedStep = nextSmartGuidedStep("websiteIntent");
   appendUnderstandingCard({ updates: inferGuidedUpdatesFromAnyMessage(message), sourceMessage: message });
   appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
-  guidedStatusText.textContent = langText({
-    en: "Template selected. Continue with the business details.",
-    es: "Template seleccionado. Sigamos con los datos del negocio.",
-    fr: "Template sélectionné. Continuons avec les détails de l'entreprise.",
-    pt: "Template selecionado. Vamos continuar com os dados do negócio.",
-  });
+  guidedStatusText.textContent = selection?.templateId
+    ? langText({
+      en: "Template selected. Continue with the business details.",
+      es: "Template seleccionado. Sigamos con los datos del negocio.",
+      fr: "Template sélectionné. Continuons avec les détails de l'entreprise.",
+      pt: "Template selecionado. Vamos continuar com os dados do negócio.",
+    })
+    : langText({
+      en: "Goal noted. Luma will choose the structure after understanding the offer.",
+      es: "Objetivo entendido. Luma elegira la estructura despues de entender la oferta.",
+      fr: "Objectif note. Luma choisira la structure apres avoir compris l'offre.",
+      pt: "Objetivo entendido. A Luma escolhera a estrutura depois de entender a oferta.",
+    });
   setThinking(false);
   renderGuidedSummary();
   refreshQuickChips();
   saveGuidedDraft();
-  appendTemplatePreviewChoices(selection, message).catch((error) => {
-    console.warn("Template preview choices failed; setup can continue.", error);
-  });
+  if (selection?.templateId) {
+    appendTemplatePreviewChoices(selection, message).catch((error) => {
+      console.warn("Template preview choices failed; setup can continue.", error);
+    });
+  }
 }
 
 function withTimeout(promise, timeoutMs) {
@@ -2582,6 +2658,28 @@ function withTimeout(promise, timeoutMs) {
 }
 
 async function selectTemplateFromFreeText(message) {
+  const inferredTemplateId = inferTemplateIdFromText(message);
+  if (inferredTemplateId) {
+    const template = window.TemplateRouter?.getTemplateById
+      ? await window.TemplateRouter.getTemplateById(inferredTemplateId)
+      : null;
+    return {
+      templateId: inferredTemplateId,
+      template,
+      intent: "guided_context_template",
+      catalogType: template?.catalogModel?.catalogType || templatePreviewMeta(inferredTemplateId)?.catalogType || "",
+      reason: "Selected from the customer description",
+    };
+  }
+  if (isGenericCommerceIntent(message) || !inferredTemplateId) {
+    return {
+      templateId: "",
+      template: null,
+      intent: "provisional_needs_catalog_context",
+      catalogType: "",
+      reason: "Waiting for the product range before selecting a visual base",
+    };
+  }
   if (!window.TemplateRouter?.selectTemplateFromPrompt) {
     return {
       templateId: "mega-marketplace",
@@ -2798,6 +2896,15 @@ function renderSitePlanCard() {
 }
 
 function appendTemplateDetectionMessage(selection) {
+  if (!selection?.templateId) {
+    appendChatMessage("assistant", langText({
+      en: "I understand the general goal. I will choose the visual structure after I know what you sell or offer.",
+      es: "Entiendo el objetivo general. Elegire la estructura visual cuando sepa que vendes u ofreces.",
+      fr: "Je comprends l'objectif general. Je choisirai la structure visuelle apres avoir compris l'offre.",
+      pt: "Entendi o objetivo geral. Vou escolher a estrutura visual depois de entender o que voce vende ou oferece.",
+    }), "thinking");
+    return;
+  }
   const templateName = selection.template?.name || selection.templateId;
   const explanation = selection.template?.catalogModel?.customerFeeling || selection.template?.visualDifference || selection.reason;
   const lines = [
