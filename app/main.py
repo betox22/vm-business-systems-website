@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from .ai_design import generate_store_config, generate_store_design
 from .ai_intake import guide_intake
+from .luma_agent import chat_with_luma
 from .ai_website_builder import generate_ai_website_schema
 from .auth_store import (
     AuthError,
@@ -54,6 +55,8 @@ from .schemas import (
     DesignConfigPayload,
     IntakeAssistantRequest,
     IntakeAssistantResponse,
+    LumaAgentRequest,
+    LumaAgentResponse,
     LeadMutationResponse,
     LeadUpdatePayload,
     OrderOut,
@@ -445,6 +448,11 @@ def run_intake_assistant(payload: IntakeAssistantRequest) -> IntakeAssistantResp
 @app.post("/api/ai/intake-assistant", response_model=IntakeAssistantResponse)
 def run_api_intake_assistant(payload: IntakeAssistantRequest) -> IntakeAssistantResponse:
     return guide_intake(payload)
+
+
+@app.post("/api/luma/chat", response_model=LumaAgentResponse)
+def run_luma_agent(payload: LumaAgentRequest) -> LumaAgentResponse:
+    return chat_with_luma(payload)
 
 
 @app.post("/client-requests", response_model=ClientRequestResponse)

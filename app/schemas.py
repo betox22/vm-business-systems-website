@@ -359,6 +359,45 @@ class IntakeAssistantResponse(BaseModel):
     confidence: float = 0
 
 
+class LumaAgentRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    current: ClientRequestPayload = Field(default_factory=ClientRequestPayload)
+    message: str = ""
+    current_step: str = Field(default="websiteIntent", alias="currentStep")
+    current_step_snake: str = Field(default="", alias="current_step")
+    history: list[dict] = Field(default_factory=list)
+    session_id: str = Field(default="", alias="sessionId")
+    selected_template_id: str = Field(default="", alias="selectedTemplateId")
+    site_plan: dict | None = Field(default=None, alias="sitePlan")
+    previous_schema: dict | None = Field(default=None, alias="previousSchema")
+
+
+class LumaAgentResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    assistant_message: str = Field(alias="assistantMessage")
+    message: str = ""
+    emotion: str = Field(default="speaking", pattern="^(neutral|happy|thinking|listening|speaking|alert|success)$")
+    intent: str = Field(default="collect_info")
+    updated_fields: dict = Field(default_factory=dict, alias="updatedFields")
+    updates: dict = Field(default_factory=dict)
+    next_step: str = Field(default="", alias="next_step")
+    next_step_camel: str = Field(default="", alias="nextStep")
+    next_question: str = Field(default="", alias="next_question")
+    next_question_camel: str = Field(default="", alias="nextQuestion")
+    ready_to_generate: bool = Field(default=False, alias="readyToGenerate")
+    missing_important_fields: list[str] = Field(default_factory=list, alias="missingImportantFields")
+    confidence: float = 0.0
+    selected_template_id: str = Field(default="", alias="selectedTemplateId")
+    selected_template_reason: str = Field(default="", alias="selectedTemplateReason")
+    catalog_type: str = Field(default="", alias="catalogType")
+    design_strategy: dict = Field(default_factory=dict, alias="designStrategy")
+    site_plan: dict | None = Field(default=None, alias="sitePlan")
+    actions: list[dict] = Field(default_factory=list)
+    used_dev_fallback: bool = Field(default=False, alias="usedDevFallback")
+
+
 class AiWebsiteBuilderRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
