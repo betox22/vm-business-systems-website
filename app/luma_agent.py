@@ -105,7 +105,7 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
     return LumaAgentResponse(
         assistantMessage=assistant_message,
         message=assistant_message,
-        emotion=data.get("emotion") or ("success" if ready else "speaking"),
+        emotion=_normalize_emotion(data.get("emotion"), ready),
         intent=intent,
         updatedFields=merged_updates,
         updates=merged_updates,
@@ -121,7 +121,7 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
         catalogType=catalog_type,
         designStrategy=_design_strategy(selected_template_id, catalog_type, template_reason, merged_current),
         sitePlan=site_plan,
-        actions=data.get("actions") or [],
+        actions=_normalize_actions(data.get("actions") or []),
         usedDevFallback=False,
     )
 
@@ -170,6 +170,28 @@ def _clean_local_updates(updates: dict, current_step: str) -> dict:
     ):
         cleaned.pop("contactInfo", None)
     return cleaned
+
+
+def _normalize_emotion(value: str | None, ready: bool = False) -> str:
+    allowed = {"neutral", "happy", "thinking", "listening", "speaking", "alert", "success"}
+    normalized = (value or "").strip().lower()
+    if normalized in allowed:
+        return normalized
+    if normalized in {"enthusiastic", "excited", "celebrating", "confident"}:
+        return "success" if ready else "happy"
+    if normalized in {"warning", "concerned", "confused", "error"}:
+        return "alert"
+    return "success" if ready else "speaking"
+
+
+def _normalize_actions(actions: list) -> list[dict]:
+    normalized = []
+    for index, action in enumerate(actions or []):
+        if isinstance(action, dict):
+            normalized.append(action)
+        elif action:
+            normalized.append({"type": "suggestion", "label": str(action), "order": index})
+    return normalized
 
 
 def _fallback_response(
