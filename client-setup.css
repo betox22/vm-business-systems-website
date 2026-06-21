@@ -669,6 +669,31 @@ body.public-client-setup.generated-preview-open {
   box-shadow: 0 30px 90px rgba(15, 23, 42, 0.13);
 }
 
+.public-client-setup .live-preview-rendered {
+  min-height: 1180px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.13);
+}
+
+.public-client-setup .live-preview-rendered .rendered-site {
+  min-height: 1180px;
+  box-shadow: none;
+}
+
+.public-client-setup .live-preview-rendered .rendered-page-switcher,
+.public-client-setup .live-preview-rendered .studio-floating-catalog {
+  display: none;
+}
+
+.public-client-setup .live-preview-rendered .rendered-nav {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
 .public-client-setup .live-page-header {
   position: sticky;
   top: 0;
@@ -2152,6 +2177,26 @@ body.public-client-setup.generated-preview-open {
   .public-client-setup .live-preview-page {
     min-height: 0;
     border-radius: 18px;
+  }
+
+  .public-client-setup .live-preview-rendered,
+  .public-client-setup .live-preview-rendered .rendered-site {
+    min-height: 340px;
+    border-radius: 18px;
+  }
+
+  .public-client-setup .live-preview-rendered .rendered-nav nav {
+    display: none;
+  }
+
+  .public-client-setup .live-preview-rendered .rendered-nav {
+    min-height: 52px;
+    padding: 0 14px;
+  }
+
+  .public-client-setup .live-preview-rendered .rendered-site section {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 
   .public-client-setup .live-page-header {

@@ -1372,6 +1372,15 @@ function ensureLiveSitePreviewCard() {
 function renderLiveSitePreview() {
   const card = ensureLiveSitePreviewCard();
   if (!card) return;
+  syncTemplateSelectionFromGuidedContext();
+  try {
+    const selection = livePreviewTemplateSelection();
+    const schema = buildInstantTemplateSchema(livePreviewPayload(), selection);
+    card.innerHTML = `<div class="live-preview-rendered">${renderWebsite(schema, "home")}</div>`;
+    return;
+  } catch (error) {
+    console.warn("Live rendered template preview failed; using compact fallback.", error);
+  }
   const services = arrayValue(guidedState.servicesProducts).filter(Boolean);
   const name = guidedState.businessName || langText({
     en: "Your business",
@@ -1449,6 +1458,40 @@ function renderLiveSitePreview() {
       <footer class="live-page-footer">${escapeHtml(profile.label)} · ${escapeHtml(langText({ en: "Editable draft preview", es: "Preview editable", fr: "Apercu modifiable", pt: "Preview editavel" }))}</footer>
     </div>
   `;
+}
+
+function livePreviewTemplateSelection() {
+  const profile = livePreviewTemplateProfile();
+  const meta = templatePreviewMeta(profile.templateId) || templatePreviewMeta("mega-marketplace");
+  return {
+    templateId: meta?.templateId || profile.templateId || "mega-marketplace",
+    template: forcedTemplateSelection?.template || { id: meta?.templateId || profile.templateId || "mega-marketplace", name: localizedTemplateName(meta), catalogModel: { catalogType: meta?.catalogType || profile.catalogType || "dense_marketplace_catalog" } },
+    intent: forcedTemplateSelection?.intent || "live_preview_template",
+    catalogType: meta?.catalogType || profile.catalogType || "dense_marketplace_catalog",
+    reason: "Live preview selected from guided context",
+  };
+}
+
+function livePreviewPayload() {
+  return {
+    business_name: guidedState.businessName || langText({ en: "Your business", es: "Tu negocio", fr: "Votre entreprise", pt: "Seu negócio" }),
+    business_description: guidedState.businessDescription || guidedState.websiteIntent || "",
+    industry: guidedState.industry || inferCommerceIndustry(guidedState),
+    location: guidedState.location || "",
+    services_products: arrayValue(guidedState.servicesProducts).length ? arrayValue(guidedState.servicesProducts) : livePreviewFallbackItems(),
+    target_audience: guidedState.targetAudience || "",
+    preferred_tone: guidedState.preferredTone || "",
+    preferred_colors: arrayValue(guidedState.preferredColors),
+    contact_info: guidedState.contactInfo || {},
+    selectedLanguage,
+    salesMode: guidedState.salesMode || guidedState.websiteIntent || "",
+    logoPalette: guidedState.logoPalette || [],
+    assets: [
+      ...(guidedState.logoUrl ? [{ asset_type: "logo", url: guidedState.logoUrl }] : []),
+      ...arrayValue(guidedState.photoUrls).map((url) => ({ asset_type: "photo", url })),
+    ],
+    brand: guidedState.brand,
+  };
 }
 
 function livePreviewTemplateProfile() {
@@ -3521,10 +3564,6 @@ async function handleGuidedGenerateButton() {
     renderGuidedSummary();
     refreshQuickChips();
     guidedReply.focus();
-    return;
-  }
-  if (isPublicClientSetup && !hasStudioAccountSession()) {
-    promptAccountBeforeGenerate();
     return;
   }
   guidedStep = "review";
