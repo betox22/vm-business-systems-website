@@ -591,6 +591,7 @@ const REQUIRED_GUIDED_STEPS = [
   "businessName",
   "businessDescription",
   "servicesProducts",
+  "preferredColors",
   "contactInfo",
 ];
 
@@ -599,6 +600,7 @@ const SMART_GUIDED_STEP_PRIORITY = [
   "businessName",
   "businessDescription",
   "servicesProducts",
+  "preferredColors",
   "contactInfo",
   "salesMode",
   "industry",
@@ -4852,7 +4854,9 @@ function inferDesignerTemplateIdFromPayload(payload = {}) {
   if (/curso|course|academy|academia|bootcamp|training|clases|masterclass/.test(text)) return "education-course-academy-pro";
   if (/digital|ebook|templates|plantillas|descarga|download|membresia|membership/.test(text)) return "digital-products-store";
   if (/ropa|fashion|moda|boutique|streetwear|zapato|sneaker|accesorio/.test(text)) return "fashion-drop-pro";
-  if (textSuggestsFocusedProductLine(text) || products.length <= 2 && /online|store|shop|tienda|ecommerce|producto|product/.test(text)) return "apple-premium-product";
+  if (textSuggestsFocusedProductLine(text) || textSuggestsSingleProductShowcase(text) || textSuggestsPremiumProductPreference(text)) {
+    return "apple-premium-product";
+  }
   if (/servicio|service|contractor|limpieza|roofing|repair|reparacion|cotizacion|quote/.test(text)) return "local-services-pro-plus";
   if (/empresa|company|corporate|corporativo|pagina web|website|agencia|firma/.test(text)) return "corporate-company-pro";
   return "";
