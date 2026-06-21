@@ -1467,14 +1467,22 @@ function renderLiveSitePreview() {
 function hasEnoughContextForTemplatePreview() {
   const intent = normalizeTemplateIntentText(guidedState.websiteIntent);
   const description = normalizeTemplateIntentText(guidedState.businessDescription);
-  const services = arrayValue(guidedState.servicesProducts).join(" ");
+  const offerItems = meaningfulOfferItems(guidedState.servicesProducts);
+  const services = offerItems.join(" ");
   const commerceSignal = normalizeTemplateIntentText(`${intent} ${description} ${services}`);
   const hasIntent = intent.length >= 6 || /tienda|store|shop|marketplace|catalogo|servicio|service|reserva|booking|restaurante|restaurant|pagina|website|landing/.test(commerceSignal);
-  const hasOffer = arrayValue(guidedState.servicesProducts).length > 0 || description.length >= 18 || textSuggestsBroadMarketplace(commerceSignal) || textSuggestsFocusedProductLine(commerceSignal);
+  const hasOffer = offerItems.length > 0 || description.length >= 18 || textSuggestsBroadMarketplace(commerceSignal) || textSuggestsFocusedProductLine(commerceSignal);
   return Boolean(hasIntent && hasOffer);
 }
 
+function meaningfulOfferItems(value) {
+  return arrayValue(value)
+    .map((item) => cleanExtractedPhrase(item, 70))
+    .filter((item) => item && !isGenericCommerceIntent(item) && !/^(online|internet|web|ecommerce|e-commerce|venta|ventas|sell|selling|products?|productos?|services?|servicios?)$/i.test(item));
+}
+
 function renderNeutralLiveWorkspace() {
+  const offerItems = meaningfulOfferItems(guidedState.servicesProducts);
   const steps = [
     {
       title: langText({ en: "Business goal", es: "Objetivo del negocio", fr: "Objectif business", pt: "Objetivo do negocio" }),
@@ -1483,8 +1491,8 @@ function renderNeutralLiveWorkspace() {
     },
     {
       title: langText({ en: "Offer / catalog", es: "Oferta / catalogo", fr: "Offre / catalogue", pt: "Oferta / catalogo" }),
-      text: arrayValue(guidedState.servicesProducts).join(", ") || guidedState.businessDescription || langText({ en: "No template selected yet", es: "Aun no hay template elegido", fr: "Pas encore de template", pt: "Ainda sem template escolhido" }),
-      active: arrayValue(guidedState.servicesProducts).length > 0 || Boolean(guidedState.businessDescription),
+      text: offerItems.join(", ") || guidedState.businessDescription || langText({ en: "No template selected yet", es: "Aun no hay template elegido", fr: "Pas encore de template", pt: "Ainda sem template escolhido" }),
+      active: offerItems.length > 0 || Boolean(guidedState.businessDescription),
     },
     {
       title: langText({ en: "Visual base", es: "Base visual", fr: "Base visuelle", pt: "Base visual" }),
@@ -1538,12 +1546,13 @@ function livePreviewTemplateSelection() {
 }
 
 function livePreviewPayload() {
+  const offerItems = meaningfulOfferItems(guidedState.servicesProducts);
   return {
     business_name: guidedState.businessName || langText({ en: "Your business", es: "Tu negocio", fr: "Votre entreprise", pt: "Seu negócio" }),
     business_description: guidedState.businessDescription || guidedState.websiteIntent || "",
     industry: guidedState.industry || inferCommerceIndustry(guidedState),
     location: guidedState.location || "",
-    services_products: arrayValue(guidedState.servicesProducts).length ? arrayValue(guidedState.servicesProducts) : livePreviewFallbackItems(),
+    services_products: offerItems.length ? offerItems : livePreviewFallbackItems(),
     target_audience: guidedState.targetAudience || "",
     preferred_tone: guidedState.preferredTone || "",
     preferred_colors: arrayValue(guidedState.preferredColors),
@@ -2470,11 +2479,11 @@ async function sendGuidedReply() {
   appendChatMessage("user", message);
   guidedReply.value = "";
   const broadLocalUpdates = inferGuidedUpdatesFromAnyMessage(message);
-  mergeGuidedUpdates(broadLocalUpdates);
   if (guidedStep === "websiteIntent") {
     await handleWebsiteIntentAnswer(message);
     return;
   }
+  mergeGuidedUpdates(broadLocalUpdates);
   if (guidedStep === "review") {
     const adjustmentLabel = langText({
       en: "Client requested adjustments",
@@ -2578,6 +2587,7 @@ async function handleWebsiteIntentAnswer(message) {
   guidedState.websiteIntent = message;
   if (!guidedState.industry) guidedState.industry = inferIndustryFromPrompt(message);
   if (!guidedState.preferredTone) guidedState.preferredTone = extractStyleHint(message);
+  const inferredUpdates = inferGuidedUpdatesFromAnyMessage(message);
   if (isGenericCommerceIntent(message)) {
     forcedTemplateSelection = {
       templateId: "",
@@ -2587,7 +2597,7 @@ async function handleWebsiteIntentAnswer(message) {
       reason: "Commerce intent detected; waiting for product range before selecting the visual base",
     };
     guidedStep = nextSmartGuidedStep("websiteIntent");
-    appendUnderstandingCard({ updates: inferGuidedUpdatesFromAnyMessage(message), sourceMessage: message });
+    appendUnderstandingCard({ updates: { websiteIntent: message }, sourceMessage: message });
     appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
     guidedStatusText.textContent = langText({
       en: "Commerce intent noted. Luma will choose the template after understanding the product range.",
@@ -2601,6 +2611,8 @@ async function handleWebsiteIntentAnswer(message) {
     saveGuidedDraft();
     return;
   }
+  mergeGuidedUpdates(inferredUpdates);
+  guidedState.websiteIntent = message;
   let selection = {
     templateId: "",
     template: null,
@@ -4547,6 +4559,7 @@ function extractLocation(text) {
 }
 
 function extractServicesProducts(text) {
+  if (isGenericCommerceIntent(text)) return [];
   const patterns = [
     /(?:productos?|servicios?|vende|vendo|ofrece|ofrecemos|catalogo|cat[aá]logo)\s*(?:son|es|:|-)?\s*([^.;\n]+)/i,
     /(?:tienda|negocio|marca|empresa)\s+de\s+([^.;\n]+)/i,
@@ -4559,7 +4572,7 @@ function extractServicesProducts(text) {
     if (match?.[1]) {
       return splitCommaOrLines(match[1])
         .map((item) => cleanExtractedPhrase(item, 48))
-        .filter((item) => item.length > 1)
+        .filter((item) => item.length > 1 && meaningfulOfferItems([item]).length > 0)
         .slice(0, 8);
     }
   }
