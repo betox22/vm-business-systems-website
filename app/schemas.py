@@ -379,6 +379,17 @@ class AiWebsiteBuilderRequest(BaseModel):
     selected_template: dict = Field(default_factory=dict, alias="selectedTemplate")
     catalog_items: list[CatalogItemInput] = Field(default_factory=list, alias="catalogItems")
     assets: list[WebsiteAssetInput] = Field(default_factory=list)
+    logo_palette: list[str] = Field(default_factory=list, alias="logoPalette")
+    brand: dict = Field(default_factory=dict)
+    design_strategy: dict = Field(default_factory=dict, alias="designStrategy")
+    quality_rules: list[str] = Field(default_factory=list, alias="qualityRules")
+    requested_adjustments: list[str] = Field(default_factory=list, alias="requestedAdjustments")
+    site_plan: dict | None = Field(default=None, alias="sitePlan")
+    site_plan_approved: bool = Field(default=False, alias="sitePlanApproved")
+    brand_context_note: str = Field(default="", alias="brandContextNote", max_length=1000)
+    revision_mode: str = Field(default="", alias="revisionMode", max_length=80)
+    revision_instructions: dict | None = Field(default=None, alias="revisionInstructions")
+    previous_schema: dict | None = Field(default=None, alias="previousSchema")
 
 
 class WebsiteSectionSchema(BaseModel):
