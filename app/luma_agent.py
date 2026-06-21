@@ -96,9 +96,10 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
     missing = _missing_important_fields(merged_current)
     ready = not any(field in missing for field in REQUIRED_FOR_DRAFT)
     next_step = "review" if ready else _next_step(merged_current, current_step)
-    next_question = data.get("nextQuestion") or data.get("next_question") or _question_for(selected_language, next_step)
-    assistant_message = data.get("assistantMessage") or data.get("message") or _message_for(selected_language, ready)
     catalog_type = TEMPLATE_CATALOG_TYPES.get(selected_template_id, "")
+    analysis = _analyze_business_context(merged_current, payload.message, selected_template_id, catalog_type, missing, ready)
+    next_question = _contextual_question(selected_language, next_step, analysis, merged_current)
+    assistant_message = _contextual_message(selected_language, ready, analysis, selected_template_id)
     site_plan = _site_plan_for(selected_template_id, catalog_type, selected_language, merged_current) if selected_template_id else None
     intent = data.get("intent") or ("select_template" if selected_template_id else "collect_info")
 
@@ -115,11 +116,11 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
         nextQuestion=next_question,
         readyToGenerate=ready,
         missingImportantFields=missing,
-        confidence=float(data.get("confidence") or 0.82),
+        confidence=float(data.get("confidence") or analysis.get("confidence") or 0.82),
         selectedTemplateId=selected_template_id,
         selectedTemplateReason=template_reason,
         catalogType=catalog_type,
-        designStrategy=_design_strategy(selected_template_id, catalog_type, template_reason, merged_current),
+        designStrategy=_design_strategy(selected_template_id, catalog_type, template_reason, merged_current, analysis),
         sitePlan=site_plan,
         actions=_normalize_actions(data.get("actions") or []),
         usedDevFallback=False,
@@ -218,7 +219,9 @@ def _fallback_response(
     missing = _missing_important_fields(merged_current)
     ready = not any(field in missing for field in REQUIRED_FOR_DRAFT)
     next_step = "review" if ready else _next_step(merged_current, current_step)
-    message = _message_for(selected_language, ready)
+    analysis = _analyze_business_context(merged_current, payload.message, selected_template_id, catalog_type, missing, ready)
+    message = _contextual_message(selected_language, ready, analysis, selected_template_id)
+    next_question = _contextual_question(selected_language, next_step, analysis, merged_current)
     return LumaAgentResponse(
         assistantMessage=message,
         message=message,
@@ -228,15 +231,15 @@ def _fallback_response(
         updates=local_updates,
         next_step=next_step,
         nextStep=next_step,
-        next_question=_question_for(selected_language, next_step),
-        nextQuestion=_question_for(selected_language, next_step),
+        next_question=next_question,
+        nextQuestion=next_question,
         readyToGenerate=ready,
         missingImportantFields=missing,
         confidence=0.58,
         selectedTemplateId=selected_template_id,
         selectedTemplateReason=template_reason,
         catalogType=catalog_type,
-        designStrategy=_design_strategy(selected_template_id, catalog_type, template_reason, merged_current),
+        designStrategy=_design_strategy(selected_template_id, catalog_type, template_reason, merged_current, analysis),
         sitePlan=_site_plan_for(selected_template_id, catalog_type, selected_language, merged_current) if selected_template_id else None,
         usedDevFallback=used_dev_fallback,
     )
@@ -247,7 +250,7 @@ def _choose_template(current: dict, message: str, ai_template_id: str, ai_reason
     deterministic = _infer_template_id(text, current)
     if deterministic:
         return deterministic, _template_reason(deterministic, text)
-    if ai_template_id in TEMPLATE_CATALOG_TYPES:
+    if ai_template_id in TEMPLATE_CATALOG_TYPES and _has_structural_evidence(text, current):
         return ai_template_id, ai_reason or "Selected from AI business interpretation"
     return "", "Waiting for clearer offer/catalog context"
 
@@ -329,6 +332,20 @@ def _is_focused_product(text: str, products: list[str]) -> bool:
         "producto premium", "showcase", "presentacion premium",
     ]
     return _has_any(text, focused_words)
+
+
+def _has_structural_evidence(text: str, current: dict) -> bool:
+    products = _meaningful_products(current.get("servicesProducts") or [])
+    if products:
+        return True
+    if len(_normalize(current.get("businessDescription") or "")) >= 40:
+        return True
+    structural_words = [
+        "marketplace", "catalogo", "catalog", "restaurante", "restaurant", "booking", "reserva",
+        "servicio", "service", "empresa", "company", "curso", "academy", "digital", "fashion",
+        "ropa", "moda", "parachoques", "repuestos", "software", "clinica", "legal",
+    ]
+    return _has_any(text, structural_words)
 
 
 def _missing_important_fields(current: dict) -> list[str]:
@@ -424,6 +441,161 @@ def _message_for(language: str, ready: bool) -> str:
     }.get(language, "Got it.")
 
 
+def _analyze_business_context(
+    current: dict,
+    message: str,
+    template_id: str,
+    catalog_type: str,
+    missing: list[str],
+    ready: bool,
+) -> dict:
+    text = _normalized_context(current, message)
+    products = _meaningful_products(current.get("servicesProducts") or [])
+    broad_score = sum(
+        1
+        for word in [
+            "amazon",
+            "marketplace",
+            "de todo",
+            "todo tipo",
+            "variado",
+            "variedad",
+            "muchas categorias",
+            "multi categoria",
+            "catalogo amplio",
+            "raros",
+            "inusual",
+            "accesorios",
+            "ropa",
+            "carros",
+            "juguetes",
+        ]
+        if word in text
+    ) + max(0, len(products) - 2)
+    focused_score = sum(
+        1
+        for word in [
+            "un solo producto",
+            "producto estrella",
+            "linea de",
+            "coleccion de",
+            "parachoques",
+            "modelos",
+            "premium",
+            "showcase",
+        ]
+        if word in text
+    )
+    service_score = sum(1 for word in ["servicio", "service", "cita", "reserva", "booking", "quote", "cotizacion"] if word in text)
+
+    if template_id == "mega-marketplace" or broad_score >= 2:
+        catalog_breadth = "broad_multi_category"
+    elif template_id == "apple-premium-product" or focused_score >= 1:
+        catalog_breadth = "focused_product_line"
+    elif service_score >= 1:
+        catalog_breadth = "service_or_booking"
+    elif products:
+        catalog_breadth = "standard_catalog"
+    else:
+        catalog_breadth = "unknown"
+
+    decision_state = "ready_to_generate" if ready else "needs_brand_direction" if "preferredColors" in missing else "needs_business_context"
+    signals = []
+    if broad_score:
+        signals.append("broad_catalog_signals")
+    if focused_score:
+        signals.append("focused_product_signals")
+    if _has_brand_direction(current):
+        signals.append("brand_direction_present")
+    if current.get("businessName"):
+        signals.append("business_name_present")
+    if products:
+        signals.append("products_or_services_present")
+
+    confidence = 0.55
+    if template_id:
+        confidence += 0.18
+    if catalog_breadth != "unknown":
+        confidence += 0.12
+    if _has_brand_direction(current):
+        confidence += 0.08
+    if current.get("businessDescription"):
+        confidence += 0.07
+
+    return {
+        "decisionState": decision_state,
+        "catalogBreadth": catalog_breadth,
+        "catalogSignals": signals,
+        "recommendedTemplateId": template_id,
+        "recommendedCatalogType": catalog_type,
+        "missingBeforeDraft": missing,
+        "confidence": round(min(confidence, 0.94), 2),
+        "reasoningSummary": _reasoning_summary(catalog_breadth, template_id, decision_state),
+    }
+
+
+def _reasoning_summary(catalog_breadth: str, template_id: str, decision_state: str) -> str:
+    if decision_state == "needs_brand_direction":
+        return "Luma has enough offer context to choose structure, but needs visual direction before drafting."
+    if catalog_breadth == "broad_multi_category":
+        return "The offer looks like a broad catalog, so Luma should use a marketplace/search-first structure."
+    if catalog_breadth == "focused_product_line":
+        return "The offer looks focused, so Luma should use a premium product-story structure."
+    if template_id:
+        return "Luma selected a structure from the business type and offer context."
+    return "Luma needs more business context before choosing a final structure."
+
+
+def _contextual_message(language: str, ready: bool, analysis: dict, template_id: str) -> str:
+    catalog_breadth = analysis.get("catalogBreadth")
+    decision_state = analysis.get("decisionState")
+    if ready:
+        messages = {
+            "en": "I have enough context now. I will use the selected structure as the base and rewrite the copy professionally instead of pasting your notes.",
+            "es": "Ya tengo suficiente contexto. Voy a usar la estructura seleccionada como base y redactar la página de forma profesional, sin copiar tus notas tal cual.",
+            "fr": "J'ai assez de contexte. Je vais utiliser la structure choisie comme base et rédiger le site de façon professionnelle, sans copier vos notes.",
+            "pt": "Já tenho contexto suficiente. Vou usar a estrutura selecionada como base e escrever a página de forma profissional, sem copiar suas notas literalmente.",
+        }
+        return messages.get(language, messages["en"])
+    if decision_state == "needs_brand_direction":
+        messages = {
+            "en": "I understand the business model and the right structure. Now I need visual direction so the draft does not feel random.",
+            "es": "Ya entiendo el tipo de negocio y la estructura correcta. Ahora necesito dirección visual para que el borrador no salga al azar.",
+            "fr": "Je comprends le modèle et la bonne structure. Il me faut maintenant une direction visuelle pour éviter un brouillon au hasard.",
+            "pt": "Já entendi o tipo de negócio e a estrutura certa. Agora preciso de direção visual para o rascunho não parecer aleatório.",
+        }
+        return messages.get(language, messages["en"])
+    if catalog_breadth == "broad_multi_category" and template_id == "mega-marketplace":
+        messages = {
+            "en": "This sounds like a broad catalog, so I am treating it as a marketplace-style store instead of a single-product page.",
+            "es": "Esto suena como un catálogo amplio, así que lo estoy tratando como una tienda tipo marketplace, no como una página de un solo producto.",
+            "fr": "Cela ressemble à un catalogue large, donc je le traite comme une boutique type marketplace, pas comme une page produit unique.",
+            "pt": "Isso parece um catálogo amplo, então estou tratando como uma loja estilo marketplace, não como uma página de produto único.",
+        }
+        return messages.get(language, messages["en"])
+    return _message_for(language, ready)
+
+
+def _contextual_question(language: str, step: str, analysis: dict, current: dict) -> str:
+    if step == "preferredColors":
+        questions = {
+            "en": "Do you have a logo, brand colors, or a style direction? You can say exact colors, describe the vibe, upload a logo later, or tell me to let AI decide.",
+            "es": "¿Tienes logo, colores de marca o una dirección de estilo? Puedes decir colores exactos, describir el estilo, subir logo después o decirme que la IA decida.",
+            "fr": "Avez-vous un logo, des couleurs de marque ou une direction de style ? Vous pouvez donner des couleurs, décrire le style, ajouter un logo plus tard ou laisser l'IA décider.",
+            "pt": "Você tem logo, cores da marca ou uma direção de estilo? Pode dizer cores exatas, descrever o estilo, enviar logo depois ou pedir para a IA decidir.",
+        }
+        return questions.get(language, questions["en"])
+    if step == "servicesProducts" and analysis.get("catalogBreadth") == "unknown":
+        questions = {
+            "en": "What will you offer: one main product, a small product line, many categories, services, bookings, or a full marketplace?",
+            "es": "¿Qué vas a ofrecer: un producto principal, una línea pequeña, muchas categorías, servicios, reservas o un marketplace completo?",
+            "fr": "Que voulez-vous proposer : un produit principal, une petite gamme, plusieurs catégories, des services, des réservations ou une marketplace complète ?",
+            "pt": "O que você vai oferecer: um produto principal, uma linha pequena, muitas categorias, serviços, agendamentos ou um marketplace completo?",
+        }
+        return questions.get(language, questions["en"])
+    return _question_for(language, step)
+
+
 def _template_reason(template_id: str, text: str) -> str:
     if template_id == "mega-marketplace":
         return "Broad or varied catalog detected; using search-first marketplace architecture."
@@ -432,15 +604,18 @@ def _template_reason(template_id: str, text: str) -> str:
     return "Selected from business type and offer context."
 
 
-def _design_strategy(template_id: str, catalog_type: str, reason: str, current: dict) -> dict:
+def _design_strategy(template_id: str, catalog_type: str, reason: str, current: dict, analysis: dict | None = None) -> dict:
+    analysis = analysis or {}
     return {
         "designerMode": True,
+        "reasoningMode": "strategic_diagnosis_then_structure_selection",
         "selectedTemplateId": template_id,
         "selectedCatalogType": catalog_type,
         "selectedTemplateReason": reason,
         "templateUsePolicy": "Use this as reference architecture only; adapt copy, sections, products, CTAs, colors and layout to the business.",
         "publicCopyPolicy": "Never paste intake answers verbatim. Rewrite as polished customer-facing copy.",
-        "catalogComplexity": "broad_multi_category_catalog" if template_id == "mega-marketplace" else "focused_or_standard_catalog",
+        "catalogComplexity": analysis.get("catalogBreadth") or ("broad_multi_category_catalog" if template_id == "mega-marketplace" else "focused_or_standard_catalog"),
+        "diagnosis": analysis,
         "businessSignal": {
             "industry": current.get("industry") or "",
             "salesMode": current.get("salesMode") or "",
