@@ -114,7 +114,7 @@ const I18N = {
     decideAudience: "Audience: Let AI decide",
     decideSections: "Sections: Let AI decide",
     serverKeyNotice: "You can switch back to chat any time.",
-    assistantServerNotice: "Your details stay ready for review before generating.",
+    assistantServerNotice: "Ready when you are. Luma can generate now or keep refining the plan.",
     replyPlaceholder: "Type your answer...",
     photoUrlsPlaceholder: "One image URL per line",
     salesModePlaceholder: "online sales, quotes, or both",
@@ -214,7 +214,7 @@ const I18N = {
     decideAudience: "Audiencia: que IA decida",
     decideSections: "Secciones: que IA decida",
     serverKeyNotice: "Puedes volver al chat cuando quieras.",
-    assistantServerNotice: "Tus detalles quedan listos para revisar antes de generar.",
+    assistantServerNotice: "Listo cuando quieras. Luma puede generar ahora o seguir afinando el plan.",
     replyPlaceholder: "Escribe tu respuesta...",
     photoUrlsPlaceholder: "Una URL de imagen por linea",
     salesModePlaceholder: "ventas online, cotizaciones, o ambos",
@@ -314,7 +314,7 @@ const I18N = {
     decideAudience: "Audience : laisser l'IA décider",
     decideSections: "Sections : laisser l'IA décider",
     serverKeyNotice: "Vous pouvez revenir au chat à tout moment.",
-    assistantServerNotice: "Vos détails sont prêts à vérifier avant la génération.",
+    assistantServerNotice: "Prêt quand vous l'êtes. Luma peut générer maintenant ou affiner le plan.",
     replyPlaceholder: "Écrivez votre réponse...",
     photoUrlsPlaceholder: "Une URL d'image par ligne",
     salesModePlaceholder: "vente en ligne, devis, ou les deux",
@@ -414,7 +414,7 @@ const I18N = {
     decideAudience: "Público: deixar a IA decidir",
     decideSections: "Seções: deixar a IA decidir",
     serverKeyNotice: "Você pode voltar ao chat quando quiser.",
-    assistantServerNotice: "Seus detalhes ficam prontos para revisar antes de gerar.",
+    assistantServerNotice: "Pronto quando você quiser. A Luma pode gerar agora ou refinar o plano.",
     replyPlaceholder: "Digite sua resposta...",
     photoUrlsPlaceholder: "Uma URL de imagem por linha",
     salesModePlaceholder: "vendas online, orçamentos, ou ambos",
@@ -1088,7 +1088,7 @@ studioSelectionToolbar?.querySelectorAll("[data-selection-action]").forEach((but
   button.addEventListener("click", () => handleStudioSelectionAction(button.dataset.selectionAction));
 });
 studioAuthCloseButton?.addEventListener("click", closeStudioAuthGate);
-studioAuthDemoButton?.addEventListener("click", closeStudioAuthGate);
+studioAuthDemoButton?.addEventListener("click", continueWithDemoSession);
 studioGoogleAuthButton?.addEventListener("click", () => continueWithStudioAuth("google"));
 studioAppleAuthButton?.addEventListener("click", () => continueWithStudioAuth("apple"));
 studioEmailAuthButton?.addEventListener("click", () => {
@@ -3500,16 +3500,36 @@ async function reviewAndGenerateFromGuided() {
 
 async function handleGuidedGenerateButton() {
   syncGuidedStateFromSummary();
-  if (guidedStep !== "review") {
-    guidedStep = "review";
-    document.body.classList.remove("review-details-open");
+  normalizeGuidedStateBeforeGenerate();
+  const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
+  if (requiredMissing.length) {
+    const nextMissing = requiredMissing[0];
+    guidedStep = nextMissing;
+    document.body.classList.remove("review-details-open", "final-review-mode");
+    appendChatMessage("assistant", langText({
+      en: `I still need one key detail before generating:\n\n${guidedQuestion(nextMissing)}`,
+      es: `Todavía necesito un dato clave antes de generar:\n\n${guidedQuestion(nextMissing)}`,
+      fr: `Il me manque encore un détail clé avant de générer :\n\n${guidedQuestion(nextMissing)}`,
+      pt: `Ainda preciso de um detalhe importante antes de gerar:\n\n${guidedQuestion(nextMissing)}`,
+    }), "alert");
+    guidedStatusText.textContent = langText({
+      en: "Answer the missing detail, then generate.",
+      es: "Responde ese dato y luego genera.",
+      fr: "Répondez à ce détail, puis générez.",
+      pt: "Responda esse detalhe e depois gere.",
+    });
     renderGuidedSummary();
+    refreshQuickChips();
+    guidedReply.focus();
     return;
   }
   if (isPublicClientSetup && !hasStudioAccountSession()) {
     promptAccountBeforeGenerate();
     return;
   }
+  guidedStep = "review";
+  document.body.classList.remove("review-details-open");
+  renderGuidedSummary();
   await reviewAndGenerateFromGuided();
 }
 
@@ -9059,6 +9079,22 @@ function closeStudioAuthGate() {
   if (!studioAuthGate) return;
   studioAuthGate.hidden = true;
   document.body.classList.remove("studio-auth-open");
+}
+
+async function continueWithDemoSession() {
+  const pendingAction = localStorage.getItem("lumaPendingAuthAction") || "";
+  sessionStorage.setItem("vm_portal_preview_token", `demo-${Date.now()}`);
+  closeStudioAuthGate();
+  if (pendingAction === "generate") {
+    localStorage.removeItem("lumaPendingAuthAction");
+    guidedStatusText.textContent = langText({
+      en: "Demo session active. Generating your editable draft...",
+      es: "Sesion demo activa. Generando tu borrador editable...",
+      fr: "Session demo active. Génération du brouillon modifiable...",
+      pt: "Sessao demo ativa. Gerando seu rascunho editavel...",
+    });
+    await reviewAndGenerateFromGuided();
+  }
 }
 
 function persistPendingStudioAccountAction(action) {
