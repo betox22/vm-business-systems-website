@@ -3662,7 +3662,6 @@ async function reviewAndGenerateFromGuided() {
 
 async function handleGuidedGenerateButton() {
   syncGuidedStateFromSummary();
-  normalizeGuidedStateBeforeGenerate();
   const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
   if (requiredMissing.length) {
     const nextMissing = requiredMissing[0];
@@ -3685,6 +3684,7 @@ async function handleGuidedGenerateButton() {
     guidedReply.focus();
     return;
   }
+  normalizeGuidedStateBeforeGenerate();
   guidedStep = "review";
   document.body.classList.remove("review-details-open");
   renderGuidedSummary();
@@ -3714,7 +3714,7 @@ function promptAccountBeforeGenerate() {
 }
 
 function normalizeGuidedStateBeforeGenerate() {
-  const services = arrayValue(guidedState.servicesProducts);
+  const services = meaningfulOfferItems(guidedState.servicesProducts);
   guidedState.businessName = guidedState.businessName || t("newClientWebsite");
   guidedState.industry = guidedState.industry || t("generalBusiness");
   guidedState.businessDescription =
@@ -3725,7 +3725,7 @@ function normalizeGuidedStateBeforeGenerate() {
       fr: `Site professionnel pour ${guidedState.businessName} axé sur ${services.join(", ") || guidedState.industry}.`,
       pt: `Site profissional para ${guidedState.businessName} focado em ${services.join(", ") || guidedState.industry}.`,
     });
-  guidedState.servicesProducts = services.length ? services : [t("featuredOffer"), t("mainService"), t("contactRequest")];
+  guidedState.servicesProducts = services;
   guidedState.targetAudience = guidedState.targetAudience || t("letAiDecide");
   guidedState.preferredTone = guidedState.preferredTone || t("letAiDecide");
   guidedState.preferredColors = arrayValue(guidedState.preferredColors).length
@@ -4678,6 +4678,7 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
   setStudioProgressPhase("brand");
   const templateSelection = await selectTemplateForPayload(payload);
   attachTemplateSelection(payload, templateSelection);
+  enrichPayloadDesignStrategy(payload, templateSelection);
   setStudioProgressPhase("homepage");
   const button = triggerButton;
   button.disabled = true;
@@ -4722,6 +4723,27 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     button.disabled = false;
     button.textContent = button.id === "guidedGenerateButton" ? t("reviewGenerate") : t("generateButton");
   }
+}
+
+function enrichPayloadDesignStrategy(payload, templateSelection) {
+  payload.designStrategy = {
+    ...(payload.designStrategy || {}),
+    designerMode: true,
+    templateUsePolicy: "Use the selected template as a reference architecture only. Adapt content, copy, palette, sections, product taxonomy, and CTAs to the business brief.",
+    selectedTemplateReason: templateSelection?.reason || "",
+    selectedTemplateId: templateSelection?.templateId || "",
+    selectedCatalogType: templateSelection?.catalogType || "",
+    catalogComplexity: inferCatalogComplexity(payload),
+    publicCopyPolicy: "Never paste intake answers verbatim into the website. Rewrite as polished customer-facing copy in the selected language.",
+  };
+}
+
+function inferCatalogComplexity(payload = {}) {
+  const text = normalizeTemplateIntentText(`${payload.business_description || ""} ${arrayValue(payload.services_products).join(" ")} ${payload.industry || ""}`);
+  const products = meaningfulOfferItems(payload.services_products);
+  if (textSuggestsBroadMarketplace(text) || products.length >= 5) return "broad_multi_category_catalog";
+  if (textSuggestsFocusedProductLine(text) || products.length <= 2) return "focused_product_line";
+  return "standard_catalog";
 }
 
 async function createDomainOrderIfNeeded(payload, result) {
@@ -4781,7 +4803,7 @@ async function selectTemplateForPayload(payload) {
     arrayValue(payload.preferred_colors).join(" "),
     payload.salesMode || guidedState.salesMode,
   ].join(" ");
-  const inferredTemplateId = inferTemplateIdFromText(prompt);
+  const inferredTemplateId = inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(prompt);
   const shouldOverrideForced = inferredTemplateId
     && inferredTemplateId !== forcedTemplateSelection?.templateId
     && (
@@ -4814,12 +4836,53 @@ async function selectTemplateForPayload(payload) {
       };
     }
   }
+  const fallbackTemplateId = inferDesignerTemplateIdFromPayload(payload);
+  if (fallbackTemplateId && window.TemplateRouter.getTemplateById) {
+    const template = await window.TemplateRouter.getTemplateById(fallbackTemplateId);
+    if (template) {
+      return {
+        templateId: fallbackTemplateId,
+        template,
+        intent: "designer_mode_template_reference",
+        catalogType: template.catalogModel?.catalogType || templatePreviewMeta(fallbackTemplateId)?.catalogType || "",
+        reason: "Designer-mode fallback selected from catalog complexity and business type",
+      };
+    }
+  }
   try {
     return await window.TemplateRouter.selectTemplateFromPrompt(prompt);
   } catch (error) {
     console.warn("Template selection failed", error);
     return null;
   }
+}
+
+function inferDesignerTemplateIdFromPayload(payload = {}) {
+  const text = normalizeTemplateIntentText([
+    payload.business_name,
+    payload.business_description,
+    payload.industry,
+    arrayValue(payload.services_products).join(" "),
+    payload.target_audience,
+    payload.preferred_tone,
+    arrayValue(payload.preferred_colors).join(" "),
+    payload.salesMode || guidedState.salesMode,
+  ].join(" "));
+  const products = meaningfulOfferItems(payload.services_products);
+  if (textSuggestsBroadMarketplace(text) || products.length >= 5) return "mega-marketplace";
+  if (/restaurant|restaurante|menu|comida|food|cafe|cafeteria|delivery/.test(text)) return "restaurant-food-business";
+  if (/barber|barberia|salon|spa|booking|reserva|cita|appointment/.test(text)) return "booking-appointment-pro";
+  if (/legal|abogado|lawyer|contador|tax|impuestos|consultoria|consulting|seguros/.test(text)) return "legal-professional-services-pro";
+  if (/clinic|clinica|wellness|dental|doctor|estetica|salud|therapy|skincare/.test(text)) return "medical-wellness-clinic-pro";
+  if (/saas|software|enterprise|automatizacion|plataforma|dashboard|crm|erp|api/.test(text)) return "b2b-saas-enterprise-pro";
+  if (/industrial|manufactur|fabrica|maquinaria|repuestos|herramientas|suministros/.test(text)) return "manufacturing-industrial-supplier-pro";
+  if (/curso|course|academy|academia|bootcamp|training|clases|masterclass/.test(text)) return "education-course-academy-pro";
+  if (/digital|ebook|templates|plantillas|descarga|download|membresia|membership/.test(text)) return "digital-products-store";
+  if (/ropa|fashion|moda|boutique|streetwear|zapato|sneaker|accesorio/.test(text)) return "fashion-drop-pro";
+  if (textSuggestsFocusedProductLine(text) || products.length <= 2 && /online|store|shop|tienda|ecommerce|producto|product/.test(text)) return "apple-premium-product";
+  if (/servicio|service|contractor|limpieza|roofing|repair|reparacion|cotizacion|quote/.test(text)) return "local-services-pro-plus";
+  if (/empresa|company|corporate|corporativo|pagina web|website|agencia|firma/.test(text)) return "corporate-company-pro";
+  return "";
 }
 
 function attachTemplateSelection(payload, selection) {
