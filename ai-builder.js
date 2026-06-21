@@ -1,6 +1,7 @@
 const API_BASE_URL = resolveApiBaseUrl();
 const API_URL = `${API_BASE_URL}/ai/website-builder`;
 const INTAKE_ASSISTANT_URL = `${API_BASE_URL}/api/ai/intake-assistant`;
+const LUMA_AGENT_URL = `${API_BASE_URL}/api/luma/chat`;
 const CLIENT_REQUESTS_URL = `${API_BASE_URL}/client-requests`;
 const ASSET_UPLOAD_URL = `${API_BASE_URL}/api/admin/assets/upload`;
 const SUPPORTED_LANGUAGES = ["en", "es", "fr", "pt"];
@@ -2479,11 +2480,6 @@ async function sendGuidedReply() {
   appendChatMessage("user", message);
   guidedReply.value = "";
   const broadLocalUpdates = inferGuidedUpdatesFromAnyMessage(message);
-  if (guidedStep === "websiteIntent") {
-    await handleWebsiteIntentAnswer(message);
-    return;
-  }
-  mergeGuidedUpdates(broadLocalUpdates);
   if (guidedStep === "review") {
     const adjustmentLabel = langText({
       en: "Client requested adjustments",
@@ -2530,14 +2526,18 @@ async function sendGuidedReply() {
   setThinking(true);
 
   try {
-    const response = await fetch(INTAKE_ASSISTANT_URL, {
+    const response = await fetch(LUMA_AGENT_URL, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         current: guidedStateForApi(),
         message,
+        currentStep: guidedStep,
         current_step: guidedStep,
         history: guidedHistory,
+        selectedTemplateId: forcedTemplateSelection?.templateId || "",
+        sitePlan: guidedState.sitePlan || null,
+        previousSchema: currentSchema || null,
       }),
     });
     if (!response.ok) {
@@ -2549,16 +2549,17 @@ async function sendGuidedReply() {
     const updatedFields = result.updatedFields || result.updates || {};
     guidedHistory.push({ role: "user", content: message });
     guidedHistory.push({ role: "assistant", content: assistantMessage });
-    mergeGuidedUpdates({ ...broadLocalUpdates, ...updatedFields });
-    syncTemplateSelectionFromGuidedContext(message);
+    mergeGuidedUpdates(updatedFields);
+    await applyLumaAgentDecision(result);
     const serverNextStep = result.next_step || result.nextStep || "";
-    guidedStep = result.readyToGenerate ? "review" : nextSmartGuidedStep(serverNextStep || guidedStep);
+    guidedStep = result.readyToGenerate ? "review" : normalizeNextGuidedStep(serverNextStep || guidedStep);
     const serverNextQuestion = result.nextQuestion || result.next_question;
     const nextQuestion = chooseNextQuestionText(serverNextQuestion, guidedStep);
-    const publicAssistantMessage = composeAssistantReply(assistantMessage, nextQuestion, result.used_dev_fallback);
-    appendUnderstandingCard({ updates: { ...broadLocalUpdates, ...updatedFields }, sourceMessage: message });
-    appendChatMessage("assistant", publicAssistantMessage, result.used_dev_fallback ? "alert" : emotion);
-    guidedStatusText.textContent = result.used_dev_fallback
+    const usedDevFallback = Boolean(result.used_dev_fallback || result.usedDevFallback);
+    const publicAssistantMessage = composeAssistantReply(assistantMessage, nextQuestion, usedDevFallback);
+    appendUnderstandingCard({ updates: updatedFields, sourceMessage: message });
+    appendChatMessage("assistant", publicAssistantMessage, usedDevFallback ? "alert" : emotion);
+    guidedStatusText.textContent = usedDevFallback
       ? t("devFallbackMissingKey")
       : t("summaryUpdated");
   } catch (error) {
@@ -2574,6 +2575,44 @@ async function sendGuidedReply() {
   setThinking(false);
   renderGuidedSummary();
   refreshQuickChips();
+}
+
+async function applyLumaAgentDecision(result = {}) {
+  const selectedTemplateId = result.selectedTemplateId || result.selected_template_id || "";
+  if (selectedTemplateId && window.TemplateRouter?.getTemplateById) {
+    let template = null;
+    try {
+      template = await window.TemplateRouter.getTemplateById(selectedTemplateId);
+    } catch (error) {
+      console.warn("Luma selected template could not be loaded.", error);
+    }
+    forcedTemplateSelection = {
+      templateId: selectedTemplateId,
+      template,
+      intent: result.intent || "luma_agent_template",
+      catalogType: result.catalogType || result.catalog_type || template?.catalogModel?.catalogType || "",
+      reason: result.selectedTemplateReason || result.selected_template_reason || "Selected by Luma from the conversation",
+    };
+  } else if (!selectedTemplateId && result.intent === "collect_info") {
+    forcedTemplateSelection = {
+      templateId: "",
+      template: null,
+      intent: "luma_agent_collecting_context",
+      catalogType: "",
+      reason: "Luma is still collecting enough context before choosing a structure",
+    };
+  }
+
+  if (result.designStrategy) {
+    guidedState.designStrategy = result.designStrategy;
+  }
+  if (result.sitePlan) {
+    guidedState.sitePlan = result.sitePlan;
+    guidedState.sitePlanApproved = false;
+  } else if (!selectedTemplateId) {
+    guidedState.sitePlan = null;
+    guidedState.sitePlanApproved = false;
+  }
 }
 
 async function handleWebsiteIntentAnswer(message) {
@@ -4239,14 +4278,17 @@ function guidedStateForApi() {
     photoUrls,
     logoPalette: arrayValue(guidedState.logoPalette),
     brand: normalizeBrand(guidedState.brand || { logoUrl, extractedColors: arrayValue(guidedState.logoPalette) }),
-    designStrategy: createDesignStrategy({
-      business_name: guidedState.businessName,
-      business_description: guidedState.businessDescription,
-      industry: guidedState.industry,
-      target_audience: guidedState.targetAudience,
-      preferred_tone: guidedState.preferredTone,
-      salesMode: guidedState.salesMode,
-    }),
+    designStrategy: {
+      ...createDesignStrategy({
+        business_name: guidedState.businessName,
+        business_description: guidedState.businessDescription,
+        industry: guidedState.industry,
+        target_audience: guidedState.targetAudience,
+        preferred_tone: guidedState.preferredTone,
+        salesMode: guidedState.salesMode,
+      }),
+      ...(guidedState.designStrategy || {}),
+    },
     qualityRules: DESIGN_QUALITY_RULES,
     selectedLanguage,
     hasLogo: Boolean(guidedState.hasLogo || guidedState.logoUrl),
