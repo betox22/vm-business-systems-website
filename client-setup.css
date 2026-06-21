@@ -2279,20 +2279,88 @@ body.public-client-setup.generated-preview-open {
   .public-client-setup .guided-shell {
     width: 100%;
     height: 100dvh;
+    min-height: 100dvh;
     border: 0;
     border-radius: 0;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .public-client-setup .guided-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 10px 8px;
+  }
+
+  .public-client-setup .assistant-identity {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .public-client-setup .assistant-identity > div {
+    min-width: 0;
+  }
+
+  .public-client-setup .assistant-identity strong,
+  .public-client-setup .assistant-identity span,
+  .public-client-setup .assistant-identity em {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .public-client-setup .assistant-avatar.large {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+  }
+
+  .public-client-setup .guided-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding-right: 0;
+  }
+
+  .public-client-setup .compact-language {
+    max-width: none;
+  }
+
+  .public-client-setup .compact-language::before {
+    display: none;
+  }
+
+  .public-client-setup .compact-language select {
+    width: 58px;
+    min-height: 32px;
+    padding: 6px;
+    font-size: 11px;
+  }
+
+  .public-client-setup .icon-button,
+  .public-client-setup .icon-only {
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
   }
 
   .public-client-setup .guided-layout {
+    height: 100%;
+    min-height: 0;
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(32vh, auto) minmax(0, 1fr);
+    grid-template-rows: minmax(0, auto) minmax(0, 1fr);
     overflow: hidden;
   }
 
   .public-client-setup .guided-live-stage {
-    max-height: 38vh;
-    padding: 12px;
-    overflow: auto;
+    max-height: min(28dvh, 210px);
+    min-height: 0;
+    padding: 8px 10px;
+    overflow: hidden;
   }
 
   .public-client-setup .live-stage-header {
@@ -2306,14 +2374,18 @@ body.public-client-setup.generated-preview-open {
 
   .public-client-setup .live-preview-rendered,
   .public-client-setup .live-preview-rendered .rendered-site {
-    min-height: 340px;
+    min-height: 190px;
+    max-height: 190px;
     border-radius: 18px;
+    overflow: hidden;
   }
 
   .public-client-setup .neutral-live-workspace {
-    min-height: 330px;
+    min-height: 176px;
+    max-height: 176px;
     border-radius: 18px;
-    padding: 20px;
+    padding: 16px;
+    overflow: hidden;
   }
 
   .public-client-setup .neutral-live-orbit {
@@ -2325,28 +2397,57 @@ body.public-client-setup.generated-preview-open {
 
   .public-client-setup .neutral-live-copy h2 {
     max-width: 290px;
-    font-size: 30px;
+    font-size: 24px;
   }
 
   .public-client-setup .neutral-live-copy p {
     max-width: 300px;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .public-client-setup .neutral-live-steps {
-    margin-top: 22px;
+    display: none;
+  }
+
+  .public-client-setup .guided-chat-card {
+    min-height: 0;
+    height: 100%;
+    border-left: 0;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 -12px 30px rgba(15, 23, 42, 0.08);
+  }
+
+  .public-client-setup .luma-coach-card {
+    margin: 8px 10px 0;
+    padding: 10px;
+    border-radius: 14px;
+  }
+
+  .public-client-setup .luma-coach-card p,
+  .public-client-setup .luma-coach-template {
+    display: none;
+  }
+
+  .public-client-setup .luma-coach-next {
+    margin-top: 8px;
+    padding: 8px;
+  }
+
+  .public-client-setup .luma-coach-examples {
+    margin-top: 8px;
     gap: 8px;
   }
 
-  .public-client-setup .neutral-live-steps article {
-    grid-template-columns: 30px minmax(0, 1fr);
-    border-radius: 14px;
-    padding: 10px;
+  .public-client-setup .guided-chat {
+    min-height: 0;
+    padding: 10px 10px 8px;
+    overflow-y: auto;
   }
 
-  .public-client-setup .neutral-live-steps b {
-    width: 30px;
-    height: 30px;
+  .public-client-setup .chat-message {
+    max-width: 92%;
+    overflow-wrap: anywhere;
+    font-size: 14px;
   }
 
   .public-client-setup .live-preview-rendered .rendered-nav nav {
@@ -2443,13 +2544,6 @@ body.public-client-setup.generated-preview-open {
     font-size: 18px;
   }
 
-  .public-client-setup .guided-chat-card {
-    min-height: 0;
-    border-left: 0;
-    border-top: 1px solid rgba(15, 23, 42, 0.08);
-    box-shadow: 0 -12px 30px rgba(15, 23, 42, 0.08);
-  }
-
   .public-client-setup .guided-live-stage .live-site-preview-card {
     border-radius: 18px;
   }
@@ -2505,8 +2599,34 @@ body.public-client-setup.generated-preview-open {
     display: none;
   }
 
+  .public-client-setup.review-details-open .guided-live-stage,
+  .public-client-setup.final-review-mode .guided-live-stage {
+    display: none;
+  }
+
+  .public-client-setup.review-details-open .guided-chat-card,
+  .public-client-setup.final-review-mode .guided-chat-card {
+    display: none;
+  }
+
+  .public-client-setup.review-details-open .guided-layout,
+  .public-client-setup.final-review-mode .guided-layout {
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .public-client-setup.review-details-open .summary-panel,
   .public-client-setup.final-review-mode .summary-panel {
+    position: static;
     grid-column: 1;
+    grid-row: 1;
+    display: block;
+    height: 100%;
+    max-height: none;
+    min-height: 0;
+    overflow-y: auto;
+    border: 0;
+    border-radius: 0;
+    padding: 14px;
   }
 
   .public-client-setup .ai-build-card-head {
@@ -2521,16 +2641,8 @@ body.public-client-setup.generated-preview-open {
     grid-template-columns: 1fr;
   }
 
-  .public-client-setup .guided-header {
-    padding: 12px 12px 10px;
-  }
-
   .public-client-setup .guided-progress {
     padding: 7px 12px 5px;
-  }
-
-  .public-client-setup .guided-chat {
-    padding: 14px 12px 10px;
   }
 
   .public-client-setup .chat-status-card {
@@ -2546,19 +2658,14 @@ body.public-client-setup.generated-preview-open {
     padding: 9px 10px 10px;
   }
 
+  .public-client-setup .guided-actions {
+    display: flex;
+    gap: 6px;
+  }
+
   .public-client-setup #switchManualFormButton,
   .public-client-setup #guidedSkipButton {
     display: none;
-  }
-
-  .public-client-setup .guided-header-actions {
-    align-items: center;
-    display: flex;
-    grid-template-columns: none;
-  }
-
-  .public-client-setup .compact-language {
-    width: auto;
   }
 }
 
