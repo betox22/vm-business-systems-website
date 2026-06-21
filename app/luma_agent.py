@@ -9,7 +9,7 @@ from .config import get_settings
 from .schemas import LumaAgentRequest, LumaAgentResponse
 
 
-REQUIRED_FOR_DRAFT = ["businessName", "businessDescription", "servicesProducts"]
+REQUIRED_FOR_DRAFT = ["businessName", "businessDescription", "servicesProducts", "preferredColors"]
 IMPORTANT_FOR_LAUNCH = ["contactInfo"]
 
 TEMPLATE_CATALOG_TYPES = {
@@ -132,9 +132,14 @@ def _system_prompt(selected_language: str) -> str:
         "You are not a form. You behave like ChatGPT in designer mode: understand the business, infer missing fields, "
         "ask one useful question at a time, and decide the correct website/store architecture. "
         f"Respond in selectedLanguage={selected_language}. Keep JSON keys in English. "
+        "Start from a neutral standard discovery mode. Do not choose a final template from generic phrases like "
+        "'online store', 'sell products online', 'website', or 'catalog' alone. First understand the actual offer, "
+        "catalog breadth, audience, and brand direction. "
         "The user's intake answers are internal strategy notes, never public website copy. Do not paste rough user text into page headlines or paragraphs. "
         "Rewrite everything as polished customer-facing strategy later. "
         "If the user gives many details in one message, extract all fields and only ask what is truly missing. "
+        "Before readyToGenerate=true, make sure you have brand direction: either preferredColors, a logo/photo note, "
+        "or an explicit 'let AI decide'. If missing, ask for logo/colors/style instead of generating. "
         "For broad varied products, unusual mixed items, many categories, marketplace, Amazon-like, or general online store with many categories, select mega-marketplace. "
         "For one hero product, one product line, niche product variants, or premium product storytelling, select apple-premium-product. "
         "For clothing/fashion drops, select fashion-drop-pro. For restaurants/menu, select restaurant-food-business. "
@@ -323,16 +328,32 @@ def _is_focused_product(text: str, products: list[str]) -> bool:
         "single product", "one product", "linea de", "coleccion de", "parachoques", "modelos",
         "producto premium", "showcase", "presentacion premium",
     ]
-    return (0 < len(products) <= 2 and not _is_broad_marketplace(text, products)) or _has_any(text, focused_words)
+    return _has_any(text, focused_words)
 
 
 def _missing_important_fields(current: dict) -> list[str]:
     missing = []
     for field in [*REQUIRED_FOR_DRAFT, *IMPORTANT_FOR_LAUNCH]:
         value = current.get(field)
+        if field == "preferredColors":
+            if not _has_brand_direction(current):
+                missing.append(field)
+            continue
         if value in ("", None, [], {}):
             missing.append(field)
     return missing
+
+
+def _has_brand_direction(current: dict) -> bool:
+    colors = current.get("preferredColors") or []
+    if isinstance(colors, str):
+        colors = [colors] if colors.strip() else []
+    if colors:
+        return True
+    if current.get("logoUrl") or current.get("hasLogo") or current.get("hasPhotos") or current.get("hasLogoPhotos"):
+        return True
+    text = _normalize(" ".join(str(current.get(key) or "") for key in ["preferredTone", "businessDescription", "industry"]))
+    return _has_any(text, ["ai decide", "ia decida", "que la ia decida", "let ai decide", "minimal", "premium", "elegante", "moderno", "futurista", "cyberpunk", "neon", "pastel", "lujo"])
 
 
 def _next_step(current: dict, current_step: str) -> str:
@@ -342,6 +363,8 @@ def _next_step(current: dict, current_step: str) -> str:
         return "businessDescription"
     if not current.get("servicesProducts"):
         return "servicesProducts"
+    if not _has_brand_direction(current):
+        return "preferredColors"
     if not current.get("contactInfo"):
         return "contactInfo"
     return "review"
@@ -353,6 +376,7 @@ def _question_for(language: str, step: str) -> str:
             "businessName": "What should I call the business?",
             "businessDescription": "Tell me what the business sells or does. You can include products, style, city, and contact in one message.",
             "servicesProducts": "What are the main products, categories, or services?",
+            "preferredColors": "Do you have a logo, brand colors, or a style direction? You can also say: let AI decide.",
             "contactInfo": "What contact should the website use: WhatsApp, phone, email, or Instagram?",
             "review": "I have enough to create the first draft. Do you want to add a logo/photos or generate it now?",
         },
@@ -360,6 +384,7 @@ def _question_for(language: str, step: str) -> str:
             "businessName": "¿Cómo se llama el negocio?",
             "businessDescription": "Cuéntame qué vende o qué hace. Puedes incluir productos, estilo, ciudad y contacto en un solo mensaje.",
             "servicesProducts": "¿Cuáles son los productos, categorías o servicios principales?",
+            "preferredColors": "¿Tienes logo, colores de marca o una dirección de estilo? También puedes decir: que la IA decida.",
             "contactInfo": "¿Qué contacto debe usar la página: WhatsApp, teléfono, email o Instagram?",
             "review": "Ya tengo suficiente para crear el primer borrador. ¿Quieres subir logo/fotos o generarlo ahora?",
         },
@@ -367,6 +392,7 @@ def _question_for(language: str, step: str) -> str:
             "businessName": "Quel est le nom de l'entreprise ?",
             "businessDescription": "Dites-moi ce qu'elle vend ou propose. Vous pouvez inclure produits, style, ville et contact.",
             "servicesProducts": "Quels sont les principaux produits, catégories ou services ?",
+            "preferredColors": "Avez-vous un logo, des couleurs de marque ou une direction de style ? Vous pouvez aussi dire : laisser l'IA décider.",
             "contactInfo": "Quel contact doit apparaître : WhatsApp, téléphone, email ou Instagram ?",
             "review": "J'ai assez d'informations pour créer le premier brouillon. Voulez-vous ajouter logo/photos ou générer maintenant ?",
         },
@@ -374,6 +400,7 @@ def _question_for(language: str, step: str) -> str:
             "businessName": "Qual é o nome do negócio?",
             "businessDescription": "Conte o que ele vende ou faz. Pode incluir produtos, estilo, cidade e contato em uma mensagem.",
             "servicesProducts": "Quais são os principais produtos, categorias ou serviços?",
+            "preferredColors": "Você tem logo, cores da marca ou uma direção de estilo? Também pode dizer: deixar a IA decidir.",
             "contactInfo": "Qual contato deve aparecer: WhatsApp, telefone, email ou Instagram?",
             "review": "Já tenho o suficiente para criar o primeiro rascunho. Quer enviar logo/fotos ou gerar agora?",
         },
