@@ -38,6 +38,7 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
     local_updates = _clean_local_updates(
         _infer_broad_updates(payload.message or "", selected_language),
         current_step,
+        payload.message,
     )
 
     settings = get_settings()
@@ -84,6 +85,7 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
     updated_fields = _clean_local_updates(
         data.get("updatedFields") or data.get("updates") or {},
         current_step,
+        payload.message,
     )
     merged_updates = _merge_current_updates(local_updates, updated_fields)
     merged_current = _merge_current_updates(current, merged_updates)
@@ -166,7 +168,7 @@ def _parse_json(text: str) -> dict:
     return {}
 
 
-def _clean_local_updates(updates: dict, current_step: str) -> dict:
+def _clean_local_updates(updates: dict, current_step: str, message: str = "") -> dict:
     cleaned = dict(updates or {})
     contact = cleaned.get("contactInfo")
     if (
@@ -175,6 +177,12 @@ def _clean_local_updates(updates: dict, current_step: str) -> dict:
         and set(contact.keys()) == {"notes"}
     ):
         cleaned.pop("contactInfo", None)
+    if current_step != "preferredColors" and not _message_mentions_brand_direction(message):
+        cleaned.pop("preferredColors", None)
+    if not _message_mentions_assets(message):
+        cleaned.pop("hasLogo", None)
+        cleaned.pop("hasPhotos", None)
+        cleaned.pop("hasLogoPhotos", None)
     return cleaned
 
 
@@ -332,6 +340,22 @@ def _is_focused_product(text: str, products: list[str]) -> bool:
         "producto premium", "showcase", "presentacion premium",
     ]
     return _has_any(text, focused_words)
+
+
+def _message_mentions_brand_direction(message: str) -> bool:
+    text = _normalize(message)
+    brand_words = [
+        "color", "colores", "palette", "paleta", "logo", "brand", "marca", "style", "estilo",
+        "minimal", "premium", "elegante", "moderno", "futurista", "cyberpunk", "neon", "pastel",
+        "lujo", "ai decide", "ia decida", "que la ia decida", "let ai decide",
+    ]
+    hex_color = re.search(r"#[0-9a-f]{3,8}\b", text)
+    return bool(hex_color) or _has_any(text, brand_words)
+
+
+def _message_mentions_assets(message: str) -> bool:
+    text = _normalize(message)
+    return _has_any(text, ["logo", "foto", "fotos", "photo", "photos", "imagen", "imagenes", "image", "images"])
 
 
 def _has_structural_evidence(text: str, current: dict) -> bool:
@@ -499,7 +523,15 @@ def _analyze_business_context(
     else:
         catalog_breadth = "unknown"
 
-    decision_state = "ready_to_generate" if ready else "needs_brand_direction" if "preferredColors" in missing else "needs_business_context"
+    core_missing = any(field in missing for field in ["businessName", "businessDescription", "servicesProducts"])
+    if ready:
+        decision_state = "ready_to_generate"
+    elif core_missing:
+        decision_state = "needs_business_context"
+    elif "preferredColors" in missing:
+        decision_state = "needs_brand_direction"
+    else:
+        decision_state = "needs_business_context"
     signals = []
     if broad_score:
         signals.append("broad_catalog_signals")
