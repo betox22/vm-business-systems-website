@@ -860,7 +860,12 @@
       intent: "minimal_premium",
       templateId: "apple-premium-product",
       catalogType: "premium_editorial_catalog",
-      keywords: ["premium minimalista", "minimal", "premium", "limpio", "simple", "producto premium", "minimalista", "portafolio", "portfolio", "producto estrella", "productos extravagantes", "presentacion excelente", "excelente presentacion"],
+      keywords: [
+        "premium minimalista", "producto premium", "minimalista para una linea",
+        "portafolio", "portfolio", "producto estrella", "productos extravagantes",
+        "presentacion excelente", "excelente presentacion", "linea de producto",
+        "producto unico", "un solo producto", "flagship", "showcase"
+      ],
     },
     {
       intent: "luxury",
@@ -906,6 +911,15 @@
   function suggestsFocusedProductLine(normalizedPrompt) {
     return /\b(linea de|linea para|product line|same niche|mismo nicho|mismo tipo|una categoria|varios modelos|modelos para|parachoques|bumper|4x4|off road|pickup|camioneta|camionetas)\b/.test(normalizedPrompt)
       && !suggestsBroadMarketplace(normalizedPrompt);
+  }
+
+  function rulePriority(rule, normalizedPrompt) {
+    if (!rule) return 0;
+    if (suggestsBroadMarketplace(normalizedPrompt) && rule.intent === "amazon_marketplace") return 10000;
+    if (suggestsFocusedProductLine(normalizedPrompt) && rule.intent === "minimal_premium") return 9000;
+    if (rule.intent === "minimal_premium" && !suggestsFocusedProductLine(normalizedPrompt)) return -30;
+    if (rule.intent === "fashion" && suggestsBroadMarketplace(normalizedPrompt)) return -20;
+    return 0;
   }
 
   async function loadTemplates() {
@@ -987,7 +1001,8 @@
     const normalized = normalizeText(userPrompt);
     const scored = INTENT_RULES.map((rule) => {
       const matches = rule.keywords.filter((keyword) => normalized.includes(normalizeText(keyword)));
-      const score = matches.reduce((total, keyword) => total + Math.max(1, normalizeText(keyword).split(" ").length), 0);
+      const score = matches.reduce((total, keyword) => total + Math.max(1, normalizeText(keyword).split(" ").length), 0)
+        + rulePriority(rule, normalized);
       return { rule, score, matches };
     })
       .filter((item) => item.score > 0)
@@ -1046,7 +1061,8 @@
     }
     const scored = INTENT_RULES.map((rule) => {
       const matches = rule.keywords.filter((keyword) => normalizedPrompt.includes(normalizeText(keyword)));
-      const exactWeight = matches.reduce((score, keyword) => score + Math.max(1, normalizeText(keyword).split(" ").length), 0);
+      const exactWeight = matches.reduce((score, keyword) => score + Math.max(1, normalizeText(keyword).split(" ").length), 0)
+        + rulePriority(rule, normalizedPrompt);
       return { rule, score: exactWeight, matches };
     })
       .filter((item) => item.score > 0)
