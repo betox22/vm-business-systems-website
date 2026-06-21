@@ -188,9 +188,9 @@
                   <div id="guidedPhotoPreview" class="photo-preview-strip"></div>
                 </div>
                 <div id="brandKitPanel" class="brand-kit-panel" hidden></div>
-                <button id="guidedGenerateButton" type="button" data-i18n="reviewGenerate">Generate my website</button>
+                <button id="guidedGenerateButton" type="button" data-i18n="reviewGenerate" onclick="window.handleGuidedGenerateButton?.(event)">Generate my website</button>
                 <button id="keepChattingButton" class="secondary-action full-width" type="button" data-i18n="keepChatting">Keep chatting</button>
-                <p id="guidedStatusText" class="status-text" data-i18n="assistantServerNotice">Ready when you are. Luma can generate now or keep refining the plan.</p>
+                <p id="guidedStatusText" class="status-text" data-i18n="assistantServerNotice">Tap Generate to create the full editable website, or keep chatting to refine the plan.</p>
               </div>
             </div>
           </div>
@@ -315,6 +315,6 @@
     <script src="/template-router.js?v=10"></script>
     <script src="/js/avatar-state-manager.js?v=1"></script>
     <script src="/js/avatar-assistant.js?v=2"></script>
-    <script src="/ai-builder.js?v=101"></script>
+    <script src="/ai-builder.js?v=102"></script>
   </body>
 </html>

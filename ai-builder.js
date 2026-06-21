@@ -115,7 +115,7 @@ const I18N = {
     decideAudience: "Audience: Let AI decide",
     decideSections: "Sections: Let AI decide",
     serverKeyNotice: "You can switch back to chat any time.",
-    assistantServerNotice: "Ready when you are. Luma can generate now or keep refining the plan.",
+    assistantServerNotice: "Tap Generate to create the full editable website, or keep chatting to refine the plan.",
     replyPlaceholder: "Type your answer...",
     photoUrlsPlaceholder: "One image URL per line",
     salesModePlaceholder: "online sales, quotes, or both",
@@ -215,7 +215,7 @@ const I18N = {
     decideAudience: "Audiencia: que IA decida",
     decideSections: "Secciones: que IA decida",
     serverKeyNotice: "Puedes volver al chat cuando quieras.",
-    assistantServerNotice: "Listo cuando quieras. Luma puede generar ahora o seguir afinando el plan.",
+    assistantServerNotice: "Toca Generar para crear la página editable completa, o sigue conversando para ajustar el plan.",
     replyPlaceholder: "Escribe tu respuesta...",
     photoUrlsPlaceholder: "Una URL de imagen por linea",
     salesModePlaceholder: "ventas online, cotizaciones, o ambos",
@@ -315,7 +315,7 @@ const I18N = {
     decideAudience: "Audience : laisser l'IA décider",
     decideSections: "Sections : laisser l'IA décider",
     serverKeyNotice: "Vous pouvez revenir au chat à tout moment.",
-    assistantServerNotice: "Prêt quand vous l'êtes. Luma peut générer maintenant ou affiner le plan.",
+    assistantServerNotice: "Touchez Générer pour créer le site modifiable complet, ou continuez à discuter pour affiner le plan.",
     replyPlaceholder: "Écrivez votre réponse...",
     photoUrlsPlaceholder: "Une URL d'image par ligne",
     salesModePlaceholder: "vente en ligne, devis, ou les deux",
@@ -415,7 +415,7 @@ const I18N = {
     decideAudience: "Público: deixar a IA decidir",
     decideSections: "Seções: deixar a IA decidir",
     serverKeyNotice: "Você pode voltar ao chat quando quiser.",
-    assistantServerNotice: "Pronto quando você quiser. A Luma pode gerar agora ou refinar o plano.",
+    assistantServerNotice: "Toque em Gerar para criar o site editável completo, ou continue conversando para ajustar o plano.",
     replyPlaceholder: "Digite sua resposta...",
     photoUrlsPlaceholder: "Uma URL de imagem por linha",
     salesModePlaceholder: "vendas online, orçamentos, ou ambos",
@@ -1136,7 +1136,14 @@ document.addEventListener("click", (event) => {
   }
 });
 document.querySelector("#guidedSkipButton").addEventListener("click", skipGuidedQuestion);
+window.handleGuidedGenerateButton = handleGuidedGenerateButton;
+guidedGenerateButton.addEventListener("pointerdown", handleGuidedGenerateButton);
 guidedGenerateButton.addEventListener("click", handleGuidedGenerateButton);
+document.addEventListener("click", (event) => {
+  if (event.target?.closest?.("#guidedGenerateButton")) {
+    handleGuidedGenerateButton(event);
+  }
+}, true);
 guidedReply.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
@@ -1375,95 +1382,7 @@ function renderLiveSitePreview() {
   const card = ensureLiveSitePreviewCard();
   if (!card) return;
   syncTemplateSelectionFromGuidedContext();
-  if (!hasEnoughContextForTemplatePreview()) {
-    card.innerHTML = renderNeutralLiveWorkspace();
-    return;
-  }
-  try {
-    const selection = livePreviewTemplateSelection();
-    const schema = buildInstantTemplateSchema(livePreviewPayload(), selection);
-    card.innerHTML = `<div class="live-preview-rendered">${renderWebsite(schema, "home")}</div>`;
-    return;
-  } catch (error) {
-    console.warn("Live rendered template preview failed; using compact fallback.", error);
-  }
-  const services = arrayValue(guidedState.servicesProducts).filter(Boolean);
-  const name = guidedState.businessName || langText({
-    en: "Your business",
-    es: "Tu negocio",
-    fr: "Votre entreprise",
-    pt: "Seu negócio",
-  });
-  const profile = livePreviewTemplateProfile();
-  const items = sanitizePublicProductList(services.length ? services : livePreviewFallbackItems(), {
-    business_description: guidedState.businessDescription,
-    industry: guidedState.industry,
-    selectedLanguage,
-  }, instantLocaleCopy(selectedLanguage), selectedLanguage, profile.templateId).slice(0, 6);
-  const publicCopy = livePreviewPublicCopy(profile, items);
-  const contact = contactInfoCompactLabel(guidedState.contactInfo) || langText({
-    en: "Contact pending",
-    es: "Contacto pendiente",
-    fr: "Contact à compléter",
-    pt: "Contato pendente",
-  });
-  const colorHint = arrayValue(guidedState.preferredColors).join(", ") || (guidedState.logoPalette || []).join(", ") || langText({
-    en: "AI palette",
-    es: "Paleta IA",
-    fr: "Palette IA",
-    pt: "Paleta IA",
-  });
-  const navItems = livePreviewNavItems(profile);
-  card.innerHTML = `
-    <div class="live-preview-page live-template-${escapeAttribute(profile.kind)}">
-      <header class="live-page-header">
-        <strong>${escapeHtml(name)}</strong>
-        <nav>${navItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</nav>
-        <button type="button">${escapeHtml(profile.cta)}</button>
-      </header>
-      <section class="live-page-hero">
-        <div class="live-page-hero-copy">
-          <em>${escapeHtml(profile.kicker)}</em>
-          <h1>${escapeHtml(publicCopy.headline)}</h1>
-          <p>${escapeHtml(publicCopy.subtitle)}</p>
-          <div class="live-page-actions">
-            <button type="button">${escapeHtml(profile.cta)}</button>
-            <span>${escapeHtml(publicCopy.supportingLine)}</span>
-          </div>
-        </div>
-        <div class="live-page-visual" aria-hidden="true">
-          <img src="${escapeAttribute(profile.image)}" alt="">
-        </div>
-      </section>
-      ${livePreviewTemplateModules(profile, items)}
-      <section class="live-page-section">
-        <div class="live-page-section-head">
-          <span>${escapeHtml(profile.sectionKicker)}</span>
-          <h2>${escapeHtml(profile.sectionTitle)}</h2>
-        </div>
-        <div class="live-page-card-grid">
-          ${items.slice(0, 6).map((item, index) => `
-            <article>
-              <i>${escapeHtml(profile.itemLabels[index % profile.itemLabels.length] || profile.itemLabels[0])}</i>
-              <strong>${escapeHtml(item)}</strong>
-              <span>${escapeHtml(livePreviewItemMicrocopy(profile, index))}</span>
-            </article>
-          `).join("")}
-        </div>
-      </section>
-      <section class="live-page-proof">
-        <div>
-          <span>${escapeHtml(langText({ en: "Brand direction", es: "Direccion de marca", fr: "Direction de marque", pt: "Direcao da marca" }))}</span>
-          <strong>${escapeHtml(colorHint)}</strong>
-        </div>
-        <div>
-          <span>${escapeHtml(langText({ en: "Contact / next step", es: "Contacto / siguiente paso", fr: "Contact / prochaine etape", pt: "Contato / proximo passo" }))}</span>
-          <strong>${escapeHtml(contact)}</strong>
-        </div>
-      </section>
-      <footer class="live-page-footer">${escapeHtml(profile.label)} · ${escapeHtml(langText({ en: "Editable draft preview", es: "Preview editable", fr: "Apercu modifiable", pt: "Preview editavel" }))}</footer>
-    </div>
-  `;
+  card.innerHTML = renderNeutralLiveWorkspace();
 }
 
 function hasEnoughContextForTemplatePreview() {
