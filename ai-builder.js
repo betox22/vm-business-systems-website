@@ -592,7 +592,6 @@ const REQUIRED_GUIDED_STEPS = [
   "businessDescription",
   "servicesProducts",
   "preferredColors",
-  "contactInfo",
 ];
 
 const SMART_GUIDED_STEP_PRIORITY = [
@@ -3626,6 +3625,7 @@ async function handleGuidedGenerateButton(event) {
   event?.stopPropagation?.();
   if (isGeneratingWebsite) return;
   syncGuidedStateFromSummary();
+  normalizeGuidedStateBeforeGenerate();
   const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
   if (requiredMissing.length) {
     const nextMissing = requiredMissing[0];
@@ -3648,7 +3648,6 @@ async function handleGuidedGenerateButton(event) {
     guidedReply.focus();
     return;
   }
-  normalizeGuidedStateBeforeGenerate();
   guidedStep = "review";
   document.body.classList.remove("review-details-open");
   renderGuidedSummary();

@@ -2443,15 +2443,12 @@ body.public-client-setup.generated-preview-open {
     height: 100%;
     min-height: 0;
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     overflow: hidden;
   }
 
   .public-client-setup .guided-live-stage {
-    max-height: min(28dvh, 210px);
-    min-height: 0;
-    padding: 8px 10px;
-    overflow: hidden;
+    display: none;
   }
 
   .public-client-setup .live-stage-header {
@@ -2531,14 +2528,28 @@ body.public-client-setup.generated-preview-open {
 
   .public-client-setup .guided-chat {
     min-height: 0;
-    padding: 10px 10px 8px;
+    padding: 12px 12px 8px;
     overflow-y: auto;
   }
 
   .public-client-setup .chat-message {
-    max-width: 92%;
+    max-width: 100%;
     overflow-wrap: anywhere;
-    font-size: 14px;
+    font-size: 16px;
+  }
+
+  .public-client-setup .chat-message span,
+  .public-client-setup .chat-message.user {
+    font-size: 16px;
+    line-height: 1.45;
+  }
+
+  .public-client-setup .chat-message span {
+    padding: 12px 14px;
+  }
+
+  .public-client-setup .chat-message.user {
+    max-width: 94%;
   }
 
   .public-client-setup .luma-ready-actions {
@@ -2551,6 +2562,35 @@ body.public-client-setup.generated-preview-open {
 
   .public-client-setup .luma-ready-head strong {
     text-align: left;
+  }
+
+  .public-client-setup .luma-ready-card,
+  .public-client-setup .site-plan-card {
+    width: 100%;
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .public-client-setup .chat-composer {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px 12px max(12px, env(safe-area-inset-bottom));
+  }
+
+  .public-client-setup .chat-input-label input {
+    min-height: 48px;
+    border-radius: 18px;
+    font-size: 16px;
+  }
+
+  .public-client-setup .guided-actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .public-client-setup .guided-actions .text-action {
+    max-width: none;
+    font-size: 11px;
   }
 
   .public-client-setup .live-preview-rendered .rendered-nav nav {
