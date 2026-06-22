@@ -3808,7 +3808,8 @@ function renderGuidedSummary() {
   if (isFinalReview && assistantState !== "success") setAssistantState("success");
   guidedStepLabel.textContent = isFinalReview ? t("reviewStep") : `${t("step")} ${stepIndex} ${t("of")} 7`;
   guidedProgressBar.style.width = `${Math.min(100, Math.round((stepIndex / 7) * 100))}%`;
-  document.body.classList.toggle("final-review-mode", isFinalReview);
+  document.body.classList.toggle("ready-chat-mode", isFinalReview);
+  document.body.classList.remove("final-review-mode");
   guidedGenerateButton.textContent = isFinalReview ? t("generateMyWebsite") : t("reviewGenerate");
   currentInfoPreview.textContent = compactCollectedPreview();
   currentInfoMeta.textContent = conversationProgressLabel();
@@ -3972,9 +3973,62 @@ function aiSourceSignalList() {
 
 function renderSitePlanInChatIfNeeded() {
   if (guidedStep !== "review" || !guidedChat) return;
-  guidedChat.querySelectorAll(".site-plan-card").forEach((card) => card.remove());
-  guidedChat.appendChild(renderSitePlanCard());
+  guidedChat.querySelectorAll(".site-plan-card, .luma-ready-card").forEach((card) => card.remove());
+  if (forcedTemplateSelection?.templateId || guidedState.sitePlan?.templateId) {
+    guidedChat.appendChild(renderSitePlanCard());
+  }
+  guidedChat.appendChild(renderLumaReadyCard());
   guidedChat.scrollTop = guidedChat.scrollHeight;
+}
+
+function renderLumaReadyCard() {
+  const diagnosis = guidedState.designStrategy?.diagnosis || {};
+  const plan = guidedState.sitePlan || null;
+  const card = document.createElement("section");
+  card.className = "luma-ready-card";
+  const templateMeta = templatePreviewMeta(plan?.templateId || forcedTemplateSelection?.templateId || "");
+  const templateName = localizedTemplateName(templateMeta) || plan?.templateName || forcedTemplateSelection?.templateId || langText({
+    en: "AI-selected structure",
+    es: "Estructura elegida por IA",
+    fr: "Structure choisie par IA",
+    pt: "Estrutura escolhida por IA",
+  });
+  const reason = diagnosis.reasoningSummary || forcedTemplateSelection?.reason || langText({
+    en: "Luma will use the conversation as strategy and generate customer-facing copy.",
+    es: "Luma usara la conversacion como estrategia y generara textos para clientes.",
+    fr: "Luma utilisera la conversation comme strategie et generera le contenu client.",
+    pt: "A Luma usara a conversa como estrategia e gerara textos para clientes.",
+  });
+  card.innerHTML = `
+    <div class="luma-ready-head">
+      <span>${escapeHtml(langText({ en: "Ready to build", es: "Listo para construir", fr: "Pret a construire", pt: "Pronto para construir" }))}</span>
+      <strong>${escapeHtml(templateName)}</strong>
+    </div>
+    <p>${escapeHtml(reason)}</p>
+    <div class="luma-ready-points">
+      <span>${escapeHtml(langText({ en: "No raw notes pasted", es: "No pega notas crudas", fr: "Pas de notes brutes", pt: "Nao cola notas brutas" }))}</span>
+      <span>${escapeHtml(langText({ en: "Editable after generation", es: "Editable despues", fr: "Modifiable apres", pt: "Editavel depois" }))}</span>
+      <span>${escapeHtml(langText({ en: "Template-backed", es: "Basado en plantilla", fr: "Base template", pt: "Baseado em template" }))}</span>
+    </div>
+    <div class="luma-ready-actions">
+      <button type="button" data-chat-generate>${escapeHtml(t("generateMyWebsite"))}</button>
+      <button type="button" data-chat-review>${escapeHtml(t("reviewDetails"))}</button>
+      <button type="button" data-chat-refine>${escapeHtml(langText({ en: "Tell Luma one more thing", es: "Decirle algo mas a Luma", fr: "Ajouter une precision", pt: "Dizer mais uma coisa" }))}</button>
+    </div>
+  `;
+  card.querySelector("[data-chat-generate]")?.addEventListener("click", handleGuidedGenerateButton);
+  card.querySelector("[data-chat-review]")?.addEventListener("click", openReviewDetails);
+  card.querySelector("[data-chat-refine]")?.addEventListener("click", () => {
+    const message = langText({
+      en: "Tell me exactly what else you want to add or change. I will adjust only that part of the plan.",
+      es: "Dime exactamente qué más quieres agregar o cambiar. Ajustaré solo esa parte del plan.",
+      fr: "Dites-moi exactement quoi ajouter ou changer. Je modifierai seulement cette partie du plan.",
+      pt: "Diga exatamente o que quer adicionar ou mudar. Vou ajustar apenas essa parte do plano.",
+    });
+    appendChatMessage("assistant", message, "speaking");
+    guidedReply.focus();
+  });
+  return card;
 }
 
 function renderSelectedDomainState() {
@@ -4062,7 +4116,7 @@ function openReviewDetails() {
 }
 
 function keepChatting() {
-  document.body.classList.remove("review-details-open", "final-review-mode");
+  document.body.classList.remove("review-details-open", "final-review-mode", "ready-chat-mode");
   const nextMissing = nextSmartGuidedStep(guidedStep, { allowReview: false });
   guidedStep = nextMissing || "review";
   const message = nextMissing

@@ -1664,6 +1664,93 @@ body.public-client-setup.generated-preview-open {
   background: #0f766e;
 }
 
+.public-client-setup .luma-ready-card {
+  display: grid;
+  justify-self: start;
+  gap: 12px;
+  width: min(100%, 720px);
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 22px;
+  padding: 16px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(45, 212, 191, 0.22), transparent 34%),
+    linear-gradient(145deg, rgba(240, 253, 250, 0.98), rgba(255, 255, 255, 0.98));
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+.public-client-setup .luma-ready-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.public-client-setup .luma-ready-head span {
+  color: #0f766e;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.public-client-setup .luma-ready-head strong {
+  color: #101828;
+  font-size: 18px;
+  font-weight: 950;
+  line-height: 1.05;
+  text-align: right;
+}
+
+.public-client-setup .luma-ready-card p {
+  margin: 0;
+  color: #475467;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.public-client-setup .luma-ready-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.public-client-setup .luma-ready-points span {
+  border-radius: 999px;
+  padding: 7px 10px;
+  color: #0f766e;
+  background: rgba(20, 184, 166, 0.12);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.public-client-setup .luma-ready-actions {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.2fr) minmax(120px, 0.8fr) minmax(140px, 1fr);
+  gap: 8px;
+}
+
+.public-client-setup .luma-ready-actions button {
+  min-height: 42px;
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: #0f172a;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.public-client-setup .luma-ready-actions [data-chat-generate] {
+  color: #ffffff;
+  background: #0f8f78;
+  box-shadow: 0 12px 26px rgba(15, 143, 120, 0.22);
+}
+
+.public-client-setup.ready-chat-mode .chat-status-card {
+  border-color: rgba(15, 118, 110, 0.2);
+  background: rgba(240, 253, 250, 0.78);
+}
+
 .public-client-setup .guided-chat {
   flex: 1 1 auto;
   align-content: start;
@@ -2452,6 +2539,18 @@ body.public-client-setup.generated-preview-open {
     max-width: 92%;
     overflow-wrap: anywhere;
     font-size: 14px;
+  }
+
+  .public-client-setup .luma-ready-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .public-client-setup .luma-ready-head {
+    display: grid;
+  }
+
+  .public-client-setup .luma-ready-head strong {
+    text-align: left;
   }
 
   .public-client-setup .live-preview-rendered .rendered-nav nav {
