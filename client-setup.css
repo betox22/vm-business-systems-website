@@ -1757,9 +1757,26 @@ body.public-client-setup.generated-preview-open {
   gap: 12px;
   max-height: none;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 18px 16px 12px;
   scroll-behavior: smooth;
+}
+
+.public-client-setup .guided-chat-card,
+.public-client-setup .guided-chat,
+.public-client-setup .chat-message,
+.public-client-setup .chat-message span,
+.public-client-setup .site-plan-card,
+.public-client-setup .luma-ready-card,
+.public-client-setup .chat-understanding-card,
+.public-client-setup .template-choice-panel,
+.public-client-setup .luma-coach-card,
+.public-client-setup .luma-ready-actions button,
+.public-client-setup .site-plan-pages article {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .public-client-setup .chat-message {
@@ -1776,6 +1793,9 @@ body.public-client-setup.generated-preview-open {
   display: block;
   width: fit-content;
   max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-word;
   padding: 11px 13px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 16px 16px 16px 5px;
@@ -2498,8 +2518,10 @@ body.public-client-setup.generated-preview-open {
   }
 
   .public-client-setup .guided-chat-card {
+    width: 100%;
     min-height: 0;
     height: 100%;
+    overflow: hidden;
     border-left: 0;
     border-top: 1px solid rgba(15, 23, 42, 0.08);
     box-shadow: 0 -12px 30px rgba(15, 23, 42, 0.08);
@@ -2529,10 +2551,12 @@ body.public-client-setup.generated-preview-open {
   .public-client-setup .guided-chat {
     min-height: 0;
     padding: 12px 12px 8px;
+    overflow-x: hidden;
     overflow-y: auto;
   }
 
   .public-client-setup .chat-message {
+    width: auto;
     max-width: 100%;
     overflow-wrap: anywhere;
     font-size: 16px;
@@ -2545,11 +2569,15 @@ body.public-client-setup.generated-preview-open {
   }
 
   .public-client-setup .chat-message span {
+    width: auto;
     padding: 12px 14px;
   }
 
   .public-client-setup .chat-message.user {
-    max-width: 94%;
+    max-width: 92%;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 
   .public-client-setup .luma-ready-actions {
@@ -2567,6 +2595,8 @@ body.public-client-setup.generated-preview-open {
   .public-client-setup .luma-ready-card,
   .public-client-setup .site-plan-card {
     width: 100%;
+    max-width: 100%;
+    overflow: hidden;
     border-radius: 18px;
     padding: 14px;
   }
@@ -2584,13 +2614,32 @@ body.public-client-setup.generated-preview-open {
   }
 
   .public-client-setup .guided-actions {
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 42px 42px minmax(0, 1fr);
+    justify-content: stretch;
     width: 100%;
   }
 
   .public-client-setup .guided-actions .text-action {
     max-width: none;
     font-size: 11px;
+  }
+
+  .public-client-setup #guidedMicButton {
+    order: 1;
+  }
+
+  .public-client-setup #guidedSendButton {
+    order: 2;
+  }
+
+  .public-client-setup #guidedSkipButton {
+    order: 3;
+    justify-self: end;
+  }
+
+  .public-client-setup #switchManualFormButton {
+    display: none;
   }
 
   .public-client-setup .live-preview-rendered .rendered-nav nav {

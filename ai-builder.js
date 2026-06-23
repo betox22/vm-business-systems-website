@@ -3686,6 +3686,18 @@ function promptAccountBeforeGenerate() {
 
 function normalizeGuidedStateBeforeGenerate() {
   const services = meaningfulOfferItems(guidedState.servicesProducts);
+  if (!services.length) {
+    services.push(
+      guidedState.industry ||
+        guidedState.businessDescription ||
+        langText({
+          en: "AI-defined offer",
+          es: "oferta definida por IA",
+          fr: "offre definie par IA",
+          pt: "oferta definida por IA",
+        })
+    );
+  }
   guidedState.businessName = guidedState.businessName || t("newClientWebsite");
   guidedState.industry = guidedState.industry || t("generalBusiness");
   guidedState.businessDescription =
@@ -4010,12 +4022,12 @@ function renderLumaReadyCard() {
       <span>${escapeHtml(langText({ en: "Template-backed", es: "Basado en plantilla", fr: "Base template", pt: "Baseado em template" }))}</span>
     </div>
     <div class="luma-ready-actions">
-      <button type="button" data-chat-generate>${escapeHtml(t("generateMyWebsite"))}</button>
+      <button type="button" data-chat-generate>${escapeHtml(langText({ en: "Generate website now", es: "Generar pagina ahora", fr: "Generer maintenant", pt: "Gerar site agora" }))}</button>
       <button type="button" data-chat-review>${escapeHtml(t("reviewDetails"))}</button>
       <button type="button" data-chat-refine>${escapeHtml(langText({ en: "Tell Luma one more thing", es: "Decirle algo mas a Luma", fr: "Ajouter une precision", pt: "Dizer mais uma coisa" }))}</button>
     </div>
   `;
-  card.querySelector("[data-chat-generate]")?.addEventListener("click", handleGuidedGenerateButton);
+  card.querySelector("[data-chat-generate]")?.addEventListener("click", (event) => handleGuidedGenerateButton(event));
   card.querySelector("[data-chat-review]")?.addEventListener("click", openReviewDetails);
   card.querySelector("[data-chat-refine]")?.addEventListener("click", () => {
     const message = langText({
