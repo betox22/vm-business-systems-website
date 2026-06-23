@@ -5117,9 +5117,10 @@ function applyBrandSystemToSchema(schema, brandInput) {
 }
 
 function normalizeBrand(brandInput = {}) {
-  const brand = { ...DEFAULT_BRAND, ...(brandInput || {}) };
-  const colors = brandInput.colors || {};
-  brand.logoUrl = brand.logoUrl || brandInput.logo_url || brandInput.logo || "";
+  const input = brandInput || {};
+  const brand = { ...DEFAULT_BRAND, ...input };
+  const colors = input.colors || {};
+  brand.logoUrl = brand.logoUrl || input.logo_url || input.logo || "";
   brand.primaryColor = resolveColor(brand.primaryColor || colors.primary, DEFAULT_BRAND.primaryColor);
   brand.secondaryColor = resolveColor(brand.secondaryColor || colors.secondary, DEFAULT_BRAND.secondaryColor);
   brand.accentColor = resolveColor(brand.accentColor || colors.accent, brand.primaryColor);
