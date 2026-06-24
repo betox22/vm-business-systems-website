@@ -8,6 +8,8 @@ services:
     envVars:
       - key: OPENAI_MODEL
         value: gpt-5-mini
+      - key: OPENAI_CHAT_TIMEOUT
+        value: 8
       - key: ALLOW_DEV_AI_MOCK
         value: false
       - key: ALLOWED_ORIGINS

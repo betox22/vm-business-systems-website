@@ -41,13 +41,16 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
         payload.message,
     )
 
+    if _can_answer_intake_locally(payload, current, local_updates):
+        return _fallback_response(payload, current_step, selected_language, local_updates, False)
+
     settings = get_settings()
     if not settings.openai_api_key:
         return _fallback_response(payload, current_step, selected_language, local_updates, True)
 
     client = OpenAI(
         api_key=settings.openai_api_key,
-        timeout=30.0,
+        timeout=settings.openai_chat_timeout,
         max_retries=0,
         http_client=httpx.Client(trust_env=False),
     )
@@ -168,6 +171,43 @@ def _parse_json(text: str) -> dict:
     return {}
 
 
+def _can_answer_intake_locally(payload: LumaAgentRequest, current: dict, local_updates: dict) -> bool:
+    if payload.previous_schema:
+        return False
+    message = _normalize(payload.message or "")
+    if not message:
+        return True
+    complex_change_words = [
+        "cambia solo",
+        "modifica solo",
+        "replace",
+        "change only",
+        "make it more",
+        "hazlo mas",
+        "rediseña",
+        "redesign",
+        "copy",
+        "texto",
+        "section",
+        "seccion",
+    ]
+    if _has_any(message, complex_change_words):
+        return False
+    if local_updates:
+        return True
+    if _infer_template_id(_normalized_context(current, payload.message), current):
+        return True
+    return (payload.current_step_snake or payload.current_step) in {
+        "websiteIntent",
+        "businessName",
+        "businessDescription",
+        "servicesProducts",
+        "preferredColors",
+        "contactInfo",
+        "salesMode",
+    }
+
+
 def _clean_local_updates(updates: dict, current_step: str, message: str = "") -> dict:
     cleaned = dict(updates or {})
     contact = cleaned.get("contactInfo")
@@ -243,7 +283,7 @@ def _fallback_response(
         nextQuestion=next_question,
         readyToGenerate=ready,
         missingImportantFields=missing,
-        confidence=0.58,
+        confidence=analysis.get("confidence") if not used_dev_fallback else 0.58,
         selectedTemplateId=selected_template_id,
         selectedTemplateReason=template_reason,
         catalogType=catalog_type,
