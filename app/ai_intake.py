@@ -336,17 +336,37 @@ def _infer_broad_updates(text: str, selected_language: str) -> dict:
     if sales_mode != "unknown":
         updates["salesMode"] = sales_mode
     if any(word in lowered for word in ["logo", "logotipo", "brand", "marca", "foto", "photo", "imagen", "image"]):
-        updates["hasLogoPhotos"] = {
-            "en": "Client mentioned logo/photos",
-            "es": "El cliente mencionó logo/fotos",
-            "fr": "Le client a mentionné logo/photos",
-            "pt": "O cliente mencionou logo/fotos",
-        }.get(selected_language, "Client mentioned logo/photos")
-        updates["hasLogo"] = any(word in lowered for word in ["logo", "logotipo", "brand", "marca"])
+        generated_logo_request = _wants_ai_generated_logo(lowered)
+        updates["hasLogoPhotos"] = (
+            {
+                "en": "Client has no logo and wants Luma to create a simple brand mark from the business name and style.",
+                "es": "El cliente no tiene logo y quiere que Luma cree una marca simple con el nombre y el estilo.",
+                "fr": "Le client n'a pas de logo et veut que Luma crée une marque simple avec le nom et le style.",
+                "pt": "O cliente nao tem logo e quer que a Luma crie uma marca simples com o nome e o estilo.",
+            }.get(selected_language, "Client wants AI-generated logo direction")
+            if generated_logo_request
+            else {
+                "en": "Client mentioned logo/photos",
+                "es": "El cliente mencionó logo/fotos",
+                "fr": "Le client a mentionné logo/photos",
+                "pt": "O cliente mencionou logo/fotos",
+            }.get(selected_language, "Client mentioned logo/photos")
+        )
+        updates["hasLogo"] = False if generated_logo_request else any(word in lowered for word in ["logo", "logotipo", "brand", "marca"])
         updates["hasPhotos"] = any(word in lowered for word in ["foto", "photo", "imagen", "image"])
     if len(text) > 50:
         updates.setdefault("businessDescription", text[:600])
     return updates
+
+
+def _wants_ai_generated_logo(text: str) -> bool:
+    return bool(
+        re.search(
+            r"no tengo logo|sin logo|crea(?:r)?(?:me)?(?: un)? logo|crear(?: un)? logo|generate(?: a)? logo|make(?: a)? logo|haz(?:me)?(?: un)? logo|diseñ(?:a|ar)(?: un)? logo|disena(?:r)?(?: un)? logo",
+            text,
+            flags=re.I,
+        )
+    )
 
 
 def _extract_contact(text: str) -> dict[str, str]:
@@ -375,7 +395,7 @@ def _extract_business_name(text: str) -> str:
         match = re.search(pattern, text, flags=re.I)
         if match:
             name = re.split(
-                r"\s+(?:y\s+)?(?:vende|vendo|vendemos|ofrece|ofrecemos|hace|tiene|con|para)\b",
+                r"\s+(?:y\s+)?(?:vende|vendo|vendemos|ofrece|ofrecemos|hace|tiene|con|para|debe|sera|será|ser|vamos|va)\b",
                 match.group(1),
                 maxsplit=1,
                 flags=re.I,
