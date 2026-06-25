@@ -4201,6 +4201,23 @@ function guidedCompletionPercent() {
 }
 
 function compactCollectedPreview() {
+  if (isPublicClientSetup) {
+    const templateMeta = templatePreviewMeta(forcedTemplateSelection?.templateId || guidedState.sitePlan?.templateId || "");
+    const humanTemplate = localizedTemplateName(templateMeta);
+    const parts = [
+      guidedState.businessName,
+      humanTemplate,
+      arrayValue(guidedState.servicesProducts).slice(0, 2).join(", "),
+    ].filter(Boolean);
+    return parts.length
+      ? parts.join(" · ")
+      : langText({
+          en: "Luma is collecting the essentials.",
+          es: "Luma está reuniendo lo esencial.",
+          fr: "Luma collecte l'essentiel.",
+          pt: "A Luma está reunindo o essencial.",
+        });
+  }
   const parts = [
     forcedTemplateSelection?.templateId,
     guidedState.businessName,
