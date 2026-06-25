@@ -4269,6 +4269,7 @@ function guidedStateForApi() {
   const logoUrl = isCloudSafeUrl(guidedState.logoUrl) ? guidedState.logoUrl : "";
   const photoUrls = arrayValue(guidedState.photoUrls).filter(isCloudSafeUrl);
   const payload = {
+    websiteIntent: guidedState.websiteIntent,
     businessName: guidedState.businessName,
     businessDescription: guidedState.businessDescription,
     industry: guidedState.industry,
@@ -4287,6 +4288,7 @@ function guidedStateForApi() {
       ...createDesignStrategy({
         business_name: guidedState.businessName,
         business_description: guidedState.businessDescription,
+        website_intent: guidedState.websiteIntent,
         industry: guidedState.industry,
         target_audience: guidedState.targetAudience,
         preferred_tone: guidedState.preferredTone,
