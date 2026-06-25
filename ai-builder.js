@@ -1329,6 +1329,11 @@ function ensureGuidedCoachCard() {
 }
 
 function renderGuidedCoachCard() {
+  if (isPublicClientSetup) {
+    guidedCoachCard?.remove();
+    guidedCoachCard = null;
+    return;
+  }
   const card = ensureGuidedCoachCard();
   if (!card) return;
   const stage = guidedStage(guidedStep);
@@ -2143,16 +2148,15 @@ function resetAssistantConversation() {
   if (restoredGuidedDraftInfo) {
     appendRestoredDraftMessage();
   }
-  appendChatMessage("assistant", guidedQuestion(guidedStep), "happy");
   if (guidedStep === "websiteIntent") {
     appendChatMessage(
       "assistant",
-      langText({
-        en: "You can type examples like: I need a large catalog store, a restaurant menu, a booking site for a barbershop, or a cyberpunk online store.",
-        es: "Puedes escribir algo como: necesito una tienda con catalogo grande, un menu de restaurante, una barberia con citas, o una tienda cyberpunk super cool.",
-        fr: "Vous pouvez écrire par exemple : grand catalogue, menu de restaurant, site de reservation pour salon, ou boutique cyberpunk.",
-        pt: "Você pode escrever algo como: loja com catalogo grande, menu de restaurante, site de reservas para barbearia, ou loja cyberpunk.",
-      }),
+      `${guidedQuestion(guidedStep)}\n\n${langText({
+        en: "You can answer naturally, for example: a large catalog store, a restaurant menu, a booking site for a barbershop, or a cyberpunk online store.",
+        es: "Puedes responder natural, por ejemplo: una tienda con catalogo grande, un menu de restaurante, una barberia con citas, o una tienda cyberpunk.",
+        fr: "Vous pouvez répondre naturellement, par exemple : grand catalogue, menu de restaurant, site de reservation pour salon, ou boutique cyberpunk.",
+        pt: "Você pode responder naturalmente, por exemplo: loja com catalogo grande, menu de restaurante, site de reservas para barbearia ou loja cyberpunk.",
+      })}`,
       "speaking",
     );
   } else if (forcedTemplateSelection?.templateId && guidedState.websiteIntent) {
@@ -3062,6 +3066,7 @@ function updateAssetPromptVisibility() {
 }
 
 function appendUnderstandingCard({ updates = {}, sourceMessage = "" } = {}) {
+  if (isPublicClientSetup) return;
   const filledItems = understandingItems().filter((item) => item.status === "detected");
   const missingItems = understandingItems().filter((item) => item.status === "missing");
   const changedKeys = Object.keys(updates || {}).filter((key) => key in guidedState);
@@ -3985,7 +3990,7 @@ function aiSourceSignalList() {
 function renderSitePlanInChatIfNeeded() {
   if (guidedStep !== "review" || !guidedChat) return;
   guidedChat.querySelectorAll(".site-plan-card, .luma-ready-card").forEach((card) => card.remove());
-  if (forcedTemplateSelection?.templateId || guidedState.sitePlan?.templateId) {
+  if (!isPublicClientSetup && (forcedTemplateSelection?.templateId || guidedState.sitePlan?.templateId)) {
     guidedChat.appendChild(renderSitePlanCard());
   }
   guidedChat.appendChild(renderLumaReadyCard());
