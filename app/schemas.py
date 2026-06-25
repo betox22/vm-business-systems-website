@@ -230,6 +230,7 @@ class ClientLoginResponse(BaseModel):
 class ClientRequestPayload(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
+    website_intent: str = Field(default="", alias="websiteIntent", max_length=300)
     business_name: str = Field(default="", alias="businessName", max_length=160)
     business_description: str = Field(
         default="",

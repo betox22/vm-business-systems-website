@@ -374,7 +374,13 @@ def _extract_business_name(text: str) -> str:
     for pattern in patterns:
         match = re.search(pattern, text, flags=re.I)
         if match:
-            return _clean(match.group(1), 56)
+            name = re.split(
+                r"\s+(?:y\s+)?(?:vende|vendo|vendemos|ofrece|ofrecemos|hace|tiene|con|para)\b",
+                match.group(1),
+                maxsplit=1,
+                flags=re.I,
+            )[0]
+            return _clean(name, 56)
     return ""
 
 
@@ -394,7 +400,7 @@ def _extract_location(text: str) -> str:
 
 def _extract_services(text: str) -> list[str]:
     patterns = [
-        r"(?:productos?|servicios?|vende|vendo|ofrece|ofrecemos|catalogo|cat[aá]logo)\s*(?:son|es|:|-)?\s*([^.;\n]+)",
+        r"(?:productos?|servicios?|vende\b|vendo\b|vendemos\b|ofrece\b|ofrecemos\b|catalogo|cat[aá]logo)\s*(?:son|es|:|-)?\s*([^.;\n]+)",
         r"(?:tienda|negocio|marca|empresa|pagina|p[aá]gina|web)\s+de\s+([^.;\n]+)",
         r"(?:products?|services?|sells|offers|catalog)\s*(?:are|is|:|-)?\s*([^.;\n]+)",
         r"(?:store|shop|business|brand|website)\s+(?:for|of)\s+([^.;\n]+)",

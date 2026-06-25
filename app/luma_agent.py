@@ -9,8 +9,8 @@ from .config import get_settings
 from .schemas import LumaAgentRequest, LumaAgentResponse
 
 
-REQUIRED_FOR_DRAFT = ["businessName", "businessDescription", "servicesProducts", "preferredColors"]
-IMPORTANT_FOR_LAUNCH = ["contactInfo"]
+REQUIRED_FOR_DRAFT = ["websiteIntent", "businessName", "businessDescription"]
+IMPORTANT_FOR_LAUNCH: list[str] = []
 
 TEMPLATE_CATALOG_TYPES = {
     "mega-marketplace": "dense_marketplace_catalog",
@@ -144,8 +144,8 @@ def _system_prompt(selected_language: str) -> str:
         "The user's intake answers are internal strategy notes, never public website copy. Do not paste rough user text into page headlines or paragraphs. "
         "Rewrite everything as polished customer-facing strategy later. "
         "If the user gives many details in one message, extract all fields and only ask what is truly missing. "
-        "Before readyToGenerate=true, make sure you have brand direction: either preferredColors, a logo/photo note, "
-        "or an explicit 'let AI decide'. If missing, ask for logo/colors/style instead of generating. "
+        "Do not require colors, logo, photos, contact, domain, or brand direction before readyToGenerate=true. "
+        "Treat those as optional enhancements for review; never repeat them as blocking questions. "
         "For broad varied products, unusual mixed items, many categories, marketplace, Amazon-like, or general online store with many categories, select mega-marketplace. "
         "For one hero product, one product line, niche product variants, or premium product storytelling, select apple-premium-product. "
         "For clothing/fashion drops, select fashion-drop-pro. For restaurants/menu, select restaurant-food-business. "
@@ -210,6 +210,8 @@ def _can_answer_intake_locally(payload: LumaAgentRequest, current: dict, local_u
 
 def _clean_local_updates(updates: dict, current_step: str, message: str = "") -> dict:
     cleaned = dict(updates or {})
+    if current_step == "websiteIntent" and message.strip() and not cleaned.get("websiteIntent"):
+        cleaned["websiteIntent"] = message.strip()[:300]
     contact = cleaned.get("contactInfo")
     if (
         current_step != "contactInfo"
@@ -416,10 +418,6 @@ def _missing_important_fields(current: dict) -> list[str]:
     missing = []
     for field in [*REQUIRED_FOR_DRAFT, *IMPORTANT_FOR_LAUNCH]:
         value = current.get(field)
-        if field == "preferredColors":
-            if not _has_brand_direction(current):
-                missing.append(field)
-            continue
         if value in ("", None, [], {}):
             missing.append(field)
     return missing
@@ -438,52 +436,62 @@ def _has_brand_direction(current: dict) -> bool:
 
 
 def _next_step(current: dict, current_step: str) -> str:
-    if not current.get("businessName"):
-        return "businessName"
+    if not current.get("websiteIntent"):
+        return "websiteIntent"
     if not current.get("businessDescription"):
         return "businessDescription"
-    if not current.get("servicesProducts"):
+    if not current.get("businessName"):
+        return "businessName"
+    if not _has_offer_context(current) and current_step != "servicesProducts":
         return "servicesProducts"
-    if not _has_brand_direction(current):
-        return "preferredColors"
-    if not current.get("contactInfo"):
-        return "contactInfo"
     return "review"
+
+
+def _has_offer_context(current: dict) -> bool:
+    if _meaningful_products(current.get("servicesProducts") or []):
+        return True
+    description = _normalize(current.get("businessDescription") or "")
+    intent = _normalize(current.get("websiteIntent") or "")
+    return len(description) >= 28 or _has_any(intent, ["store", "tienda", "marketplace", "catalog", "catalogo", "service", "servicio", "booking", "reserva"])
 
 
 def _question_for(language: str, step: str) -> str:
     questions = {
         "en": {
+            "websiteIntent": "What should this become: online store, marketplace, catalog, booking page, company site, landing page, or something else?",
             "businessName": "What should I call the business?",
-            "businessDescription": "Tell me what the business sells or does. You can include products, style, city, and contact in one message.",
-            "servicesProducts": "What are the main products, categories, or services?",
+            "businessDescription": "Tell me what it sells or does in one message. I will use it as design strategy, not as literal page copy.",
+            "servicesProducts": "I only need one clarification: what are the main product categories or services?",
             "preferredColors": "Do you have a logo, brand colors, or a style direction? You can also say: let AI decide.",
             "contactInfo": "What contact should the website use: WhatsApp, phone, email, or Instagram?",
-            "review": "I have enough to create the first draft. Do you want to add a logo/photos or generate it now?",
+            "review": "I have enough to create the first draft. You can add logo/photos or generate now.",
         },
         "es": {
+            "websiteIntent": "¿Qué quieres crear: tienda online, marketplace, catálogo, reservas, página de empresa, landing o algo diferente?",
             "businessName": "¿Cómo se llama el negocio?",
-            "businessDescription": "Cuéntame qué vende o qué hace. Puedes incluir productos, estilo, ciudad y contacto en un solo mensaje.",
-            "servicesProducts": "¿Cuáles son los productos, categorías o servicios principales?",
+            "businessDescription": "Dime qué vende o qué hace en un solo mensaje. Lo usaré como estrategia de diseño, no como texto literal para la página.",
+            "servicesProducts": "Sólo necesito aclarar algo: ¿cuáles son las categorías principales de productos o servicios?",
             "preferredColors": "¿Tienes logo, colores de marca o una dirección de estilo? También puedes decir: que la IA decida.",
             "contactInfo": "¿Qué contacto debe usar la página: WhatsApp, teléfono, email o Instagram?",
-            "review": "Ya tengo suficiente para crear el primer borrador. ¿Quieres subir logo/fotos o generarlo ahora?",
+            "review": "Ya tengo suficiente para crear el primer borrador. Puedes subir logo/fotos o generar ahora.",
         },
         "fr": {
+            "websiteIntent": "Que voulez-vous créer : boutique en ligne, marketplace, catalogue, réservations, site d'entreprise, landing page ou autre chose ?",
             "businessName": "Quel est le nom de l'entreprise ?",
-            "businessDescription": "Dites-moi ce qu'elle vend ou propose. Vous pouvez inclure produits, style, ville et contact.",
-            "servicesProducts": "Quels sont les principaux produits, catégories ou services ?",
+            "businessDescription": "Dites-moi ce qu'elle vend ou propose en un seul message. Je l'utiliserai comme stratégie de design, pas comme texte littéral.",
+            "servicesProducts": "J'ai seulement besoin d'une précision : quelles sont les principales catégories de produits ou services ?",
             "preferredColors": "Avez-vous un logo, des couleurs de marque ou une direction de style ? Vous pouvez aussi dire : laisser l'IA décider.",
             "contactInfo": "Quel contact doit apparaître : WhatsApp, téléphone, email ou Instagram ?",
-            "review": "J'ai assez d'informations pour créer le premier brouillon. Voulez-vous ajouter logo/photos ou générer maintenant ?",
+            "review": "J'ai assez d'informations pour créer le premier brouillon. Vous pouvez ajouter logo/photos ou générer maintenant.",
         },
         "pt": {
+            "websiteIntent": "O que você quer criar: loja online, marketplace, catálogo, reservas, site empresarial, landing page ou outra coisa?",
             "businessName": "Qual é o nome do negócio?",
-            "businessDescription": "Conte o que ele vende ou faz. Pode incluir produtos, estilo, cidade e contato em uma mensagem.",
-            "servicesProducts": "Quais são os principais produtos, categorias ou serviços?",
+            "businessDescription": "Diga o que ele vende ou faz em uma mensagem. Vou usar isso como estratégia de design, não como texto literal da página.",
+            "servicesProducts": "Só preciso esclarecer uma coisa: quais são as principais categorias de produtos ou serviços?",
             "preferredColors": "Você tem logo, cores da marca ou uma direção de estilo? Também pode dizer: deixar a IA decidir.",
             "contactInfo": "Qual contato deve aparecer: WhatsApp, telefone, email ou Instagram?",
-            "review": "Já tenho o suficiente para criar o primeiro rascunho. Quer enviar logo/fotos ou gerar agora?",
+            "review": "Já tenho o suficiente para criar o primeiro rascunho. Você pode enviar logo/fotos ou gerar agora.",
         },
     }
     return questions.get(language, questions["en"]).get(step, questions.get(language, questions["en"])["review"])
@@ -563,13 +571,11 @@ def _analyze_business_context(
     else:
         catalog_breadth = "unknown"
 
-    core_missing = any(field in missing for field in ["businessName", "businessDescription", "servicesProducts"])
+    core_missing = any(field in missing for field in REQUIRED_FOR_DRAFT)
     if ready:
         decision_state = "ready_to_generate"
     elif core_missing:
         decision_state = "needs_business_context"
-    elif "preferredColors" in missing:
-        decision_state = "needs_brand_direction"
     else:
         decision_state = "needs_business_context"
     signals = []
