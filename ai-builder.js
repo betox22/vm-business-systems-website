@@ -466,7 +466,7 @@ const GUIDED_QUESTIONS = {
     salesMode: "Should the site support online sales, quote requests, in-person visits, or a mix?",
     hasLogoPhotos: "Do you have a logo or photos ready to use?",
     desiredDomain: "What domain would you like? You can write a name like lunastore.com or skip it for now.",
-    review: "I have enough to create the first draft. You can add logo/photos or generate now.",
+    review: "I have enough to create the first draft. If you asked me to create the logo or choose colors, I will include that in the design direction.",
   },
   es: {
     websiteIntent: "¿Qué quieres crear: tienda online, marketplace, catálogo, reservas, página de empresa, landing o algo diferente?",
@@ -482,7 +482,7 @@ const GUIDED_QUESTIONS = {
     salesMode: "¿Quieres ventas online, solicitudes de cotización, visitas presenciales o una mezcla?",
     hasLogoPhotos: "Tienes logo o fotos listas para usar?",
     desiredDomain: "Que dominio te gustaria? Puedes escribir algo como lunastore.com o saltarlo por ahora.",
-    review: "Ya tengo suficiente para crear el primer borrador. Puedes subir logo/fotos o generar ahora.",
+    review: "Ya tengo suficiente para crear el primer borrador. Si me pediste crear el logo o elegir colores, lo incluiré en la dirección visual.",
   },
   fr: {
     websiteIntent: "Que voulez-vous créer : boutique en ligne, marketplace, catalogue, réservations, site d'entreprise, landing page ou autre chose ?",
@@ -498,7 +498,7 @@ const GUIDED_QUESTIONS = {
     salesMode: "Le site doit-il proposer la vente en ligne, les demandes de devis, les visites en personne, ou un mélange?",
     hasLogoPhotos: "Avez-vous un logo ou des photos prêts à utiliser?",
     desiredDomain: "Quel domaine souhaitez-vous? Vous pouvez écrire lunastore.com ou ignorer pour l'instant.",
-    review: "J'ai assez d'informations pour créer le premier brouillon. Vous pouvez ajouter logo/photos ou générer maintenant.",
+    review: "J'ai assez d'informations pour créer le premier brouillon. Si vous m'avez demandé de créer le logo ou de choisir les couleurs, je l'inclurai dans la direction visuelle.",
   },
   pt: {
     websiteIntent: "O que você quer criar: loja online, marketplace, catálogo, reservas, site empresarial, landing page ou outra coisa?",
@@ -514,7 +514,7 @@ const GUIDED_QUESTIONS = {
     salesMode: "O site deve aceitar vendas online, pedidos de orçamento, visitas presenciais, ou uma mistura?",
     hasLogoPhotos: "Você tem logo ou fotos prontas para usar?",
     desiredDomain: "Qual domínio você gostaria? Pode escrever lunastore.com ou pular por enquanto.",
-    review: "Já tenho o suficiente para criar o primeiro rascunho. Você pode enviar logo/fotos ou gerar agora.",
+    review: "Já tenho o suficiente para criar o primeiro rascunho. Se você pediu para criar o logo ou escolher cores, vou incluir isso na direção visual.",
   },
 };
 
@@ -3025,7 +3025,7 @@ function refreshQuickChips() {
     preferredColors: ["Let AI choose", "Use my logo colors", "I have specific colors"],
     salesMode: ["Sell online", "Request quotes", "Calls/messages", "All of the above", "Not sure"],
     targetAudience: ["Local customers", "Families", "Professionals", "Businesses", "Let AI decide"],
-    review: ["Yes, correct", "Change style", "Upload logo", "Generate now"],
+    review: ["Yes, correct", "Change style", "Generate now"],
   };
   const chips = chipsByStep[guidedStep] || [];
   quickChipRow.innerHTML = chips
@@ -3039,15 +3039,28 @@ function refreshQuickChips() {
 
 function shouldShowAssetPrompt() {
   const typed = guidedReply?.value || "";
+  if (wantsAiGeneratedLogo(typed) || wantsAiGeneratedLogo(guidedState.hasLogoPhotos)) return false;
   return (
-    ["preferredColors", "hasLogoPhotos", "review"].includes(guidedStep) ||
-    Boolean(guidedState.hasLogoPhotos && !guidedState.hasLogo && !guidedState.hasPhotos) ||
-    /logo|foto|fotos|imagen|imagenes|image|photo|photos|brand|marca|color|colors/i.test(typed)
+    document.body.classList.contains("review-details-open") ||
+    guidedStep === "hasLogoPhotos" ||
+    wantsToUploadAssets(typed) ||
+    Boolean((guidedState.hasLogo || guidedState.hasPhotos) && !wantsAiGeneratedLogo(guidedState.hasLogoPhotos))
   );
 }
 
 function updateAssetPromptVisibility() {
   guidedAssetPrompt?.classList.toggle("active", shouldShowAssetPrompt());
+}
+
+function wantsAiGeneratedLogo(value) {
+  const text = String(value || "").toLowerCase();
+  return /no tengo logo|sin logo|crea(?:r)?(?:me)?(?: un)? logo|crear(?: un)? logo|generate(?: a)? logo|make(?: a)? logo|haz(?:me)?(?: un)? logo|diseñ(?:a|ar)(?: un)? logo|disena(?:r)?(?: un)? logo/.test(text);
+}
+
+function wantsToUploadAssets(value) {
+  const text = String(value || "").toLowerCase();
+  if (wantsAiGeneratedLogo(text)) return false;
+  return /subir|cargar|adjuntar|upload|attach|tengo logo|tengo fotos|logo listo|fotos listas|photo ready|photos ready|use my logo|usar mi logo/.test(text);
 }
 
 function appendUnderstandingCard({ updates = {}, sourceMessage = "" } = {}) {
@@ -4002,33 +4015,22 @@ function renderLumaReadyCard() {
   });
   card.innerHTML = `
     <div class="luma-ready-head">
-      <span>${escapeHtml(langText({ en: "Ready to build", es: "Listo para construir", fr: "Pret a construire", pt: "Pronto para construir" }))}</span>
+      <span>${escapeHtml(langText({ en: "Site plan ready", es: "Plan listo", fr: "Plan pret", pt: "Plano pronto" }))}</span>
       <strong>${escapeHtml(templateName)}</strong>
     </div>
     <p>${escapeHtml(reason)}</p>
     <div class="luma-ready-points">
-      <span>${escapeHtml(langText({ en: "No raw notes pasted", es: "No pega notas crudas", fr: "Pas de notes brutes", pt: "Nao cola notas brutas" }))}</span>
-      <span>${escapeHtml(langText({ en: "Editable after generation", es: "Editable despues", fr: "Modifiable apres", pt: "Editavel depois" }))}</span>
-      <span>${escapeHtml(langText({ en: "Template-backed", es: "Basado en plantilla", fr: "Base template", pt: "Baseado em template" }))}</span>
+      <span>${escapeHtml(langText({ en: "Professional copy", es: "Textos profesionales", fr: "Textes professionnels", pt: "Textos profissionais" }))}</span>
+      <span>${escapeHtml(langText({ en: "Editable draft", es: "Borrador editable", fr: "Brouillon modifiable", pt: "Rascunho editavel" }))}</span>
+      <span>${escapeHtml(langText({ en: "Brand direction included", es: "Identidad incluida", fr: "Identite incluse", pt: "Identidade incluida" }))}</span>
     </div>
     <div class="luma-ready-actions">
       <button type="button" data-chat-generate>${escapeHtml(langText({ en: "Generate website now", es: "Generar pagina ahora", fr: "Generer maintenant", pt: "Gerar site agora" }))}</button>
       <button type="button" data-chat-review>${escapeHtml(t("reviewDetails"))}</button>
-      <button type="button" data-chat-refine>${escapeHtml(langText({ en: "Tell Luma one more thing", es: "Decirle algo mas a Luma", fr: "Ajouter une precision", pt: "Dizer mais uma coisa" }))}</button>
     </div>
   `;
   card.querySelector("[data-chat-generate]")?.addEventListener("click", (event) => handleGuidedGenerateButton(event));
   card.querySelector("[data-chat-review]")?.addEventListener("click", openReviewDetails);
-  card.querySelector("[data-chat-refine]")?.addEventListener("click", () => {
-    const message = langText({
-      en: "Tell me exactly what else you want to add or change. I will adjust only that part of the plan.",
-      es: "Dime exactamente qué más quieres agregar o cambiar. Ajustaré solo esa parte del plan.",
-      fr: "Dites-moi exactement quoi ajouter ou changer. Je modifierai seulement cette partie du plan.",
-      pt: "Diga exatamente o que quer adicionar ou mudar. Vou ajustar apenas essa parte do plano.",
-    });
-    appendChatMessage("assistant", message, "speaking");
-    guidedReply.focus();
-  });
   return card;
 }
 
@@ -4556,12 +4558,19 @@ function inferGuidedUpdatesFromAnyMessage(message) {
   if (salesMode && !guidedState.salesMode) updates.salesMode = salesMode;
 
   if (/logo|foto|fotos|imagen|imagenes|photo|photos|image|images/.test(lower) && !guidedState.hasLogoPhotos) {
-    updates.hasLogoPhotos = langText({
-      en: "Client mentioned logo/photos",
-      es: "El cliente mencionó logo/fotos",
-      fr: "Le client a mentionné logo/photos",
-      pt: "O cliente mencionou logo/fotos",
-    });
+    updates.hasLogoPhotos = wantsAiGeneratedLogo(text)
+      ? langText({
+          en: "Client has no logo and wants Luma to create a simple brand mark from the business name and style.",
+          es: "El cliente no tiene logo y quiere que Luma cree una marca simple con el nombre y el estilo.",
+          fr: "Le client n'a pas de logo et veut que Luma crée une marque simple avec le nom et le style.",
+          pt: "O cliente nao tem logo e quer que a Luma crie uma marca simples com o nome e o estilo.",
+        })
+      : langText({
+          en: "Client mentioned logo/photos",
+          es: "El cliente mencionó logo/fotos",
+          fr: "Le client a mentionné logo/photos",
+          pt: "O cliente mencionou logo/fotos",
+        });
   }
 
   return updates;
@@ -4589,7 +4598,7 @@ function extractBusinessName(text) {
   for (const pattern of patterns) {
     const match = text.match(pattern);
     if (match?.[1]) {
-      const name = match[1].split(/\s+(?:y\s+)?(?:vende|vendo|vendemos|ofrece|ofrecemos|hace|tiene|con|para)\b/i)[0];
+      const name = match[1].split(/\s+(?:y\s+)?(?:vende|vendo|vendemos|ofrece|ofrecemos|hace|tiene|con|para|debe|sera|será|ser|vamos|va)\b/i)[0];
       return cleanExtractedPhrase(name, 56);
     }
   }
