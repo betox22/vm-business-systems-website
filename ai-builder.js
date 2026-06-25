@@ -453,12 +453,12 @@ const I18N = {
 
 const GUIDED_QUESTIONS = {
   en: {
-    websiteIntent: "What do you need this website to do: sell online, show a catalog, explain your business, take bookings, receive quote requests, or something else?",
+    websiteIntent: "What should this become: online store, marketplace, catalog, booking page, company site, landing page, or something else?",
     businessName: "First, what is the name of your business?",
-    businessDescription: "To understand the direction, tell me what the business sells or does. I will use this as design context, not as text to copy literally.",
+    businessDescription: "Tell me what it sells or does in one message. I will use it as design strategy, not as literal page copy.",
     industry: "What industry or category best fits it?",
     location: "Where is it located or where does it serve customers?",
-    servicesProducts: "Which main products or services should the site show?",
+    servicesProducts: "I only need one clarification: what are the main product categories or services?",
     targetAudience: "Who is the main customer? You can also let AI decide.",
     preferredTone: "What style should it feel like: elegant, modern, friendly, premium? Or should AI decide?",
     preferredColors: "Any preferred colors, or do you want to upload a logo so I can extract a palette from it?",
@@ -466,15 +466,15 @@ const GUIDED_QUESTIONS = {
     salesMode: "Should the site support online sales, quote requests, in-person visits, or a mix?",
     hasLogoPhotos: "Do you have a logo or photos ready to use?",
     desiredDomain: "What domain would you like? You can write a name like lunastore.com or skip it for now.",
-    review: "Review the summary. If it looks right, generate the site.",
+    review: "I have enough to create the first draft. You can add logo/photos or generate now.",
   },
   es: {
-    websiteIntent: "Para que necesitas esta pagina: vender online, mostrar catalogo, explicar tu negocio, recibir reservas, recibir cotizaciones o algo diferente?",
+    websiteIntent: "¿Qué quieres crear: tienda online, marketplace, catálogo, reservas, página de empresa, landing o algo diferente?",
     businessName: "Primero, ¿cómo se llama tu negocio?",
-    businessDescription: "Para entender la dirección, dime qué vende u ofrece tu negocio. Lo usaré como contexto de diseño, no como texto literal para poner en la página.",
+    businessDescription: "Dime qué vende o qué hace en un solo mensaje. Lo usaré como estrategia de diseño, no como texto literal para la página.",
     industry: "En que industria o categoria lo pondrias?",
     location: "Donde atiende o donde esta ubicado?",
-    servicesProducts: "Que productos o servicios principales quieres mostrar?",
+    servicesProducts: "Sólo necesito aclarar algo: ¿cuáles son las categorías principales de productos o servicios?",
     targetAudience: "A quien le vendes principalmente? Tambien puedes dejar que IA decida.",
     preferredTone: "Que estilo quieres: elegante, moderno, cercano, premium? O dejo que IA decida?",
     preferredColors: "¿Tienes colores preferidos o quieres subir un logo para sacar una paleta desde ahí?",
@@ -482,15 +482,15 @@ const GUIDED_QUESTIONS = {
     salesMode: "¿Quieres ventas online, solicitudes de cotización, visitas presenciales o una mezcla?",
     hasLogoPhotos: "Tienes logo o fotos listas para usar?",
     desiredDomain: "Que dominio te gustaria? Puedes escribir algo como lunastore.com o saltarlo por ahora.",
-    review: "Revisa el resumen. Si esta bien, genera el sitio.",
+    review: "Ya tengo suficiente para crear el primer borrador. Puedes subir logo/fotos o generar ahora.",
   },
   fr: {
-    websiteIntent: "Que doit faire ce site: vendre en ligne, afficher un catalogue, présenter l'entreprise, prendre des réservations, recevoir des devis ou autre chose?",
+    websiteIntent: "Que voulez-vous créer : boutique en ligne, marketplace, catalogue, réservations, site d'entreprise, landing page ou autre chose ?",
     businessName: "Quel est le nom de l'entreprise?",
-    businessDescription: "Pour comprendre la direction, dites-moi ce que l'entreprise vend ou propose. Je l'utiliserai comme contexte de design, pas comme texte à copier tel quel.",
+    businessDescription: "Dites-moi ce qu'elle vend ou propose en un seul message. Je l'utiliserai comme stratégie de design, pas comme texte littéral.",
     industry: "Dans quel secteur ou catégorie la placeriez-vous?",
     location: "Où se trouve-t-elle ou où sert-elle ses clients?",
-    servicesProducts: "Quels produits ou services principaux faut-il afficher?",
+    servicesProducts: "J'ai seulement besoin d'une précision : quelles sont les principales catégories de produits ou services ?",
     targetAudience: "Qui est le client principal? Vous pouvez aussi laisser l'IA décider.",
     preferredTone: "Quel style voulez-vous: élégant, moderne, chaleureux, premium? Ou l'IA décide?",
     preferredColors: "Avez-vous des couleurs préférées, ou voulez-vous importer un logo pour que j'en extraie une palette?",
@@ -498,15 +498,15 @@ const GUIDED_QUESTIONS = {
     salesMode: "Le site doit-il proposer la vente en ligne, les demandes de devis, les visites en personne, ou un mélange?",
     hasLogoPhotos: "Avez-vous un logo ou des photos prêts à utiliser?",
     desiredDomain: "Quel domaine souhaitez-vous? Vous pouvez écrire lunastore.com ou ignorer pour l'instant.",
-    review: "Vérifiez le résumé. Si tout est bon, générez le site.",
+    review: "J'ai assez d'informations pour créer le premier brouillon. Vous pouvez ajouter logo/photos ou générer maintenant.",
   },
   pt: {
-    websiteIntent: "O que este site precisa fazer: vender online, mostrar catálogo, explicar o negócio, receber agendamentos, receber orçamentos ou outra coisa?",
+    websiteIntent: "O que você quer criar: loja online, marketplace, catálogo, reservas, site empresarial, landing page ou outra coisa?",
     businessName: "Qual é o nome do negócio?",
-    businessDescription: "Para entender a direção, diga o que o negócio vende ou oferece. Vou usar isso como contexto de design, não como texto literal para o site.",
+    businessDescription: "Diga o que ele vende ou faz em uma mensagem. Vou usar isso como estratégia de design, não como texto literal da página.",
     industry: "Em qual setor ou categoria ele se encaixa?",
     location: "Onde fica ou onde atende clientes?",
-    servicesProducts: "Quais produtos ou serviços principais devem aparecer?",
+    servicesProducts: "Só preciso esclarecer uma coisa: quais são as principais categorias de produtos ou serviços?",
     targetAudience: "Quem é o cliente principal? Você também pode deixar a IA decidir.",
     preferredTone: "Qual estilo você quer: elegante, moderno, próximo, premium? Ou a IA decide?",
     preferredColors: "Tem cores preferidas, ou quer enviar um logo para eu extrair uma paleta dele?",
@@ -514,7 +514,7 @@ const GUIDED_QUESTIONS = {
     salesMode: "O site deve aceitar vendas online, pedidos de orçamento, visitas presenciais, ou uma mistura?",
     hasLogoPhotos: "Você tem logo ou fotos prontas para usar?",
     desiredDomain: "Qual domínio você gostaria? Pode escrever lunastore.com ou pular por enquanto.",
-    review: "Revise o resumo. Se estiver certo, gere o site.",
+    review: "Já tenho o suficiente para criar o primeiro rascunho. Você pode enviar logo/fotos ou gerar agora.",
   },
 };
 
@@ -571,54 +571,30 @@ let guidedState = {
 
 const GUIDED_STEPS = [
   "websiteIntent",
-  "businessName",
   "businessDescription",
-  "industry",
-  "location",
+  "businessName",
   "servicesProducts",
-  "targetAudience",
-  "preferredTone",
   "preferredColors",
   "contactInfo",
-  "salesMode",
-  "hasLogoPhotos",
-  "desiredDomain",
   "review",
 ];
 
 const REQUIRED_GUIDED_STEPS = [
   "websiteIntent",
-  "businessName",
   "businessDescription",
-  "servicesProducts",
-  "preferredColors",
+  "businessName",
 ];
 
 const SMART_GUIDED_STEP_PRIORITY = [
   "websiteIntent",
-  "businessName",
   "businessDescription",
+  "businessName",
   "servicesProducts",
   "preferredColors",
   "contactInfo",
-  "salesMode",
-  "industry",
-  "location",
-  "preferredTone",
-  "preferredColors",
-  "targetAudience",
-  "desiredDomain",
 ];
 
-const OPTIONAL_GUIDED_STEPS = new Set([
-  "industry",
-  "location",
-  "targetAudience",
-  "preferredTone",
-  "preferredColors",
-  "salesMode",
-  "desiredDomain",
-]);
+const OPTIONAL_GUIDED_STEPS = new Set([]);
 
 const guidedAskedSteps = new Map();
 let lastAssistantPromptSignature = "";
@@ -2405,6 +2381,15 @@ async function sendGuidedReply() {
   appendChatMessage("user", message);
   guidedReply.value = "";
   const broadLocalUpdates = inferGuidedUpdatesFromAnyMessage(message);
+  const stepUpdates = inferGuidedUpdates(guidedStep, message);
+  const localContextUpdates = { ...broadLocalUpdates, ...stepUpdates };
+  if (guidedStep === "websiteIntent" && !localContextUpdates.websiteIntent) {
+    localContextUpdates.websiteIntent = extractWebsiteIntent(message) || message.slice(0, 180);
+  }
+  if (!localContextUpdates.businessDescription && !guidedState.businessDescription && isRichIntakeMessage(message)) {
+    localContextUpdates.businessDescription = message;
+  }
+  mergeGuidedUpdates(localContextUpdates);
   if (guidedStep === "review") {
     const adjustmentLabel = langText({
       en: "Client requested adjustments",
@@ -2488,7 +2473,7 @@ async function sendGuidedReply() {
       ? t("devFallbackMissingKey")
       : t("summaryUpdated");
   } catch (error) {
-    const updates = { ...broadLocalUpdates, ...inferGuidedUpdates(guidedStep, message) };
+    const updates = localContextUpdates;
     mergeGuidedUpdates(updates);
     syncTemplateSelectionFromGuidedContext(message);
     guidedStep = nextSmartGuidedStep(guidedStep);
@@ -4601,7 +4586,10 @@ function extractBusinessName(text) {
   ];
   for (const pattern of patterns) {
     const match = text.match(pattern);
-    if (match?.[1]) return cleanExtractedPhrase(match[1], 56);
+    if (match?.[1]) {
+      const name = match[1].split(/\s+(?:y\s+)?(?:vende|vendo|vendemos|ofrece|ofrecemos|hace|tiene|con|para)\b/i)[0];
+      return cleanExtractedPhrase(name, 56);
+    }
   }
   return "";
 }
@@ -4623,7 +4611,7 @@ function extractLocation(text) {
 function extractServicesProducts(text) {
   if (isGenericCommerceIntent(text)) return [];
   const patterns = [
-    /(?:productos?|servicios?|vende|vendo|ofrece|ofrecemos|catalogo|cat[aá]logo)\s*(?:son|es|:|-)?\s*([^.;\n]+)/i,
+    /(?:productos?|servicios?|vende\b|vendo\b|vendemos\b|ofrece\b|ofrecemos\b|catalogo|cat[aá]logo)\s*(?:son|es|:|-)?\s*([^.;\n]+)/i,
     /(?:tienda|negocio|marca|empresa)\s+de\s+([^.;\n]+)/i,
     /(?:pagina|p[aá]gina|web|site)\s+de\s+([^.;\n]+)/i,
     /(?:products?|services?|sells|offers|catalog)\s*(?:are|is|:|-)?\s*([^.;\n]+)/i,
