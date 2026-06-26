@@ -3597,13 +3597,12 @@ async function reviewAndGenerateFromGuided() {
   normalizeGuidedStateBeforeGenerate();
   applyGuidedStateToForm();
   const previousText = guidedGenerateButton.textContent;
-  guidedGenerateButton.disabled = true;
-  guidedGenerateButton.textContent = langText({
+  setGuidedGenerateControlsBusy(true, langText({
     en: "Saving request...",
     es: "Guardando solicitud...",
     fr: "Enregistrement de la demande...",
     pt: "Salvando solicitação...",
-  });
+  }));
   guidedStatusText.textContent = t("savingRequest");
 
   try {
@@ -3617,7 +3616,7 @@ async function reviewAndGenerateFromGuided() {
     guidedStatusText.textContent = t("requestNotSaved");
   }
 
-  guidedGenerateButton.textContent = t("generating");
+  setGuidedGenerateControlsBusy(true, t("generating"));
   guidedStatusText.textContent = t("generatingLong");
   await generateWebsite(guidedGenerateButton);
   if (currentSchema) {
@@ -3639,7 +3638,26 @@ async function reviewAndGenerateFromGuided() {
     });
   }
   guidedGenerateButton.textContent = previousText || t("reviewGenerate");
-  guidedGenerateButton.disabled = false;
+  setGuidedGenerateControlsBusy(false);
+}
+
+function setGuidedGenerateControlsBusy(isBusy, label = "") {
+  const readyLabel = langText({
+    en: "Generate website now",
+    es: "Generar pagina ahora",
+    fr: "Generer maintenant",
+    pt: "Gerar site agora",
+  });
+  document.querySelectorAll("[data-chat-generate]").forEach((button) => {
+    button.disabled = Boolean(isBusy);
+    button.setAttribute("aria-busy", isBusy ? "true" : "false");
+    button.textContent = isBusy ? label || t("generating") : readyLabel;
+  });
+  if (guidedGenerateButton) {
+    guidedGenerateButton.disabled = Boolean(isBusy);
+    guidedGenerateButton.setAttribute("aria-busy", isBusy ? "true" : "false");
+    if (isBusy) guidedGenerateButton.textContent = label || t("generating");
+  }
 }
 
 async function handleGuidedGenerateButton(event) {
@@ -3673,8 +3691,7 @@ async function handleGuidedGenerateButton(event) {
   guidedStep = "review";
   document.body.classList.remove("review-details-open");
   renderGuidedSummary();
-  guidedGenerateButton.disabled = true;
-  guidedGenerateButton.textContent = t("generating");
+  setGuidedGenerateControlsBusy(true, t("generating"));
   guidedStatusText.textContent = t("generatingLong");
   isGeneratingWebsite = true;
   try {
@@ -3691,7 +3708,7 @@ async function handleGuidedGenerateButton(event) {
     }), "alert");
   } finally {
     isGeneratingWebsite = false;
-    guidedGenerateButton.disabled = false;
+    setGuidedGenerateControlsBusy(false);
     guidedGenerateButton.textContent = t("reviewGenerate");
   }
 }
