@@ -3358,6 +3358,34 @@ async function analyzeLogoBrand(dataUrl, context = {}) {
 }
 
 function createBrandSystem(input = {}) {
+  const briefText = [
+    input.businessName,
+    input.industry,
+    input.tone,
+    arrayValue(input.preferredColors).join(" "),
+  ].join(" ");
+  if (briefRequestsCyberpunk(briefText)) {
+    return {
+      ...DEFAULT_BRAND,
+      logoUrl: input.logoUrl || "",
+      primaryColor: "#00f5ff",
+      secondaryColor: "#ff2bd6",
+      accentColor: "#a855f7",
+      backgroundColor: "#070714",
+      surfaceColor: "#111126",
+      textColor: "#f8fbff",
+      mutedTextColor: "#a7b0ff",
+      borderColor: "rgba(0, 245, 255, 0.24)",
+      buttonColor: "#00f5ff",
+      buttonTextColor: "#050814",
+      styleDirection: "cyberpunk neon marketplace",
+      fontPairing: { heading: "Space Grotesk", body: "Inter" },
+      borderRadius: "10px",
+      shadowStyle: "0 22px 70px rgba(0, 245, 255, 0.22)",
+      extractedColors: [],
+      paletteSource: "ai_style_keyword",
+    };
+  }
   const extractedColors = arrayValue(input.extractedColors)
     .map((color) => resolveColor(color, ""))
     .filter(Boolean);
@@ -5288,10 +5316,133 @@ function applyDesignIntelligence(schema, payload = {}, templateSelection = null,
   };
   nextSchema = ensurePurposefulSections(nextSchema, strategy, options);
   nextSchema = normalizeCatalogCommerceModel(nextSchema, strategy);
+  nextSchema = enforceSelectedTemplateArchitecture(nextSchema, payload, templateSelection);
   nextSchema = orderSectionsByStrategy(nextSchema, layoutStrategy);
   nextSchema = applyProfessionalLayoutSettings(nextSchema, strategy);
   nextSchema = reviewWebsiteConfigBeforeRender(nextSchema, strategy);
   return nextSchema;
+}
+
+function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelection = null) {
+  const templateId = `${templateSelection?.templateId || payload.templateId || schema.selected_template?.id || schema.layout_mode?.template_id || ""}`;
+  const catalogType = `${templateSelection?.catalogType || payload.catalogType || schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || ""}`;
+  const brief = [
+    payload.business_name,
+    payload.business_description,
+    payload.industry,
+    arrayValue(payload.services_products).join(" "),
+    payload.target_audience,
+    payload.preferred_tone,
+    arrayValue(payload.preferred_colors).join(" "),
+  ].join(" ");
+  let nextSchema = schema;
+  if (/mega-marketplace/i.test(templateId) || /dense_marketplace_catalog/i.test(catalogType) || textSuggestsBroadMarketplace(brief)) {
+    const copy = instantLocaleCopy(payload.selectedLanguage || selectedLanguage || "en");
+    const name = payload.business_name || schema.business?.name || copy.newStore;
+    const description = professionalPublicDescription({
+      payload,
+      template: templateSelection?.template || schema.selected_template || { id: "mega-marketplace", category: "marketplace" },
+      catalogType: "dense_marketplace_catalog",
+      copy,
+      name,
+      products: arrayValue(payload.services_products).length ? arrayValue(payload.services_products) : arrayValue(schema.products_services).map((item) => item.name),
+      language: payload.selectedLanguage || selectedLanguage || "en",
+    });
+    const marketplacePages = buildMarketplaceInstantPages(copy, name, description, payload);
+    const existingPages = arrayValue(schema.pages).filter((page) => page.page_key !== "home" && page.page_key !== "catalog");
+    nextSchema = {
+      ...nextSchema,
+      site_type: "online_store",
+      selected_template: {
+        ...(nextSchema.selected_template || {}),
+        id: "mega-marketplace",
+        name: nextSchema.selected_template?.name || "Mega Marketplace",
+        intent: "amazon_marketplace",
+      },
+      catalog_model: {
+        ...(nextSchema.catalog_model || {}),
+        catalogType: "dense_marketplace_catalog",
+      },
+      layout_mode: {
+        ...(nextSchema.layout_mode || {}),
+        template_id: "mega-marketplace",
+        catalog_type: "dense_marketplace_catalog",
+        intent: "amazon_marketplace",
+        navigation: { ...(nextSchema.layout_mode?.navigation || {}), show_cart: true, show_header: true, sticky_header: true },
+        checkout: { ...(nextSchema.layout_mode?.checkout || {}), mode: "cart_setup_required", primary_action: copy.shopNow },
+      },
+      navigation: [
+        { label: copy.home, page_key: "home" },
+        { label: copy.deals, page_key: "catalog" },
+        { label: copy.categories, page_key: "catalog" },
+        { label: copy.support, page_key: "contact" },
+      ],
+      pages: [...marketplacePages.slice(0, 2), ...existingPages],
+    };
+  }
+  if (briefRequestsCyberpunk(brief)) {
+    nextSchema = applyCyberpunkVisualDirection(nextSchema);
+  }
+  return nextSchema;
+}
+
+function briefRequestsCyberpunk(value = "") {
+  return /cyberpunk|neon|neón|futurista|future|gaming|gamer|super cool|sci.?fi|techno/i.test(String(value || ""));
+}
+
+function applyCyberpunkVisualDirection(schema) {
+  const colors = {
+    background: "#070714",
+    surface: "#111126",
+    primary: "#00f5ff",
+    secondary: "#ff2bd6",
+    text: "#f8fbff",
+    muted: "#a7b0ff",
+  };
+  const brand = normalizeBrand({
+    ...(schema.brand || {}),
+    colors,
+    primaryColor: colors.primary,
+    secondaryColor: colors.secondary,
+    accentColor: colors.secondary,
+    backgroundColor: colors.background,
+    surfaceColor: colors.surface,
+    textColor: colors.text,
+    mutedTextColor: colors.muted,
+    buttonColor: colors.primary,
+    buttonTextColor: "#050814",
+    styleDirection: "cyberpunk neon marketplace",
+    fontPairing: { heading: "Space Grotesk", body: "Inter" },
+    borderRadius: "10px",
+    shadowStyle: "0 22px 70px rgba(0, 245, 255, 0.22)",
+  });
+  return {
+    ...schema,
+    brand,
+    theme: {
+      ...(schema.theme || {}),
+      colors,
+      fonts: brand.fontPairing,
+      radius: 10,
+      shadow: brand.shadowStyle,
+      buttons: {
+        ...(schema.theme?.buttons || {}),
+        background: colors.primary,
+        text: "#050814",
+        radius: "10px",
+      },
+    },
+    design_variants: arrayValue(schema.design_variants).map((variant, index) => ({
+      ...variant,
+      name: index === 0 ? "Cyberpunk marketplace" : variant.name,
+      background_style: index === 0 ? "dark neon commerce grid" : variant.background_style,
+      theme: {
+        ...(variant.theme || {}),
+        colors,
+        fonts: brand.fontPairing,
+      },
+    })),
+  };
 }
 
 function normalizeCatalogCommerceModel(schema, strategy = {}) {
