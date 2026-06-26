@@ -4,7 +4,7 @@ import httpx
 from openai import OpenAI
 
 from .config import get_settings
-from .schemas import AiWebsiteBuilderRequest, WebsiteSchema
+from .schemas import AiWebsiteBuilderRequest, WebsitePageSchema, WebsiteSchema
 
 
 RENDERABLE_SECTION_TYPES = [
@@ -635,7 +635,209 @@ def generate_ai_website_schema(payload: AiWebsiteBuilderRequest) -> tuple[Websit
         schema.layout_mode["template_id"] = payload.template_id
         schema.layout_mode["catalog_type"] = payload.catalog_type or schema.catalog_model.get("catalogType", "")
         schema.layout_mode["intent"] = payload.template_intent
+    schema = WebsiteSchema.model_validate(_enforce_template_guardrails(schema, payload).model_dump())
     return schema, False, "openai"
+
+
+def _enforce_template_guardrails(schema: WebsiteSchema, payload: AiWebsiteBuilderRequest) -> WebsiteSchema:
+    brief = " ".join(
+        [
+            payload.business_name or "",
+            payload.business_description or "",
+            payload.industry or "",
+            " ".join(payload.services_products or []),
+            payload.target_audience or "",
+            payload.preferred_tone or "",
+            " ".join(payload.preferred_colors or []),
+            payload.template_id or "",
+            payload.catalog_type or "",
+        ]
+    ).lower()
+    wants_marketplace = (
+        payload.template_id == "mega-marketplace"
+        or payload.catalog_type == "dense_marketplace_catalog"
+        or any(
+            token in brief
+            for token in [
+                "tipo amazon",
+                "amazon",
+                "marketplace",
+                "de todo",
+                "todo tipo",
+                "variado",
+                "variados",
+                "muchas categorias",
+                "muchos productos",
+                "cosas raras",
+                "inusual",
+                "unusual",
+                "gadgets",
+                "anime",
+                "juguetes",
+            ]
+        )
+    )
+    wants_cyberpunk = any(
+        token in brief
+        for token in ["cyberpunk", "neon", "neón", "futurista", "gaming", "gamer", "super cool", "sci-fi"]
+    )
+    if wants_marketplace:
+        schema.site_type = "online_store"
+        schema.selected_template = {
+            **(schema.selected_template or {}),
+            "id": "mega-marketplace",
+            "name": (schema.selected_template or {}).get("name", "Mega Marketplace"),
+            "intent": "amazon_marketplace",
+            "catalogType": "dense_marketplace_catalog",
+        }
+        schema.catalog_model = {
+            **(schema.catalog_model or {}),
+            "catalogType": "dense_marketplace_catalog",
+        }
+        schema.layout_mode = {
+            **(schema.layout_mode or {}),
+            "template_id": "mega-marketplace",
+            "catalog_type": "dense_marketplace_catalog",
+            "intent": "amazon_marketplace",
+            "navigation": {"show_cart": True, "show_header": True, "sticky_header": True},
+            "checkout": {"mode": "cart_setup_required", "primary_action": _label(payload.selected_language, "shop_now")},
+        }
+        schema.navigation = [
+            {"label": _label(payload.selected_language, "home"), "page_key": "home"},
+            {"label": _label(payload.selected_language, "deals"), "page_key": "catalog"},
+            {"label": _label(payload.selected_language, "categories"), "page_key": "catalog"},
+            {"label": _label(payload.selected_language, "support"), "page_key": "contact"},
+        ]
+        schema.pages = _ensure_marketplace_pages(schema, payload)
+    if wants_cyberpunk:
+        colors = {
+            "background": "#070714",
+            "surface": "#111126",
+            "primary": "#00f5ff",
+            "secondary": "#ff2bd6",
+            "text": "#f8fbff",
+            "muted": "#a7b0ff",
+        }
+        schema.theme = {
+            **(schema.theme or {}),
+            "colors": colors,
+            "fonts": {"heading": "Space Grotesk", "body": "Inter"},
+            "radius": 10,
+            "buttons": {
+                **((schema.theme or {}).get("buttons") or {}),
+                "background": colors["primary"],
+                "text": "#050814",
+                "radius": "10px",
+            },
+        }
+        schema.global_components = {
+            **(schema.global_components or {}),
+            "brand_style": "cyberpunk neon marketplace",
+        }
+        schema.design_variants = [
+            {
+                **variant,
+                "theme": {**(variant.get("theme") or {}), "colors": colors, "fonts": {"heading": "Space Grotesk", "body": "Inter"}},
+                "background_style": variant.get("background_style") or "dark neon commerce grid",
+            }
+            for variant in (schema.design_variants or [])
+        ]
+    return schema
+
+
+def _ensure_marketplace_pages(schema: WebsiteSchema, payload: AiWebsiteBuilderRequest) -> list:
+    existing = {page.page_key: page for page in schema.pages}
+    language = payload.selected_language or "en"
+    business_name = payload.business_name or schema.business.get("name", "Store")
+    home_title = _label(language, "home")
+    catalog_title = _label(language, "catalog")
+    home_page = existing.get("home")
+    catalog_page = existing.get("catalog")
+    if not home_page or not any(section.type == "MarketplaceHero" for section in home_page.sections):
+        home_page = {
+            "page_key": "home",
+            "title": home_title,
+            "slug": "/",
+            "order": 1,
+            "sections": [
+                _section("marketplace_hero", "MarketplaceHero", 1, {
+                    "headline": _marketplace_headline(language, business_name),
+                    "subtitle": _marketplace_subtitle(language),
+                    "primary_button": _label(language, "shop_now"),
+                    "secondary_button": _label(language, "view_categories"),
+                    "search_placeholder": _label(language, "search_placeholder"),
+                    "deal_badge": _label(language, "today_deal"),
+                    "deal_title": _label(language, "deal_title"),
+                    "deal_text": _label(language, "deal_text"),
+                    "image_url": "",
+                    "images": [],
+                }, {"layout": "marketplace_deals", "spacing": "compact", "container_width": "wide"}),
+                _section("category_rail", "CategoryRail", 2, {"title": _label(language, "shop_by_category"), "text": _label(language, "category_text")}, {"layout": "category_tiles", "spacing": "compact", "container_width": "wide"}),
+                _section("deal_row", "DealRow", 3, {"title": _label(language, "today_deals"), "text": _label(language, "deals_text")}, {"layout": "deal_row", "spacing": "compact", "container_width": "wide"}),
+                _section("marketplace_catalog", "ProductGrid", 4, {"title": _label(language, "best_sellers"), "text": _label(language, "catalog_text"), "images": []}, {"layout": "marketplace_grid", "columns": 4, "spacing": "balanced", "container_width": "wide", "card_density": "compact", "card_gap": "tight"}),
+                _section("trust_strip", "TrustStrip", 5, {"title": _label(language, "why_buy"), "text": _label(language, "trust_text")}, {"layout": "marketplace_trust", "spacing": "compact", "container_width": "wide"}),
+            ],
+        }
+    else:
+        home_page = home_page.model_dump()
+    if not catalog_page:
+        catalog_page = {
+            "page_key": "catalog",
+            "title": catalog_title,
+            "slug": "/catalog",
+            "order": 2,
+            "sections": [
+                _section("catalog_grid", "ProductGrid", 1, {"title": catalog_title, "text": _label(language, "catalog_text"), "images": []}, {"layout": "marketplace_grid", "columns": 4, "spacing": "compact", "container_width": "wide", "card_density": "compact", "card_gap": "tight"}),
+            ],
+        }
+    else:
+        catalog_page = catalog_page.model_dump()
+    other_pages = [page.model_dump() for page in schema.pages if page.page_key not in {"home", "catalog"}]
+    return [WebsitePageSchema.model_validate(page) for page in [home_page, catalog_page, *other_pages]]
+
+
+def _section(section_id: str, section_type: str, order: int, editable: dict, settings: dict) -> dict:
+    return {"id": section_id, "type": section_type, "order": order, "editable": editable, "settings": settings}
+
+
+def _marketplace_headline(language: str, business_name: str) -> str:
+    return {
+        "es": f"{business_name}: hallazgos raros, utiles y diferentes",
+        "fr": f"{business_name}: trouvailles rares, utiles et differentes",
+        "pt": f"{business_name}: achados raros, uteis e diferentes",
+    }.get(language, f"{business_name}: rare, useful and different finds")
+
+
+def _marketplace_subtitle(language: str) -> str:
+    return {
+        "es": "Una tienda tipo marketplace pensada para descubrir productos curiosos por categoria, tendencia y oportunidad.",
+        "fr": "Une boutique marketplace concue pour decouvrir des produits originaux par categorie, tendance et opportunite.",
+        "pt": "Uma loja estilo marketplace para descobrir produtos curiosos por categoria, tendencia e oportunidade.",
+    }.get(language, "A marketplace-style store built for discovering unusual products by category, trend and deal.")
+
+
+def _label(language: str, key: str) -> str:
+    labels = {
+        "en": {
+            "home": "Home", "catalog": "Catalog", "deals": "Deals", "categories": "Categories", "support": "Support",
+            "shop_now": "Shop now", "view_categories": "View categories", "search_placeholder": "Search strange finds, gifts, car gear, anime and more",
+            "today_deal": "Today deal", "deal_title": "Fresh finds updated weekly", "deal_text": "Browse fast-moving picks, gifts, accessories and useful oddities.",
+            "shop_by_category": "Shop by category", "category_text": "Organized discovery for a broad catalog.", "today_deals": "Deals and new drops",
+            "deals_text": "Featured finds, limited offers and seasonal collections.", "best_sellers": "Trending finds",
+            "catalog_text": "A dense, editable catalog ready for products, prices, photos and categories.", "why_buy": "Why shop here",
+            "trust_text": "Clear categories, worldwide shipping options, quick contact and editable product detail pages.",
+        },
+        "es": {
+            "home": "Inicio", "catalog": "Catalogo", "deals": "Ofertas", "categories": "Categorias", "support": "Soporte",
+            "shop_now": "Comprar ahora", "view_categories": "Ver categorias", "search_placeholder": "Busca rarezas, regalos, accesorios, anime y mas",
+            "today_deal": "Oferta del dia", "deal_title": "Hallazgos nuevos cada semana", "deal_text": "Explora productos curiosos, regalos, accesorios y cosas utiles poco comunes.",
+            "shop_by_category": "Compra por categoria", "category_text": "Descubrimiento ordenado para un catalogo amplio.", "today_deals": "Ofertas y novedades",
+            "deals_text": "Destacados, ofertas limitadas y colecciones de temporada.", "best_sellers": "Hallazgos en tendencia",
+            "catalog_text": "Un catalogo denso y editable listo para productos, precios, fotos y categorias.", "why_buy": "Por que comprar aqui",
+            "trust_text": "Categorias claras, opciones de envio mundial, contacto rapido y paginas de producto editables.",
+        },
+    }
+    return labels.get(language, labels["en"]).get(key, labels["en"].get(key, key))
 
 
 def _localized_copy(language: str) -> dict[str, str | list[str]]:
