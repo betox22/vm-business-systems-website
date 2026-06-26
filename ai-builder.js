@@ -3596,6 +3596,7 @@ async function reviewAndGenerateFromGuided() {
   syncGuidedStateFromSummary();
   normalizeGuidedStateBeforeGenerate();
   applyGuidedStateToForm();
+  const previousText = guidedGenerateButton.textContent;
   guidedGenerateButton.disabled = true;
   guidedGenerateButton.textContent = langText({
     en: "Saving request...",
@@ -3619,7 +3620,25 @@ async function reviewAndGenerateFromGuided() {
   guidedGenerateButton.textContent = t("generating");
   guidedStatusText.textContent = t("generatingLong");
   await generateWebsite(guidedGenerateButton);
-  guidedGenerateButton.textContent = t("reviewGenerate");
+  if (currentSchema) {
+    const successMessage = langText({
+      en: "Draft generated. You can review and edit it now.",
+      es: "Borrador generado. Ya puedes revisarlo y editarlo.",
+      fr: "Brouillon généré. Vous pouvez maintenant le réviser et le modifier.",
+      pt: "Rascunho gerado. Agora você pode revisar e editar.",
+    });
+    guidedStatusText.textContent = successMessage;
+    appendChatMessage("assistant", successMessage, "success");
+    showGeneratedClientPreview();
+  } else {
+    guidedStatusText.textContent = langText({
+      en: "Luma could not create a draft yet. Try again or keep chatting with more details.",
+      es: "Luma no pudo crear el borrador todavía. Intenta otra vez o agrega más detalles.",
+      fr: "Luma n'a pas encore pu créer de brouillon. Réessayez ou ajoutez plus de détails.",
+      pt: "A Luma ainda não conseguiu criar o rascunho. Tente novamente ou adicione mais detalhes.",
+    });
+  }
+  guidedGenerateButton.textContent = previousText || t("reviewGenerate");
   guidedGenerateButton.disabled = false;
 }
 
@@ -3660,8 +3679,20 @@ async function handleGuidedGenerateButton(event) {
   isGeneratingWebsite = true;
   try {
     await reviewAndGenerateFromGuided();
+  } catch (error) {
+    console.error("Guided website generation failed", error);
+    const message = `${t("generateError")}: ${shortError(error?.message || error)}`;
+    guidedStatusText.textContent = message;
+    appendChatMessage("assistant", langText({
+      en: `${message}. I could not finish the draft from this click. Try again or add one more detail and I will retry.`,
+      es: `${message}. No pude terminar el borrador con este click. Intenta otra vez o agrega un detalle más y lo vuelvo a intentar.`,
+      fr: `${message}. Je n'ai pas pu terminer le brouillon avec ce clic. Réessayez ou ajoutez un détail et je recommence.`,
+      pt: `${message}. Não consegui terminar o rascunho com este clique. Tente novamente ou adicione mais um detalhe e eu tento de novo.`,
+    }), "alert");
   } finally {
     isGeneratingWebsite = false;
+    guidedGenerateButton.disabled = false;
+    guidedGenerateButton.textContent = t("reviewGenerate");
   }
 }
 
