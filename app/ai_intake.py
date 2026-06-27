@@ -389,7 +389,7 @@ def _extract_business_name(text: str) -> str:
     patterns = [
         r"(?:nombre(?: del negocio)?|negocio|tienda|marca|empresa)\s*(?:es|se llama|:|-)\s*([^.,;\n]+)",
         r"(?:business(?: name)?|store|brand|company)\s*(?:is|called|:|-)\s*([^.,;\n]+)",
-        r"(?:se llama|called)\s+([^.,;\n]+)",
+        r"(?:se llama|llamad[ao]|called|named)\s+([^.,;\n]+)",
     ]
     for pattern in patterns:
         match = re.search(pattern, text, flags=re.I)
@@ -429,17 +429,42 @@ def _extract_services(text: str) -> list[str]:
         match = re.search(pattern, text, flags=re.I)
         if match:
             product_phrase = _trim_product_phrase(match.group(1))
-            return [_clean(item, 52) for item in _split_items(product_phrase) if _clean(item, 52)]
+            return _clean_product_items(product_phrase)
     return []
 
 
 def _trim_product_phrase(value: str) -> str:
     return re.split(
-        r"\b(?:quiero|estilo|style|contacto|contact|whatsapp|instagram|tel[eé]fono|phone|email|ubicaci[oó]n|location)\b|\s+en\s+[A-ZÁÉÍÓÚÑ]",
+        r"\b(?:quiero|estilo|style|contacto|contact|whatsapp|instagram|tel[eé]fono|phone|email|ubicaci[oó]n|location|no\s+tengo\s+logo|sin\s+logo|crea(?:r)?(?:me)?(?:\s+un)?\s+logo|crear(?:\s+un)?\s+logo|crealo\s+tu|créalo\s+tú|haz(?:me)?(?:\s+un)?\s+logo|generate(?:\s+a)?\s+logo)\b|\s+en\s+[A-ZÁÉÍÓÚÑ]",
         value or "",
         maxsplit=1,
         flags=re.I,
     )[0]
+
+
+def _clean_product_items(value: str) -> list[str]:
+    ignored_patterns = [
+        r"\blogo\b",
+        r"\bno\s+tengo\b",
+        r"\bsin\s+logo\b",
+        r"\bcrea(?:r)?(?:me)?\b",
+        r"\bcrealo\s+tu\b",
+        r"\bcréalo\s+tú\b",
+        r"\bgenerate\b",
+        r"\bmake\b",
+    ]
+    cleaned: list[str] = []
+    for item in _split_items(value):
+        normalized = item.strip()
+        if not normalized:
+            continue
+        lowered = normalized.lower()
+        if any(re.search(pattern, lowered, flags=re.I) for pattern in ignored_patterns):
+            continue
+        final = _clean(normalized, 52)
+        if final:
+            cleaned.append(final)
+    return list(dict.fromkeys(cleaned))
 
 
 def _infer_industry(text: str) -> str:
