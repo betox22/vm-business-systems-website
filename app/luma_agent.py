@@ -103,7 +103,7 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
     next_step = "review" if ready else _next_step(merged_current, current_step)
     catalog_type = TEMPLATE_CATALOG_TYPES.get(selected_template_id, "")
     analysis = _analyze_business_context(merged_current, payload.message, selected_template_id, catalog_type, missing, ready)
-    next_question = _contextual_question(selected_language, next_step, analysis, merged_current)
+    next_question = "" if ready else _contextual_question(selected_language, next_step, analysis, merged_current)
     assistant_message = _contextual_message(selected_language, ready, analysis, selected_template_id)
     site_plan = _site_plan_for(selected_template_id, catalog_type, selected_language, merged_current) if selected_template_id else None
     intent = data.get("intent") or ("select_template" if selected_template_id else "collect_info")
@@ -278,7 +278,7 @@ def _fallback_response(
     next_step = "review" if ready else _next_step(merged_current, current_step)
     analysis = _analyze_business_context(merged_current, payload.message, selected_template_id, catalog_type, missing, ready)
     message = _contextual_message(selected_language, ready, analysis, selected_template_id)
-    next_question = _contextual_question(selected_language, next_step, analysis, merged_current)
+    next_question = "" if ready else _contextual_question(selected_language, next_step, analysis, merged_current)
     return LumaAgentResponse(
         assistantMessage=message,
         message=message,
