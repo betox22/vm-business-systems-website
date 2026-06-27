@@ -540,6 +540,12 @@ body.public-client-setup.generated-preview-open {
   box-shadow: -18px 0 44px rgba(15, 23, 42, 0.08);
 }
 
+.public-client-setup .guided-chat-card {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(20, 184, 166, 0.09), transparent 28%),
+    linear-gradient(180deg, #f7fbfa 0%, #eef7f5 100%);
+}
+
 .public-client-setup .luma-coach-card {
   margin: 12px 16px 0;
   padding: 12px;
@@ -1763,6 +1769,11 @@ body.public-client-setup.generated-preview-open {
   scroll-behavior: smooth;
 }
 
+.public-client-setup .guided-chat {
+  display: grid;
+  grid-auto-rows: max-content;
+}
+
 .public-client-setup .guided-chat-card,
 .public-client-setup .guided-chat,
 .public-client-setup .chat-message,
@@ -1781,7 +1792,7 @@ body.public-client-setup.generated-preview-open {
 
 .public-client-setup .chat-message {
   width: fit-content;
-  max-width: 84%;
+  max-width: min(82%, 620px);
   gap: 8px;
   padding: 0;
   border: 0;
@@ -1797,25 +1808,28 @@ body.public-client-setup.generated-preview-open {
   white-space: pre-wrap;
   word-break: break-word;
   padding: 11px 13px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 16px 16px 16px 5px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 18px 18px 18px 6px;
   color: #111827;
   background: #ffffff;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
   font-size: 14px;
   line-height: 1.45;
 }
 
 .public-client-setup .chat-message.user {
   justify-self: end;
-  max-width: 80%;
+  max-width: min(78%, 560px);
   padding: 11px 13px;
-  border-radius: 16px 16px 5px 16px;
+  border-radius: 18px 18px 6px 18px;
   color: #ffffff;
-  background: linear-gradient(135deg, #0f766e, #14b8a6);
-  box-shadow: 0 10px 26px rgba(15, 118, 110, 0.2);
+  background: linear-gradient(135deg, #0f8f78, #14b8a6);
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.18);
   font-size: 14px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .public-client-setup .chat-message .assistant-avatar.tiny {
@@ -1935,6 +1949,11 @@ body.public-client-setup.generated-preview-open {
   align-items: center;
   gap: 6px;
   margin: 0;
+}
+
+.public-client-setup #guidedSkipButton,
+.public-client-setup #switchManualFormButton {
+  display: none !important;
 }
 
 .public-client-setup #guidedSendButton {
@@ -2602,7 +2621,8 @@ body.public-client-setup.generated-preview-open {
   }
 
   .public-client-setup .chat-composer {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     gap: 8px;
     padding: 10px 12px max(12px, env(safe-area-inset-bottom));
   }
@@ -2615,9 +2635,9 @@ body.public-client-setup.generated-preview-open {
 
   .public-client-setup .guided-actions {
     display: grid;
-    grid-template-columns: 42px 42px minmax(0, 1fr);
-    justify-content: stretch;
-    width: 100%;
+    grid-template-columns: 42px 42px;
+    justify-content: end;
+    width: auto;
   }
 
   .public-client-setup .guided-actions .text-action {
@@ -2633,13 +2653,9 @@ body.public-client-setup.generated-preview-open {
     order: 2;
   }
 
-  .public-client-setup #guidedSkipButton {
-    order: 3;
-    justify-self: end;
-  }
-
+  .public-client-setup #guidedSkipButton,
   .public-client-setup #switchManualFormButton {
-    display: none;
+    display: none !important;
   }
 
   .public-client-setup .live-preview-rendered .rendered-nav nav {

@@ -2464,7 +2464,7 @@ async function sendGuidedReply() {
     const serverNextStep = result.next_step || result.nextStep || "";
     guidedStep = result.readyToGenerate ? "review" : normalizeNextGuidedStep(serverNextStep || guidedStep);
     const serverNextQuestion = result.nextQuestion || result.next_question;
-    const nextQuestion = chooseNextQuestionText(serverNextQuestion, guidedStep);
+    const nextQuestion = result.readyToGenerate ? "" : chooseNextQuestionText(serverNextQuestion, guidedStep);
     const usedDevFallback = Boolean(result.used_dev_fallback || result.usedDevFallback);
     const publicAssistantMessage = composeAssistantReply(assistantMessage, nextQuestion, usedDevFallback);
     appendUnderstandingCard({ updates: updatedFields, sourceMessage: message });
