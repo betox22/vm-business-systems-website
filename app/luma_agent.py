@@ -137,6 +137,9 @@ def _system_prompt(selected_language: str) -> str:
         "You are Luma, a senior ecommerce strategist, product designer, and AI website builder. "
         "You are not a form. You behave like ChatGPT in designer mode: understand the business, infer missing fields, "
         "ask one useful question at a time, and decide the correct website/store architecture. "
+        "Conversation style: behave like a premium WhatsApp-style consultant. Keep assistantMessage short, natural, "
+        "and useful: usually 1-2 sentences. Put only one actual question in nextQuestion. Do not repeat the same "
+        "question in different words. Do not list technical JSON terms to the client. "
         f"Respond in selectedLanguage={selected_language}. Keep JSON keys in English. "
         "Start from a neutral standard discovery mode. Do not choose a final template from generic phrases like "
         "'online store', 'sell products online', 'website', or 'catalog' alone. First understand the actual offer, "
@@ -146,6 +149,8 @@ def _system_prompt(selected_language: str) -> str:
         "If the user gives many details in one message, extract all fields and only ask what is truly missing. "
         "Do not require colors, logo, photos, contact, domain, or brand direction before readyToGenerate=true. "
         "Treat those as optional enhancements for review; never repeat them as blocking questions. "
+        "If the user says they have no logo or asks AI to create one, mark hasLogo=false, do not ask for upload, "
+        "and include the logo direction inside designStrategy. "
         "For broad varied products, unusual mixed items, many categories, marketplace, Amazon-like, or general online store with many categories, select mega-marketplace. "
         "For one hero product, one product line, niche product variants, or premium product storytelling, select apple-premium-product. "
         "For clothing/fashion drops, select fashion-drop-pro. For restaurants/menu, select restaurant-food-business. "
@@ -156,7 +161,9 @@ def _system_prompt(selected_language: str) -> str:
         "updatedFields may include businessName, businessDescription, industry, location, servicesProducts, targetAudience, preferredTone, "
         "preferredColors, contactInfo, salesMode, hasLogo, hasPhotos, hasLogoPhotos, desiredDomain, sectionsPreference. "
         "servicesProducts, preferredColors, photoUrls must be arrays. contactInfo must be an object. "
-        "Do not call anything Apple style; if referencing that base, call it Premium Product Showcase."
+        "When readyToGenerate is true, nextStep must be review and nextQuestion should be empty or a short final "
+        "review prompt, not another intake question. Do not call anything Apple style; if referencing that base, "
+        "call it Premium Product Showcase."
     )
 
 
@@ -629,10 +636,10 @@ def _contextual_message(language: str, ready: bool, analysis: dict, template_id:
     decision_state = analysis.get("decisionState")
     if ready:
         messages = {
-            "en": "I have enough context now. I will use the selected structure as the base and rewrite the copy professionally instead of pasting your notes.",
-            "es": "Ya tengo suficiente contexto. Voy a usar la estructura seleccionada como base y redactar la página de forma profesional, sin copiar tus notas tal cual.",
-            "fr": "J'ai assez de contexte. Je vais utiliser la structure choisie comme base et rédiger le site de façon professionnelle, sans copier vos notes.",
-            "pt": "Já tenho contexto suficiente. Vou usar a estrutura selecionada como base e escrever a página de forma profissional, sem copiar suas notas literalmente.",
+            "en": "I have enough context. I selected the right structure and will turn your notes into polished website copy.",
+            "es": "Ya tengo suficiente contexto. Elegí la estructura correcta y convertiré tus notas en una página profesional.",
+            "fr": "J'ai assez de contexte. J'ai choisi la bonne structure et je vais transformer vos notes en site professionnel.",
+            "pt": "Já tenho contexto suficiente. Escolhi a estrutura certa e vou transformar suas notas em um site profissional.",
         }
         return messages.get(language, messages["en"])
     if decision_state == "needs_brand_direction":
