@@ -1,6 +1,13 @@
 (function () {
   const TEMPLATE_LIBRARY_URL = "/templates/all-templates.json";
   let templateCache = null;
+  const TEMPLATE_ID_ALIASES = {
+    "marketplace-style": "mega-marketplace",
+    "luxury-product-store": "apple-premium-product",
+    "appointment-booking": "booking-appointment-pro",
+    "bold-fashion-store": "fashion-drop-pro",
+    "local-business-pro": "local-services-pro-plus",
+  };
   const PRO_TEMPLATES = [
     {
       id: "apple-premium-product",
@@ -983,10 +990,11 @@
       catalogType: "dense_marketplace_catalog",
       keywords: [],
     };
-    const template = templates.find((item) => item.id === rule.templateId) || templates.find((item) => item.id === "minimal-store") || templates[0];
+    const normalizedTemplateId = normalizeTemplateId(rule.templateId);
+    const template = templates.find((item) => item.id === normalizedTemplateId) || templates.find((item) => item.id === rule.templateId) || templates.find((item) => item.id === "minimal-store") || templates[0];
     const catalogType = template?.catalogModel?.catalogType || rule.catalogType;
     return {
-      templateId: template?.id || rule.templateId,
+      templateId: template?.id || normalizedTemplateId || rule.templateId,
       template,
       intent: rule.intent,
       catalogType,
@@ -1014,10 +1022,11 @@
 
     const selected = [];
     const addRule = (rule, score = 0, reason = "") => {
-      if (!rule?.templateId || selected.some((item) => item.templateId === rule.templateId)) return;
-      const template = templates.find((item) => item.id === rule.templateId) || templates.find((item) => item.id === "minimal-store") || templates[0];
+      const normalizedTemplateId = normalizeTemplateId(rule.templateId);
+      if (!normalizedTemplateId || selected.some((item) => item.templateId === normalizedTemplateId || item.templateId === rule.templateId)) return;
+      const template = templates.find((item) => item.id === normalizedTemplateId) || templates.find((item) => item.id === rule.templateId) || templates.find((item) => item.id === "minimal-store") || templates[0];
       selected.push({
-        templateId: template?.id || rule.templateId,
+        templateId: template?.id || normalizedTemplateId || rule.templateId,
         template,
         intent: rule.intent,
         catalogType: template?.catalogModel?.catalogType || rule.catalogType,
@@ -1072,7 +1081,13 @@
 
   async function getTemplateById(templateId) {
     const templates = await loadTemplates();
-    return templates.find((item) => item.id === templateId) || null;
+    const normalizedTemplateId = normalizeTemplateId(templateId);
+    return templates.find((item) => item.id === normalizedTemplateId) || templates.find((item) => item.id === templateId) || null;
+  }
+
+  function normalizeTemplateId(templateId) {
+    const id = String(templateId || "").trim();
+    return TEMPLATE_ID_ALIASES[id] || id;
   }
 
   window.TemplateRouter = {
@@ -1081,6 +1096,7 @@
     selectTemplateFromPrompt,
     getTemplateCandidates,
     normalizeText,
+    normalizeTemplateId,
     intentRules: INTENT_RULES,
   };
 })();

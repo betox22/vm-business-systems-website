@@ -2491,28 +2491,6 @@ async function sendGuidedReply() {
   }
   mergeGuidedUpdates(localContextUpdates);
   syncTemplateSelectionFromGuidedContext(message);
-  if (shouldAdvanceToDesignerPlan(message)) {
-    guidedHistory.push({ role: "user", content: message });
-    guidedStep = "review";
-    guidedState.sitePlan = buildSitePlan();
-    guidedState.sitePlanApproved = false;
-    appendUnderstandingCard({ updates: localContextUpdates, sourceMessage: message });
-    appendChatMessage(
-      "assistant",
-      langText({
-        en: "I have enough context. I’m choosing the structure, palette, catalog model and editable sections now. Review the plan or generate the first draft.",
-        es: "Ya tengo suficiente contexto. Voy a elegir estructura, paleta, modelo de catálogo y secciones editables. Revisa el plan o genera el primer borrador.",
-        fr: "J'ai assez de contexte. Je choisis maintenant la structure, la palette, le modèle de catalogue et les sections modifiables. Vérifiez le plan ou générez le premier brouillon.",
-        pt: "Ja tenho contexto suficiente. Vou escolher estrutura, paleta, modelo de catalogo e secoes editaveis. Revise o plano ou gere o primeiro rascunho.",
-      }),
-      "success",
-    );
-    guidedStatusText.textContent = t("summaryUpdated");
-    renderGuidedSummary();
-    refreshQuickChips();
-    saveGuidedDraft();
-    return;
-  }
   if (guidedStep === "review") {
     const adjustmentLabel = langText({
       en: "Client requested adjustments",
@@ -5038,10 +5016,19 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
   } catch (error) {
     builderAvatarManager?.setState("confused", { source: "generate-error" });
     setStudioProgressPhase("homepage");
-    const fallbackResult = buildInstantTemplateResult(payload, error, templateSelection);
-    applyGenerationResult(fallbackResult, payload, templateSelection);
+    if (!isPublicClientSetup) {
+      const fallbackResult = buildInstantTemplateResult(payload, error, templateSelection);
+      applyGenerationResult(fallbackResult, payload, templateSelection);
+    }
     setStudioProgressPhase("ready");
-    const message = `${t("generateError")}: ${shortError(error.message)}. Showing a fast editable draft instead.`;
+    const message = isPublicClientSetup
+      ? `${t("generateError")}: ${shortError(error.message)}. ${langText({
+          en: "No draft was shown because Dixie could not finish the real AI generation.",
+          es: "No mostré un borrador porque Dixie no pudo terminar la generación real con IA.",
+          fr: "Aucun brouillon n'a été affiché car Dixie n'a pas terminé la génération IA réelle.",
+          pt: "Nenhum rascunho foi exibido porque a Dixie não conseguiu concluir a geração real com IA.",
+        })}`
+      : `${t("generateError")}: ${shortError(error.message)}. Showing a fast editable draft instead.`;
     statusText.textContent = message;
     guidedStatusText.textContent = message;
   } finally {
