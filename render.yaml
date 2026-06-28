@@ -9,7 +9,7 @@ services:
       - key: OPENAI_MODEL
         value: gpt-5-mini
       - key: OPENAI_CHAT_TIMEOUT
-        value: 8
+        value: 25
       - key: ALLOW_DEV_AI_MOCK
         value: false
       - key: ALLOWED_ORIGINS
