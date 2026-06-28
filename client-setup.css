@@ -1833,10 +1833,16 @@ body.public-client-setup.generated-preview-open {
 }
 
 .public-client-setup .chat-message .assistant-avatar.tiny {
-  width: 26px;
-  height: 26px;
-  border-radius: 9px;
-  margin-top: 3px;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin: -2px 2px 0 0;
+  object-fit: contain;
+  background: transparent;
+  box-shadow: none;
+  filter: drop-shadow(0 8px 14px rgba(20, 184, 166, 0.22));
 }
 
 .public-client-setup .guided-thinking {
