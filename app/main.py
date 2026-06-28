@@ -797,7 +797,7 @@ def create_ai_website(payload: AiWebsiteBuilderRequest) -> AiWebsiteBuilderRespo
             payload,
             schema,
             provider=provider,
-            model="development_mock" if used_dev_mock else "openai",
+            model="development_mock" if used_dev_mock else provider,
         )
         business_id = stored["business_id"]
         site_id = stored["site_id"]

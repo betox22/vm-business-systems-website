@@ -1,7 +1,7 @@
 import json
 
 import httpx
-from openai import OpenAI
+from openai import AuthenticationError, OpenAI
 
 from .config import get_settings
 from .schemas import AiWebsiteBuilderRequest, WebsitePageSchema, WebsiteSchema
@@ -489,6 +489,133 @@ WEBSITE_SCHEMA_JSON_SCHEMA = {
     },
 }
 
+FAST_CONTENT_PACK_JSON_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "business",
+        "theme",
+        "navigation",
+        "section_copy",
+        "products_services",
+        "brand_notes",
+    ],
+    "properties": {
+        "business": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["description", "target_audience", "tone"],
+            "properties": {
+                "description": {"type": "string"},
+                "target_audience": {"type": "string"},
+                "tone": {"type": "string"},
+            },
+        },
+        "theme": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["colors", "fonts", "buttons", "radius"],
+            "properties": {
+                "colors": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["background", "surface", "primary", "secondary", "text", "muted"],
+                    "properties": {
+                        "background": {"type": "string"},
+                        "surface": {"type": "string"},
+                        "primary": {"type": "string"},
+                        "secondary": {"type": "string"},
+                        "text": {"type": "string"},
+                        "muted": {"type": "string"},
+                    },
+                },
+                "fonts": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["heading", "body"],
+                    "properties": {
+                        "heading": {"type": "string"},
+                        "body": {"type": "string"},
+                    },
+                },
+                "buttons": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["primary_label", "secondary_label"],
+                    "properties": {
+                        "primary_label": {"type": "string"},
+                        "secondary_label": {"type": "string"},
+                    },
+                },
+                "radius": {"type": "integer"},
+            },
+        },
+        "navigation": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["label", "page_key"],
+                "properties": {
+                    "label": {"type": "string"},
+                    "page_key": {"type": "string"},
+                },
+            },
+        },
+        "section_copy": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": [
+                    "id",
+                    "headline",
+                    "subtitle",
+                    "title",
+                    "text",
+                    "primary_button",
+                    "secondary_button",
+                ],
+                "properties": {
+                    "id": {"type": "string"},
+                    "headline": {"type": "string"},
+                    "subtitle": {"type": "string"},
+                    "title": {"type": "string"},
+                    "text": {"type": "string"},
+                    "primary_button": {"type": "string"},
+                    "secondary_button": {"type": "string"},
+                },
+            },
+        },
+        "products_services": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 12,
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["name", "description", "price_label", "image_url", "button_label"],
+                "properties": {
+                    "name": {"type": "string"},
+                    "description": {"type": "string"},
+                    "price_label": {"type": "string"},
+                    "image_url": {"type": "string"},
+                    "button_label": {"type": "string"},
+                },
+            },
+        },
+        "brand_notes": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["logo_direction", "visual_direction"],
+            "properties": {
+                "logo_direction": {"type": "string"},
+                "visual_direction": {"type": "string"},
+            },
+        },
+    },
+}
+
 
 def generate_ai_website_schema(payload: AiWebsiteBuilderRequest) -> tuple[WebsiteSchema, bool, str]:
     settings = get_settings()
@@ -498,10 +625,22 @@ def generate_ai_website_schema(payload: AiWebsiteBuilderRequest) -> tuple[Websit
             return _development_mock(payload), True, "development_mock"
         raise RuntimeError("OPENAI_API_KEY is required for AI website generation.")
 
-    client = OpenAI(
-        api_key=settings.openai_api_key,
-        http_client=httpx.Client(trust_env=False),
-    )
+    client = OpenAI(api_key=settings.openai_api_key, http_client=httpx.Client(trust_env=False))
+    base_schema = _production_template_schema(payload)
+    try:
+        content_pack = _generate_fast_content_pack(client, settings, payload, base_schema)
+        schema = _apply_content_pack(base_schema, content_pack, payload)
+        schema = WebsiteSchema.model_validate(_enforce_template_guardrails(schema, payload).model_dump())
+        return schema, False, "template_first_openai"
+    except AuthenticationError:
+        raise
+    except Exception:
+        schema = WebsiteSchema.model_validate(_enforce_template_guardrails(base_schema, payload).model_dump())
+        return schema, False, "template_first_local_fallback"
+
+
+def _generate_full_openai_schema(client: OpenAI, settings, payload: AiWebsiteBuilderRequest) -> WebsiteSchema:
+    selected_language = payload.selected_language or "en"
     response = client.responses.create(
         model=settings.openai_model,
         input=[
@@ -636,7 +775,121 @@ def generate_ai_website_schema(payload: AiWebsiteBuilderRequest) -> tuple[Websit
         schema.layout_mode["catalog_type"] = payload.catalog_type or schema.catalog_model.get("catalogType", "")
         schema.layout_mode["intent"] = payload.template_intent
     schema = WebsiteSchema.model_validate(_enforce_template_guardrails(schema, payload).model_dump())
-    return schema, False, "openai"
+    return schema
+
+
+def _production_template_schema(payload: AiWebsiteBuilderRequest) -> WebsiteSchema:
+    schema = _development_mock(payload)
+    schema = WebsiteSchema.model_validate(_enforce_template_guardrails(schema, payload).model_dump())
+    schema.global_components = {
+        **(schema.global_components or {}),
+        "generation_mode": "template_first",
+    }
+    return schema
+
+
+def _generate_fast_content_pack(
+    client: OpenAI,
+    settings,
+    payload: AiWebsiteBuilderRequest,
+    base_schema: WebsiteSchema,
+) -> dict:
+    selected_language = payload.selected_language or "en"
+    response = client.responses.create(
+        model=settings.openai_chat_model or settings.openai_model,
+        input=[
+            {
+                "role": "system",
+                "content": (
+                    "You are Dixie, a senior ecommerce strategist and web art director. "
+                    "Return a compact content pack for an existing editable website template. "
+                    "Do not generate a full website schema. Do not paste raw client notes. "
+                    "Rewrite into polished public copy, choose strong colors, create realistic product/service cards, "
+                    "and preserve the selected template architecture. Do not return full design variants unless they "
+                    "are materially different from the template defaults. For broad varied stores, use marketplace language, "
+                    "category discovery, deals, trust, cart and checkout wording. For focused product lines, use premium "
+                    "editorial product language. All visible values must be in selectedLanguage. JSON keys stay English."
+                ),
+            },
+            {
+                "role": "user",
+                "content": json.dumps(
+                    {
+                        "selectedLanguage": selected_language,
+                        "business": payload.model_dump(mode="json", by_alias=True),
+                        "template": {
+                            "id": base_schema.layout_mode.get("template_id")
+                            or base_schema.selected_template.get("id")
+                            or payload.template_id,
+                            "catalogType": base_schema.layout_mode.get("catalog_type")
+                            or base_schema.catalog_model.get("catalogType")
+                            or payload.catalog_type,
+                            "sectionIds": [
+                                section.id
+                                for page in base_schema.pages
+                                for section in page.sections
+                            ],
+                        },
+                        "instruction": (
+                            "Create concise high-quality copy and product cards for this already-selected template. "
+                            "If the client has no logo and asks AI to create one, put the logo direction in brand_notes. "
+                            "Respect requested style words such as cyberpunk by turning them into readable HEX colors."
+                        ),
+                    },
+                    ensure_ascii=False,
+                ),
+            },
+        ],
+        text={
+            "format": {
+                "type": "json_schema",
+                "name": "template_content_pack",
+                "schema": FAST_CONTENT_PACK_JSON_SCHEMA,
+                "strict": True,
+            }
+        },
+        max_output_tokens=2200,
+        timeout=settings.openai_chat_timeout,
+    )
+    return json.loads(response.output_text)
+
+
+def _apply_content_pack(schema: WebsiteSchema, content_pack: dict, payload: AiWebsiteBuilderRequest) -> WebsiteSchema:
+    data = schema.model_dump()
+    business_pack = content_pack.get("business") or {}
+    data["business"] = {
+        **data.get("business", {}),
+        "description": business_pack.get("description") or data.get("business", {}).get("description", ""),
+        "target_audience": business_pack.get("target_audience") or data.get("business", {}).get("target_audience", ""),
+        "tone": business_pack.get("tone") or data.get("business", {}).get("tone", ""),
+        "selectedLanguage": payload.selected_language,
+    }
+    if content_pack.get("theme"):
+        data["theme"] = content_pack["theme"]
+    if content_pack.get("navigation"):
+        data["navigation"] = content_pack["navigation"]
+    section_copy = {item.get("id"): item for item in content_pack.get("section_copy", []) if item.get("id")}
+    for page in data.get("pages", []):
+        for section in page.get("sections", []):
+            patch = section_copy.get(section.get("id"))
+            if not patch:
+                continue
+            editable = section.setdefault("editable", {})
+            for key in ["headline", "subtitle", "title", "text", "primary_button", "secondary_button"]:
+                if patch.get(key):
+                    editable[key] = patch[key]
+    if content_pack.get("products_services"):
+        data["products_services"] = content_pack["products_services"]
+    if content_pack.get("design_variants"):
+        data["design_variants"] = content_pack["design_variants"]
+    brand_notes = content_pack.get("brand_notes") or {}
+    data["global_components"] = {
+        **data.get("global_components", {}),
+        "logo_direction": brand_notes.get("logo_direction", ""),
+        "visual_direction": brand_notes.get("visual_direction", ""),
+        "generation_mode": "template_first_openai",
+    }
+    return WebsiteSchema.model_validate(data)
 
 
 def _enforce_template_guardrails(schema: WebsiteSchema, payload: AiWebsiteBuilderRequest) -> WebsiteSchema:
@@ -780,6 +1033,14 @@ def _ensure_marketplace_pages(schema: WebsiteSchema, payload: AiWebsiteBuilderRe
         }
     else:
         home_page = home_page.model_dump()
+        for section in home_page.get("sections", []):
+            if section.get("type") != "MarketplaceHero":
+                continue
+            editable = section.setdefault("editable", {})
+            if _is_generic_headline(editable.get("headline", ""), business_name):
+                editable["headline"] = _marketplace_headline(language, business_name)
+            if not editable.get("subtitle"):
+                editable["subtitle"] = _marketplace_subtitle(language)
     if not catalog_page:
         catalog_page = {
             "page_key": "catalog",
@@ -814,6 +1075,22 @@ def _marketplace_subtitle(language: str) -> str:
         "fr": "Une boutique marketplace concue pour decouvrir des produits originaux par categorie, tendance et opportunite.",
         "pt": "Uma loja estilo marketplace para descobrir produtos curiosos por categoria, tendencia e oportunidade.",
     }.get(language, "A marketplace-style store built for discovering unusual products by category, trend and deal.")
+
+
+def _is_generic_headline(headline: str, business_name: str) -> bool:
+    normalized = " ".join(str(headline or "").lower().split())
+    brand = " ".join(str(business_name or "").lower().split())
+    generic = {
+        f"bienvenido a {brand}",
+        f"bienvenida a {brand}",
+        f"welcome to {brand}",
+        f"bem-vindo a {brand}",
+        f"bem vindo a {brand}",
+        f"bienvenue chez {brand}",
+        f"bienvenue a {brand}",
+        brand,
+    }
+    return not normalized or normalized in generic or len(normalized) < max(18, len(brand) + 8)
 
 
 def _label(language: str, key: str) -> str:
