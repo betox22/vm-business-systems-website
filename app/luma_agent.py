@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 
 import httpx
@@ -8,6 +9,8 @@ from .ai_intake import _infer_broad_updates, _language, _merge_current_updates
 from .config import get_settings
 from .schemas import LumaAgentRequest, LumaAgentResponse
 
+
+logger = logging.getLogger(__name__)
 
 REQUIRED_FOR_DRAFT = ["websiteIntent", "businessName", "businessDescription"]
 IMPORTANT_FOR_LAUNCH: list[str] = []
@@ -138,7 +141,8 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
             ],
         )
         data = _parse_json(response.output_text)
-    except Exception:
+    except Exception as error:
+        logger.exception("Dixie OpenAI chat failed: %s", error.__class__.__name__)
         return _fallback_response(payload, current_step, selected_language, local_updates, True)
 
     updated_fields = _clean_local_updates(
