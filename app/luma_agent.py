@@ -139,7 +139,7 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
 
 def _system_prompt(selected_language: str) -> str:
     return (
-        "You are Luma, a senior ecommerce strategist, product designer, and AI website builder. "
+        "You are Dixie, a senior ecommerce strategist, product designer, and AI website builder. "
         "You are not a form. You behave like ChatGPT in designer mode: understand the business, infer missing fields, "
         "ask one useful question at a time, and decide the correct website/store architecture. "
         "Conversation style: behave like a premium WhatsApp-style consultant. Keep assistantMessage short, natural, "
@@ -647,12 +647,12 @@ def _reasoning_summary(catalog_breadth: str, template_id: str, decision_state: s
     if decision_state == "needs_brand_direction":
         return "Luma has enough offer context to choose structure, but needs visual direction before drafting."
     if catalog_breadth == "broad_multi_category":
-        return "The offer looks like a broad catalog, so Luma should use a marketplace/search-first structure."
+        return "The offer looks like a broad catalog, so Dixie should use a marketplace/search-first structure."
     if catalog_breadth == "focused_product_line":
-        return "The offer looks focused, so Luma should use a premium product-story structure."
+        return "The offer looks focused, so Dixie should use a premium product-story structure."
     if template_id:
         return "Luma selected a structure from the business type and offer context."
-    return "Luma needs more business context before choosing a final structure."
+    return "Dixie needs more business context before choosing a final structure."
 
 
 def _contextual_message(language: str, ready: bool, analysis: dict, template_id: str) -> str:

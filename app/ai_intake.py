@@ -339,10 +339,10 @@ def _infer_broad_updates(text: str, selected_language: str) -> dict:
         generated_logo_request = _wants_ai_generated_logo(lowered)
         updates["hasLogoPhotos"] = (
             {
-                "en": "Client has no logo and wants Luma to create a simple brand mark from the business name and style.",
-                "es": "El cliente no tiene logo y quiere que Luma cree una marca simple con el nombre y el estilo.",
-                "fr": "Le client n'a pas de logo et veut que Luma crée une marque simple avec le nom et le style.",
-                "pt": "O cliente nao tem logo e quer que a Luma crie uma marca simples com o nome e o estilo.",
+                "en": "Client has no logo and wants Dixie to create a simple brand mark from the business name and style.",
+                "es": "El cliente no tiene logo y quiere que Dixie cree una marca simple con el nombre y el estilo.",
+                "fr": "Le client n'a pas de logo et veut que Dixie crée une marque simple avec le nom et le style.",
+                "pt": "O cliente nao tem logo e quer que a Dixie crie uma marca simples com o nome e o estilo.",
             }.get(selected_language, "Client wants AI-generated logo direction")
             if generated_logo_request
             else {
