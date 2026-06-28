@@ -105,7 +105,7 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
         return _fallback_response(payload, current_step, selected_language, local_updates, False)
 
     if not settings.openai_api_key:
-        return _fallback_response(payload, current_step, selected_language, local_updates, True)
+        return _fallback_response(payload, current_step, selected_language, local_updates, True, "missing_openai_api_key")
 
     client = OpenAI(
         api_key=settings.openai_api_key,
@@ -143,7 +143,7 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
         data = _parse_json(response.output_text)
     except Exception as error:
         logger.exception("Dixie OpenAI chat failed: %s", error.__class__.__name__)
-        return _fallback_response(payload, current_step, selected_language, local_updates, True)
+        return _fallback_response(payload, current_step, selected_language, local_updates, True, error.__class__.__name__)
 
     updated_fields = _clean_local_updates(
         data.get("updatedFields") or data.get("updates") or {},
@@ -352,6 +352,7 @@ def _fallback_response(
     selected_language: str,
     local_updates: dict,
     used_dev_fallback: bool,
+    fallback_reason: str = "",
 ) -> LumaAgentResponse:
     current = payload.current.model_dump(by_alias=True)
     merged_current = _merge_current_updates(current, local_updates)
@@ -387,6 +388,7 @@ def _fallback_response(
         catalogType=catalog_type,
         designStrategy=_design_strategy(selected_template_id, catalog_type, template_reason, merged_current, analysis),
         sitePlan=_site_plan_for(selected_template_id, catalog_type, selected_language, merged_current) if selected_template_id else None,
+        actions=[{"type": "diagnostic", "code": fallback_reason}] if used_dev_fallback and fallback_reason else [],
         usedDevFallback=used_dev_fallback,
     )
 
