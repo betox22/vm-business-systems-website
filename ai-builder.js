@@ -1203,15 +1203,15 @@ function detectBrowserLanguage() {
 }
 
 function t(key) {
-  return I18N[selectedLanguage]?.[key] || I18N.en[key] || key;
+  return publicAssistantCopy(I18N[selectedLanguage]?.[key] || I18N.en[key] || key);
 }
 
 function langText(map, language = selectedLanguage) {
-  return map[language] || map.en || "";
+  return publicAssistantCopy(map[language] || map.en || "");
 }
 
 function guidedQuestion(step) {
-  return GUIDED_QUESTIONS[selectedLanguage]?.[step] || GUIDED_QUESTIONS.en[step] || GUIDED_QUESTIONS.en.review;
+  return publicAssistantCopy(GUIDED_QUESTIONS[selectedLanguage]?.[step] || GUIDED_QUESTIONS.en[step] || GUIDED_QUESTIONS.en.review);
 }
 
 function guidedStage(step = guidedStep) {
@@ -2476,12 +2476,21 @@ async function sendGuidedReply() {
     guidedHistory.push({ role: "assistant", content: assistantMessage });
     mergeGuidedUpdates(updatedFields);
     await applyLumaAgentDecision(result);
+    const locallyReadyToGenerate = !result.readyToGenerate && isRichIntakeMessage(message) && hasEnoughContextForFirstDraft();
     const serverNextStep = result.next_step || result.nextStep || "";
-    guidedStep = result.readyToGenerate ? "review" : normalizeNextGuidedStep(serverNextStep || guidedStep);
+    guidedStep = (result.readyToGenerate || locallyReadyToGenerate) ? "review" : normalizeNextGuidedStep(serverNextStep || guidedStep);
     const serverNextQuestion = result.nextQuestion || result.next_question;
-    const nextQuestion = result.readyToGenerate ? "" : chooseNextQuestionText(serverNextQuestion, guidedStep);
+    const nextQuestion = (result.readyToGenerate || locallyReadyToGenerate) ? "" : chooseNextQuestionText(serverNextQuestion, guidedStep);
     const usedDevFallback = Boolean(result.used_dev_fallback || result.usedDevFallback);
-    const publicAssistantMessage = composeAssistantReply(assistantMessage, nextQuestion, usedDevFallback);
+    const finalAssistantMessage = locallyReadyToGenerate
+      ? langText({
+          en: "I have enough context to build the first draft. I will use your notes as strategy, not as page copy.",
+          es: "Ya tengo suficiente contexto para crear el primer borrador. Voy a usar tus notas como estrategia, no como texto pegado en la pagina.",
+          fr: "J'ai assez de contexte pour créer le premier brouillon. J'utiliserai vos notes comme stratégie, pas comme texte brut.",
+          pt: "Ja tenho contexto suficiente para criar o primeiro rascunho. Vou usar suas notas como estrategia, nao como texto colado na pagina.",
+        })
+      : assistantMessage;
+    const publicAssistantMessage = composeAssistantReply(finalAssistantMessage, nextQuestion, usedDevFallback);
     appendUnderstandingCard({ updates: updatedFields, sourceMessage: message });
     appendChatMessage("assistant", publicAssistantMessage, usedDevFallback ? "alert" : emotion);
     guidedStatusText.textContent = usedDevFallback
@@ -2491,10 +2500,26 @@ async function sendGuidedReply() {
     const updates = localContextUpdates;
     mergeGuidedUpdates(updates);
     syncTemplateSelectionFromGuidedContext(message);
-    guidedStep = nextSmartGuidedStep(guidedStep);
+    const locallyReadyToGenerate = isRichIntakeMessage(message) && hasEnoughContextForFirstDraft();
+    guidedStep = locallyReadyToGenerate ? "review" : nextSmartGuidedStep(guidedStep);
     console.warn("Luma intake assistant request failed; continuing locally.", error);
     appendUnderstandingCard({ updates, sourceMessage: message });
-    appendChatMessage("assistant", composeAssistantReply(t("localFallbackMessage"), guidedQuestion(guidedStep), true), "speaking");
+    appendChatMessage(
+      "assistant",
+      composeAssistantReply(
+        locallyReadyToGenerate
+          ? langText({
+              en: "I saved the details and have enough context to build the first draft.",
+              es: "Guardé los datos y ya tengo suficiente contexto para crear el primer borrador.",
+              fr: "J'ai enregistré les détails et j'ai assez de contexte pour créer le premier brouillon.",
+              pt: "Salvei os dados e ja tenho contexto suficiente para criar o primeiro rascunho.",
+            })
+          : t("localFallbackMessage"),
+        locallyReadyToGenerate ? "" : guidedQuestion(guidedStep),
+        true,
+      ),
+      locallyReadyToGenerate ? "success" : "speaking",
+    );
     guidedStatusText.textContent = t("localFallback");
   }
   setThinking(false);
@@ -4098,12 +4123,12 @@ function renderLumaReadyCard() {
     fr: "Structure choisie par IA",
     pt: "Estrutura escolhida por IA",
   });
-  const reason = diagnosis.reasoningSummary || forcedTemplateSelection?.reason || langText({
+  const reason = assistantVisibleCopy(diagnosis.reasoningSummary || forcedTemplateSelection?.reason || langText({
     en: "Dixie will use the conversation as strategy and generate customer-facing copy.",
     es: "Dixie usara la conversacion como estrategia y generara textos para clientes.",
     fr: "Dixie utilisera la conversation comme strategie et generera le contenu client.",
     pt: "A Dixie usara a conversa como estrategia e gerara textos para clientes.",
-  });
+  }));
   card.innerHTML = `
     <div class="luma-ready-head">
       <span>${escapeHtml(langText({ en: "Site plan ready", es: "Plan listo", fr: "Plan pret", pt: "Plano pronto" }))}</span>
@@ -4575,10 +4600,18 @@ function isGuidedStepAnswered(step) {
   if (step === "contactInfo") return Object.keys(guidedState.contactInfo || {}).length > 0;
   if (step === "salesMode") return Boolean(guidedState.salesMode);
   if (step === "hasLogoPhotos") {
-    return Boolean(guidedState.hasLogoPhotos || guidedState.hasLogo || guidedState.hasPhotos);
+    return Boolean(guidedState.hasLogoPhotos || guidedState.hasLogo || guidedState.hasPhotos || guidedState.aiGeneratedLogoRequested);
   }
   if (step === "desiredDomain") return Boolean(guidedState.desiredDomain);
   return false;
+}
+
+function hasEnoughContextForFirstDraft() {
+  const hasName = Boolean(guidedState.businessName);
+  const hasOffer = Boolean(guidedState.businessDescription) || arrayValue(guidedState.servicesProducts).length > 0;
+  const hasGoal = Boolean(guidedState.websiteIntent || guidedState.salesMode || forcedTemplateSelection?.templateId);
+  const hasStyle = Boolean(guidedState.preferredTone || arrayValue(guidedState.preferredColors).length || arrayValue(guidedState.logoPalette).length);
+  return hasName && hasOffer && hasGoal && hasStyle;
 }
 
 function inferGuidedUpdates(step, message) {
@@ -4649,12 +4682,14 @@ function inferGuidedUpdatesFromAnyMessage(message) {
   if (salesMode && !guidedState.salesMode) updates.salesMode = salesMode;
 
   if (/logo|foto|fotos|imagen|imagenes|photo|photos|image|images/.test(lower) && !guidedState.hasLogoPhotos) {
-    updates.hasLogoPhotos = wantsAiGeneratedLogo(text)
+    const wantsGeneratedLogo = wantsAiGeneratedLogo(text);
+    if (wantsGeneratedLogo) updates.aiGeneratedLogoRequested = true;
+    updates.hasLogoPhotos = wantsGeneratedLogo
       ? langText({
-          en: "Client has no logo and wants Luma to create a simple brand mark from the business name and style.",
-          es: "El cliente no tiene logo y quiere que Luma cree una marca simple con el nombre y el estilo.",
-          fr: "Le client n'a pas de logo et veut que Luma crée une marque simple avec le nom et le style.",
-          pt: "O cliente nao tem logo e quer que a Luma crie uma marca simples com o nome e o estilo.",
+          en: "Client has no logo and wants Dixie to create a simple brand mark from the business name and style.",
+          es: "El cliente no tiene logo y quiere que Dixie cree una marca simple con el nombre y el estilo.",
+          fr: "Le client n'a pas de logo et veut que Dixie crée une marque simple avec le nom et le style.",
+          pt: "O cliente nao tem logo e quer que a Dixie crie uma marca simples com o nome e o estilo.",
         })
       : langText({
           en: "Client mentioned logo/photos",
@@ -12986,6 +13021,17 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function assistantVisibleCopy(value) {
+  return String(value ?? "")
+    .replace(/\bLuma\b/g, "Dixie")
+    .replace(/\bGNU Dev\b/g, "Dixie")
+    .replace(/gnu-dev-assistant/g, "nixie_idle");
+}
+
+function publicAssistantCopy(value) {
+  return isPublicClientSetup ? assistantVisibleCopy(value) : value;
 }
 
 function escapeAttribute(value) {

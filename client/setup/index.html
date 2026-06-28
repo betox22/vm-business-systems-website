@@ -6,7 +6,7 @@
     <title>Dixie Guided Setup</title>
     <link rel="stylesheet" href="/css/avatar-assistant.css?v=2">
     <link rel="stylesheet" href="/ai-builder.css?v=76">
-    <link rel="stylesheet" href="/client-setup.css?v=31">
+    <link rel="stylesheet" href="/client-setup.css?v=32">
   </head>
   <body class="public-client-setup guided-modal-open" data-context="client-setup">
     <main class="ai-shell">
@@ -93,7 +93,7 @@
               <section class="guided-live-stage" aria-label="Live website preview">
                 <div class="live-stage-header">
                   <span data-i18n="livePreviewKicker">Live draft</span>
-                  <strong data-i18n="livePreviewTitle">Luma is choosing the right structure</strong>
+                  <strong data-i18n="livePreviewTitle">Dixie is choosing the right structure</strong>
                   <p data-i18n="livePreviewText">The preview adapts from your answers before the full editable site is generated.</p>
                 </div>
                 <div id="liveSitePreviewMount" class="live-site-preview-mount"></div>
@@ -103,7 +103,7 @@
                 <div id="guidedChat" class="guided-chat" aria-live="polite"></div>
                 <div id="guidedThinking" class="guided-thinking">
                   <img class="assistant-avatar tiny" src="/assets/nixie_thinking.png" alt="">
-                  <span data-i18n="thinking">Luma is thinking...</span>
+                  <span data-i18n="thinking">Dixie is thinking...</span>
                 </div>
                 <div class="chat-status-card">
                   <div>
@@ -116,7 +116,7 @@
                 <div id="guidedAssetPrompt" class="guided-asset-prompt">
                   <div>
                     <strong data-i18n="assetPromptTitle">Logo and photos</strong>
-                    <span data-i18n="assetPromptText">Upload them here and Luma can use them for the draft.</span>
+                    <span data-i18n="assetPromptText">Upload them here and Dixie can use them for the draft.</span>
                   </div>
                   <div>
                     <button id="chatLogoUploadButton" class="secondary-action" type="button" data-i18n="uploadLogo">Upload logo optional</button>
@@ -146,8 +146,8 @@
               <div class="summary-panel" aria-label="Review details">
                 <div class="summary-head">
                   <div>
-                    <h2 data-i18n="finalReviewTitle">Luma's build plan</h2>
-                    <p data-i18n="summaryHelper">Luma turns your answers into a template-backed, editable website plan before generating.</p>
+                    <h2 data-i18n="finalReviewTitle">Dixie's build plan</h2>
+                    <p data-i18n="summaryHelper">Dixie turns your answers into a template-backed, editable website plan before generating.</p>
                   </div>
                   <img class="assistant-avatar tiny" src="/assets/nixie_idle.png" alt="">
                 </div>
@@ -246,11 +246,11 @@
             <div id="clientReviewBar" class="client-review-bar">
               <div>
                 <strong id="generatedReadyTitle">Tu borrador está listo</strong>
-                <span id="generatedReadySubtitle">Revísalo completo. Puedes enviarlo al equipo o pedirle ajustes a Luma.</span>
+                <span id="generatedReadySubtitle">Revísalo completo. Puedes enviarlo al equipo o pedirle ajustes a Dixie.</span>
               </div>
               <div>
                 <button id="submitDraftReviewButton" type="button">Enviar para revisión</button>
-                <button id="adjustWithLumaButton" type="button">Ajustar con Luma</button>
+                <button id="adjustWithLumaButton" type="button">Ajustar con Dixie</button>
                 <button id="exitClientPreviewButton" type="button">Seguir revisando</button>
               </div>
             </div>
@@ -259,7 +259,7 @@
               <button type="button" data-selection-action="up">↑</button>
               <button type="button" data-selection-action="down">↓</button>
               <button type="button" data-selection-action="duplicate">Duplicar</button>
-              <button type="button" data-selection-action="luma">Luma</button>
+              <button type="button" data-selection-action="luma">Dixie</button>
               <button type="button" data-selection-action="delete">Eliminar</button>
             </div>
             <div id="previewFrame" class="site-preview"></div>
@@ -268,11 +268,11 @@
           <aside class="studio-side studio-luma-panel">
             <div class="studio-card luma-studio-card">
               <div class="studio-luma-avatar">
-                <img class="assistant-avatar large" src="/assets/nixie_idle.png" alt="Luma">
+                <img class="assistant-avatar large" src="/assets/nixie_idle.png" alt="Dixie">
                 <span></span>
               </div>
               <div class="studio-card-head">
-                <strong>Luma</strong>
+                <strong>Dixie</strong>
                 <span>Diseñadora IA</span>
               </div>
               <p class="studio-luma-message">Toca una sección o dime qué quieres mejorar. Puedo ajustar layout, productos, textos y estilo.</p>
@@ -282,7 +282,7 @@
                 <div><i></i><strong>Online shop</strong></div>
                 <div><em></em><strong>Contact page</strong></div>
               </div>
-              <button id="studioAdjustButton" class="studio-primary-action" type="button">Ajustar con Luma</button>
+              <button id="studioAdjustButton" class="studio-primary-action" type="button">Ajustar con Dixie</button>
             </div>
           </aside>
         </div>
@@ -292,11 +292,11 @@
         <div class="studio-auth-card">
           <button id="studioAuthCloseButton" class="icon-button" type="button" aria-label="Cerrar">×</button>
           <div class="studio-auth-avatar">
-            <img class="assistant-avatar large" src="/assets/nixie_success.png" alt="Luma">
+            <img class="assistant-avatar large" src="/assets/nixie_success.png" alt="Dixie">
           </div>
           <span data-i18n="accountGateKicker">Guarda tu progreso</span>
           <h2 data-i18n="accountGateTitle">Tu primer borrador está listo para seguir editando</h2>
-          <p data-i18n="accountGateText">Crea una cuenta para guardar este sitio, manejar productos, precios, inventario y continuar con Luma sin perder nada.</p>
+          <p data-i18n="accountGateText">Crea una cuenta para guardar este sitio, manejar productos, precios, inventario y continuar con Dixie sin perder nada.</p>
           <div class="studio-auth-actions">
             <button id="studioGoogleAuthButton" type="button" data-i18n="continueGoogle">Continuar con Google</button>
             <button id="studioAppleAuthButton" type="button" data-i18n="continueApple">Continuar con Apple</button>
@@ -315,6 +315,6 @@
     <script src="/template-router.js?v=10"></script>
     <script src="/js/avatar-state-manager.js?v=1"></script>
     <script src="/js/avatar-assistant.js?v=2"></script>
-    <script src="/ai-builder.js?v=119"></script>
+    <script src="/ai-builder.js?v=120"></script>
   </body>
 </html>
