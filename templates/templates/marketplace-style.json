@@ -108,10 +108,19 @@
     }
   ],
   "aiPrompt": "Build a multi-category ecommerce homepage focused on fast product discovery, deals, search, and trust.",
+  "commerceRequirements": {
+    "requiresAccountEntry": true,
+    "requiresCart": true,
+    "requiresAddToCartButtons": true,
+    "requiresCheckoutPath": true,
+    "requiresSearchAndFilters": true,
+    "requiresCustomerSubscription": true,
+    "notes": "When the business intent is online sales, marketplace, retail, or product catalog, this template must render as a commerce experience with account/register, cart, add-to-cart actions, checkout intent, search, filters, categories, and customer capture. Do not render it as only a brochure or static catalog."
+  },
   "catalogModel": {
     "catalogType": "dense_marketplace_catalog",
-    "productCardStyle": "compact cards with rating, discount, delivery badge, quick view, compare",
-    "collectionLayout": "search-first layout, category sidebar, deal rows, best seller sections",
+    "productCardStyle": "compact commerce cards with rating, discount, delivery badge, price, add-to-cart button, quick view, compare",
+    "collectionLayout": "search-first marketplace layout with customer account entry, cart, category sidebar, deal rows, best seller sections, subscription capture, and checkout path",
     "filters": [
       "category",
       "brand",

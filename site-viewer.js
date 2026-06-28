@@ -1,6 +1,7 @@
 const API_BASE_URL = resolveApiBaseUrl();
 const publicSite = document.querySelector("#publicSite");
 let currentPublicSite = null;
+let publicCart = loadPublicCart();
 
 loadPublicSite();
 
@@ -53,18 +54,48 @@ function renderWebsite(schema) {
   const logo = schema.brand?.logoUrl || schema.global_components?.logo_url;
   const layoutId = schema.layout_mode?.id || "standard";
   const templateId = schema.active_template?.id || schema.selected_template?.id || "standard";
+  const commerceActions = isCommerceSite(schema) ? renderCommerceNavActions(schema) : "";
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)}">
     <header class="rendered-nav sticky">
-      <div>${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business?.name)}">` : renderLogoMark(schema)}</div>
+      <div class="rendered-nav-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business?.name)}">` : renderLogoMark(schema)}</div>
       <nav>${(schema.navigation || [])
         .map((item) => `<a href="#${escapeAttribute(item.page_key)}">${escapeHtml(item.label)}</a>`)
         .join("")}</nav>
+      ${commerceActions}
     </header>
     ${(page?.sections || []).sort((a, b) => a.order - b.order).map((section) => renderSection(section, schema)).join("")}
     <footer class="rendered-footer">
       <div>${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business?.name || "")}">` : renderLogoMark(schema)}</div>
       <span>${escapeHtml(schema.global_components?.footer_text || "")}</span>
     </footer>
+  </div>`;
+}
+
+function isCommerceSite(schema = {}) {
+  const templateId = schema.active_template?.id || schema.selected_template?.id || "";
+  const catalogType = schema.catalog_model?.catalogType || schema.catalogModel?.catalogType || schema.layout_mode?.catalog_type || "";
+  const salesMode = schema.business?.salesMode || schema.business?.sales_mode || schema.sales_mode || "";
+  const intent = schema.business?.websiteIntent || schema.business?.website_intent || schema.business?.intent || "";
+  const text = [templateId, catalogType, salesMode, intent, schema.business?.industry, schema.business?.description].join(" ").toLowerCase();
+  return /marketplace|ecommerce|commerce|store|shop|retail|online_sales|sell|venta|tienda|productos/.test(text);
+}
+
+function commerceLabels(schema = {}) {
+  const language = schema?.business?.selectedLanguage || "en";
+  const labels = {
+    en: { account: "Account", cart: "Cart", addToCart: "Add to cart", addedToCart: "added to cart", checkout: "Checkout", continueShopping: "Continue shopping", emptyCart: "Your cart is empty.", signInTitle: "Sign in or create account", name: "Name", email: "Email", continue: "Continue", saved: "Saved", items: "items", total: "Total" },
+    es: { account: "Cuenta", cart: "Carrito", addToCart: "Agregar al carrito", addedToCart: "agregado al carrito", checkout: "Pagar", continueShopping: "Seguir comprando", emptyCart: "Tu carrito esta vacio.", signInTitle: "Entrar o crear cuenta", name: "Nombre", email: "Correo", continue: "Continuar", saved: "Guardado", items: "articulos", total: "Total" },
+    fr: { account: "Compte", cart: "Panier", addToCart: "Ajouter au panier", addedToCart: "ajoute au panier", checkout: "Paiement", continueShopping: "Continuer", emptyCart: "Votre panier est vide.", signInTitle: "Connexion ou creation de compte", name: "Nom", email: "Email", continue: "Continuer", saved: "Enregistre", items: "articles", total: "Total" },
+    pt: { account: "Conta", cart: "Carrinho", addToCart: "Adicionar ao carrinho", addedToCart: "adicionado ao carrinho", checkout: "Checkout", continueShopping: "Continuar comprando", emptyCart: "Seu carrinho esta vazio.", signInTitle: "Entrar ou criar conta", name: "Nome", email: "Email", continue: "Continuar", saved: "Salvo", items: "itens", total: "Total" },
+  };
+  return labels[language] || labels.en;
+}
+
+function renderCommerceNavActions(schema) {
+  const labels = commerceLabels(schema);
+  return `<div class="commerce-actions">
+    <button class="commerce-action" data-account-open type="button">${escapeHtml(labels.account)}</button>
+    <button class="commerce-action cart-button" data-cart-open type="button">${escapeHtml(labels.cart)} <span data-cart-count>${cartItemCount()}</span></button>
   </div>`;
 }
 
@@ -1604,6 +1635,13 @@ function renderLeadFunnelOfferCatalog(items, schema) {
 
 function renderCatalogCard(item, className, badge, schema) {
   const labels = catalogLocaleLabels(schema);
+  const commerce = commerceLabels(schema);
+  const isMarket = String(className || "").includes("market-card") || isCommerceSite(schema);
+  const priceLabel = item.price_label || labels.request;
+  const actionAttributes = isMarket
+    ? `data-cart-add data-item-id="${escapeAttribute(item.id || item.name || "")}" data-item-name="${escapeAttribute(item.name)}" data-item-price="${escapeAttribute(priceLabel)}"`
+    : `data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}"`;
+  const actionLabel = isMarket ? commerce.addToCart : (item.button_label || labels.view);
   return `<article class="${className}">
     ${renderResilientImage(item.image_url, item.name, item.name)}
     ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
@@ -1611,8 +1649,8 @@ function renderCatalogCard(item, className, badge, schema) {
     <h3>${escapeHtml(item.name)}</h3>
     <p>${escapeHtml(item.description)}</p>
     <div class="market-meta"><span>${"★".repeat(Math.max(1, Math.min(5, Math.round(Number(item.rating) || 4))))} ${escapeHtml(item.rating || "4.6")}</span><span>${escapeHtml(item.shipping_label || labels.fastShip)}</span></div>
-    <b>${escapeHtml(item.price_label || labels.request)}</b>
-    <button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.view)}</button>
+    <b>${escapeHtml(priceLabel)}</b>
+    <button class="rendered-button" ${actionAttributes} type="button">${escapeHtml(actionLabel)}</button>
   </article>`;
 }
 
@@ -1755,6 +1793,123 @@ function bindPublicSiteActions() {
       catalogItemId: button.dataset.itemId || "",
       catalogItemName: button.dataset.itemName || "",
     }));
+  });
+  publicSite.querySelectorAll("[data-cart-add]").forEach((button) => {
+    button.addEventListener("click", () => addCartItem(button));
+  });
+  publicSite.querySelectorAll("[data-cart-open]").forEach((button) => {
+    button.addEventListener("click", () => openCartDrawer());
+  });
+  publicSite.querySelectorAll("[data-account-open]").forEach((button) => {
+    button.addEventListener("click", () => openAccountModal());
+  });
+  updateCartCount();
+}
+
+function loadPublicCart() {
+  try {
+    return JSON.parse(localStorage.getItem("lumaPublicCart") || "[]");
+  } catch (error) {
+    return [];
+  }
+}
+
+function savePublicCart() {
+  localStorage.setItem("lumaPublicCart", JSON.stringify(publicCart));
+}
+
+function cartItemCount() {
+  return publicCart.reduce((total, item) => total + Number(item.quantity || 1), 0);
+}
+
+function updateCartCount() {
+  document.querySelectorAll("[data-cart-count]").forEach((node) => {
+    node.textContent = String(cartItemCount());
+  });
+}
+
+function addCartItem(button) {
+  const id = button.dataset.itemId || button.dataset.itemName || `item-${Date.now()}`;
+  const existing = publicCart.find((item) => item.id === id);
+  if (existing) {
+    existing.quantity = Number(existing.quantity || 1) + 1;
+  } else {
+    publicCart.push({
+      id,
+      name: button.dataset.itemName || "Item",
+      price: button.dataset.itemPrice || "",
+      quantity: 1,
+    });
+  }
+  savePublicCart();
+  updateCartCount();
+  showCommerceToast(`${button.dataset.itemName || "Item"} ${commerceLabels(currentPublicSite?.schema).addedToCart}`);
+}
+
+function showCommerceToast(message) {
+  document.querySelector(".commerce-toast")?.remove();
+  document.body.insertAdjacentHTML("beforeend", `<div class="commerce-toast">${escapeHtml(message)}</div>`);
+  setTimeout(() => document.querySelector(".commerce-toast")?.remove(), 1600);
+}
+
+function openCartDrawer() {
+  const existing = document.querySelector(".commerce-modal");
+  if (existing) existing.remove();
+  const labels = commerceLabels(currentPublicSite?.schema);
+  const itemsHtml = publicCart.length
+    ? publicCart.map((item) => `<div class="commerce-cart-item">
+        <div><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price || "")}</span></div>
+        <span>x${escapeHtml(item.quantity || 1)}</span>
+      </div>`).join("")
+    : `<p class="commerce-empty">${escapeHtml(labels.emptyCart)}</p>`;
+  document.body.insertAdjacentHTML("beforeend", `<div class="commerce-modal" role="dialog" aria-modal="true">
+    <div class="commerce-modal-card">
+      <div class="commerce-modal-head"><strong>${escapeHtml(labels.cart)}</strong><button data-close-commerce type="button" aria-label="Close">x</button></div>
+      <div class="commerce-cart-list">${itemsHtml}</div>
+      <div class="commerce-cart-total"><span>${escapeHtml(labels.items)}</span><b>${cartItemCount()}</b></div>
+      <button class="rendered-button" data-cart-checkout type="button">${escapeHtml(labels.checkout)}</button>
+      <button class="rendered-button secondary" data-close-commerce type="button">${escapeHtml(labels.continueShopping)}</button>
+    </div>
+  </div>`);
+  const modal = document.querySelector(".commerce-modal");
+  modal.querySelectorAll("[data-close-commerce]").forEach((button) => button.addEventListener("click", () => modal.remove()));
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) modal.remove();
+  });
+  modal.querySelector("[data-cart-checkout]")?.addEventListener("click", () => {
+    const cartSummary = publicCart.map((item) => `${item.quantity || 1} x ${item.name}`).join(", ");
+    modal.remove();
+    openLeadModal({ catalogItemName: cartSummary || labels.cart });
+  });
+}
+
+function openAccountModal() {
+  const existing = document.querySelector(".commerce-modal");
+  if (existing) existing.remove();
+  const labels = commerceLabels(currentPublicSite?.schema);
+  document.body.insertAdjacentHTML("beforeend", `<div class="commerce-modal" role="dialog" aria-modal="true">
+    <form class="commerce-modal-card">
+      <div class="commerce-modal-head"><strong>${escapeHtml(labels.signInTitle)}</strong><button data-close-commerce type="button" aria-label="Close">x</button></div>
+      <label>${escapeHtml(labels.name)}<input name="name" autocomplete="name"></label>
+      <label>${escapeHtml(labels.email)}<input name="email" type="email" autocomplete="email"></label>
+      <span class="commerce-status"></span>
+      <button class="rendered-button" type="submit">${escapeHtml(labels.continue)}</button>
+    </form>
+  </div>`);
+  const modal = document.querySelector(".commerce-modal");
+  modal.querySelector("[data-close-commerce]").addEventListener("click", () => modal.remove());
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) modal.remove();
+  });
+  modal.querySelector("form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    localStorage.setItem("lumaShopperProfile", JSON.stringify({
+      name: data.get("name")?.toString() || "",
+      email: data.get("email")?.toString() || "",
+    }));
+    event.currentTarget.querySelector(".commerce-status").textContent = labels.saved;
+    setTimeout(() => modal.remove(), 800);
   });
 }
 

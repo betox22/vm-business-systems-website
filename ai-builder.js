@@ -10620,6 +10620,7 @@ function renderWebsite(schema, pageKey) {
   const logo = schema.brand?.logoUrl || schema.global_components.logo_url;
   const layoutId = schema.layout_mode?.id || "standard";
   const templateId = schema.active_template?.id || schema.selected_template?.id || "standard";
+  const commerceActions = isCommerceSite(schema) ? renderCommerceNavActions(schema) : "";
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)}">
     ${renderStudioFloatingCatalog(schema)}
     <div class="rendered-page-switcher">
@@ -10630,10 +10631,11 @@ function renderWebsite(schema, pageKey) {
         .join("")}</div>
     </div>
     <header class="rendered-nav ${schema.layout_mode?.navigation?.sticky_header ? "sticky" : ""}">
-      <div>${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business.name)}">` : renderLogoMark(schema)}</div>
+      <div class="rendered-nav-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business.name)}">` : renderLogoMark(schema)}</div>
       <nav>${schema.navigation
         .map((item) => `<a class="${item.page_key === page.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.label)}</a>`)
         .join("")}</nav>
+      ${commerceActions}
     </header>
     ${page.sections
       .sort((a, b) => a.order - b.order)
@@ -10643,6 +10645,34 @@ function renderWebsite(schema, pageKey) {
       <div>${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business.name)}">` : renderLogoMark(schema)}</div>
       <span>${escapeHtml(schema.global_components.footer_text || "")}</span>
     </footer>
+  </div>`;
+}
+
+function isCommerceSite(schema = {}) {
+  const templateId = schema.active_template?.id || schema.selected_template?.id || "";
+  const catalogType = schema.catalog_model?.catalogType || schema.catalogModel?.catalogType || schema.layout_mode?.catalog_type || "";
+  const salesMode = schema.business?.salesMode || schema.business?.sales_mode || schema.sales_mode || "";
+  const intent = schema.business?.websiteIntent || schema.business?.website_intent || schema.business?.intent || "";
+  const text = [templateId, catalogType, salesMode, intent, schema.business?.industry, schema.business?.description].join(" ").toLowerCase();
+  return /marketplace|ecommerce|commerce|store|shop|retail|online_sales|sell|venta|tienda|productos/.test(text);
+}
+
+function commerceLabels(schema = {}) {
+  const language = schema?.business?.selectedLanguage || selectedLanguage || "en";
+  const labels = {
+    en: { account: "Account", cart: "Cart", addToCart: "Add to cart" },
+    es: { account: "Cuenta", cart: "Carrito", addToCart: "Agregar al carrito" },
+    fr: { account: "Compte", cart: "Panier", addToCart: "Ajouter au panier" },
+    pt: { account: "Conta", cart: "Carrinho", addToCart: "Adicionar ao carrinho" },
+  };
+  return labels[language] || labels.en;
+}
+
+function renderCommerceNavActions(schema) {
+  const labels = commerceLabels(schema);
+  return `<div class="commerce-actions">
+    <button class="commerce-action" type="button">${escapeHtml(labels.account)}</button>
+    <button class="commerce-action cart-button" type="button">${escapeHtml(labels.cart)} <span>0</span></button>
   </div>`;
 }
 
@@ -12520,6 +12550,7 @@ function renderPersonalBrandServicesCatalog(items) {
 
 function renderCatalogCard(item, className, badge, schema) {
   const labels = catalogLocaleLabels(schema);
+  const commerce = commerceLabels(schema);
   const isMarket = String(className || "").includes("market-card");
   return `<article class="${className}">
     ${renderResilientImage(item.image_url, item.name, item.name)}
@@ -12530,7 +12561,7 @@ function renderCatalogCard(item, className, badge, schema) {
     ${isMarket ? `<div class="market-meta"><span>${"★".repeat(Math.max(1, Math.min(5, Math.round(Number(item.rating) || 4))))} ${escapeHtml(item.rating || "4.6")}</span><span>${escapeHtml(item.shipping_label || labels.fastShip)}</span></div>` : ""}
     <b>${escapeHtml(productPriceLabel(item))}</b>
     ${productStockBadge(item)}
-    <a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.view)}</a>
+    <button class="rendered-button" type="button">${escapeHtml(isMarket ? commerce.addToCart : (item.button_label || labels.view))}</button>
   </article>`;
 }
 

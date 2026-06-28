@@ -5416,6 +5416,12 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   object-fit: contain;
 }
 
+.rendered-nav-brand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
 .logo-lockup {
   display: flex;
   align-items: center;
@@ -5453,6 +5459,174 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   text-decoration: none;
   font-weight: 850;
   opacity: 0.78;
+}
+
+.commerce-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.commerce-action {
+  border: 1px solid color-mix(in srgb, var(--site-text) 14%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--site-surface) 92%, transparent);
+  color: var(--site-text);
+  padding: 9px 13px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--site-text) 8%, transparent);
+}
+
+.cart-button span,
+.cart-button [data-cart-count] {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 5px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--site-accent);
+  color: var(--site-text);
+  font-size: 10px;
+}
+
+.template-mega-marketplace .commerce-action,
+.template-marketplace-style .commerce-action {
+  border-color: color-mix(in srgb, var(--site-accent) 44%, transparent);
+  background: color-mix(in srgb, var(--site-text) 78%, var(--site-primary));
+  color: var(--site-surface);
+}
+
+.template-mega-marketplace .cart-button span,
+.template-marketplace-style .cart-button span,
+.template-mega-marketplace .cart-button [data-cart-count],
+.template-marketplace-style .cart-button [data-cart-count] {
+  color: var(--site-text);
+}
+
+.commerce-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  justify-items: end;
+  background: rgba(4, 8, 18, 0.48);
+  backdrop-filter: blur(8px);
+}
+
+.commerce-modal-card {
+  display: grid;
+  gap: 14px;
+  width: min(430px, calc(100vw - 24px));
+  min-height: 100%;
+  padding: 22px;
+  background: var(--site-surface, #fff);
+  color: var(--site-text, #111827);
+  box-shadow: -20px 0 60px rgba(8, 15, 32, 0.22);
+}
+
+.commerce-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.commerce-modal-head button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--site-text) 12%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.commerce-cart-list {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.commerce-cart-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid color-mix(in srgb, var(--site-text) 10%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--site-bg, #f8fafc) 72%, var(--site-surface, #fff));
+}
+
+.commerce-cart-item strong,
+.commerce-cart-item span {
+  display: block;
+}
+
+.commerce-cart-item span {
+  color: var(--site-muted, #64748b);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.commerce-cart-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid color-mix(in srgb, var(--site-text) 10%, transparent);
+  padding-top: 14px;
+}
+
+.commerce-empty,
+.commerce-status {
+  color: var(--site-muted, #64748b);
+}
+
+.commerce-toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 90;
+  border-radius: 999px;
+  padding: 12px 16px;
+  background: var(--site-text, #111827);
+  color: var(--site-surface, #fff);
+  font-weight: 900;
+  box-shadow: 0 18px 48px rgba(8, 15, 32, 0.24);
+}
+
+@media (max-width: 760px) {
+  .rendered-nav nav {
+    order: 3;
+    width: 100%;
+  }
+
+  .commerce-actions {
+    margin-left: 0;
+    flex: 1 1 auto;
+  }
+
+  .commerce-action {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+
+  .commerce-modal {
+    justify-items: stretch;
+  }
+
+  .commerce-modal-card {
+    width: 100%;
+    min-height: 100%;
+  }
 }
 
 .rendered-hero {
