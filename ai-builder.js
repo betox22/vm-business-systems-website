@@ -12202,7 +12202,57 @@ function renderMarketplaceCatalog(items, schema) {
       <div class="marketplace-sort-bar"><b>${escapeHtml(labels.results)}</b><span>${escapeHtml(labels.sortBy)}: ${escapeHtml(labels.featured)}</span></div>
       <div class="catalog-results">${items.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? labels.deal : labels.fastShip}`, schema)).join("")}</div>
     </div>
-  </div>`;
+  </div>${renderMarketplaceSubscribe(schema)}`;
+}
+
+function renderMarketplaceSubscribe(schema) {
+  const copy = marketplaceSubscribeCopy(schema);
+  return `<section class="marketplace-subscribe">
+    <div>
+      <span>${escapeHtml(copy.kicker)}</span>
+      <h2>${escapeHtml(copy.title)}</h2>
+      <p>${escapeHtml(copy.text)}</p>
+    </div>
+    <form>
+      <input type="email" placeholder="${escapeAttribute(copy.placeholder)}">
+      <button class="rendered-button" data-open-lead type="button">${escapeHtml(copy.button)}</button>
+    </form>
+  </section>`;
+}
+
+function marketplaceSubscribeCopy(schema) {
+  const language = schema?.business?.selectedLanguage || selectedLanguage || "en";
+  const copies = {
+    en: {
+      kicker: "Subscriber deals",
+      title: "Get drops, offers and rare finds first",
+      text: "Customers can subscribe for new arrivals, limited deals and category updates.",
+      placeholder: "Email address",
+      button: "Subscribe",
+    },
+    es: {
+      kicker: "Ofertas para suscriptores",
+      title: "Recibe drops, ofertas y hallazgos primero",
+      text: "Los clientes pueden suscribirse para novedades, ofertas limitadas y actualizaciones por categoria.",
+      placeholder: "Correo electronico",
+      button: "Suscribirme",
+    },
+    fr: {
+      kicker: "Offres abonnees",
+      title: "Recevez les nouveautés et offres en premier",
+      text: "Les clients peuvent recevoir nouveautés, offres limitées et mises à jour par catégorie.",
+      placeholder: "Adresse email",
+      button: "S'abonner",
+    },
+    pt: {
+      kicker: "Ofertas para assinantes",
+      title: "Receba novidades, ofertas e achados primeiro",
+      text: "Clientes podem receber novidades, ofertas limitadas e atualizacoes por categoria.",
+      placeholder: "Email",
+      button: "Assinar",
+    },
+  };
+  return copies[language] || copies.en;
 }
 
 function renderPremiumEditorialCatalog(items, schema) {
