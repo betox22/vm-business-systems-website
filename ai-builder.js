@@ -5,15 +5,17 @@ const LUMA_AGENT_URL = `${API_BASE_URL}/api/luma/chat`;
 const CLIENT_REQUESTS_URL = `${API_BASE_URL}/client-requests`;
 const ASSET_UPLOAD_URL = `${API_BASE_URL}/api/admin/assets/upload`;
 const SUPPORTED_LANGUAGES = ["en", "es", "fr", "pt"];
-const ASSISTANT_AVATAR_FALLBACK = "/public/brand/gnu-dev-assistant.png";
+const ASSISTANT_AVATAR_FALLBACK = "/assets/nixie_idle.png";
 const ASSISTANT_AVATARS = {
-  neutral: "/public/brand/gnu-dev-neutral.png",
-  happy: "/public/brand/gnu-dev-happy.png",
-  thinking: "/public/brand/gnu-dev-thinking.png",
-  listening: "/public/brand/gnu-dev-listening.png",
-  speaking: "/public/brand/gnu-dev-speaking.png",
-  alert: "/public/brand/gnu-dev-alert.png",
-  success: "/public/brand/gnu-dev-success.png",
+  neutral: "/assets/nixie_idle.png",
+  happy: "/assets/nixie_success.png",
+  thinking: "/assets/nixie_thinking.png",
+  listening: "/assets/nixie_listening.png",
+  speaking: "/assets/nixie_speaking.png",
+  building: "/assets/nixie_building.png",
+  optimize: "/assets/nixie_optimize.png",
+  alert: "/assets/nixie_alert.png",
+  success: "/assets/nixie_success.png",
 };
 const LANGUAGE_NAMES = {
   en: "English",
@@ -1949,8 +1951,21 @@ function initBuilderAvatarAssistant() {
   builderAvatarAssistant = new window.AvatarAssistant({
     root: builderAvatarRoot,
     manager: builderAvatarManager,
-    name: isPublicClientSetup ? "Luma" : "GNU Dev",
-    imageUrl: "/public/brand/gnu-dev-assistant.png",
+    name: "Luma",
+    imageUrl: ASSISTANT_AVATAR_FALLBACK,
+    imagePaths: {
+      idle: ASSISTANT_AVATAR_FALLBACK,
+      neutral: ASSISTANT_AVATARS.neutral,
+      happy: ASSISTANT_AVATARS.happy,
+      thinking: ASSISTANT_AVATARS.thinking,
+      listening: ASSISTANT_AVATARS.listening,
+      speaking: ASSISTANT_AVATARS.speaking,
+      building: ASSISTANT_AVATARS.building,
+      optimize: ASSISTANT_AVATARS.optimize,
+      confused: ASSISTANT_AVATARS.thinking,
+      success: ASSISTANT_AVATARS.success,
+      alert: ASSISTANT_AVATARS.alert,
+    },
     compact: true,
     labels: {
       idle: t("assistantSubtitle"),
