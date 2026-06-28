@@ -1401,7 +1401,7 @@ function renderNeutralLiveWorkspace() {
     },
     {
       title: langText({ en: "Visual base", es: "Base visual", fr: "Base visuelle", pt: "Base visual" }),
-      text: langText({ en: "Luma will choose this after understanding the business.", es: "Luma elegira esto despues de entender el negocio.", fr: "Luma choisira apres avoir compris le business.", pt: "A Luma escolhera depois de entender o negocio." }),
+      text: langText({ en: "Dixie will choose this after understanding the business.", es: "Dixie elegira esto despues de entender el negocio.", fr: "Dixie choisira apres avoir compris le business.", pt: "A Dixie escolhera depois de entender o negocio." }),
       active: false,
     },
   ];
@@ -1412,12 +1412,12 @@ function renderNeutralLiveWorkspace() {
       </div>
       <section class="neutral-live-copy">
         <span>${escapeHtml(langText({ en: "No template selected yet", es: "Aun no hay plantilla seleccionada", fr: "Aucun template choisi", pt: "Nenhum template selecionado" }))}</span>
-        <h2>${escapeHtml(langText({ en: "Luma is learning what to build", es: "Luma esta entendiendo que construir", fr: "Luma comprend quoi construire", pt: "A Luma esta entendendo o que construir" }))}</h2>
+        <h2>${escapeHtml(langText({ en: "Dixie is learning what to build", es: "Dixie esta entendiendo que construir", fr: "Dixie comprend quoi construire", pt: "A Dixie esta entendendo o que construir" }))}</h2>
         <p>${escapeHtml(langText({
-          en: "Once the business type and offer are clear, Luma will select the right structure and show the real preview here.",
-          es: "Cuando el tipo de negocio y la oferta esten claros, Luma elegira la estructura correcta y mostrara aqui el preview real.",
-          fr: "Quand le type de business et l'offre seront clairs, Luma choisira la bonne structure et affichera l'apercu ici.",
-          pt: "Quando o tipo de negocio e a oferta estiverem claros, a Luma escolhera a estrutura certa e mostrara o preview real aqui.",
+          en: "Once the business type and offer are clear, Dixie will select the right structure and show the real preview here.",
+          es: "Cuando el tipo de negocio y la oferta esten claros, Dixie elegira la estructura correcta y mostrara aqui el preview real.",
+          fr: "Quand le type de business et l'offre seront clairs, Dixie choisira la bonne structure et affichera l'apercu ici.",
+          pt: "Quando o tipo de negocio e a oferta estiverem claros, a Dixie escolhera a estrutura certa e mostrara o preview real aqui.",
         }))}</p>
       </section>
       <div class="neutral-live-steps">
@@ -3988,7 +3988,7 @@ function renderGuidedBriefReview() {
     </div>
     <div class="ai-build-grid">
       <section>
-        <span>${escapeHtml(langText({ en: "Luma will use", es: "Luma usara", fr: "Luma utilisera", pt: "A Luma usara" }))}</span>
+        <span>${escapeHtml(langText({ en: "Dixie will use", es: "Dixie usara", fr: "Dixie utilisera", pt: "A Dixie usara" }))}</span>
         ${sourceSignals.map((item) => `<strong>${escapeHtml(item)}</strong>`).join("")}
       </section>
       <section>
@@ -4004,17 +4004,17 @@ function aiBuildFocusLine() {
   const products = arrayValue(guidedState.servicesProducts).filter(Boolean).slice(0, 3);
   if (products.length) {
     return langText({
-      en: `${name}: Luma is shaping the site around ${products.join(", ")}.`,
-      es: `${name}: Luma esta armando el sitio alrededor de ${products.join(", ")}.`,
-      fr: `${name} : Luma structure le site autour de ${products.join(", ")}.`,
-      pt: `${name}: a Luma esta montando o site em torno de ${products.join(", ")}.`,
+      en: `${name}: Dixie is shaping the site around ${products.join(", ")}.`,
+      es: `${name}: Dixie esta armando el sitio alrededor de ${products.join(", ")}.`,
+      fr: `${name} : Dixie structure le site autour de ${products.join(", ")}.`,
+      pt: `${name}: a Dixie esta montando o site em torno de ${products.join(", ")}.`,
     });
   }
   return langText({
-    en: `${name}: Luma will use the conversation as strategy, not as raw page copy.`,
-    es: `${name}: Luma usara la conversacion como estrategia, no como texto crudo en la pagina.`,
-    fr: `${name} : Luma utilisera la conversation comme strategie, pas comme texte brut.`,
-    pt: `${name}: a Luma usara a conversa como estrategia, nao como texto bruto.`,
+    en: `${name}: Dixie will use the conversation as strategy, not as raw page copy.`,
+    es: `${name}: Dixie usara la conversacion como estrategia, no como texto crudo en la pagina.`,
+    fr: `${name} : Dixie utilisera la conversation comme strategie, pas comme texte brut.`,
+    pt: `${name}: a Dixie usara a conversa como estrategia, nao como texto bruto.`,
   });
 }
 
@@ -4022,33 +4022,33 @@ function aiCatalogStrategyLine(plan) {
   const catalog = `${plan.catalogType || forcedTemplateSelection?.catalogType || ""}`.toLowerCase();
   if (/dense|marketplace/.test(catalog)) {
     return langText({
-      en: "The products look varied, so Luma is using a search-first marketplace structure instead of a single-product landing.",
-      es: "Los productos se ven variados, asi que Luma usa una estructura tipo marketplace con busqueda, no una landing de producto unico.",
-      fr: "Les produits semblent varies, donc Luma utilise une structure marketplace avec recherche.",
-      pt: "Os produtos parecem variados, entao a Luma usa uma estrutura marketplace com busca.",
+      en: "The products look varied, so Dixie is using a search-first marketplace structure instead of a single-product landing.",
+      es: "Los productos se ven variados, asi que Dixie usa una estructura tipo marketplace con busqueda, no una landing de producto unico.",
+      fr: "Les produits semblent varies, donc Dixie utilise une structure marketplace avec recherche.",
+      pt: "Os produtos parecem variados, entao a Dixie usa uma estrutura marketplace com busca.",
     });
   }
   if (/premium_editorial/.test(catalog)) {
     return langText({
-      en: "The offer looks focused, so Luma is using a premium product-line presentation with strong story and conversion sections.",
-      es: "La oferta se ve enfocada, asi que Luma usa una presentacion premium de linea de producto con historia y conversion.",
-      fr: "L'offre semble ciblee, donc Luma utilise une presentation premium de gamme produit.",
-      pt: "A oferta parece focada, entao a Luma usa uma apresentacao premium de linha de produto.",
+      en: "The offer looks focused, so Dixie is using a premium product-line presentation with strong story and conversion sections.",
+      es: "La oferta se ve enfocada, asi que Dixie usa una presentacion premium de linea de producto con historia y conversion.",
+      fr: "L'offre semble ciblee, donc Dixie utilise une presentation premium de gamme produit.",
+      pt: "A oferta parece focada, entao a Dixie usa uma apresentacao premium de linha de produto.",
     });
   }
   if (/service|booking|lead|legal|medical/.test(catalog)) {
     return langText({
-      en: "The request is service-led, so Luma is prioritizing trust, proof, process and a clear contact path.",
-      es: "La solicitud es de servicios, asi que Luma prioriza confianza, prueba, proceso y contacto claro.",
-      fr: "La demande est orientee service, donc Luma priorise confiance, preuves et contact clair.",
-      pt: "O pedido e de servicos, entao a Luma prioriza confianca, prova, processo e contato.",
+      en: "The request is service-led, so Dixie is prioritizing trust, proof, process and a clear contact path.",
+      es: "La solicitud es de servicios, asi que Dixie prioriza confianza, prueba, proceso y contacto claro.",
+      fr: "La demande est orientee service, donc Dixie priorise confiance, preuves et contact clair.",
+      pt: "O pedido e de servicos, entao a Dixie prioriza confianca, prova, processo e contato.",
     });
   }
   return langText({
-    en: "Luma is matching the structure to the business type and will keep the generated site editable.",
-    es: "Luma esta ajustando la estructura al tipo de negocio y mantendra el sitio editable.",
-    fr: "Luma adapte la structure au type d'entreprise et gardera le site modifiable.",
-    pt: "A Luma esta ajustando a estrutura ao tipo de negocio e mantera o site editavel.",
+    en: "Dixie is matching the structure to the business type and will keep the generated site editable.",
+    es: "Dixie esta ajustando la estructura al tipo de negocio y mantendra el sitio editable.",
+    fr: "Dixie adapte la structure au type d'entreprise et gardera le site modifiable.",
+    pt: "A Dixie esta ajustando a estrutura ao tipo de negocio e mantera o site editavel.",
   });
 }
 
@@ -4099,10 +4099,10 @@ function renderLumaReadyCard() {
     pt: "Estrutura escolhida por IA",
   });
   const reason = diagnosis.reasoningSummary || forcedTemplateSelection?.reason || langText({
-    en: "Luma will use the conversation as strategy and generate customer-facing copy.",
-    es: "Luma usara la conversacion como estrategia y generara textos para clientes.",
-    fr: "Luma utilisera la conversation comme strategie et generera le contenu client.",
-    pt: "A Luma usara a conversa como estrategia e gerara textos para clientes.",
+    en: "Dixie will use the conversation as strategy and generate customer-facing copy.",
+    es: "Dixie usara la conversacion como estrategia y generara textos para clientes.",
+    fr: "Dixie utilisera la conversation comme strategie et generera le contenu client.",
+    pt: "A Dixie usara a conversa como estrategia e gerara textos para clientes.",
   });
   card.innerHTML = `
     <div class="luma-ready-head">

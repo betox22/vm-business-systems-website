@@ -291,9 +291,15 @@ body.public-client-setup.generated-preview-open {
 }
 
 .public-client-setup .assistant-avatar.large {
-  width: 48px;
-  height: 48px;
-  border-radius: 15px;
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  object-fit: contain;
+  background: transparent;
+  box-shadow: none;
+  filter: drop-shadow(0 12px 20px rgba(20, 184, 166, 0.25));
   animation: luma-idle 4.6s ease-in-out infinite;
 }
 
@@ -305,7 +311,7 @@ body.public-client-setup.generated-preview-open {
 
 .public-client-setup .assistant-avatar-wrap::before,
 .public-client-setup .assistant-avatar-wrap::after {
-  content: "";
+  content: none;
   position: absolute;
   inset: -5px;
   border-radius: 18px;
