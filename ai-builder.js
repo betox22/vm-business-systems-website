@@ -563,6 +563,7 @@ let guidedState = {
   hasPhotos: false,
   salesMode: "",
   hasLogoPhotos: "",
+  aiGeneratedLogoRequested: false,
   sectionsPreference: "",
   desiredDomain: "",
   revisionMode: "",
@@ -1370,7 +1371,19 @@ function renderLiveSitePreview() {
   const card = ensureLiveSitePreviewCard();
   if (!card) return;
   syncTemplateSelectionFromGuidedContext();
-  card.innerHTML = renderNeutralLiveWorkspace();
+  if (!hasEnoughContextForTemplatePreview()) {
+    card.innerHTML = renderNeutralLiveWorkspace();
+    return;
+  }
+  const payload = livePreviewPayload();
+  const selection = livePreviewTemplateSelection();
+  let schema = buildInstantTemplateSchema(payload, selection);
+  schema = prepareWebsiteConfig(schema, payload, selection);
+  card.innerHTML = `
+    <div class="live-template-preview-shell">
+      ${renderWebsite(schema, schema.pages?.[0]?.page_key || "home")}
+    </div>
+  `;
 }
 
 function hasEnoughContextForTemplatePreview() {
@@ -2423,28 +2436,25 @@ async function sendGuidedReply() {
       ...arrayValue(guidedState.requestedAdjustments),
       `${adjustmentLabel}: ${message}`,
     ];
-    appendChatMessage(
-      "assistant",
-      currentSchema
-        ? langText({
-            en: "Perfect, I added those adjustments to the build plan. Press “Generate my website” to create a new version with only those changes.",
-            es: "Perfecto, ya agregué esos ajustes al plan. Presiona “Generar mi página” para crear una nueva versión cambiando solo eso.",
-            fr: "Parfait, j'ai ajouté ces ajustements au plan. Appuyez sur « Générer mon site » pour créer une version qui change seulement cela.",
-            pt: "Perfeito, adicionei esses ajustes ao plano. Pressione “Gerar meu site” para criar uma versão mudando apenas isso.",
-          })
-        : langText({
-            en: "Perfect, I added that to the plan. Anything else you want to change or add before I generate?",
-            es: "Perfecto, agregué eso al plan. ¿Quieres modificar algo más o agregar otro detalle antes de generar?",
-            fr: "Parfait, j'ai ajouté cela au plan. Voulez-vous modifier ou ajouter autre chose avant de générer?",
-            pt: "Perfeito, adicionei isso ao plano. Quer mudar ou adicionar mais alguma coisa antes de gerar?",
-          }),
-      "success",
-    );
+    if (currentSchema) {
+      await applyDraftAdjustmentFromChat(message, localContextUpdates);
+    } else {
+      appendChatMessage(
+        "assistant",
+        langText({
+          en: "Perfect, I added that to the plan. Anything else you want to change or add before I generate?",
+          es: "Perfecto, agregué eso al plan. ¿Quieres modificar algo más o agregar otro detalle antes de generar?",
+          fr: "Parfait, j'ai ajouté cela au plan. Voulez-vous modifier ou ajouter autre chose avant de générer?",
+          pt: "Perfeito, adicionei isso ao plano. Quer mudar ou adicionar mais alguma coisa antes de gerar?",
+        }),
+        "success",
+      );
+    }
     guidedStatusText.textContent = langText({
-      en: "Extra details saved.",
-      es: "Detalles adicionales guardados.",
-      fr: "Détails supplémentaires enregistrés.",
-      pt: "Detalhes adicionais salvos.",
+      en: currentSchema ? "Draft updated." : "Extra details saved.",
+      es: currentSchema ? "Borrador actualizado." : "Detalles adicionales guardados.",
+      fr: currentSchema ? "Brouillon mis à jour." : "Détails supplémentaires enregistrés.",
+      pt: currentSchema ? "Rascunho atualizado." : "Detalhes adicionais salvos.",
     });
     renderGuidedSummary();
     refreshQuickChips();
@@ -4387,6 +4397,10 @@ function isInvalidBusinessNameUpdate(value) {
   return text.length > 70 || /(\n|productos?|servicios?|ubicaci[oó]n|contacto|telefono|tel[eé]fono|whatsapp|instagram|colores?|vende|ofrece)/i.test(text);
 }
 
+function isPlaceholderBusinessName(value) {
+  return /^(your business|tu negocio|votre entreprise|seu negocio|seu negócio|new client website|nueva pagina|nueva página)$/i.test(String(value || "").trim());
+}
+
 function guidedStateForApi() {
   const logoUrl = isCloudSafeUrl(guidedState.logoUrl) ? guidedState.logoUrl : "";
   const photoUrls = arrayValue(guidedState.photoUrls).filter(isCloudSafeUrl);
@@ -4653,7 +4667,9 @@ function inferGuidedUpdatesFromAnyMessage(message) {
   }
 
   const businessName = extractBusinessName(text);
-  if (businessName && !guidedState.businessName) updates.businessName = businessName;
+  if (businessName && (!guidedState.businessName || isPlaceholderBusinessName(guidedState.businessName))) {
+    updates.businessName = businessName;
+  }
 
   const industry = inferIndustryFromPrompt(text);
   if (industry && !guidedState.industry) updates.industry = industry;
@@ -4675,6 +4691,9 @@ function inferGuidedUpdatesFromAnyMessage(message) {
   const colors = extractColorsFromText(text);
   if (colors.length && !arrayValue(guidedState.preferredColors).length) {
     updates.preferredColors = colors;
+  } else if (briefRequestsCyberpunk(text) && !arrayValue(guidedState.preferredColors).length) {
+    updates.preferredColors = ["cyberpunk", "neon cyan", "magenta"];
+    if (!updates.preferredTone && !guidedState.preferredTone) updates.preferredTone = "Cyberpunk, neon, energetic, modern";
   }
 
   const contactInfo = extractContactInfo(text);
@@ -4722,6 +4741,8 @@ function extractWebsiteIntent(text) {
 function extractBusinessName(text) {
   const patterns = [
     /(?:nombre(?: del negocio)?|negocio|tienda|marca|empresa)\s*(?:es|se llama|:|-)\s*([^.,;\n]+)/i,
+    /(?:con el nombre|con nombre|nombre)\s+([^.,;\n]+)/i,
+    /(?:se llamar[aá]|se va a llamar|sera llamado|será llamado)\s+([^.,;\n]+)/i,
     /(?:business(?: name)?|store|brand|company)\s*(?:is|called|:|-)\s*([^.,;\n]+)/i,
     /(?:se llama|called)\s+([^.,;\n]+)/i,
   ];
@@ -5146,6 +5167,198 @@ function buildRevisionInstructions() {
     instruction:
       "This is a revision of an already liked draft. Apply only the specific requested changes. Do not redesign, re-theme, reorder pages, replace unrelated copy, change catalog items, change business data, or switch templates unless the client explicitly asked for that exact change.",
   };
+}
+
+async function applyDraftAdjustmentFromChat(message, localContextUpdates = {}) {
+  guidedStatusText.textContent = langText({
+    en: "Applying that to the draft...",
+    es: "Aplicando eso al borrador...",
+    fr: "Application au brouillon...",
+    pt: "Aplicando isso ao rascunho...",
+  });
+  setThinking(true);
+  builderAvatarManager?.setState("thinking", { source: "draft-adjustment" });
+  try {
+    applyGuidedStateToForm();
+    syncTemplateSelectionFromGuidedContext(message);
+    const payload = await collectPayload();
+    const text = normalizeTemplateIntentText([
+      message,
+      payload.business_description,
+      payload.industry,
+      arrayValue(payload.services_products).join(" "),
+      payload.preferred_tone,
+      arrayValue(payload.preferred_colors).join(" "),
+    ].join(" "));
+    const templateSelection = await selectTemplateForPayload(payload);
+    const shouldRebuildFromTemplate = shouldRebuildDraftFromTemplate(message, payload, templateSelection);
+    const nextSchema = shouldRebuildFromTemplate
+      ? buildInstantTemplateSchema(payload, templateSelection)
+      : applyTargetedSchemaPatch(currentSchema, message, payload, localContextUpdates, templateSelection);
+    const mergedSchema = templateSelection ? mergeTemplateSelectionIntoSchema(nextSchema, templateSelection) : nextSchema;
+    currentSchema = prepareWebsiteConfig(mergedSchema, payload, templateSelection);
+    if (briefRequestsCyberpunk(text)) currentSchema = applyCyberpunkVisualDirection(currentSchema);
+    currentCatalogItems = catalogItemsFromSchema(currentSchema);
+    selectedPageKey = currentSchema.pages?.[0]?.page_key || "home";
+    selectedVariantId = currentSchema.design_variants?.[0]?.id || selectedVariantId || "";
+    saveGeneratedSite({
+      business_id: currentBusinessId,
+      site_id: currentSiteId,
+      generation_id: currentGenerationId,
+      storage_status: currentSiteId ? "local_revision_preview" : "local_revision_preview_unsaved",
+      schema: currentSchema,
+      used_dev_mock: false,
+    });
+    renderEditor();
+    renderPreview();
+    showGeneratedClientPreview();
+    document.body.classList.add("draft-adjust-open");
+    guidedPanel.classList.add("active");
+    appendChatMessage(
+      "assistant",
+      draftAdjustmentReply(shouldRebuildFromTemplate, templateSelection),
+      "success",
+    );
+    builderAvatarManager?.setState("success", { source: "draft-adjustment" });
+  } catch (error) {
+    console.warn("Draft adjustment could not be applied locally.", error);
+    appendChatMessage(
+      "assistant",
+      langText({
+        en: "I understood the change, but I could not apply it visually in this pass. I saved it as a specific revision instruction so the next generation changes only that.",
+        es: "Entendí el cambio, pero no pude aplicarlo visualmente en este pase. Lo dejé guardado como instrucción específica para que la próxima generación cambie sólo eso.",
+        fr: "J'ai compris le changement, mais je n'ai pas pu l'appliquer visuellement maintenant. Je l'ai gardé comme instruction précise pour la prochaine génération.",
+        pt: "Entendi a mudança, mas não consegui aplicar visualmente agora. Deixei como instrução específica para a próxima geração mudar só isso.",
+      }),
+      "alert",
+    );
+    builderAvatarManager?.setState("alert", { source: "draft-adjustment" });
+  } finally {
+    setThinking(false);
+  }
+}
+
+function shouldRebuildDraftFromTemplate(message, payload = {}, templateSelection = null) {
+  const text = normalizeTemplateIntentText([
+    message,
+    payload.business_description,
+    payload.industry,
+    arrayValue(payload.services_products).join(" "),
+    payload.templateIntent,
+    templateSelection?.templateId,
+    templateSelection?.catalogType,
+  ].join(" "));
+  const currentTemplateId = currentSchema?.selected_template?.id || currentSchema?.active_template?.id || currentSchema?.layout_mode?.template_id || "";
+  const nextTemplateId = templateSelection?.templateId || inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(text);
+  return Boolean(
+    /template|plantilla|estructura|layout|marketplace|catalogo|catálogo|tienda|store|shop|cyberpunk|neon|estilo|style|diseño|diseno/.test(text)
+      || textSuggestsBroadMarketplace(text)
+      || textSuggestsFocusedProductLine(text)
+      || (nextTemplateId && nextTemplateId !== currentTemplateId)
+  );
+}
+
+function applyTargetedSchemaPatch(schema, message, payload = {}, localContextUpdates = {}, templateSelection = null) {
+  let nextSchema = structuredClone(schema);
+  const text = normalizeTemplateIntentText(message);
+  if (briefRequestsCyberpunk(message)) {
+    nextSchema = applyCyberpunkVisualDirection(nextSchema);
+  }
+  if (localContextUpdates.businessName || payload.business_name) {
+    nextSchema.business = { ...(nextSchema.business || {}), name: payload.business_name || localContextUpdates.businessName || nextSchema.business?.name };
+  }
+  if (arrayValue(localContextUpdates.servicesProducts).length) {
+    nextSchema.catalog_items = mergeCatalogFromOfferItems(nextSchema.catalog_items, localContextUpdates.servicesProducts, payload);
+  }
+  if (/headline|titulo|título|slogan|hero|texto principal|copy|copia/.test(text)) {
+    nextSchema = updatePrimaryHeroCopy(nextSchema, message, payload, templateSelection);
+  }
+  if (/bot[oó]n|button|cta|llamada|call to action/.test(text)) {
+    nextSchema = updatePrimaryCtaCopy(nextSchema, message);
+  }
+  return nextSchema;
+}
+
+function mergeCatalogFromOfferItems(existingItems = [], offerItems = [], payload = {}) {
+  const labels = instantLocaleCopy(payload.selectedLanguage || selectedLanguage || "en");
+  const existing = arrayValue(existingItems);
+  const known = new Set(existing.map((item) => normalizeTemplateIntentText(item.name || item.title || item)));
+  const additions = meaningfulOfferItems(offerItems)
+    .filter((item) => !known.has(normalizeTemplateIntentText(item)))
+    .map((name, index) => ({
+      id: `chat_item_${Date.now()}_${index}`,
+      sku: `CHAT-${existing.length + index + 1}`,
+      name,
+      description: labels.itemDescription(payload.business_name || guidedState.businessName || labels.newStore),
+      category: marketplaceCategoryForIndex(existing.length + index, labels),
+      price_type: "fixed",
+      price_amount: "",
+      currency: "USD",
+      price_label: labels.priceNotSet,
+      button_label: labels.viewProduct,
+      inventory_quantity: "",
+      track_inventory: true,
+      image_url: "",
+      is_active: true,
+      is_featured: existing.length + index < 3,
+      sort_order: existing.length + index,
+    }));
+  return [...existing, ...additions];
+}
+
+function updatePrimaryHeroCopy(schema, message, payload = {}, templateSelection = null) {
+  const copy = instantLocaleCopy(payload.selectedLanguage || selectedLanguage || "en");
+  const description = professionalPublicDescription({
+    payload,
+    template: templateSelection?.template || schema.selected_template || {},
+    catalogType: templateSelection?.catalogType || schema.catalog_model?.catalogType || "",
+    copy,
+    name: payload.business_name || schema.business?.name || copy.newStore,
+    products: payload.services_products,
+    language: payload.selectedLanguage || selectedLanguage || "en",
+  });
+  const page = arrayValue(schema.pages).find((item) => item.page_key === "home") || schema.pages?.[0];
+  const hero = page?.sections?.find((section) => /Hero/i.test(section.type));
+  if (hero) {
+    hero.editable = {
+      ...(hero.editable || {}),
+      headline: hero.editable?.headline || copy.marketplaceHeadline?.(payload.business_name || schema.business?.name || copy.newStore) || schema.business?.name,
+      subtitle: description,
+    };
+  }
+  return schema;
+}
+
+function updatePrimaryCtaCopy(schema, message) {
+  const match = String(message || "").match(/(?:bot[oó]n|button|cta|dice|decir|texto)\s*(?:principal)?\s*(?:a|por|:)?\s*["“]?([^"”]{3,40})["”]?/i);
+  const label = cleanExtractedPhrase(match?.[1] || "", 40);
+  if (!label) return schema;
+  arrayValue(schema.pages).forEach((page) => {
+    arrayValue(page.sections).forEach((section) => {
+      if (/Hero|ProductGrid|MarketplaceHero/i.test(section.type)) {
+        section.editable = { ...(section.editable || {}), primary_button: label };
+      }
+    });
+  });
+  return schema;
+}
+
+function draftAdjustmentReply(rebuiltFromTemplate, templateSelection = null) {
+  const templateName = templateSelection?.template?.name || localizedTemplateName(templatePreviewMeta(templateSelection?.templateId || "")) || "";
+  if (rebuiltFromTemplate) {
+    return langText({
+      en: `Done. I rebuilt the draft using the best matching structure${templateName ? `: ${templateName}` : ""}, then kept it editable.`,
+      es: `Listo. Reorganicé el borrador usando la estructura que mejor encaja${templateName ? `: ${templateName}` : ""}, y sigue editable.`,
+      fr: `C'est fait. J'ai reconstruit le brouillon avec la structure la plus adaptée${templateName ? `: ${templateName}` : ""}, en gardant tout modifiable.`,
+      pt: `Pronto. Reorganizei o rascunho usando a estrutura que melhor encaixa${templateName ? `: ${templateName}` : ""}, mantendo tudo editável.`,
+    });
+  }
+  return langText({
+    en: "Done. I applied that change to the draft on the left. Tell me the next specific adjustment.",
+    es: "Listo. Apliqué ese cambio al borrador de la izquierda. Dime el siguiente ajuste específico.",
+    fr: "C'est fait. J'ai appliqué ce changement au brouillon à gauche. Dites-moi le prochain ajustement précis.",
+    pt: "Pronto. Apliquei essa mudança ao rascunho à esquerda. Diga o próximo ajuste específico.",
+  });
 }
 
 function mergeTemplateSelectionIntoSchema(schema, selection) {
@@ -10454,7 +10667,9 @@ function schemaForPreview() {
   }
   schema.layout_mode = { ...schema.layout_mode, id: variant.layout_mode_id || schema.layout_mode?.id };
   schema.active_design_variant = variant;
-  schema.active_template = preset;
+  if (!schema.active_template?.id && !schema.selected_template?.id) {
+    schema.active_template = preset;
+  }
   schema.pages = schema.pages.map((page) => ({
     ...page,
     sections: page.sections.map((section) => {
