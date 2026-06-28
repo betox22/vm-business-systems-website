@@ -32,7 +32,8 @@ TEMPLATE_CATALOG_TYPES = {
 
 
 def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
-    selected_language = _language(payload.current.selected_language)
+    detected_language = _message_language_override(payload.message or "")
+    selected_language = detected_language or _language(payload.current.selected_language)
     current_step = payload.current_step_snake or payload.current_step or "websiteIntent"
     current = payload.current.model_dump(by_alias=True)
     local_updates = _clean_local_updates(
@@ -40,11 +41,15 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
         current_step,
         payload.message,
     )
-
-    if _can_answer_intake_locally(payload, current, local_updates):
-        return _fallback_response(payload, current_step, selected_language, local_updates, False)
+    if detected_language:
+        local_updates["selectedLanguage"] = detected_language
 
     settings = get_settings()
+    should_use_ai = bool(settings.openai_api_key) and len(_normalize(payload.message or "")) >= 25
+
+    if _can_answer_intake_locally(payload, current, local_updates) and not should_use_ai:
+        return _fallback_response(payload, current_step, selected_language, local_updates, False)
+
     if not settings.openai_api_key:
         return _fallback_response(payload, current_step, selected_language, local_updates, True)
 
@@ -176,6 +181,25 @@ def _parse_json(text: str) -> dict:
         if match:
             return json.loads(match.group(0))
     return {}
+
+
+def _message_language_override(message: str) -> str:
+    text = _normalize(message)
+    if not text:
+        return ""
+    spanish_hits = [
+        "quiero", "tienda", "pagina", "catalogo", "productos", "vender", "llamara", "llama",
+        "negocio", "colores", "logo", "desde", "estados unidos", "despacho", "todo el mundo",
+    ]
+    french_hits = ["bonjour", "boutique", "produits", "entreprise", "couleurs", "je veux"]
+    portuguese_hits = ["quero", "loja", "produtos", "negocio", "cores", "brasil", "pagina"]
+    if sum(1 for word in spanish_hits if word in text) >= 2:
+        return "es"
+    if sum(1 for word in french_hits if word in text) >= 2:
+        return "fr"
+    if sum(1 for word in portuguese_hits if word in text) >= 2:
+        return "pt"
+    return ""
 
 
 def _can_answer_intake_locally(payload: LumaAgentRequest, current: dict, local_updates: dict) -> bool:

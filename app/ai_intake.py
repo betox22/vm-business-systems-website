@@ -389,13 +389,13 @@ def _extract_business_name(text: str) -> str:
     patterns = [
         r"(?:nombre(?: del negocio)?|negocio|tienda|marca|empresa)\s*(?:es|se llama|:|-)\s*([^.,;\n]+)",
         r"(?:business(?: name)?|store|brand|company)\s*(?:is|called|:|-)\s*([^.,;\n]+)",
-        r"(?:se llama|llamad[ao]|called|named)\s+([^.,;\n]+)",
+        r"(?:se llama|se llamar[aá]|llamad[ao]|called|named)\s+([^.,;\n]+)",
     ]
     for pattern in patterns:
         match = re.search(pattern, text, flags=re.I)
         if match:
             name = re.split(
-                r"\s+(?:y\s+)?(?:vende|vendo|vendemos|ofrece|ofrecemos|hace|tiene|con|para|debe|sera|será|ser|vamos|va)\b",
+                r"\s+(?:y\s+)?(?:vende|vendo|vendemos|ofrece|ofrecemos|hace|tiene|con|para|debe|sera|será|ser|vamos|va|no\s+tengo|sin\s+logo|pero|aunque)\b",
                 match.group(1),
                 maxsplit=1,
                 flags=re.I,
@@ -406,10 +406,10 @@ def _extract_business_name(text: str) -> str:
 
 def _extract_location(text: str) -> str:
     patterns = [
+        r"(?:desde|en|ubicado en|est[aá] en)\s+(estados unidos|usa|united states|venezuela|colombia|mexico|méxico|españa|spain|canada|canad[aá])(?:\s|,|\.|;|$)",
         r"(?:ubicaci[oó]n|ubicado en|est[aá] en|atiende en|localidad|ciudad|zona)\s*(?:es|:|-)?\s*([^.,;\n]+)",
-        r"(?:en|desde)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){0,2})(?:\s|,|\.|;|$)",
         r"(?:location|located in|serves|city|area)\s*(?:is|:|-)?\s*([^.,;\n]+)",
-        r"(?:in|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|,|\.|;|$)",
+        r"(?:in|from)\s+(united states|usa|venezuela|colombia|mexico|spain|canada)(?:\s|,|\.|;|$)",
     ]
     for pattern in patterns:
         match = re.search(pattern, text, flags=re.I)
@@ -494,7 +494,10 @@ def _extract_tone(text: str) -> str:
 
 
 def _extract_colors(text: str) -> list[str]:
+    lowered = text.lower()
     hex_colors = re.findall(r"#[0-9a-f]{3,8}\b", text, flags=re.I)
+    if "cyberpunk" in lowered:
+        return list(dict.fromkeys([*hex_colors, "cyberpunk neon"]))
     names = [
         "rojo", "azul", "verde", "negro", "blanco", "gris", "dorado", "amarillo", "naranja", "morado", "violeta", "rosa", "beige",
         "red", "blue", "green", "black", "white", "gray", "grey", "gold", "yellow", "orange", "purple", "pink", "cyan",
