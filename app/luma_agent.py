@@ -12,6 +12,57 @@ from .schemas import LumaAgentRequest, LumaAgentResponse
 REQUIRED_FOR_DRAFT = ["websiteIntent", "businessName", "businessDescription"]
 IMPORTANT_FOR_LAUNCH: list[str] = []
 
+TEMPLATE_GUIDE = [
+    {
+        "id": "mega-marketplace",
+        "name": "Mega Marketplace",
+        "bestFor": "broad catalogs, many categories, Amazon-like discovery, unusual mixed products, general retail",
+        "layout": "search-first home, departments/categories, deals, product grid, cart/account/subscription entry points",
+    },
+    {
+        "id": "listing-marketplace-pro",
+        "name": "Listing Marketplace",
+        "bestFor": "multi-seller listings, classifieds, used products, services by seller/location",
+        "layout": "listing search, seller cards, filters, lead/contact flow",
+    },
+    {
+        "id": "apple-premium-product",
+        "name": "Premium Product Showcase",
+        "bestFor": "one hero product, one focused product line, premium product variants, niche hardware/accessories",
+        "layout": "cinematic hero, feature story, specs/details, comparison, direct purchase CTA",
+    },
+    {
+        "id": "fashion-drop-pro",
+        "name": "Fashion Drop",
+        "bestFor": "fashion, boutique, streetwear, sneakers, visual collections and drops",
+        "layout": "collection hero, lookbook, drops, product cards with sizes/colors",
+    },
+    {
+        "id": "restaurant-food-business",
+        "name": "Restaurant / Food Business",
+        "bestFor": "restaurants, menus, cafes, catering, food delivery",
+        "layout": "menu categories, specials, food cards, location and order CTA",
+    },
+    {
+        "id": "booking-appointment-pro",
+        "name": "Appointment Booking",
+        "bestFor": "barbershops, salons, spa, clinics, consultations",
+        "layout": "service menu, price/duration, calendar CTA, staff/location",
+    },
+    {
+        "id": "local-services-pro-plus",
+        "name": "Local Services",
+        "bestFor": "contractors, repairs, cleaning, quotes, service businesses",
+        "layout": "service cards, proof, areas served, quote/contact CTA",
+    },
+    {
+        "id": "corporate-company-pro",
+        "name": "Company Website",
+        "bestFor": "company presentation, agency, corporate information without cart/catalog",
+        "layout": "hero, services, about, proof, contact/lead capture",
+    },
+]
+
 TEMPLATE_CATALOG_TYPES = {
     "mega-marketplace": "dense_marketplace_catalog",
     "listing-marketplace-pro": "listing_marketplace_catalog",
@@ -45,7 +96,7 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
         local_updates["selectedLanguage"] = detected_language
 
     settings = get_settings()
-    should_use_ai = bool(settings.openai_api_key) and len(_normalize(payload.message or "")) >= 25
+    should_use_ai = bool(settings.openai_api_key) and bool(_normalize(payload.message or ""))
 
     if _can_answer_intake_locally(payload, current, local_updates) and not should_use_ai:
         return _fallback_response(payload, current_step, selected_language, local_updates, False)
@@ -79,7 +130,7 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
                             "sitePlan": payload.site_plan,
                             "hasPreviousSchema": bool(payload.previous_schema),
                             "history": payload.history[-10:],
-                            "availableTemplates": list(TEMPLATE_CATALOG_TYPES.keys()),
+                            "availableTemplates": TEMPLATE_GUIDE,
                         },
                         ensure_ascii=False,
                     ),
@@ -109,7 +160,8 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
     catalog_type = TEMPLATE_CATALOG_TYPES.get(selected_template_id, "")
     analysis = _analyze_business_context(merged_current, payload.message, selected_template_id, catalog_type, missing, ready)
     next_question = "" if ready else _contextual_question(selected_language, next_step, analysis, merged_current)
-    assistant_message = _contextual_message(selected_language, ready, analysis, selected_template_id)
+    ai_message = data.get("assistantMessage") or data.get("message") or ""
+    assistant_message = _designer_message(selected_language, ai_message, ready, analysis, selected_template_id)
     site_plan = _site_plan_for(selected_template_id, catalog_type, selected_language, merged_current) if selected_template_id else None
     intent = data.get("intent") or ("select_template" if selected_template_id else "collect_info")
 
@@ -131,7 +183,7 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
         selectedTemplateReason=template_reason,
         catalogType=catalog_type,
         designStrategy=_design_strategy(selected_template_id, catalog_type, template_reason, merged_current, analysis),
-        sitePlan=site_plan,
+        sitePlan=data.get("sitePlan") if isinstance(data.get("sitePlan"), dict) else site_plan,
         actions=_normalize_actions(data.get("actions") or []),
         usedDevFallback=False,
     )
@@ -140,8 +192,9 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
 def _system_prompt(selected_language: str) -> str:
     return (
         "You are Dixie, a senior ecommerce strategist, product designer, and AI website builder. "
-        "You are not a form. You behave like ChatGPT in designer mode: understand the business, infer missing fields, "
-        "ask one useful question at a time, and decide the correct website/store architecture. "
+        "You are not a form and not a passive support bot. You behave like ChatGPT in expert designer mode: "
+        "understand the business, infer missing fields, challenge weak assumptions when useful, decide the correct "
+        "website/store architecture, and guide the customer toward a professional result. "
         "Conversation style: behave like a premium WhatsApp-style consultant. Keep assistantMessage short, natural, "
         "and useful: usually 1-2 sentences. Put only one actual question in nextQuestion. Do not repeat the same "
         "question in different words. Do not list technical JSON terms to the client. "
@@ -149,6 +202,11 @@ def _system_prompt(selected_language: str) -> str:
         "Start from a neutral standard discovery mode. Do not choose a final template from generic phrases like "
         "'online store', 'sell products online', 'website', or 'catalog' alone. First understand the actual offer, "
         "catalog breadth, audience, and brand direction. "
+        "Use the available templates as production-proven architectures, not as final copy. Your job is to choose "
+        "the closest architecture, then adapt copy, visual direction, sections, catalog model, CTAs, and pages to "
+        "the business. If the customer describes many unrelated categories or says Amazon/general marketplace, choose "
+        "mega-marketplace even if fashion/accessories are also mentioned. If the customer describes one focused product "
+        "line or product variants, choose apple-premium-product but call it Premium Product Showcase to the user. "
         "The user's intake answers are internal strategy notes, never public website copy. Do not paste rough user text into page headlines or paragraphs. "
         "Rewrite everything as polished customer-facing strategy later. "
         "If the user gives many details in one message, extract all fields and only ask what is truly missing. "
@@ -156,6 +214,9 @@ def _system_prompt(selected_language: str) -> str:
         "Treat those as optional enhancements for review; never repeat them as blocking questions. "
         "If the user says they have no logo or asks AI to create one, mark hasLogo=false, do not ask for upload, "
         "and include the logo direction inside designStrategy. "
+        "If readyToGenerate is true, assistantMessage must sound decisive: explain the chosen structure and why in "
+        "client-friendly language, then invite the user to generate or adjust one specific thing. Do not ask for the "
+        "business name, logo, colors, or contact again if they are already present or optional. "
         "For broad varied products, unusual mixed items, many categories, marketplace, Amazon-like, or general online store with many categories, select mega-marketplace. "
         "For one hero product, one product line, niche product variants, or premium product storytelling, select apple-premium-product. "
         "For clothing/fashion drops, select fashion-drop-pro. For restaurants/menu, select restaurant-food-business. "
@@ -683,6 +744,44 @@ def _contextual_message(language: str, ready: bool, analysis: dict, template_id:
         }
         return messages.get(language, messages["en"])
     return _message_for(language, ready)
+
+
+def _designer_message(language: str, ai_message: str, ready: bool, analysis: dict, template_id: str) -> str:
+    cleaned = _sanitize_designer_message(ai_message)
+    if cleaned and not _looks_like_redundant_question(cleaned, ready):
+        return cleaned[:520]
+    return _contextual_message(language, ready, analysis, template_id)
+
+
+def _sanitize_designer_message(message: str) -> str:
+    text = re.sub(r"\s+", " ", message or "").strip()
+    replacements = {
+        "Apple style": "premium product showcase",
+        "Apple-style": "premium product showcase",
+        "Amazon style": "marketplace-style",
+        "Amazon-style": "marketplace-style",
+    }
+    for original, replacement in replacements.items():
+        text = re.sub(re.escape(original), replacement, text, flags=re.I)
+    return text
+
+
+def _looks_like_redundant_question(message: str, ready: bool) -> bool:
+    if not ready:
+        return False
+    text = _normalize(message)
+    blocking_question_terms = [
+        "como se llama",
+        "business name",
+        "nombre del negocio",
+        "subir logo",
+        "upload logo",
+        "colores preferidos",
+        "preferred colors",
+        "contact details",
+        "datos de contacto",
+    ]
+    return "?" in message and _has_any(text, blocking_question_terms)
 
 
 def _contextual_question(language: str, step: str, analysis: dict, current: dict) -> str:
