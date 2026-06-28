@@ -772,6 +772,9 @@ def _sanitize_designer_message(message: str) -> str:
     }
     for original, replacement in replacements.items():
         text = re.sub(re.escape(original), replacement, text, flags=re.I)
+    text = re.sub(r"\bsimilar\s+a\s+amazon\b", "con una experiencia de marketplace amplio", text, flags=re.I)
+    text = re.sub(r"\bamazon\b", "un marketplace amplio", text, flags=re.I)
+    text = re.sub(r"\bapple\b", "una marca premium", text, flags=re.I)
     return text
 
 
