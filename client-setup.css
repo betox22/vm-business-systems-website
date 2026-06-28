@@ -470,6 +470,15 @@ body.public-client-setup.generated-preview-open {
   padding-right: 34px;
 }
 
+.public-client-setup .compact-action {
+  min-height: 34px;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .public-client-setup .compact-language {
   width: auto;
   min-width: 0;
@@ -2564,6 +2573,13 @@ body.public-client-setup.generated-preview-open {
     gap: 6px;
     min-width: 0;
     padding-right: 0;
+  }
+
+  .public-client-setup .compact-action {
+    max-width: 112px;
+    padding: 7px 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .public-client-setup .compact-language {

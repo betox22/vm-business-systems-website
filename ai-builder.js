@@ -69,6 +69,8 @@ const I18N = {
     generateMyWebsite: "Generate my website",
     keepChatting: "Keep chatting",
     thinking: "Dixie is thinking...",
+    startNewProject: "New page",
+    startNewProjectConfirm: "Start a new page? This clears the current client draft from this browser.",
     micButton: "Use voice",
     voiceOutputOn: "Voice on",
     voiceOutputOff: "Voice off",
@@ -169,6 +171,8 @@ const I18N = {
     generateMyWebsite: "Generar mi pagina",
     keepChatting: "Seguir conversando",
     thinking: "Dixie esta pensando...",
+    startNewProject: "Nueva página",
+    startNewProjectConfirm: "¿Iniciar una página nueva? Esto borra el borrador actual de este navegador.",
     micButton: "Usar voz",
     voiceOutputOn: "Voz activada",
     voiceOutputOff: "Voz apagada",
@@ -269,6 +273,8 @@ const I18N = {
     generateMyWebsite: "Générer mon site",
     keepChatting: "Continuer la discussion",
     thinking: "Luma réfléchit...",
+    startNewProject: "Nouvelle page",
+    startNewProjectConfirm: "Commencer une nouvelle page ? Cela efface le brouillon actuel de ce navigateur.",
     micButton: "Utiliser la voix",
     voiceOutputOn: "Voix activée",
     voiceOutputOff: "Voix désactivée",
@@ -369,6 +375,8 @@ const I18N = {
     generateMyWebsite: "Gerar meu site",
     keepChatting: "Continuar conversando",
     thinking: "Luma está pensando...",
+    startNewProject: "Nova página",
+    startNewProjectConfirm: "Iniciar uma nova página? Isso limpa o rascunho atual deste navegador.",
     micButton: "Usar voz",
     voiceOutputOn: "Voz ativada",
     voiceOutputOff: "Voz desligada",
@@ -455,7 +463,7 @@ const I18N = {
 
 const GUIDED_QUESTIONS = {
   en: {
-    websiteIntent: "What should this become: online store, marketplace, catalog, booking page, company site, landing page, or something else?",
+    websiteIntent: "Tell me what you want to build in one rich paragraph: what the business sells or does, who buys, the style/colors, location, and whether it should sell online, book appointments, collect leads, or present the company. I will choose the best structure and ask only for what is missing.",
     businessName: "First, what is the name of your business?",
     businessDescription: "Tell me what it sells or does in one message. I will use it as design strategy, not as literal page copy.",
     industry: "What industry or category best fits it?",
@@ -471,7 +479,7 @@ const GUIDED_QUESTIONS = {
     review: "I have enough to create the first draft. If you asked me to create the logo or choose colors, I will include that in the design direction.",
   },
   es: {
-    websiteIntent: "¿Qué quieres crear: tienda online, marketplace, catálogo, reservas, página de empresa, landing o algo diferente?",
+    websiteIntent: "Descríbeme en un párrafo qué quieres construir: qué vende o hace el negocio, para quién, estilo/colores, ubicación y si debe vender online, reservar citas, captar clientes o sólo presentar la empresa. Yo elegiré la mejor estructura y sólo preguntaré lo que falte.",
     businessName: "Primero, ¿cómo se llama tu negocio?",
     businessDescription: "Dime qué vende o qué hace en un solo mensaje. Lo usaré como estrategia de diseño, no como texto literal para la página.",
     industry: "En que industria o categoria lo pondrias?",
@@ -487,7 +495,7 @@ const GUIDED_QUESTIONS = {
     review: "Ya tengo suficiente para crear el primer borrador. Si me pediste crear el logo o elegir colores, lo incluiré en la dirección visual.",
   },
   fr: {
-    websiteIntent: "Que voulez-vous créer : boutique en ligne, marketplace, catalogue, réservations, site d'entreprise, landing page ou autre chose ?",
+    websiteIntent: "Décrivez en un paragraphe ce que vous voulez créer : ce que l'entreprise vend ou fait, pour qui, le style/couleurs, la localisation, et si le site doit vendre en ligne, réserver, capter des leads ou présenter l'entreprise. Je choisirai la meilleure structure et demanderai seulement ce qui manque.",
     businessName: "Quel est le nom de l'entreprise?",
     businessDescription: "Dites-moi ce qu'elle vend ou propose en un seul message. Je l'utiliserai comme stratégie de design, pas comme texte littéral.",
     industry: "Dans quel secteur ou catégorie la placeriez-vous?",
@@ -503,7 +511,7 @@ const GUIDED_QUESTIONS = {
     review: "J'ai assez d'informations pour créer le premier brouillon. Si vous m'avez demandé de créer le logo ou de choisir les couleurs, je l'inclurai dans la direction visuelle.",
   },
   pt: {
-    websiteIntent: "O que você quer criar: loja online, marketplace, catálogo, reservas, site empresarial, landing page ou outra coisa?",
+    websiteIntent: "Descreva em um parágrafo o que você quer criar: o que o negócio vende ou faz, para quem, estilo/cores, localização, e se deve vender online, agendar, captar contatos ou apresentar a empresa. Eu escolho a melhor estrutura e pergunto apenas o que faltar.",
     businessName: "Qual é o nome do negócio?",
     businessDescription: "Diga o que ele vende ou faz em uma mensagem. Vou usar isso como estratégia de design, não como texto literal da página.",
     industry: "Em qual setor ou categoria ele se encaixa?",
@@ -543,34 +551,38 @@ let guidedCoachCard = null;
 let liveSitePreviewCard = null;
 let guidedSendLocked = false;
 let guidedLastSendAt = 0;
-let guidedState = {
-  websiteIntent: "",
-  businessName: "",
-  businessDescription: "",
-  industry: "",
-  location: "",
-  servicesProducts: [],
-  targetAudience: "",
-  preferredTone: "",
-  preferredColors: [],
-  contactInfo: {},
-  logoUrl: "",
-  photoUrls: [],
-  logoPalette: [],
-  brand: null,
-  selectedLanguage,
-  hasLogo: false,
-  hasPhotos: false,
-  salesMode: "",
-  hasLogoPhotos: "",
-  aiGeneratedLogoRequested: false,
-  sectionsPreference: "",
-  desiredDomain: "",
-  revisionMode: "",
-  requestedAdjustments: [],
-  sitePlan: null,
-  sitePlanApproved: false,
-};
+let guidedState = createEmptyGuidedState();
+
+function createEmptyGuidedState(language = selectedLanguage) {
+  return {
+    websiteIntent: "",
+    businessName: "",
+    businessDescription: "",
+    industry: "",
+    location: "",
+    servicesProducts: [],
+    targetAudience: "",
+    preferredTone: "",
+    preferredColors: [],
+    contactInfo: {},
+    logoUrl: "",
+    photoUrls: [],
+    logoPalette: [],
+    brand: null,
+    selectedLanguage: language,
+    hasLogo: false,
+    hasPhotos: false,
+    salesMode: "",
+    hasLogoPhotos: "",
+    aiGeneratedLogoRequested: false,
+    sectionsPreference: "",
+    desiredDomain: "",
+    revisionMode: "",
+    requestedAdjustments: [],
+    sitePlan: null,
+    sitePlanApproved: false,
+  };
+}
 
 const GUIDED_STEPS = [
   "websiteIntent",
@@ -972,6 +984,8 @@ const switchManualFormButton = document.querySelector("#switchManualFormButton")
 const backToChatButton = document.querySelector("#backToChatButton");
 const submitDraftReviewButton = document.querySelector("#submitDraftReviewButton");
 const adjustWithLumaButton = document.querySelector("#adjustWithLumaButton");
+const startNewProjectButton = document.querySelector("#startNewProjectButton");
+const startNewGeneratedProjectButton = document.querySelector("#startNewGeneratedProjectButton");
 const builderAvatarRoot = document.querySelector("#builderAvatarAssistant");
 const builderAvatarManager = window.AvatarStateManager ? new window.AvatarStateManager("idle") : null;
 let builderAvatarAssistant = null;
@@ -1060,6 +1074,8 @@ document.querySelector("#exitClientPreviewButton").addEventListener("click", () 
 submitDraftReviewButton?.addEventListener("click", (event) => requireStudioAccount(event, "review", submitGeneratedDraftForReview));
 adjustWithLumaButton?.addEventListener("click", adjustGeneratedDraftWithLuma);
 studioAdjustButton?.addEventListener("click", adjustGeneratedDraftWithLuma);
+startNewProjectButton?.addEventListener("click", startNewClientProject);
+startNewGeneratedProjectButton?.addEventListener("click", startNewClientProject);
 document.querySelectorAll("[data-studio-add-section]").forEach((button) => {
   button.addEventListener("click", () => addStudioSection(button.dataset.studioAddSection));
 });
@@ -2178,6 +2194,58 @@ function resetAssistantConversation() {
   }
 }
 
+function startNewClientProject() {
+  if (!isPublicClientSetup) return;
+  const hasExistingWork = Boolean(currentSchema || guidedState.businessName || guidedState.businessDescription || guidedState.websiteIntent);
+  if (hasExistingWork && !window.confirm(t("startNewProjectConfirm"))) return;
+
+  localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
+  localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
+  localStorage.removeItem("lumaPendingGeneratedSite");
+  localStorage.removeItem("lumaPendingAuthAction");
+
+  currentSchema = null;
+  selectedPageKey = "home";
+  selectedVariantId = "";
+  selectedStudioSectionId = "";
+  currentSiteId = null;
+  currentBusinessId = null;
+  currentGenerationId = null;
+  currentCatalogItems = [];
+  forcedTemplateSelection = null;
+  restoredGuidedDraftInfo = null;
+  guidedStep = "websiteIntent";
+  guidedState = createEmptyGuidedState(selectedLanguage);
+  guidedAskedSteps.clear();
+  lastAssistantPromptSignature = "";
+
+  document.body.classList.remove(
+    "generated-preview-open",
+    "client-preview-mode",
+    "draft-adjust-open",
+    "review-details-open",
+    "final-review-mode",
+    "manual-form-open",
+    "studio-auth-open",
+  );
+  guidedPanel?.classList.add("active");
+  form?.classList.remove("active");
+  previewFrame.innerHTML = "";
+  applyGuidedStateToForm();
+  renderGuidedSummary();
+  refreshQuickChips();
+  renderLiveSitePreview();
+  resetAssistantConversation();
+  guidedStatusText.textContent = langText({
+    en: "New page started.",
+    es: "Nueva página iniciada.",
+    fr: "Nouvelle page commencée.",
+    pt: "Nova página iniciada.",
+  });
+  guidedReply?.focus();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 function setIntakeMode(mode) {
   const guided = mode === "guided";
   quickModeButton.classList.toggle("active", !guided);
@@ -2422,6 +2490,29 @@ async function sendGuidedReply() {
     localContextUpdates.businessDescription = message;
   }
   mergeGuidedUpdates(localContextUpdates);
+  syncTemplateSelectionFromGuidedContext(message);
+  if (shouldAdvanceToDesignerPlan(message)) {
+    guidedHistory.push({ role: "user", content: message });
+    guidedStep = "review";
+    guidedState.sitePlan = buildSitePlan();
+    guidedState.sitePlanApproved = false;
+    appendUnderstandingCard({ updates: localContextUpdates, sourceMessage: message });
+    appendChatMessage(
+      "assistant",
+      langText({
+        en: "I have enough context. I’m choosing the structure, palette, catalog model and editable sections now. Review the plan or generate the first draft.",
+        es: "Ya tengo suficiente contexto. Voy a elegir estructura, paleta, modelo de catálogo y secciones editables. Revisa el plan o genera el primer borrador.",
+        fr: "J'ai assez de contexte. Je choisis maintenant la structure, la palette, le modèle de catalogue et les sections modifiables. Vérifiez le plan ou générez le premier brouillon.",
+        pt: "Ja tenho contexto suficiente. Vou escolher estrutura, paleta, modelo de catalogo e secoes editaveis. Revise o plano ou gere o primeiro rascunho.",
+      }),
+      "success",
+    );
+    guidedStatusText.textContent = t("summaryUpdated");
+    renderGuidedSummary();
+    refreshQuickChips();
+    saveGuidedDraft();
+    return;
+  }
   if (guidedStep === "review") {
     const adjustmentLabel = langText({
       en: "Client requested adjustments",
@@ -4549,8 +4640,24 @@ function chooseNextQuestionText(serverQuestion, step) {
   const fallback = guidedQuestion(step);
   const candidate = String(serverQuestion || "").trim();
   if (!candidate) return fallback;
+  if (questionTargetsAnsweredField(candidate)) return fallback;
   if (isDuplicateQuestion(candidate, fallback)) return fallback;
   return candidate;
+}
+
+function questionTargetsAnsweredField(question) {
+  const text = questionSignature(question);
+  const checks = [
+    ["businessName", /\b(name|nombre|nom|nome|llama|called|business)\b/],
+    ["businessDescription", /\b(sells|does|vende|hace|description|descripcion|descricao|propose)\b/],
+    ["servicesProducts", /\b(products|services|productos|servicios|categories|categorias)\b/],
+    ["preferredColors", /\b(colors|colores|couleurs|cores|palette|paleta)\b/],
+    ["preferredTone", /\b(style|tone|estilo|tono|visual|premium|modern)\b/],
+    ["salesMode", /\b(online|sales|sell|venta|vender|quote|cotizacion|devis)\b/],
+    ["hasLogoPhotos", /\b(logo|photo|photos|foto|fotos|image|imagen)\b/],
+    ["contactInfo", /\b(contact|email|phone|whatsapp|telefono|correo)\b/],
+  ];
+  return checks.some(([step, pattern]) => pattern.test(text) && isGuidedStepAnswered(step));
 }
 
 function composeAssistantReply(message, nextQuestion, usedFallback = false) {
@@ -4630,6 +4737,12 @@ function hasEnoughContextForFirstDraft() {
   const hasGoal = Boolean(guidedState.websiteIntent || guidedState.salesMode || forcedTemplateSelection?.templateId);
   const hasStyle = Boolean(guidedState.preferredTone || arrayValue(guidedState.preferredColors).length || arrayValue(guidedState.logoPalette).length);
   return hasName && hasOffer && hasGoal && hasStyle;
+}
+
+function shouldAdvanceToDesignerPlan(message) {
+  if (guidedStep === "review") return false;
+  if (!isRichIntakeMessage(message)) return false;
+  return hasEnoughContextForFirstDraft();
 }
 
 function inferGuidedUpdates(step, message) {
