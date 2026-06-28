@@ -183,7 +183,7 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
         nextQuestion=next_question,
         readyToGenerate=ready,
         missingImportantFields=missing,
-        confidence=float(data.get("confidence") or analysis.get("confidence") or 0.82),
+        confidence=_normalize_confidence(data.get("confidence") or analysis.get("confidence") or 0.82),
         selectedTemplateId=selected_template_id,
         selectedTemplateReason=template_reason,
         catalogType=catalog_type,
@@ -767,10 +767,22 @@ def _sanitize_designer_message(message: str) -> str:
         "Apple-style": "premium product showcase",
         "Amazon style": "marketplace-style",
         "Amazon-style": "marketplace-style",
+        "Amazon like": "marketplace-style",
+        "Amazon-like": "marketplace-style",
     }
     for original, replacement in replacements.items():
         text = re.sub(re.escape(original), replacement, text, flags=re.I)
     return text
+
+
+def _normalize_confidence(value: object) -> float:
+    try:
+        confidence = float(value)
+    except (TypeError, ValueError):
+        return 0.82
+    if confidence > 1:
+        confidence = confidence / 100
+    return round(max(0.0, min(confidence, 0.99)), 2)
 
 
 def _looks_like_redundant_question(message: str, ready: bool) -> bool:
