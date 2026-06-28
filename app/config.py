@@ -10,8 +10,9 @@ class Settings(BaseSettings):
     )
     default_root_domain: str = Field(default="misas.com", alias="DEFAULT_ROOT_DOMAIN")
     openai_model: str = Field(default="gpt-5-mini", alias="OPENAI_MODEL")
+    openai_chat_model: str = Field(default="gpt-4o-mini", alias="OPENAI_CHAT_MODEL")
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
-    openai_chat_timeout: float = Field(default=25.0, alias="OPENAI_CHAT_TIMEOUT")
+    openai_chat_timeout: float = Field(default=18.0, alias="OPENAI_CHAT_TIMEOUT")
     supabase_url: str | None = Field(default=None, alias="SUPABASE_URL")
     supabase_service_role_key: str | None = Field(
         default=None,

@@ -115,7 +115,8 @@ def chat_with_luma(payload: LumaAgentRequest) -> LumaAgentResponse:
     )
     try:
         response = client.responses.create(
-            model=settings.openai_model,
+            model=settings.openai_chat_model,
+            max_output_tokens=900,
             input=[
                 {
                     "role": "system",
