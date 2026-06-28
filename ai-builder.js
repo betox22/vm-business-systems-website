@@ -1610,12 +1610,29 @@ function livePreviewTemplateProfile() {
 }
 
 function inferLivePreviewTemplateId() {
+  const aiSelectedTemplateId = resolvedAiTemplateId();
+  if (aiSelectedTemplateId) return aiSelectedTemplateId;
   const text = guidedTemplateContextText();
   if (textSuggestsBroadMarketplace(text)) return "mega-marketplace";
   const inferred = inferTemplateIdFromText(text);
   if (inferred) return inferred;
   if (forcedTemplateSelection?.templateId) return forcedTemplateSelection.templateId;
   return "mega-marketplace";
+}
+
+function resolvedAiTemplateId() {
+  const candidates = [
+    forcedTemplateSelection?.templateId,
+    guidedState.sitePlan?.templateId,
+    guidedState.designStrategy?.selectedTemplateId,
+    guidedState.designStrategy?.diagnosis?.recommendedTemplateId,
+  ];
+  return candidates.find((templateId) => isConcreteTemplateId(templateId)) || "";
+}
+
+function isConcreteTemplateId(templateId) {
+  const value = String(templateId || "").trim();
+  return Boolean(value && !/^default_|pending|unknown|collecting|provisional/i.test(value));
 }
 
 function guidedTemplateContextText(extra = "") {
@@ -5115,6 +5132,28 @@ async function selectTemplateForPayload(payload) {
     arrayValue(payload.preferred_colors).join(" "),
     payload.salesMode || guidedState.salesMode,
   ].join(" ");
+  const aiSelectedTemplateId = resolvedAiTemplateId();
+  if (aiSelectedTemplateId && window.TemplateRouter.getTemplateById) {
+    const template = await window.TemplateRouter.getTemplateById(aiSelectedTemplateId);
+    if (template) {
+      return {
+        templateId: aiSelectedTemplateId,
+        template,
+        intent: forcedTemplateSelection?.intent || guidedState.designStrategy?.diagnosis?.decisionState || "ai_selected_template",
+        catalogType: forcedTemplateSelection?.catalogType
+          || guidedState.sitePlan?.catalogType
+          || guidedState.designStrategy?.selectedCatalogType
+          || guidedState.designStrategy?.diagnosis?.recommendedCatalogType
+          || template.catalogModel?.catalogType
+          || templatePreviewMeta(aiSelectedTemplateId)?.catalogType
+          || "",
+        reason: forcedTemplateSelection?.reason
+          || guidedState.designStrategy?.selectedTemplateReason
+          || guidedState.designStrategy?.diagnosis?.reasoningSummary
+          || "Selected by Dixie from the guided conversation",
+      };
+    }
+  }
   const inferredTemplateId = inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(prompt);
   const shouldOverrideForced = inferredTemplateId
     && inferredTemplateId !== forcedTemplateSelection?.templateId
