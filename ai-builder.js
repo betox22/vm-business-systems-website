@@ -1054,7 +1054,7 @@ document.querySelector("#clientPreviewButton").addEventListener("click", () => {
   document.body.classList.add("client-preview-mode");
 });
 document.querySelector("#exitClientPreviewButton").addEventListener("click", () => {
-  document.body.classList.remove("client-preview-mode");
+  document.body.classList.remove("client-preview-mode", "draft-adjust-open");
 });
 submitDraftReviewButton?.addEventListener("click", (event) => requireStudioAccount(event, "review", submitGeneratedDraftForReview));
 adjustWithLumaButton?.addEventListener("click", adjustGeneratedDraftWithLuma);
@@ -1082,6 +1082,10 @@ quickModeButton.addEventListener("click", () => setIntakeMode("quick"));
 guidedModeButton.addEventListener("click", () => setIntakeMode("guided"));
 guidedCloseButton.addEventListener("click", () => {
   if (isPublicClientSetup) {
+    if (document.body.classList.contains("draft-adjust-open")) {
+      closeDraftAdjustmentChat();
+      return;
+    }
     if (currentSchema) {
       showGeneratedClientPreview();
       guidedStatusText.textContent = langText({
@@ -9517,7 +9521,7 @@ function showGeneratedClientPreview() {
     window.parent.postMessage({ type: "luma-generated-preview" }, "*");
   }
   document.body.classList.add("generated-preview-open", "client-preview-mode");
-  document.body.classList.remove("review-details-open", "final-review-mode", "manual-form-open");
+  document.body.classList.remove("review-details-open", "final-review-mode", "manual-form-open", "draft-adjust-open");
   guidedPanel.classList.remove("active");
   storageStatus.textContent = currentSiteId ? t("generatedOpenAI") : t("generatedOpenAI");
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -9675,9 +9679,10 @@ function continueWithEmailAuth(event) {
 }
 
 function adjustGeneratedDraftWithLuma() {
-  document.body.classList.remove("generated-preview-open", "client-preview-mode");
+  document.body.classList.add("generated-preview-open", "client-preview-mode", "draft-adjust-open");
+  document.body.classList.remove("review-details-open", "final-review-mode", "manual-form-open");
   guidedPanel.classList.add("active");
-  document.body.classList.add("guided-modal-open");
+  document.body.classList.remove("guided-modal-open");
   guidedStep = "review";
   const message = langText({
     en: "Of course. Tell me what you want to change in the draft: colors, sections, copy, products, style, or any detail. Then I can generate a new version with those adjustments.",
@@ -9696,6 +9701,18 @@ function adjustGeneratedDraftWithLuma() {
   if (isEmbeddedClientSetup) {
     window.parent.postMessage({ type: "luma-adjusting-draft" }, "*");
   }
+}
+
+function closeDraftAdjustmentChat() {
+  document.body.classList.remove("draft-adjust-open", "guided-modal-open", "review-details-open", "final-review-mode");
+  guidedPanel.classList.remove("active");
+  document.body.classList.add("generated-preview-open", "client-preview-mode");
+  storageStatus.textContent = langText({
+    en: "Draft preview is still open.",
+    es: "El preview del borrador sigue abierto.",
+    fr: "L'apercu du brouillon reste ouvert.",
+    pt: "O preview do rascunho continua aberto.",
+  });
 }
 
 async function collectPayload() {
