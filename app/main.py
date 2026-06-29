@@ -16,6 +16,7 @@ from .auth_store import (
     demo_client_member,
     login_client,
     login_admin,
+    get_supabase_user,
     permissions_for_role,
     update_supabase_user_password,
     verify_admin_bearer,
@@ -280,6 +281,35 @@ def start_client_oauth(provider: str, return_to: str = "") -> RedirectResponse:
         f"&redirect_to={quote(redirect_to, safe='')}"
     )
     return RedirectResponse(auth_url, status_code=status.HTTP_302_FOUND)
+
+
+@app.get("/api/client/auth/me")
+def read_client_auth_user(request: Request) -> dict:
+    authorization = request.headers.get("authorization", "")
+    bearer_token = authorization.removeprefix("Bearer ").strip()
+    if not bearer_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Client session token required.",
+        )
+    try:
+        user = get_supabase_user(bearer_token)
+    except AuthNotConfiguredError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(error),
+        ) from error
+    except AuthError as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(error),
+        ) from error
+    return {
+        "id": user.get("id", ""),
+        "email": user.get("email", ""),
+        "userMetadata": user.get("user_metadata") or {},
+        "appMetadata": user.get("app_metadata") or {},
+    }
 
 
 @app.get("/tenant", response_model=TenantOut)
