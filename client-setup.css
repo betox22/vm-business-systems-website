@@ -64,6 +64,11 @@ body.public-client-setup.generated-preview-open {
   display: block;
 }
 
+.public-client-setup.client-auth-required .intake-panel,
+.public-client-setup.client-auth-required .workspace {
+  display: none !important;
+}
+
 .public-client-setup .client-support-hidden,
 .public-client-setup .workspace,
 .public-client-setup .intake-mode-tabs,
@@ -83,6 +88,12 @@ body.public-client-setup.generated-preview-open {
   min-height: 100vh;
   background: #ffffff;
   overflow: visible;
+}
+
+.public-client-setup.client-auth-required.generated-preview-open .workspace,
+.public-client-setup.client-auth-required.generated-preview-open .intake-panel,
+.public-client-setup.client-auth-required .guided-panel {
+  display: none !important;
 }
 
 .public-client-setup.generated-preview-open .toolbar {

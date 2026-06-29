@@ -2367,6 +2367,11 @@ function captureClientAuthResetIntent() {
   if (!shouldReset) return;
   clientIntakeSession = null;
   clearClientWorkspaceUnlock();
+  localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
+  localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
+  localStorage.removeItem(CLIENT_INTAKE_SESSION_STORAGE_KEY);
+  localStorage.removeItem("lumaPendingGeneratedSite");
+  localStorage.removeItem("lumaPendingAuthAction");
   localStorage.removeItem("lumaClientAccessToken");
   localStorage.removeItem("lumaClientRefreshToken");
   sessionStorage.removeItem("lumaClientAccessToken");
@@ -10394,6 +10399,9 @@ function openStudioAuthGate(action = "continue") {
   if (studioAuthCloseButton) studioAuthCloseButton.hidden = action === "start";
   studioAuthGate.hidden = false;
   document.body.classList.add("studio-auth-open");
+  if (isPublicClientSetup && action === "start") {
+    document.body.classList.add("client-auth-required");
+  }
   setAssistantState("success");
 }
 
@@ -10401,6 +10409,7 @@ function closeStudioAuthGate() {
   if (!studioAuthGate) return;
   studioAuthGate.hidden = true;
   document.body.classList.remove("studio-auth-open");
+  document.body.classList.remove("client-auth-required");
 }
 
 async function continueWithDemoSession() {
