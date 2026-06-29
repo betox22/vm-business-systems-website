@@ -263,6 +263,29 @@ class ClientRequestResponse(BaseModel):
     storage_status: str
 
 
+class ClientIntakeSessionPayload(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    email: str = Field(min_length=3, max_length=240)
+    name: str = Field(default="", max_length=180)
+    selected_language: str = Field(default="en", alias="selectedLanguage", pattern="^(en|es|fr|pt)$")
+    request_id: str | None = Field(default=None, alias="requestId")
+    force_new: bool = Field(default=False, alias="forceNew")
+    draft: ClientRequestPayload = Field(default_factory=ClientRequestPayload)
+
+
+class ClientIntakeSessionResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    session_id: str = Field(alias="sessionId")
+    client_email: str = Field(alias="clientEmail")
+    request_id: str | None = Field(default=None, alias="requestId")
+    request_number: str | None = Field(default=None, alias="requestNumber")
+    restored: bool = False
+    storage_status: str = Field(alias="storageStatus")
+    draft: dict = Field(default_factory=dict)
+
+
 class AdminLoginPayload(BaseModel):
     email: str = Field(min_length=3, max_length=240)
     password: str = Field(min_length=1, max_length=240)

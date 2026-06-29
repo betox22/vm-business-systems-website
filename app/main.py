@@ -45,6 +45,8 @@ from .schemas import (
     AiWebsiteBuilderResponse,
     ClientRequestPayload,
     ClientRequestResponse,
+    ClientIntakeSessionPayload,
+    ClientIntakeSessionResponse,
     DomainOut,
     DomainOrderPayload,
     DomainOrderResponse,
@@ -104,6 +106,7 @@ from .supabase_store import (
     update_site_schema,
     upsert_domain,
     upsert_business_member,
+    upsert_client_intake_session,
 )
 from .tenant import get_current_tenant
 from .ticket import render_thermal_ticket_html
@@ -468,6 +471,45 @@ def create_request(payload: ClientRequestPayload) -> ClientRequestResponse:
         request_id=request.get("id"),
         request_number=request.get("request_number"),
         storage_status="stored",
+    )
+
+
+@app.post("/api/client/intake-session", response_model=ClientIntakeSessionResponse)
+def create_or_resume_client_intake(payload: ClientIntakeSessionPayload) -> ClientIntakeSessionResponse:
+    try:
+        result = upsert_client_intake_session(
+            email=payload.email,
+            name=payload.name,
+            selected_language=payload.selected_language,
+            request_id=payload.request_id,
+            force_new=payload.force_new,
+            draft=payload.draft,
+        )
+    except SupabaseNotConfiguredError:
+        return ClientIntakeSessionResponse(
+            session_id=f"local-{payload.email.lower()}",
+            client_email=payload.email.lower(),
+            request_id=payload.request_id,
+            request_number=None,
+            restored=False,
+            storage_status="supabase_not_configured",
+            draft=payload.draft.model_dump(by_alias=True),
+        )
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(error),
+        ) from error
+
+    row = result.get("row", {})
+    return ClientIntakeSessionResponse(
+        session_id=str(row.get("id") or payload.email.lower()),
+        client_email=payload.email.lower(),
+        request_id=row.get("id"),
+        request_number=row.get("request_number"),
+        restored=bool(result.get("restored")),
+        storage_status="stored",
+        draft=result.get("draft") or {},
     )
 
 

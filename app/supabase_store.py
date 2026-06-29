@@ -96,6 +96,168 @@ def create_client_request(payload: ClientRequestPayload) -> dict[str, Any]:
     )
 
 
+def upsert_client_intake_session(
+    *,
+    email: str,
+    name: str = "",
+    selected_language: str = "en",
+    request_id: str | None = None,
+    force_new: bool = False,
+    draft: ClientRequestPayload | None = None,
+) -> dict[str, Any]:
+    settings = get_settings()
+    if not settings.supabase_url or not settings.supabase_service_role_key:
+        raise SupabaseNotConfiguredError(
+            "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required."
+        )
+
+    clean_email = (email or "").strip().lower()
+    if not clean_email:
+        raise RuntimeError("Client email is required.")
+
+    payload = draft or ClientRequestPayload()
+    if selected_language:
+        payload.selected_language = selected_language
+    payload.contact_info = {
+        **(payload.contact_info or {}),
+        "email": payload.contact_info.get("email") or clean_email,
+        "name": payload.contact_info.get("name") or name or payload.business_name,
+    }
+    if name and not payload.business_name:
+        payload.business_name = name
+    payload.status = payload.status or "draft"
+
+    existing = None
+    if request_id and not force_new:
+        rows = _select_optional(
+            "client_requests",
+            f"select=*&id=eq.{quote(request_id)}&limit=1",
+        )
+        existing = rows[0] if rows else None
+
+    if not existing and not force_new:
+        rows = _select_optional(
+            "client_requests",
+            "select=*&"
+            f"contact_email=eq.{quote(clean_email)}&"
+            "order=created_at.desc&limit=1",
+        )
+        existing = rows[0] if rows else None
+
+    update_payload = _client_request_row_payload(payload)
+    update_payload["contact_email"] = clean_email
+    if name:
+        update_payload["contact_name"] = name
+    if not update_payload.get("client_name"):
+        update_payload["client_name"] = name or payload.business_name or clean_email
+    update_payload["status"] = payload.status or "draft"
+
+    if existing:
+        row = _update("client_requests", str(existing["id"]), update_payload)
+        return {
+            "row": row,
+            "restored": True,
+            "draft": _client_request_row_to_payload(row),
+        }
+
+    row = create_client_request(payload)
+    return {
+        "row": row,
+        "restored": False,
+        "draft": _client_request_row_to_payload(row),
+    }
+
+
+def _client_request_row_payload(payload: ClientRequestPayload) -> dict[str, Any]:
+    contact = payload.contact_info or {}
+    return {
+        "client_name": payload.business_name or contact.get("name") or "New client",
+        "contact_name": contact.get("name", ""),
+        "contact_email": contact.get("email", ""),
+        "contact_phone": contact.get("phone", contact.get("whatsapp", "")),
+        "business_name": payload.business_name,
+        "industry": payload.industry,
+        "description": payload.business_description,
+        "location": payload.location,
+        "services_products": payload.services_products,
+        "social_links": {
+            "instagram": contact.get("instagram", ""),
+            "facebook": contact.get("facebook", ""),
+            "tiktok": contact.get("tiktok", ""),
+            "website": contact.get("website", ""),
+        },
+        "preferred_colors": payload.preferred_colors,
+        "selected_language": payload.selected_language,
+        "tone_style": payload.preferred_tone,
+        "internal_notes": json.dumps(
+            {
+                "source": payload.source,
+                "websiteIntent": payload.website_intent,
+                "targetAudience": payload.target_audience,
+                "selectedLanguage": payload.selected_language,
+                "salesMode": payload.sales_mode,
+                "hasLogo": payload.has_logo,
+                "hasPhotos": payload.has_photos,
+                "hasLogoPhotos": payload.has_logo_photos,
+                "sectionsPreference": payload.sections_preference,
+                "logoUrl": payload.logo_url,
+                "photoUrls": payload.photo_urls,
+                "contactInfo": payload.contact_info,
+                "desiredDomain": payload.desired_domain,
+            },
+            ensure_ascii=False,
+        ),
+    }
+
+
+def _client_request_row_to_payload(row: dict[str, Any]) -> dict[str, Any]:
+    notes = _parse_internal_notes(row.get("internal_notes"))
+    contact = notes.get("contactInfo") if isinstance(notes.get("contactInfo"), dict) else {}
+    social = row.get("social_links") if isinstance(row.get("social_links"), dict) else {}
+    contact_info = {
+        **social,
+        **contact,
+        "name": contact.get("name") or row.get("contact_name", ""),
+        "email": contact.get("email") or row.get("contact_email", ""),
+        "phone": contact.get("phone") or row.get("contact_phone", ""),
+    }
+    return {
+        "websiteIntent": notes.get("websiteIntent", ""),
+        "businessName": row.get("business_name", "") or row.get("client_name", ""),
+        "businessDescription": row.get("description", ""),
+        "industry": row.get("industry", ""),
+        "location": row.get("location", ""),
+        "servicesProducts": row.get("services_products") or [],
+        "targetAudience": notes.get("targetAudience", ""),
+        "preferredTone": row.get("tone_style", ""),
+        "preferredColors": row.get("preferred_colors") or [],
+        "contactInfo": contact_info,
+        "logoUrl": notes.get("logoUrl", ""),
+        "photoUrls": notes.get("photoUrls", []),
+        "selectedLanguage": row.get("selected_language") or notes.get("selectedLanguage", "en"),
+        "desiredDomain": notes.get("desiredDomain", ""),
+        "hasLogo": bool(notes.get("hasLogo", False)),
+        "hasPhotos": bool(notes.get("hasPhotos", False)),
+        "salesMode": notes.get("salesMode", ""),
+        "hasLogoPhotos": notes.get("hasLogoPhotos", ""),
+        "sectionsPreference": notes.get("sectionsPreference", ""),
+        "source": notes.get("source", "ai_guided_setup"),
+        "status": row.get("status", "draft"),
+    }
+
+
+def _parse_internal_notes(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if not value:
+        return {}
+    try:
+        parsed = json.loads(str(value))
+    except (TypeError, json.JSONDecodeError):
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
 def store_ai_website_generation(
     payload: AiWebsiteBuilderRequest,
     schema: WebsiteSchema,
