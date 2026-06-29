@@ -29,6 +29,7 @@ const GUIDED_DRAFT_STORAGE_KEY = "lumaGuidedDraft";
 const GENERATED_SITE_STORAGE_KEY = "lumaGeneratedSite";
 const CLIENT_INTAKE_SESSION_STORAGE_KEY = "lumaClientIntakeSession";
 const CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY = "lumaClientWorkspaceUnlocked";
+const CLIENT_WORKSPACE_IDLE_LOCK_MS = 5 * 60 * 1000;
 
 function adminHeaders(extra = {}) {
   const token = localStorage.getItem("lumaAdminToken") || "";
@@ -559,6 +560,7 @@ let clientIntakeSession = null;
 let clientIntakeSyncTimer = null;
 let clientIntakeSyncInFlight = false;
 let clientAccountButton = null;
+let clientWorkspaceIdleTimer = null;
 let guidedState = createEmptyGuidedState();
 
 function createEmptyGuidedState(language = selectedLanguage) {
@@ -1012,6 +1014,7 @@ safeBootStep("request-hydration", hydrateFromSelectedRequest);
 safeBootStep("guided-intake", initGuidedIntake);
 safeBootStep("client-session", initClientIntakeSessionGate);
 safeBootStep("client-account-control", renderClientAccountControl);
+safeBootStep("client-workspace-security", initClientWorkspaceSecurity);
 
 function safeBootStep(label, callback) {
   try {
@@ -2215,6 +2218,50 @@ function isClientWorkspaceUnlocked() {
 
 function markClientWorkspaceUnlocked() {
   sessionStorage.setItem(CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY, "1");
+  scheduleClientWorkspaceAutoLock();
+}
+
+function initClientWorkspaceSecurity() {
+  if (!isPublicClientSetup) return;
+  scheduleClientWorkspaceAutoLock();
+  ["pointerdown", "keydown", "touchstart"].forEach((eventName) => {
+    window.addEventListener(eventName, scheduleClientWorkspaceAutoLock, { passive: true });
+  });
+  window.addEventListener("pagehide", () => {
+    sessionStorage.removeItem(CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY);
+  });
+}
+
+function scheduleClientWorkspaceAutoLock() {
+  if (!isPublicClientSetup) return;
+  clearTimeout(clientWorkspaceIdleTimer);
+  if (!isClientWorkspaceUnlocked()) return;
+  clientWorkspaceIdleTimer = setTimeout(() => {
+    lockClientWorkspace("idle");
+  }, CLIENT_WORKSPACE_IDLE_LOCK_MS);
+}
+
+function lockClientWorkspace(reason = "idle") {
+  if (!isPublicClientSetup) return;
+  sessionStorage.removeItem(CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY);
+  openStudioAuthGate("start");
+  if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
+  if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+  if (guidedStatusText) {
+    guidedStatusText.textContent = reason === "idle"
+      ? langText({
+          en: "Workspace locked after inactivity. Sign in again to continue.",
+          es: "Espacio bloqueado por inactividad. Inicia sesión otra vez para continuar.",
+          fr: "Espace verrouillé après inactivité. Connectez-vous à nouveau pour continuer.",
+          pt: "Espaço bloqueado por inatividade. Entre novamente para continuar.",
+        })
+      : langText({
+          en: "Sign in again to continue.",
+          es: "Inicia sesión otra vez para continuar.",
+          fr: "Connectez-vous à nouveau pour continuer.",
+          pt: "Entre novamente para continuar.",
+        });
+  }
 }
 
 function readClientIntakeSession() {
