@@ -557,6 +557,7 @@ let guidedLastSendAt = 0;
 let clientIntakeSession = null;
 let clientIntakeSyncTimer = null;
 let clientIntakeSyncInFlight = false;
+let clientAccountButton = null;
 let guidedState = createEmptyGuidedState();
 
 function createEmptyGuidedState(language = selectedLanguage) {
@@ -992,6 +993,7 @@ const submitDraftReviewButton = document.querySelector("#submitDraftReviewButton
 const adjustWithLumaButton = document.querySelector("#adjustWithLumaButton");
 const startNewProjectButton = document.querySelector("#startNewProjectButton");
 const startNewGeneratedProjectButton = document.querySelector("#startNewGeneratedProjectButton");
+const guidedHeaderActions = document.querySelector(".guided-header-actions");
 const builderAvatarRoot = document.querySelector("#builderAvatarAssistant");
 const builderAvatarManager = window.AvatarStateManager ? new window.AvatarStateManager("idle") : null;
 let builderAvatarAssistant = null;
@@ -1008,6 +1010,7 @@ safeBootStep("auth-redirect", captureStudioAuthRedirect);
 safeBootStep("request-hydration", hydrateFromSelectedRequest);
 safeBootStep("guided-intake", initGuidedIntake);
 safeBootStep("client-session", initClientIntakeSessionGate);
+safeBootStep("client-account-control", renderClientAccountControl);
 
 function safeBootStep(label, callback) {
   try {
@@ -2202,6 +2205,65 @@ function writeClientIntakeSession(session) {
     localStorage.setItem(CLIENT_INTAKE_SESSION_STORAGE_KEY, JSON.stringify(clientIntakeSession));
   } catch {
     // Account state is helpful, not required for the live session.
+  }
+  renderClientAccountControl();
+}
+
+function renderClientAccountControl() {
+  if (!isPublicClientSetup || !guidedHeaderActions) return;
+  if (!clientAccountButton) {
+    clientAccountButton = document.createElement("button");
+    clientAccountButton.id = "clientAccountButton";
+    clientAccountButton.className = "secondary-action compact-action client-account-button";
+    clientAccountButton.type = "button";
+    clientAccountButton.addEventListener("click", switchClientAccount);
+    guidedHeaderActions.insertBefore(clientAccountButton, guidedHeaderActions.firstChild);
+  }
+  const session = clientIntakeSession || readClientIntakeSession();
+  const email = session?.clientEmail || localStorage.getItem("lumaPendingClientEmail") || "";
+  clientAccountButton.textContent = email
+    ? langText({
+        en: `Account: ${compactEmailLabel(email)}`,
+        es: `Cuenta: ${compactEmailLabel(email)}`,
+        fr: `Compte : ${compactEmailLabel(email)}`,
+        pt: `Conta: ${compactEmailLabel(email)}`,
+      })
+    : langText({ en: "Sign in", es: "Iniciar sesión", fr: "Connexion", pt: "Entrar" });
+}
+
+function compactEmailLabel(email) {
+  const text = String(email || "").trim();
+  if (text.length <= 24) return text;
+  const [name, domain] = text.split("@");
+  if (!domain) return `${text.slice(0, 21)}...`;
+  return `${name.slice(0, 10)}...@${domain}`;
+}
+
+function switchClientAccount() {
+  const hasSession = Boolean(clientIntakeSession?.clientEmail || readClientIntakeSession()?.clientEmail || storedClientAccessToken());
+  if (hasSession) {
+    const ok = window.confirm(langText({
+      en: "Switch account? This will keep this browser draft, but the next workspace will require login again.",
+      es: "¿Cambiar cuenta? Se conserva el borrador en este navegador, pero el siguiente workspace pedirá login otra vez.",
+      fr: "Changer de compte ? Le brouillon reste dans ce navigateur, mais le prochain espace demandera une connexion.",
+      pt: "Trocar de conta? O rascunho fica neste navegador, mas o próximo workspace pedirá login novamente.",
+    }));
+    if (!ok) return;
+  }
+  clientIntakeSession = null;
+  localStorage.removeItem(CLIENT_INTAKE_SESSION_STORAGE_KEY);
+  localStorage.removeItem("lumaClientAccessToken");
+  localStorage.removeItem("lumaClientRefreshToken");
+  localStorage.removeItem("lumaPendingClientEmail");
+  sessionStorage.removeItem("lumaClientAccessToken");
+  sessionStorage.removeItem("lumaClientRefreshToken");
+  renderClientAccountControl();
+  openStudioAuthGate("start");
+  if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
+  if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+  if (studioAuthEmail) {
+    studioAuthEmail.value = "";
+    studioAuthEmail.focus();
   }
 }
 

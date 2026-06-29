@@ -479,6 +479,12 @@ body.public-client-setup.generated-preview-open {
   white-space: nowrap;
 }
 
+.public-client-setup .client-account-button {
+  max-width: 230px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .public-client-setup .compact-language {
   width: auto;
   min-width: 0;
@@ -2580,6 +2586,10 @@ body.public-client-setup.generated-preview-open {
     padding: 7px 9px;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .public-client-setup .client-account-button {
+    max-width: 148px;
   }
 
   .public-client-setup .compact-language {
