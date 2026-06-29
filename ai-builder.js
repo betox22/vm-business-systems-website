@@ -4,6 +4,7 @@ const INTAKE_ASSISTANT_URL = `${API_BASE_URL}/api/ai/intake-assistant`;
 const LUMA_AGENT_URL = `${API_BASE_URL}/api/luma/chat`;
 const CLIENT_REQUESTS_URL = `${API_BASE_URL}/client-requests`;
 const CLIENT_INTAKE_SESSION_URL = `${API_BASE_URL}/api/client/intake-session`;
+const CLIENT_AUTH_ME_URL = `${API_BASE_URL}/api/client/auth/me`;
 const ASSET_UPLOAD_URL = `${API_BASE_URL}/api/admin/assets/upload`;
 const SUPPORTED_LANGUAGES = ["en", "es", "fr", "pt"];
 const ASSISTANT_AVATAR_FALLBACK = "/assets/nixie_idle.png";
@@ -2160,6 +2161,10 @@ function initClientIntakeSessionGate() {
     syncClientIntakeSession({ immediate: true, reason: "resume" });
     return;
   }
+  if (storedClientAccessToken()) {
+    resumeClientSessionFromAuthToken();
+    return;
+  }
   openStudioAuthGate("start");
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
@@ -2197,6 +2202,78 @@ function writeClientIntakeSession(session) {
     localStorage.setItem(CLIENT_INTAKE_SESSION_STORAGE_KEY, JSON.stringify(clientIntakeSession));
   } catch {
     // Account state is helpful, not required for the live session.
+  }
+}
+
+function storedClientAccessToken() {
+  return localStorage.getItem("lumaClientAccessToken") || sessionStorage.getItem("lumaClientAccessToken") || "";
+}
+
+function clientAuthHeaders(extra = {}) {
+  const token = storedClientAccessToken();
+  return {
+    ...extra,
+    ...(token ? { authorization: `Bearer ${token}` } : {}),
+  };
+}
+
+async function fetchClientAuthUser() {
+  const token = storedClientAccessToken();
+  if (!token) return null;
+  const response = await fetch(CLIENT_AUTH_ME_URL, {
+    headers: clientAuthHeaders(),
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem("lumaClientAccessToken");
+      sessionStorage.removeItem("lumaClientAccessToken");
+    }
+    throw new Error(await readErrorMessage(response));
+  }
+  return response.json();
+}
+
+async function resumeClientSessionFromAuthToken() {
+  try {
+    const user = await fetchClientAuthUser();
+    const email = user?.email || "";
+    if (!email) throw new Error("Authenticated user email missing.");
+    const name = user?.userMetadata?.full_name || user?.userMetadata?.name || guidedState.businessName || "";
+    const session = await createOrResumeClientIntakeSession({
+      email,
+      name,
+      reason: "oauth-resume",
+    });
+    if (storageStatus) {
+      storageStatus.textContent = session.restored
+        ? langText({
+            en: "Session restored. Dixie will keep saving your progress.",
+            es: "Sesión recuperada. Dixie seguirá guardando tu progreso.",
+            fr: "Session restaurée. Dixie continuera à sauvegarder votre progression.",
+            pt: "Sessão recuperada. Dixie continuará salvando seu progresso.",
+          })
+        : langText({
+            en: "Session connected. Dixie will save every answer.",
+            es: "Sesión conectada. Dixie guardará cada respuesta.",
+            fr: "Session connectée. Dixie sauvegardera chaque réponse.",
+            pt: "Sessão conectada. Dixie salvará cada resposta.",
+          });
+    }
+    closeStudioAuthGate();
+    return session;
+  } catch (error) {
+    console.warn("Could not resume auth session", error);
+    openStudioAuthGate("start");
+    if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+    if (storageStatus) {
+      storageStatus.textContent = langText({
+        en: "Could not restore the login session. Continue with email.",
+        es: "No se pudo recuperar la sesión. Continúa con email.",
+        fr: "Impossible de restaurer la session. Continuez avec email.",
+        pt: "Não foi possível recuperar a sessão. Continue com email.",
+      });
+    }
+    return null;
   }
 }
 
@@ -2589,6 +2666,9 @@ function captureStudioAuthRedirect() {
   localStorage.setItem("lumaClientAccessToken", accessToken);
   if (refreshToken) localStorage.setItem("lumaClientRefreshToken", refreshToken);
   restorePendingStudioAfterAuth();
+  if (isPublicClientSetup) {
+    setTimeout(() => resumeClientSessionFromAuthToken(), 0);
+  }
   const cleanUrl = new URL(window.location.href);
   cleanUrl.hash = "";
   ["access_token", "refresh_token", "expires_in", "expires_at", "token_type", "type"].forEach((param) => cleanUrl.searchParams.delete(param));
@@ -10132,7 +10212,6 @@ function hasStudioAccountSession() {
     readClientIntakeSession()?.clientEmail ||
     localStorage.getItem("lumaClientAccessToken") ||
     sessionStorage.getItem("lumaClientAccessToken") ||
-    localStorage.getItem("lumaPendingClientEmail") ||
     localStorage.getItem("vm_portal_preview_token") ||
     sessionStorage.getItem("vm_portal_preview_token"),
   );
