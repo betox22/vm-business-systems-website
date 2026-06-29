@@ -3,6 +3,7 @@ const API_URL = `${API_BASE_URL}/ai/website-builder`;
 const INTAKE_ASSISTANT_URL = `${API_BASE_URL}/api/ai/intake-assistant`;
 const LUMA_AGENT_URL = `${API_BASE_URL}/api/luma/chat`;
 const CLIENT_REQUESTS_URL = `${API_BASE_URL}/client-requests`;
+const CLIENT_INTAKE_SESSION_URL = `${API_BASE_URL}/api/client/intake-session`;
 const ASSET_UPLOAD_URL = `${API_BASE_URL}/api/admin/assets/upload`;
 const SUPPORTED_LANGUAGES = ["en", "es", "fr", "pt"];
 const ASSISTANT_AVATAR_FALLBACK = "/assets/nixie_idle.png";
@@ -25,6 +26,7 @@ const LANGUAGE_NAMES = {
 };
 const GUIDED_DRAFT_STORAGE_KEY = "lumaGuidedDraft";
 const GENERATED_SITE_STORAGE_KEY = "lumaGeneratedSite";
+const CLIENT_INTAKE_SESSION_STORAGE_KEY = "lumaClientIntakeSession";
 
 function adminHeaders(extra = {}) {
   const token = localStorage.getItem("lumaAdminToken") || "";
@@ -123,13 +125,13 @@ const I18N = {
     replyPlaceholder: "Type your answer...",
     photoUrlsPlaceholder: "One image URL per line",
     salesModePlaceholder: "online sales, quotes, or both",
-    accountGateKicker: "Save your progress",
-    accountGateTitle: "Connect an account before generating",
-    accountGateText: "Use Google, Apple, or email so your draft is saved and you can edit products, prices, images and content later.",
+    accountGateKicker: "Protected workspace",
+    accountGateTitle: "Start by saving your progress",
+    accountGateText: "Use email so Dixie can save every answer, restore drafts, and keep you from repeating the same information.",
     continueGoogle: "Continue with Google",
     continueApple: "Continue with Apple",
     continueEmail: "Continue with email",
-    saveEmailContinue: "Save email",
+    saveEmailContinue: "Enter my workspace",
     continueDemo: "Keep viewing demo",
     sendingAssistant: "Dixie is reviewing your answer...",
     summaryUpdated: "Details updated.",
@@ -225,13 +227,13 @@ const I18N = {
     replyPlaceholder: "Escribe tu respuesta...",
     photoUrlsPlaceholder: "Una URL de imagen por linea",
     salesModePlaceholder: "ventas online, cotizaciones, o ambos",
-    accountGateKicker: "Guarda tu progreso",
-    accountGateTitle: "Conecta una cuenta antes de generar",
-    accountGateText: "Usa Google, Apple o email para guardar tu borrador y luego editar productos, precios, imagenes y contenido.",
+    accountGateKicker: "Workspace protegido",
+    accountGateTitle: "Empieza guardando tu progreso",
+    accountGateText: "Usa email para que Dixie guarde cada respuesta, recupere tus borradores y no tengas que repetir la misma información.",
     continueGoogle: "Continuar con Google",
     continueApple: "Continuar con Apple",
     continueEmail: "Continuar con email",
-    saveEmailContinue: "Guardar email",
+    saveEmailContinue: "Entrar a mi workspace",
     continueDemo: "Seguir viendo demo",
     sendingAssistant: "Dixie esta revisando tu respuesta...",
     summaryUpdated: "Detalles actualizados.",
@@ -327,13 +329,13 @@ const I18N = {
     replyPlaceholder: "Écrivez votre réponse...",
     photoUrlsPlaceholder: "Une URL d'image par ligne",
     salesModePlaceholder: "vente en ligne, devis, ou les deux",
-    accountGateKicker: "Sauvegardez votre progression",
-    accountGateTitle: "Connectez un compte avant de générer",
-    accountGateText: "Utilisez Google, Apple ou email pour sauvegarder le brouillon et modifier ensuite produits, prix, images et contenu.",
+    accountGateKicker: "Espace protégé",
+    accountGateTitle: "Commencez en sauvegardant votre progression",
+    accountGateText: "Utilisez l'email pour que Dixie sauvegarde chaque réponse, retrouve vos brouillons et évite de répéter les mêmes informations.",
     continueGoogle: "Continuer avec Google",
     continueApple: "Continuer avec Apple",
     continueEmail: "Continuer avec email",
-    saveEmailContinue: "Sauvegarder l'email",
+    saveEmailContinue: "Entrer dans mon espace",
     continueDemo: "Continuer la démo",
     sendingAssistant: "Luma analyse votre réponse...",
     summaryUpdated: "Détails mis à jour.",
@@ -429,13 +431,13 @@ const I18N = {
     replyPlaceholder: "Digite sua resposta...",
     photoUrlsPlaceholder: "Uma URL de imagem por linha",
     salesModePlaceholder: "vendas online, orçamentos, ou ambos",
-    accountGateKicker: "Salve seu progresso",
-    accountGateTitle: "Conecte uma conta antes de gerar",
-    accountGateText: "Use Google, Apple ou email para salvar o rascunho e editar produtos, preços, imagens e conteúdo depois.",
+    accountGateKicker: "Workspace protegido",
+    accountGateTitle: "Comece salvando seu progresso",
+    accountGateText: "Use email para a Dixie salvar cada resposta, recuperar seus rascunhos e evitar repetir as mesmas informações.",
     continueGoogle: "Continuar com Google",
     continueApple: "Continuar com Apple",
     continueEmail: "Continuar com email",
-    saveEmailContinue: "Salvar email",
+    saveEmailContinue: "Entrar no meu workspace",
     continueDemo: "Continuar vendo demo",
     sendingAssistant: "Luma está revisando sua resposta...",
     summaryUpdated: "Detalhes atualizados.",
@@ -551,6 +553,9 @@ let guidedCoachCard = null;
 let liveSitePreviewCard = null;
 let guidedSendLocked = false;
 let guidedLastSendAt = 0;
+let clientIntakeSession = null;
+let clientIntakeSyncTimer = null;
+let clientIntakeSyncInFlight = false;
 let guidedState = createEmptyGuidedState();
 
 function createEmptyGuidedState(language = selectedLanguage) {
@@ -1001,6 +1006,7 @@ safeBootStep("assistant-state", () => setAssistantState("happy"));
 safeBootStep("auth-redirect", captureStudioAuthRedirect);
 safeBootStep("request-hydration", hydrateFromSelectedRequest);
 safeBootStep("guided-intake", initGuidedIntake);
+safeBootStep("client-session", initClientIntakeSessionGate);
 
 function safeBootStep(label, callback) {
   try {
@@ -2145,6 +2151,148 @@ function initGuidedIntake() {
   resetAssistantConversation();
 }
 
+function initClientIntakeSessionGate() {
+  if (!isPublicClientSetup) return;
+  const stored = readClientIntakeSession();
+  if (stored?.clientEmail) {
+    clientIntakeSession = stored;
+    hydrateClientIntakeSession(stored, { silent: true });
+    syncClientIntakeSession({ immediate: true, reason: "resume" });
+    return;
+  }
+  openStudioAuthGate("start");
+  if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
+  if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+  if (studioAuthEmail) {
+    studioAuthEmail.value = guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
+    setTimeout(() => studioAuthEmail.focus(), 80);
+  }
+  if (guidedStatusText) {
+    guidedStatusText.textContent = langText({
+      en: "Create or resume your workspace first, so Dixie can save every answer.",
+      es: "Crea o recupera tu espacio primero, así Dixie guarda cada respuesta.",
+      fr: "Créez ou reprenez votre espace pour que Dixie sauvegarde chaque réponse.",
+      pt: "Crie ou recupere seu espaço primeiro para a Dixie salvar cada resposta.",
+    });
+  }
+}
+
+function readClientIntakeSession() {
+  try {
+    const raw = localStorage.getItem(CLIENT_INTAKE_SESSION_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    localStorage.removeItem(CLIENT_INTAKE_SESSION_STORAGE_KEY);
+    return null;
+  }
+}
+
+function writeClientIntakeSession(session) {
+  clientIntakeSession = {
+    ...(clientIntakeSession || {}),
+    ...(session || {}),
+    savedAt: new Date().toISOString(),
+  };
+  try {
+    localStorage.setItem(CLIENT_INTAKE_SESSION_STORAGE_KEY, JSON.stringify(clientIntakeSession));
+  } catch {
+    // Account state is helpful, not required for the live session.
+  }
+}
+
+function hydrateClientIntakeSession(session, options = {}) {
+  if (!session) return;
+  currentRequestId = session.requestId || session.request_id || currentRequestId;
+  const draft = session.draft || {};
+  if (draft.selectedLanguage) setSelectedLanguage(draft.selectedLanguage);
+  const normalizedDraft = {
+    ...draft,
+    servicesProducts: arrayValue(draft.servicesProducts),
+    preferredColors: arrayValue(draft.preferredColors),
+    photoUrls: arrayValue(draft.photoUrls),
+    contactInfo: { ...(draft.contactInfo || {}) },
+  };
+  if (session.clientEmail && !normalizedDraft.contactInfo.email) {
+    normalizedDraft.contactInfo.email = session.clientEmail;
+  }
+  mergeGuidedUpdates(normalizedDraft);
+  applyGuidedStateToForm();
+  renderGuidedSummary();
+  refreshQuickChips();
+  renderLiveSitePreview();
+  if (!options.silent && session.restored) {
+    appendChatMessage("assistant", langText({
+      en: "I found your saved workspace. We can continue from here.",
+      es: "Encontré tu espacio guardado. Podemos continuar desde aquí.",
+      fr: "J'ai retrouvé votre espace sauvegardé. Nous pouvons continuer ici.",
+      pt: "Encontrei seu espaço salvo. Podemos continuar daqui.",
+    }), "success");
+  }
+}
+
+async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false } = {}) {
+  const cleanEmail = String(email || "").trim().toLowerCase();
+  if (!cleanEmail) throw new Error("Email is required.");
+  const draft = immediateDraft || guidedStateForApi();
+  draft.contactInfo = {
+    ...(draft.contactInfo || {}),
+    email: draft.contactInfo?.email || cleanEmail,
+    name: draft.contactInfo?.name || name || draft.businessName || "",
+  };
+  const response = await fetch(CLIENT_INTAKE_SESSION_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      email: cleanEmail,
+      name,
+      selectedLanguage,
+      requestId: forceNew ? null : currentRequestId,
+      forceNew,
+      draft,
+    }),
+  });
+  if (!response.ok) throw new Error(await readErrorMessage(response));
+  const session = await response.json();
+  writeClientIntakeSession(session);
+  localStorage.setItem("lumaPendingClientEmail", cleanEmail);
+  hydrateClientIntakeSession(session, { silent: reason === "autosave" });
+  return session;
+}
+
+function syncClientIntakeSession({ immediate = false, reason = "autosave" } = {}) {
+  if (!isPublicClientSetup || !clientIntakeSession?.clientEmail) return;
+  clearTimeout(clientIntakeSyncTimer);
+  const run = async () => {
+    if (clientIntakeSyncInFlight) return;
+    clientIntakeSyncInFlight = true;
+    try {
+      const session = await createOrResumeClientIntakeSession({
+        email: clientIntakeSession.clientEmail,
+        name: guidedState.contactInfo?.name || guidedState.businessName || "",
+        reason,
+      });
+      if (session.requestId) currentRequestId = session.requestId;
+    } catch (error) {
+      console.warn("Client intake autosave failed", error);
+      if (guidedStatusText) {
+        guidedStatusText.textContent = langText({
+          en: "Saved in this browser. Cloud sync will retry.",
+          es: "Guardado en este navegador. La nube reintentará.",
+          fr: "Enregistré dans ce navigateur. La synchronisation réessaiera.",
+          pt: "Salvo neste navegador. A nuvem tentará novamente.",
+        });
+      }
+    } finally {
+      clientIntakeSyncInFlight = false;
+    }
+  };
+  if (immediate) {
+    run();
+  } else {
+    clientIntakeSyncTimer = setTimeout(run, 900);
+  }
+}
+
 function applyPromptFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const prompt = params.get("prompt") || params.get("description") || "";
@@ -2215,6 +2363,7 @@ function startNewClientProject() {
   if (!isPublicClientSetup) return;
   const hasExistingWork = Boolean(currentSchema || guidedState.businessName || guidedState.businessDescription || guidedState.websiteIntent);
   if (hasExistingWork && !window.confirm(t("startNewProjectConfirm"))) return;
+  const existingEmail = clientIntakeSession?.clientEmail || readClientIntakeSession()?.clientEmail || "";
 
   localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
   localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
@@ -2225,6 +2374,7 @@ function startNewClientProject() {
   selectedPageKey = "home";
   selectedVariantId = "";
   selectedStudioSectionId = "";
+  currentRequestId = null;
   currentSiteId = null;
   currentBusinessId = null;
   currentGenerationId = null;
@@ -2233,6 +2383,7 @@ function startNewClientProject() {
   restoredGuidedDraftInfo = null;
   guidedStep = "websiteIntent";
   guidedState = createEmptyGuidedState(selectedLanguage);
+  if (existingEmail) guidedState.contactInfo.email = existingEmail;
   guidedAskedSteps.clear();
   lastAssistantPromptSignature = "";
 
@@ -2259,6 +2410,16 @@ function startNewClientProject() {
     fr: "Nouvelle page commencée.",
     pt: "Nova página iniciada.",
   });
+  if (existingEmail) {
+    createOrResumeClientIntakeSession({
+      email: existingEmail,
+      name: "",
+      reason: "new-project",
+      forceNew: true,
+    }).catch((error) => console.warn("Could not create new client intake session", error));
+  } else {
+    initClientIntakeSessionGate();
+  }
   guidedReply?.focus();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -2314,6 +2475,7 @@ function saveGuidedDraft() {
   } catch {
     // Draft autosave should never block the user flow.
   }
+  syncClientIntakeSession({ reason: "autosave" });
 }
 
 function restoreGuidedDraft() {
@@ -3832,6 +3994,10 @@ async function handleGuidedGenerateButton(event) {
   event?.preventDefault?.();
   event?.stopPropagation?.();
   if (isGeneratingWebsite) return;
+  if (isPublicClientSetup && !hasStudioAccountSession()) {
+    promptAccountBeforeGenerate();
+    return;
+  }
   syncGuidedStateFromSummary();
   normalizeGuidedStateBeforeGenerate();
   const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
@@ -3962,6 +4128,18 @@ function inferCommerceIndustry(state) {
 }
 
 async function saveGuidedClientRequest() {
+  if (clientIntakeSession?.clientEmail) {
+    const session = await createOrResumeClientIntakeSession({
+      email: clientIntakeSession.clientEmail,
+      name: guidedState.contactInfo?.name || guidedState.businessName || "",
+      reason: "final-save",
+    });
+    return {
+      request_id: session.requestId,
+      request_number: session.requestNumber,
+      storage_status: session.storageStatus,
+    };
+  }
   const response = await fetch(CLIENT_REQUESTS_URL, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -9950,6 +10128,8 @@ function requireStudioAccount(event, action, callback) {
 
 function hasStudioAccountSession() {
   return Boolean(
+    clientIntakeSession?.clientEmail ||
+    readClientIntakeSession()?.clientEmail ||
     localStorage.getItem("lumaClientAccessToken") ||
     sessionStorage.getItem("lumaClientAccessToken") ||
     localStorage.getItem("lumaPendingClientEmail") ||
@@ -9961,6 +10141,8 @@ function hasStudioAccountSession() {
 function openStudioAuthGate(action = "continue") {
   if (!studioAuthGate) return;
   persistPendingStudioAccountAction(action);
+  studioAuthGate.dataset.action = action;
+  if (studioAuthCloseButton) studioAuthCloseButton.hidden = action === "start";
   studioAuthGate.hidden = false;
   document.body.classList.add("studio-auth-open");
   setAssistantState("success");
@@ -10007,27 +10189,78 @@ function persistPendingStudioAccountAction(action) {
 
 function continueWithStudioAuth(provider) {
   persistPendingStudioAccountAction(provider);
-  const returnTo = encodeURIComponent(window.location.href);
   const configured = provider === "google" ? window.LUMA_GOOGLE_AUTH_URL : window.LUMA_APPLE_AUTH_URL;
+  if (!configured) {
+    if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+    if (studioAuthEmail) studioAuthEmail.focus();
+    if (storageStatus) {
+      storageStatus.textContent = langText({
+        en: "Google and Apple sign-in will be connected later. Continue with email for now.",
+        es: "Google y Apple se conectan luego. Continúa con email por ahora.",
+        fr: "Google et Apple seront connectés plus tard. Continuez avec email pour l'instant.",
+        pt: "Google e Apple serão conectados depois. Continue com email por enquanto.",
+      });
+    }
+    return;
+  }
+  const returnTo = encodeURIComponent(window.location.href);
   const fallback = `${API_BASE_URL}/api/client/auth/oauth/${encodeURIComponent(provider)}?return_to=${returnTo}`;
   window.location.href = configured || fallback;
 }
 
-function continueWithEmailAuth(event) {
+async function continueWithEmailAuth(event) {
   event.preventDefault();
   const email = studioAuthEmail?.value.trim();
   if (!email) return;
   persistPendingStudioAccountAction("email");
-  localStorage.setItem("lumaPendingClientEmail", email);
-  if (storageStatus) {
-    storageStatus.textContent = langText({
-      en: "Email saved. The account step is ready to connect to magic links.",
-      es: "Email guardado. El paso de cuenta queda listo para conectar magic links.",
-      fr: "Email enregistré. L'étape de compte est prête pour les magic links.",
-      pt: "Email salvo. A etapa de conta está pronta para magic links.",
-    });
+  const submitButton = studioEmailAuthForm?.querySelector("button[type='submit']");
+  const previousText = submitButton?.textContent || "";
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = langText({ en: "Opening...", es: "Abriendo...", fr: "Ouverture...", pt: "Abrindo..." });
   }
-  closeStudioAuthGate();
+  try {
+    const session = await createOrResumeClientIntakeSession({
+      email,
+      name: guidedState.contactInfo?.name || guidedState.businessName || "",
+      reason: "start",
+    });
+    if (storageStatus) {
+      storageStatus.textContent = session.restored
+        ? langText({
+            en: "Workspace restored. Your answers will keep saving.",
+            es: "Espacio recuperado. Tus respuestas seguirán guardándose.",
+            fr: "Espace restauré. Vos réponses continueront à être sauvegardées.",
+            pt: "Espaço recuperado. Suas respostas continuarão salvas.",
+          })
+        : langText({
+            en: "Workspace created. Dixie will save every answer.",
+            es: "Espacio creado. Dixie guardará cada respuesta.",
+            fr: "Espace créé. Dixie sauvegardera chaque réponse.",
+            pt: "Espaço criado. Dixie salvará cada resposta.",
+          });
+    }
+    closeStudioAuthGate();
+    const pendingAction = localStorage.getItem("lumaPendingAuthAction") || "";
+    if (pendingAction === "generate") {
+      localStorage.removeItem("lumaPendingAuthAction");
+      await handleGuidedGenerateButton(new Event("submit"));
+    }
+  } catch (error) {
+    if (storageStatus) {
+      storageStatus.textContent = `${langText({
+        en: "Could not open your workspace",
+        es: "No se pudo abrir tu espacio",
+        fr: "Impossible d'ouvrir votre espace",
+        pt: "Não foi possível abrir seu espaço",
+      })}: ${shortError(error.message)}`;
+    }
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = previousText || t("saveEmailContinue");
+    }
+  }
 }
 
 function adjustGeneratedDraftWithLuma() {
