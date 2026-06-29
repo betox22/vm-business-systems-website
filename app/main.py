@@ -1,9 +1,10 @@
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from openai import AuthenticationError, OpenAIError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from urllib.parse import quote
 
 from .ai_design import generate_store_config, generate_store_design
 from .ai_intake import guide_intake
@@ -256,6 +257,29 @@ def login_client_user(payload: ClientLoginPayload) -> ClientLoginResponse:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(error),
         ) from error
+
+
+@app.get("/api/client/auth/oauth/{provider}")
+def start_client_oauth(provider: str, return_to: str = "") -> RedirectResponse:
+    normalized_provider = provider.strip().lower()
+    if normalized_provider not in {"google", "apple"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported OAuth provider.",
+        )
+    settings = get_settings()
+    if not settings.supabase_url:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Supabase Auth is not configured.",
+        )
+    redirect_to = return_to or "https://vmbusinesssystems.com/client/setup/"
+    auth_url = (
+        f"{settings.supabase_url.rstrip('/')}/auth/v1/authorize"
+        f"?provider={normalized_provider}"
+        f"&redirect_to={quote(redirect_to, safe='')}"
+    )
+    return RedirectResponse(auth_url, status_code=status.HTTP_302_FOUND)
 
 
 @app.get("/tenant", response_model=TenantOut)
