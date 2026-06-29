@@ -66,9 +66,9 @@ const I18N = {
     selectedTemplate: "Selected template",
     catalogType: "Catalog type",
     currentInfo: "A few details collected so far.",
-    livePreviewKicker: "Live draft",
-    livePreviewTitle: "Dixie is choosing the right structure",
-    livePreviewText: "The preview adapts from your answers before the full editable site is generated.",
+    livePreviewKicker: "Build workspace",
+    livePreviewTitle: "Business model and site architecture",
+    livePreviewText: "Your answers define the template family, catalog logic, page structure and conversion path before the editable draft is generated.",
     finalReviewTitle: "Dixie's build plan",
     generateMyWebsite: "Generate my website",
     keepChatting: "Keep chatting",
@@ -168,9 +168,9 @@ const I18N = {
     selectedTemplate: "Template seleccionado",
     catalogType: "Tipo de catalogo",
     currentInfo: "Algunos detalles recopilados hasta ahora.",
-    livePreviewKicker: "Borrador en vivo",
-    livePreviewTitle: "Dixie esta eligiendo la estructura correcta",
-    livePreviewText: "El preview se adapta con tus respuestas antes de generar el sitio editable completo.",
+    livePreviewKicker: "Workspace de construccion",
+    livePreviewTitle: "Modelo de negocio y arquitectura del sitio",
+    livePreviewText: "Tus respuestas definen la familia de plantilla, logica de catalogo, estructura de paginas y flujo de conversion antes de generar el borrador editable.",
     finalReviewTitle: "Plan de construccion de Dixie",
     generateMyWebsite: "Generar mi pagina",
     keepChatting: "Seguir conversando",
@@ -270,9 +270,9 @@ const I18N = {
     selectedTemplate: "Template sélectionné",
     catalogType: "Type de catalogue",
     currentInfo: "Quelques détails collectés jusqu'ici.",
-    livePreviewKicker: "Brouillon live",
-    livePreviewTitle: "Luma choisit la bonne structure",
-    livePreviewText: "L'apercu s'adapte a vos reponses avant de generer le site complet modifiable.",
+    livePreviewKicker: "Workspace de creation",
+    livePreviewTitle: "Modele business et architecture du site",
+    livePreviewText: "Vos reponses definissent la famille de template, la logique catalogue, la structure des pages et le parcours de conversion.",
     finalReviewTitle: "Plan de creation de Luma",
     generateMyWebsite: "Générer mon site",
     keepChatting: "Continuer la discussion",
@@ -372,9 +372,9 @@ const I18N = {
     selectedTemplate: "Template selecionado",
     catalogType: "Tipo de catálogo",
     currentInfo: "Alguns detalhes coletados até agora.",
-    livePreviewKicker: "Rascunho ao vivo",
-    livePreviewTitle: "A Luma esta escolhendo a estrutura certa",
-    livePreviewText: "O preview se adapta com suas respostas antes de gerar o site editavel completo.",
+    livePreviewKicker: "Workspace de criacao",
+    livePreviewTitle: "Modelo de negocio e arquitetura do site",
+    livePreviewText: "Suas respostas definem familia de template, logica de catalogo, estrutura de paginas e fluxo de conversao.",
     finalReviewTitle: "Plano de construcao da Luma",
     generateMyWebsite: "Gerar meu site",
     keepChatting: "Continuar conversando",
@@ -1449,7 +1449,12 @@ function renderNeutralLiveWorkspace() {
     },
     {
       title: langText({ en: "Visual base", es: "Base visual", fr: "Base visuelle", pt: "Base visual" }),
-      text: langText({ en: "Dixie will choose this after understanding the business.", es: "Dixie elegira esto despues de entender el negocio.", fr: "Dixie choisira apres avoir compris le business.", pt: "A Dixie escolhera depois de entender o negocio." }),
+      text: langText({
+        en: "The visual system is selected after the offer, audience and sales path are clear.",
+        es: "El sistema visual se selecciona cuando la oferta, el publico y el flujo de venta esten claros.",
+        fr: "Le systeme visuel est choisi lorsque l'offre, l'audience et le parcours de vente sont clairs.",
+        pt: "O sistema visual e escolhido quando oferta, publico e fluxo de venda ficam claros.",
+      }),
       active: false,
     },
   ];
@@ -1459,13 +1464,13 @@ function renderNeutralLiveWorkspace() {
         <span></span><span></span><span></span>
       </div>
       <section class="neutral-live-copy">
-        <span>${escapeHtml(langText({ en: "No template selected yet", es: "Aun no hay plantilla seleccionada", fr: "Aucun template choisi", pt: "Nenhum template selecionado" }))}</span>
-        <h2>${escapeHtml(langText({ en: "Dixie is learning what to build", es: "Dixie esta entendiendo que construir", fr: "Dixie comprend quoi construire", pt: "A Dixie esta entendendo o que construir" }))}</h2>
+        <span>${escapeHtml(langText({ en: "Strategy workspace", es: "Workspace de estrategia", fr: "Espace strategie", pt: "Workspace de estrategia" }))}</span>
+        <h2>${escapeHtml(langText({ en: "Define the business model first", es: "Primero definimos el modelo del negocio", fr: "Definir d'abord le modele business", pt: "Primeiro definimos o modelo do negocio" }))}</h2>
         <p>${escapeHtml(langText({
-          en: "Once the business type and offer are clear, Dixie will select the right structure and show the real preview here.",
-          es: "Cuando el tipo de negocio y la oferta esten claros, Dixie elegira la estructura correcta y mostrara aqui el preview real.",
-          fr: "Quand le type de business et l'offre seront clairs, Dixie choisira la bonne structure et affichera l'apercu ici.",
-          pt: "Quando o tipo de negocio e a oferta estiverem claros, a Dixie escolhera a estrutura certa e mostrara o preview real aqui.",
+          en: "Answer in plain language. The system will translate your goal into the right website type, template family, catalog structure and conversion flow.",
+          es: "Responde en lenguaje natural. El sistema convierte tu objetivo en tipo de pagina, familia de plantilla, estructura de catalogo y flujo de conversion.",
+          fr: "Repondez naturellement. Le systeme transforme votre objectif en type de site, famille de template, structure catalogue et parcours de conversion.",
+          pt: "Responda em linguagem natural. O sistema transforma seu objetivo em tipo de site, familia de template, catalogo e fluxo de conversao.",
         }))}</p>
       </section>
       <div class="neutral-live-steps">
