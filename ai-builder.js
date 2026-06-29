@@ -28,7 +28,6 @@ const LANGUAGE_NAMES = {
 const GUIDED_DRAFT_STORAGE_KEY = "lumaGuidedDraft";
 const GENERATED_SITE_STORAGE_KEY = "lumaGeneratedSite";
 const CLIENT_INTAKE_SESSION_STORAGE_KEY = "lumaClientIntakeSession";
-const CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY = "lumaClientWorkspaceUnlocked";
 const CLIENT_WORKSPACE_IDLE_LOCK_MS = 5 * 60 * 1000;
 
 function adminHeaders(extra = {}) {
@@ -561,6 +560,7 @@ let clientIntakeSyncTimer = null;
 let clientIntakeSyncInFlight = false;
 let clientAccountButton = null;
 let clientWorkspaceIdleTimer = null;
+let clientWorkspaceUnlocked = false;
 let guidedState = createEmptyGuidedState();
 
 function createEmptyGuidedState(language = selectedLanguage) {
@@ -1009,6 +1009,7 @@ safeBootStep("language", initLanguageControls);
 safeBootStep("voice", initVoiceInput);
 safeBootStep("audio-toggle", updateAssistantAudioToggle);
 safeBootStep("assistant-state", () => setAssistantState("happy"));
+safeBootStep("client-auth-reset", captureClientAuthResetIntent);
 safeBootStep("auth-redirect", captureStudioAuthRedirect);
 safeBootStep("request-hydration", hydrateFromSelectedRequest);
 safeBootStep("guided-intake", initGuidedIntake);
@@ -2213,12 +2214,17 @@ function initClientIntakeSessionGate() {
 }
 
 function isClientWorkspaceUnlocked() {
-  return sessionStorage.getItem(CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY) === "1";
+  return clientWorkspaceUnlocked;
 }
 
 function markClientWorkspaceUnlocked() {
-  sessionStorage.setItem(CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY, "1");
+  clientWorkspaceUnlocked = true;
   scheduleClientWorkspaceAutoLock();
+}
+
+function clearClientWorkspaceUnlock() {
+  clientWorkspaceUnlocked = false;
+  clearTimeout(clientWorkspaceIdleTimer);
 }
 
 function initClientWorkspaceSecurity() {
@@ -2228,7 +2234,7 @@ function initClientWorkspaceSecurity() {
     window.addEventListener(eventName, scheduleClientWorkspaceAutoLock, { passive: true });
   });
   window.addEventListener("pagehide", () => {
-    sessionStorage.removeItem(CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY);
+    clearClientWorkspaceUnlock();
   });
 }
 
@@ -2243,7 +2249,7 @@ function scheduleClientWorkspaceAutoLock() {
 
 function lockClientWorkspace(reason = "idle") {
   if (!isPublicClientSetup) return;
-  sessionStorage.removeItem(CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY);
+  clearClientWorkspaceUnlock();
   openStudioAuthGate("start");
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
@@ -2336,7 +2342,7 @@ function switchClientAccount() {
   localStorage.removeItem("lumaPendingClientEmail");
   sessionStorage.removeItem("lumaClientAccessToken");
   sessionStorage.removeItem("lumaClientRefreshToken");
-  sessionStorage.removeItem(CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY);
+  clearClientWorkspaceUnlock();
   renderClientAccountControl();
   openStudioAuthGate("start");
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
@@ -2349,6 +2355,26 @@ function switchClientAccount() {
 
 function storedClientAccessToken() {
   return localStorage.getItem("lumaClientAccessToken") || sessionStorage.getItem("lumaClientAccessToken") || "";
+}
+
+function captureClientAuthResetIntent() {
+  if (!isPublicClientSetup) return;
+  const params = new URLSearchParams(window.location.search);
+  const shouldReset = ["test-login", "force-login", "logout"].some((key) => {
+    const value = params.get(key);
+    return value === "" || value === "1" || value === "true";
+  });
+  if (!shouldReset) return;
+  clientIntakeSession = null;
+  clearClientWorkspaceUnlock();
+  localStorage.removeItem("lumaClientAccessToken");
+  localStorage.removeItem("lumaClientRefreshToken");
+  sessionStorage.removeItem("lumaClientAccessToken");
+  sessionStorage.removeItem("lumaClientRefreshToken");
+  sessionStorage.removeItem("vm_portal_preview_token");
+  if (params.has("logout")) {
+    localStorage.removeItem("lumaPendingClientEmail");
+  }
 }
 
 function clientAuthHeaders(extra = {}) {
