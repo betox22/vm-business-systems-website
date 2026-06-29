@@ -10189,21 +10189,8 @@ function persistPendingStudioAccountAction(action) {
 
 function continueWithStudioAuth(provider) {
   persistPendingStudioAccountAction(provider);
-  const configured = provider === "google" ? window.LUMA_GOOGLE_AUTH_URL : window.LUMA_APPLE_AUTH_URL;
-  if (!configured) {
-    if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
-    if (studioAuthEmail) studioAuthEmail.focus();
-    if (storageStatus) {
-      storageStatus.textContent = langText({
-        en: "Google and Apple sign-in will be connected later. Continue with email for now.",
-        es: "Google y Apple se conectan luego. Continúa con email por ahora.",
-        fr: "Google et Apple seront connectés plus tard. Continuez avec email pour l'instant.",
-        pt: "Google e Apple serão conectados depois. Continue com email por enquanto.",
-      });
-    }
-    return;
-  }
   const returnTo = encodeURIComponent(window.location.href);
+  const configured = provider === "google" ? window.LUMA_GOOGLE_AUTH_URL : window.LUMA_APPLE_AUTH_URL;
   const fallback = `${API_BASE_URL}/api/client/auth/oauth/${encodeURIComponent(provider)}?return_to=${returnTo}`;
   window.location.href = configured || fallback;
 }
