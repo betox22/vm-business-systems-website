@@ -2199,6 +2199,9 @@ function initClientIntakeSessionGate() {
   openStudioAuthGate("start");
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+  if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
+  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = isPublicClientSetup;
+  if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
   if (studioAuthEmail) {
     studioAuthEmail.value = guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
     setTimeout(() => studioAuthEmail.focus(), 80);
@@ -2253,6 +2256,9 @@ function lockClientWorkspace(reason = "idle") {
   openStudioAuthGate("start");
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+  if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
+  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = isPublicClientSetup;
+  if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
   if (guidedStatusText) {
     guidedStatusText.textContent = reason === "idle"
       ? langText({
@@ -2347,6 +2353,9 @@ function switchClientAccount() {
   openStudioAuthGate("start");
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+  if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
+  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = isPublicClientSetup;
+  if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
   if (studioAuthEmail) {
     studioAuthEmail.value = "";
     studioAuthEmail.focus();
@@ -10401,6 +10410,13 @@ function openStudioAuthGate(action = "continue") {
   document.body.classList.add("studio-auth-open");
   if (isPublicClientSetup && action === "start") {
     document.body.classList.add("client-auth-required");
+  }
+  if (isPublicClientSetup) {
+    if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+    if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
+    if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = true;
+    if (studioAppleAuthButton) studioAppleAuthButton.hidden = true;
+    if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   }
   setAssistantState("success");
 }
