@@ -28,6 +28,7 @@ const LANGUAGE_NAMES = {
 const GUIDED_DRAFT_STORAGE_KEY = "lumaGuidedDraft";
 const GENERATED_SITE_STORAGE_KEY = "lumaGeneratedSite";
 const CLIENT_INTAKE_SESSION_STORAGE_KEY = "lumaClientIntakeSession";
+const CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY = "lumaClientWorkspaceUnlocked";
 
 function adminHeaders(extra = {}) {
   const token = localStorage.getItem("lumaAdminToken") || "";
@@ -2148,6 +2149,11 @@ function languageToSpeechLocale(language) {
 
 function initGuidedIntake() {
   importQuickFormToGuidedState();
+  if (isPublicClientSetup && !isClientWorkspaceUnlocked()) {
+    renderGuidedSummary();
+    resetAssistantConversation();
+    return;
+  }
   restoreGuidedDraft();
   applyPromptFromQuery();
   restoreGeneratedSite();
@@ -2157,6 +2163,24 @@ function initGuidedIntake() {
 
 function initClientIntakeSessionGate() {
   if (!isPublicClientSetup) return;
+  if (!isClientWorkspaceUnlocked()) {
+    openStudioAuthGate("start");
+    if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
+    if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+    if (studioAuthEmail) {
+      studioAuthEmail.value = guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
+      setTimeout(() => studioAuthEmail.focus(), 80);
+    }
+    if (guidedStatusText) {
+      guidedStatusText.textContent = langText({
+        en: "Sign in first so Dixie can protect and save this workspace.",
+        es: "Inicia sesión primero para que Dixie proteja y guarde este espacio.",
+        fr: "Connectez-vous d'abord pour que Dixie protège et sauvegarde cet espace.",
+        pt: "Entre primeiro para a Dixie proteger e salvar este espaço.",
+      });
+    }
+    return;
+  }
   const stored = readClientIntakeSession();
   if (stored?.clientEmail) {
     clientIntakeSession = stored;
@@ -2183,6 +2207,14 @@ function initClientIntakeSessionGate() {
       pt: "Crie ou recupere seu espaço primeiro para a Dixie salvar cada resposta.",
     });
   }
+}
+
+function isClientWorkspaceUnlocked() {
+  return sessionStorage.getItem(CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY) === "1";
+}
+
+function markClientWorkspaceUnlocked() {
+  sessionStorage.setItem(CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY, "1");
 }
 
 function readClientIntakeSession() {
@@ -2257,6 +2289,7 @@ function switchClientAccount() {
   localStorage.removeItem("lumaPendingClientEmail");
   sessionStorage.removeItem("lumaClientAccessToken");
   sessionStorage.removeItem("lumaClientRefreshToken");
+  sessionStorage.removeItem(CLIENT_WORKSPACE_UNLOCK_STORAGE_KEY);
   renderClientAccountControl();
   openStudioAuthGate("start");
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
@@ -2321,6 +2354,7 @@ async function resumeClientSessionFromAuthToken() {
             pt: "Sessão conectada. Dixie salvará cada resposta.",
           });
     }
+    markClientWorkspaceUnlocked();
     closeStudioAuthGate();
     return session;
   } catch (error) {
@@ -2727,6 +2761,7 @@ function captureStudioAuthRedirect() {
   if (!accessToken) return;
   localStorage.setItem("lumaClientAccessToken", accessToken);
   if (refreshToken) localStorage.setItem("lumaClientRefreshToken", refreshToken);
+  markClientWorkspaceUnlocked();
   restorePendingStudioAfterAuth();
   if (isPublicClientSetup) {
     setTimeout(() => resumeClientSessionFromAuthToken(), 0);
@@ -10269,11 +10304,11 @@ function requireStudioAccount(event, action, callback) {
 }
 
 function hasStudioAccountSession() {
+  if (isPublicClientSetup && !isClientWorkspaceUnlocked()) return false;
   return Boolean(
-    clientIntakeSession?.clientEmail ||
-    readClientIntakeSession()?.clientEmail ||
     localStorage.getItem("lumaClientAccessToken") ||
     sessionStorage.getItem("lumaClientAccessToken") ||
+    clientIntakeSession?.clientEmail ||
     localStorage.getItem("vm_portal_preview_token") ||
     sessionStorage.getItem("vm_portal_preview_token"),
   );
@@ -10368,6 +10403,7 @@ async function continueWithEmailAuth(event) {
             pt: "Espaço criado. Dixie salvará cada resposta.",
           });
     }
+    markClientWorkspaceUnlocked();
     closeStudioAuthGate();
     const pendingAction = localStorage.getItem("lumaPendingAuthAction") || "";
     if (pendingAction === "generate") {
