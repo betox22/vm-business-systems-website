@@ -1423,9 +1423,12 @@ function hasEnoughContextForTemplatePreview() {
   const offerItems = meaningfulOfferItems(guidedState.servicesProducts);
   const services = offerItems.join(" ");
   const commerceSignal = normalizeTemplateIntentText(`${intent} ${description} ${services}`);
-  const hasIntent = intent.length >= 6 || /tienda|store|shop|marketplace|catalogo|servicio|service|reserva|booking|restaurante|restaurant|pagina|website|landing/.test(commerceSignal);
-  const hasOffer = offerItems.length > 0 || description.length >= 18 || textSuggestsBroadMarketplace(commerceSignal) || textSuggestsFocusedProductLine(commerceSignal);
-  return Boolean(hasIntent && hasOffer);
+  const hasIntent = /tienda|store|shop|marketplace|catalogo|servicio|service|reserva|booking|restaurante|restaurant|pagina|website|landing|amazon|ebay/.test(commerceSignal);
+  const hasConcreteOffer = offerItems.length >= 2
+    || description.length >= 70
+    || textSuggestsBroadMarketplace(commerceSignal)
+    || textSuggestsFocusedProductLine(commerceSignal);
+  return Boolean(hasIntent && hasConcreteOffer);
 }
 
 function meaningfulOfferItems(value) {
@@ -1436,26 +1439,36 @@ function meaningfulOfferItems(value) {
 
 function renderNeutralLiveWorkspace() {
   const offerItems = meaningfulOfferItems(guidedState.servicesProducts);
+  const hasInitialGoal = Boolean(guidedState.websiteIntent);
+  const hasOffer = offerItems.length > 0 || Boolean(guidedState.businessDescription);
+  const hasDirection = hasInitialGoal && hasOffer;
   const steps = [
     {
-      title: langText({ en: "Business goal", es: "Objetivo del negocio", fr: "Objectif business", pt: "Objetivo do negocio" }),
-      text: guidedState.websiteIntent || langText({ en: "Waiting for what you want to create", es: "Esperando que quieres crear", fr: "En attente du type de site", pt: "Esperando o que voce quer criar" }),
-      active: Boolean(guidedState.websiteIntent),
+      title: langText({ en: "Business model", es: "Modelo del negocio", fr: "Modele business", pt: "Modelo do negocio" }),
+      text: guidedState.websiteIntent || langText({ en: "Website, store, marketplace, catalog, booking, leads or company site", es: "Web, tienda, marketplace, catalogo, reservas, captacion o empresa", fr: "Site, boutique, marketplace, catalogue, reservation, leads ou entreprise", pt: "Site, loja, marketplace, catalogo, reservas, leads ou empresa" }),
+      active: hasInitialGoal,
     },
     {
-      title: langText({ en: "Offer / catalog", es: "Oferta / catalogo", fr: "Offre / catalogue", pt: "Oferta / catalogo" }),
-      text: offerItems.join(", ") || guidedState.businessDescription || langText({ en: "No template selected yet", es: "Aun no hay template elegido", fr: "Pas encore de template", pt: "Ainda sem template escolhido" }),
-      active: offerItems.length > 0 || Boolean(guidedState.businessDescription),
+      title: langText({ en: "Offer intelligence", es: "Inteligencia de oferta", fr: "Intelligence de l'offre", pt: "Inteligencia da oferta" }),
+      text: offerItems.join(", ") || guidedState.businessDescription || langText({ en: "LYRA is waiting for product, service or catalog context", es: "LYRA espera contexto de productos, servicios o catalogo", fr: "LYRA attend le contexte des produits, services ou catalogue", pt: "LYRA aguarda contexto de produtos, servicos ou catalogo" }),
+      active: hasOffer,
     },
     {
-      title: langText({ en: "Visual base", es: "Base visual", fr: "Base visuelle", pt: "Base visual" }),
-      text: langText({
-        en: "The visual system is selected after the offer, audience and sales path are clear.",
-        es: "El sistema visual se selecciona cuando la oferta, el publico y el flujo de venta esten claros.",
-        fr: "Le systeme visuel est choisi lorsque l'offre, l'audience et le parcours de vente sont clairs.",
-        pt: "O sistema visual e escolhido quando oferta, publico e fluxo de venda ficam claros.",
-      }),
-      active: false,
+      title: langText({ en: "Template decision", es: "Decision de plantilla", fr: "Decision template", pt: "Decisao de template" }),
+      text: hasDirection
+        ? langText({
+            en: "KREATON will match the request against the template library before showing a draft.",
+            es: "KREATON cruzara la solicitud con la biblioteca de plantillas antes de mostrar un borrador.",
+            fr: "KREATON compare la demande avec la bibliotheque de templates avant d'afficher un brouillon.",
+            pt: "KREATON compara o pedido com a biblioteca de templates antes de mostrar um rascunho.",
+          })
+        : langText({
+            en: "No random preview. The visual base appears only when the business context is clear.",
+            es: "Sin preview random. La base visual aparece solo cuando el contexto del negocio esta claro.",
+            fr: "Pas de preview aleatoire. La base visuelle apparait quand le contexte est clair.",
+            pt: "Sem preview aleatorio. A base visual aparece quando o contexto fica claro.",
+          }),
+      active: hasDirection,
     },
   ];
   return `
@@ -1464,13 +1477,13 @@ function renderNeutralLiveWorkspace() {
         <span></span><span></span><span></span>
       </div>
       <section class="neutral-live-copy">
-        <span>${escapeHtml(langText({ en: "Strategy workspace", es: "Workspace de estrategia", fr: "Espace strategie", pt: "Workspace de estrategia" }))}</span>
-        <h2>${escapeHtml(langText({ en: "Define the business model first", es: "Primero definimos el modelo del negocio", fr: "Definir d'abord le modele business", pt: "Primeiro definimos o modelo do negocio" }))}</h2>
+        <span>${escapeHtml(langText({ en: "KREATON AI Studio", es: "KREATON AI Studio", fr: "KREATON AI Studio", pt: "KREATON AI Studio" }))}</span>
+        <h2>${escapeHtml(langText({ en: "LYRA is mapping the business before designing", es: "LYRA esta entendiendo el negocio antes de diseñar", fr: "LYRA cartographie le business avant de designer", pt: "LYRA mapeia o negocio antes de desenhar" }))}</h2>
         <p>${escapeHtml(langText({
-          en: "Answer in plain language. The system will translate your goal into the right website type, template family, catalog structure and conversion flow.",
-          es: "Responde en lenguaje natural. El sistema convierte tu objetivo en tipo de pagina, familia de plantilla, estructura de catalogo y flujo de conversion.",
-          fr: "Repondez naturellement. Le systeme transforme votre objectif en type de site, famille de template, structure catalogue et parcours de conversion.",
-          pt: "Responda em linguagem natural. O sistema transforma seu objetivo em tipo de site, familia de template, catalogo e fluxo de conversao.",
+          en: "Describe the business naturally. LYRA extracts the model, catalog depth, audience, style and sales flow, then chooses the right template family.",
+          es: "Describe el negocio de forma natural. LYRA extrae modelo, profundidad de catalogo, publico, estilo y flujo de venta, luego elige la familia de plantilla correcta.",
+          fr: "Decrivez l'activite naturellement. LYRA extrait le modele, le catalogue, l'audience, le style et le parcours de vente, puis choisit la bonne famille de template.",
+          pt: "Descreva o negocio naturalmente. LYRA extrai modelo, profundidade do catalogo, publico, estilo e venda, depois escolhe a familia de template correta.",
         }))}</p>
       </section>
       <div class="neutral-live-steps">
@@ -1681,7 +1694,7 @@ function normalizeTemplateIntentText(value) {
 
 function textSuggestsBroadMarketplace(value) {
   const text = normalizeTemplateIntentText(value);
-  return /\b(de todo|todo tipo|variedad|variado|variados|productos variados|catalogo grande|catalogo variado|muchos productos|muchas categorias|multi categoria|cosas raras|cosas inusuales|inusual|unusual|nada comun|poco comun|dificil de encontrar|curiosidades|gadgets|anime|juguetes)\b/.test(text)
+  return /\b(amazon|tipo amazon|como amazon|mega tienda|mega store|de todo|todo tipo|variedad|variado|variados|productos variados|catalogo grande|catalogo variado|muchos productos|muchas categorias|multi categoria|cosas raras|cosas inusuales|inusual|unusual|nada comun|poco comun|dificil de encontrar|curiosidades|gadgets|anime|juguetes)\b/.test(text)
     || /(ropa|accesorios).*(carros|autos|juguetes|anime|gadgets)/.test(text)
     || /(carros|autos|juguetes|anime|gadgets).*(ropa|accesorios)/.test(text);
 }
@@ -5328,7 +5341,7 @@ function extractLocation(text) {
 function extractServicesProducts(text) {
   if (isGenericCommerceIntent(text)) return [];
   const patterns = [
-    /(?:productos?|servicios?|vende\b|vendo\b|vendemos\b|ofrece\b|ofrecemos\b|catalogo|cat[aá]logo)\s*(?:son|es|:|-)?\s*([^.;\n]+)/i,
+    /(?:productos?|servicios?|vende\b|vender\b|vendo\b|vendemos\b|venta de|ofrece\b|ofrecemos\b|catalogo|cat[aá]logo)\s*(?:son|es|:|-)?\s*([^.;\n]+)/i,
     /(?:tienda|negocio|marca|empresa)\s+de\s+([^.;\n]+)/i,
     /(?:pagina|p[aá]gina|web|site)\s+de\s+([^.;\n]+)/i,
     /(?:products?|services?|sells|offers|catalog)\s*(?:are|is|:|-)?\s*([^.;\n]+)/i,
@@ -5342,6 +5355,26 @@ function extractServicesProducts(text) {
         .filter((item) => item.length > 1 && meaningfulOfferItems([item]).length > 0)
         .slice(0, 8);
     }
+  }
+  if (textSuggestsBroadMarketplace(text)) {
+    const candidates = [
+      ["ropa", "fashion"],
+      ["accesorios", "accessories"],
+      ["carros", "auto accessories"],
+      ["automotive", "auto accessories"],
+      ["regalos", "gifts"],
+      ["hogar", "home goods"],
+      ["juguetes", "toys"],
+      ["anime", "anime collectibles"],
+      ["gadgets", "gadgets"],
+      ["cosas raras", "rare finds"],
+      ["inusual", "unusual products"],
+      ["unusual", "unusual products"],
+    ];
+    const inferred = candidates
+      .filter(([needle]) => normalizeTemplateIntentText(text).includes(needle))
+      .map(([, label]) => label);
+    return [...new Set(inferred)].slice(0, 8);
   }
   return [];
 }
