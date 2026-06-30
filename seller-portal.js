@@ -31,7 +31,7 @@ function resolveApiBase() {
   const saved = localStorage.getItem("lumaApiBaseUrl");
   if (saved) return saved.replace(/\/$/, "");
   if (["localhost", "127.0.0.1"].includes(window.location.hostname)) return "http://127.0.0.1:8010";
-  return "https://luma-api.vmbusinesssystems.com";
+  return "https://kreaton-lyra-api.onrender.com";
 }
 
 function apiUrl(path) {
