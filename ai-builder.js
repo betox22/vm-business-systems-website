@@ -9093,21 +9093,21 @@ function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
         {
           id: "category_rail",
           type: "CategoryRail",
-          order: 2,
+          order: 3,
           editable: { title: copy.shopByCategory, text: copy.categoryRailText },
           settings: { layout: "category_tiles", spacing: "compact", container_width: "wide" },
         },
         {
           id: "deal_row",
           type: "DealRow",
-          order: 3,
+          order: 4,
           editable: { title: copy.todayDeals, text: copy.dealsText },
           settings: { layout: "deal_row", spacing: "compact", container_width: "wide" },
         },
         {
           id: "marketplace_catalog",
           type: "ProductGrid",
-          order: 4,
+          order: 2,
           editable: { title: copy.bestSellers, text: copy.catalogText, images: [] },
           settings: { layout: "marketplace_grid", columns: 4, spacing: "balanced", container_width: "wide", card_density: "compact", card_gap: "tight" },
         },
@@ -13326,6 +13326,13 @@ function renderMarketplaceHero(section, schema) {
   const items = marketplaceItems(schema);
   const labels = catalogLocaleLabels(schema);
   const topItems = items.slice(0, 4);
+  const categories = marketplaceCategories(schema);
+  const heroProducts = topItems.map((item, index) => `<article class="marketplace-hero-product-card">
+        ${renderResilientImage(item.image_url, item.name, item.name)}
+        <small>${escapeHtml(index % 2 ? labels.fastShip : labels.deal)}</small>
+        <strong>${escapeHtml(item.name)}</strong>
+        <span>${escapeHtml(productPriceLabel(item))}</span>
+      </article>`).join("");
   return `<section class="marketplace-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="marketplace-search-panel">
       <div class="marketplace-logo-row">
@@ -13337,22 +13344,29 @@ function renderMarketplaceHero(section, schema) {
         <input value="" placeholder="${escapeAttribute(editable.search_placeholder || labels.searchPlaceholder)}" readonly>
         <button type="button">${escapeHtml(labels.searchButton)}</button>
       </label>
-      <div class="marketplace-chip-row">${marketplaceCategories(schema).slice(0, 6).map((category) => `<span>${escapeHtml(category)}</span>`).join("")}</div>
+      <div class="marketplace-chip-row">${categories.slice(0, 6).map((category) => `<span>${escapeHtml(category)}</span>`).join("")}</div>
     </div>
-    <div class="marketplace-deal-hero">
-      <div>
+    <div class="marketplace-deal-hero marketplace-commerce-home">
+      <div class="marketplace-hero-copy">
         <small>${escapeHtml(editable.deal_badge || labels.deal)}</small>
         <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
         <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+        <div class="marketplace-mini-stat-row">
+          <span>${escapeHtml(labels.secureCheckout)}</span>
+          <span>${escapeHtml(labels.fastShip)}</span>
+          <span>${escapeHtml(labels.support)}</span>
+        </div>
         <div class="rendered-actions">
           <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || labels.shopNow)}</a>
           <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.categories)}</a>
         </div>
       </div>
-      <aside>
-        <b>${escapeHtml(editable.deal_title || labels.dealTitle)}</b>
-        <p>${escapeHtml(editable.deal_text || labels.dealText)}</p>
-        <div>${topItems.map((item) => `<span>${escapeHtml(item.name)}</span>`).join("")}</div>
+      <aside class="marketplace-hero-products-panel">
+        <div class="marketplace-hero-products-head">
+          <b>${escapeHtml(editable.deal_title || labels.dealTitle)}</b>
+          <span>${escapeHtml(labels.sortBy)}: ${escapeHtml(labels.featured)}</span>
+        </div>
+        <div class="marketplace-hero-products">${heroProducts}</div>
       </aside>
     </div>
   </section>`;
