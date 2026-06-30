@@ -1647,10 +1647,10 @@ function livePreviewTemplateProfile() {
 }
 
 function inferLivePreviewTemplateId() {
-  const aiSelectedTemplateId = resolvedAiTemplateId();
-  if (aiSelectedTemplateId) return aiSelectedTemplateId;
   const text = guidedTemplateContextText();
   if (textSuggestsBroadMarketplace(text)) return "mega-marketplace";
+  const aiSelectedTemplateId = resolvedAiTemplateId();
+  if (aiSelectedTemplateId) return aiSelectedTemplateId;
   const inferred = inferTemplateIdFromText(text);
   if (inferred) return inferred;
   if (forcedTemplateSelection?.templateId) return forcedTemplateSelection.templateId;
@@ -3336,7 +3336,9 @@ function localizedTemplateDescription(choice) {
 function buildAiStudioPlanFromGuidedState(extra = "") {
   const contextText = guidedTemplateContextText(extra);
   const payload = guidedStatePayloadForPlanning();
-  const templateId = inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(contextText) || forcedTemplateSelection?.templateId || "";
+  const templateId = textSuggestsBroadMarketplace(contextText)
+    ? "mega-marketplace"
+    : inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(contextText) || forcedTemplateSelection?.templateId || "";
   const templateMeta = templatePreviewMeta(templateId);
   const catalogType = templateMeta?.catalogType || forcedTemplateSelection?.catalogType || "";
   const websiteType = inferWebsiteTypeFromContext(contextText, catalogType);
@@ -3416,7 +3418,7 @@ function inferWebsiteTypeFromContext(contextText, catalogType = "") {
   const text = normalizeTemplateIntentText(`${contextText} ${catalogType}`);
   if (/restaurant|restaurante|menu|comida|food|cafe|delivery/.test(text)) return "restaurant_menu";
   if (/booking|appointment|reserva|cita|barber|salon|spa/.test(text)) return "booking_site";
-  if (/dense|marketplace|amazon|de todo|todo tipo|variado|muchos productos|catalogo grande/.test(text)) return "mega_marketplace";
+  if (textSuggestsBroadMarketplace(text) || /dense|marketplace|amazon|de todo|todo tipo|variad[oa]s?|muchos productos|catalogo grande|multi.?category|multi.?categoria/.test(text)) return "mega_marketplace";
   if (/listing|classified|real estate|inmueble|rental|alquiler|carros usados/.test(text)) return "listing_marketplace";
   if (/digital|download|curso|course|ebook|membership|membresia/.test(text)) return "digital_products";
   if (/quote|cotizacion|cotización|service|servicio|contractor|legal|clinic|industrial/.test(text)) return "service_or_quote_site";
