@@ -58,10 +58,10 @@ const I18N = {
   en: {
     languageLabel: "Website language",
     quickForm: "Quick Form",
-    guidedSetup: "Let Dixie help me",
+    guidedSetup: "Let LYRA help me",
     assistantSubtitle: "AI website assistant",
     onlineStatus: "Online",
-    assistantIntro: "Hi, I’m Dixie. I’ll help you create your website or store step by step. You can type or use your voice.",
+    assistantIntro: "Hi, I’m LYRA. I’ll help you create your website or store step by step. You can type or use your voice.",
     intentDetected: "Great. I detected this direction:",
     selectedTemplate: "Selected template",
     catalogType: "Catalog type",
@@ -69,10 +69,10 @@ const I18N = {
     livePreviewKicker: "Build workspace",
     livePreviewTitle: "Business model and site architecture",
     livePreviewText: "Your answers define the template family, catalog logic, page structure and conversion path before the editable draft is generated.",
-    finalReviewTitle: "Dixie's build plan",
+    finalReviewTitle: "LYRA's build plan",
     generateMyWebsite: "Generate my website",
     keepChatting: "Keep chatting",
-    thinking: "Dixie is thinking...",
+    thinking: "LYRA is thinking...",
     startNewProject: "New page",
     startNewProjectConfirm: "Start a new page? This clears the current client draft from this browser.",
     micButton: "Use voice",
@@ -81,7 +81,7 @@ const I18N = {
     voiceUnsupported: "Voice input is not supported in this browser.",
     voiceListening: "Listening... speak now.",
     voiceReady: "Voice transcript ready. Review it and press Send.",
-    summaryHelper: "Dixie turns your answers into a template-backed, editable website plan before generating.",
+    summaryHelper: "LYRA turns your answers into a template-backed, editable website plan before generating.",
     editDetails: "Edit details",
     reviewDetails: "Review details",
     selectedLanguage: "Selected language",
@@ -105,7 +105,7 @@ const I18N = {
     photoUrls: "Photo URLs optional",
     uploadPhotos: "Upload photos optional",
     assetPromptTitle: "Logo and photos",
-    assetPromptText: "Upload them here and Dixie can use them for the draft.",
+    assetPromptText: "Upload them here and LYRA can use them for the draft.",
     salesMode: "Sales flow",
     hasLogoPhotos: "Logo/photos",
     websiteIntent: "Website type",
@@ -129,22 +129,22 @@ const I18N = {
     salesModePlaceholder: "online sales, quotes, or both",
     accountGateKicker: "Protected workspace",
     accountGateTitle: "Start by saving your progress",
-    accountGateText: "Use email so Dixie can save every answer, restore drafts, and keep you from repeating the same information.",
+    accountGateText: "Use email so LYRA can save every answer, restore drafts, and keep you from repeating the same information.",
     continueGoogle: "Continue with Google",
     continueApple: "Continue with Apple",
     continueEmail: "Continue with email",
     saveEmailContinue: "Enter my workspace",
     continueDemo: "Keep viewing demo",
-    sendingAssistant: "Dixie is reviewing your answer...",
+    sendingAssistant: "LYRA is reviewing your answer...",
     summaryUpdated: "Details updated.",
-    devFallbackMissingKey: "Luma is using a simplified response while the AI service finishes connecting.",
+    devFallbackMissingKey: "LYRA is using a simplified response while the AI service finishes connecting.",
     localFallback: "Answer saved. Continuing with the setup.",
     localFallbackMessage: "Got it. I saved that detail and will keep going.",
     savingRequest: "Saving completed intake as client_request...",
     requestNotSaved: "Saved in this browser session. You can still generate your website draft.",
     generatedOpenAI: "Generated with OpenAI through the backend.",
     generating: "Generating...",
-    generatingLong: "Dixie is designing your website. This can take about a minute.",
+    generatingLong: "LYRA is designing your website. This can take about a minute.",
     generateError: "Could not generate",
     reviewStep: "Review",
     step: "Step",
@@ -160,10 +160,10 @@ const I18N = {
   es: {
     languageLabel: "Idioma del sitio",
     quickForm: "Formulario rapido",
-    guidedSetup: "Que Dixie me ayude",
+    guidedSetup: "Que LYRA me ayude",
     assistantSubtitle: "Asistente web con IA",
     onlineStatus: "En linea",
-    assistantIntro: "Hola, soy Dixie. Te ayudare a crear tu pagina o tienda paso a paso. Puedes escribir o usar tu voz.",
+    assistantIntro: "Hola, soy LYRA. Te ayudare a crear tu pagina o tienda paso a paso. Puedes escribir o usar tu voz.",
     intentDetected: "Perfecto. Detecte esta direccion:",
     selectedTemplate: "Template seleccionado",
     catalogType: "Tipo de catalogo",
@@ -171,10 +171,10 @@ const I18N = {
     livePreviewKicker: "Workspace de construccion",
     livePreviewTitle: "Modelo de negocio y arquitectura del sitio",
     livePreviewText: "Tus respuestas definen la familia de plantilla, logica de catalogo, estructura de paginas y flujo de conversion antes de generar el borrador editable.",
-    finalReviewTitle: "Plan de construccion de Dixie",
+    finalReviewTitle: "Plan de construccion de LYRA",
     generateMyWebsite: "Generar mi pagina",
     keepChatting: "Seguir conversando",
-    thinking: "Dixie esta pensando...",
+    thinking: "LYRA esta pensando...",
     startNewProject: "Nueva página",
     startNewProjectConfirm: "¿Iniciar una página nueva? Esto borra el borrador actual de este navegador.",
     micButton: "Usar voz",
@@ -183,7 +183,7 @@ const I18N = {
     voiceUnsupported: "La entrada por voz no esta disponible en este navegador.",
     voiceListening: "Escuchando... habla ahora.",
     voiceReady: "Transcripcion lista. Revisala y presiona Enviar.",
-    summaryHelper: "Dixie convierte tus respuestas en un plan editable basado en templates antes de generar.",
+    summaryHelper: "LYRA convierte tus respuestas en un plan editable basado en templates antes de generar.",
     editDetails: "Editar detalles",
     reviewDetails: "Revisar resumen",
     selectedLanguage: "Idioma seleccionado",
@@ -207,7 +207,7 @@ const I18N = {
     photoUrls: "URLs de fotos opcionales",
     uploadPhotos: "Subir fotos opcional",
     assetPromptTitle: "Logo y fotos",
-    assetPromptText: "Súbelos aquí y Dixie los usará para diseñar la primera versión.",
+    assetPromptText: "Súbelos aquí y LYRA los usará para diseñar la primera versión.",
     salesMode: "Flujo de venta",
     hasLogoPhotos: "Logo/fotos",
     websiteIntent: "Tipo de sitio",
@@ -231,22 +231,22 @@ const I18N = {
     salesModePlaceholder: "ventas online, cotizaciones, o ambos",
     accountGateKicker: "Workspace protegido",
     accountGateTitle: "Empieza guardando tu progreso",
-    accountGateText: "Usa email para que Dixie guarde cada respuesta, recupere tus borradores y no tengas que repetir la misma información.",
+    accountGateText: "Usa email para que LYRA guarde cada respuesta, recupere tus borradores y no tengas que repetir la misma información.",
     continueGoogle: "Continuar con Google",
     continueApple: "Continuar con Apple",
     continueEmail: "Continuar con email",
     saveEmailContinue: "Entrar a mi workspace",
     continueDemo: "Seguir viendo demo",
-    sendingAssistant: "Dixie esta revisando tu respuesta...",
+    sendingAssistant: "LYRA esta revisando tu respuesta...",
     summaryUpdated: "Detalles actualizados.",
-    devFallbackMissingKey: "Luma está usando una respuesta simplificada mientras el servicio de IA termina de conectar.",
+    devFallbackMissingKey: "LYRA está usando una respuesta simplificada mientras el servicio de IA termina de conectar.",
     localFallback: "Respuesta guardada. Seguimos con la configuración.",
     localFallbackMessage: "Listo. Guardé ese detalle y seguimos avanzando.",
     savingRequest: "Guardando intake completado como client_request...",
     requestNotSaved: "Guardado en esta sesión del navegador. Igual puedes generar tu primera versión.",
     generatedOpenAI: "Generado con OpenAI desde el backend.",
     generating: "Generando...",
-    generatingLong: "Dixie esta disenando tu pagina. Esto puede tardar cerca de un minuto.",
+    generatingLong: "LYRA esta disenando tu pagina. Esto puede tardar cerca de un minuto.",
     generateError: "No se pudo generar",
     reviewStep: "Revision",
     step: "Paso",
@@ -262,10 +262,10 @@ const I18N = {
   fr: {
     languageLabel: "Langue du site",
     quickForm: "Formulaire rapide",
-    guidedSetup: "Luma m'accompagne",
+    guidedSetup: "LYRA m'accompagne",
     assistantSubtitle: "Assistant de création de site",
     onlineStatus: "En ligne",
-    assistantIntro: "Bonjour, je suis Luma. Je vais vous aider à créer votre site ou boutique étape par étape. Vous pouvez écrire ou utiliser votre voix.",
+    assistantIntro: "Bonjour, je suis LYRA. Je vais vous aider à créer votre site ou boutique étape par étape. Vous pouvez écrire ou utiliser votre voix.",
     intentDetected: "Très bien. J'ai détecté cette direction :",
     selectedTemplate: "Template sélectionné",
     catalogType: "Type de catalogue",
@@ -273,10 +273,10 @@ const I18N = {
     livePreviewKicker: "Workspace de creation",
     livePreviewTitle: "Modele business et architecture du site",
     livePreviewText: "Vos reponses definissent la famille de template, la logique catalogue, la structure des pages et le parcours de conversion.",
-    finalReviewTitle: "Plan de creation de Luma",
+    finalReviewTitle: "Plan de creation de LYRA",
     generateMyWebsite: "Générer mon site",
     keepChatting: "Continuer la discussion",
-    thinking: "Luma réfléchit...",
+    thinking: "LYRA réfléchit...",
     startNewProject: "Nouvelle page",
     startNewProjectConfirm: "Commencer une nouvelle page ? Cela efface le brouillon actuel de ce navigateur.",
     micButton: "Utiliser la voix",
@@ -285,7 +285,7 @@ const I18N = {
     voiceUnsupported: "La saisie vocale n'est pas prise en charge dans ce navigateur.",
     voiceListening: "Écoute en cours... parlez maintenant.",
     voiceReady: "Transcription prête. Vérifiez-la puis appuyez sur Envoyer.",
-    summaryHelper: "Luma transforme vos reponses en plan modifiable base sur un template avant la generation.",
+    summaryHelper: "LYRA transforme vos reponses en plan modifiable base sur un template avant la generation.",
     editDetails: "Modifier les details",
     reviewDetails: "Vérifier les détails",
     selectedLanguage: "Langue sélectionnée",
@@ -309,7 +309,7 @@ const I18N = {
     photoUrls: "URLs de photos optionnelles",
     uploadPhotos: "Importer des photos optionnelles",
     assetPromptTitle: "Logo et photos",
-    assetPromptText: "Importez-les ici et Luma les utilisera pour le brouillon.",
+    assetPromptText: "Importez-les ici et LYRA les utilisera pour le brouillon.",
     salesMode: "Parcours de vente",
     hasLogoPhotos: "Logo/photos",
     websiteIntent: "Type de site",
@@ -333,22 +333,22 @@ const I18N = {
     salesModePlaceholder: "vente en ligne, devis, ou les deux",
     accountGateKicker: "Espace protégé",
     accountGateTitle: "Commencez en sauvegardant votre progression",
-    accountGateText: "Utilisez l'email pour que Dixie sauvegarde chaque réponse, retrouve vos brouillons et évite de répéter les mêmes informations.",
+    accountGateText: "Utilisez l'email pour que LYRA sauvegarde chaque réponse, retrouve vos brouillons et évite de répéter les mêmes informations.",
     continueGoogle: "Continuer avec Google",
     continueApple: "Continuer avec Apple",
     continueEmail: "Continuer avec email",
     saveEmailContinue: "Entrer dans mon espace",
     continueDemo: "Continuer la démo",
-    sendingAssistant: "Luma analyse votre réponse...",
+    sendingAssistant: "LYRA analyse votre réponse...",
     summaryUpdated: "Détails mis à jour.",
-    devFallbackMissingKey: "Luma utilise une réponse simplifiée pendant que le service IA se connecte.",
+    devFallbackMissingKey: "LYRA utilise une réponse simplifiée pendant que le service IA se connecte.",
     localFallback: "Réponse enregistrée. Nous continuons la configuration.",
     localFallbackMessage: "J'ai enregistré votre réponse et nous continuons.",
     savingRequest: "Enregistrement de l'intake comme client_request...",
     requestNotSaved: "Enregistré dans cette session. Vous pouvez quand même générer le brouillon.",
     generatedOpenAI: "Généré avec OpenAI via le backend.",
     generating: "Génération...",
-    generatingLong: "Luma conçoit votre site. Cela peut prendre environ une minute.",
+    generatingLong: "LYRA conçoit votre site. Cela peut prendre environ une minute.",
     generateError: "Impossible de générer",
     reviewStep: "Vérification",
     step: "Étape",
@@ -364,10 +364,10 @@ const I18N = {
   pt: {
     languageLabel: "Idioma do site",
     quickForm: "Formulario rapido",
-    guidedSetup: "Luma me ajuda",
+    guidedSetup: "LYRA me ajuda",
     assistantSubtitle: "Assistente de criação de sites",
     onlineStatus: "Online",
-    assistantIntro: "Olá, sou a Luma. Vou ajudar você a criar seu site ou loja passo a passo. Você pode digitar ou usar a voz.",
+    assistantIntro: "Olá, sou a LYRA. Vou ajudar você a criar seu site ou loja passo a passo. Você pode digitar ou usar a voz.",
     intentDetected: "Ótimo. Detectei esta direção:",
     selectedTemplate: "Template selecionado",
     catalogType: "Tipo de catálogo",
@@ -375,10 +375,10 @@ const I18N = {
     livePreviewKicker: "Workspace de criacao",
     livePreviewTitle: "Modelo de negocio e arquitetura do site",
     livePreviewText: "Suas respostas definem familia de template, logica de catalogo, estrutura de paginas e fluxo de conversao.",
-    finalReviewTitle: "Plano de construcao da Luma",
+    finalReviewTitle: "Plano de construcao da LYRA",
     generateMyWebsite: "Gerar meu site",
     keepChatting: "Continuar conversando",
-    thinking: "Luma está pensando...",
+    thinking: "LYRA está pensando...",
     startNewProject: "Nova página",
     startNewProjectConfirm: "Iniciar uma nova página? Isso limpa o rascunho atual deste navegador.",
     micButton: "Usar voz",
@@ -387,7 +387,7 @@ const I18N = {
     voiceUnsupported: "Entrada por voz não é compatível com este navegador.",
     voiceListening: "Ouvindo... fale agora.",
     voiceReady: "Transcrição pronta. Revise e pressione Enviar.",
-    summaryHelper: "A Luma transforma suas respostas em um plano editavel baseado em templates antes de gerar.",
+    summaryHelper: "A LYRA transforma suas respostas em um plano editavel baseado em templates antes de gerar.",
     editDetails: "Editar detalhes",
     reviewDetails: "Revisar resumo",
     selectedLanguage: "Idioma selecionado",
@@ -411,7 +411,7 @@ const I18N = {
     photoUrls: "URLs de fotos opcionais",
     uploadPhotos: "Enviar fotos opcionais",
     assetPromptTitle: "Logo e fotos",
-    assetPromptText: "Envie aqui e a Luma usará no primeiro rascunho.",
+    assetPromptText: "Envie aqui e a LYRA usará no primeiro rascunho.",
     salesMode: "Fluxo de venda",
     hasLogoPhotos: "Logo/fotos",
     websiteIntent: "Tipo de site",
@@ -435,22 +435,22 @@ const I18N = {
     salesModePlaceholder: "vendas online, orçamentos, ou ambos",
     accountGateKicker: "Workspace protegido",
     accountGateTitle: "Comece salvando seu progresso",
-    accountGateText: "Use email para a Dixie salvar cada resposta, recuperar seus rascunhos e evitar repetir as mesmas informações.",
+    accountGateText: "Use email para a LYRA salvar cada resposta, recuperar seus rascunhos e evitar repetir as mesmas informações.",
     continueGoogle: "Continuar com Google",
     continueApple: "Continuar com Apple",
     continueEmail: "Continuar com email",
     saveEmailContinue: "Entrar no meu workspace",
     continueDemo: "Continuar vendo demo",
-    sendingAssistant: "Luma está revisando sua resposta...",
+    sendingAssistant: "LYRA está revisando sua resposta...",
     summaryUpdated: "Detalhes atualizados.",
-    devFallbackMissingKey: "A Luma está usando uma resposta simplificada enquanto o serviço de IA termina de conectar.",
+    devFallbackMissingKey: "A LYRA está usando uma resposta simplificada enquanto o serviço de IA termina de conectar.",
     localFallback: "Resposta salva. Continuamos a configuração.",
     localFallbackMessage: "Salvei sua resposta e vamos continuar.",
     savingRequest: "Salvando intake concluído como client_request...",
     requestNotSaved: "Salvo nesta sessão. Você ainda pode gerar o rascunho do site.",
     generatedOpenAI: "Gerado com OpenAI pelo backend.",
     generating: "Gerando...",
-    generatingLong: "A Luma está criando seu site. Isso pode levar cerca de um minuto.",
+    generatingLong: "A LYRA está criando seu site. Isso pode levar cerca de um minuto.",
     generateError: "Não foi possível gerar",
     reviewStep: "Revisão",
     step: "Etapa",
@@ -1021,13 +1021,13 @@ function safeBootStep(label, callback) {
   try {
     callback();
   } catch (error) {
-    console.error(`Luma boot step failed: ${label}`, error);
+    console.error(`LYRA boot step failed: ${label}`, error);
     if (guidedStatusText) {
       guidedStatusText.textContent = langText({
-        en: "Luma loaded with a recoverable issue. You can keep answering.",
-        es: "Luma cargó con un problema recuperable. Puedes seguir respondiendo.",
-        fr: "Luma a chargé avec un problème récupérable. Vous pouvez continuer.",
-        pt: "A Luma carregou com um problema recuperável. Você pode continuar.",
+        en: "LYRA loaded with a recoverable issue. You can keep answering.",
+        es: "LYRA cargó con un problema recuperable. Puedes seguir respondiendo.",
+        fr: "LYRA a chargé avec un problème récupérable. Vous pouvez continuer.",
+        pt: "A LYRA carregou com um problema recuperável. Você pode continuar.",
       });
     }
   }
@@ -1256,10 +1256,10 @@ function guidedStage(step = guidedStep) {
       index: 1,
       title: langText({ en: "Define the business goal", es: "Definir el objetivo", fr: "Définir l'objectif", pt: "Definir o objetivo" }),
       body: langText({
-        en: "Start with the outcome. Luma will decide whether this should be a store, catalog, booking flow, lead page, company site or marketplace.",
-        es: "Empieza por el objetivo. Luma decide si conviene tienda, catalogo, reservas, captacion, pagina de empresa o marketplace.",
-        fr: "Commencez par l'objectif. Luma décide si le mieux est boutique, catalogue, réservation, leads, site d'entreprise ou marketplace.",
-        pt: "Comece pelo objetivo. A Luma decide se deve ser loja, catálogo, agendamento, captação, site empresarial ou marketplace.",
+        en: "Start with the outcome. LYRA will decide whether this should be a store, catalog, booking flow, lead page, company site or marketplace.",
+        es: "Empieza por el objetivo. LYRA decide si conviene tienda, catalogo, reservas, captacion, pagina de empresa o marketplace.",
+        fr: "Commencez par l'objectif. LYRA décide si le mieux est boutique, catalogue, réservation, leads, site d'entreprise ou marketplace.",
+        pt: "Comece pelo objetivo. A LYRA decide se deve ser loja, catálogo, agendamento, captação, site empresarial ou marketplace.",
       }),
       examples: [
         langText({ en: "Sell products online", es: "Vender productos online", fr: "Vendre en ligne", pt: "Vender online" }),
@@ -1273,10 +1273,10 @@ function guidedStage(step = guidedStep) {
       index: 2,
       title: langText({ en: "Understand the business", es: "Entender el negocio", fr: "Comprendre l'entreprise", pt: "Entender o negócio" }),
       body: langText({
-        en: "Give Luma the raw business details. One rich paragraph is enough; it will extract what matters.",
-        es: "Dale a Luma los datos reales del negocio. Un párrafo completo sirve; Luma extrae lo importante.",
-        fr: "Donnez les détails bruts. Un paragraphe riche suffit; Luma extrait l'essentiel.",
-        pt: "Dê os dados reais do negócio. Um parágrafo completo basta; a Luma extrai o essencial.",
+        en: "Give LYRA the raw business details. One rich paragraph is enough; it will extract what matters.",
+        es: "Dale a LYRA los datos reales del negocio. Un párrafo completo sirve; LYRA extrae lo importante.",
+        fr: "Donnez les détails bruts. Un paragraphe riche suffit; LYRA extrait l'essentiel.",
+        pt: "Dê os dados reais do negócio. Um parágrafo completo basta; a LYRA extrai o essencial.",
       }),
       examples: [
         langText({ en: "Name, what it sells, city", es: "Nombre, qué vende, ciudad", fr: "Nom, offre, ville", pt: "Nome, o que vende, cidade" }),
@@ -1289,10 +1289,10 @@ function guidedStage(step = guidedStep) {
       index: 3,
       title: langText({ en: "Shape the brand", es: "Definir el estilo", fr: "Définir le style", pt: "Definir o estilo" }),
       body: langText({
-        en: "Now Luma chooses the visual personality, sales flow and assets. You can answer or let AI decide.",
-        es: "Ahora Luma define personalidad visual, forma de venta y recursos. Puedes responder o dejar que IA decida.",
-        fr: "Luma définit la personnalité visuelle, le flux de vente et les assets. Vous pouvez répondre ou laisser l'IA décider.",
-        pt: "Agora a Luma define visual, venda e assets. Você pode responder ou deixar a IA decidir.",
+        en: "Now LYRA chooses the visual personality, sales flow and assets. You can answer or let AI decide.",
+        es: "Ahora LYRA define personalidad visual, forma de venta y recursos. Puedes responder o dejar que IA decida.",
+        fr: "LYRA définit la personnalité visuelle, le flux de vente et les assets. Vous pouvez répondre ou laisser l'IA décider.",
+        pt: "Agora a LYRA define visual, venda e assets. Você pode responder ou deixar a IA decidir.",
       }),
       examples: [
         langText({ en: "Premium, minimal, bold, futuristic", es: "Premium, minimal, llamativo, futurista", fr: "Premium, minimal, audacieux, futuriste", pt: "Premium, minimal, chamativo, futurista" }),
@@ -1321,10 +1321,10 @@ function guidedStage(step = guidedStep) {
     index: 5,
     title: langText({ en: "Review and generate", es: "Revisar y generar", fr: "Vérifier et générer", pt: "Revisar e gerar" }),
     body: langText({
-      en: "Luma has enough to create the first editable website draft. Review or ask for one more change.",
-      es: "Luma ya tiene suficiente para crear el primer borrador editable. Revisa o pide un último ajuste.",
-      fr: "Luma a assez d'informations pour créer le premier brouillon modifiable. Vérifiez ou demandez un dernier ajustement.",
-      pt: "A Luma já tem o suficiente para criar o primeiro rascunho editável. Revise ou peça um último ajuste.",
+      en: "LYRA has enough to create the first editable website draft. Review or ask for one more change.",
+      es: "LYRA ya tiene suficiente para crear el primer borrador editable. Revisa o pide un último ajuste.",
+      fr: "LYRA a assez d'informations pour créer le premier brouillon modifiable. Vérifiez ou demandez un dernier ajustement.",
+      pt: "A LYRA já tem o suficiente para criar o primeiro rascunho editável. Revise ou peça um último ajuste.",
     }),
     examples: [
       plan ? langText({ en: "Approve site plan", es: "Aprobar plan del sitio", fr: "Approuver le plan", pt: "Aprovar plano" }) : langText({ en: "Generate draft", es: "Generar borrador", fr: "Générer le brouillon", pt: "Gerar rascunho" }),
@@ -1782,10 +1782,10 @@ function livePreviewPublicCopy(profile, items = []) {
         pt: `Uma experiencia de compra clara para ${productFocus}, com categorias, destaques e caminho rapido para comprar ou perguntar.`,
       }),
       supportingLine: langText({
-        en: "Luma is shaping this as a catalog with search, categories, featured offers and editable product sections.",
-        es: "Luma lo esta armando como catalogo con busqueda, categorias, ofertas destacadas y secciones editables.",
-        fr: "Luma le structure comme catalogue avec recherche, categories, offres et sections modifiables.",
-        pt: "A Luma esta estruturando como catalogo com busca, categorias, ofertas e secoes editaveis.",
+        en: "LYRA is shaping this as a catalog with search, categories, featured offers and editable product sections.",
+        es: "LYRA lo esta armando como catalogo con busqueda, categorias, ofertas destacadas y secciones editables.",
+        fr: "LYRA le structure comme catalogue avec recherche, categories, offres et sections modifiables.",
+        pt: "A LYRA esta estruturando como catalogo com busca, categorias, ofertas e secoes editaveis.",
       }),
     },
     fashion: {
@@ -1822,10 +1822,10 @@ function livePreviewPublicCopy(profile, items = []) {
         pt: "Uma experiencia acolhedora com destaques, especiais, horarios, localizacao e pedidos rapidos.",
       }),
       supportingLine: langText({
-        en: "Luma is turning the intake into a menu structure, not pasting internal notes onto the page.",
-        es: "Luma convierte la informacion en estructura de menu, no pega notas internas en la pagina.",
-        fr: "Luma transforme les infos en structure de menu, sans coller les notes internes.",
-        pt: "A Luma transforma as informacoes em menu, sem colar notas internas.",
+        en: "LYRA is turning the intake into a menu structure, not pasting internal notes onto the page.",
+        es: "LYRA convierte la informacion en estructura de menu, no pega notas internas en la pagina.",
+        fr: "LYRA transforme les infos en structure de menu, sans coller les notes internes.",
+        pt: "A LYRA transforma as informacoes em menu, sem colar notas internas.",
       }),
     },
     service: {
@@ -1842,10 +1842,10 @@ function livePreviewPublicCopy(profile, items = []) {
         pt: `Uma pagina clara para ${productFocus}, com provas, processo, contato e orcamento.`,
       }),
       supportingLine: langText({
-        en: "Luma is translating the brief into positioning, proof and conversion sections.",
-        es: "Luma traduce el brief en posicionamiento, prueba y secciones de conversion.",
-        fr: "Luma traduit le brief en positionnement, preuves et conversion.",
-        pt: "A Luma traduz o briefing em posicionamento, prova e conversao.",
+        en: "LYRA is translating the brief into positioning, proof and conversion sections.",
+        es: "LYRA traduce el brief en posicionamiento, prueba y secciones de conversion.",
+        fr: "LYRA traduit le brief en positionnement, preuves et conversion.",
+        pt: "A LYRA traduz o briefing em posicionamento, prova e conversao.",
       }),
     },
     premium: {
@@ -2021,7 +2021,7 @@ function initBuilderAvatarAssistant() {
   builderAvatarAssistant = new window.AvatarAssistant({
     root: builderAvatarRoot,
     manager: builderAvatarManager,
-    name: "Dixie",
+    name: "LYRA",
     imageUrl: ASSISTANT_AVATAR_FALLBACK,
     imagePaths: {
       idle: ASSISTANT_AVATAR_FALLBACK,
@@ -2182,10 +2182,10 @@ function initClientIntakeSessionGate() {
     }
     if (guidedStatusText) {
       guidedStatusText.textContent = langText({
-        en: "Sign in first so Dixie can protect and save this workspace.",
-        es: "Inicia sesión primero para que Dixie proteja y guarde este espacio.",
-        fr: "Connectez-vous d'abord pour que Dixie protège et sauvegarde cet espace.",
-        pt: "Entre primeiro para a Dixie proteger e salvar este espaço.",
+        en: "Sign in first so LYRA can protect and save this workspace.",
+        es: "Inicia sesión primero para que LYRA proteja y guarde este espacio.",
+        fr: "Connectez-vous d'abord pour que LYRA protège et sauvegarde cet espace.",
+        pt: "Entre primeiro para a LYRA proteger e salvar este espaço.",
       });
     }
     return;
@@ -2213,10 +2213,10 @@ function initClientIntakeSessionGate() {
   }
   if (guidedStatusText) {
     guidedStatusText.textContent = langText({
-      en: "Create or resume your workspace first, so Dixie can save every answer.",
-      es: "Crea o recupera tu espacio primero, así Dixie guarda cada respuesta.",
-      fr: "Créez ou reprenez votre espace pour que Dixie sauvegarde chaque réponse.",
-      pt: "Crie ou recupere seu espaço primeiro para a Dixie salvar cada resposta.",
+      en: "Create or resume your workspace first, so LYRA can save every answer.",
+      es: "Crea o recupera tu espacio primero, así LYRA guarda cada respuesta.",
+      fr: "Créez ou reprenez votre espace pour que LYRA sauvegarde chaque réponse.",
+      pt: "Crie ou recupere seu espaço primeiro para a LYRA salvar cada resposta.",
     });
   }
 }
@@ -2434,16 +2434,16 @@ async function resumeClientSessionFromAuthToken() {
     if (storageStatus) {
       storageStatus.textContent = session.restored
         ? langText({
-            en: "Session restored. Dixie will keep saving your progress.",
-            es: "Sesión recuperada. Dixie seguirá guardando tu progreso.",
-            fr: "Session restaurée. Dixie continuera à sauvegarder votre progression.",
-            pt: "Sessão recuperada. Dixie continuará salvando seu progresso.",
+            en: "Session restored. LYRA will keep saving your progress.",
+            es: "Sesión recuperada. LYRA seguirá guardando tu progreso.",
+            fr: "Session restaurée. LYRA continuera à sauvegarder votre progression.",
+            pt: "Sessão recuperada. LYRA continuará salvando seu progresso.",
           })
         : langText({
-            en: "Session connected. Dixie will save every answer.",
-            es: "Sesión conectada. Dixie guardará cada respuesta.",
-            fr: "Session connectée. Dixie sauvegardera chaque réponse.",
-            pt: "Sessão conectada. Dixie salvará cada resposta.",
+            en: "Session connected. LYRA will save every answer.",
+            es: "Sesión conectada. LYRA guardará cada respuesta.",
+            fr: "Session connectée. LYRA sauvegardera chaque réponse.",
+            pt: "Sessão conectada. LYRA salvará cada resposta.",
           });
     }
     markClientWorkspaceUnlocked();
@@ -3033,7 +3033,7 @@ async function sendGuidedReply() {
     syncTemplateSelectionFromGuidedContext(message);
     const locallyReadyToGenerate = isRichIntakeMessage(message) && hasEnoughContextForFirstDraft();
     guidedStep = locallyReadyToGenerate ? "review" : nextSmartGuidedStep(guidedStep);
-    console.warn("Luma intake assistant request failed; continuing locally.", error);
+    console.warn("LYRA intake assistant request failed; continuing locally.", error);
     appendUnderstandingCard({ updates, sourceMessage: message });
     appendChatMessage(
       "assistant",
@@ -3065,14 +3065,14 @@ async function applyLumaAgentDecision(result = {}) {
     try {
       template = await window.TemplateRouter.getTemplateById(selectedTemplateId);
     } catch (error) {
-      console.warn("Luma selected template could not be loaded.", error);
+      console.warn("LYRA selected template could not be loaded.", error);
     }
     forcedTemplateSelection = {
       templateId: selectedTemplateId,
       template,
       intent: result.intent || "luma_agent_template",
       catalogType: result.catalogType || result.catalog_type || template?.catalogModel?.catalogType || "",
-      reason: result.selectedTemplateReason || result.selected_template_reason || "Selected by Luma from the conversation",
+      reason: result.selectedTemplateReason || result.selected_template_reason || "Selected by LYRA from the conversation",
     };
   } else if (!selectedTemplateId && result.intent === "collect_info") {
     forcedTemplateSelection = {
@@ -3080,7 +3080,7 @@ async function applyLumaAgentDecision(result = {}) {
       template: null,
       intent: "luma_agent_collecting_context",
       catalogType: "",
-      reason: "Luma is still collecting enough context before choosing a structure",
+      reason: "LYRA is still collecting enough context before choosing a structure",
     };
   }
 
@@ -3120,10 +3120,10 @@ async function handleWebsiteIntentAnswer(message) {
     appendUnderstandingCard({ updates: { websiteIntent: message }, sourceMessage: message });
     appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
     guidedStatusText.textContent = langText({
-      en: "Commerce intent noted. Luma will choose the template after understanding the product range.",
-      es: "Intencion de venta detectada. Luma elegira el template al entender el tipo de productos.",
-      fr: "Intention de vente notee. Luma choisira le template apres avoir compris la gamme de produits.",
-      pt: "Intencao de venda detectada. A Luma escolhera o template apos entender os produtos.",
+      en: "Commerce intent noted. LYRA will choose the template after understanding the product range.",
+      es: "Intencion de venta detectada. LYRA elegira el template al entender el tipo de productos.",
+      fr: "Intention de vente notee. LYRA choisira le template apres avoir compris la gamme de produits.",
+      pt: "Intencao de venda detectada. A LYRA escolhera o template apos entender os produtos.",
     });
     setThinking(false);
     renderGuidedSummary();
@@ -3143,7 +3143,7 @@ async function handleWebsiteIntentAnswer(message) {
   try {
     selection = await withTimeout(selectTemplateFromFreeText(message), 2500);
   } catch (error) {
-    console.warn("Luma template intent detection failed; continuing locally.", error);
+    console.warn("LYRA template intent detection failed; continuing locally.", error);
   }
   forcedTemplateSelection = selection;
   appendTemplateDetectionMessage(selection);
@@ -3158,10 +3158,10 @@ async function handleWebsiteIntentAnswer(message) {
       pt: "Template selecionado. Vamos continuar com os dados do negócio.",
     })
     : langText({
-      en: "Goal noted. Luma will choose the structure after understanding the offer.",
-      es: "Objetivo entendido. Luma elegira la estructura despues de entender la oferta.",
-      fr: "Objectif note. Luma choisira la structure apres avoir compris l'offre.",
-      pt: "Objetivo entendido. A Luma escolhera a estrutura depois de entender a oferta.",
+      en: "Goal noted. LYRA will choose the structure after understanding the offer.",
+      es: "Objetivo entendido. LYRA elegira la estructura despues de entender la oferta.",
+      fr: "Objectif note. LYRA choisira la structure apres avoir compris l'offre.",
+      pt: "Objetivo entendido. A LYRA escolhera a estrutura depois de entender a oferta.",
     });
   setThinking(false);
   renderGuidedSummary();
@@ -3399,7 +3399,7 @@ function renderSitePlanCard() {
     </div>
     <div class="site-plan-actions">
       <button type="button" data-site-plan-approve>${escapeHtml(guidedState.sitePlanApproved ? langText({ en: "Approved", es: "Aprobado", fr: "Approuvé", pt: "Aprovado" }) : langText({ en: "Approve this structure", es: "Aprobar estructura", fr: "Approuver la structure", pt: "Aprovar estrutura" }))}</button>
-      <button type="button" data-site-plan-adjust>${escapeHtml(langText({ en: "Ask Luma to change it", es: "Pedir cambio a Luma", fr: "Demander un changement", pt: "Pedir mudança à Luma" }))}</button>
+      <button type="button" data-site-plan-adjust>${escapeHtml(langText({ en: "Ask LYRA to change it", es: "Pedir cambio a LYRA", fr: "Demander un changement", pt: "Pedir mudança à LYRA" }))}</button>
     </div>
   `;
   card.querySelector("[data-site-plan-approve]")?.addEventListener("click", () => {
@@ -3461,10 +3461,10 @@ async function appendTemplatePreviewChoices(selection, sourceMessage = "") {
     fr: "Choisissez une base visuelle",
     pt: "Escolha uma base visual",
   }))}</strong><span>${escapeHtml(langText({
-    en: "Luma recommends one, but you can switch before generating.",
-    es: "Luma recomienda una, pero puedes cambiarla antes de generar.",
-    fr: "Luma en recommande une, mais vous pouvez changer avant de générer.",
-    pt: "A Luma recomenda uma, mas você pode trocar antes de gerar.",
+    en: "LYRA recommends one, but you can switch before generating.",
+    es: "LYRA recomienda una, pero puedes cambiarla antes de generar.",
+    fr: "LYRA en recommande une, mais vous pouvez changer avant de générer.",
+    pt: "A LYRA recomenda uma, mas você pode trocar antes de gerar.",
   }))}</span>`;
   const grid = document.createElement("div");
   grid.className = "template-choice-grid";
@@ -4230,10 +4230,10 @@ async function reviewAndGenerateFromGuided() {
     showGeneratedClientPreview();
   } else {
     guidedStatusText.textContent = langText({
-      en: "Luma could not create a draft yet. Try again or keep chatting with more details.",
-      es: "Luma no pudo crear el borrador todavía. Intenta otra vez o agrega más detalles.",
-      fr: "Luma n'a pas encore pu créer de brouillon. Réessayez ou ajoutez plus de détails.",
-      pt: "A Luma ainda não conseguiu criar o rascunho. Tente novamente ou adicione mais detalhes.",
+      en: "LYRA could not create a draft yet. Try again or keep chatting with more details.",
+      es: "LYRA no pudo crear el borrador todavía. Intenta otra vez o agrega más detalles.",
+      fr: "LYRA n'a pas encore pu créer de brouillon. Réessayez ou ajoutez plus de détails.",
+      pt: "A LYRA ainda não conseguiu criar o rascunho. Tente novamente ou adicione mais detalhes.",
     });
   }
   guidedGenerateButton.textContent = previousText || t("reviewGenerate");
@@ -4516,10 +4516,10 @@ function renderGuidedBriefReview() {
     pt: "Template pendente",
   });
   const templateDescription = localizedTemplateDescription(templateMeta) || plan.strategy || langText({
-    en: "Luma will choose the final visual base from the full business context.",
-    es: "Luma elegira la base visual final usando todo el contexto del negocio.",
-    fr: "Luma choisira la base visuelle finale avec tout le contexte.",
-    pt: "A Luma escolhera a base visual final usando todo o contexto.",
+    en: "LYRA will choose the final visual base from the full business context.",
+    es: "LYRA elegira la base visual final usando todo el contexto del negocio.",
+    fr: "LYRA choisira la base visuelle finale avec tout le contexte.",
+    pt: "A LYRA escolhera a base visual final usando todo o contexto.",
   });
   const businessFocus = aiBuildFocusLine();
   const catalogStrategy = aiCatalogStrategyLine(plan);
@@ -4560,7 +4560,7 @@ function renderGuidedBriefReview() {
     </div>
     <div class="ai-build-grid">
       <section>
-        <span>${escapeHtml(langText({ en: "Dixie will use", es: "Dixie usara", fr: "Dixie utilisera", pt: "A Dixie usara" }))}</span>
+        <span>${escapeHtml(langText({ en: "LYRA will use", es: "LYRA usara", fr: "LYRA utilisera", pt: "A LYRA usara" }))}</span>
         ${sourceSignals.map((item) => `<strong>${escapeHtml(item)}</strong>`).join("")}
       </section>
       <section>
@@ -4576,17 +4576,17 @@ function aiBuildFocusLine() {
   const products = arrayValue(guidedState.servicesProducts).filter(Boolean).slice(0, 3);
   if (products.length) {
     return langText({
-      en: `${name}: Dixie is shaping the site around ${products.join(", ")}.`,
-      es: `${name}: Dixie esta armando el sitio alrededor de ${products.join(", ")}.`,
-      fr: `${name} : Dixie structure le site autour de ${products.join(", ")}.`,
-      pt: `${name}: a Dixie esta montando o site em torno de ${products.join(", ")}.`,
+      en: `${name}: LYRA is shaping the site around ${products.join(", ")}.`,
+      es: `${name}: LYRA esta armando el sitio alrededor de ${products.join(", ")}.`,
+      fr: `${name} : LYRA structure le site autour de ${products.join(", ")}.`,
+      pt: `${name}: a LYRA esta montando o site em torno de ${products.join(", ")}.`,
     });
   }
   return langText({
-    en: `${name}: Dixie will use the conversation as strategy, not as raw page copy.`,
-    es: `${name}: Dixie usara la conversacion como estrategia, no como texto crudo en la pagina.`,
-    fr: `${name} : Dixie utilisera la conversation comme strategie, pas comme texte brut.`,
-    pt: `${name}: a Dixie usara a conversa como estrategia, nao como texto bruto.`,
+    en: `${name}: LYRA will use the conversation as strategy, not as raw page copy.`,
+    es: `${name}: LYRA usara la conversacion como estrategia, no como texto crudo en la pagina.`,
+    fr: `${name} : LYRA utilisera la conversation comme strategie, pas comme texte brut.`,
+    pt: `${name}: a LYRA usara a conversa como estrategia, nao como texto bruto.`,
   });
 }
 
@@ -4594,33 +4594,33 @@ function aiCatalogStrategyLine(plan) {
   const catalog = `${plan.catalogType || forcedTemplateSelection?.catalogType || ""}`.toLowerCase();
   if (/dense|marketplace/.test(catalog)) {
     return langText({
-      en: "The products look varied, so Dixie is using a search-first marketplace structure instead of a single-product landing.",
-      es: "Los productos se ven variados, asi que Dixie usa una estructura tipo marketplace con busqueda, no una landing de producto unico.",
-      fr: "Les produits semblent varies, donc Dixie utilise une structure marketplace avec recherche.",
-      pt: "Os produtos parecem variados, entao a Dixie usa uma estrutura marketplace com busca.",
+      en: "The products look varied, so LYRA is using a search-first marketplace structure instead of a single-product landing.",
+      es: "Los productos se ven variados, asi que LYRA usa una estructura tipo marketplace con busqueda, no una landing de producto unico.",
+      fr: "Les produits semblent varies, donc LYRA utilise une structure marketplace avec recherche.",
+      pt: "Os produtos parecem variados, entao a LYRA usa uma estrutura marketplace com busca.",
     });
   }
   if (/premium_editorial/.test(catalog)) {
     return langText({
-      en: "The offer looks focused, so Dixie is using a premium product-line presentation with strong story and conversion sections.",
-      es: "La oferta se ve enfocada, asi que Dixie usa una presentacion premium de linea de producto con historia y conversion.",
-      fr: "L'offre semble ciblee, donc Dixie utilise une presentation premium de gamme produit.",
-      pt: "A oferta parece focada, entao a Dixie usa uma apresentacao premium de linha de produto.",
+      en: "The offer looks focused, so LYRA is using a premium product-line presentation with strong story and conversion sections.",
+      es: "La oferta se ve enfocada, asi que LYRA usa una presentacion premium de linea de producto con historia y conversion.",
+      fr: "L'offre semble ciblee, donc LYRA utilise une presentation premium de gamme produit.",
+      pt: "A oferta parece focada, entao a LYRA usa uma apresentacao premium de linha de produto.",
     });
   }
   if (/service|booking|lead|legal|medical/.test(catalog)) {
     return langText({
-      en: "The request is service-led, so Dixie is prioritizing trust, proof, process and a clear contact path.",
-      es: "La solicitud es de servicios, asi que Dixie prioriza confianza, prueba, proceso y contacto claro.",
-      fr: "La demande est orientee service, donc Dixie priorise confiance, preuves et contact clair.",
-      pt: "O pedido e de servicos, entao a Dixie prioriza confianca, prova, processo e contato.",
+      en: "The request is service-led, so LYRA is prioritizing trust, proof, process and a clear contact path.",
+      es: "La solicitud es de servicios, asi que LYRA prioriza confianza, prueba, proceso y contacto claro.",
+      fr: "La demande est orientee service, donc LYRA priorise confiance, preuves et contact clair.",
+      pt: "O pedido e de servicos, entao a LYRA prioriza confianca, prova, processo e contato.",
     });
   }
   return langText({
-    en: "Dixie is matching the structure to the business type and will keep the generated site editable.",
-    es: "Dixie esta ajustando la estructura al tipo de negocio y mantendra el sitio editable.",
-    fr: "Dixie adapte la structure au type d'entreprise et gardera le site modifiable.",
-    pt: "A Dixie esta ajustando a estrutura ao tipo de negocio e mantera o site editavel.",
+    en: "LYRA is matching the structure to the business type and will keep the generated site editable.",
+    es: "LYRA esta ajustando la estructura al tipo de negocio y mantendra el sitio editable.",
+    fr: "LYRA adapte la structure au type d'entreprise et gardera le site modifiable.",
+    pt: "A LYRA esta ajustando a estrutura ao tipo de negocio e mantera o site editavel.",
   });
 }
 
@@ -4671,10 +4671,10 @@ function renderLumaReadyCard() {
     pt: "Estrutura escolhida por IA",
   });
   const reason = assistantVisibleCopy(diagnosis.reasoningSummary || forcedTemplateSelection?.reason || langText({
-    en: "Dixie will use the conversation as strategy and generate customer-facing copy.",
-    es: "Dixie usara la conversacion como estrategia y generara textos para clientes.",
-    fr: "Dixie utilisera la conversation comme strategie et generera le contenu client.",
-    pt: "A Dixie usara a conversa como estrategia e gerara textos para clientes.",
+    en: "LYRA will use the conversation as strategy and generate customer-facing copy.",
+    es: "LYRA usara la conversacion como estrategia y generara textos para clientes.",
+    fr: "LYRA utilisera la conversation comme strategie et generera le contenu client.",
+    pt: "A LYRA usara a conversa como estrategia e gerara textos para clientes.",
   }));
   card.innerHTML = `
     <div class="luma-ready-head">
@@ -4862,10 +4862,10 @@ function compactCollectedPreview() {
     return parts.length
       ? parts.join(" · ")
       : langText({
-          en: "Luma is collecting the essentials.",
-          es: "Luma está reuniendo lo esencial.",
-          fr: "Luma collecte l'essentiel.",
-          pt: "A Luma está reunindo o essencial.",
+          en: "LYRA is collecting the essentials.",
+          es: "LYRA está reuniendo lo esencial.",
+          fr: "LYRA collecte l'essentiel.",
+          pt: "A LYRA está reunindo o essencial.",
         });
   }
   const parts = [
@@ -5264,10 +5264,10 @@ function inferGuidedUpdatesFromAnyMessage(message) {
     if (wantsGeneratedLogo) updates.aiGeneratedLogoRequested = true;
     updates.hasLogoPhotos = wantsGeneratedLogo
       ? langText({
-          en: "Client has no logo and wants Dixie to create a simple brand mark from the business name and style.",
-          es: "El cliente no tiene logo y quiere que Dixie cree una marca simple con el nombre y el estilo.",
-          fr: "Le client n'a pas de logo et veut que Dixie crée une marque simple avec le nom et le style.",
-          pt: "O cliente nao tem logo e quer que a Dixie crie uma marca simples com o nome e o estilo.",
+          en: "Client has no logo and wants LYRA to create a simple brand mark from the business name and style.",
+          es: "El cliente no tiene logo y quiere que LYRA cree una marca simple con el nombre y el estilo.",
+          fr: "Le client n'a pas de logo et veut que LYRA crée une marque simple avec le nom et le style.",
+          pt: "O cliente nao tem logo e quer que a LYRA crie uma marca simples com o nome e o estilo.",
         })
       : langText({
           en: "Client mentioned logo/photos",
@@ -5487,10 +5487,10 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     setStudioProgressPhase("ready");
     const message = isPublicClientSetup
       ? `${t("generateError")}: ${shortError(error.message)}. ${langText({
-          en: "No draft was shown because Dixie could not finish the real AI generation.",
-          es: "No mostré un borrador porque Dixie no pudo terminar la generación real con IA.",
-          fr: "Aucun brouillon n'a été affiché car Dixie n'a pas terminé la génération IA réelle.",
-          pt: "Nenhum rascunho foi exibido porque a Dixie não conseguiu concluir a geração real com IA.",
+          en: "No draft was shown because LYRA could not finish the real AI generation.",
+          es: "No mostré un borrador porque LYRA no pudo terminar la generación real con IA.",
+          fr: "Aucun brouillon n'a été affiché car LYRA n'a pas terminé la génération IA réelle.",
+          pt: "Nenhum rascunho foi exibido porque a LYRA não conseguiu concluir a geração real com IA.",
         })}`
       : `${t("generateError")}: ${shortError(error.message)}. Showing a fast editable draft instead.`;
     statusText.textContent = message;
@@ -5597,7 +5597,7 @@ async function selectTemplateForPayload(payload) {
         reason: forcedTemplateSelection?.reason
           || guidedState.designStrategy?.selectedTemplateReason
           || guidedState.designStrategy?.diagnosis?.reasoningSummary
-          || "Selected by Dixie from the guided conversation",
+          || "Selected by LYRA from the guided conversation",
       };
     }
   }
@@ -10500,10 +10500,10 @@ async function continueWithEmailAuth(event) {
             pt: "Espaço recuperado. Suas respostas continuarão salvas.",
           })
         : langText({
-            en: "Workspace created. Dixie will save every answer.",
-            es: "Espacio creado. Dixie guardará cada respuesta.",
-            fr: "Espace créé. Dixie sauvegardera chaque réponse.",
-            pt: "Espaço criado. Dixie salvará cada resposta.",
+            en: "Workspace created. LYRA will save every answer.",
+            es: "Espacio creado. LYRA guardará cada respuesta.",
+            fr: "Espace créé. LYRA sauvegardera chaque réponse.",
+            pt: "Espaço criado. LYRA salvará cada resposta.",
           });
     }
     markClientWorkspaceUnlocked();
@@ -13977,8 +13977,8 @@ function escapeHtml(value) {
 
 function assistantVisibleCopy(value) {
   return String(value ?? "")
-    .replace(/\bLuma\b/g, "Dixie")
-    .replace(/\bGNU Dev\b/g, "Dixie")
+    .replace(/\bLuma\b/g, "LYRA")
+    .replace(/\bGNU Dev\b/g, "LYRA")
     .replace(/gnu-dev-assistant/g, "nixie_idle");
 }
 
