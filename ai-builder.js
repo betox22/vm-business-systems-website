@@ -1035,7 +1035,7 @@ function safeBootStep(label, callback) {
 
 function registerCriticalGuidedControls() {
   document.addEventListener("click", (event) => {
-    const target = event.target?.closest?.("#guidedSendButton, #guidedSkipButton, #switchManualFormButton, #backToChatButton");
+    const target = event.target?.closest?.("#guidedSendButton, #guidedSkipButton, #switchManualFormButton, #backToChatButton, #guidedGenerateButton, [data-chat-generate]");
     if (!target) return;
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -1047,6 +1047,8 @@ function registerCriticalGuidedControls() {
       switchToManualForm();
     } else if (target.id === "backToChatButton") {
       switchBackToChat();
+    } else if (target.id === "guidedGenerateButton" || target.matches?.("[data-chat-generate]")) {
+      handleGuidedGenerateButton(event);
     }
   }, true);
   document.addEventListener("keydown", (event) => {
@@ -3584,6 +3586,10 @@ function insertQuickChip(value) {
     guidedLogoUpload.click();
     return;
   }
+  if (value === "Review details") {
+    openReviewDetails();
+    return;
+  }
   if (value === "Generate now") {
     guidedStep = "review";
     renderGuidedSummary();
@@ -3609,7 +3615,7 @@ function refreshQuickChips() {
     preferredColors: ["Let AI choose", "Use my logo colors", "I have specific colors"],
     salesMode: ["Sell online", "Request quotes", "Calls/messages", "All of the above", "Not sure"],
     targetAudience: ["Local customers", "Families", "Professionals", "Businesses", "Let AI decide"],
-    review: ["Yes, correct", "Change style", "Generate now"],
+    review: ["Generate now", "Review details", "Change style", "Upload logo"],
   };
   const chips = chipsByStep[guidedStep] || [];
   quickChipRow.innerHTML = chips
@@ -3758,6 +3764,7 @@ function translateChip(value) {
       "Change style": "Cambiar estilo",
       "Upload logo": "Subir logo",
       "Generate now": "Generar ya",
+      "Review details": "Revisar detalles",
     },
     fr: {
       Elegant: "Élégant",
@@ -3788,6 +3795,7 @@ function translateChip(value) {
       "Change style": "Changer le style",
       "Upload logo": "Importer un logo",
       "Generate now": "Générer maintenant",
+      "Review details": "Vérifier les détails",
     },
     pt: {
       Elegant: "Elegante",
@@ -3818,6 +3826,7 @@ function translateChip(value) {
       "Change style": "Mudar estilo",
       "Upload logo": "Enviar logo",
       "Generate now": "Gerar agora",
+      "Review details": "Revisar detalhes",
     },
   };
   return dictionary[selectedLanguage]?.[value] || value;
