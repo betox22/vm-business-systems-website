@@ -591,6 +591,8 @@ function createEmptyGuidedState(language = selectedLanguage) {
     requestedAdjustments: [],
     sitePlan: null,
     sitePlanApproved: false,
+    aiStudioPlan: null,
+    designStrategy: null,
   };
 }
 
@@ -2954,6 +2956,7 @@ async function sendGuidedReply() {
   }
   mergeGuidedUpdates(localContextUpdates);
   syncTemplateSelectionFromGuidedContext(message);
+  const localStudioPlan = refreshAiStudioPlanFromContext(message);
   if (guidedStep === "review") {
     const adjustmentLabel = langText({
       en: "Client requested adjustments",
@@ -3022,7 +3025,8 @@ async function sendGuidedReply() {
     guidedHistory.push({ role: "assistant", content: assistantMessage });
     mergeGuidedUpdates(updatedFields);
     await applyLumaAgentDecision(result);
-    const locallyReadyToGenerate = !result.readyToGenerate && isRichIntakeMessage(message) && hasEnoughContextForFirstDraft();
+    refreshAiStudioPlanFromContext(message);
+    const locallyReadyToGenerate = !result.readyToGenerate && hasEnoughContextForFirstDraft();
     const serverNextStep = result.next_step || result.nextStep || "";
     guidedStep = (result.readyToGenerate || locallyReadyToGenerate) ? "review" : normalizeNextGuidedStep(serverNextStep || guidedStep);
     const serverNextQuestion = result.nextQuestion || result.next_question;
@@ -3046,7 +3050,8 @@ async function sendGuidedReply() {
     const updates = localContextUpdates;
     mergeGuidedUpdates(updates);
     syncTemplateSelectionFromGuidedContext(message);
-    const locallyReadyToGenerate = isRichIntakeMessage(message) && hasEnoughContextForFirstDraft();
+    const fallbackPlan = refreshAiStudioPlanFromContext(message);
+    const locallyReadyToGenerate = hasEnoughContextForFirstDraft();
     guidedStep = locallyReadyToGenerate ? "review" : nextSmartGuidedStep(guidedStep);
     console.warn("LYRA intake assistant request failed; continuing locally.", error);
     appendUnderstandingCard({ updates, sourceMessage: message });
@@ -3055,10 +3060,10 @@ async function sendGuidedReply() {
       composeAssistantReply(
         locallyReadyToGenerate
           ? langText({
-              en: "I saved the details and have enough context to build the first draft.",
-              es: "Guardé los datos y ya tengo suficiente contexto para crear el primer borrador.",
-              fr: "J'ai enregistré les détails et j'ai assez de contexte pour créer le premier brouillon.",
-              pt: "Salvei os dados e ja tenho contexto suficiente para criar o primeiro rascunho.",
+              en: `I have enough context to build the first draft. I will use ${fallbackPlan.recommendedTemplateName || "the selected template"} as the base and rewrite the site professionally.`,
+              es: `Ya tengo suficiente contexto para crear el primer borrador. Usare ${fallbackPlan.recommendedTemplateName || "la plantilla seleccionada"} como base y reescribire la pagina profesionalmente.`,
+              fr: `J'ai assez de contexte pour créer le premier brouillon. J'utiliserai ${fallbackPlan.recommendedTemplateName || "le template choisi"} comme base et je réécrirai le site professionnellement.`,
+              pt: `Ja tenho contexto suficiente para criar o primeiro rascunho. Vou usar ${fallbackPlan.recommendedTemplateName || "o template escolhido"} como base e reescrever o site profissionalmente.`,
             })
           : t("localFallbackMessage"),
         locallyReadyToGenerate ? "" : guidedQuestion(guidedStep),
@@ -3069,33 +3074,47 @@ async function sendGuidedReply() {
     guidedStatusText.textContent = t("localFallback");
   }
   setThinking(false);
+  if (guidedStep === "review") {
+    guidedState.sitePlan = buildSitePlan(forcedTemplateSelection);
+    guidedState.sitePlan.aiStudioPlan = guidedState.aiStudioPlan || localStudioPlan;
+  }
   renderGuidedSummary();
   refreshQuickChips();
 }
 
 async function applyLumaAgentDecision(result = {}) {
   const selectedTemplateId = result.selectedTemplateId || result.selected_template_id || "";
-  if (selectedTemplateId && window.TemplateRouter?.getTemplateById) {
+  const localPlan = refreshAiStudioPlanFromContext();
+  const effectiveTemplateId = shouldPreferLocalStudioTemplate(selectedTemplateId, localPlan)
+    ? localPlan.recommendedTemplateId
+    : selectedTemplateId;
+  if (effectiveTemplateId && window.TemplateRouter?.getTemplateById) {
     let template = null;
     try {
-      template = await window.TemplateRouter.getTemplateById(selectedTemplateId);
+      template = await window.TemplateRouter.getTemplateById(effectiveTemplateId);
     } catch (error) {
       console.warn("LYRA selected template could not be loaded.", error);
     }
     forcedTemplateSelection = {
-      templateId: selectedTemplateId,
+      templateId: effectiveTemplateId,
       template,
-      intent: result.intent || "luma_agent_template",
-      catalogType: result.catalogType || result.catalog_type || template?.catalogModel?.catalogType || "",
-      reason: result.selectedTemplateReason || result.selected_template_reason || "Selected by LYRA from the conversation",
+      intent: shouldPreferLocalStudioTemplate(selectedTemplateId, localPlan) ? "ai_studio_plan_override" : (result.intent || "luma_agent_template"),
+      catalogType: shouldPreferLocalStudioTemplate(selectedTemplateId, localPlan)
+        ? localPlan.recommendedCatalogType
+        : result.catalogType || result.catalog_type || template?.catalogModel?.catalogType || "",
+      reason: shouldPreferLocalStudioTemplate(selectedTemplateId, localPlan)
+        ? localPlan.reasoningSummary
+        : result.selectedTemplateReason || result.selected_template_reason || "Selected by LYRA from the conversation",
     };
   } else if (!selectedTemplateId && result.intent === "collect_info") {
     forcedTemplateSelection = {
-      templateId: "",
+      templateId: localPlan.recommendedTemplateId || "",
       template: null,
-      intent: "luma_agent_collecting_context",
-      catalogType: "",
-      reason: "LYRA is still collecting enough context before choosing a structure",
+      intent: localPlan.recommendedTemplateId ? "ai_studio_plan" : "luma_agent_collecting_context",
+      catalogType: localPlan.recommendedCatalogType || "",
+      reason: localPlan.recommendedTemplateId
+        ? localPlan.reasoningSummary
+        : "LYRA is still collecting enough context before choosing a structure",
     };
   }
 
@@ -3103,12 +3122,24 @@ async function applyLumaAgentDecision(result = {}) {
     guidedState.designStrategy = result.designStrategy;
   }
   if (result.sitePlan) {
-    guidedState.sitePlan = result.sitePlan;
+    guidedState.sitePlan = {
+      ...result.sitePlan,
+      aiStudioPlan: localPlan,
+    };
     guidedState.sitePlanApproved = false;
   } else if (!selectedTemplateId) {
-    guidedState.sitePlan = null;
+    guidedState.sitePlan = localPlan.recommendedTemplateId ? buildSitePlan(forcedTemplateSelection) : null;
+    if (guidedState.sitePlan) guidedState.sitePlan.aiStudioPlan = localPlan;
     guidedState.sitePlanApproved = false;
   }
+}
+
+function shouldPreferLocalStudioTemplate(serverTemplateId, localPlan = {}) {
+  if (!localPlan?.recommendedTemplateId) return false;
+  if (!serverTemplateId) return true;
+  if (serverTemplateId === localPlan.recommendedTemplateId) return false;
+  const planSignal = `${localPlan.websiteType || ""} ${localPlan.recommendedCatalogType || ""} ${localPlan.reasoningSummary || ""}`;
+  return /mega_marketplace|marketplace|broad catalog|muchos productos|de todo|varied|catalog|booking|restaurant|service|quote|premium_showcase/i.test(planSignal);
 }
 
 async function handleWebsiteIntentAnswer(message) {
@@ -3300,6 +3331,186 @@ function localizedTemplateName(choice) {
 
 function localizedTemplateDescription(choice) {
   return choice?.descriptions?.[selectedLanguage] || choice?.description || choice?.template?.clientSelectionCard?.difference || choice?.template?.visualDifference || "";
+}
+
+function buildAiStudioPlanFromGuidedState(extra = "") {
+  const contextText = guidedTemplateContextText(extra);
+  const payload = guidedStatePayloadForPlanning();
+  const templateId = inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(contextText) || forcedTemplateSelection?.templateId || "";
+  const templateMeta = templatePreviewMeta(templateId);
+  const catalogType = templateMeta?.catalogType || forcedTemplateSelection?.catalogType || "";
+  const websiteType = inferWebsiteTypeFromContext(contextText, catalogType);
+  const salesFlow = inferSalesFlowForPlan(contextText, websiteType);
+  const requiredFeatures = inferRequiredFeaturesForPlan(contextText, websiteType, catalogType);
+  const missingImportantFields = missingImportantFieldsForPlan();
+  const reasoningSummary = explainTemplateDecision(templateId, websiteType, contextText);
+  const pages = buildPlanPagesForContext(templateId, websiteType, catalogType);
+  return {
+    version: 2,
+    decisionState: missingImportantFields.length ? "enough_to_plan_with_optional_gaps" : "ready_to_generate",
+    websiteType,
+    recommendedTemplateId: templateId,
+    recommendedTemplateName: localizedTemplateName(templateMeta) || forcedTemplateSelection?.template?.name || templateId,
+    recommendedCatalogType: catalogType,
+    reasoningSummary,
+    salesFlow,
+    requiredFeatures,
+    pages,
+    missingImportantFields,
+    copyPolicy: "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+    editabilityContract: [
+      "Every visible text block must be editable.",
+      "Every catalog item, category, price label and image must be editable.",
+      "Colors, fonts, buttons, page order and section order must remain editable.",
+      "Future chat changes must patch only the requested area unless the client asks for a full redesign.",
+    ],
+  };
+}
+
+function guidedStatePayloadForPlanning() {
+  return {
+    business_name: guidedState.businessName,
+    business_description: guidedState.businessDescription || guidedState.websiteIntent,
+    industry: guidedState.industry,
+    services_products: arrayValue(guidedState.servicesProducts),
+    target_audience: guidedState.targetAudience,
+    preferred_tone: guidedState.preferredTone,
+    preferred_colors: arrayValue(guidedState.preferredColors),
+    salesMode: guidedState.salesMode,
+  };
+}
+
+function refreshAiStudioPlanFromContext(extra = "") {
+  const plan = buildAiStudioPlanFromGuidedState(extra);
+  guidedState.aiStudioPlan = plan;
+  guidedState.designStrategy = {
+    ...(guidedState.designStrategy || {}),
+    diagnosis: plan,
+    selectedTemplateId: plan.recommendedTemplateId,
+    selectedTemplateReason: plan.reasoningSummary,
+    selectedCatalogType: plan.recommendedCatalogType,
+    designerRole: "senior ecommerce strategist, UX architect and brand designer",
+    templateUsePolicy: "Choose the closest proven template as architecture, then adapt copy, colors, sections, catalog and CTAs to the client's business.",
+  };
+  if (plan.recommendedTemplateId && forcedTemplateSelection?.templateId !== plan.recommendedTemplateId) {
+    forcedTemplateSelection = {
+      templateId: plan.recommendedTemplateId,
+      template: null,
+      catalogType: plan.recommendedCatalogType,
+      intent: "ai_studio_plan",
+      reason: plan.reasoningSummary,
+    };
+    guidedState.sitePlan = null;
+    guidedState.sitePlanApproved = false;
+  } else if (forcedTemplateSelection?.templateId) {
+    forcedTemplateSelection = {
+      ...forcedTemplateSelection,
+      catalogType: forcedTemplateSelection.catalogType || plan.recommendedCatalogType,
+      reason: forcedTemplateSelection.reason || plan.reasoningSummary,
+    };
+  }
+  return plan;
+}
+
+function inferWebsiteTypeFromContext(contextText, catalogType = "") {
+  const text = normalizeTemplateIntentText(`${contextText} ${catalogType}`);
+  if (/restaurant|restaurante|menu|comida|food|cafe|delivery/.test(text)) return "restaurant_menu";
+  if (/booking|appointment|reserva|cita|barber|salon|spa/.test(text)) return "booking_site";
+  if (/dense|marketplace|amazon|de todo|todo tipo|variado|muchos productos|catalogo grande/.test(text)) return "mega_marketplace";
+  if (/listing|classified|real estate|inmueble|rental|alquiler|carros usados/.test(text)) return "listing_marketplace";
+  if (/digital|download|curso|course|ebook|membership|membresia/.test(text)) return "digital_products";
+  if (/quote|cotizacion|cotización|service|servicio|contractor|legal|clinic|industrial/.test(text)) return "service_or_quote_site";
+  if (/premium_editorial|flagship|single product|producto unico|mismo nicho|linea de|showcase/.test(text)) return "premium_showcase_store";
+  if (/store|shop|tienda|ecommerce|venta online|vender online|catalog/.test(text)) return "online_store";
+  return "business_website";
+}
+
+function inferSalesFlowForPlan(contextText, websiteType) {
+  const text = normalizeTemplateIntentText(contextText);
+  if (/quote|cotizacion|cotización|presupuesto|consulta|inquiry/.test(text) || /service|quote/.test(websiteType)) return "quote_or_lead_request";
+  if (/booking|appointment|reserva|cita/.test(text) || websiteType === "booking_site") return "appointment_booking";
+  if (/restaurant|menu|pedido|order/.test(text) || websiteType === "restaurant_menu") return "menu_order_or_contact";
+  if (/marketplace|store|shop|tienda|vender|venta online|checkout|carrito/.test(text) || /store|marketplace|digital/.test(websiteType)) return "online_sales";
+  return "lead_capture";
+}
+
+function inferRequiredFeaturesForPlan(contextText, websiteType, catalogType = "") {
+  const text = normalizeTemplateIntentText(`${contextText} ${websiteType} ${catalogType}`);
+  const features = new Set(["editable_pages", "editable_sections", "editable_brand_system", "contact_capture"]);
+  if (/marketplace|dense|catalog|store|shop|tienda|product|producto/.test(text)) {
+    ["catalog_manager", "categories", "search", "filters", "product_cards"].forEach((feature) => features.add(feature));
+  }
+  if (/online_sales|checkout|carrito|cart|shop|store|tienda|marketplace|digital/.test(text)) {
+    ["cart", "checkout_path", "customer_account", "featured_deals"].forEach((feature) => features.add(feature));
+  }
+  if (/marketplace|dense|amazon|muchos productos|de todo|todo tipo/.test(text)) {
+    ["deal_sections", "best_sellers", "newsletter_or_deal_subscription", "ratings_reviews", "wishlist_ready"].forEach((feature) => features.add(feature));
+  }
+  if (/booking|appointment|reserva|cita/.test(text)) features.add("booking_request_flow");
+  if (/restaurant|menu|food|comida/.test(text)) features.add("menu_categories");
+  if (/quote|cotizacion|cotización|service|servicio|industrial|legal|clinic/.test(text)) features.add("quote_request_flow");
+  return [...features];
+}
+
+function missingImportantFieldsForPlan() {
+  const missing = [];
+  if (!guidedState.businessName) missing.push("businessName");
+  if (!guidedState.businessDescription && !arrayValue(guidedState.servicesProducts).length) missing.push("businessDescription");
+  if (!guidedState.websiteIntent && !guidedState.salesMode) missing.push("websiteIntent");
+  return missing;
+}
+
+function explainTemplateDecision(templateId, websiteType, contextText) {
+  if (templateId === "mega-marketplace") {
+    return langText({
+      en: "The offer reads as a broad, varied catalog, so the best base is a search-first marketplace with categories, deals, filters, account and cart logic.",
+      es: "La oferta se entiende como un catalogo amplio y variado, asi que la mejor base es un marketplace con busqueda, categorias, ofertas, filtros, cuenta y carrito.",
+      fr: "L'offre ressemble a un catalogue large et varie; la meilleure base est donc un marketplace avec recherche, categories, offres, filtres, compte et panier.",
+      pt: "A oferta parece um catalogo amplo e variado; a melhor base e um marketplace com busca, categorias, ofertas, filtros, conta e carrinho.",
+    });
+  }
+  if (templateId === "apple-premium-product") {
+    return langText({
+      en: "The offer is focused enough for a premium product presentation with stronger story, proof, feature sections and conversion.",
+      es: "La oferta es suficientemente enfocada para una presentacion premium con historia, prueba, secciones de beneficios y conversion.",
+      fr: "L'offre est assez focalisee pour une presentation premium avec histoire, preuves, benefices et conversion.",
+      pt: "A oferta e focada o suficiente para uma apresentacao premium com historia, prova, beneficios e conversao.",
+    });
+  }
+  if (templateId === "restaurant-food-business") return langText({ en: "The business needs menu discovery and ordering/contact, so LYRA should use a restaurant menu architecture.", es: "El negocio necesita menu, descubrimiento y pedido/contacto, asi que LYRA debe usar arquitectura de restaurante.", fr: "Le business demande menu, decouverte et commande/contact.", pt: "O negocio precisa de menu, descoberta e pedido/contato." });
+  if (templateId === "booking-appointment-pro") return langText({ en: "The core action is scheduling, so LYRA should make booking and services the main conversion path.", es: "La accion central es agendar, asi que LYRA debe poner reservas y servicios como conversion principal.", fr: "L'action principale est la reservation.", pt: "A acao principal e agendamento." });
+  if (templateId) return langText({
+    en: `LYRA selected ${localizedTemplateName(templatePreviewMeta(templateId)) || templateId} because it best matches ${websiteType.replace(/_/g, " ")}.`,
+    es: `LYRA selecciono ${localizedTemplateName(templatePreviewMeta(templateId)) || templateId} porque encaja mejor con ${websiteType.replace(/_/g, " ")}.`,
+    fr: `LYRA a choisi ${localizedTemplateName(templatePreviewMeta(templateId)) || templateId} car il correspond a ${websiteType.replace(/_/g, " ")}.`,
+    pt: `A LYRA escolheu ${localizedTemplateName(templatePreviewMeta(templateId)) || templateId} porque combina melhor com ${websiteType.replace(/_/g, " ")}.`,
+  });
+  return langText({
+    en: "LYRA is still identifying the strongest template from the business context.",
+    es: "LYRA todavia esta identificando la plantilla mas fuerte segun el contexto del negocio.",
+    fr: "LYRA identifie encore le meilleur template selon le contexte.",
+    pt: "A LYRA ainda esta identificando o melhor template pelo contexto.",
+  });
+}
+
+function buildPlanPagesForContext(templateId, websiteType, catalogType) {
+  if (templateId === "mega-marketplace" || websiteType === "mega_marketplace") {
+    return [
+      { key: "home", title: "Home", purpose: "Search, categories, deals, best sellers and trust modules", sections: ["marketplace_header", "search_hero", "category_rail", "deal_row", "best_seller_grid", "subscribe"] },
+      { key: "catalog", title: "Catalog", purpose: "Dense searchable product catalog", sections: ["filters", "sort", "product_grid", "ratings", "shipping_badges"] },
+      { key: "deals", title: "Deals", purpose: "Promotions, drops and featured offers", sections: ["daily_deals", "featured_collections", "newsletter"] },
+      { key: "account", title: "Account / Cart", purpose: "Customer account, cart, checkout path and saved items", sections: ["cart", "wishlist", "checkout", "order_contact"] },
+    ];
+  }
+  if (templateId === "apple-premium-product" || websiteType === "premium_showcase_store") {
+    return [
+      { key: "home", title: "Home", purpose: "Cinematic product story and premium CTA", sections: ["premium_hero", "feature_spotlight", "proof", "cta"] },
+      { key: "catalog", title: "Collection", purpose: "Curated product line or models", sections: ["featured_products", "specs", "comparison"] },
+      { key: "story", title: "Story", purpose: "Brand/product positioning and benefits", sections: ["editorial_story", "gallery", "trust"] },
+      { key: "buy", title: "Buy / Contact", purpose: "Purchase, quote or lead action", sections: ["checkout_or_inquiry", "faq", "support"] },
+    ];
+  }
+  return buildSitePlan({ templateId, catalogType, template: forcedTemplateSelection?.template || {} }).pages;
 }
 
 function buildSitePlan(selection = forcedTemplateSelection) {
@@ -4397,6 +4608,9 @@ function normalizeGuidedStateBeforeGenerate() {
   if (!guidedState.industry || guidedState.industry === t("generalBusiness")) {
     guidedState.industry = inferCommerceIndustry(guidedState);
   }
+  const aiStudioPlan = refreshAiStudioPlanFromContext();
+  guidedState.sitePlan = guidedState.sitePlan || buildSitePlan(forcedTemplateSelection);
+  if (guidedState.sitePlan) guidedState.sitePlan.aiStudioPlan = aiStudioPlan;
 }
 
 function inferCommerceIndustry(state) {
@@ -4525,19 +4739,20 @@ function renderGuidedSummary() {
 function renderGuidedBriefReview() {
   if (!guidedBriefReview) return;
   syncTemplateSelectionFromGuidedContext();
+  const aiStudioPlan = refreshAiStudioPlanFromContext();
   const plan = forcedTemplateSelection?.templateId ? ensureSitePlan() : buildSitePlan({
     templateId: "",
     template: {},
     catalogType: "",
   });
-  const templateMeta = templatePreviewMeta(plan.templateId) || templatePreviewMeta(forcedTemplateSelection?.templateId || "");
-  const templateName = localizedTemplateName(templateMeta) || plan.templateName || langText({
+  const templateMeta = templatePreviewMeta(aiStudioPlan.recommendedTemplateId || plan.templateId) || templatePreviewMeta(forcedTemplateSelection?.templateId || "");
+  const templateName = aiStudioPlan.recommendedTemplateName || localizedTemplateName(templateMeta) || plan.templateName || langText({
     en: "Template pending",
     es: "Template pendiente",
     fr: "Template a definir",
     pt: "Template pendente",
   });
-  const templateDescription = localizedTemplateDescription(templateMeta) || plan.strategy || langText({
+  const templateDescription = aiStudioPlan.reasoningSummary || localizedTemplateDescription(templateMeta) || plan.strategy || langText({
     en: "LYRA will choose the final visual base from the full business context.",
     es: "LYRA elegira la base visual final usando todo el contexto del negocio.",
     fr: "LYRA choisira la base visuelle finale avec tout le contexte.",
@@ -4670,6 +4885,38 @@ function aiSourceSignalList() {
   return signals.length ? signals : [langText({ en: "conversation context", es: "contexto de la conversacion", fr: "contexte conversation", pt: "contexto da conversa" })];
 }
 
+function humanizePlanFeature(feature) {
+  const labels = {
+    editable_pages: { en: "Editable pages", es: "Paginas editables", fr: "Pages modifiables", pt: "Paginas editaveis" },
+    editable_sections: { en: "Editable sections", es: "Secciones editables", fr: "Sections modifiables", pt: "Secoes editaveis" },
+    editable_brand_system: { en: "Editable brand", es: "Marca editable", fr: "Marque modifiable", pt: "Marca editavel" },
+    contact_capture: { en: "Contact capture", es: "Captura contacto", fr: "Capture contact", pt: "Captura contato" },
+    catalog_manager: { en: "Catalog manager", es: "Catalogo editable", fr: "Catalogue modifiable", pt: "Catalogo editavel" },
+    categories: { en: "Categories", es: "Categorias", fr: "Categories", pt: "Categorias" },
+    search: { en: "Search", es: "Busqueda", fr: "Recherche", pt: "Busca" },
+    filters: { en: "Filters", es: "Filtros", fr: "Filtres", pt: "Filtros" },
+    product_cards: { en: "Product cards", es: "Tarjetas producto", fr: "Fiches produit", pt: "Cards produto" },
+    cart: { en: "Cart", es: "Carrito", fr: "Panier", pt: "Carrinho" },
+    checkout_path: { en: "Checkout path", es: "Ruta de pago", fr: "Parcours paiement", pt: "Fluxo pagamento" },
+    customer_account: { en: "Customer account", es: "Cuenta cliente", fr: "Compte client", pt: "Conta cliente" },
+    featured_deals: { en: "Featured deals", es: "Ofertas destacadas", fr: "Offres en avant", pt: "Ofertas destaque" },
+    deal_sections: { en: "Deal sections", es: "Secciones ofertas", fr: "Sections offres", pt: "Secoes ofertas" },
+    best_sellers: { en: "Best sellers", es: "Mas vendidos", fr: "Meilleures ventes", pt: "Mais vendidos" },
+    newsletter_or_deal_subscription: { en: "Deal subscription", es: "Suscripcion ofertas", fr: "Abonnement offres", pt: "Assinatura ofertas" },
+    ratings_reviews: { en: "Ratings/reviews", es: "Ratings/reseñas", fr: "Avis/notes", pt: "Avaliacoes" },
+    wishlist_ready: { en: "Wishlist ready", es: "Favoritos listo", fr: "Favoris prêt", pt: "Favoritos pronto" },
+    booking_request_flow: { en: "Booking flow", es: "Flujo reservas", fr: "Flux reservation", pt: "Fluxo agenda" },
+    menu_categories: { en: "Menu categories", es: "Categorias menu", fr: "Categories menu", pt: "Categorias menu" },
+    quote_request_flow: { en: "Quote flow", es: "Flujo cotizacion", fr: "Flux devis", pt: "Fluxo orcamento" },
+  };
+  return langText(labels[feature] || {
+    en: String(feature || "").replace(/_/g, " "),
+    es: String(feature || "").replace(/_/g, " "),
+    fr: String(feature || "").replace(/_/g, " "),
+    pt: String(feature || "").replace(/_/g, " "),
+  });
+}
+
 function renderSitePlanInChatIfNeeded() {
   if (guidedStep !== "review" || !guidedChat) return;
   guidedChat.querySelectorAll(".site-plan-card, .luma-ready-card").forEach((card) => card.remove());
@@ -4681,7 +4928,7 @@ function renderSitePlanInChatIfNeeded() {
 }
 
 function renderLumaReadyCard() {
-  const diagnosis = guidedState.designStrategy?.diagnosis || {};
+  const diagnosis = refreshAiStudioPlanFromContext();
   const plan = guidedState.sitePlan || null;
   const card = document.createElement("section");
   card.className = "luma-ready-card";
@@ -4705,9 +4952,9 @@ function renderLumaReadyCard() {
     </div>
     <p>${escapeHtml(reason)}</p>
     <div class="luma-ready-points">
-      <span>${escapeHtml(langText({ en: "Professional copy", es: "Textos profesionales", fr: "Textes professionnels", pt: "Textos profissionais" }))}</span>
+      ${(diagnosis.requiredFeatures || []).slice(0, 3).map((feature) => `<span>${escapeHtml(humanizePlanFeature(feature))}</span>`).join("")}
       <span>${escapeHtml(langText({ en: "Editable draft", es: "Borrador editable", fr: "Brouillon modifiable", pt: "Rascunho editavel" }))}</span>
-      <span>${escapeHtml(langText({ en: "Brand direction included", es: "Identidad incluida", fr: "Identite incluse", pt: "Identidade incluida" }))}</span>
+      <span>${escapeHtml(langText({ en: "No raw notes pasted", es: "Sin pegar notas crudas", fr: "Sans notes brutes", pt: "Sem notas brutas coladas" }))}</span>
     </div>
     <div class="luma-ready-actions">
       <button type="button" data-chat-generate>${escapeHtml(langText({ en: "Generate website now", es: "Generar pagina ahora", fr: "Generer maintenant", pt: "Gerar site agora" }))}</button>
@@ -4959,6 +5206,9 @@ function isPlaceholderBusinessName(value) {
 function guidedStateForApi() {
   const logoUrl = isCloudSafeUrl(guidedState.logoUrl) ? guidedState.logoUrl : "";
   const photoUrls = arrayValue(guidedState.photoUrls).filter(isCloudSafeUrl);
+  const aiStudioPlan = refreshAiStudioPlanFromContext();
+  const sitePlan = guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan() : null);
+  if (sitePlan && aiStudioPlan) sitePlan.aiStudioPlan = aiStudioPlan;
   const payload = {
     websiteIntent: guidedState.websiteIntent,
     businessName: guidedState.businessName,
@@ -4986,6 +5236,7 @@ function guidedStateForApi() {
         salesMode: guidedState.salesMode,
       }),
       ...(guidedState.designStrategy || {}),
+      aiStudioPlan,
     },
     qualityRules: DESIGN_QUALITY_RULES,
     selectedLanguage,
@@ -4994,7 +5245,8 @@ function guidedStateForApi() {
     salesMode: guidedState.salesMode,
     hasLogoPhotos: guidedState.hasLogoPhotos,
     sectionsPreference: guidedState.sectionsPreference,
-    sitePlan: guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan() : null),
+    aiStudioPlan,
+    sitePlan,
     sitePlanApproved: Boolean(guidedState.sitePlanApproved),
     publicCopyPolicy: {
       mode: "designer_rewrite",
@@ -5622,6 +5874,25 @@ async function selectTemplateForPayload(payload) {
     payload.salesMode || guidedState.salesMode,
   ].join(" ");
   const aiSelectedTemplateId = resolvedAiTemplateId();
+  const studioPlanTemplateId = guidedState.aiStudioPlan?.recommendedTemplateId || guidedState.designStrategy?.diagnosis?.recommendedTemplateId || "";
+  if (studioPlanTemplateId && window.TemplateRouter.getTemplateById) {
+    const template = await window.TemplateRouter.getTemplateById(studioPlanTemplateId);
+    if (template) {
+      return {
+        templateId: studioPlanTemplateId,
+        template,
+        intent: "ai_studio_plan",
+        catalogType: guidedState.aiStudioPlan?.recommendedCatalogType
+          || guidedState.designStrategy?.diagnosis?.recommendedCatalogType
+          || template.catalogModel?.catalogType
+          || templatePreviewMeta(studioPlanTemplateId)?.catalogType
+          || "",
+        reason: guidedState.aiStudioPlan?.reasoningSummary
+          || guidedState.designStrategy?.diagnosis?.reasoningSummary
+          || "Selected by LYRA's AI Studio plan",
+      };
+    }
+  }
   if (aiSelectedTemplateId && window.TemplateRouter.getTemplateById) {
     const template = await window.TemplateRouter.getTemplateById(aiSelectedTemplateId);
     if (template) {
@@ -10611,6 +10882,7 @@ function closeDraftAdjustmentChat() {
 
 async function collectPayload() {
   if (isPublicClientSetup) syncTemplateSelectionFromGuidedContext();
+  const aiStudioPlan = isPublicClientSetup ? refreshAiStudioPlanFromContext() : guidedState.aiStudioPlan;
   const data = new FormData(form);
   const contactInfo = parseKeyValueLines(data.get("contact_info")?.toString() || "");
   const logoUrl = data.get("logo_url")?.toString().trim();
@@ -10633,6 +10905,9 @@ async function collectPayload() {
   for (const [index, file] of photoFiles.entries()) {
     assets.push({ asset_type: "photo", label: `Uploaded photo ${index + 1}`, url: await uploadAssetOrFallback(file, "photo", `Uploaded photo ${index + 1}`) });
   }
+
+  const sitePlan = guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan(forcedTemplateSelection) : null);
+  if (sitePlan && aiStudioPlan) sitePlan.aiStudioPlan = aiStudioPlan;
 
   const payload = {
     business_name: data.get("business_name")?.toString().trim(),
@@ -10659,17 +10934,24 @@ async function collectPayload() {
       industry: data.get("industry")?.toString().trim(),
       tone: data.get("preferred_tone")?.toString().trim(),
     }),
-    designStrategy: createDesignStrategy({
-      business_name: data.get("business_name")?.toString().trim(),
-      business_description: data.get("business_description")?.toString().trim(),
-      industry: data.get("industry")?.toString().trim(),
-      target_audience: data.get("target_audience")?.toString().trim(),
-      preferred_tone: data.get("preferred_tone")?.toString().trim(),
-      salesMode: guidedState.salesMode,
-    }),
+    designStrategy: {
+      ...createDesignStrategy({
+        business_name: data.get("business_name")?.toString().trim(),
+        business_description: data.get("business_description")?.toString().trim(),
+        industry: data.get("industry")?.toString().trim(),
+        target_audience: data.get("target_audience")?.toString().trim(),
+        preferred_tone: data.get("preferred_tone")?.toString().trim(),
+        salesMode: guidedState.salesMode,
+      }),
+      aiStudioPlan,
+      selectedTemplateId: aiStudioPlan?.recommendedTemplateId || "",
+      selectedTemplateReason: aiStudioPlan?.reasoningSummary || "",
+      selectedCatalogType: aiStudioPlan?.recommendedCatalogType || "",
+    },
+    aiStudioPlan,
     qualityRules: DESIGN_QUALITY_RULES,
     requestedAdjustments: arrayValue(guidedState.requestedAdjustments),
-    sitePlan: guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan() : null),
+    sitePlan,
     sitePlanApproved: Boolean(guidedState.sitePlanApproved),
     brandContextNote:
       "Intake answers are client intent and design strategy context. Use them to create polished website copy, but do not copy internal planning answers literally unless they are natural public-facing text.",
