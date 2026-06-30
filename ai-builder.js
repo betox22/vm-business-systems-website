@@ -1648,11 +1648,10 @@ function livePreviewTemplateProfile() {
 
 function inferLivePreviewTemplateId() {
   const text = guidedTemplateContextText();
-  if (textSuggestsBroadMarketplace(text)) return "mega-marketplace";
-  const aiSelectedTemplateId = resolvedAiTemplateId();
-  if (aiSelectedTemplateId) return aiSelectedTemplateId;
   const inferred = inferTemplateIdFromText(text);
   if (inferred) return inferred;
+  const aiSelectedTemplateId = resolvedAiTemplateId();
+  if (aiSelectedTemplateId) return aiSelectedTemplateId;
   if (forcedTemplateSelection?.templateId) return forcedTemplateSelection.templateId;
   return "mega-marketplace";
 }
@@ -1723,6 +1722,56 @@ function textSuggestsPremiumProductPreference(value) {
     || /\b(linea de|coleccion de|producto especializado|producto de nicho|flagship|single product|one product|limited collection|curated collection)\b/.test(text);
 }
 
+function templateIntentScorecard(value, payload = {}) {
+  const text = normalizeTemplateIntentText([
+    value,
+    payload.business_name,
+    payload.business_description,
+    payload.industry,
+    arrayValue(payload.services_products).join(" "),
+    payload.target_audience,
+    payload.preferred_tone,
+    arrayValue(payload.preferred_colors).join(" "),
+    payload.salesMode || guidedState.salesMode,
+  ].join(" "));
+  const products = meaningfulOfferItems(payload.services_products || []);
+  if (!text) return [];
+  const scoreFor = (templateId, score, reason) => ({ templateId, score, reason });
+  const scores = [];
+  const has = (pattern) => pattern.test(text);
+
+  if (has(/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|mega marketplace)\b/)) scores.push(scoreFor("mega-marketplace", 140, "explicit large marketplace reference"));
+  if (textSuggestsBroadMarketplace(text)) scores.push(scoreFor("mega-marketplace", 105, "broad multi-category catalog"));
+  if (products.length >= 5 && !has(/\b(restaurante|restaurant|menu|comida|food|cafe|cafeteria|barber|barberia|salon|spa|clinica|clinic|servicio|service|contractor|curso|course)\b/)) {
+    scores.push(scoreFor("mega-marketplace", 55, "many independent product categories"));
+  }
+
+  if (has(/\b(tipo ebay|como ebay|clasificados|classifieds|listados|listings|vendedores|seller|usado|used|segunda mano)\b/)) scores.push(scoreFor("listing-marketplace-pro", 120, "seller/listing marketplace"));
+  if (has(/\b(real estate|bienes raices|bienes raices|inmuebles|propiedades|casas|apartamentos|alquiler|renta|rentals|zillow|realtor|mls|autotrader|auto trader|vehiculos|vehiculos usados|carros usados)\b/)) scores.push(scoreFor("real-estate-listings-pro", 118, "searchable listing business"));
+  if (has(/\b(restaurante|restaurant|food truck|cafeteria|cafeteria|catering|menu|menu|comida|pizza|tacos|bakery|panaderia|bar|delivery|pickup|ordenar|pedidos)\b/)) scores.push(scoreFor("restaurant-food-business", 125, "restaurant/menu flow"));
+  if (has(/\b(barber|barberia|barberia|barbershop|salon|spa|citas|reservas|appointments|booking|agenda|agendar|calendar|calendario)\b/)) scores.push(scoreFor("booking-appointment-pro", 120, "appointment booking flow"));
+  if (has(/\b(clinica|clinica|clinic|med spa|medical spa|spa medico|estetica|estetica|aesthetic|dental|dentist|doctor|wellness|salud|health|therapy|terapia|nutricion|laser|botox|facial|skincare|dermatology|fisio|physio|chiropractor|consulta medica)\b/)) scores.push(scoreFor("medical-wellness-clinic-pro", 118, "clinic/wellness trust flow"));
+  if (has(/\b(abogado|lawyer|legal|law firm|contador|accountant|tax|taxes|impuestos|consulting|consultoria|seguros|insurance|asesor|advisor|financiero|compliance|firma profesional)\b/)) scores.push(scoreFor("legal-professional-services-pro", 115, "professional services trust flow"));
+  if (has(/\b(b2b saas|saas|enterprise|software empresarial|automatizacion|automation|platform|plataforma|dashboard|crm|erp|integraciones|api|managed services|it services|business systems|request demo|demo|workflow)\b/)) scores.push(scoreFor("b2b-saas-enterprise-pro", 115, "B2B software/enterprise flow"));
+  if (has(/\b(manufacturing|manufacturer|industrial|industrial supplier|fabrica|fabricante|manufactura|maquinaria|machinery|repuestos industriales|parts supplier|tools supplier|herramientas industriales|safety equipment|bulk order|b2b procurement|rfq|proveedor industrial|suministros industriales)\b/)) scores.push(scoreFor("manufacturing-industrial-supplier-pro", 114, "industrial supplier flow"));
+  if (has(/\b(curso|cursos|course|courses|academy|academia|escuela online|bootcamp|training|formacion|clases|classes|lessons|masterclass|workshop|taller|coaching program|certificacion)\b/)) scores.push(scoreFor("education-course-academy-pro", 112, "course/academy flow"));
+  if (has(/\b(digital|ebook|e-book|templates|plantillas|descarga|download|pdf|pack|membresia|membership|digital products|productos digitales)\b/)) scores.push(scoreFor("digital-products-store", 105, "digital product flow"));
+  if (has(/\b(contratista|contractor|construccion|construction|limpieza|cleaning|plomeria|plumbing|electricista|electrician|hvac|aire acondicionado|mechanic|mecanico|landscaping|seguridad|security|servicio local|local service|reparacion|repair|presupuesto|cotizacion|quote|emergencia)\b/)) scores.push(scoreFor("home-services-premium", 108, "local service quote flow"));
+  if (has(/\b(ropa|fashion|moda|boutique|streetwear|zapato|sneaker|apparel|clothing|drop|lookbook)\b/) && !textSuggestsBroadMarketplace(text)) scores.push(scoreFor("fashion-drop-pro", 104, "fashion/lookbook commerce"));
+  if (has(/\b(lujo|luxury|high ticket|alta gama|exclusivo|joyeria|perfumes|fragancia|relojes|watches|cuero|arte|coleccionable|private appointment|cita privada|precio a consultar)\b/)) scores.push(scoreFor("luxury-high-ticket-pro", 110, "luxury/high-ticket showroom"));
+  if (textSuggestsFocusedProductLine(text) || textSuggestsSingleProductShowcase(text) || textSuggestsPremiumProductPreference(text)) scores.push(scoreFor("apple-premium-product", 108, "focused product line"));
+  if (has(/\b(landing|landing page|funnel|embudo|captar clientes|captar leads|leads|campana|campaign|oferta|offer|book call|agenda una llamada|alta conversion)\b/)) scores.push(scoreFor("lead-funnel-pro", 95, "lead capture funnel"));
+  if (has(/\b(empresa|company|corporate|corporativo|pagina web|website|agencia|agency|firma|business website|organizacion|organization)\b/)) scores.push(scoreFor("corporate-company-pro", 90, "company website"));
+
+  return scores
+    .filter((item) => item.score > 0 && templatePreviewMeta(item.templateId))
+    .sort((a, b) => b.score - a.score);
+}
+
+function bestTemplateIdFromContext(value, payload = {}) {
+  return templateIntentScorecard(value, payload)[0]?.templateId || "";
+}
+
 function isGenericCommerceIntent(value) {
   const text = normalizeTemplateIntentText(value);
   if (!text || textSuggestsBroadMarketplace(text) || textSuggestsFocusedProductLine(text) || textSuggestsSingleProductShowcase(text)) return false;
@@ -1733,6 +1782,8 @@ function isGenericCommerceIntent(value) {
 function inferTemplateIdFromText(value) {
   const text = normalizeTemplateIntentText(value);
   if (!text) return "";
+  const scoredTemplateId = bestTemplateIdFromContext(text);
+  if (scoredTemplateId) return scoredTemplateId;
   if (textSuggestsBroadMarketplace(text)) return "mega-marketplace";
   if (textSuggestsFocusedProductLine(text)) return "apple-premium-product";
   if (/tipo ebay|como ebay|clasificados|listados|vendedores|usado|seller|listing/.test(text)) return "listing-marketplace-pro";
@@ -3336,9 +3387,7 @@ function localizedTemplateDescription(choice) {
 function buildAiStudioPlanFromGuidedState(extra = "") {
   const contextText = guidedTemplateContextText(extra);
   const payload = guidedStatePayloadForPlanning();
-  const templateId = textSuggestsBroadMarketplace(contextText)
-    ? "mega-marketplace"
-    : inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(contextText) || forcedTemplateSelection?.templateId || "";
+  const templateId = inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(contextText) || forcedTemplateSelection?.templateId || "";
   const templateMeta = templatePreviewMeta(templateId);
   const catalogType = templateMeta?.catalogType || forcedTemplateSelection?.catalogType || "";
   const websiteType = inferWebsiteTypeFromContext(contextText, catalogType);
@@ -5982,6 +6031,8 @@ function inferDesignerTemplateIdFromPayload(payload = {}) {
     payload.salesMode || guidedState.salesMode,
   ].join(" "));
   const products = meaningfulOfferItems(payload.services_products);
+  const scoredTemplateId = bestTemplateIdFromContext(text, payload);
+  if (scoredTemplateId) return scoredTemplateId;
   if (textSuggestsBroadMarketplace(text) || products.length >= 5) return "mega-marketplace";
   if (/restaurant|restaurante|menu|comida|food|cafe|cafeteria|delivery/.test(text)) return "restaurant-food-business";
   if (/barber|barberia|salon|spa|booking|reserva|cita|appointment/.test(text)) return "booking-appointment-pro";

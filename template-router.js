@@ -922,8 +922,16 @@
 
   function rulePriority(rule, normalizedPrompt) {
     if (!rule) return 0;
-    if (suggestsBroadMarketplace(normalizedPrompt) && rule.intent === "amazon_marketplace") return 10000;
-    if (suggestsFocusedProductLine(normalizedPrompt) && rule.intent === "minimal_premium") return 9000;
+    if (/\b(restaurante|restaurant|food truck|cafeteria|catering|menu|comida|pizza|tacos|bakery|panaderia|bar|delivery|pickup|pedidos)\b/.test(normalizedPrompt) && rule.intent === "restaurant") return 130;
+    if (/\b(barberia|barbershop|salon|spa|citas|reservas|appointments|booking|agenda|agendar)\b/.test(normalizedPrompt) && rule.intent === "appointments") return 125;
+    if (/\b(clinica|clinic|med spa|dental|doctor|wellness|salud|therapy|terapia|skincare|dermatology|consulta medica)\b/.test(normalizedPrompt) && rule.intent === "medical_wellness") return 122;
+    if (/\b(abogado|lawyer|legal|contador|accountant|tax|impuestos|consulting|consultoria|seguros|insurance|advisor|firma profesional)\b/.test(normalizedPrompt) && rule.intent === "legal_professional_services") return 120;
+    if (/\b(saas|enterprise|software|automatizacion|platform|plataforma|dashboard|crm|erp|api|demo|workflow)\b/.test(normalizedPrompt) && rule.intent === "b2b_enterprise_saas") return 118;
+    if (/\b(manufacturing|industrial|fabrica|fabricante|maquinaria|repuestos|tools supplier|rfq|proveedor industrial|suministros industriales)\b/.test(normalizedPrompt) && rule.intent === "manufacturing_industrial_supplier") return 118;
+    if (/\b(curso|cursos|course|academy|academia|bootcamp|training|clases|masterclass|workshop)\b/.test(normalizedPrompt) && rule.intent === "education_academy") return 116;
+    if (/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|mega marketplace)\b/.test(normalizedPrompt) && rule.intent === "amazon_marketplace") return 140;
+    if (suggestsBroadMarketplace(normalizedPrompt) && rule.intent === "amazon_marketplace") return 105;
+    if (suggestsFocusedProductLine(normalizedPrompt) && rule.intent === "minimal_premium") return 108;
     if (rule.intent === "minimal_premium" && !suggestsFocusedProductLine(normalizedPrompt)) return -30;
     if (rule.intent === "fashion" && suggestsBroadMarketplace(normalizedPrompt)) return -20;
     return 0;
@@ -985,9 +993,9 @@
     const normalized = normalizeText(userPrompt);
     const matchedRule = selectBestIntentRule(normalized);
     const rule = matchedRule || {
-      intent: "default_marketplace_discovery",
-      templateId: "mega-marketplace",
-      catalogType: "dense_marketplace_catalog",
+      intent: "default_needs_context",
+      templateId: "minimal-store",
+      catalogType: "editorial_minimal_grid",
       keywords: [],
     };
     const normalizedTemplateId = normalizeTemplateId(rule.templateId);
@@ -1000,7 +1008,7 @@
       catalogType,
       reason: matchedRule
         ? `Matched keywords for ${rule.intent}`
-        : "No exact intent matched; using a broad marketplace discovery template until the catalog is clearer",
+        : "No exact intent matched; using a neutral editable base until the business model is clearer",
     };
   }
 
@@ -1018,7 +1026,7 @@
 
     const primary = scored.length
       ? scored
-      : [{ rule: { intent: "default_marketplace_discovery", templateId: "mega-marketplace", catalogType: "dense_marketplace_catalog" }, score: 0, matches: [] }];
+      : [{ rule: { intent: "default_needs_context", templateId: "minimal-store", catalogType: "editorial_minimal_grid" }, score: 0, matches: [] }];
 
     const selected = [];
     const addRule = (rule, score = 0, reason = "") => {
@@ -1062,12 +1070,6 @@
   }
 
   function selectBestIntentRule(normalizedPrompt) {
-    if (suggestsBroadMarketplace(normalizedPrompt)) {
-      return INTENT_RULES.find((rule) => rule.intent === "amazon_marketplace") || null;
-    }
-    if (suggestsFocusedProductLine(normalizedPrompt)) {
-      return INTENT_RULES.find((rule) => rule.intent === "minimal_premium") || null;
-    }
     const scored = INTENT_RULES.map((rule) => {
       const matches = rule.keywords.filter((keyword) => normalizedPrompt.includes(normalizeText(keyword)));
       const exactWeight = matches.reduce((score, keyword) => score + Math.max(1, normalizeText(keyword).split(" ").length), 0)
