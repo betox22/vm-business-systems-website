@@ -118,7 +118,7 @@ async def website_builder(request: WebsiteGenerationRequest) -> WebsiteGeneratio
 
 def build_schema_from_state(state) -> Dict[str, Any]:
     name = state.businessName or "Your Business"
-    template_id = state.selectedTemplateId or "modern-store"
+    template_id = state.selectedTemplateId or "corporate-company-pro"
     copy = state.generatedCopy.get("hero", {})
     headline = copy.get("headline") or name
     subheadline = copy.get("subheadline") or state.businessDescription or ""

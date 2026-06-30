@@ -6,6 +6,118 @@ from typing import Dict, List
 from .models import AgentResult, ProjectState, WebsiteType
 
 
+TEMPLATE_CATALOG: Dict[str, Dict[str, str]] = {
+    "mega-marketplace": {
+        "name": "Mega Marketplace",
+        "websiteType": "marketplace",
+        "catalogType": "dense_marketplace_catalog",
+        "audience": "Shoppers comparing many categories, deals, novelty products and fast-buy options.",
+    },
+    "listing-marketplace-pro": {
+        "name": "Listing Marketplace",
+        "websiteType": "marketplace",
+        "catalogType": "listing_marketplace_catalog",
+        "audience": "Buyers comparing listings, sellers, conditions, prices and availability.",
+    },
+    "apple-premium-product": {
+        "name": "Premium Product",
+        "websiteType": "premium_product",
+        "catalogType": "premium_editorial_catalog",
+        "audience": "Buyers evaluating a focused high-value product line with strong visual proof.",
+    },
+    "fashion-drop-pro": {
+        "name": "Fashion Drop",
+        "websiteType": "fashion",
+        "catalogType": "lookbook_collection_catalog",
+        "audience": "Style-driven shoppers browsing collections, drops, looks and limited releases.",
+    },
+    "restaurant-food-business": {
+        "name": "Restaurant Menu",
+        "websiteType": "restaurant",
+        "catalogType": "restaurant_menu_catalog",
+        "audience": "Local diners checking menu, specials, hours, location and ordering options.",
+    },
+    "booking-appointment-pro": {
+        "name": "Booking",
+        "websiteType": "booking",
+        "catalogType": "booking_menu_catalog",
+        "audience": "Customers choosing services, availability and appointment options.",
+    },
+    "home-services-premium": {
+        "name": "Local Services Premium",
+        "websiteType": "home_services",
+        "catalogType": "home_services_quote_catalog",
+        "audience": "Local customers comparing service areas, proof, reviews and quote options.",
+    },
+    "local-services-pro-plus": {
+        "name": "Local Services",
+        "websiteType": "services",
+        "catalogType": "service_area_catalog",
+        "audience": "Customers who need a clear service offer, trust signals and contact path.",
+    },
+    "corporate-company-pro": {
+        "name": "Corporate Company",
+        "websiteType": "corporate",
+        "catalogType": "company_services_catalog",
+        "audience": "Business visitors evaluating services, process, credibility and contact fit.",
+    },
+    "lead-funnel-pro": {
+        "name": "Lead Funnel",
+        "websiteType": "lead_funnel",
+        "catalogType": "lead_funnel_offer_catalog",
+        "audience": "Prospects deciding on one clear offer through benefits, proof and lead capture.",
+    },
+    "digital-products-store": {
+        "name": "Digital Products",
+        "websiteType": "digital_products",
+        "catalogType": "digital_offer_catalog",
+        "audience": "Customers buying downloads, courses, templates, software or digital bundles.",
+    },
+    "real-estate-listings-pro": {
+        "name": "Real Estate / Listings",
+        "websiteType": "real_estate",
+        "catalogType": "real_estate_listing_catalog",
+        "audience": "Buyers or renters searching listings by location, specs, price and availability.",
+    },
+    "luxury-high-ticket-pro": {
+        "name": "Luxury High Ticket",
+        "websiteType": "luxury",
+        "catalogType": "luxury_high_ticket_catalog",
+        "audience": "High-intent buyers who need exclusivity, trust, details and private inquiry.",
+    },
+    "education-course-academy-pro": {
+        "name": "Course Academy",
+        "websiteType": "education",
+        "catalogType": "education_course_catalog",
+        "audience": "Students or professionals comparing courses, outcomes, modules and enrollment.",
+    },
+    "medical-wellness-clinic-pro": {
+        "name": "Clinic / Wellness",
+        "websiteType": "clinic",
+        "catalogType": "medical_wellness_service_catalog",
+        "audience": "Patients or wellness clients looking for treatments, trust, staff and booking.",
+    },
+    "legal-professional-services-pro": {
+        "name": "Legal / Professional",
+        "websiteType": "legal",
+        "catalogType": "legal_professional_services_catalog",
+        "audience": "Clients evaluating professional authority, services, trust and consultation.",
+    },
+    "b2b-saas-enterprise-pro": {
+        "name": "B2B SaaS / Enterprise",
+        "websiteType": "b2b",
+        "catalogType": "b2b_solution_catalog",
+        "audience": "Business decision-makers comparing software, automation, dashboards and ROI.",
+    },
+    "manufacturing-industrial-supplier-pro": {
+        "name": "Industrial Supplier",
+        "websiteType": "industrial",
+        "catalogType": "industrial_supplier_catalog",
+        "audience": "Procurement teams and operators comparing specs, availability and RFQ options.",
+    },
+}
+
+
 def normalize_text(value: str | None) -> str:
     return re.sub(r"\s+", " ", (value or "").strip().lower())
 
@@ -89,56 +201,17 @@ class StrategyAgent(BaseAgent):
             state.businessDescription or "",
             state.industry or "",
             " ".join(state.servicesProducts),
+            state.preferredTone or "",
+            state.preferredColors or "",
+            state.salesFlow or "",
         ]))
 
-        website_type: WebsiteType = "online_store"
-        template_id = "modern-store"
-        template_name = "Modern Store"
-        catalog_type = "standard_catalog"
-
-        broad_terms = [
-            "amazon",
-            "marketplace",
-            "muchos productos",
-            "productos variados",
-            "de todo",
-            "categorias",
-            "categorías",
-            "cosas raras",
-            "accesorios",
-        ]
-        focused_terms = ["un producto", "linea", "línea", "premium", "exclusivo", "flagship"]
-
-        if any(term in text for term in broad_terms) or len(state.servicesProducts) >= 5:
-            website_type = "marketplace"
-            template_id = "mega-marketplace"
-            template_name = "Mega Marketplace"
-            catalog_type = "broad_multi_category_catalog"
-        elif any(term in text for term in focused_terms):
-            website_type = "premium_product"
-            template_id = "premium-showcase"
-            template_name = "Premium Showcase"
-            catalog_type = "focused_product_line"
-        elif any(term in text for term in ["ropa", "fashion", "moda", "zapatos", "streetwear"]):
-            website_type = "fashion"
-            template_id = "fashion-drop"
-            template_name = "Fashion Drop"
-            catalog_type = "fashion_collections"
-        elif any(term in text for term in ["restaurante", "menu", "comida", "food"]):
-            website_type = "restaurant"
-            template_id = "restaurant-menu"
-            template_name = "Restaurant Menu"
-            catalog_type = "restaurant_menu"
-        elif any(term in text for term in ["cita", "booking", "reserva", "agenda", "barber"]):
-            website_type = "booking"
-            template_id = "appointment-booking"
-            template_name = "Appointment Booking"
-            catalog_type = "bookable_services"
-        elif any(term in text for term in ["servicio", "quote", "cotizacion", "cotización"]):
-            website_type = "services"
-            template_id = "local-services"
-            template_name = "Local Services"
-            catalog_type = "service_catalog"
+        template_id, reason = self._select_template_id(text, len(state.servicesProducts), state.selectedTemplateId)
+        template = TEMPLATE_CATALOG[template_id]
+        website_type = template["websiteType"]
+        template_name = template["name"]
+        catalog_type = template["catalogType"]
+        target_audience = state.targetAudience or template["audience"]
 
         return AgentResult(
             agentName=self.name,
@@ -147,10 +220,100 @@ class StrategyAgent(BaseAgent):
                 "selectedTemplateId": template_id,
                 "selectedTemplateName": template_name,
                 "catalogType": catalog_type,
+                "targetAudience": target_audience,
             },
-            reasoningSummary=f"Selected {template_name} because the intake points to {catalog_type}.",
-            confidence=0.82,
+            reasoningSummary=f"Selected {template_name}: {reason}",
+            confidence=0.88,
         )
+
+    def _select_template_id(self, text: str, product_count: int, existing_template_id: str | None) -> tuple[str, str]:
+        scores = {template_id: 0 for template_id in TEMPLATE_CATALOG}
+        reasons: Dict[str, List[str]] = {template_id: [] for template_id in TEMPLATE_CATALOG}
+
+        def add(template_id: str, points: int, reason: str) -> None:
+            scores[template_id] += points
+            reasons[template_id].append(reason)
+
+        if existing_template_id in TEMPLATE_CATALOG:
+            add(existing_template_id, 18, "existing valid template signal")
+
+        broad_patterns = [
+            r"\bamazon\b",
+            r"\bmarketplace\b",
+            r"\bmega\s*(tienda|store|marketplace)\b",
+            r"\bmuchos productos\b",
+            r"\bproductos variados\b",
+            r"\bvarias categorias\b",
+            r"\bcategorias\b",
+            r"\bcategorias?\b",
+            r"\bde todo\b",
+            r"\bcosas raras\b",
+            r"\bvariety\b",
+            r"\bvarios\b",
+        ]
+        if any(re.search(pattern, text) for pattern in broad_patterns) or product_count >= 5:
+            add("mega-marketplace", 150, "broad multi-category catalog")
+
+        if re.search(r"\b(ebay|listing|listados|vendedores|seller|subasta|auction|usado|condition)\b", text):
+            add("listing-marketplace-pro", 120, "listing and seller comparison flow")
+
+        if re.search(r"\b(ropa|fashion|moda|boutique|streetwear|zapatos|sneaker|apparel|clothing|drop|lookbook)\b", text):
+            add("fashion-drop-pro", 95, "fashion and collection browsing")
+
+        focused_product = re.search(
+            r"\b(un producto|solo un producto|una linea|linea de|linea premium|producto premium|flagship|high ticket|exclusivo|parachoques|modelo)\b",
+            text,
+        )
+        if focused_product and scores["mega-marketplace"] < 100:
+            add("apple-premium-product", 118, "focused premium product line")
+
+        if re.search(r"\b(lujo|luxury|joyeria|jewelry|reloj|watch|arte|coleccionable|carro de lujo|private viewing)\b", text):
+            add("luxury-high-ticket-pro", 120, "high-ticket private-showroom offer")
+
+        if re.search(r"\b(restaurante|restaurant|menu|comida|food|pizza|burger|cafe|bar|plato|pedido)\b", text):
+            add("restaurant-food-business", 130, "restaurant and menu flow")
+
+        if re.search(r"\b(cita|booking|reserva|agenda|appointment|barber|salon|spa|calendario)\b", text):
+            add("booking-appointment-pro", 125, "appointment booking flow")
+
+        if re.search(r"\b(curso|course|academy|academia|clase|coaching|bootcamp|training|formacion)\b", text):
+            add("education-course-academy-pro", 124, "course and education offer")
+
+        if re.search(r"\b(digital|download|descarga|template|plantilla|ebook|software|membresia|membership|bundle)\b", text):
+            add("digital-products-store", 118, "digital product delivery")
+
+        if re.search(r"\b(real estate|inmueble|propiedad|casa|apartamento|terreno|listing|renta|alquiler)\b", text):
+            add("real-estate-listings-pro", 124, "search-first listings")
+
+        if re.search(r"\b(clinica|clinic|medico|medical|dental|wellness|terapia|estetica|treatment|consulta)\b", text):
+            add("medical-wellness-clinic-pro", 122, "clinic trust and appointment flow")
+
+        if re.search(r"\b(abogado|legal|law|contador|tax|impuesto|consultoria|insurance|seguro|asesoria)\b", text):
+            add("legal-professional-services-pro", 120, "professional authority and consultation")
+
+        if re.search(r"\b(saas|software|enterprise|b2b|automatizacion|automation|dashboard|crm|erp|api|integraciones|plataforma)\b", text):
+            add("b2b-saas-enterprise-pro", 122, "B2B software decision flow")
+
+        if re.search(r"\b(fabrica|manufactura|industrial|maquinaria|repuestos industriales|herramientas|supplier|bulk|rfq)\b", text):
+            add("manufacturing-industrial-supplier-pro", 122, "industrial supplier RFQ flow")
+
+        if re.search(r"\b(servicio|service|contractor|limpieza|repair|reparacion|roofing|cotizacion|cotización|quote)\b", text):
+            add("local-services-pro-plus", 95, "service quote flow")
+
+        if re.search(r"\b(plomeria|electricista|landscaping|construccion|hvac|home service|casa)\b", text):
+            add("home-services-premium", 115, "local home-service trust flow")
+
+        if re.search(r"\b(empresa|company|corporate|nosotros|servicios profesionales|consulting firm)\b", text):
+            add("corporate-company-pro", 90, "company presentation flow")
+
+        if re.search(r"\b(landing|lead|captar|conversion|campana|campaña|oferta unica)\b", text):
+            add("lead-funnel-pro", 95, "single-offer lead capture")
+
+        if max(scores.values()) <= 0:
+            return "corporate-company-pro", "not enough commerce-specific context, using a professional company structure"
+
+        winner = max(scores, key=lambda template_id: scores[template_id])
+        return winner, "; ".join(reasons[winner][:3]) or "best scoring strategy"
 
 
 class ArtDirectorAgent(BaseAgent):
@@ -218,6 +381,30 @@ class CopywriterAgent(BaseAgent):
                 headline = f"{name}: presentación premium para una oferta que merece atención"
                 subheadline = "Una experiencia visual refinada para explicar valor, detalles, modelos y confianza antes de comprar."
                 cta = "Ver colección"
+            elif state.websiteType == "fashion":
+                headline = f"{name}: colecciones con estilo, drops y piezas listas para destacar"
+                subheadline = "Una tienda visual para presentar looks, novedades, categorías y compras rápidas desde cualquier dispositivo."
+                cta = "Ver colección"
+            elif state.websiteType == "restaurant":
+                headline = f"{name}: menú claro, visual y listo para recibir pedidos"
+                subheadline = "Platos, especiales, horarios y contacto organizados para que el cliente decida rápido."
+                cta = "Ver menú"
+            elif state.websiteType == "booking":
+                headline = f"{name}: servicios fáciles de explorar y reservar"
+                subheadline = "Presenta servicios, disponibilidad, confianza y un camino directo para agendar."
+                cta = "Reservar ahora"
+            elif state.websiteType in ["services", "home_services", "legal", "clinic"]:
+                headline = f"{name}: servicios profesionales con confianza desde el primer vistazo"
+                subheadline = "Una página clara para explicar lo que haces, demostrar credibilidad y convertir visitas en solicitudes."
+                cta = "Solicitar información"
+            elif state.websiteType in ["b2b", "industrial"]:
+                headline = f"{name}: soluciones claras para compradores que necesitan decidir con confianza"
+                subheadline = "Catálogo, especificaciones, beneficios y llamadas a acción pensadas para ventas consultivas."
+                cta = "Solicitar cotización"
+            elif state.websiteType == "digital_products":
+                headline = f"{name}: productos digitales listos para vender y entregar"
+                subheadline = "Presenta bundles, módulos, beneficios y acceso inmediato con una experiencia simple de compra."
+                cta = "Ver productos"
             else:
                 headline = f"{name}: una presencia digital clara y profesional"
                 subheadline = "Contenido, secciones y llamados a la acción pensados para convertir visitantes en clientes."
@@ -231,6 +418,30 @@ class CopywriterAgent(BaseAgent):
                 headline = f"{name}: a premium showcase for a focused offer"
                 subheadline = "A refined product experience built around value, details, models and buyer confidence."
                 cta = "View collection"
+            elif state.websiteType == "fashion":
+                headline = f"{name}: style-led collections, drops and standout pieces"
+                subheadline = "A visual store built for looks, new arrivals, categories and fast mobile shopping."
+                cta = "View collection"
+            elif state.websiteType == "restaurant":
+                headline = f"{name}: a clear visual menu ready for orders"
+                subheadline = "Dishes, specials, hours and contact details organized so customers can decide fast."
+                cta = "View menu"
+            elif state.websiteType == "booking":
+                headline = f"{name}: services made easy to explore and book"
+                subheadline = "Show services, availability, trust signals and a direct path to appointments."
+                cta = "Book now"
+            elif state.websiteType in ["services", "home_services", "legal", "clinic"]:
+                headline = f"{name}: professional services with trust from the first view"
+                subheadline = "A clear page for explaining your offer, proving credibility and turning visits into requests."
+                cta = "Request info"
+            elif state.websiteType in ["b2b", "industrial"]:
+                headline = f"{name}: clear solutions for buyers who need confidence"
+                subheadline = "Catalog, specs, benefits and calls to action built for consultative sales."
+                cta = "Request quote"
+            elif state.websiteType == "digital_products":
+                headline = f"{name}: digital products ready to sell and deliver"
+                subheadline = "Present bundles, modules, benefits and instant access with a simple buying experience."
+                cta = "View products"
             else:
                 headline = f"{name}: a clear professional web presence"
                 subheadline = "Content, sections and calls to action designed to turn visitors into customers."
