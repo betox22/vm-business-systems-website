@@ -5502,8 +5502,7 @@ function hasEnoughContextForFirstDraft() {
   const hasName = Boolean(guidedState.businessName);
   const hasOffer = Boolean(guidedState.businessDescription) || arrayValue(guidedState.servicesProducts).length > 0;
   const hasGoal = Boolean(guidedState.websiteIntent || guidedState.salesMode || forcedTemplateSelection?.templateId);
-  const hasStyle = Boolean(guidedState.preferredTone || arrayValue(guidedState.preferredColors).length || arrayValue(guidedState.logoPalette).length);
-  return hasName && hasOffer && hasGoal && hasStyle;
+  return hasName && hasOffer && hasGoal;
 }
 
 function shouldAdvanceToDesignerPlan(message) {
@@ -5629,7 +5628,7 @@ function extractBusinessName(text) {
   for (const pattern of patterns) {
     const match = text.match(pattern);
     if (match?.[1]) {
-      const name = match[1].split(/\s+(?:y\s+)?(?:vende|vendo|vendemos|ofrece|ofrecemos|hace|tiene|con|para|debe|sera|será|ser|vamos|va)\b/i)[0];
+      const name = match[1].split(/\s+(?:y\s+)?(?:vende|vendo|vendemos|ofrece|ofrecemos|hace|tiene|con|para|debe|sera|será|ser|vamos|va|ubicad[ao]|en\s+usa|desde|despacho|env[ií]o|no\s+tengo|sin\s+logo|pero|quiero|necesito)\b/i)[0];
       return cleanExtractedPhrase(name, 56);
     }
   }
@@ -5825,17 +5824,15 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
   } catch (error) {
     builderAvatarManager?.setState("confused", { source: "generate-error" });
     setStudioProgressPhase("homepage");
-    if (!isPublicClientSetup) {
-      const fallbackResult = buildInstantTemplateResult(payload, error, templateSelection);
-      applyGenerationResult(fallbackResult, payload, templateSelection);
-    }
+    const fallbackResult = buildInstantTemplateResult(payload, error, templateSelection);
+    applyGenerationResult(fallbackResult, payload, templateSelection);
     setStudioProgressPhase("ready");
     const message = isPublicClientSetup
-      ? `${t("generateError")}: ${shortError(error.message)}. ${langText({
-          en: "No draft was shown because LYRA could not finish the real AI generation.",
-          es: "No mostré un borrador porque LYRA no pudo terminar la generación real con IA.",
-          fr: "Aucun brouillon n'a été affiché car LYRA n'a pas terminé la génération IA réelle.",
-          pt: "Nenhum rascunho foi exibido porque a LYRA não conseguiu concluir a geração real com IA.",
+      ? `${langText({
+          en: "I created a fast editable draft from the selected template while the AI service recovers.",
+          es: "Creé un borrador editable rápido desde la plantilla elegida mientras se recupera el servicio de IA.",
+          fr: "J'ai créé un brouillon modifiable rapide depuis le template choisi pendant que le service IA récupère.",
+          pt: "Criei um rascunho editável rápido a partir do template escolhido enquanto o serviço de IA se recupera.",
         })}`
       : `${t("generateError")}: ${shortError(error.message)}. Showing a fast editable draft instead.`;
     statusText.textContent = message;
