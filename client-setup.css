@@ -3318,3 +3318,139 @@ body.public-client-setup {
     font-size: 12px;
   }
 }
+
+/* Strict mobile-first layout contract for Lyra client workspace. */
+@media (max-width: 768px) {
+  body.public-client-setup {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .ai-shell,
+  .public-client-setup:not(.generated-preview-open) .intake-panel,
+  .public-client-setup:not(.generated-preview-open) .guided-panel,
+  .public-client-setup:not(.generated-preview-open) .guided-shell {
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .guided-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr);
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .guided-live-stage,
+  .public-client-setup:not(.generated-preview-open) .live-stage-header,
+  .public-client-setup:not(.generated-preview-open) .live-site-preview-mount {
+    display: none !important;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .guided-chat-card {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-width: 100%;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .guided-header,
+  .public-client-setup:not(.generated-preview-open) .guided-progress,
+  .public-client-setup:not(.generated-preview-open) .luma-coach-card,
+  .public-client-setup:not(.generated-preview-open) .quick-chip-row,
+  .public-client-setup:not(.generated-preview-open) .chat-status-card,
+  .public-client-setup:not(.generated-preview-open) .chat-composer {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .luma-coach-card,
+  .public-client-setup:not(.generated-preview-open) .chat-status-card {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .guided-chat {
+    min-height: 0;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 12px 10px 96px;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .live-stage-header strong,
+  .public-client-setup:not(.generated-preview-open) .neutral-live-copy h2,
+  .public-client-setup:not(.generated-preview-open) .luma-ready-head strong,
+  .public-client-setup:not(.generated-preview-open) .site-plan-head strong,
+  .public-client-setup:not(.generated-preview-open) .chat-understanding-card strong {
+    font-size: min(24px, 7vw);
+    line-height: 1.08;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .luma-coach-top strong,
+  .public-client-setup:not(.generated-preview-open) .chat-status-card strong,
+  .public-client-setup:not(.generated-preview-open) .guided-progress span {
+    font-size: 11px;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .chat-message span,
+  .public-client-setup:not(.generated-preview-open) .chat-message.user {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .chat-message.assistant,
+  .public-client-setup:not(.generated-preview-open) .chat-message.system {
+    grid-template-columns: 36px minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .chat-message span {
+    max-width: min(80vw, 100%);
+  }
+
+  .public-client-setup:not(.generated-preview-open) .chat-message.user {
+    max-width: 80vw;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .chat-composer {
+    position: sticky;
+    bottom: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+    padding-top: 10px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.97);
+  }
+
+  .public-client-setup.generated-preview-open.draft-adjust-open .workspace {
+    margin-right: 0;
+  }
+
+  .public-client-setup.generated-preview-open.draft-adjust-open .guided-panel {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    padding: 0;
+    background: #f7fbfa;
+  }
+
+  .public-client-setup.generated-preview-open.draft-adjust-open .guided-shell {
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+}
