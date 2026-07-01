@@ -3454,3 +3454,508 @@ body.public-client-setup {
     border-radius: 0;
   }
 }
+
+/* KREATON Studio visual layer: clean AI workspace without changing existing logic. */
+body.public-client-setup:not(.generated-preview-open):not(.client-auth-required) {
+  height: 100dvh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 14% 10%, rgba(20, 184, 166, 0.11), transparent 34%),
+    radial-gradient(circle at 86% 8%, rgba(99, 102, 241, 0.12), transparent 30%),
+    linear-gradient(135deg, #f8fafc 0%, #eefcf9 52%, #f7f5ff 100%);
+  color: #0f172a;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .ai-shell,
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .intake-panel,
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-panel {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-shell {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-header {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px clamp(18px, 2.2vw, 32px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(18px);
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .assistant-identity {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .assistant-avatar.large {
+  width: 58px;
+  height: 58px;
+  filter: drop-shadow(0 14px 22px rgba(20, 184, 166, 0.2));
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .assistant-identity strong {
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .assistant-identity span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .compact-action,
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .compact-language select,
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .audio-toggle,
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) #guidedCloseButton {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(255, 255, 255, 0.86);
+  color: #334155;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-progress {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 8px clamp(18px, 2.2vw, 32px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-progress div {
+  height: 5px;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-progress i {
+  background: linear-gradient(90deg, #14b8a6, #6366f1);
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(380px, 30vw, 430px);
+  overflow: hidden;
+  background: transparent;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-live-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 22px;
+  overflow: auto;
+  padding: clamp(22px, 3.2vw, 46px);
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-live-stage::after {
+  content: "";
+  position: absolute;
+  right: 5%;
+  top: 18%;
+  width: min(32vw, 420px);
+  height: min(32vw, 420px);
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.12);
+  filter: blur(48px);
+  pointer-events: none;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-stage-header {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-stage-header span {
+  border-color: rgba(20, 184, 166, 0.18);
+  background: rgba(240, 253, 250, 0.9);
+  color: #0f766e;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-stage-header strong {
+  max-width: 720px;
+  margin-top: 14px;
+  color: #0f172a;
+  font-size: clamp(34px, 4.3vw, 62px);
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-stage-header p {
+  max-width: 640px;
+  color: #475569;
+  font-size: 16px;
+  line-height: 1.58;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-site-preview-mount {
+  position: relative;
+  z-index: 1;
+  min-height: 420px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  overflow: hidden;
+  background:
+    linear-gradient(#f8fafc 0 48px, transparent 48px),
+    #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-site-preview-mount::before {
+  content: "vista-previa.kreaton.ai/tu-proyecto";
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  color: #94a3b8;
+  background:
+    radial-gradient(circle at 22px 50%, #cbd5e1 0 5px, transparent 6px),
+    radial-gradient(circle at 42px 50%, #cbd5e1 0 5px, transparent 6px),
+    radial-gradient(circle at 62px 50%, #cbd5e1 0 5px, transparent 6px),
+    rgba(248, 250, 252, 0.96);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-site-preview-mount:empty::after {
+  content: "LYRA esta mapeando el negocio antes de disenar.";
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #64748b;
+  text-align: center;
+  font-weight: 800;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-site-preview-card,
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-preview-rendered {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-chat-card {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 0;
+  border-left: 1px solid rgba(15, 23, 42, 0.09);
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(18px);
+  box-shadow: -12px 0 40px rgba(15, 23, 42, 0.08);
+}
+
+.public-client-setup .lyra-agent-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.14);
+  background: rgba(238, 242, 255, 0.68);
+  color: #4338ca;
+}
+
+.public-client-setup .lyra-agent-status span {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #6366f1;
+}
+
+.public-client-setup .lyra-agent-status span::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  animation: lyra-agent-ping 1.8s ease-out infinite;
+}
+
+.public-client-setup .lyra-agent-status strong {
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-chat {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 20px 18px 14px;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message {
+  margin-bottom: 14px;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message.assistant,
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message.system {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message .assistant-avatar.tiny {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 12px rgba(20, 184, 166, 0.18));
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message.assistant span,
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message.system span {
+  width: fit-content;
+  max-width: min(100%, 330px);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 20px 20px 20px 6px;
+  padding: 13px 15px;
+  background: #ffffff;
+  color: #334155;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message.user {
+  display: block;
+  width: fit-content;
+  max-width: min(78%, 340px);
+  margin-left: auto;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message.user span {
+  display: block;
+  border-radius: 20px 20px 6px 20px;
+  padding: 13px 15px;
+  background: linear-gradient(135deg, #0f766e, #14b8a6);
+  color: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 118, 110, 0.18);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-thinking,
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-status-card,
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-asset-prompt,
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .quick-chip-row {
+  margin-left: 18px;
+  margin-right: 18px;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-status-card {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-asset-prompt {
+  border-color: rgba(20, 184, 166, 0.16);
+  border-radius: 16px;
+  background: rgba(240, 253, 250, 0.72);
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .quick-chip-row button,
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-asset-prompt button,
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-status-card button {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 850;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 16px 16px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-input-label input {
+  min-height: 46px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 14px;
+  padding: 0 14px;
+  background: #f8fafc;
+  box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.02);
+  font-size: 14px;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-actions {
+  display: grid;
+  grid-template-columns: 40px 40px;
+  gap: 8px;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-actions .text-action {
+  grid-column: 1 / -1;
+  min-height: 20px;
+  padding: 0;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .send-toggle {
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+}
+
+.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .mic-toggle {
+  background: #ffffff;
+  color: #334155;
+}
+
+@keyframes lyra-agent-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  body.public-client-setup:not(.generated-preview-open):not(.client-auth-required) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-shell {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-header {
+    min-height: 64px;
+    padding: 8px 10px;
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .assistant-avatar.large {
+    width: 48px;
+    height: 48px;
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-header-actions {
+    gap: 6px;
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .compact-action {
+    max-width: 96px;
+    min-height: 32px;
+    padding: 6px 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-live-stage {
+    display: none !important;
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-chat-card {
+    border-left: 0;
+    box-shadow: none;
+  }
+
+  .public-client-setup .lyra-agent-status {
+    padding: 8px 12px;
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-chat {
+    padding: 12px 10px 12px;
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message.assistant,
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message.system {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message.assistant span,
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message.system span {
+    max-width: min(78vw, 100%);
+    font-size: 14px;
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message.user {
+    max-width: 78vw;
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-message.user span {
+    font-size: 14px;
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-thinking,
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-status-card,
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .guided-asset-prompt,
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .quick-chip-row {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-composer {
+    position: sticky;
+    bottom: 0;
+    padding: 10px 10px max(12px, env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.96);
+  }
+
+  .public-client-setup:not(.generated-preview-open):not(.client-auth-required) .chat-input-label input {
+    min-height: 46px;
+    font-size: 16px;
+  }
+}
