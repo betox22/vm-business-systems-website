@@ -6554,7 +6554,7 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
     payload.preferred_tone,
     arrayValue(payload.preferred_colors).join(" "),
   ].join(" ");
-  let nextSchema = schema;
+  let nextSchema = lockSchemaToExecutableTemplate(schema, payload, templateSelection, { templateId, catalogType, brief });
   if (/mega-marketplace/i.test(templateId) || /dense_marketplace_catalog/i.test(catalogType) || textSuggestsBroadMarketplace(brief)) {
     const copy = instantLocaleCopy(payload.selectedLanguage || selectedLanguage || "en");
     const name = payload.business_name || schema.business?.name || copy.newStore;
@@ -6603,6 +6603,131 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
     nextSchema = applyCyberpunkVisualDirection(nextSchema);
   }
   return nextSchema;
+}
+
+function lockSchemaToExecutableTemplate(schema, payload = {}, templateSelection = null, context = {}) {
+  const template = templateSelection?.template || payload.selectedTemplate || schema.selected_template || {};
+  const templateId = context.templateId || templateSelection?.templateId || payload.templateId || schema.selected_template?.id || schema.layout_mode?.template_id || template.id || "";
+  const catalogType = context.catalogType || templateSelection?.catalogType || payload.catalogType || schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || template.catalogModel?.catalogType || "";
+  if (!templateId && !catalogType) return schema;
+
+  const copy = instantLocaleCopy(payload.selectedLanguage || schema.business?.selectedLanguage || selectedLanguage || "en");
+  const name = payload.business_name || schema.business?.name || copy.newStore;
+  const products = arrayValue(payload.services_products).length
+    ? arrayValue(payload.services_products)
+    : arrayValue(schema.catalog_items || schema.products_services).map((item) => item.name || item.title || item).filter(Boolean);
+  const description = professionalPublicDescription({
+    payload: {
+      ...payload,
+      business_name: name,
+      services_products: products,
+      business_description: payload.business_description || schema.business?.description || "",
+      preferred_tone: payload.preferred_tone || schema.business?.tone || "",
+    },
+    template,
+    catalogType,
+    copy,
+    name,
+    products,
+    language: payload.selectedLanguage || schema.business?.selectedLanguage || selectedLanguage || "en",
+  });
+  const lockedPages = executablePagesForTemplate(templateId, catalogType, copy, name, description, payload);
+  if (!lockedPages.length) return schema;
+
+  const existingByKey = new Map(arrayValue(schema.pages).map((page) => [page.page_key, page]));
+  const mergedPages = lockedPages.map((page) => mergeLockedTemplatePage(page, existingByKey.get(page.page_key)));
+  const customPages = arrayValue(schema.pages).filter((page) => page.page_key && !mergedPages.some((locked) => locked.page_key === page.page_key));
+  return {
+    ...schema,
+    pages: [...mergedPages, ...customPages.map((page, index) => ({ ...page, order: mergedPages.length + index + 1 }))],
+    selected_template: {
+      ...(schema.selected_template || {}),
+      ...(template || {}),
+      id: normalizeTemplatePresetId(templateId, catalogType),
+      name: template.name || schema.selected_template?.name || localizedTemplateName(templatePreviewMeta(templateId)) || templateId,
+      architecture_locked: true,
+      editable_content_only: true,
+    },
+    active_template: {
+      ...(schema.active_template || {}),
+      id: normalizeTemplatePresetId(templateId, catalogType),
+      architecture_locked: true,
+    },
+    layout_mode: {
+      ...(schema.layout_mode || {}),
+      template_id: normalizeTemplatePresetId(templateId, catalogType),
+      catalog_type: catalogType || schema.layout_mode?.catalog_type || schema.catalog_model?.catalogType || "",
+      architecture_locked: true,
+      navigation: {
+        ...(schema.layout_mode?.navigation || {}),
+        show_header: true,
+        sticky_header: true,
+        show_cart: /marketplace|store|shop|ecommerce|catalog|retail|product/i.test(`${templateId} ${catalogType}`),
+      },
+    },
+    catalog_model: {
+      ...(schema.catalog_model || {}),
+      ...(template.catalogModel || {}),
+      catalogType: catalogType || template.catalogModel?.catalogType || schema.catalog_model?.catalogType || "",
+    },
+    template_lock: {
+      enabled: true,
+      template_id: normalizeTemplatePresetId(templateId, catalogType),
+      rule: "AI may edit copy, products, media, colors, CTAs, and ordering only inside the selected executable template. It must not invent a new layout.",
+    },
+  };
+}
+
+function normalizeTemplatePresetId(templateId = "", catalogType = "") {
+  if (/mega-marketplace|marketplace-style/i.test(templateId) || /dense_marketplace_catalog/i.test(catalogType)) return "mega-marketplace";
+  return templateId || "";
+}
+
+function mergeLockedTemplatePage(lockedPage, existingPage = null) {
+  if (!existingPage) return lockedPage;
+  const existingSections = new Map(arrayValue(existingPage.sections).map((section) => [section.id || section.type, section]));
+  return {
+    ...lockedPage,
+    title: existingPage.title || lockedPage.title,
+    slug: existingPage.slug || lockedPage.slug,
+    sections: arrayValue(lockedPage.sections).map((lockedSection) => {
+      const existing = existingSections.get(lockedSection.id) || existingSections.get(lockedSection.type);
+      if (!existing) return lockedSection;
+      return {
+        ...lockedSection,
+        editable: {
+          ...(lockedSection.editable || {}),
+          ...(existing.editable || {}),
+        },
+        settings: {
+          ...(lockedSection.settings || {}),
+          ...(existing.settings || {}),
+          layout: lockedSection.settings?.layout || existing.settings?.layout,
+        },
+      };
+    }),
+  };
+}
+
+function executablePagesForTemplate(templateId = "", catalogType = "", copy, name, description, payload = {}) {
+  const key = `${templateId} ${catalogType}`.toLowerCase();
+  if (/mega-marketplace|marketplace-style|dense_marketplace_catalog/.test(key)) return buildMarketplaceInstantPages(copy, name, description, payload);
+  if (/apple-premium-product|premium_editorial_catalog/.test(key)) return buildPremiumProductInstantPages(copy, name, description, payload);
+  if (/luxury-high-ticket-pro|luxury_high_ticket_catalog/.test(key)) return buildLuxuryHighTicketInstantPages(copy, name, description, payload);
+  if (/education-course-academy-pro|education_course_catalog/.test(key)) return buildEducationAcademyInstantPages(copy, name, description, payload);
+  if (/medical-wellness-clinic-pro|medical_wellness_service_catalog/.test(key)) return buildMedicalWellnessInstantPages(copy, name, description, payload);
+  if (/legal-professional-services-pro|legal_professional_services_catalog/.test(key)) return buildLegalProfessionalInstantPages(copy, name, description, payload);
+  if (/b2b-saas-enterprise-pro|b2b_solution_catalog/.test(key)) return buildB2BEnterpriseInstantPages(copy, name, description, payload);
+  if (/manufacturing-industrial-supplier-pro|industrial_supplier_catalog/.test(key)) return buildManufacturingIndustrialInstantPages(copy, name, description, payload);
+  if (/fashion-drop-pro|bold-fashion-store|lookbook_collection_catalog/.test(key)) return buildFashionDropInstantPages(copy, name, description, payload);
+  if (/corporate-company-pro|company_services_catalog/.test(key)) return buildCorporateCompanyInstantPages(copy, name, description, payload);
+  if (/home-services-premium|local-services-pro-plus|home_services_quote_catalog|service_area_catalog/.test(key)) return buildHomeServicesPremiumInstantPages(copy, name, description, payload);
+  if (/booking-appointment-pro|booking_menu_catalog/.test(key)) return buildBookingAppointmentInstantPages(copy, name, description, payload);
+  if (/restaurant-food-business|restaurant_menu_catalog|menu_catalog/.test(key)) return buildRestaurantMenuInstantPages(copy, name, description, payload);
+  if (/digital-products-store|digital_offer_catalog/.test(key)) return buildDigitalProductsInstantPages(copy, name, description, payload);
+  if (/real-estate-listings-pro|real_estate_listing_catalog/.test(key)) return buildRealEstateListingsInstantPages(copy, name, description, payload);
+  if (/lead-funnel-pro|lead_funnel_offer_catalog/.test(key)) return buildLeadFunnelInstantPages(copy, name, description, payload);
+  return [];
 }
 
 function briefRequestsCyberpunk(value = "") {
@@ -9093,21 +9218,21 @@ function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
         {
           id: "category_rail",
           type: "CategoryRail",
-          order: 3,
+          order: 2,
           editable: { title: copy.shopByCategory, text: copy.categoryRailText },
           settings: { layout: "category_tiles", spacing: "compact", container_width: "wide" },
         },
         {
           id: "deal_row",
           type: "DealRow",
-          order: 4,
+          order: 3,
           editable: { title: copy.todayDeals, text: copy.dealsText },
           settings: { layout: "deal_row", spacing: "compact", container_width: "wide" },
         },
         {
           id: "marketplace_catalog",
           type: "ProductGrid",
-          order: 2,
+          order: 4,
           editable: { title: copy.bestSellers, text: copy.catalogText, images: [] },
           settings: { layout: "marketplace_grid", columns: 4, spacing: "balanced", container_width: "wide", card_density: "compact", card_gap: "tight" },
         },
@@ -9127,9 +9252,26 @@ function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
       order: 2,
       sections: [
         {
+          id: "catalog_search",
+          type: "MarketplaceHero",
+          order: 1,
+          editable: {
+            headline: copy.catalog,
+            subtitle: copy.catalogText,
+            primary_button: copy.shopDeals,
+            secondary_button: copy.viewCategories,
+            search_placeholder: copy.searchPlaceholder,
+            deal_badge: copy.bestSellers,
+            deal_title: copy.todayDeals,
+            deal_text: copy.dealsText,
+            images: [],
+          },
+          settings: { layout: "marketplace_search", spacing: "compact", container_width: "wide" },
+        },
+        {
           id: "catalog_grid",
           type: "ProductGrid",
-          order: 1,
+          order: 2,
           editable: { title: copy.catalog, text: copy.catalogText, images: [] },
           settings: { layout: "marketplace_grid", columns: 4, spacing: "compact", container_width: "wide", card_density: "compact", card_gap: "tight" },
         },
