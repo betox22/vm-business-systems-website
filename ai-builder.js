@@ -10840,7 +10840,22 @@ function continueWithStudioAuth(provider) {
 async function continueWithEmailAuth(event) {
   event.preventDefault();
   const email = studioAuthEmail?.value.trim();
-  if (!email) return;
+  if (!isValidWorkspaceEmail(email)) {
+    const message = langText({
+      en: "Enter a complete email, for example test@gmail.com.",
+      es: "Escribe un correo completo, por ejemplo test@gmail.com.",
+      fr: "Entrez un email complet, par exemple test@gmail.com.",
+      pt: "Digite um email completo, por exemplo test@gmail.com.",
+    });
+    if (studioAuthEmail) {
+      studioAuthEmail.setCustomValidity(message);
+      studioAuthEmail.reportValidity();
+      studioAuthEmail.addEventListener("input", () => studioAuthEmail.setCustomValidity(""), { once: true });
+    }
+    if (storageStatus) storageStatus.textContent = message;
+    if (guidedStatusText) guidedStatusText.textContent = message;
+    return;
+  }
   persistPendingStudioAccountAction("email");
   const submitButton = studioEmailAuthForm?.querySelector("button[type='submit']");
   const previousText = submitButton?.textContent || "";
@@ -10891,6 +10906,10 @@ async function continueWithEmailAuth(event) {
       submitButton.textContent = previousText || t("saveEmailContinue");
     }
   }
+}
+
+function isValidWorkspaceEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(email || "").trim());
 }
 
 function adjustGeneratedDraftWithLuma() {

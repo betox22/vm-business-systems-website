@@ -4,7 +4,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -22,6 +22,7 @@ from .orchestrator import (
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 orchestrator = LyraOrchestrator()
+client_intake_sessions: Dict[str, Dict[str, Any]] = {}
 
 app = FastAPI(title="KREATON LYRA API", version="0.1.0")
 
@@ -83,6 +84,47 @@ async def luma_chat(request: LumaChatRequest) -> LumaChatResponse:
         sitePlan=plan,
         used_dev_fallback=False,
     )
+
+
+@app.post("/api/client/intake-session")
+async def client_intake_session(payload: Dict[str, Any]) -> Dict[str, Any]:
+    email = str(payload.get("email") or "").strip().lower()
+    if "@" not in email or "." not in email.rsplit("@", 1)[-1]:
+        raise HTTPException(status_code=400, detail="A complete email is required.")
+
+    force_new = bool(payload.get("forceNew"))
+    existing = client_intake_sessions.get(email)
+    draft = payload.get("draft") if isinstance(payload.get("draft"), dict) else {}
+    name = str(payload.get("name") or draft.get("businessName") or "").strip()
+    selected_language = payload.get("selectedLanguage") or draft.get("selectedLanguage") or "en"
+
+    if force_new or not existing:
+        request_id = payload.get("requestId") or f"req_{uuid.uuid4().hex[:12]}"
+        session = {
+            "requestId": request_id,
+            "request_id": request_id,
+            "requestNumber": f"KR-{uuid.uuid4().hex[:6].upper()}",
+            "request_number": "",
+            "clientEmail": email,
+            "client_email": email,
+            "clientName": name,
+            "selectedLanguage": selected_language,
+            "draft": draft,
+            "restored": False,
+            "storageStatus": "stored",
+            "storage_status": "stored",
+        }
+        session["request_number"] = session["requestNumber"]
+        client_intake_sessions[email] = session
+        return session
+
+    existing["draft"] = {**(existing.get("draft") or {}), **draft}
+    existing["clientName"] = name or existing.get("clientName") or ""
+    existing["selectedLanguage"] = selected_language
+    existing["restored"] = True
+    existing["storageStatus"] = "stored"
+    existing["storage_status"] = "stored"
+    return existing
 
 
 @app.post("/ai/website-builder", response_model=WebsiteGenerationResponse)
