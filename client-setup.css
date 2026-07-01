@@ -3140,3 +3140,181 @@ body.public-client-setup.generated-preview-open {
     transform: scale(1.08);
   }
 }
+
+/* KREATON client hardening: final override for mobile chat and generated preview. */
+body.public-client-setup {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.public-client-setup,
+.public-client-setup *,
+.public-client-setup *::before,
+.public-client-setup *::after {
+  box-sizing: border-box;
+}
+
+.public-client-setup .guided-shell,
+.public-client-setup .guided-layout,
+.public-client-setup .guided-chat-card,
+.public-client-setup .guided-chat,
+.public-client-setup .chat-message,
+.public-client-setup .chat-message span,
+.public-client-setup .luma-ready-card,
+.public-client-setup .chat-understanding-card,
+.public-client-setup .site-plan-card,
+.public-client-setup .chat-composer,
+.public-client-setup .chat-input-label,
+.public-client-setup .chat-input-label input {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.public-client-setup .guided-chat {
+  overflow-x: hidden;
+}
+
+.public-client-setup .chat-message.user {
+  width: fit-content;
+  max-width: min(78%, 560px);
+}
+
+.public-client-setup .chat-message.assistant span,
+.public-client-setup .chat-message.system span {
+  max-width: 100%;
+}
+
+.public-client-setup .chat-input-label input {
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  body.public-client-setup:not(.generated-preview-open) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .ai-shell,
+  .public-client-setup:not(.generated-preview-open) .guided-panel {
+    width: 100%;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .guided-shell {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    width: 100%;
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .guided-layout {
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .guided-chat-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .guided-chat {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 12px 10px 96px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .chat-message {
+    max-width: 100%;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .chat-message.assistant,
+  .public-client-setup:not(.generated-preview-open) .chat-message.system {
+    grid-template-columns: 38px minmax(0, 1fr);
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .chat-message .assistant-avatar.tiny {
+    width: 36px;
+    height: 36px;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .chat-message span {
+    width: auto;
+    max-width: min(78vw, 100%);
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .chat-message.user {
+    width: fit-content;
+    max-width: 78vw;
+    margin-left: auto;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .chat-composer {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    width: 100%;
+    padding: 10px 10px max(12px, env(safe-area-inset-bottom));
+    box-shadow: 0 -12px 28px rgba(15, 23, 42, 0.08);
+  }
+
+  .public-client-setup:not(.generated-preview-open) .chat-input-label input {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .public-client-setup:not(.generated-preview-open) .guided-actions {
+    grid-template-columns: 42px 42px;
+    min-width: 90px;
+  }
+
+  .public-client-setup:not(.generated-preview-open) #guidedSendButton,
+  .public-client-setup:not(.generated-preview-open) #guidedMicButton {
+    width: 42px;
+    height: 42px;
+    min-height: 42px;
+  }
+}
+
+@media (max-width: 720px) {
+  .public-client-setup.generated-preview-open #previewFrame,
+  .public-client-setup.generated-preview-open #previewFrame .rendered-site {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .public-client-setup.generated-preview-open #previewFrame .rendered-site {
+    min-height: 100vh;
+  }
+
+  .public-client-setup.generated-preview-open .client-review-bar {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .public-client-setup.generated-preview-open .client-review-bar strong {
+    font-size: 14px;
+  }
+
+  .public-client-setup.generated-preview-open .client-review-bar span {
+    font-size: 12px;
+  }
+}

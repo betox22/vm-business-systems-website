@@ -6028,9 +6028,12 @@ function inferDesignerTemplateIdFromPayload(payload = {}) {
     payload.salesMode || guidedState.salesMode,
   ].join(" "));
   const products = meaningfulOfferItems(payload.services_products);
+  if (/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|mega marketplace)\b/.test(text) || textSuggestsBroadMarketplace(text) || products.length >= 5) {
+    return "mega-marketplace";
+  }
+  if (textSuggestsFocusedProductLine(text)) return "apple-premium-product";
   const scoredTemplateId = bestTemplateIdFromContext(text, payload);
   if (scoredTemplateId) return scoredTemplateId;
-  if (textSuggestsBroadMarketplace(text) || products.length >= 5) return "mega-marketplace";
   if (/restaurant|restaurante|menu|comida|food|cafe|cafeteria|delivery/.test(text)) return "restaurant-food-business";
   if (/barber|barberia|salon|spa|booking|reserva|cita|appointment/.test(text)) return "booking-appointment-pro";
   if (/legal|abogado|lawyer|contador|tax|impuestos|consultoria|consulting|seguros/.test(text)) return "legal-professional-services-pro";
@@ -6040,7 +6043,7 @@ function inferDesignerTemplateIdFromPayload(payload = {}) {
   if (/curso|course|academy|academia|bootcamp|training|clases|masterclass/.test(text)) return "education-course-academy-pro";
   if (/digital|ebook|templates|plantillas|descarga|download|membresia|membership/.test(text)) return "digital-products-store";
   if (/ropa|fashion|moda|boutique|streetwear|zapato|sneaker|accesorio/.test(text)) return "fashion-drop-pro";
-  if (textSuggestsFocusedProductLine(text) || textSuggestsSingleProductShowcase(text) || textSuggestsPremiumProductPreference(text)) {
+  if (textSuggestsSingleProductShowcase(text) || textSuggestsPremiumProductPreference(text)) {
     return "apple-premium-product";
   }
   if (/servicio|service|contractor|limpieza|roofing|repair|reparacion|cotizacion|quote/.test(text)) return "local-services-pro-plus";

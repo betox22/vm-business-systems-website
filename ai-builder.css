@@ -2658,6 +2658,29 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   outline: none;
 }
 
+.template-mega-marketplace .marketplace-deal-row,
+.template-marketplace-style .marketplace-deal-row,
+.template-mega-marketplace .catalog-results,
+.template-marketplace-style .catalog-results {
+  align-items: stretch;
+}
+
+.template-mega-marketplace .market-card,
+.template-marketplace-style .market-card {
+  height: 100%;
+  min-width: 0;
+}
+
+.template-mega-marketplace .market-card .rendered-button,
+.template-marketplace-style .market-card .rendered-button {
+  margin-top: auto;
+}
+
+.template-mega-marketplace .marketplace-subscribe,
+.template-marketplace-style .marketplace-subscribe {
+  clear: both;
+}
+
 .template-apple-premium-product,
 .layout-apple-premium-product {
   width: min(100%, 1440px);
@@ -9398,5 +9421,80 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 
   .section-masonry .rendered-card:nth-child(even) {
     margin-top: 0;
+  }
+}
+
+/* Final marketplace override after generic mobile rules. */
+.template-mega-marketplace,
+.template-marketplace-style {
+  overflow-x: hidden;
+}
+
+.template-mega-marketplace .catalog-results,
+.template-marketplace-style .catalog-results,
+.template-mega-marketplace .marketplace-deal-row,
+.template-marketplace-style .marketplace-deal-row {
+  align-items: stretch;
+}
+
+.template-mega-marketplace .market-card,
+.template-marketplace-style .market-card {
+  height: 100%;
+  min-width: 0;
+}
+
+.template-mega-marketplace .market-card .rendered-button,
+.template-marketplace-style .market-card .rendered-button {
+  margin-top: auto;
+}
+
+@media (max-width: 760px) {
+  .template-mega-marketplace .rendered-nav,
+  .template-marketplace-style .rendered-nav {
+    align-items: center;
+    flex-direction: initial;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .template-mega-marketplace .catalog-results,
+  .template-marketplace-style .catalog-results {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .template-mega-marketplace .market-card,
+  .template-marketplace-style .market-card {
+    grid-template-rows: 116px auto auto minmax(34px, 1fr) auto auto;
+    min-height: 318px;
+  }
+
+  .template-mega-marketplace .market-card .image-shell,
+  .template-marketplace-style .market-card .image-shell,
+  .template-mega-marketplace .market-card > .card-placeholder,
+  .template-marketplace-style .market-card > .card-placeholder {
+    height: 116px;
+    min-height: 116px;
+  }
+
+  .template-mega-marketplace .commerce-actions,
+  .template-marketplace-style .commerce-actions {
+    justify-content: flex-end;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .template-mega-marketplace .commerce-action,
+  .template-marketplace-style .commerce-action {
+    max-width: 96px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .template-mega-marketplace .marketplace-subscribe,
+  .template-marketplace-style .marketplace-subscribe {
+    grid-template-columns: 1fr;
+    margin: 18px 10px 0;
+    border-radius: 10px;
+    padding: 18px;
   }
 }

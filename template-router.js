@@ -1070,6 +1070,12 @@
   }
 
   function selectBestIntentRule(normalizedPrompt) {
+    if (/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|mega marketplace)\b/.test(normalizedPrompt) || suggestsBroadMarketplace(normalizedPrompt)) {
+      return INTENT_RULES.find((rule) => rule.intent === "amazon_marketplace") || null;
+    }
+    if (suggestsFocusedProductLine(normalizedPrompt)) {
+      return INTENT_RULES.find((rule) => rule.intent === "minimal_premium") || null;
+    }
     const scored = INTENT_RULES.map((rule) => {
       const matches = rule.keywords.filter((keyword) => normalizedPrompt.includes(normalizeText(keyword)));
       const exactWeight = matches.reduce((score, keyword) => score + Math.max(1, normalizeText(keyword).split(" ").length), 0)
