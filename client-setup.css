@@ -4244,8 +4244,8 @@ body.public-client-setup .template-board-panel .template-carousel-heading strong
 
 body.public-client-setup .template-board-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(260px, 1fr));
-  gap: clamp(18px, 2vw, 30px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(24px, 2vw, 32px);
   align-content: start;
   align-items: stretch;
   min-height: min-content;
@@ -4272,10 +4272,25 @@ body.public-client-setup .template-board-card.active-card {
   box-shadow: 0 30px 90px rgba(34, 211, 238, 0.16);
 }
 
+body.public-client-setup .template-board-card.recommended:first-child,
+body.public-client-setup .template-skeleton-card:first-child {
+  grid-column: span 2;
+}
+
+body.public-client-setup .template-board-card.recommended:first-child {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(280px, 0.88fr);
+  min-height: clamp(520px, 58vh, 680px);
+}
+
 body.public-client-setup .template-board-image {
   height: clamp(260px, 34vh, 420px);
   background: #020617;
   overflow: hidden;
+}
+
+body.public-client-setup .template-board-card.recommended:first-child .template-board-image {
+  height: 100%;
 }
 
 body.public-client-setup .template-board-image img {
@@ -4304,6 +4319,12 @@ body.public-client-setup .template-skeleton-card {
   background: rgba(15, 23, 42, 0.92);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
   animation: templateSkeletonPulse 1.65s ease-in-out var(--skeleton-delay, 0ms) infinite;
+}
+
+body.public-client-setup .template-skeleton-card:first-child {
+  grid-template-columns: minmax(0, 1.12fr) minmax(280px, 0.88fr);
+  grid-template-rows: minmax(0, 1fr);
+  min-height: clamp(520px, 58vh, 680px);
 }
 
 body.public-client-setup .template-skeleton-preview,
@@ -4413,9 +4434,20 @@ body.public-client-setup .live-site-preview-card.template-board-loading-host .te
   border-radius: 0;
 }
 
+@media (min-width: 1740px) {
+  body.public-client-setup .template-board-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 1380px) {
   body.public-client-setup .template-board-grid {
-    grid-template-columns: repeat(2, minmax(260px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.public-client-setup .template-board-card.recommended:first-child,
+  body.public-client-setup .template-skeleton-card:first-child {
+    grid-column: span 2;
   }
 }
 
@@ -4565,13 +4597,33 @@ body.public-client-setup .selected-template-preview-actions [data-chat-generate]
     grid-template-columns: 1fr;
   }
 
+  body.public-client-setup .template-board-card.recommended:first-child,
+  body.public-client-setup .template-skeleton-card:first-child {
+    grid-column: auto;
+  }
+
   body.public-client-setup .template-board-card {
     min-height: 0;
+  }
+
+  body.public-client-setup .template-board-card.recommended:first-child {
+    display: block;
+    min-height: 0;
+  }
+
+  body.public-client-setup .template-board-card.recommended:first-child .template-board-image {
+    height: 220px;
   }
 
   body.public-client-setup .template-skeleton-card {
     min-height: 0;
     grid-template-rows: 220px minmax(180px, auto);
+  }
+
+  body.public-client-setup .template-skeleton-card:first-child {
+    grid-template-columns: none;
+    grid-template-rows: 220px minmax(180px, auto);
+    min-height: 0;
   }
 
   body.public-client-setup .selected-template-preview {
