@@ -1439,7 +1439,7 @@ function shouldShowCanvasTemplateCarousel() {
 function renderCanvasTemplateCarousel(card) {
   const selection = livePreviewTemplateSelection();
   const selectedId = selection?.templateId || "";
-  const choices = rankedFallbackChoices(selectedId).slice(0, 5);
+  const choices = canvasTemplateChoices(selectedId).slice(0, 5);
   if (!choices.length) {
     card.innerHTML = renderNeutralLiveWorkspace();
     return;
@@ -1487,11 +1487,51 @@ function renderCanvasTemplateCarousel(card) {
     });
   });
   card.querySelectorAll(".template-carousel-card").forEach((item) => {
-    item.addEventListener("click", () => {
-      item.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-      updateTemplateCarouselActiveCard(track);
+    item.addEventListener("click", (event) => {
+      if (event.target?.closest?.("button")) return;
+      event.preventDefault();
+      window.Lyra?.selectTemplate(item.dataset.templateChoice);
     });
   });
+}
+
+function canvasTemplateChoices(selectedTemplateId = "") {
+  const selected = templatePreviewMeta(selectedTemplateId);
+  const selectedCatalog = selected?.catalogType || "";
+  const selectedText = `${selectedTemplateId} ${selectedCatalog}`;
+  const ordered = [];
+  const add = (templateId) => {
+    const choice = templatePreviewMeta(templateId);
+    if (choice && !ordered.some((item) => item.templateId === choice.templateId)) ordered.push(choice);
+  };
+
+  add(selectedTemplateId);
+  if (/legal|professional|consulting|tax|insurance|advisor/.test(selectedText)) {
+    ["legal-professional-services-pro", "corporate-company-pro", "b2b-saas-enterprise-pro", "luxury-high-ticket-pro", "lead-funnel-pro"].forEach(add);
+  } else if (/clinic|medical|wellness|dental/.test(selectedText)) {
+    ["medical-wellness-clinic-pro", "booking-appointment-pro", "local-services-pro-plus", "corporate-company-pro", "lead-funnel-pro"].forEach(add);
+  } else if (/marketplace|dense|mega/.test(selectedText)) {
+    ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro", "digital-products-store", "apple-premium-product"].forEach(add);
+  } else if (/listing|classified|real_estate|real-estate/.test(selectedText)) {
+    ["listing-marketplace-pro", "real-estate-listings-pro", "mega-marketplace", "corporate-company-pro", "lead-funnel-pro"].forEach(add);
+  } else if (/restaurant|menu|food/.test(selectedText)) {
+    ["restaurant-food-business", "booking-appointment-pro", "lead-funnel-pro", "home-services-premium", "local-services-pro-plus"].forEach(add);
+  } else if (/booking|appointment/.test(selectedText)) {
+    ["booking-appointment-pro", "local-services-pro-plus", "home-services-premium", "lead-funnel-pro", "corporate-company-pro"].forEach(add);
+  } else if (/industrial|manufacturing|supplier/.test(selectedText)) {
+    ["manufacturing-industrial-supplier-pro", "b2b-saas-enterprise-pro", "corporate-company-pro", "lead-funnel-pro", "mega-marketplace"].forEach(add);
+  } else if (/b2b|saas|enterprise|solution/.test(selectedText)) {
+    ["b2b-saas-enterprise-pro", "corporate-company-pro", "lead-funnel-pro", "manufacturing-industrial-supplier-pro", "apple-premium-product"].forEach(add);
+  } else if (/fashion|lookbook|collection/.test(selectedText)) {
+    ["fashion-drop-pro", "apple-premium-product", "mega-marketplace", "listing-marketplace-pro", "luxury-high-ticket-pro"].forEach(add);
+  } else {
+    rankedFallbackChoices(selectedTemplateId).forEach((choice) => add(choice.templateId));
+  }
+
+  TEMPLATE_PREVIEW_CHOICES.forEach((choice) => {
+    if (ordered.length < 5) add(choice.templateId);
+  });
+  return ordered;
 }
 
 function shouldShowSelectedTemplatePreview() {

@@ -4219,6 +4219,57 @@ body.public-client-setup .template-carousel-card.active-card {
   opacity: 1;
 }
 
+body.public-client-setup .template-carousel-canvas {
+  min-height: clamp(640px, 78vh, 920px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+  gap: 28px;
+  padding: clamp(20px, 3vw, 42px);
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+body.public-client-setup .template-carousel-canvas .template-carousel-heading {
+  max-width: 920px;
+}
+
+body.public-client-setup .template-carousel-canvas .template-carousel-heading strong {
+  font-size: clamp(2rem, 4vw, 4.5rem);
+  line-height: 0.95;
+}
+
+body.public-client-setup .template-carousel-canvas .template-carousel-track {
+  align-items: stretch;
+  gap: clamp(18px, 2vw, 30px);
+  min-height: 0;
+  padding: 10px max(24px, calc((100vw - 1260px) / 2)) 36px;
+  margin-inline: calc(clamp(20px, 3vw, 42px) * -1);
+}
+
+body.public-client-setup .template-carousel-canvas .template-carousel-card {
+  flex: 0 0 clamp(340px, 28vw, 520px) !important;
+  width: clamp(340px, 28vw, 520px) !important;
+  min-height: clamp(460px, 58vh, 680px);
+  cursor: pointer;
+}
+
+body.public-client-setup .template-carousel-canvas .template-carousel-image {
+  height: clamp(250px, 34vh, 410px);
+}
+
+body.public-client-setup .template-carousel-canvas .template-carousel-body {
+  min-height: 210px;
+}
+
+body.public-client-setup .template-carousel-canvas .template-carousel-body strong {
+  font-size: clamp(1.25rem, 1.7vw, 1.8rem);
+}
+
+body.public-client-setup .template-carousel-canvas .template-carousel-body button {
+  margin-top: auto;
+}
+
 body.public-client-setup .selected-template-preview {
   min-height: clamp(620px, 78vh, 920px);
   background:
@@ -4311,6 +4362,27 @@ body.public-client-setup .selected-template-preview-actions [data-chat-generate]
 }
 
 @media (max-width: 767px) {
+  body.public-client-setup .template-carousel-canvas {
+    min-height: 100%;
+    border-radius: 18px;
+    padding: 16px;
+  }
+
+  body.public-client-setup .template-carousel-canvas .template-carousel-heading strong {
+    font-size: 2rem;
+  }
+
+  body.public-client-setup .template-carousel-canvas .template-carousel-track {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+
+  body.public-client-setup .template-carousel-canvas .template-carousel-card {
+    flex-basis: min(86vw, 360px) !important;
+    width: min(86vw, 360px) !important;
+    min-height: 500px;
+  }
+
   body.public-client-setup .selected-template-preview {
     min-height: 100%;
     border-radius: 18px;
