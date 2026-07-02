@@ -1410,6 +1410,10 @@ function renderLiveSitePreview() {
     renderCanvasTemplateCarousel(card);
     return;
   }
+  if (shouldShowSelectedTemplatePreview()) {
+    renderSelectedTemplateCanvasPreview(card);
+    return;
+  }
   if (!hasEnoughContextForTemplatePreview()) {
     card.innerHTML = renderNeutralLiveWorkspace();
     return;
@@ -1429,7 +1433,7 @@ function shouldShowCanvasTemplateCarousel() {
   if (!isPublicClientSetup || currentSchema) return false;
   if (!hasEnoughContextForTemplatePreview()) return false;
   if (forcedTemplateSelection?.intent === "client_visual_template_choice") return false;
-  return guidedStep !== "review" || !forcedTemplateSelection?.templateId;
+  return true;
 }
 
 function renderCanvasTemplateCarousel(card) {
@@ -1490,16 +1494,59 @@ function renderCanvasTemplateCarousel(card) {
   });
 }
 
+function shouldShowSelectedTemplatePreview() {
+  return Boolean(
+    isPublicClientSetup &&
+    !currentSchema &&
+    forcedTemplateSelection?.intent === "client_visual_template_choice" &&
+    templatePreviewMeta(forcedTemplateSelection.templateId)
+  );
+}
+
+function renderSelectedTemplateCanvasPreview(card) {
+  const choice = templatePreviewMeta(forcedTemplateSelection.templateId);
+  card.innerHTML = `
+    <section class="selected-template-preview canvas-fade-in">
+      <div class="selected-template-preview-copy">
+        <span>${escapeHtml(langText({ en: "Selected architecture", es: "Arquitectura seleccionada", fr: "Architecture selectionnee", pt: "Arquitetura selecionada" }))}</span>
+        <h2>${escapeHtml(localizedTemplateName(choice))}</h2>
+        <p>${escapeHtml(langText({
+          en: "This is the real template base. LYRA will now adapt it to the business copy, colors, catalog and conversion flow.",
+          es: "Esta es la base real del template. LYRA ahora la adaptara al negocio, textos, colores, catalogo y flujo de conversion.",
+          fr: "C'est la vraie base du template. LYRA l'adaptera au business, textes, couleurs, catalogue et conversion.",
+          pt: "Esta e a base real do template. A LYRA vai adapta-la ao negocio, textos, cores, catalogo e conversao.",
+        }))}</p>
+      </div>
+      <div class="selected-template-preview-frame">
+        <img src="${escapeAttribute(choice.image)}" alt="${escapeAttribute(localizedTemplateName(choice))}">
+      </div>
+      <div class="selected-template-preview-actions">
+        <button type="button" data-change-template>${escapeHtml(langText({ en: "Choose another base", es: "Elegir otra base", fr: "Choisir une autre base", pt: "Escolher outra base" }))}</button>
+        <button type="button" data-chat-generate>${escapeHtml(langText({ en: "Generate editable site", es: "Generar sitio editable", fr: "Generer le site modifiable", pt: "Gerar site editavel" }))}</button>
+      </div>
+    </section>
+  `;
+  card.querySelector("[data-change-template]")?.addEventListener("click", () => {
+    forcedTemplateSelection = {
+      ...forcedTemplateSelection,
+      intent: "ai_studio_plan",
+    };
+    renderLiveSitePreview();
+  });
+  card.querySelector("[data-chat-generate]")?.addEventListener("click", handleGuidedGenerateButton);
+}
+
 function hasEnoughContextForTemplatePreview() {
   const intent = normalizeTemplateIntentText(guidedState.websiteIntent);
   const description = normalizeTemplateIntentText(guidedState.businessDescription);
   const offerItems = meaningfulOfferItems(guidedState.servicesProducts);
   const services = offerItems.join(" ");
   const commerceSignal = normalizeTemplateIntentText(`${intent} ${description} ${services}`);
-  const hasIntent = /tienda|store|shop|marketplace|catalogo|servicio|service|reserva|booking|restaurante|restaurant|pagina|website|landing|amazon|ebay/.test(commerceSignal);
+  const hasIntent = /tienda|store|shop|marketplace|catalogo|servicio|service|reserva|booking|restaurante|restaurant|pagina|website|landing|amazon|ebay|abogado|abogados|legal|lawyer|bufet|firma|consultoria|consulting|clinica|clinic|empresa|company/.test(commerceSignal);
   const hasConcreteOffer = offerItems.length >= 2
     || description.length >= 45
     || commerceSignal.split(/\s+/).length >= 16
+    || /abogado|abogados|legal|lawyer|bufet|firma|consultoria|consulting|clinica|clinic|servicio|service/.test(commerceSignal)
     || textSuggestsBroadMarketplace(commerceSignal)
     || textSuggestsFocusedProductLine(commerceSignal);
   return Boolean(hasIntent && hasConcreteOffer);
