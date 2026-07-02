@@ -553,6 +553,9 @@ let forcedTemplateSelection = null;
 let restoredGuidedDraftInfo = null;
 let guidedCoachCard = null;
 let liveSitePreviewCard = null;
+let templateBoardLoading = false;
+let templateBoardLoadingSignature = "";
+let templateBoardLoadingTimer = null;
 let guidedSendLocked = false;
 let guidedLastSendAt = 0;
 let clientIntakeSession = null;
@@ -1405,9 +1408,13 @@ function ensureLiveSitePreviewCard() {
 function renderLiveSitePreview() {
   const card = ensureLiveSitePreviewCard();
   if (!card) return;
-  card.classList.remove("template-board-card-host", "selected-template-card-host", "live-render-card-host");
+  card.classList.remove("template-board-card-host", "template-board-loading-host", "selected-template-card-host", "live-render-card-host");
   syncTemplateSelectionFromGuidedContext();
   if (shouldShowCanvasTemplateCarousel()) {
+    if (shouldRenderTemplateBoardSkeleton()) {
+      renderCanvasTemplateSkeleton(card);
+      return;
+    }
     renderCanvasTemplateCarousel(card);
     return;
   }
@@ -1436,6 +1443,71 @@ function shouldShowCanvasTemplateCarousel() {
   if (!hasEnoughContextForTemplatePreview()) return false;
   if (forcedTemplateSelection?.intent === "client_visual_template_choice") return false;
   return true;
+}
+
+function templateBoardLoadingKey() {
+  const selection = livePreviewTemplateSelection();
+  return [
+    selectedLanguage,
+    guidedStep,
+    selection?.templateId || "",
+    selection?.catalogType || "",
+    guidedState.websiteIntent || "",
+    guidedState.businessDescription || "",
+    arrayValue(guidedState.servicesProducts).join("|"),
+  ].join("::");
+}
+
+function shouldRenderTemplateBoardSkeleton() {
+  const key = templateBoardLoadingKey();
+  if (key !== templateBoardLoadingSignature) {
+    templateBoardLoadingSignature = key;
+    templateBoardLoading = true;
+    if (templateBoardLoadingTimer) clearTimeout(templateBoardLoadingTimer);
+    templateBoardLoadingTimer = setTimeout(() => {
+      templateBoardLoading = false;
+      if (shouldShowCanvasTemplateCarousel()) renderLiveSitePreview();
+    }, 560);
+    return true;
+  }
+  return templateBoardLoading;
+}
+
+function renderCanvasTemplateSkeleton(card) {
+  card.classList.add("template-board-loading-host");
+  const skeletonCards = Array.from({ length: 5 }).map((_, index) => `
+    <article class="template-skeleton-card" aria-hidden="true" style="--skeleton-delay: ${index * 90}ms">
+      <div class="template-skeleton-preview"></div>
+      <div class="template-skeleton-body">
+        <span class="template-skeleton-pill"></span>
+        <strong></strong>
+        <small></small>
+        <small></small>
+        <em></em>
+      </div>
+    </article>
+  `).join("");
+  card.innerHTML = `
+    <section class="template-choice-panel template-board-panel template-skeleton-panel" aria-busy="true" aria-live="polite">
+      <div class="template-choice-heading template-carousel-heading">
+        <strong>${escapeHtml(langText({
+          en: "Preparing premium template options",
+          es: "Preparando opciones premium",
+          fr: "Preparation des options premium",
+          pt: "Preparando opcoes premium",
+        }))}</strong>
+        <span>${escapeHtml(langText({
+          en: "LYRA is matching your business context to the strongest editable template bases.",
+          es: "LYRA esta cruzando el contexto del negocio con las mejores bases editables.",
+          fr: "LYRA rapproche le contexte business des meilleures bases modifiables.",
+          pt: "A LYRA esta combinando o contexto do negocio com as melhores bases editaveis.",
+        }))}</span>
+      </div>
+      <div class="template-board-grid template-skeleton-grid">
+        ${skeletonCards}
+      </div>
+    </section>
+  `;
 }
 
 function renderCanvasTemplateCarousel(card) {

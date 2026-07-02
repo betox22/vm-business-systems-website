@@ -4286,24 +4286,129 @@ body.public-client-setup .template-board-image img {
   object-position: top center;
 }
 
+body.public-client-setup .template-skeleton-panel {
+  background:
+    radial-gradient(circle at 18% 8%, rgba(34, 211, 238, 0.18), transparent 30%),
+    radial-gradient(circle at 78% 0%, rgba(99, 102, 241, 0.2), transparent 34%),
+    linear-gradient(135deg, #020617 0%, #0f172a 52%, #111827 100%);
+}
+
+body.public-client-setup .template-skeleton-card {
+  width: 100%;
+  min-height: clamp(470px, 54vh, 650px);
+  display: grid;
+  grid-template-rows: clamp(260px, 34vh, 420px) minmax(210px, auto);
+  overflow: hidden;
+  border-radius: 26px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.92);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  animation: templateSkeletonPulse 1.65s ease-in-out var(--skeleton-delay, 0ms) infinite;
+}
+
+body.public-client-setup .template-skeleton-preview,
+body.public-client-setup .template-skeleton-pill,
+body.public-client-setup .template-skeleton-body strong,
+body.public-client-setup .template-skeleton-body small,
+body.public-client-setup .template-skeleton-body em {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(125, 211, 252, 0.2) 48%, rgba(15, 23, 42, 0) 100%),
+    linear-gradient(135deg, rgba(51, 65, 85, 0.85), rgba(30, 41, 59, 0.86));
+  background-size: 240% 100%, 100% 100%;
+  animation: templateSkeletonShimmer 1.45s linear var(--skeleton-delay, 0ms) infinite;
+}
+
+body.public-client-setup .template-skeleton-preview {
+  min-height: 100%;
+}
+
+body.public-client-setup .template-skeleton-body {
+  padding: 22px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+body.public-client-setup .template-skeleton-pill {
+  width: 112px;
+  height: 20px;
+  border-radius: 999px;
+}
+
+body.public-client-setup .template-skeleton-body strong {
+  width: min(78%, 280px);
+  height: 30px;
+  border-radius: 12px;
+}
+
+body.public-client-setup .template-skeleton-body small {
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+}
+
+body.public-client-setup .template-skeleton-body small + small {
+  width: 72%;
+}
+
+body.public-client-setup .template-skeleton-body em {
+  width: 48%;
+  height: 42px;
+  align-self: end;
+  margin-top: 18px;
+  border-radius: 999px;
+}
+
+@keyframes templateSkeletonShimmer {
+  0% {
+    background-position: 180% 0, 0 0;
+  }
+  100% {
+    background-position: -80% 0, 0 0;
+  }
+}
+
+@keyframes templateSkeletonPulse {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
 body.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-site-preview-mount:has(.template-board-card-host) {
   min-height: min(900px, calc(100vh - 190px));
   overflow: auto;
   background: #020617;
 }
 
-body.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-site-preview-mount:has(.template-board-card-host)::before {
+body.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-site-preview-mount:has(.template-board-loading-host) {
+  min-height: min(900px, calc(100vh - 190px));
+  overflow: hidden;
+  background: #020617;
+}
+
+body.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-site-preview-mount:has(.template-board-card-host)::before,
+body.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-site-preview-mount:has(.template-board-loading-host)::before {
   display: none;
 }
 
-body.public-client-setup .live-site-preview-card.template-board-card-host {
+body.public-client-setup .live-site-preview-card.template-board-card-host,
+body.public-client-setup .live-site-preview-card.template-board-loading-host {
   width: 100%;
   min-width: 0;
   min-height: 100%;
   display: block;
 }
 
-body.public-client-setup .live-site-preview-card.template-board-card-host .template-board-panel {
+body.public-client-setup .live-site-preview-card.template-board-card-host .template-board-panel,
+body.public-client-setup .live-site-preview-card.template-board-loading-host .template-board-panel {
   min-height: min(900px, calc(100vh - 190px));
   border-radius: 0;
 }
@@ -4462,6 +4567,11 @@ body.public-client-setup .selected-template-preview-actions [data-chat-generate]
 
   body.public-client-setup .template-board-card {
     min-height: 0;
+  }
+
+  body.public-client-setup .template-skeleton-card {
+    min-height: 0;
+    grid-template-rows: 220px minmax(180px, auto);
   }
 
   body.public-client-setup .selected-template-preview {
