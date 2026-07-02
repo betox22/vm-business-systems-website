@@ -1445,7 +1445,7 @@ function renderCanvasTemplateCarousel(card) {
     return;
   }
   card.innerHTML = `
-    <section class="template-choice-panel template-carousel-panel template-carousel-canvas">
+    <section class="template-choice-panel template-board-panel">
       <div class="template-choice-heading template-carousel-heading">
         <strong>${escapeHtml(langText({
           en: "Select the structure LYRA should use",
@@ -1460,13 +1460,13 @@ function renderCanvasTemplateCarousel(card) {
           pt: "Estas sao bases reais. A LYRA adapta textos, cores, produtos e fluxo depois da escolha.",
         }))}</span>
       </div>
-      <div class="template-choice-grid template-carousel-track" aria-label="Template carousel">
+      <div class="template-board-grid" aria-label="Template options">
         ${choices.map((choice, index) => `
-          <article class="template-choice-card template-carousel-card ${choice.templateId === selectedId || index === 0 ? "active-card recommended" : ""}" data-template-choice="${escapeAttribute(choice.templateId)}" data-catalog-type="${escapeAttribute(choice.catalogType || "")}">
-            <div class="template-carousel-image">
+          <article class="template-choice-card template-board-card ${choice.templateId === selectedId || index === 0 ? "active-card recommended" : ""}" data-template-choice="${escapeAttribute(choice.templateId)}" data-catalog-type="${escapeAttribute(choice.catalogType || "")}">
+            <div class="template-board-image">
               <img src="${escapeAttribute(choice.image)}" alt="${escapeAttribute(localizedTemplateName(choice))}">
             </div>
-            <div class="template-carousel-body">
+            <div class="template-board-body">
               <span>${escapeHtml(choice.templateId === selectedId || index === 0 ? langText({ en: "Recommended", es: "Recomendada", fr: "Recommandee", pt: "Recomendada" }) : langText({ en: "Alternative", es: "Alternativa", fr: "Alternative", pt: "Alternativa" }))}</span>
               <strong>${escapeHtml(localizedTemplateName(choice))}</strong>
               <small>${escapeHtml(localizedTemplateDescription(choice))}</small>
@@ -1478,15 +1478,13 @@ function renderCanvasTemplateCarousel(card) {
       </div>
     </section>
   `;
-  const track = card.querySelector(".template-carousel-track");
-  initTemplateCarousel(track);
   card.querySelectorAll("[data-template-preview]").forEach((button) => {
     button.addEventListener("click", (event) => {
       event.stopPropagation();
       window.Lyra?.selectTemplate(button.dataset.templatePreview);
     });
   });
-  card.querySelectorAll(".template-carousel-card").forEach((item) => {
+  card.querySelectorAll(".template-board-card").forEach((item) => {
     item.addEventListener("click", (event) => {
       if (event.target?.closest?.("button")) return;
       event.preventDefault();
@@ -1500,14 +1498,18 @@ function canvasTemplateChoices(selectedTemplateId = "") {
   const selectedCatalog = selected?.catalogType || "";
   const selectedText = `${selectedTemplateId} ${selectedCatalog}`;
   const ordered = [];
+  const usedImages = new Set();
   const add = (templateId) => {
     const choice = templatePreviewMeta(templateId);
-    if (choice && !ordered.some((item) => item.templateId === choice.templateId)) ordered.push(choice);
+    if (!choice || ordered.some((item) => item.templateId === choice.templateId)) return;
+    if (usedImages.has(choice.image) && ordered.length >= 3) return;
+    usedImages.add(choice.image);
+    ordered.push(choice);
   };
 
   add(selectedTemplateId);
   if (/legal|professional|consulting|tax|insurance|advisor/.test(selectedText)) {
-    ["legal-professional-services-pro", "corporate-company-pro", "b2b-saas-enterprise-pro", "luxury-high-ticket-pro", "lead-funnel-pro"].forEach(add);
+    ["legal-professional-services-pro", "corporate-company-pro", "b2b-saas-enterprise-pro", "booking-appointment-pro", "medical-wellness-clinic-pro"].forEach(add);
   } else if (/clinic|medical|wellness|dental/.test(selectedText)) {
     ["medical-wellness-clinic-pro", "booking-appointment-pro", "local-services-pro-plus", "corporate-company-pro", "lead-funnel-pro"].forEach(add);
   } else if (/marketplace|dense|mega/.test(selectedText)) {
