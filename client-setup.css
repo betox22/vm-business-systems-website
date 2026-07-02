@@ -4220,6 +4220,8 @@ body.public-client-setup .template-carousel-card.active-card {
 }
 
 body.public-client-setup .template-board-panel {
+  width: 100%;
+  max-width: none;
   min-height: clamp(640px, 78vh, 920px);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -4227,7 +4229,8 @@ body.public-client-setup .template-board-panel {
   gap: 28px;
   padding: clamp(20px, 3vw, 42px);
   border-radius: 28px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 body.public-client-setup .template-board-panel .template-carousel-heading {
@@ -4241,9 +4244,10 @@ body.public-client-setup .template-board-panel .template-carousel-heading strong
 
 body.public-client-setup .template-board-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  grid-template-columns: repeat(3, minmax(260px, 1fr));
   gap: clamp(18px, 2vw, 30px);
   align-content: start;
+  align-items: stretch;
   min-height: min-content;
   padding-block: 8px 20px;
   overflow: visible;
@@ -4279,6 +4283,35 @@ body.public-client-setup .template-board-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: top center;
+}
+
+body.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-site-preview-mount:has(.template-board-card-host) {
+  min-height: min(900px, calc(100vh - 190px));
+  overflow: auto;
+  background: #020617;
+}
+
+body.public-client-setup:not(.generated-preview-open):not(.client-auth-required) .live-site-preview-mount:has(.template-board-card-host)::before {
+  display: none;
+}
+
+body.public-client-setup .live-site-preview-card.template-board-card-host {
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  display: block;
+}
+
+body.public-client-setup .live-site-preview-card.template-board-card-host .template-board-panel {
+  min-height: min(900px, calc(100vh - 190px));
+  border-radius: 0;
+}
+
+@media (max-width: 1380px) {
+  body.public-client-setup .template-board-grid {
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
+  }
 }
 
 body.public-client-setup .template-board-body {

@@ -1405,6 +1405,7 @@ function ensureLiveSitePreviewCard() {
 function renderLiveSitePreview() {
   const card = ensureLiveSitePreviewCard();
   if (!card) return;
+  card.classList.remove("template-board-card-host", "selected-template-card-host", "live-render-card-host");
   syncTemplateSelectionFromGuidedContext();
   if (shouldShowCanvasTemplateCarousel()) {
     renderCanvasTemplateCarousel(card);
@@ -1422,6 +1423,7 @@ function renderLiveSitePreview() {
   const selection = livePreviewTemplateSelection();
   let schema = buildInstantTemplateSchema(payload, selection);
   schema = prepareWebsiteConfig(schema, payload, selection);
+  card.classList.add("live-render-card-host");
   card.innerHTML = `
     <div class="live-template-preview-shell">
       ${renderWebsite(schema, schema.pages?.[0]?.page_key || "home")}
@@ -1437,6 +1439,7 @@ function shouldShowCanvasTemplateCarousel() {
 }
 
 function renderCanvasTemplateCarousel(card) {
+  card.classList.add("template-board-card-host");
   const selection = livePreviewTemplateSelection();
   const selectedId = selection?.templateId || "";
   const choices = canvasTemplateChoices(selectedId).slice(0, 5);
@@ -1478,18 +1481,15 @@ function renderCanvasTemplateCarousel(card) {
       </div>
     </section>
   `;
-  card.querySelectorAll("[data-template-preview]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      window.Lyra?.selectTemplate(button.dataset.templatePreview);
-    });
-  });
-  card.querySelectorAll(".template-board-card").forEach((item) => {
-    item.addEventListener("click", (event) => {
-      if (event.target?.closest?.("button")) return;
-      event.preventDefault();
-      window.Lyra?.selectTemplate(item.dataset.templateChoice);
-    });
+  const panel = card.querySelector(".template-board-panel");
+  panel?.addEventListener("click", (event) => {
+    const button = event.target?.closest?.("[data-template-preview]");
+    const item = event.target?.closest?.(".template-board-card");
+    const templateId = button?.dataset.templatePreview || item?.dataset.templateChoice || "";
+    if (!templateId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    window.Lyra?.selectTemplate(templateId);
   });
 }
 
@@ -1546,6 +1546,7 @@ function shouldShowSelectedTemplatePreview() {
 }
 
 function renderSelectedTemplateCanvasPreview(card) {
+  card.classList.add("selected-template-card-host");
   const choice = templatePreviewMeta(forcedTemplateSelection.templateId);
   card.innerHTML = `
     <section class="selected-template-preview canvas-fade-in">
