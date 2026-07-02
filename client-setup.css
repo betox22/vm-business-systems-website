@@ -4,6 +4,238 @@ body.public-client-setup {
   background: transparent;
 }
 
+/* LYRA template carousel: dark snap selector with magnetic center focus. */
+.public-client-setup .template-carousel-panel {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  margin: 10px 0 14px;
+  padding: 18px 0 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(37, 99, 235, 0.22), transparent 34%),
+    radial-gradient(circle at 88% 14%, rgba(20, 184, 166, 0.18), transparent 30%),
+    #020617;
+  box-shadow: 0 24px 70px rgba(2, 6, 23, 0.28);
+}
+
+.public-client-setup .template-carousel-panel-hidden {
+  display: none;
+}
+
+.public-client-setup .template-carousel-heading {
+  padding: 0 18px 14px;
+  color: #ffffff;
+}
+
+.public-client-setup .template-carousel-heading strong {
+  display: block;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.public-client-setup .template-carousel-heading span {
+  display: block;
+  max-width: 560px;
+  margin-top: 5px;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.public-client-setup .template-carousel-track {
+  display: flex;
+  grid-template-columns: none;
+  gap: 18px;
+  overflow-x: auto;
+  overflow-y: visible;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 18px;
+  padding: 8px 18px 24px;
+  cursor: grab;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.public-client-setup .template-carousel-track:active {
+  cursor: grabbing;
+}
+
+.public-client-setup .template-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.public-client-setup .template-carousel-card {
+  flex: 0 0 min(320px, 78vw);
+  width: min(320px, 78vw);
+  min-height: 380px;
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 24px;
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26);
+  transform: scale(0.94);
+  opacity: 0.72;
+  transition:
+    transform 420ms ease,
+    opacity 420ms ease,
+    border-color 420ms ease,
+    box-shadow 420ms ease;
+}
+
+.public-client-setup .template-carousel-card:hover {
+  transform: translateY(-8px) scale(0.98);
+  opacity: 0.92;
+}
+
+.public-client-setup .template-carousel-card.active-card {
+  transform: scale(1.05);
+  opacity: 1;
+  border-color: rgba(34, 211, 238, 0.78);
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.16),
+    0 32px 90px rgba(8, 145, 178, 0.28);
+}
+
+.public-client-setup .template-carousel-image {
+  height: 190px;
+  overflow: hidden;
+  background: #111827;
+}
+
+.public-client-setup .template-carousel-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 700ms ease;
+}
+
+.public-client-setup .template-carousel-card:hover .template-carousel-image img,
+.public-client-setup .template-carousel-card.active-card .template-carousel-image img {
+  transform: scale(1.055);
+}
+
+.public-client-setup .template-carousel-body {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+}
+
+.public-client-setup .template-carousel-body span,
+.public-client-setup .template-carousel-body em {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: #67e8f9;
+  background: rgba(8, 145, 178, 0.16);
+  font-size: 10px;
+  font-weight: 900;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.public-client-setup .template-carousel-body strong {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.public-client-setup .template-carousel-body small {
+  min-height: 52px;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.42;
+}
+
+.public-client-setup .template-carousel-body em {
+  color: #c4b5fd;
+  background: rgba(124, 58, 237, 0.16);
+  text-transform: none;
+}
+
+.public-client-setup .template-carousel-body button {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 14px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.public-client-setup .template-carousel-body button:hover {
+  background: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.public-client-setup .live-site-preview-mount.canvas-fade-in {
+  animation: lyraCanvasFadeIn 300ms ease both;
+}
+
+@keyframes lyraCanvasFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 767px) {
+  .public-client-setup .template-carousel-panel {
+    border-radius: 18px;
+    margin: 8px 0 12px;
+    padding-top: 14px;
+  }
+
+  .public-client-setup .template-carousel-heading {
+    padding: 0 14px 10px;
+  }
+
+  .public-client-setup .template-carousel-heading strong {
+    font-size: 16px;
+  }
+
+  .public-client-setup .template-carousel-track {
+    gap: 14px;
+    scroll-padding-inline: 14px;
+    padding: 8px 14px 22px;
+  }
+
+  .public-client-setup .template-carousel-card {
+    flex-basis: min(286px, 82vw);
+    width: min(286px, 82vw);
+    min-height: 350px;
+    border-radius: 20px;
+  }
+
+  .public-client-setup .template-carousel-card.active-card {
+    transform: scale(1.025);
+  }
+
+  .public-client-setup .template-carousel-image {
+    height: 166px;
+  }
+}
+
 .public-client-setup .domain-check-card {
   display: grid;
   gap: 8px;
@@ -3958,4 +4190,31 @@ body.public-client-setup:not(.generated-preview-open):not(.client-auth-required)
     min-height: 46px;
     font-size: 16px;
   }
+}
+
+/* Final priority layer for LYRA carousel. Keep this at EOF. */
+body.public-client-setup .template-carousel-panel {
+  background:
+    radial-gradient(circle at 20% 0%, rgba(37, 99, 235, 0.22), transparent 34%),
+    radial-gradient(circle at 88% 14%, rgba(20, 184, 166, 0.18), transparent 30%),
+    #020617;
+}
+
+body.public-client-setup .template-carousel-track {
+  display: flex !important;
+  grid-template-columns: none !important;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+body.public-client-setup .template-carousel-card {
+  flex: 0 0 min(320px, 78vw) !important;
+  width: min(320px, 78vw) !important;
+  scroll-snap-align: center;
+}
+
+body.public-client-setup .template-carousel-card.active-card {
+  transform: scale(1.05);
+  opacity: 1;
 }

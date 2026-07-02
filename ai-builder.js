@@ -632,7 +632,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Premium Product",
     names: { en: "Premium Product", es: "Producto premium", fr: "Produit premium", pt: "Produto premium" },
     catalogType: "premium_editorial_catalog",
-    image: "/templates-preview/screenshots/premium.png",
+    image: "/templates-preview/carousel-assets/apple_2.png",
     description: "Premium product showcase with spacious hero, refined copy, and polished sections.",
     descriptions: {
       en: "Premium product showcase with spacious hero, refined copy, and polished sections.",
@@ -646,7 +646,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Luxury High Ticket",
     names: { en: "Luxury High Ticket", es: "Lujo high ticket", fr: "Luxe high ticket", pt: "Luxo high ticket" },
     catalogType: "luxury_high_ticket_catalog",
-    image: "/templates-preview/screenshots/premium.png",
+    image: "/templates-preview/carousel-assets/professional_2.png",
     description: "Private showroom style for jewelry, watches, art, luxury cars, collectibles, and high-ticket pieces.",
     descriptions: {
       en: "Private showroom style for jewelry, watches, art, luxury cars, collectibles, and high-ticket pieces.",
@@ -674,7 +674,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Clinic / Wellness",
     names: { en: "Clinic / Wellness", es: "Clinica / Wellness", fr: "Clinique / Wellness", pt: "Clinica / Wellness" },
     catalogType: "medical_wellness_service_catalog",
-    image: "/templates-preview/screenshots/clinic.png",
+    image: "/templates-preview/carousel-assets/clinic_2.png",
     description: "Premium clinic style for medical, aesthetic, dental, wellness, therapy, and consultation-based businesses.",
     descriptions: {
       en: "Premium clinic style for medical, aesthetic, dental, wellness, therapy, and consultation-based businesses.",
@@ -688,7 +688,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Legal / Professional",
     names: { en: "Legal / Professional", es: "Legal / Profesional", fr: "Juridique / Professionnel", pt: "Juridico / Profissional" },
     catalogType: "legal_professional_services_catalog",
-    image: "/templates-preview/screenshots/professional.png",
+    image: "/templates-preview/carousel-assets/professional_2.png",
     description: "Premium professional firm style for legal, accounting, tax, consulting, insurance, and B2B advisory.",
     descriptions: {
       en: "Premium professional firm style for legal, accounting, tax, consulting, insurance, and B2B advisory.",
@@ -702,7 +702,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "B2B SaaS / Enterprise",
     names: { en: "B2B SaaS / Enterprise", es: "B2B SaaS / Empresarial", fr: "B2B SaaS / Entreprise", pt: "B2B SaaS / Empresarial" },
     catalogType: "b2b_solution_catalog",
-    image: "/templates-preview/screenshots/b2b.png",
+    image: "/templates-preview/carousel-assets/b2b_2.png",
     description: "Enterprise software style for SaaS, automation, IT services, integrations, dashboards, and B2B systems.",
     descriptions: {
       en: "Enterprise software style for SaaS, automation, IT services, integrations, dashboards, and B2B systems.",
@@ -716,7 +716,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Industrial Supplier",
     names: { en: "Industrial Supplier", es: "Proveedor industrial", fr: "Fournisseur industriel", pt: "Fornecedor industrial" },
     catalogType: "industrial_supplier_catalog",
-    image: "/templates-preview/screenshots/industrial.png",
+    image: "/templates-preview/carousel-assets/industrial_2.png",
     description: "Technical B2B supplier style for manufacturing, machinery, parts, tools, safety equipment, and bulk RFQs.",
     descriptions: {
       en: "Technical B2B supplier style for manufacturing, machinery, parts, tools, safety equipment, and bulk RFQs.",
@@ -730,7 +730,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Mega Marketplace",
     names: { en: "Mega Marketplace", es: "Mega marketplace", fr: "Mega marketplace", pt: "Mega marketplace" },
     catalogType: "dense_marketplace_catalog",
-    image: "/templates-preview/screenshots/amazon.png",
+    image: "/templates-preview/carousel-assets/amazon_2.jpg",
     description: "Large catalog marketplace with search, categories, deals, filters, and dense products.",
     descriptions: {
       en: "Large catalog marketplace with search, categories, deals, filters, and dense products.",
@@ -744,7 +744,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Listing Marketplace",
     names: { en: "Listing Marketplace", es: "Marketplace de listados", fr: "Marketplace d'annonces", pt: "Marketplace de anuncios" },
     catalogType: "listing_marketplace_catalog",
-    image: "/templates-preview/screenshots/ebay.png",
+    image: "/templates-preview/carousel-assets/ebay_2.png",
     description: "Seller listing marketplace with condition labels, offers, and comparison layout.",
     descriptions: {
       en: "Seller listing marketplace with condition labels, offers, and comparison layout.",
@@ -758,7 +758,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Fashion Drop",
     names: { en: "Fashion Drop", es: "Fashion drop", fr: "Drop mode", pt: "Fashion drop" },
     catalogType: "lookbook_collection_catalog",
-    image: "/templates-preview/screenshots/premium.png",
+    image: "/templates-preview/carousel-assets/apple_2.png",
     description: "Editorial boutique storefront with visual hero, collections, lookbook, and launch energy.",
     descriptions: {
       en: "Editorial boutique storefront with visual hero, collections, lookbook, and launch energy.",
@@ -772,7 +772,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Corporate Company",
     names: { en: "Corporate Company", es: "Pagina de empresa", fr: "Site entreprise", pt: "Site empresarial" },
     catalogType: "company_services_catalog",
-    image: "/templates-preview/screenshots/services.png",
+    image: "/templates-preview/carousel-assets/services_2.png",
     description: "Professional company website with positioning, services, process, proof, and contact.",
     descriptions: {
       en: "Professional company website with positioning, services, process, proof, and contact.",
@@ -786,7 +786,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Lead Funnel",
     names: { en: "Lead Funnel", es: "Landing de conversion", fr: "Landing de conversion", pt: "Landing de conversao" },
     catalogType: "lead_funnel_offer_catalog",
-    image: "/templates-preview/screenshots/services.png",
+    image: "/templates-preview/carousel-assets/services_2.png",
     description: "Focused landing page for one offer, benefits, proof, FAQ, and lead capture.",
     descriptions: {
       en: "Focused landing page for one offer, benefits, proof, FAQ, and lead capture.",
@@ -800,7 +800,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Restaurant Menu",
     names: { en: "Restaurant Menu", es: "Menu restaurante", fr: "Menu restaurant", pt: "Menu restaurante" },
     catalogType: "restaurant_menu_catalog",
-    image: "/templates-preview/screenshots/services.png",
+    image: "/templates-preview/carousel-assets/services_2.png",
     description: "Restaurant-first site with menu categories, signature dishes, specials, hours, and order CTA.",
     descriptions: {
       en: "Restaurant-first site with menu categories, signature dishes, specials, hours, and order CTA.",
@@ -814,7 +814,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Digital Products",
     names: { en: "Digital Products", es: "Productos digitales", fr: "Produits digitaux", pt: "Produtos digitais" },
     catalogType: "digital_offer_catalog",
-    image: "/templates-preview/screenshots/premium.png",
+    image: "/templates-preview/carousel-assets/apple_2.png",
     description: "Creator/SaaS-style digital product site with bundles, modules, proof, and instant access CTA.",
     descriptions: {
       en: "Creator/SaaS-style digital product site with bundles, modules, proof, and instant access CTA.",
@@ -828,7 +828,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Real Estate / Listings",
     names: { en: "Real Estate / Listings", es: "Propiedades / listings", fr: "Immobilier / annonces", pt: "Imoveis / anuncios" },
     catalogType: "real_estate_listing_catalog",
-    image: "/templates-preview/screenshots/marketplace.png",
+    image: "/templates-preview/carousel-assets/ebay_2.png",
     description: "Search-first listing site with filters, location, price/spec cards, area panel, and inquiry CTAs.",
     descriptions: {
       en: "Search-first listing site with filters, location, price/spec cards, area panel, and inquiry CTAs.",
@@ -842,7 +842,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Local Services Premium",
     names: { en: "Local Services Premium", es: "Servicios locales premium", fr: "Services locaux premium", pt: "Servicos locais premium" },
     catalogType: "home_services_quote_catalog",
-    image: "/templates-preview/screenshots/services.png",
+    image: "/templates-preview/carousel-assets/services_2.png",
     description: "Premium local service site with phone-first hero, service areas, proof, reviews, and quote flow.",
     descriptions: {
       en: "Premium local service site with phone-first hero, service areas, proof, reviews, and quote flow.",
@@ -856,7 +856,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Local Services",
     names: { en: "Local Services", es: "Servicios locales", fr: "Services locaux", pt: "Servicos locais" },
     catalogType: "service_area_catalog",
-    image: "/templates-preview/screenshots/services.png",
+    image: "/templates-preview/carousel-assets/services_2.png",
     description: "Quote-focused service site with service cards, trust, service area, and contact CTA.",
     descriptions: {
       en: "Quote-focused service site with service cards, trust, service area, and contact CTA.",
@@ -870,7 +870,7 @@ const TEMPLATE_PREVIEW_CHOICES = [
     name: "Booking",
     names: { en: "Booking", es: "Reservas", fr: "Reservations", pt: "Agendamentos" },
     catalogType: "booking_menu_catalog",
-    image: "/templates-preview/screenshots/booking.png",
+    image: "/templates-preview/carousel-assets/booking_2.jpg",
     description: "Appointment-first layout with service menu, availability, staff/process, and booking CTA.",
     descriptions: {
       en: "Appointment-first layout with service menu, availability, staff/process, and booking CTA.",
@@ -3729,44 +3729,94 @@ async function appendTemplatePreviewChoices(selection, sourceMessage = "") {
   const selectedId = selection?.templateId || "";
   const choices = await getTemplatePreviewCandidates(selection, sourceMessage);
   const card = document.createElement("div");
-  card.className = "template-choice-panel";
+  card.className = "template-choice-panel template-carousel-panel";
   const heading = document.createElement("div");
-  heading.className = "template-choice-heading";
+  heading.className = "template-choice-heading template-carousel-heading";
   heading.innerHTML = `<strong>${escapeHtml(langText({
-    en: "Choose a visual base",
-    es: "Elige una base visual",
-    fr: "Choisissez une base visuelle",
-    pt: "Escolha uma base visual",
+    en: "Select an architecture",
+    es: "Selecciona una arquitectura",
+    fr: "Selectionnez une architecture",
+    pt: "Selecione uma arquitetura",
   }))}</strong><span>${escapeHtml(langText({
-    en: "LYRA recommends one, but you can switch before generating.",
-    es: "LYRA recomienda una, pero puedes cambiarla antes de generar.",
-    fr: "LYRA en recommande une, mais vous pouvez changer avant de générer.",
-    pt: "A LYRA recomenda uma, mas você pode trocar antes de gerar.",
+    en: "Choose the base. LYRA adapts copy, catalog, colors and user flow.",
+    es: "Elige la base. LYRA adapta textos, catalogo, colores y flujo de usuario.",
+    fr: "Choisissez la base. LYRA adapte textes, catalogue, couleurs et parcours.",
+    pt: "Escolha a base. A LYRA adapta textos, catalogo, cores e fluxo.",
   }))}</span>`;
   const grid = document.createElement("div");
-  grid.className = "template-choice-grid";
+  grid.className = "template-choice-grid template-carousel-track";
+  grid.setAttribute("aria-label", "Template carousel");
   choices.forEach((choice, index) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `template-choice-card ${choice.templateId === selectedId ? "recommended" : ""}`;
-    button.dataset.templateChoice = choice.templateId;
-    button.dataset.catalogType = choice.catalogType || "";
-    button.innerHTML = `
-      <img src="${escapeAttribute(choice.image)}" alt="">
-      <span>${escapeHtml(choice.templateId === selectedId || index === 0 ? langText({ en: "Recommended", es: "Recomendada", fr: "Recommandée", pt: "Recomendada" }) : langText({ en: "Alternative", es: "Alternativa", fr: "Alternative", pt: "Alternativa" }))}</span>
-      <strong>${escapeHtml(localizedTemplateName(choice))}</strong>
-      <small>${escapeHtml(localizedTemplateDescription(choice))}</small>
-      <em>${escapeHtml(choice.catalogType || "")}</em>
+    const item = document.createElement("article");
+    item.className = `template-choice-card template-carousel-card ${choice.templateId === selectedId || index === 0 ? "active-card recommended" : ""}`;
+    item.dataset.templateChoice = choice.templateId;
+    item.dataset.catalogType = choice.catalogType || "";
+    item.innerHTML = `
+      <div class="template-carousel-image">
+        <img src="${escapeAttribute(choice.image)}" alt="${escapeAttribute(localizedTemplateName(choice))}">
+      </div>
+      <div class="template-carousel-body">
+        <span>${escapeHtml(choice.templateId === selectedId || index === 0 ? langText({ en: "Recommended", es: "Recomendada", fr: "Recommandee", pt: "Recomendada" }) : langText({ en: "Alternative", es: "Alternativa", fr: "Alternative", pt: "Alternativa" }))}</span>
+        <strong>${escapeHtml(localizedTemplateName(choice))}</strong>
+        <small>${escapeHtml(localizedTemplateDescription(choice))}</small>
+        <em>${escapeHtml(choice.catalogType || "")}</em>
+        <button type="button" data-template-preview="${escapeAttribute(choice.templateId)}">${escapeHtml(langText({ en: "Preview", es: "Previsualizar", fr: "Previsualiser", pt: "Previsualizar" }))}</button>
+      </div>
     `;
-    button.addEventListener("click", () => chooseTemplatePreview(choice));
-    grid.appendChild(button);
+    item.querySelector("[data-template-preview]")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (window.Lyra?.selectTemplate) {
+        window.Lyra.selectTemplate(choice.templateId);
+      } else {
+        chooseTemplatePreview(choice, { hideCarousel: true, fadeCanvas: true });
+      }
+    });
+    item.addEventListener("click", () => {
+      item.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      updateTemplateCarouselActiveCard(grid);
+    });
+    grid.appendChild(item);
   });
   card.append(heading, grid);
   guidedChat.appendChild(card);
+  initTemplateCarousel(grid);
   guidedChat.scrollTop = guidedChat.scrollHeight;
 }
 
-async function chooseTemplatePreview(choice) {
+function initTemplateCarousel(track) {
+  if (!track || track.dataset.carouselReady === "1") return;
+  track.dataset.carouselReady = "1";
+  let rafId = 0;
+  const schedule = () => {
+    cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(() => updateTemplateCarouselActiveCard(track));
+  };
+  track.addEventListener("scroll", schedule, { passive: true });
+  window.addEventListener("resize", schedule, { passive: true });
+  schedule();
+}
+
+function updateTemplateCarouselActiveCard(track) {
+  if (!track) return;
+  const cards = [...track.querySelectorAll(".template-carousel-card")];
+  if (!cards.length) return;
+  const trackRect = track.getBoundingClientRect();
+  const center = trackRect.left + trackRect.width / 2;
+  let active = cards[0];
+  let smallestDistance = Infinity;
+  cards.forEach((card) => {
+    const rect = card.getBoundingClientRect();
+    const cardCenter = rect.left + rect.width / 2;
+    const distance = Math.abs(center - cardCenter);
+    if (distance < smallestDistance) {
+      active = card;
+      smallestDistance = distance;
+    }
+  });
+  cards.forEach((card) => card.classList.toggle("active-card", card === active));
+}
+
+async function chooseTemplatePreview(choice, options = {}) {
   const template = window.TemplateRouter?.getTemplateById
     ? await window.TemplateRouter.getTemplateById(choice.templateId)
     : null;
@@ -3780,6 +3830,17 @@ async function chooseTemplatePreview(choice) {
   guidedState.websiteIntent = guidedState.websiteIntent || localizedTemplateName(choice);
   document.querySelectorAll(".template-choice-card.selected").forEach((card) => card.classList.remove("selected"));
   document.querySelector(`[data-template-choice="${cssEscape(choice.templateId)}"]`)?.classList.add("selected");
+  if (options.hideCarousel) {
+    document.querySelectorAll(".template-carousel-panel").forEach((panel) => {
+      panel.classList.add("template-carousel-panel-hidden");
+    });
+  }
+  if (options.fadeCanvas && liveSitePreviewMount) {
+    liveSitePreviewMount.classList.remove("canvas-fade-in");
+    void liveSitePreviewMount.offsetWidth;
+    liveSitePreviewMount.classList.add("canvas-fade-in");
+  }
+  renderLiveSitePreview();
   appendChatMessage(
     "user",
     langText({
@@ -3794,6 +3855,16 @@ async function chooseTemplatePreview(choice) {
   renderGuidedSummary();
   saveGuidedDraft();
 }
+
+window.Lyra = {
+  ...(window.Lyra || {}),
+  async selectTemplate(templateId) {
+    const choice = templatePreviewMeta(templateId);
+    if (!choice) return null;
+    await chooseTemplatePreview(choice, { hideCarousel: true, fadeCanvas: true });
+    return forcedTemplateSelection;
+  },
+};
 
 function skipGuidedQuestion() {
   appendChatMessage("user", t("skipMessage"));
