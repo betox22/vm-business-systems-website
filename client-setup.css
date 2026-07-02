@@ -4256,20 +4256,26 @@ body.public-client-setup .template-board-grid {
 body.public-client-setup .template-board-card {
   width: 100% !important;
   min-height: clamp(470px, 54vh, 650px);
-  border-radius: 26px;
-  background: rgba(15, 23, 42, 0.94);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(8, 13, 28, 0.98));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow:
+    0 24px 70px rgba(2, 6, 23, 0.24),
+    0 1px 0 rgba(255, 255, 255, 0.05) inset;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease, background 220ms ease;
 }
 
 body.public-client-setup .template-board-card:hover,
 body.public-client-setup .template-board-card.active-card {
-  transform: translateY(-4px);
-  border-color: rgba(34, 211, 238, 0.72);
-  box-shadow: 0 30px 90px rgba(34, 211, 238, 0.16);
+  transform: translateY(-5px);
+  border-color: rgba(103, 232, 249, 0.62);
+  box-shadow:
+    0 32px 90px rgba(8, 47, 73, 0.2),
+    0 16px 44px rgba(2, 6, 23, 0.24),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
 body.public-client-setup .template-board-card.recommended:first-child,
@@ -4285,12 +4291,18 @@ body.public-client-setup .template-board-card.recommended:first-child {
 
 body.public-client-setup .template-board-image {
   height: clamp(260px, 34vh, 420px);
+  margin: 12px 12px 0;
+  border-radius: 18px 18px 14px 14px;
   background: #020617;
+  border: 1px solid rgba(148, 163, 184, 0.16);
   overflow: hidden;
 }
 
 body.public-client-setup .template-board-card.recommended:first-child .template-board-image {
-  height: 100%;
+  height: auto;
+  min-height: calc(100% - 24px);
+  margin: 12px 0 12px 12px;
+  border-radius: 18px;
 }
 
 body.public-client-setup .template-board-image img {
@@ -4299,6 +4311,14 @@ body.public-client-setup .template-board-image img {
   height: 100%;
   object-fit: cover;
   object-position: top center;
+  transform: scale(1);
+  transition: transform 300ms ease, filter 300ms ease;
+}
+
+body.public-client-setup .template-board-card:hover .template-board-image img,
+body.public-client-setup .template-board-card.active-card .template-board-image img {
+  transform: scale(1.05);
+  filter: saturate(1.06) contrast(1.03);
 }
 
 body.public-client-setup .template-skeleton-panel {
@@ -4453,42 +4473,93 @@ body.public-client-setup .live-site-preview-card.template-board-loading-host .te
 
 body.public-client-setup .template-board-body {
   min-height: 220px;
-  padding: 22px;
+  padding: 22px 24px 24px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+body.public-client-setup .template-board-meta {
   display: grid;
   gap: 10px;
 }
 
-body.public-client-setup .template-board-body span,
-body.public-client-setup .template-board-body em {
+body.public-client-setup .template-status-pill {
   width: fit-content;
+  padding: 7px 10px;
+  border-radius: 999px;
   color: #67e8f9;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(103, 232, 249, 0.24);
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+body.public-client-setup .template-board-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+body.public-client-setup .template-board-badges em {
+  width: fit-content;
+  padding: 7px 9px;
+  border-radius: 999px;
+  color: #ecfeff;
+  background: rgba(45, 212, 191, 0.13);
+  border: 1px solid rgba(94, 234, 212, 0.2);
+  font-style: normal;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+body.public-client-setup .template-board-badges em[data-badge-tone="1"] {
+  color: #eef2ff;
+  background: rgba(129, 140, 248, 0.14);
+  border-color: rgba(165, 180, 252, 0.22);
+}
+
+body.public-client-setup .template-board-badges em[data-badge-tone="2"] {
+  color: #fff7ed;
+  background: rgba(251, 146, 60, 0.12);
+  border-color: rgba(253, 186, 116, 0.2);
 }
 
 body.public-client-setup .template-board-body strong {
   color: #f8fafc;
-  font-size: clamp(1.25rem, 1.7vw, 1.8rem);
+  font-size: clamp(1.35rem, 1.7vw, 1.95rem);
   line-height: 1.04;
+  letter-spacing: 0;
 }
 
 body.public-client-setup .template-board-body small {
-  color: #cbd5e1;
+  color: #b6c2d2;
   font-size: 0.92rem;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 body.public-client-setup .template-board-body button {
   margin-top: auto;
   border: 0;
   border-radius: 999px;
-  padding: 12px 16px;
-  color: #02121a;
-  background: #22d3ee;
+  padding: 13px 16px;
+  color: #041014;
+  background: linear-gradient(135deg, #67e8f9, #2dd4bf);
   font-weight: 950;
   cursor: pointer;
+  box-shadow: 0 12px 30px rgba(45, 212, 191, 0.2);
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+body.public-client-setup .template-board-body button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 38px rgba(45, 212, 191, 0.27);
+  filter: brightness(1.04);
 }
 
 body.public-client-setup .selected-template-preview {
@@ -4613,6 +4684,9 @@ body.public-client-setup .selected-template-preview-actions [data-chat-generate]
 
   body.public-client-setup .template-board-card.recommended:first-child .template-board-image {
     height: 220px;
+    min-height: 0;
+    margin: 12px 12px 0;
+    border-radius: 18px 18px 14px 14px;
   }
 
   body.public-client-setup .template-skeleton-card {

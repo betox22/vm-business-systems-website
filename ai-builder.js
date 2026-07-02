@@ -1542,10 +1542,14 @@ function renderCanvasTemplateCarousel(card) {
               <img src="${escapeAttribute(choice.image)}" alt="${escapeAttribute(localizedTemplateName(choice))}">
             </div>
             <div class="template-board-body">
-              <span>${escapeHtml(choice.templateId === selectedId || index === 0 ? langText({ en: "Recommended", es: "Recomendada", fr: "Recommandee", pt: "Recomendada" }) : langText({ en: "Alternative", es: "Alternativa", fr: "Alternative", pt: "Alternativa" }))}</span>
+              <div class="template-board-meta">
+                <span class="template-status-pill">${escapeHtml(choice.templateId === selectedId || index === 0 ? langText({ en: "Recommended", es: "Recomendada", fr: "Recommandee", pt: "Recomendada" }) : langText({ en: "Alternative", es: "Alternativa", fr: "Alternative", pt: "Alternativa" }))}</span>
+                <div class="template-board-badges" aria-label="${escapeAttribute(langText({ en: "Template categories", es: "Categorias del template", fr: "Categories du template", pt: "Categorias do template" }))}">
+                  ${templateCardBadges(choice).map((badge, badgeIndex) => `<em data-badge-tone="${badgeIndex % 3}">${escapeHtml(badge)}</em>`).join("")}
+                </div>
+              </div>
               <strong>${escapeHtml(localizedTemplateName(choice))}</strong>
               <small>${escapeHtml(localizedTemplateDescription(choice))}</small>
-              <em>${escapeHtml(choice.catalogType || "")}</em>
               <button type="button" data-template-preview="${escapeAttribute(choice.templateId)}">${escapeHtml(langText({ en: "Preview", es: "Previsualizar", fr: "Previsualiser", pt: "Previsualizar" }))}</button>
             </div>
           </article>
@@ -3614,6 +3618,94 @@ function localizedTemplateName(choice) {
 
 function localizedTemplateDescription(choice) {
   return choice?.descriptions?.[selectedLanguage] || choice?.description || choice?.template?.clientSelectionCard?.difference || choice?.template?.visualDifference || "";
+}
+
+function localizedTemplateBadgeSet(map, language = selectedLanguage) {
+  const value = map[language] || map.en || [];
+  const badges = Array.isArray(value) ? value : [value];
+  return badges.map((badge) => publicAssistantCopy(badge)).filter(Boolean);
+}
+
+function templateCardBadges(choice) {
+  const catalogType = String(choice?.catalogType || "").toLowerCase();
+  if (/dense_marketplace/.test(catalogType)) return localizedTemplateBadgeSet({
+    en: ["E-commerce", "Deals", "Search-first"],
+    es: ["E-commerce", "Ofertas", "Busqueda"],
+    fr: ["E-commerce", "Offres", "Recherche"],
+    pt: ["E-commerce", "Ofertas", "Busca"],
+  });
+  if (/listing/.test(catalogType)) return localizedTemplateBadgeSet({
+    en: ["Marketplace", "Listings", "Offers"],
+    es: ["Marketplace", "Listados", "Ofertas"],
+    fr: ["Marketplace", "Annonces", "Offres"],
+    pt: ["Marketplace", "Anuncios", "Ofertas"],
+  });
+  if (/lookbook|collection/.test(catalogType)) return localizedTemplateBadgeSet({
+    en: ["Fashion", "Lookbook", "Drops"],
+    es: ["Moda", "Lookbook", "Drops"],
+    fr: ["Mode", "Lookbook", "Drops"],
+    pt: ["Moda", "Lookbook", "Drops"],
+  });
+  if (/premium|luxury/.test(catalogType)) return localizedTemplateBadgeSet({
+    en: ["Premium", "Showcase", "Editorial"],
+    es: ["Premium", "Showcase", "Editorial"],
+    fr: ["Premium", "Showcase", "Editorial"],
+    pt: ["Premium", "Showcase", "Editorial"],
+  });
+  if (/industrial|supplier/.test(catalogType)) return localizedTemplateBadgeSet({
+    en: ["B2B", "RFQ", "Materials"],
+    es: ["B2B", "Cotizacion", "Materiales"],
+    fr: ["B2B", "Devis", "Materiaux"],
+    pt: ["B2B", "Orcamento", "Materiais"],
+  });
+  if (/b2b|solution/.test(catalogType)) return localizedTemplateBadgeSet({
+    en: ["B2B", "SaaS", "Systems"],
+    es: ["B2B", "SaaS", "Sistemas"],
+    fr: ["B2B", "SaaS", "Systemes"],
+    pt: ["B2B", "SaaS", "Sistemas"],
+  });
+  if (/medical|wellness/.test(catalogType)) return localizedTemplateBadgeSet({
+    en: ["Clinic", "Booking", "Trust"],
+    es: ["Clinica", "Reservas", "Confianza"],
+    fr: ["Clinique", "Reservations", "Confiance"],
+    pt: ["Clinica", "Agendas", "Confianca"],
+  });
+  if (/legal|professional|company/.test(catalogType)) return localizedTemplateBadgeSet({
+    en: ["Services", "Authority", "Leads"],
+    es: ["Servicios", "Autoridad", "Leads"],
+    fr: ["Services", "Autorite", "Leads"],
+    pt: ["Servicos", "Autoridade", "Leads"],
+  });
+  if (/restaurant|menu/.test(catalogType)) return localizedTemplateBadgeSet({
+    en: ["Menu", "Orders", "Local"],
+    es: ["Menu", "Pedidos", "Local"],
+    fr: ["Menu", "Commandes", "Local"],
+    pt: ["Menu", "Pedidos", "Local"],
+  });
+  if (/booking/.test(catalogType)) return localizedTemplateBadgeSet({
+    en: ["Booking", "Services", "Calendar"],
+    es: ["Reservas", "Servicios", "Calendario"],
+    fr: ["Reservations", "Services", "Calendrier"],
+    pt: ["Agendas", "Servicos", "Calendario"],
+  });
+  if (/digital/.test(catalogType)) return localizedTemplateBadgeSet({
+    en: ["Digital", "Bundles", "Instant access"],
+    es: ["Digital", "Bundles", "Acceso inmediato"],
+    fr: ["Digital", "Bundles", "Acces immediat"],
+    pt: ["Digital", "Bundles", "Acesso imediato"],
+  });
+  if (/service|quote/.test(catalogType)) return localizedTemplateBadgeSet({
+    en: ["Services", "Quote", "Local"],
+    es: ["Servicios", "Cotizacion", "Local"],
+    fr: ["Services", "Devis", "Local"],
+    pt: ["Servicos", "Orcamento", "Local"],
+  });
+  return localizedTemplateBadgeSet({
+    en: ["Website", "Editable", "AI-ready"],
+    es: ["Web", "Editable", "IA lista"],
+    fr: ["Site", "Modifiable", "IA prete"],
+    pt: ["Site", "Editavel", "IA pronta"],
+  });
 }
 
 function buildAiStudioPlanFromGuidedState(extra = "") {
