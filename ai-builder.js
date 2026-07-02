@@ -1498,7 +1498,8 @@ function hasEnoughContextForTemplatePreview() {
   const commerceSignal = normalizeTemplateIntentText(`${intent} ${description} ${services}`);
   const hasIntent = /tienda|store|shop|marketplace|catalogo|servicio|service|reserva|booking|restaurante|restaurant|pagina|website|landing|amazon|ebay/.test(commerceSignal);
   const hasConcreteOffer = offerItems.length >= 2
-    || description.length >= 70
+    || description.length >= 45
+    || commerceSignal.split(/\s+/).length >= 16
     || textSuggestsBroadMarketplace(commerceSignal)
     || textSuggestsFocusedProductLine(commerceSignal);
   return Boolean(hasIntent && hasConcreteOffer);
@@ -3795,6 +3796,10 @@ function appendTemplateDetectionMessage(selection) {
 }
 
 async function appendTemplatePreviewChoices(selection, sourceMessage = "") {
+  if (isPublicClientSetup) {
+    renderLiveSitePreview();
+    return;
+  }
   const selectedId = selection?.templateId || "";
   const choices = await getTemplatePreviewCandidates(selection, sourceMessage);
   const card = document.createElement("div");
