@@ -1537,7 +1537,7 @@ function renderCanvasTemplateCarousel(card) {
       </div>
       <div class="template-board-grid" aria-label="Template options">
         ${choices.map((choice, index) => `
-          <article class="template-choice-card template-board-card ${choice.templateId === selectedId || index === 0 ? "active-card recommended" : ""}" data-template-choice="${escapeAttribute(choice.templateId)}" data-catalog-type="${escapeAttribute(choice.catalogType || "")}">
+          <article class="template-choice-card template-board-card ${choice.templateId === selectedId || index === 0 ? "active-card recommended" : ""}" style="--template-card-index: ${index};" data-template-choice="${escapeAttribute(choice.templateId)}" data-catalog-type="${escapeAttribute(choice.catalogType || "")}">
             <div class="template-board-image">
               <img src="${escapeAttribute(choice.image)}" alt="${escapeAttribute(localizedTemplateName(choice))}">
             </div>
