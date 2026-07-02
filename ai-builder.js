@@ -1406,6 +1406,10 @@ function renderLiveSitePreview() {
   const card = ensureLiveSitePreviewCard();
   if (!card) return;
   syncTemplateSelectionFromGuidedContext();
+  if (shouldShowCanvasTemplateCarousel()) {
+    renderCanvasTemplateCarousel(card);
+    return;
+  }
   if (!hasEnoughContextForTemplatePreview()) {
     card.innerHTML = renderNeutralLiveWorkspace();
     return;
@@ -1419,6 +1423,71 @@ function renderLiveSitePreview() {
       ${renderWebsite(schema, schema.pages?.[0]?.page_key || "home")}
     </div>
   `;
+}
+
+function shouldShowCanvasTemplateCarousel() {
+  if (!isPublicClientSetup || currentSchema) return false;
+  if (!hasEnoughContextForTemplatePreview()) return false;
+  if (forcedTemplateSelection?.intent === "client_visual_template_choice") return false;
+  return guidedStep !== "review" || !forcedTemplateSelection?.templateId;
+}
+
+function renderCanvasTemplateCarousel(card) {
+  const selection = livePreviewTemplateSelection();
+  const selectedId = selection?.templateId || "";
+  const choices = rankedFallbackChoices(selectedId).slice(0, 5);
+  if (!choices.length) {
+    card.innerHTML = renderNeutralLiveWorkspace();
+    return;
+  }
+  card.innerHTML = `
+    <section class="template-choice-panel template-carousel-panel template-carousel-canvas">
+      <div class="template-choice-heading template-carousel-heading">
+        <strong>${escapeHtml(langText({
+          en: "Select the structure LYRA should use",
+          es: "Selecciona la estructura que LYRA debe usar",
+          fr: "Selectionnez la structure que LYRA doit utiliser",
+          pt: "Selecione a estrutura que a LYRA deve usar",
+        }))}</strong>
+        <span>${escapeHtml(langText({
+          en: "These are real template bases. LYRA will adapt copy, colors, products and flow after you choose one.",
+          es: "Estas son bases reales. LYRA adaptara textos, colores, productos y flujo despues de elegir una.",
+          fr: "Ce sont de vraies bases. LYRA adaptera textes, couleurs, produits et parcours apres le choix.",
+          pt: "Estas sao bases reais. A LYRA adapta textos, cores, produtos e fluxo depois da escolha.",
+        }))}</span>
+      </div>
+      <div class="template-choice-grid template-carousel-track" aria-label="Template carousel">
+        ${choices.map((choice, index) => `
+          <article class="template-choice-card template-carousel-card ${choice.templateId === selectedId || index === 0 ? "active-card recommended" : ""}" data-template-choice="${escapeAttribute(choice.templateId)}" data-catalog-type="${escapeAttribute(choice.catalogType || "")}">
+            <div class="template-carousel-image">
+              <img src="${escapeAttribute(choice.image)}" alt="${escapeAttribute(localizedTemplateName(choice))}">
+            </div>
+            <div class="template-carousel-body">
+              <span>${escapeHtml(choice.templateId === selectedId || index === 0 ? langText({ en: "Recommended", es: "Recomendada", fr: "Recommandee", pt: "Recomendada" }) : langText({ en: "Alternative", es: "Alternativa", fr: "Alternative", pt: "Alternativa" }))}</span>
+              <strong>${escapeHtml(localizedTemplateName(choice))}</strong>
+              <small>${escapeHtml(localizedTemplateDescription(choice))}</small>
+              <em>${escapeHtml(choice.catalogType || "")}</em>
+              <button type="button" data-template-preview="${escapeAttribute(choice.templateId)}">${escapeHtml(langText({ en: "Preview", es: "Previsualizar", fr: "Previsualiser", pt: "Previsualizar" }))}</button>
+            </div>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
+  const track = card.querySelector(".template-carousel-track");
+  initTemplateCarousel(track);
+  card.querySelectorAll("[data-template-preview]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      window.Lyra?.selectTemplate(button.dataset.templatePreview);
+    });
+  });
+  card.querySelectorAll(".template-carousel-card").forEach((item) => {
+    item.addEventListener("click", () => {
+      item.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      updateTemplateCarouselActiveCard(track);
+    });
+  });
 }
 
 function hasEnoughContextForTemplatePreview() {
@@ -4825,6 +4894,7 @@ function applyGuidedStateToForm() {
 
 function renderGuidedSummary() {
   syncTemplateSelectionFromGuidedContext();
+  guidedStep = normalizeGuidedStepForCurrentState(guidedStep);
   document.querySelectorAll("[data-summary-field]").forEach((field) => {
     const key = field.dataset.summaryField;
     const value = guidedState[key];
@@ -4856,6 +4926,16 @@ function renderGuidedSummary() {
   updateAssetPromptVisibility();
   renderSitePlanInChatIfNeeded();
   saveGuidedDraft();
+}
+
+function normalizeGuidedStepForCurrentState(step) {
+  const normalized = normalizeNextGuidedStep(step);
+  if (normalized !== "review") return normalized;
+  if (currentSchema) return "review";
+  const requiredMissing = REQUIRED_GUIDED_STEPS.filter((item) => !isGuidedStepAnswered(item));
+  if (requiredMissing.length) return requiredMissing[0];
+  if (!hasEnoughContextForTemplatePreview()) return nextSmartGuidedStep("websiteIntent");
+  return "review";
 }
 
 function renderGuidedBriefReview() {
