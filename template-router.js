@@ -861,7 +861,7 @@
       intent: "fashion",
       templateId: "fashion-drop-pro",
       catalogType: "lookbook_collection_catalog",
-      keywords: ["ropa", "fashion", "boutique", "tipo nike", "streetwear", "sneakers", "cyberpunk", "futurista", "neon", "neón", "gaming", "super cool"],
+      keywords: ["ropa", "fashion", "boutique", "tipo nike", "streetwear", "sneakers", "cyberpunk", "futurista", "neon", "neón", "gaming", "super cool", "bisuteria", "bisutería", "joyeria artesanal", "joyería artesanal", "accesorios artesanales", "accesorios hechos a mano", "collares", "pulseras", "aretes", "zarcillos", "anillos", "handmade jewelry", "handmade accessories"],
     },
     {
       intent: "minimal_premium",
@@ -910,9 +910,26 @@
   }
 
   function suggestsBroadMarketplace(normalizedPrompt) {
-    return /\b(de todo|todo tipo|variedad|variado|variados|productos variados|catalogo grande|catalogo variado|cosas raras|cosas inusuales|inusual|unusual|nada comun|poco comun|dificil de encontrar|curiosidades|gadgets|anime|juguetes)\b/.test(normalizedPrompt)
-      || /(ropa|accesorios).*(carros|autos|juguetes|anime|gadgets)/.test(normalizedPrompt)
+    const explicitBroad = /\b(amazon|tipo amazon|como amazon|mega tienda|mega store|mega marketplace|marketplace tipo amazon|marketplace estilo amazon)\b/.test(normalizedPrompt);
+    const crossCategoryBroad = /(ropa|accesorios).*(carros|autos|juguetes|anime|gadgets)/.test(normalizedPrompt)
       || /(carros|autos|juguetes|anime|gadgets).*(ropa|accesorios)/.test(normalizedPrompt);
+    const broadCatalog = /\b(de todo|todo tipo|variedad|variado|variados|productos variados|catalogo grande|catalogo variado|cosas raras|cosas inusuales|inusual|unusual|nada comun|poco comun|dificil de encontrar|curiosidades|gadgets|anime|juguetes)\b/.test(normalizedPrompt)
+      || crossCategoryBroad;
+    if (explicitBroad) return true;
+    if (suggestsFocusedCommerceStore(normalizedPrompt) && !crossCategoryBroad) return false;
+    return broadCatalog;
+  }
+
+  function suggestsJewelryAccessoryStore(normalizedPrompt) {
+    const automotiveAccessory = /\b(accesorios? (para|de) (carros|autos|automotriz|automotrices|camionetas|motos|4x4)|auto accessories|car accessories)\b/.test(normalizedPrompt);
+    if (automotiveAccessory) return false;
+    return /\b(bisuteria|bijouterie|joyeria|jewelry|jewellery|accesorios hechos a mano|accesorios artesanales|collar|collares|necklace|necklaces|pulsera|pulseras|bracelet|bracelets|arete|aretes|zarcillo|zarcillos|earring|earrings|anillo|anillos|rings?|cadena|cadenas|dije|dijes|charm|charms|handmade accessories|handmade jewelry|artesanal|hecho a mano)\b/.test(normalizedPrompt)
+      || (/\baccesorios?\b/.test(normalizedPrompt) && /\b(moda|fashion|boutique|bisuteria|joyeria|collar|pulsera|arete|anillo|artesanal|hecho a mano|handmade)\b/.test(normalizedPrompt));
+  }
+
+  function suggestsFocusedCommerceStore(normalizedPrompt) {
+    return suggestsJewelryAccessoryStore(normalizedPrompt)
+      || /\b(ropa|fashion|moda|boutique|streetwear|zapato|sneaker|apparel|clothing|beauty|belleza|skincare|cosmeticos|cosméticos|velas|candles|decoracion|decoración|ceramica|cerámica|manualidades|crafts|productos artesanales|artesania|artesanía|coleccion propia|coleccion de|colección de)\b/.test(normalizedPrompt);
   }
 
   function suggestsFocusedProductLine(normalizedPrompt) {
@@ -930,7 +947,10 @@
     if (/\b(manufacturing|industrial|fabrica|fabricante|maquinaria|repuestos|tools supplier|rfq|proveedor industrial|suministros industriales)\b/.test(normalizedPrompt) && rule.intent === "manufacturing_industrial_supplier") return 118;
     if (/\b(curso|cursos|course|academy|academia|bootcamp|training|clases|masterclass|workshop)\b/.test(normalizedPrompt) && rule.intent === "education_academy") return 116;
     if (/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|mega marketplace)\b/.test(normalizedPrompt) && rule.intent === "amazon_marketplace") return 140;
+    if (rule.intent === "amazon_marketplace" && suggestsFocusedCommerceStore(normalizedPrompt) && !suggestsBroadMarketplace(normalizedPrompt)) return -80;
     if (suggestsBroadMarketplace(normalizedPrompt) && rule.intent === "amazon_marketplace") return 105;
+    if (suggestsJewelryAccessoryStore(normalizedPrompt) && rule.intent === "fashion") return 124;
+    if (suggestsFocusedCommerceStore(normalizedPrompt) && rule.intent === "fashion") return 112;
     if (suggestsFocusedProductLine(normalizedPrompt) && rule.intent === "minimal_premium") return 108;
     if (rule.intent === "minimal_premium" && !suggestsFocusedProductLine(normalizedPrompt)) return -30;
     if (rule.intent === "fashion" && suggestsBroadMarketplace(normalizedPrompt)) return -20;
@@ -1050,6 +1070,8 @@
       ? ["restaurant-food-business", "lead-funnel-pro", "home-services-premium", "booking-appointment-pro"]
       : normalized.includes("digital") || normalized.includes("curso") || /digital|pricing|software|course/.test(primaryCatalogType)
         ? ["digital-products-store", "lead-funnel-pro", "apple-premium-product", "corporate-company-pro"]
+      : suggestsFocusedCommerceStore(normalized) || /lookbook|collection/.test(primaryCatalogType)
+      ? ["fashion-drop-pro", "luxury-high-ticket-pro", "apple-premium-product", "listing-marketplace-pro"]
       : normalized.includes("marketplace") || /real_estate|listing|dense/.test(primaryCatalogType)
       ? ["real-estate-listings-pro", "mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro"]
       : normalized.includes("servicio") || normalized.includes("service") || /service|booking/.test(primaryCatalogType)
@@ -1075,6 +1097,9 @@
     }
     if (suggestsFocusedProductLine(normalizedPrompt)) {
       return INTENT_RULES.find((rule) => rule.intent === "minimal_premium") || null;
+    }
+    if (suggestsFocusedCommerceStore(normalizedPrompt)) {
+      return INTENT_RULES.find((rule) => rule.intent === "fashion") || null;
     }
     const scored = INTENT_RULES.map((rule) => {
       const matches = rule.keywords.filter((keyword) => normalizedPrompt.includes(normalizeText(keyword)));
