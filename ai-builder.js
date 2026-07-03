@@ -1519,6 +1519,7 @@ function renderCanvasTemplateCarousel(card) {
     card.innerHTML = renderNeutralLiveWorkspace();
     return;
   }
+  const shouldAnimateCards = !window.__lyraTemplateBoardAnimated;
   card.innerHTML = `
     <section class="template-choice-panel template-board-panel">
       <div class="template-choice-heading template-carousel-heading">
@@ -1535,9 +1536,9 @@ function renderCanvasTemplateCarousel(card) {
           pt: "Estas sao bases reais. A LYRA adapta textos, cores, produtos e fluxo depois da escolha.",
         }))}</span>
       </div>
-      <div class="template-board-grid" aria-label="Template options">
+      <div class="template-board-grid ${shouldAnimateCards ? "template-board-grid-enter" : ""}" aria-label="Template options">
         ${choices.map((choice, index) => `
-          <article class="template-choice-card template-board-card ${choice.templateId === selectedId || index === 0 ? "active-card recommended" : ""}" style="--template-card-index: ${index};" data-template-choice="${escapeAttribute(choice.templateId)}" data-catalog-type="${escapeAttribute(choice.catalogType || "")}">
+          <article class="template-choice-card template-board-card ${choice.templateId === selectedId ? "active-card recommended" : index === 0 ? "recommended" : ""}" style="--template-card-index: ${index};" data-template-choice="${escapeAttribute(choice.templateId)}" data-catalog-type="${escapeAttribute(choice.catalogType || "")}">
             <div class="template-board-image">
               <img src="${escapeAttribute(choice.image)}" alt="${escapeAttribute(localizedTemplateName(choice))}">
             </div>
@@ -1557,11 +1558,12 @@ function renderCanvasTemplateCarousel(card) {
       </div>
     </section>
   `;
+  window.__lyraTemplateBoardAnimated = true;
   const panel = card.querySelector(".template-board-panel");
   panel?.addEventListener("click", (event) => {
     const button = event.target?.closest?.("[data-template-preview]");
-    const item = event.target?.closest?.(".template-board-card");
-    const templateId = button?.dataset.templatePreview || item?.dataset.templateChoice || "";
+    if (!button) return;
+    const templateId = button.dataset.templatePreview || "";
     if (!templateId) return;
     event.preventDefault();
     event.stopPropagation();
@@ -1575,10 +1577,10 @@ function canvasTemplateChoices(selectedTemplateId = "") {
   const selectedText = `${selectedTemplateId} ${selectedCatalog}`;
   const ordered = [];
   const usedImages = new Set();
-  const add = (templateId) => {
+  const add = (templateId, options = {}) => {
     const choice = templatePreviewMeta(templateId);
     if (!choice || ordered.some((item) => item.templateId === choice.templateId)) return;
-    if (usedImages.has(choice.image) && ordered.length >= 3) return;
+    if (usedImages.has(choice.image) && !options.allowDuplicateImage) return;
     usedImages.add(choice.image);
     ordered.push(choice);
   };
@@ -1608,6 +1610,9 @@ function canvasTemplateChoices(selectedTemplateId = "") {
 
   TEMPLATE_PREVIEW_CHOICES.forEach((choice) => {
     if (ordered.length < 5) add(choice.templateId);
+  });
+  TEMPLATE_PREVIEW_CHOICES.forEach((choice) => {
+    if (ordered.length < 5) add(choice.templateId, { allowDuplicateImage: true });
   });
   return ordered;
 }

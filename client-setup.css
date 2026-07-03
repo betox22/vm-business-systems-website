@@ -4266,10 +4266,13 @@ body.public-client-setup .template-board-card {
   overflow: hidden;
   cursor: pointer;
   opacity: 1;
-  animation: templateCardFadeIn 460ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
-  animation-delay: calc(var(--template-card-index, 0) * 55ms);
   will-change: transform, opacity, filter;
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease, background 220ms ease;
+}
+
+body.public-client-setup .template-board-grid-enter .template-board-card {
+  animation: templateCardFadeIn 460ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--template-card-index, 0) * 55ms);
 }
 
 body.public-client-setup .template-board-card:hover,
