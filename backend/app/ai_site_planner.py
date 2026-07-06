@@ -4,7 +4,7 @@ import json
 import os
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from .agents import TEMPLATE_CATALOG
 from .models import AgentResult, ProjectState, WebsiteType
@@ -16,7 +16,7 @@ except Exception:  # pragma: no cover - dependency may be absent in local dev
     AsyncOpenAI = None  # type: ignore[assignment]
 
 
-ALLOWED_SECTION_COMPONENTS = {
+ALLOWED_RENDERER_COMPONENTS = {
     "Hero",
     "MarketplaceHero",
     "ProductGrid",
@@ -36,54 +36,154 @@ ALLOWED_SECTION_COMPONENTS = {
 }
 
 
-class PlannedSection(BaseModel):
+ALLOWED_SECTION_COMPONENT_TYPES = {
+    "hero_split_conversion": "Hero",
+    "hero_marketplace_search": "MarketplaceHero",
+    "hero_editorial_product": "Hero",
+    "category_rail": "CategoryRail",
+    "product_grid_4x": "ProductGrid",
+    "featured_products": "FeaturedProducts",
+    "lookbook_strip": "Lookbook",
+    "trust_strip": "TrustStrip",
+    "story_block": "StoryBlock",
+    "feature_spotlight": "FeatureSpotlight",
+    "contact_panel": "Contact",
+    "faq_block": "FAQ",
+    "cta_band": "CTA",
+    "booking_services": "BookingServices",
+    "restaurant_menu": "RestaurantMenu",
+    "service_areas": "ServiceAreas",
+    "proof_panel": "ProofPanel",
+}
+
+
+SalesFlow = Literal[
+    "online_sales",
+    "quote_request",
+    "booking",
+    "lead_capture",
+    "informational",
+]
+
+CatalogStrategy = Literal[
+    "dense_marketplace_catalog",
+    "listing_marketplace_catalog",
+    "focused_online_store",
+    "premium_editorial_catalog",
+    "lookbook_collection_catalog",
+    "restaurant_menu_catalog",
+    "booking_menu_catalog",
+    "booking_service_catalog",
+    "home_services_quote_catalog",
+    "service_lead_catalog",
+    "service_area_catalog",
+    "company_services_catalog",
+    "digital_offer_catalog",
+    "b2b_solution_catalog",
+    "industrial_supplier_catalog",
+    "real_estate_listing_catalog",
+    "luxury_high_ticket_catalog",
+    "education_course_catalog",
+    "medical_wellness_service_catalog",
+    "legal_professional_services_catalog",
+    "lead_funnel_offer_catalog",
+]
+
+
+class DesignTokens(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    component: str
+    background: str = "#ffffff"
+    surface: str = "#f8fafc"
+    primary: str = "#111827"
+    secondary: str = "#475569"
+    accent: str = "#14b8a6"
+    text: str = "#0f172a"
+    headingFont: str = "Inter"
+    bodyFont: str = "Inter"
+
+
+class CopyProps(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    badge: Optional[str] = None
+    headline: Optional[str] = None
+    subheadline: Optional[str] = None
+    body: Optional[str] = None
+    ctaPrimary: Optional[str] = None
+    ctaSecondary: Optional[str] = None
+
+
+class MediaProps(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    imageSearchQuery: Optional[str] = None
+    imageUrl: Optional[str] = None
+    alt: Optional[str] = None
+    visualDirection: Optional[str] = None
+
+
+class SectionBlock(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    sectionId: str
+    componentType: str
     variant: str = "default"
     purpose: str = ""
-    editable: Dict[str, Any] = Field(default_factory=dict)
+    copyProps: CopyProps = Field(default_factory=CopyProps, alias="copy")
+    media: Optional[MediaProps] = None
+    dataBinding: Dict[str, Any] = Field(default_factory=dict)
 
-    @field_validator("component")
+    @field_validator("componentType")
     @classmethod
-    def component_must_be_known(cls, value: str) -> str:
-        if value not in ALLOWED_SECTION_COMPONENTS:
-            raise ValueError(f"Unsupported component: {value}")
+    def component_type_must_be_known(cls, value: str) -> str:
+        if value not in ALLOWED_SECTION_COMPONENT_TYPES:
+            raise ValueError(f"Unsupported component type: {value}")
         return value
 
 
-class PlannedPage(BaseModel):
+class PageSchema(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    pageKey: str
+    pageId: str
     title: str
     slug: str
-    sections: List[PlannedSection] = Field(default_factory=list)
+    sections: List[SectionBlock] = Field(default_factory=list)
 
 
-class AISitePlan(BaseModel):
+class AIWebGenerationResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    reasoningSummary: str
+    templateId: str
     websiteType: WebsiteType
-    selectedTemplateId: str
-    catalogType: str
+    catalogStrategy: CatalogStrategy
+    salesFlow: SalesFlow
     targetAudience: str
-    salesFlow: str
-    colors: Dict[str, str] = Field(default_factory=dict)
-    typography: Dict[str, str] = Field(default_factory=dict)
-    hero: Dict[str, str] = Field(default_factory=dict)
-    pages: List[PlannedPage] = Field(default_factory=list)
+    designTokens: DesignTokens = Field(default_factory=DesignTokens)
+    pages: List[PageSchema] = Field(default_factory=list)
     catalogCategories: List[str] = Field(default_factory=list)
     catalogItems: List[Dict[str, Any]] = Field(default_factory=list)
-    reasoningSummary: str
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
-    @field_validator("selectedTemplateId")
+    @field_validator("templateId")
     @classmethod
     def template_must_exist(cls, value: str) -> str:
         if value not in TEMPLATE_CATALOG:
             raise ValueError(f"Unsupported template id: {value}")
         return value
+
+    @model_validator(mode="after")
+    def catalog_strategy_must_match_template(self) -> "AIWebGenerationResponse":
+        expected = TEMPLATE_CATALOG[self.templateId]["catalogType"]
+        if self.catalogStrategy != expected:
+            raise ValueError(
+                f"catalogStrategy must match selected template catalogType: expected {expected}, got {self.catalogStrategy}"
+            )
+        return self
+
+
+AISitePlan = AIWebGenerationResponse
 
 
 def compact_template_catalog() -> List[Dict[str, Any]]:
@@ -119,7 +219,7 @@ def state_to_client_summary(state: ProjectState, user_input: str) -> Dict[str, A
 
 
 def site_plan_to_updates(plan: AISitePlan) -> Dict[str, Any]:
-    template = TEMPLATE_CATALOG[plan.selectedTemplateId]
+    template = TEMPLATE_CATALOG[plan.templateId]
     catalog_items = []
     for index, item in enumerate(plan.catalogItems[:12]):
         name = str(item.get("name") or item.get("title") or f"Item {index + 1}").strip()
@@ -140,23 +240,62 @@ def site_plan_to_updates(plan: AISitePlan) -> Dict[str, Any]:
             "sort_order": int(item.get("sort_order", index)),
         })
 
+    pages = []
+    hero_copy: Dict[str, str] = {}
+    for page in plan.pages:
+        sections = []
+        for section in page.sections:
+            renderer_component = ALLOWED_SECTION_COMPONENT_TYPES[section.componentType]
+            section_copy = section.copyProps.model_dump(exclude_none=True)
+            if not hero_copy and section_copy and renderer_component in {"Hero", "MarketplaceHero"}:
+                hero_copy = section_copy
+            sections.append({
+                "sectionId": section.sectionId,
+                "component": renderer_component,
+                "componentType": section.componentType,
+                "variant": section.variant,
+                "purpose": section.purpose,
+                "editable": {
+                    "copy": section_copy,
+                    "media": section.media.model_dump(exclude_none=True) if section.media else {},
+                    "dataBinding": section.dataBinding,
+                },
+            })
+        pages.append({
+            "pageKey": page.pageId,
+            "pageId": page.pageId,
+            "title": page.title,
+            "slug": page.slug,
+            "sections": sections,
+        })
+
     return {
         "websiteType": plan.websiteType,
-        "selectedTemplateId": plan.selectedTemplateId,
+        "selectedTemplateId": plan.templateId,
         "selectedTemplateName": template["name"],
-        "catalogType": plan.catalogType,
+        "catalogType": plan.catalogStrategy,
         "salesFlow": plan.salesFlow,
         "targetAudience": plan.targetAudience,
-        "colors": plan.colors,
-        "typography": plan.typography,
+        "colors": {
+            "background": plan.designTokens.background,
+            "surface": plan.designTokens.surface,
+            "primary": plan.designTokens.primary,
+            "secondary": plan.designTokens.secondary,
+            "accent": plan.designTokens.accent,
+            "text": plan.designTokens.text,
+        },
+        "typography": {
+            "heading": plan.designTokens.headingFont,
+            "body": plan.designTokens.bodyFont,
+        },
         "generatedCopy": {
             "hero": {
-                "headline": plan.hero.get("headline", ""),
-                "subheadline": plan.hero.get("subheadline", ""),
-                "primaryCta": plan.hero.get("primaryCta", ""),
-                "secondaryCta": plan.hero.get("secondaryCta", ""),
+                "headline": hero_copy.get("headline", ""),
+                "subheadline": hero_copy.get("subheadline", ""),
+                "primaryCta": hero_copy.get("ctaPrimary", ""),
+                "secondaryCta": hero_copy.get("ctaSecondary", ""),
             },
-            "pages": [page.model_dump() for page in plan.pages],
+            "pages": pages,
             "templateUse": template["name"],
             "catalogCategories": plan.catalogCategories,
         },
@@ -193,17 +332,46 @@ class OpenAISitePlanAgent:
         user_payload = {
             "clientSummary": state_to_client_summary(state, user_input),
             "allowedTemplates": compact_template_catalog(),
-            "allowedComponents": sorted(ALLOWED_SECTION_COMPONENTS),
+            "allowedComponentTypes": sorted(ALLOWED_SECTION_COMPONENT_TYPES),
             "requiredOutput": {
                 "websiteType": "one allowed WebsiteType",
-                "selectedTemplateId": "one id from allowedTemplates",
-                "catalogType": "matching catalog model",
+                "templateId": "one id from allowedTemplates",
+                "catalogStrategy": "matching catalog model",
                 "targetAudience": "specific buyer profile",
                 "salesFlow": "online_sales | quote_request | booking | lead_capture | informational",
-                "colors": {"background": "#hex", "surface": "#hex", "primary": "#hex", "secondary": "#hex", "accent": "#hex", "text": "#hex"},
-                "typography": {"heading": "font name", "body": "font name"},
-                "hero": {"headline": "public copy", "subheadline": "public copy", "primaryCta": "button", "secondaryCta": "button"},
-                "pages": [{"pageKey": "home", "title": "Home", "slug": "/", "sections": [{"component": "Hero", "variant": "name", "purpose": "why", "editable": {}}]}],
+                "designTokens": {
+                    "background": "#hex",
+                    "surface": "#hex",
+                    "primary": "#hex",
+                    "secondary": "#hex",
+                    "accent": "#hex",
+                    "text": "#hex",
+                    "headingFont": "font name",
+                    "bodyFont": "font name",
+                },
+                "pages": [{
+                    "pageId": "home",
+                    "title": "Home",
+                    "slug": "/",
+                    "sections": [{
+                        "sectionId": "home-hero",
+                        "componentType": "hero_split_conversion",
+                        "variant": "template-aware variant",
+                        "purpose": "why this section exists",
+                        "copy": {
+                            "badge": "public copy",
+                            "headline": "public copy",
+                            "subheadline": "public copy",
+                            "ctaPrimary": "button",
+                            "ctaSecondary": "button",
+                        },
+                        "media": {
+                            "imageSearchQuery": "visual search phrase",
+                            "visualDirection": "art direction",
+                        },
+                        "dataBinding": {"source": "catalogItems"},
+                    }],
+                }],
                 "catalogCategories": ["category names"],
                 "catalogItems": [{"name": "item", "description": "public copy", "category": "category"}],
                 "reasoningSummary": "short internal reason",
@@ -249,13 +417,14 @@ You must design by selecting from the provided catalog only.
 Hard rules:
 - Return ONLY valid JSON. No markdown.
 - Never return HTML, CSS, class names, JavaScript, or invented renderer components.
-- selectedTemplateId must be exactly one id from allowedTemplates.
-- sections[].component must be exactly one allowed component.
+- templateId must be exactly one id from allowedTemplates.
+- sections[].componentType must be exactly one allowed component type.
 - Treat the client's intake as private strategy, not public copy.
 - Do not paste raw client notes into visible website text.
 - If a client sells a focused product family such as jewelry, handmade accessories, fashion, candles, beauty, or crafts, choose a focused store/showroom template, not a broad marketplace.
 - Choose a broad marketplace only for explicit Amazon/general-store intent or unrelated multi-category catalogs.
 - Generate polished public copy in selectedLanguage.
 - Generate category names that match the actual product/service category.
-- Keep the output editable: page titles, sections, copy, catalog categories and items must be represented as JSON values.
+- Keep the output editable: page titles, section blocks, copy, media intent, catalog categories and items must be represented as JSON values.
+- You may use media.imageSearchQuery and media.visualDirection, but do not fabricate final image URLs unless provided by the client.
 """.strip()
