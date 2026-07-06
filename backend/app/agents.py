@@ -134,6 +134,33 @@ def split_items(value: str | List[str] | None) -> List[str]:
     ]
 
 
+def suggests_jewelry_or_handmade_accessories(text: str) -> bool:
+    if re.search(r"\b(accesorios? (para|de) (carros|autos|automotriz|automotrices|camionetas|motos|4x4))\b", text):
+        return False
+    return bool(re.search(
+        r"\b(bisuteria|bijouterie|joyeria|jewelry|jewellery|collar|collares|pulsera|pulseras|arete|aretes|zarcillo|zarcillos|anillo|anillos|cadena|cadenas|dije|dijes|charm|charms|hecho a mano|hechos a mano|artesanal|artesanales|handmade accessories|handmade jewelry)\b",
+        text,
+    ))
+
+
+def suggests_focused_commerce(text: str) -> bool:
+    return suggests_jewelry_or_handmade_accessories(text) or bool(re.search(
+        r"\b(ropa|fashion|moda|boutique|streetwear|zapatos|sneaker|apparel|clothing|beauty|belleza|skincare|cosmeticos|velas|candles|decoracion|ceramica|manualidades|crafts|productos artesanales|coleccion propia)\b",
+        text,
+    ))
+
+
+def suggests_broad_marketplace(text: str, product_count: int = 0) -> bool:
+    explicit = bool(re.search(r"\b(amazon|tipo amazon|como amazon|mega tienda|mega store|mega marketplace)\b", text))
+    cross_category = bool(re.search(r"(ropa|accesorios).*(carros|autos|juguetes|anime|gadgets)|(carros|autos|juguetes|anime|gadgets).*(ropa|accesorios)", text))
+    broad_words = bool(re.search(r"\b(de todo|productos variados|catalogo grande|catalogo variado|muchas categorias|multi categoria|cosas raras|gadgets|anime|juguetes)\b", text))
+    if explicit or cross_category:
+        return True
+    if suggests_focused_commerce(text):
+        return False
+    return broad_words or product_count >= 5
+
+
 class BaseAgent:
     name = "base"
 
@@ -237,25 +264,14 @@ class StrategyAgent(BaseAgent):
         if existing_template_id in TEMPLATE_CATALOG:
             add(existing_template_id, 18, "existing valid template signal")
 
-        broad_patterns = [
-            r"\bamazon\b",
-            r"\bmarketplace\b",
-            r"\bmega\s*(tienda|store|marketplace)\b",
-            r"\bmuchos productos\b",
-            r"\bproductos variados\b",
-            r"\bvarias categorias\b",
-            r"\bcategorias\b",
-            r"\bcategorias?\b",
-            r"\bde todo\b",
-            r"\bcosas raras\b",
-            r"\bvariety\b",
-            r"\bvarios\b",
-        ]
-        if any(re.search(pattern, text) for pattern in broad_patterns) or product_count >= 5:
+        if suggests_broad_marketplace(text, product_count):
             add("mega-marketplace", 150, "broad multi-category catalog")
 
         if re.search(r"\b(ebay|listing|listados|vendedores|seller|subasta|auction|usado|condition)\b", text):
             add("listing-marketplace-pro", 120, "listing and seller comparison flow")
+
+        if suggests_jewelry_or_handmade_accessories(text):
+            add("fashion-drop-pro", 125, "focused jewelry and handmade accessory store")
 
         if re.search(r"\b(ropa|fashion|moda|boutique|streetwear|zapatos|sneaker|apparel|clothing|drop|lookbook)\b", text):
             add("fashion-drop-pro", 95, "fashion and collection browsing")
@@ -469,10 +485,18 @@ class CatalogAgent(BaseAgent):
 
     async def run(self, state: ProjectState, user_input: str) -> AgentResult:
         products = split_items(state.servicesProducts)
+        text = normalize_text(" ".join([user_input, state.businessDescription or "", state.industry or "", " ".join(products)]))
         if not products:
             products = ["Featured item", "New arrival", "Limited find", "Customer favorite"]
 
-        categories = ["Electronics", "Lifestyle", "Auto", "Collectibles", "Home", "Accessories"]
+        if suggests_jewelry_or_handmade_accessories(text):
+            categories = ["Collares", "Pulseras", "Aretes y zarcillos", "Anillos", "Sets de regalo", "Piezas personalizadas"]
+        elif state.websiteType == "fashion":
+            categories = ["Novedades", "Colecciones", "Accesorios", "Mas vendidos", "Drop limitado", "Regalos"]
+        elif state.websiteType == "marketplace":
+            categories = ["Electronics", "Lifestyle", "Auto", "Collectibles", "Home", "Accessories"]
+        else:
+            categories = ["Featured", "Popular", "New", "Recommended", "Packages", "Custom"]
         catalog = []
         for index, product in enumerate(products[:12]):
             catalog.append({

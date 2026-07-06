@@ -5,6 +5,7 @@ from typing import Any, Dict
 
 from pydantic import ValidationError
 
+from .ai_site_planner import OpenAISitePlanAgent
 from .agents import (
     ArtDirectorAgent,
     BaseAgent,
@@ -55,6 +56,7 @@ class LyraOrchestrator:
         self.art_director = ArtDirectorAgent()
         self.copywriter = CopywriterAgent()
         self.catalog = CatalogAgent()
+        self.ai_site_planner = OpenAISitePlanAgent()
         self.validator = ValidationAgent()
 
     async def run(self, user_input: str, initial_state: ProjectState | None = None) -> ProjectState:
@@ -77,7 +79,12 @@ class LyraOrchestrator:
             await manager.update(result.updates)
             await manager.add_note(result.reasoningSummary or "")
 
-        # 4. Validate final state strictly before returning to the frontend.
+        # 4. Let the server-side AI director choose the final editable plan when configured.
+        # If OPENAI_API_KEY is missing or validation fails, this returns no updates and
+        # the deterministic workers above remain the fallback.
+        await self._run_and_merge(manager, self.ai_site_planner, user_input)
+
+        # 5. Validate final state strictly before returning to the frontend.
         await self._run_and_merge(manager, self.validator, user_input)
         return await manager.snapshot()
 
