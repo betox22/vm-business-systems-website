@@ -1990,6 +1990,11 @@ function textSuggestsJewelryAccessoryStore(value) {
     || (/\baccesorios?\b/.test(text) && /\b(moda|fashion|boutique|bisuteria|joyeria|collar|pulsera|arete|anillo|artesanal|hecho a mano|handmade)\b/.test(text));
 }
 
+function textSuggestsProfessionalService(value) {
+  const text = normalizeTemplateIntentText(value);
+  return /\b(abogado|abogados|bufete|lawyer|law firm|legal|contador|accountant|tax|taxes|impuestos|consulting|consultoria|consultoría|seguros|insurance|asesor|advisor|financiero|compliance|firma profesional|inmigracion|inmigración|contratos|defensa civil)\b/.test(text);
+}
+
 function textSuggestsFocusedCommerceStore(value) {
   const text = normalizeTemplateIntentText(value);
   if (!text) return false;
@@ -2036,8 +2041,9 @@ function templateIntentScorecard(value, payload = {}) {
   const has = (pattern) => pattern.test(text);
 
   if (has(/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|mega marketplace)\b/)) scores.push(scoreFor("mega-marketplace", 140, "explicit large marketplace reference"));
+  if (textSuggestsProfessionalService(text)) scores.push(scoreFor("legal-professional-services-pro", 135, "professional services trust flow"));
   if (textSuggestsBroadMarketplace(text)) scores.push(scoreFor("mega-marketplace", 105, "broad multi-category catalog"));
-  if (products.length >= 5 && !textSuggestsFocusedCommerceStore(text) && !has(/\b(restaurante|restaurant|menu|comida|food|cafe|cafeteria|barber|barberia|salon|spa|clinica|clinic|servicio|service|contractor|curso|course)\b/)) {
+  if (products.length >= 5 && !textSuggestsFocusedCommerceStore(text) && !textSuggestsProfessionalService(text) && !has(/\b(restaurante|restaurant|menu|comida|food|cafe|cafeteria|barber|barberia|salon|spa|clinica|clinic|servicio|service|contractor|curso|course)\b/)) {
     scores.push(scoreFor("mega-marketplace", 55, "many independent product categories"));
   }
 
@@ -2951,10 +2957,11 @@ function extractStyleHint(prompt) {
 function inferIndustryFromPrompt(prompt) {
   const text = String(prompt || "").toLowerCase();
   if (/restaurante|restaurant|menu|menú|comida|food/.test(text)) return langText({ en: "Restaurant / food", es: "Restaurante / comida", fr: "Restaurant / alimentation", pt: "Restaurante / comida" });
-  if (/barber|barberia|barbería|salon|spa|cita|reserva/.test(text)) return langText({ en: "Appointment services", es: "Servicios con citas", fr: "Services avec rendez-vous", pt: "Serviços com agendamento" });
+  if (textSuggestsProfessionalService(text)) return langText({ en: "Professional services", es: "Servicios profesionales", fr: "Services professionnels", pt: "Serviços profissionais" });
+  if (textSuggestsBroadMarketplace(text) || /tienda|store|shop|producto|productos|vender|ecommerce|amazon|ebay|cyberpunk|gamer/.test(text)) return langText({ en: "Online store / ecommerce", es: "Tienda online / ecommerce", fr: "Boutique en ligne / ecommerce", pt: "Loja online / ecommerce" });
+  if (/barber|barberia|barbería|salon|spa|\b(cita|citas|reserva|reservas)\b/.test(text)) return langText({ en: "Appointment services", es: "Servicios con citas", fr: "Services avec rendez-vous", pt: "Serviços com agendamento" });
   if (/curso|course|ebook|digital|software|membres/.test(text)) return langText({ en: "Digital products", es: "Productos digitales", fr: "Produits numériques", pt: "Produtos digitais" });
   if (/contractor|construction|remodel|pintura|roofing|flooring/.test(text)) return langText({ en: "Contractor", es: "Construccion / contractor", fr: "Construction / entrepreneur", pt: "Construção / empreiteiro" });
-  if (/tienda|store|shop|producto|vender|ecommerce|amazon|ebay|cyberpunk|gamer/.test(text)) return langText({ en: "Online store / ecommerce", es: "Tienda online / ecommerce", fr: "Boutique en ligne / ecommerce", pt: "Loja online / ecommerce" });
   return "";
 }
 
@@ -6144,7 +6151,7 @@ function isRichIntakeMessage(text) {
 function extractWebsiteIntent(text) {
   if (/marketplace|amazon|ebay/i.test(text)) return "Marketplace / online store";
   if (/restaurante|restaurant|menu|menú/i.test(text)) return "Restaurant menu website";
-  if (/cita|reserva|booking|appointment/i.test(text)) return "Booking website";
+  if (/\b(cita|citas|reserva|reservas|booking|appointment)\b/i.test(text)) return "Booking website";
   if (/tienda|store|shop|ecommerce|venta online|vender online/i.test(text)) return "Online store";
   if (/servicio|services|cotizacion|cotización|quote/i.test(text)) return "Service business website";
   return text.slice(0, 180);
@@ -6156,12 +6163,13 @@ function extractBusinessName(text) {
     /(?:con el nombre|con nombre|nombre)\s+([^.,;\n]+)/i,
     /(?:se llamar[aá]|se va a llamar|sera llamado|será llamado)\s+([^.,;\n]+)/i,
     /(?:business(?: name)?|store|brand|company)\s*(?:is|called|:|-)\s*([^.,;\n]+)/i,
+    /(?:llamad[oa]|named)\s+([^.,;\n]+)/i,
     /(?:se llama|called)\s+([^.,;\n]+)/i,
   ];
   for (const pattern of patterns) {
     const match = text.match(pattern);
     if (match?.[1]) {
-      const name = match[1].split(/\s+(?:y\s+)?(?:voy\s+a\s+vender|vamos\s+a\s+vender|va\s+a\s+vender|quiero\s+vender|necesito\s+vender|vende|vendo|vendemos|vender|ofrece|ofrecemos|hace|tiene|con|para|debe|sera|será|ser|vamos|va|ubicad[ao]|en\s+usa|desde|despacho|env[ií]o|no\s+tengo|sin\s+logo|pero|quiero|necesito)\b/i)[0];
+      const name = match[1].split(/\s+(?:y\s+)?(?:voy\s+a\s+vender|vamos\s+a\s+vender|va\s+a\s+vender|quiero\s+vender|necesito\s+vender|vende|vendo|vendemos|vender|ofrece|ofrecemos|hace|tiene|con|para|debe|sera|será|ser|vamos|va|ubicad[ao]|en\s+usa|desde|despacho|env[ií]o|no\s+tengo|sin\s+logo|pero|quiero|necesito|necesitamos|menu|men[uú]|pedidos?|direcci[oó]n|colores?)\b/i)[0];
       return cleanExtractedPhrase(name, 56);
     }
   }
@@ -6184,28 +6192,13 @@ function extractLocation(text) {
 
 function extractServicesProducts(text) {
   if (isGenericCommerceIntent(text)) return [];
-  const patterns = [
-    /(?:productos?|servicios?|vende\b|vender\b|vendo\b|vendemos\b|venta de|ofrece\b|ofrecemos\b|catalogo|cat[aá]logo)\s*(?:son|es|:|-)?\s*([^.;\n]+)/i,
-    /(?:tienda|negocio|marca|empresa)\s+de\s+([^.;\n]+)/i,
-    /(?:pagina|p[aá]gina|web|site)\s+de\s+([^.;\n]+)/i,
-    /(?:products?|services?|sells|offers|catalog)\s*(?:are|is|:|-)?\s*([^.;\n]+)/i,
-    /(?:store|shop|business|brand|website)\s+(?:for|of)\s+([^.;\n]+)/i,
-  ];
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match?.[1]) {
-      return splitCommaOrLines(match[1])
-        .map((item) => cleanExtractedPhrase(item, 48))
-        .filter((item) => item.length > 1 && meaningfulOfferItems([item]).length > 0)
-        .slice(0, 8);
-    }
-  }
   if (textSuggestsBroadMarketplace(text)) {
     const candidates = [
       ["ropa", "fashion"],
       ["accesorios", "accessories"],
       ["carros", "auto accessories"],
-      ["automotive", "auto accessories"],
+      ["autos", "auto accessories"],
+      ["automotriz", "auto accessories"],
       ["regalos", "gifts"],
       ["hogar", "home goods"],
       ["juguetes", "toys"],
@@ -6215,10 +6208,32 @@ function extractServicesProducts(text) {
       ["inusual", "unusual products"],
       ["unusual", "unusual products"],
     ];
+    const normalized = normalizeTemplateIntentText(text);
     const inferred = candidates
-      .filter(([needle]) => normalizeTemplateIntentText(text).includes(needle))
+      .filter(([needle]) => normalized.includes(needle))
       .map(([, label]) => label);
     return [...new Set(inferred)].slice(0, 8);
+  }
+  const productLine = text.match(/(?:l[ií]nea|linea|colecci[oó]n|collection)\s+(?:de|para)\s+([^.;,\n]+)/i)?.[1];
+  if (productLine) {
+    return splitOfferItems(productLine).slice(0, 8);
+  }
+  const patterns = [
+    /(?:productos?|servicios?|vende\b|vender\b|vendo\b|vendemos\b|venta de|ofrece\b|ofrecemos\b|catalogo|cat[aá]logo)\s*(?:son|es|:|-)?\s*([^.;\n]+)/i,
+    /(?:tienda|store|shop)(?:\s+online)?\s+(?:para|for)\s+([^.;\n]+)/i,
+    /(?:tienda|negocio|marca|empresa)\s+de\s+([^.;\n]+)/i,
+    /(?:pagina|p[aá]gina|web|site)\s+de\s+([^.;\n]+)/i,
+    /(?:products?|services?|sells|offers|catalog)\s*(?:are|is|:|-)?\s*([^.;\n]+)/i,
+    /(?:store|shop|business|brand|website)\s+(?:for|of)\s+([^.;\n]+)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match?.[1]) {
+      const items = splitOfferItems(match[1])
+        .filter((item) => item.length > 1 && meaningfulOfferItems([item]).length > 0)
+        .slice(0, 8);
+      if (items.length) return items;
+    }
   }
   return [];
 }
@@ -6239,19 +6254,29 @@ function extractTargetAudience(text) {
 
 function extractToneFromText(text) {
   const styleHint = extractStyleHint(text);
-  const styles = ["elegante", "moderno", "premium", "minimalista", "lujoso", "juvenil", "profesional", "futurista", "cyberpunk", "neon", "neón", "friendly", "modern", "luxury", "minimal", "bold", "clean"];
+  const styles = ["elegante", "moderno", "premium", "minimalista", "lujoso", "juvenil", "profesional", "futurista", "cyberpunk", "neon", "neón", "oscuro", "dark", "friendly", "modern", "luxury", "minimal", "bold", "clean"];
   const found = styles.filter((style) => new RegExp(`\\b${escapeRegExp(style)}\\b`, "i").test(text));
-  return [...new Set([styleHint, ...found].filter(Boolean))].join(", ");
+  const normalized = [...splitCommaOrLines(styleHint), ...found]
+    .map((item) => cleanExtractedPhrase(item.replace(/neón/i, "neon"), 32).toLowerCase())
+    .filter(Boolean);
+  return [...new Set(normalized)].join(", ");
 }
 
 function extractColorsFromText(text) {
   const hexColors = text.match(/#[0-9a-f]{3,8}\b/gi) || [];
-  const colorNames = [
+  const colorVocabulary = [
     "rojo", "azul", "verde", "negro", "blanco", "gris", "dorado", "amarillo", "naranja", "morado", "violeta", "rosa", "beige",
-    "red", "blue", "green", "black", "white", "gray", "grey", "gold", "yellow", "orange", "purple", "pink", "cyan",
-  ].filter((color) => new RegExp(`\\b${escapeRegExp(color)}\\b`, "i").test(text));
-  const colorPhrase = text.match(/(?:colores?|colors?|paleta|palette)\s*(?:son|es|:|-)?\s*([^.;\n]+)/i)?.[1] || "";
-  return [...new Set([...hexColors, ...splitCommaOrLines(colorPhrase), ...colorNames].map((item) => cleanExtractedPhrase(item, 32)).filter(Boolean))].slice(0, 8);
+    "calido", "calidos", "cálido", "cálidos", "oscuro", "cyberpunk", "neon", "neón", "cyan", "magenta",
+    "red", "blue", "green", "black", "white", "gray", "grey", "gold", "yellow", "orange", "purple", "pink", "dark",
+  ];
+  const colorNames = colorVocabulary.filter((color) => new RegExp(`\\b${escapeRegExp(color)}\\b`, "i").test(text));
+  const colorPhrase = cleanColorSegment(text.match(/(?:colores?|colors?|paleta|palette)\s*(?:son|es|:|-)?\s*([^.;\n]+)/i)?.[1] || "");
+  const phraseTokens = splitCommaOrLines(colorPhrase)
+    .flatMap((item) => {
+      const found = colorVocabulary.filter((color) => new RegExp(`\\b${escapeRegExp(color)}\\b`, "i").test(item));
+      return found.length ? found : [item];
+    });
+  return [...new Set([...hexColors, ...phraseTokens, ...colorNames].map((item) => cleanExtractedPhrase(item.replace(/neón/i, "neon"), 32).toLowerCase()).filter(Boolean))].slice(0, 8);
 }
 
 function extractContactInfo(text) {
@@ -6272,8 +6297,54 @@ function extractSalesMode(lower) {
   if (/online|ecommerce|e-commerce|env[ií]o|delivery|pago en linea|pago online|comprar/.test(lower)) modes.push(langText({ en: "online sales", es: "ventas online", fr: "vente en ligne", pt: "vendas online" }));
   if (/presencial|tienda fisica|tienda física|in person|local|visita/.test(lower)) modes.push(langText({ en: "in-person visits", es: "visitas presenciales", fr: "visites en personne", pt: "visitas presenciais" }));
   if (/cotizaci[oó]n|cotizar|quote|estimate|presupuesto/.test(lower)) modes.push(langText({ en: "quote requests", es: "solicitudes de cotización", fr: "demandes de devis", pt: "pedidos de orçamento" }));
-  if (/cita|reserva|booking|appointment/.test(lower)) modes.push(langText({ en: "appointments/bookings", es: "citas/reservas", fr: "rendez-vous/réservations", pt: "agendamentos/reservas" }));
+  if (/\b(cita|citas|reserva|reservas|booking|appointment|agendar|agenda|consulta|consultas)\b/.test(lower)) modes.push(langText({ en: "appointments/bookings", es: "citas/reservas", fr: "rendez-vous/réservations", pt: "agendamentos/reservas" }));
+  if (/captar clientes|captar leads|lead|leads|contact request|solicitudes de contacto/.test(lower)) modes.push(langText({ en: "lead capture", es: "captacion de clientes", fr: "capture de prospects", pt: "captacao de clientes" }));
   return [...new Set(modes)].join(", ");
+}
+
+function cleanOfferSegment(value) {
+  return String(value || "")
+    .split(/\b(?:se\s+llam(?:a|ara|ará)|la\s+marca|el\s+negocio|no\s+tengo|sin\s+logo|colores?|colors?|paleta|palette|vendo\s+online|vender\s+online|venta\s+online|desde|ubicad[ao]|despacho|env[ií]o|contacto|whatsapp|direcci[oó]n|pedidos?|men[uú]\s+online|necesitamos?|quiero\s+estilo|quiero\s+que|quiero\s+captar|captar\s+clientes|agendar\s+consultas|agenda\s+consultas|debe\s+ser|should\s+be|located|shipping)\b/i)[0]
+    .replace(/\b(categor[ií]as|categorias)\s+desde\b/i, "")
+    .replace(/\b(de todo tipo|todo tipo|varios tipos|muchos tipos)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function splitOfferItems(value) {
+  const segment = cleanOfferSegment(value);
+  if (!segment) return [];
+  const lower = normalizeTemplateIntentText(segment);
+  const knownGroups = [
+    ["entradas", /\bentradas?\b/],
+    ["platos principales", /\bplatos?\s+principales\b/],
+    ["bebidas", /\bbebidas?\b/],
+    ["postres", /\bpostres?\b/],
+    ["bisuteria hecha a mano", /\b(bisuteria|bijouterie|joyeria|jewelry|handmade jewelry|hecho a mano|artesanal)\b/],
+    ["collares", /\b(collares?|necklaces?)\b/],
+    ["pulseras", /\b(pulseras?|bracelets?)\b/],
+    ["aretes", /\b(aretes?|zarcillos?|earrings?)\b/],
+    ["ropa", /\bropa\b/],
+    ["accesorios", /\baccesorios?\b/],
+    ["auto accessories", /\b(automotriz|autos?|carros?|camionetas?|4x4)\b/],
+    ["regalos", /\bregalos?\b/],
+    ["hogar", /\bhogar\b/],
+    ["juguetes", /\bjuguetes?\b/],
+    ["anime collectibles", /\banime\b/],
+    ["gadgets", /\bgadgets?\b/],
+  ];
+  const matched = knownGroups.filter(([, regex]) => regex.test(lower)).map(([label]) => label);
+  if (matched.length >= 2) return [...new Set(matched)];
+  return splitCommaOrLines(segment.replace(/\s+(?:y|and)\s+/gi, ", "))
+    .map((item) => cleanExtractedPhrase(item, 64))
+    .filter(Boolean);
+}
+
+function cleanColorSegment(value) {
+  return String(value || "")
+    .split(/\b(?:vendo\s+online|vender\s+online|venta\s+online|desde|ubicad[ao]|despacho|env[ií]o|contacto|whatsapp|direcci[oó]n|pedidos?|men[uú]\s+online|no\s+tengo|sin\s+logo|pero|y\s+vendo)\b/i)[0]
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function cleanExtractedPhrase(value, maxLength) {
@@ -6561,7 +6632,8 @@ function inferDesignerTemplateIdFromPayload(payload = {}) {
     payload.salesMode || guidedState.salesMode,
   ].join(" "));
   const products = meaningfulOfferItems(payload.services_products);
-  if (/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|mega marketplace)\b/.test(text) || textSuggestsBroadMarketplace(text) || (products.length >= 5 && !textSuggestsFocusedCommerceStore(text))) {
+  if (textSuggestsProfessionalService(text)) return "legal-professional-services-pro";
+  if (/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|mega marketplace)\b/.test(text) || textSuggestsBroadMarketplace(text) || (products.length >= 5 && !textSuggestsFocusedCommerceStore(text) && !textSuggestsProfessionalService(text))) {
     return "mega-marketplace";
   }
   if (textSuggestsFocusedProductLine(text)) return "apple-premium-product";
