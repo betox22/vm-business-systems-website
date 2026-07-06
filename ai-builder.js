@@ -3301,6 +3301,7 @@ async function sendGuidedReply() {
   if (!localContextUpdates.businessDescription && !guidedState.businessDescription && isRichIntakeMessage(message)) {
     localContextUpdates.businessDescription = message;
   }
+  Object.assign(localContextUpdates, completeGuidedBriefFromMessage(message, localContextUpdates));
   mergeGuidedUpdates(localContextUpdates);
   syncTemplateSelectionFromGuidedContext(message);
   const localStudioPlan = refreshAiStudioPlanFromContext(message);
@@ -5975,6 +5976,68 @@ function hasEnoughContextForFirstDraft() {
   return hasName && hasOffer && hasGoal;
 }
 
+function completeGuidedBriefFromMessage(message, pendingUpdates = {}) {
+  const text = String(message || "").trim();
+  const updates = {};
+  const merged = {
+    ...guidedState,
+    ...pendingUpdates,
+    contactInfo: { ...(guidedState.contactInfo || {}), ...(pendingUpdates.contactInfo || {}) },
+  };
+  const combinedText = normalizeTemplateIntentText([
+    text,
+    merged.websiteIntent,
+    merged.businessDescription,
+    arrayValue(merged.servicesProducts).join(" "),
+  ].join(" "));
+
+  const explicitName = extractBusinessName(text);
+  if (explicitName && (!merged.businessName || isPlaceholderBusinessName(merged.businessName))) {
+    updates.businessName = explicitName;
+  }
+
+  if (!merged.websiteIntent && isRichIntakeMessage(text)) {
+    updates.websiteIntent = extractWebsiteIntent(text) || text.slice(0, 180);
+  }
+
+  if (!merged.businessDescription && isRichIntakeMessage(text)) {
+    updates.businessDescription = text;
+  }
+
+  const inferredServices = extractServicesProducts(text);
+  if (!arrayValue(merged.servicesProducts).length && inferredServices.length) {
+    updates.servicesProducts = inferredServices;
+  }
+
+  const salesMode = extractSalesMode(combinedText);
+  if (!merged.salesMode && salesMode) updates.salesMode = salesMode;
+
+  if (!merged.preferredTone && briefRequestsCyberpunk(text)) {
+    updates.preferredTone = langText({
+      en: "Cyberpunk, neon, high-energy marketplace",
+      es: "Cyberpunk, neon, marketplace energetico",
+      fr: "Cyberpunk, neon, marketplace energique",
+      pt: "Cyberpunk, neon, marketplace energetico",
+    });
+  }
+
+  if (!arrayValue(merged.preferredColors).length && briefRequestsCyberpunk(text)) {
+    updates.preferredColors = ["cyberpunk", "neon cyan", "magenta", "deep black"];
+  }
+
+  if (wantsAiGeneratedLogo(text)) {
+    updates.aiGeneratedLogoRequested = true;
+    updates.hasLogoPhotos = langText({
+      en: "Client has no logo and wants LYRA to create a simple brand mark from the business name and style.",
+      es: "El cliente no tiene logo y quiere que LYRA cree una marca simple con el nombre y el estilo.",
+      fr: "Le client n'a pas de logo et veut que LYRA crée une marque simple avec le nom et le style.",
+      pt: "O cliente nao tem logo e quer que a LYRA crie uma marca simples com o nome e o estilo.",
+    });
+  }
+
+  return updates;
+}
+
 function shouldAdvanceToDesignerPlan(message) {
   if (guidedStep === "review") return false;
   if (!isRichIntakeMessage(message)) return false;
@@ -6098,7 +6161,7 @@ function extractBusinessName(text) {
   for (const pattern of patterns) {
     const match = text.match(pattern);
     if (match?.[1]) {
-      const name = match[1].split(/\s+(?:y\s+)?(?:vende|vendo|vendemos|ofrece|ofrecemos|hace|tiene|con|para|debe|sera|será|ser|vamos|va|ubicad[ao]|en\s+usa|desde|despacho|env[ií]o|no\s+tengo|sin\s+logo|pero|quiero|necesito)\b/i)[0];
+      const name = match[1].split(/\s+(?:y\s+)?(?:voy\s+a\s+vender|vamos\s+a\s+vender|va\s+a\s+vender|quiero\s+vender|necesito\s+vender|vende|vendo|vendemos|vender|ofrece|ofrecemos|hace|tiene|con|para|debe|sera|será|ser|vamos|va|ubicad[ao]|en\s+usa|desde|despacho|env[ií]o|no\s+tengo|sin\s+logo|pero|quiero|necesito)\b/i)[0];
       return cleanExtractedPhrase(name, 56);
     }
   }
