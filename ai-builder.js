@@ -1457,6 +1457,8 @@ function renderAiContractPreview(card) {
   const pageHtml = renderer.buildPageHTML(homePage, {
     templateId: plan.templateId || plan.recommendedTemplateId || selection?.templateId || "",
     catalogType: plan.catalogType || selection?.catalogType || "",
+    catalogItems: Array.isArray(plan.catalogItems) ? plan.catalogItems : [],
+    designTokens: plan.designTokens || plan.colors || {},
   });
   if (!pageHtml) return false;
   card.classList.add("live-render-card-host");

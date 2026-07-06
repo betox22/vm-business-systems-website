@@ -1144,6 +1144,25 @@
     return section.media || section.editable?.media || {};
   }
 
+  function sectionBinding(section = {}) {
+    return section.dataBinding || section.editable?.dataBinding || {};
+  }
+
+  function normalizeArray(value) {
+    return Array.isArray(value) ? value : [];
+  }
+
+  function productPrice(item = {}) {
+    return item.price || item.price_label || item.priceLabel || item.price_amount || item.priceAmount || "";
+  }
+
+  function ratingStars(value) {
+    const rating = Number(value || 0);
+    if (!rating) return "";
+    const rounded = Math.max(0, Math.min(5, Math.round(rating)));
+    return `${"★".repeat(rounded)}${"☆".repeat(5 - rounded)} <span>${safeHtml(rating.toFixed(1))}</span>`;
+  }
+
   function renderAiVisual(media = {}, fallback = "") {
     const url = media.imageUrl || "";
     const alt = media.alt || fallback || media.visualDirection || "";
@@ -1201,7 +1220,8 @@
 
   function renderCategoryRail(section = {}) {
     const copy = sectionCopy(section);
-    const categories = section.dataBinding?.items || section.dataBinding?.categories || [];
+    const binding = sectionBinding(section);
+    const categories = binding.items || binding.categories || [];
     const fallback = ["Featured", "New arrivals", "Best sellers", "Offers"];
     return `
       <section class="kreaton-ai-block kreaton-ai-category-rail" data-component-type="category_rail">
@@ -1214,16 +1234,17 @@
     `;
   }
 
-  function renderProductGrid4x(section = {}) {
+  function renderProductGrid4x(section = {}, context = {}) {
     const copy = sectionCopy(section);
-    const items = section.dataBinding?.items || [];
+    const binding = sectionBinding(section);
+    const items = binding.items || context.catalogItems || [];
     const products = Array.isArray(items) && items.length
       ? items
       : [
-        { name: "Signature item", description: "Editable product detail", price_label: "Price editable" },
-        { name: "Featured offer", description: "Editable product detail", price_label: "Price editable" },
-        { name: "Popular choice", description: "Editable product detail", price_label: "Price editable" },
-        { name: "New arrival", description: "Editable product detail", price_label: "Price editable" },
+        { name: "Signature item", description: "Editable product detail", price: "Price editable", rating: 4.8, badge: "Featured" },
+        { name: "Featured offer", description: "Editable product detail", price: "Price editable", rating: 4.7, badge: "Best Seller" },
+        { name: "Popular choice", description: "Editable product detail", price: "Price editable", rating: 4.6, badge: "Fast ship" },
+        { name: "New arrival", description: "Editable product detail", price: "Price editable", rating: 4.5, badge: "New" },
       ];
     return `
       <section class="kreaton-ai-block kreaton-ai-product-grid" data-component-type="product_grid_4x">
@@ -1231,16 +1252,101 @@
           <h2>${safeHtml(copy.headline || copy.title || "Featured products")}</h2>
           ${copy.subheadline ? `<p>${safeHtml(copy.subheadline)}</p>` : ""}
         </div>
-        <div class="kreaton-ai-grid">
-          ${products.slice(0, 8).map((item) => `
-            <article>
-              <div>${item.image_url || item.imageUrl ? `<img src="${safeAttribute(item.image_url || item.imageUrl)}" alt="${safeAttribute(item.name || "")}" loading="lazy">` : `<span>${safeHtml(String(item.name || "Item").slice(0, 2))}</span>`}</div>
-              <strong>${safeHtml(item.name || "Product")}</strong>
-              <p>${safeHtml(item.description || "")}</p>
-              <em>${safeHtml(item.price_label || item.price || item.price_amount || "")}</em>
+        <div class="kreaton-ai-grid kreaton-ai-market-grid">
+          ${products.slice(0, 16).map((item, index) => {
+            const imageUrl = item.image_url || item.imageUrl || "";
+            const initials = String(item.name || "Item").slice(0, 2);
+            const badge = item.badge || item.shippingBadge || (index < 4 ? "Best Seller" : "Fast ship");
+            return `
+            <article class="kreaton-ai-product-card">
+              <div class="kreaton-ai-product-media">
+                ${imageUrl
+                  ? `<img src="${safeAttribute(imageUrl)}" alt="${safeAttribute(item.name || "")}" loading="lazy" decoding="async">`
+                  : `<span>${safeHtml(initials)}</span><small>${safeHtml(item.imageSearchQuery || item.category || "Product visual")}</small>`}
+              </div>
+              <div class="kreaton-ai-product-meta">
+                <b>${safeHtml(badge)}</b>
+                <strong>${safeHtml(item.name || "Product")}</strong>
+                <p>${safeHtml(item.description || "")}</p>
+                <div class="kreaton-ai-rating">${ratingStars(item.rating || 4.7)}</div>
+                <em>${safeHtml(productPrice(item))}</em>
+                <button type="button">+ ${safeHtml(context.addToCartLabel || "Agregar")}</button>
+              </div>
+            </article>
+          `; }).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderRestaurantMenu(section = {}) {
+    const copy = sectionCopy(section);
+    const binding = sectionBinding(section);
+    const categories = normalizeArray(binding.categories).length
+      ? normalizeArray(binding.categories)
+      : [
+        { name: "Entradas", items: [{ name: "Signature starter", description: "Editable dish description", price: "$12", tags: ["Popular"] }] },
+        { name: "Principales", items: [{ name: "House main", description: "Editable dish description", price: "$24", tags: ["Chef"] }] },
+        { name: "Bebidas", items: [{ name: "Craft drink", description: "Editable drink description", price: "$8", tags: ["Fresh"] }] },
+      ];
+    return `
+      <section class="kreaton-ai-block kreaton-ai-restaurant-menu" data-component-type="restaurant_menu">
+        <div class="kreaton-ai-section-head">
+          ${copy.badge ? `<span class="kreaton-ai-badge">${safeHtml(copy.badge)}</span>` : ""}
+          <h2>${safeHtml(copy.headline || "Menu")}</h2>
+          ${copy.subheadline ? `<p>${safeHtml(copy.subheadline)}</p>` : ""}
+        </div>
+        <div class="kreaton-ai-menu-grid">
+          ${categories.slice(0, 6).map((category) => `
+            <article class="kreaton-ai-menu-category">
+              <h3>${safeHtml(category.name || "Menu")}</h3>
+              <div>
+                ${normalizeArray(category.items).slice(0, 8).map((item) => `
+                  <section class="kreaton-ai-menu-item">
+                    <div>
+                      <strong>${safeHtml(item.name || "Dish")}</strong>
+                      <p>${safeHtml(item.description || "")}</p>
+                      ${normalizeArray(item.tags).length ? `<span>${normalizeArray(item.tags).slice(0, 4).map((tag) => safeHtml(tag)).join(" · ")}</span>` : ""}
+                    </div>
+                    <em>${safeHtml(item.price || "")}</em>
+                  </section>
+                `).join("")}
+              </div>
             </article>
           `).join("")}
         </div>
+      </section>
+    `;
+  }
+
+  function renderFeatureSpotlight(section = {}) {
+    const copy = sectionCopy(section);
+    const media = sectionMedia(section);
+    const binding = sectionBinding(section);
+    const specs = normalizeArray(binding.specs).length
+      ? normalizeArray(binding.specs)
+      : [
+        { specLabel: "Offer", specValue: "Editable" },
+        { specLabel: "Quality", specValue: "Premium" },
+        { specLabel: "Support", specValue: "Included" },
+        { specLabel: "Delivery", specValue: "Fast" },
+      ];
+    return `
+      <section class="kreaton-ai-block kreaton-ai-feature-spotlight" data-component-type="feature_spotlight">
+        <div class="kreaton-ai-copy">
+          ${copy.badge ? `<span class="kreaton-ai-badge">${safeHtml(copy.badge)}</span>` : ""}
+          <h2>${safeHtml(copy.headline || "Designed to stand out")}</h2>
+          ${copy.subheadline || copy.body ? `<p>${safeHtml(copy.subheadline || copy.body)}</p>` : ""}
+          <div class="kreaton-ai-spec-grid">
+            ${specs.slice(0, 8).map((spec) => `
+              <article>
+                <span>${safeHtml(spec.specLabel || "Spec")}</span>
+                <strong>${safeHtml(spec.specValue || "")}</strong>
+              </article>
+            `).join("")}
+          </div>
+        </div>
+        <div class="kreaton-ai-visual">${renderAiVisual(media, copy.headline)}</div>
       </section>
     `;
   }
@@ -1268,12 +1374,12 @@
     lookbook_strip: renderSimpleContentBlock,
     trust_strip: renderSimpleContentBlock,
     story_block: renderSimpleContentBlock,
-    feature_spotlight: renderSimpleContentBlock,
+    feature_spotlight: renderFeatureSpotlight,
     contact_panel: renderSimpleContentBlock,
     faq_block: renderSimpleContentBlock,
     cta_band: renderSimpleContentBlock,
     booking_services: renderSimpleContentBlock,
-    restaurant_menu: renderSimpleContentBlock,
+    restaurant_menu: renderRestaurantMenu,
     service_areas: renderSimpleContentBlock,
     proof_panel: renderSimpleContentBlock,
   };
@@ -1281,8 +1387,17 @@
   function buildPageHTML(pageData = {}, context = {}) {
     const sections = Array.isArray(pageData.sections) ? pageData.sections : [];
     if (!sections.length) return "";
+    const tokens = context.designTokens || {};
+    const styleVars = [
+      tokens.background ? `--ai-bg:${safeAttribute(tokens.background)}` : "",
+      tokens.surface ? `--ai-surface:${safeAttribute(tokens.surface)}` : "",
+      tokens.primary ? `--ai-primary:${safeAttribute(tokens.primary)}` : "",
+      tokens.secondary ? `--ai-muted:${safeAttribute(tokens.secondary)}` : "",
+      tokens.accent ? `--ai-accent:${safeAttribute(tokens.accent)}` : "",
+      tokens.text ? `--ai-text:${safeAttribute(tokens.text)}` : "",
+    ].filter(Boolean).join(";");
     return `
-      <main class="kreaton-ai-page theme-${safeAttribute(context.templateId || "")}" data-ai-page="${safeAttribute(pageData.pageId || pageData.pageKey || "home")}">
+      <main class="kreaton-ai-page theme-${safeAttribute(context.templateId || "")}" data-ai-page="${safeAttribute(pageData.pageId || pageData.pageKey || "home")}" ${styleVars ? `style="${styleVars}"` : ""}>
         ${sections.map((section) => {
           const renderer = COMPONENT_ROUTER[section.componentType];
           if (!renderer) {

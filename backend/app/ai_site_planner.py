@@ -123,6 +123,68 @@ class MediaProps(BaseModel):
     visualDirection: Optional[str] = None
 
 
+class MarketplaceGridItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    name: str = Field(min_length=2, max_length=90)
+    category: str = Field(min_length=2, max_length=60)
+    description: str = Field(min_length=8, max_length=180)
+    price: str = Field(min_length=1, max_length=32)
+    rating: float = Field(ge=4.2, le=5.0)
+    badge: str = Field(min_length=2, max_length=40)
+    imageSearchQuery: str = Field(min_length=4, max_length=140)
+
+
+class MarketplaceGridBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: List[MarketplaceGridItem] = Field(min_length=12, max_length=16)
+
+
+class RestaurantMenuItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=2, max_length=80)
+    description: str = Field(min_length=8, max_length=180)
+    price: str = Field(min_length=1, max_length=32)
+    tags: List[str] = Field(default_factory=list, max_length=4)
+
+
+class RestaurantMenuCategory(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=2, max_length=60)
+    items: List[RestaurantMenuItem] = Field(min_length=3, max_length=8)
+
+
+class RestaurantMenuBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    categories: List[RestaurantMenuCategory] = Field(min_length=3, max_length=6)
+
+
+class SpecItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    specLabel: str = Field(min_length=2, max_length=50)
+    specValue: str = Field(min_length=1, max_length=80)
+
+
+class SpecsShowcaseBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    specs: List[SpecItem] = Field(min_length=4, max_length=8)
+
+
+DATA_BINDING_SCHEMAS = {
+    "product_grid_4x": MarketplaceGridBinding,
+    "featured_products": MarketplaceGridBinding,
+    "restaurant_menu": RestaurantMenuBinding,
+    "feature_spotlight": SpecsShowcaseBinding,
+}
+
+
 class SectionBlock(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
@@ -140,6 +202,13 @@ class SectionBlock(BaseModel):
         if value not in ALLOWED_SECTION_COMPONENT_TYPES:
             raise ValueError(f"Unsupported component type: {value}")
         return value
+
+    @model_validator(mode="after")
+    def required_data_binding_must_match_component(self) -> "SectionBlock":
+        schema = DATA_BINDING_SCHEMAS.get(self.componentType)
+        if schema:
+            schema.model_validate(self.dataBinding)
+        return self
 
 
 class PageSchema(BaseModel):
@@ -232,9 +301,13 @@ def site_plan_to_updates(plan: AISitePlan) -> Dict[str, Any]:
             "description": str(item.get("description") or "Editable product or service generated from the strategy."),
             "category": str(item.get("category") or (plan.catalogCategories[index % len(plan.catalogCategories)] if plan.catalogCategories else "Featured")),
             "price_type": str(item.get("price_type") or "fixed"),
-            "price_amount": item.get("price_amount") or "",
+            "price": str(item.get("price") or item.get("price_label") or item.get("price_amount") or ""),
+            "price_amount": item.get("price_amount") or item.get("price") or "",
             "currency": str(item.get("currency") or "USD"),
-            "price_label": str(item.get("price_label") or "Price editable"),
+            "price_label": str(item.get("price_label") or item.get("price") or "Price editable"),
+            "rating": item.get("rating") or 4.7,
+            "badge": str(item.get("badge") or "Featured"),
+            "imageSearchQuery": str(item.get("imageSearchQuery") or item.get("image_search_query") or name),
             "is_active": bool(item.get("is_active", True)),
             "is_featured": bool(item.get("is_featured", index < 4)),
             "sort_order": int(item.get("sort_order", index)),
@@ -255,6 +328,7 @@ def site_plan_to_updates(plan: AISitePlan) -> Dict[str, Any]:
                 "componentType": section.componentType,
                 "variant": section.variant,
                 "purpose": section.purpose,
+                "dataBinding": section.dataBinding,
                 "editable": {
                     "copy": section_copy,
                     "media": section.media.model_dump(exclude_none=True) if section.media else {},
@@ -377,18 +451,38 @@ class OpenAISitePlanAgent:
                 "reasoningSummary": "short internal reason",
                 "confidence": 0.0,
             },
+            "requiredDataBindingSchemas": {
+                "product_grid_4x_or_featured_products": {
+                    "items": "12 to 16 products. Each product requires id, name, category, description, price, rating from 4.2 to 5.0, badge, imageSearchQuery."
+                },
+                "restaurant_menu": {
+                    "categories": "3 to 6 categories such as Entradas, Principales, Bebidas. Each category requires 3 to 8 items with name, description, price, tags."
+                },
+                "feature_spotlight": {
+                    "specs": "4 to 8 specs. Each spec requires specLabel and specValue."
+                },
+            },
         }
 
         try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                temperature=0.15,
-                response_format={"type": "json_object"},
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
-                ],
-            )
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+            ]
+            try:
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    temperature=0.15,
+                    response_format=self._strict_response_format(),
+                    messages=messages,
+                )
+            except Exception:
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    temperature=0.15,
+                    response_format={"type": "json_object"},
+                    messages=messages,
+                )
             raw = response.choices[0].message.content or "{}"
             parsed = json.loads(raw)
             plan = AISitePlan.model_validate(parsed)
@@ -408,6 +502,17 @@ class OpenAISitePlanAgent:
             )
 
     @staticmethod
+    def _strict_response_format() -> Dict[str, Any]:
+        return {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "kreaton_ai_site_plan",
+                "strict": True,
+                "schema": AIWebGenerationResponse.model_json_schema(),
+            },
+        }
+
+    @staticmethod
     def _system_prompt() -> str:
         return """
 You are LYRA, a senior UI/UX director and ecommerce strategist for KREATON.
@@ -419,6 +524,9 @@ Hard rules:
 - Never return HTML, CSS, class names, JavaScript, or invented renderer components.
 - templateId must be exactly one id from allowedTemplates.
 - sections[].componentType must be exactly one allowed component type.
+- For product_grid_4x and featured_products, dataBinding.items is required with 12 to 16 realistic complete products.
+- For restaurant_menu, dataBinding.categories is required with complete menu categories and dishes.
+- For feature_spotlight, dataBinding.specs is required with complete product/service specifications.
 - Treat the client's intake as private strategy, not public copy.
 - Do not paste raw client notes into visible website text.
 - If a client sells a focused product family such as jewelry, handmade accessories, fashion, candles, beauty, or crafts, choose a focused store/showroom template, not a broad marketplace.

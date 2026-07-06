@@ -458,6 +458,192 @@ body.public-client-setup {
   font-weight: 950;
 }
 
+.public-client-setup .kreaton-ai-market-grid {
+  align-items: stretch;
+  gap: 20px;
+}
+
+.public-client-setup .kreaton-ai-product-card {
+  border-radius: 18px;
+  padding: 12px;
+}
+
+.public-client-setup .kreaton-ai-product-media {
+  aspect-ratio: 1 / 1;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  min-height: 0;
+  position: relative;
+}
+
+.public-client-setup .kreaton-ai-product-media small {
+  bottom: 10px;
+  color: rgba(15, 23, 42, 0.5);
+  font-size: 10px;
+  font-weight: 800;
+  left: 10px;
+  line-height: 1.25;
+  position: absolute;
+  right: 10px;
+  text-align: center;
+}
+
+.public-client-setup .kreaton-ai-product-meta {
+  display: grid;
+  gap: 7px;
+}
+
+.public-client-setup .kreaton-ai-product-meta b {
+  color: var(--ai-accent);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.public-client-setup .kreaton-ai-rating {
+  color: #f59e0b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.public-client-setup .kreaton-ai-rating span {
+  color: var(--ai-muted);
+  margin-left: 4px;
+}
+
+.public-client-setup .kreaton-ai-product-meta button {
+  background: var(--ai-accent);
+  border: 0;
+  border-radius: 999px;
+  color: #052e2b;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 950;
+  min-height: 38px;
+}
+
+.public-client-setup .kreaton-ai-restaurant-menu {
+  background: #fffaf2;
+}
+
+.public-client-setup .kreaton-ai-menu-grid {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.public-client-setup .kreaton-ai-menu-category {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(120, 53, 15, 0.12);
+  border-radius: 24px;
+  box-shadow: 0 18px 50px rgba(120, 53, 15, 0.08);
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+}
+
+.public-client-setup .kreaton-ai-menu-category h3 {
+  color: #7c2d12;
+  font-size: 22px;
+  margin: 0;
+}
+
+.public-client-setup .kreaton-ai-menu-category > div {
+  display: grid;
+  gap: 14px;
+}
+
+.public-client-setup .kreaton-ai-menu-item {
+  align-items: start;
+  border-top: 1px solid rgba(120, 53, 15, 0.12);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-top: 14px;
+}
+
+.public-client-setup .kreaton-ai-menu-item strong {
+  color: #1f2937;
+  display: block;
+  font-size: 15px;
+}
+
+.public-client-setup .kreaton-ai-menu-item p {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 4px 0 0;
+}
+
+.public-client-setup .kreaton-ai-menu-item span {
+  color: #a16207;
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+
+.public-client-setup .kreaton-ai-menu-item em {
+  color: #111827;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.public-client-setup .kreaton-ai-feature-spotlight {
+  align-items: center;
+  background:
+    radial-gradient(circle at 72% 38%, color-mix(in srgb, var(--ai-accent) 24%, transparent), transparent 30%),
+    linear-gradient(135deg, #020617, #0f172a 54%, #111827);
+  color: #ffffff;
+  display: grid;
+  gap: clamp(24px, 4vw, 64px);
+  grid-template-columns: minmax(0, 0.95fr) minmax(280px, 1.05fr);
+  min-height: clamp(540px, 72vh, 820px);
+}
+
+.public-client-setup .kreaton-ai-feature-spotlight .kreaton-ai-copy h2 {
+  font-size: clamp(42px, 6vw, 88px);
+  line-height: 0.94;
+  margin: 0;
+}
+
+.public-client-setup .kreaton-ai-feature-spotlight .kreaton-ai-copy p {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.public-client-setup .kreaton-ai-spec-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 12px;
+}
+
+.public-client-setup .kreaton-ai-spec-grid article {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.public-client-setup .kreaton-ai-spec-grid span {
+  color: rgba(255, 255, 255, 0.55);
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.public-client-setup .kreaton-ai-spec-grid strong {
+  color: #ffffff;
+  display: block;
+  font-size: clamp(18px, 2vw, 28px);
+  margin-top: 6px;
+}
+
 @media (max-width: 767px) {
   .public-client-setup .template-carousel-panel {
     border-radius: 18px;
@@ -526,6 +712,20 @@ body.public-client-setup {
 
   .public-client-setup .kreaton-ai-grid {
     grid-template-columns: 1fr;
+  }
+
+  .public-client-setup .kreaton-ai-menu-grid,
+  .public-client-setup .kreaton-ai-feature-spotlight,
+  .public-client-setup .kreaton-ai-spec-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .public-client-setup .kreaton-ai-feature-spotlight {
+    min-height: auto;
+  }
+
+  .public-client-setup .kreaton-ai-feature-spotlight .kreaton-ai-copy h2 {
+    font-size: 34px;
   }
 }
 
