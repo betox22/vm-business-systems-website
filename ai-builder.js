@@ -1426,6 +1426,9 @@ function renderLiveSitePreview() {
     card.innerHTML = renderNeutralLiveWorkspace();
     return;
   }
+  if (renderAiContractPreview(card)) {
+    return;
+  }
   const payload = livePreviewPayload();
   const selection = livePreviewTemplateSelection();
   let schema = buildInstantTemplateSchema(payload, selection);
@@ -1438,9 +1441,38 @@ function renderLiveSitePreview() {
   `;
 }
 
+function renderAiContractPreview(card) {
+  const renderer = window.KreatonTemplateRenderer;
+  const plan = guidedState.sitePlan || {};
+  const pages = Array.isArray(plan.pages) ? plan.pages : [];
+  const homePage = pages.find((page) => /home|inicio/i.test(`${page.pageId || page.pageKey || page.title || ""}`)) || pages[0];
+  const hasAiBlocks = Boolean(
+    renderer?.buildPageHTML &&
+    homePage &&
+    Array.isArray(homePage.sections) &&
+    homePage.sections.some((section) => section?.componentType)
+  );
+  if (!hasAiBlocks) return false;
+  const selection = livePreviewTemplateSelection();
+  const pageHtml = renderer.buildPageHTML(homePage, {
+    templateId: plan.templateId || plan.recommendedTemplateId || selection?.templateId || "",
+    catalogType: plan.catalogType || selection?.catalogType || "",
+  });
+  if (!pageHtml) return false;
+  card.classList.add("live-render-card-host");
+  card.innerHTML = `
+    <div class="live-template-preview-shell ai-contract-preview-shell canvas-fade-in">
+      ${pageHtml}
+    </div>
+  `;
+  return true;
+}
+
 function shouldShowCanvasTemplateCarousel() {
   if (!isPublicClientSetup || currentSchema) return false;
   if (!hasEnoughContextForTemplatePreview()) return false;
+  const pages = Array.isArray(guidedState.sitePlan?.pages) ? guidedState.sitePlan.pages : [];
+  if (pages.some((page) => Array.isArray(page.sections) && page.sections.some((section) => section?.componentType))) return false;
   if (forcedTemplateSelection?.intent === "client_visual_template_choice") return false;
   return true;
 }

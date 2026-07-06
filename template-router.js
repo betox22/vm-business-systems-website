@@ -1123,6 +1123,178 @@
     return TEMPLATE_ID_ALIASES[id] || id;
   }
 
+  function safeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function safeAttribute(value) {
+    return safeHtml(value).replaceAll("`", "&#096;");
+  }
+
+  function sectionCopy(section = {}) {
+    return section.copy || section.editable?.copy || {};
+  }
+
+  function sectionMedia(section = {}) {
+    return section.media || section.editable?.media || {};
+  }
+
+  function renderAiVisual(media = {}, fallback = "") {
+    const url = media.imageUrl || "";
+    const alt = media.alt || fallback || media.visualDirection || "";
+    if (url) {
+      return `<img src="${safeAttribute(url)}" alt="${safeAttribute(alt)}" loading="lazy" decoding="async">`;
+    }
+    return `
+      <div class="kreaton-ai-visual-placeholder" aria-hidden="true">
+        <span></span>
+        <em>${safeHtml(media.imageSearchQuery || media.visualDirection || fallback || "Visual direction")}</em>
+      </div>
+    `;
+  }
+
+  function renderHeroSplitConversion(section = {}) {
+    const copy = sectionCopy(section);
+    const media = sectionMedia(section);
+    return `
+      <section class="kreaton-ai-block kreaton-ai-hero-split" data-component-type="hero_split_conversion">
+        <div class="kreaton-ai-copy">
+          ${copy.badge ? `<span class="kreaton-ai-badge">${safeHtml(copy.badge)}</span>` : ""}
+          <h1>${safeHtml(copy.headline || "")}</h1>
+          ${copy.subheadline ? `<p>${safeHtml(copy.subheadline)}</p>` : ""}
+          <div class="kreaton-ai-actions">
+            <button type="button">${safeHtml(copy.ctaPrimary || "Explore")}</button>
+            ${copy.ctaSecondary ? `<a href="#">${safeHtml(copy.ctaSecondary)}</a>` : ""}
+          </div>
+        </div>
+        <div class="kreaton-ai-visual">${renderAiVisual(media, copy.headline)}</div>
+      </section>
+    `;
+  }
+
+  function renderHeroMarketplaceSearch(section = {}) {
+    const copy = sectionCopy(section);
+    const media = sectionMedia(section);
+    return `
+      <section class="kreaton-ai-block kreaton-ai-marketplace-hero" data-component-type="hero_marketplace_search">
+        <div class="kreaton-ai-copy">
+          ${copy.badge ? `<span class="kreaton-ai-badge">${safeHtml(copy.badge)}</span>` : ""}
+          <h1>${safeHtml(copy.headline || "")}</h1>
+          ${copy.subheadline ? `<p>${safeHtml(copy.subheadline)}</p>` : ""}
+          <label class="kreaton-ai-search">
+            <span>Search</span>
+            <input readonly value="" placeholder="${safeAttribute(copy.ctaSecondary || "Search products, categories or offers")}">
+          </label>
+          <div class="kreaton-ai-actions">
+            <button type="button">${safeHtml(copy.ctaPrimary || "Start shopping")}</button>
+          </div>
+        </div>
+        <div class="kreaton-ai-visual">${renderAiVisual(media, copy.headline)}</div>
+      </section>
+    `;
+  }
+
+  function renderCategoryRail(section = {}) {
+    const copy = sectionCopy(section);
+    const categories = section.dataBinding?.items || section.dataBinding?.categories || [];
+    const fallback = ["Featured", "New arrivals", "Best sellers", "Offers"];
+    return `
+      <section class="kreaton-ai-block kreaton-ai-category-rail" data-component-type="category_rail">
+        <div class="kreaton-ai-section-head">
+          <h2>${safeHtml(copy.headline || copy.title || "Shop by category")}</h2>
+          ${copy.subheadline ? `<p>${safeHtml(copy.subheadline)}</p>` : ""}
+        </div>
+        <div>${(Array.isArray(categories) && categories.length ? categories : fallback).slice(0, 8).map((item) => `<span>${safeHtml(item.name || item)}</span>`).join("")}</div>
+      </section>
+    `;
+  }
+
+  function renderProductGrid4x(section = {}) {
+    const copy = sectionCopy(section);
+    const items = section.dataBinding?.items || [];
+    const products = Array.isArray(items) && items.length
+      ? items
+      : [
+        { name: "Signature item", description: "Editable product detail", price_label: "Price editable" },
+        { name: "Featured offer", description: "Editable product detail", price_label: "Price editable" },
+        { name: "Popular choice", description: "Editable product detail", price_label: "Price editable" },
+        { name: "New arrival", description: "Editable product detail", price_label: "Price editable" },
+      ];
+    return `
+      <section class="kreaton-ai-block kreaton-ai-product-grid" data-component-type="product_grid_4x">
+        <div class="kreaton-ai-section-head">
+          <h2>${safeHtml(copy.headline || copy.title || "Featured products")}</h2>
+          ${copy.subheadline ? `<p>${safeHtml(copy.subheadline)}</p>` : ""}
+        </div>
+        <div class="kreaton-ai-grid">
+          ${products.slice(0, 8).map((item) => `
+            <article>
+              <div>${item.image_url || item.imageUrl ? `<img src="${safeAttribute(item.image_url || item.imageUrl)}" alt="${safeAttribute(item.name || "")}" loading="lazy">` : `<span>${safeHtml(String(item.name || "Item").slice(0, 2))}</span>`}</div>
+              <strong>${safeHtml(item.name || "Product")}</strong>
+              <p>${safeHtml(item.description || "")}</p>
+              <em>${safeHtml(item.price_label || item.price || item.price_amount || "")}</em>
+            </article>
+          `).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderSimpleContentBlock(section = {}) {
+    const copy = sectionCopy(section);
+    return `
+      <section class="kreaton-ai-block kreaton-ai-content-block" data-component-type="${safeAttribute(section.componentType || "content")}">
+        <div class="kreaton-ai-section-head">
+          ${copy.badge ? `<span class="kreaton-ai-badge">${safeHtml(copy.badge)}</span>` : ""}
+          <h2>${safeHtml(copy.headline || copy.title || "Section")}</h2>
+          ${copy.subheadline || copy.body ? `<p>${safeHtml(copy.subheadline || copy.body)}</p>` : ""}
+        </div>
+      </section>
+    `;
+  }
+
+  const COMPONENT_ROUTER = {
+    hero_split_conversion: renderHeroSplitConversion,
+    hero_marketplace_search: renderHeroMarketplaceSearch,
+    hero_editorial_product: renderHeroSplitConversion,
+    category_rail: renderCategoryRail,
+    product_grid_4x: renderProductGrid4x,
+    featured_products: renderProductGrid4x,
+    lookbook_strip: renderSimpleContentBlock,
+    trust_strip: renderSimpleContentBlock,
+    story_block: renderSimpleContentBlock,
+    feature_spotlight: renderSimpleContentBlock,
+    contact_panel: renderSimpleContentBlock,
+    faq_block: renderSimpleContentBlock,
+    cta_band: renderSimpleContentBlock,
+    booking_services: renderSimpleContentBlock,
+    restaurant_menu: renderSimpleContentBlock,
+    service_areas: renderSimpleContentBlock,
+    proof_panel: renderSimpleContentBlock,
+  };
+
+  function buildPageHTML(pageData = {}, context = {}) {
+    const sections = Array.isArray(pageData.sections) ? pageData.sections : [];
+    if (!sections.length) return "";
+    return `
+      <main class="kreaton-ai-page theme-${safeAttribute(context.templateId || "")}" data-ai-page="${safeAttribute(pageData.pageId || pageData.pageKey || "home")}">
+        ${sections.map((section) => {
+          const renderer = COMPONENT_ROUTER[section.componentType];
+          if (!renderer) {
+            console.warn(`[TemplateRouter] Unsupported AI block: ${section.componentType}`);
+            return "";
+          }
+          return renderer(section, context);
+        }).join("")}
+      </main>
+    `;
+  }
+
   window.TemplateRouter = {
     loadTemplates,
     getTemplateById,
@@ -1131,5 +1303,10 @@
     normalizeText,
     normalizeTemplateId,
     intentRules: INTENT_RULES,
+  };
+
+  window.KreatonTemplateRenderer = {
+    buildPageHTML,
+    componentRouter: COMPONENT_ROUTER,
   };
 })();

@@ -199,6 +199,265 @@ body.public-client-setup {
   }
 }
 
+.public-client-setup .ai-contract-preview-shell {
+  background: #f8fafc;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.public-client-setup .kreaton-ai-page {
+  --ai-bg: #f8fafc;
+  --ai-surface: #ffffff;
+  --ai-primary: #0f172a;
+  --ai-muted: #64748b;
+  --ai-accent: #14b8a6;
+  background: var(--ai-bg);
+  color: var(--ai-primary);
+  display: grid;
+  gap: 0;
+  min-height: 100%;
+}
+
+.public-client-setup .kreaton-ai-block {
+  padding: clamp(28px, 5vw, 72px);
+}
+
+.public-client-setup .kreaton-ai-hero-split,
+.public-client-setup .kreaton-ai-marketplace-hero {
+  align-items: center;
+  background:
+    radial-gradient(circle at 72% 36%, rgba(20, 184, 166, 0.22), transparent 34%),
+    linear-gradient(135deg, #ffffff 0%, #eef8f7 48%, #e7eefc 100%);
+  display: grid;
+  gap: clamp(24px, 4vw, 64px);
+  grid-template-columns: minmax(0, 0.95fr) minmax(280px, 1.05fr);
+  min-height: clamp(520px, 68vh, 760px);
+}
+
+.public-client-setup .kreaton-ai-copy {
+  display: grid;
+  gap: 18px;
+  max-width: 680px;
+}
+
+.public-client-setup .kreaton-ai-badge {
+  align-self: start;
+  background: rgba(20, 184, 166, 0.12);
+  border: 1px solid rgba(20, 184, 166, 0.25);
+  border-radius: 999px;
+  color: #0f766e;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  padding: 8px 12px;
+  text-transform: uppercase;
+}
+
+.public-client-setup .kreaton-ai-copy h1 {
+  font-size: clamp(44px, 6vw, 92px);
+  letter-spacing: 0;
+  line-height: 0.92;
+  margin: 0;
+}
+
+.public-client-setup .kreaton-ai-copy p,
+.public-client-setup .kreaton-ai-section-head p {
+  color: var(--ai-muted);
+  font-size: clamp(16px, 1.45vw, 22px);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.public-client-setup .kreaton-ai-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.public-client-setup .kreaton-ai-actions button,
+.public-client-setup .kreaton-ai-actions a {
+  align-items: center;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 900;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 20px;
+  text-decoration: none;
+}
+
+.public-client-setup .kreaton-ai-actions button {
+  background: var(--ai-primary);
+  color: #ffffff;
+}
+
+.public-client-setup .kreaton-ai-actions a {
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ai-primary);
+}
+
+.public-client-setup .kreaton-ai-visual {
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.08), rgba(20, 184, 166, 0.18));
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 32px;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.16);
+  min-height: 280px;
+  overflow: hidden;
+  position: relative;
+}
+
+.public-client-setup .kreaton-ai-visual img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.public-client-setup .kreaton-ai-visual-placeholder {
+  align-items: center;
+  display: grid;
+  height: 100%;
+  justify-items: center;
+  padding: 32px;
+  text-align: center;
+}
+
+.public-client-setup .kreaton-ai-visual-placeholder span {
+  background: radial-gradient(circle, rgba(255,255,255,0.95), rgba(20,184,166,0.35), rgba(37,99,235,0.12));
+  border-radius: 999px;
+  filter: blur(1px);
+  height: 42%;
+  width: 42%;
+}
+
+.public-client-setup .kreaton-ai-visual-placeholder em {
+  bottom: 24px;
+  color: rgba(15, 23, 42, 0.58);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  left: 24px;
+  position: absolute;
+  right: 24px;
+}
+
+.public-client-setup .kreaton-ai-search {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 18px;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+  display: grid;
+  gap: 6px;
+  max-width: 520px;
+  padding: 12px 16px;
+}
+
+.public-client-setup .kreaton-ai-search span {
+  color: var(--ai-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.public-client-setup .kreaton-ai-search input {
+  background: transparent;
+  border: 0;
+  color: var(--ai-primary);
+  font: inherit;
+  font-weight: 800;
+  outline: 0;
+}
+
+.public-client-setup .kreaton-ai-section-head {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 24px;
+  max-width: 760px;
+}
+
+.public-client-setup .kreaton-ai-section-head h2 {
+  font-size: clamp(28px, 4vw, 56px);
+  line-height: 1;
+  margin: 0;
+}
+
+.public-client-setup .kreaton-ai-category-rail > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.public-client-setup .kreaton-ai-category-rail span {
+  background: var(--ai-surface);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  font-weight: 900;
+  padding: 12px 16px;
+}
+
+.public-client-setup .kreaton-ai-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.public-client-setup .kreaton-ai-grid article {
+  background: var(--ai-surface);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.07);
+  display: grid;
+  gap: 10px;
+  overflow: hidden;
+  padding: 14px;
+}
+
+.public-client-setup .kreaton-ai-grid article > div {
+  align-items: center;
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.12), rgba(37, 99, 235, 0.1));
+  border-radius: 16px;
+  display: grid;
+  justify-items: center;
+  overflow: hidden;
+}
+
+.public-client-setup .kreaton-ai-grid img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.public-client-setup .kreaton-ai-grid article > div span {
+  color: var(--ai-accent);
+  font-size: 26px;
+  font-weight: 950;
+}
+
+.public-client-setup .kreaton-ai-grid strong {
+  font-size: 15px;
+}
+
+.public-client-setup .kreaton-ai-grid p {
+  color: var(--ai-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.public-client-setup .kreaton-ai-grid em {
+  font-style: normal;
+  font-weight: 950;
+}
+
 @media (max-width: 767px) {
   .public-client-setup .template-carousel-panel {
     border-radius: 18px;
@@ -233,6 +492,40 @@ body.public-client-setup {
 
   .public-client-setup .template-carousel-image {
     height: 166px;
+  }
+
+  .public-client-setup .kreaton-ai-block {
+    padding: 18px;
+  }
+
+  .public-client-setup .kreaton-ai-hero-split,
+  .public-client-setup .kreaton-ai-marketplace-hero {
+    gap: 20px;
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .public-client-setup .kreaton-ai-copy {
+    gap: 12px;
+  }
+
+  .public-client-setup .kreaton-ai-copy h1 {
+    font-size: 34px;
+    line-height: 1;
+  }
+
+  .public-client-setup .kreaton-ai-copy p,
+  .public-client-setup .kreaton-ai-section-head p {
+    font-size: 15px;
+  }
+
+  .public-client-setup .kreaton-ai-visual {
+    border-radius: 22px;
+    min-height: 220px;
+  }
+
+  .public-client-setup .kreaton-ai-grid {
+    grid-template-columns: 1fr;
   }
 }
 

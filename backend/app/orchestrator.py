@@ -114,14 +114,21 @@ class LyraOrchestrator:
 
 
 def site_plan_from_state(state: ProjectState) -> Dict[str, Any]:
+    generated_pages = []
+    if isinstance(state.generatedCopy, dict):
+        generated_pages = state.generatedCopy.get("pages") or []
     return {
         "recommendedTemplateId": state.selectedTemplateId,
         "recommendedTemplateName": state.selectedTemplateName,
+        "templateId": state.selectedTemplateId,
+        "templateName": state.selectedTemplateName,
         "websiteType": state.websiteType,
         "catalogType": state.catalogType,
         "salesFlow": state.salesFlow,
         "colors": state.colors,
         "typography": state.typography,
+        "pages": generated_pages,
+        "catalogCategories": state.generatedCopy.get("catalogCategories", []) if isinstance(state.generatedCopy, dict) else [],
         "copyPolicy": "Use intake as private strategy. Generate polished public copy.",
         "notes": state.notes[-6:],
     }
