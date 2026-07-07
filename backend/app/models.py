@@ -138,8 +138,8 @@ class WebsiteGenerationRequest(BaseModel):
     targetAudience: Optional[str] = None
     preferred_tone: Optional[str] = None
     preferredTone: Optional[str] = None
-    preferred_colors: Optional[str] = None
-    preferredColors: Optional[str] = None
+    preferred_colors: List[str] | str | None = None
+    preferredColors: List[str] | str | None = None
     contact_info: Dict[str, Any] | str | None = None
     contactInfo: Dict[str, Any] | str | None = None
     logoUrl: Optional[str] = None

@@ -6871,6 +6871,13 @@ function applyTargetedSchemaPatch(schema, message, payload = {}, localContextUpd
 
 function mergeCatalogFromOfferItems(existingItems = [], offerItems = [], payload = {}) {
   const labels = instantLocaleCopy(payload.selectedLanguage || selectedLanguage || "en");
+  const categoryContext = [
+    payload.business_description,
+    payload.industry,
+    payload.templateIntent,
+    arrayValue(payload.services_products).join(" "),
+    arrayValue(offerItems).join(" "),
+  ].join(" ");
   const existing = arrayValue(existingItems);
   const known = new Set(existing.map((item) => normalizeTemplateIntentText(item.name || item.title || item)));
   const additions = meaningfulOfferItems(offerItems)
@@ -6880,7 +6887,7 @@ function mergeCatalogFromOfferItems(existingItems = [], offerItems = [], payload
       sku: `CHAT-${existing.length + index + 1}`,
       name,
       description: labels.itemDescription(payload.business_name || guidedState.businessName || labels.newStore),
-      category: marketplaceCategoryForIndex(existing.length + index, labels),
+      category: marketplaceCategoryForIndex(existing.length + index, labels, categoryContext, payload.selectedLanguage || selectedLanguage || "en"),
       price_type: "fixed",
       price_amount: "",
       currency: "USD",
@@ -7206,7 +7213,8 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
       language: payload.selectedLanguage || selectedLanguage || "en",
     });
     const marketplacePages = buildMarketplaceInstantPages(copy, name, description, payload);
-    const existingPages = arrayValue(schema.pages).filter((page) => page.page_key !== "home" && page.page_key !== "catalog");
+    const marketplacePageKeys = new Set(marketplacePages.map((page) => page.page_key));
+    const existingPages = arrayValue(schema.pages).filter((page) => page.page_key && !marketplacePageKeys.has(page.page_key));
     nextSchema = {
       ...nextSchema,
       site_type: "online_store",
@@ -7230,11 +7238,12 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
       },
       navigation: [
         { label: copy.home, page_key: "home" },
-        { label: copy.deals, page_key: "catalog" },
-        { label: copy.categories, page_key: "catalog" },
-        { label: copy.support, page_key: "contact" },
+        { label: copy.deals, page_key: "deals" },
+        { label: copy.categories, page_key: "categories" },
+        { label: copy.catalog, page_key: "catalog" },
+        { label: copy.support, page_key: "support" },
       ],
-      pages: [...marketplacePages.slice(0, 2), ...existingPages],
+      pages: [...marketplacePages, ...existingPages],
     };
   }
   if (briefRequestsCyberpunk(brief)) {
@@ -7954,10 +7963,21 @@ function productFocusForLanguage(products = [], fallback = "", language = select
 function sanitizePublicProductList(products = [], payload = {}, copy = {}, language = selectedLanguage, templateHint = "") {
   const sourceText = `${payload.business_description || ""} ${payload.industry || ""} ${arrayValue(products).join(" ")} ${templateHint || ""}`;
   const sourceSuggestsBroadMarketplace = textSuggestsBroadMarketplace(sourceText);
+  const usesMarketplaceTemplate = /mega-marketplace|marketplace-style|dense_marketplace_catalog/i.test(templateHint);
   const cleaned = arrayValue(products)
     .map((item) => cleanPublicItemLabel(item))
     .filter(Boolean)
     .slice(0, 8);
+  if (sourceSuggestsBroadMarketplace || usesMarketplaceTemplate) {
+    const inferred = inferredPublicCatalogLabels({ text: sourceText, language });
+    return [
+      ...new Set([
+        ...cleaned.filter((item) => item.split(/\s+/).length <= 4),
+        ...inferred,
+        ...marketplaceSeedCatalogLabels(sourceText, language),
+      ]),
+    ].slice(0, 12);
+  }
   if (cleaned.length >= 2 && !sourceSuggestsBroadMarketplace) return cleaned;
   const inferred = inferredPublicCatalogLabels({
     text: sourceText,
@@ -7969,6 +7989,46 @@ function sanitizePublicProductList(products = [], payload = {}, copy = {}, langu
       : inferred;
   }
   return cleaned.length ? cleaned : arrayValue(copy.defaultProducts).slice(0, 4);
+}
+
+function marketplaceSeedCatalogLabels(text = "", language = selectedLanguage) {
+  const lower = String(text || "").toLowerCase();
+  const sets = {
+    es: {
+      variety: ["Gadget destacado", "Accesorio automotriz", "Coleccionable anime", "Regalo curioso", "Organizador para auto", "Accesorio para el hogar", "Producto viral", "Set de novedades", "Herramienta util", "Decoracion tematica", "Combo sorpresa", "Oferta limitada"],
+      jewelry: ["Collar artesanal", "Pulsera ajustable", "Aretes llamativos", "Set de bisuteria", "Anillo decorativo", "Charm personalizado", "Accesorio para regalo", "Coleccion de temporada", "Pieza minimalista", "Pulsera de cuentas", "Aretes de fiesta", "Pack especial"],
+      fashion: ["Chaqueta destacada", "Camiseta grafica", "Accesorio urbano", "Bolso compacto", "Gorra de temporada", "Set streetwear", "Pieza limitada", "Look completo", "Sneaker destacado", "Oferta de moda", "Drop nuevo", "Combo de accesorios"],
+      default: ["Producto destacado", "Oferta especial", "Nuevo lanzamiento", "Best seller", "Pack recomendado", "Accesorio esencial", "Producto premium", "Combo ahorro", "Seleccion popular", "Edicion limitada", "Hallazgo especial", "Categoria estrella"],
+    },
+    en: {
+      variety: ["Featured gadget", "Auto accessory", "Anime collectible", "Curious gift", "Car organizer", "Home accessory", "Viral product", "New finds set", "Useful tool", "Theme decor", "Surprise bundle", "Limited offer"],
+      jewelry: ["Handmade necklace", "Adjustable bracelet", "Statement earrings", "Jewelry set", "Decorative ring", "Custom charm", "Gift accessory", "Seasonal collection", "Minimal piece", "Beaded bracelet", "Party earrings", "Special pack"],
+      fashion: ["Featured jacket", "Graphic tee", "Urban accessory", "Compact bag", "Seasonal cap", "Streetwear set", "Limited piece", "Complete look", "Featured sneaker", "Fashion deal", "New drop", "Accessory bundle"],
+      default: ["Featured product", "Special offer", "New arrival", "Best seller", "Recommended pack", "Essential accessory", "Premium item", "Savings bundle", "Popular pick", "Limited edition", "Special find", "Category star"],
+    },
+    fr: {
+      variety: ["Gadget vedette", "Accessoire auto", "Objet anime", "Cadeau original", "Organiseur voiture", "Accessoire maison", "Produit viral", "Nouveautes", "Outil utile", "Decoration theme", "Pack surprise", "Offre limitee"],
+      jewelry: ["Collier artisanal", "Bracelet reglable", "Boucles statement", "Set bijoux", "Bague decorative", "Charm personnalise", "Accessoire cadeau", "Collection saison", "Piece minimaliste", "Bracelet perles", "Boucles fete", "Pack special"],
+      fashion: ["Veste vedette", "T-shirt graphique", "Accessoire urbain", "Sac compact", "Casquette saison", "Set streetwear", "Piece limitee", "Look complet", "Sneaker vedette", "Offre mode", "Nouveau drop", "Pack accessoires"],
+      default: ["Produit vedette", "Offre speciale", "Nouveaute", "Best seller", "Pack recommande", "Accessoire essentiel", "Produit premium", "Pack economie", "Choix populaire", "Edition limitee", "Trouvaille speciale", "Categorie phare"],
+    },
+    pt: {
+      variety: ["Gadget destaque", "Acessorio automotivo", "Colecionavel anime", "Presente curioso", "Organizador de carro", "Acessorio para casa", "Produto viral", "Set de novidades", "Ferramenta util", "Decoracao tematica", "Combo surpresa", "Oferta limitada"],
+      jewelry: ["Colar artesanal", "Pulseira ajustavel", "Brincos marcantes", "Kit bijuteria", "Anel decorativo", "Charm personalizado", "Acessorio presente", "Colecao sazonal", "Peca minimalista", "Pulseira de contas", "Brincos festa", "Pack especial"],
+      fashion: ["Jaqueta destaque", "Camiseta grafica", "Acessorio urbano", "Bolsa compacta", "Bone sazonal", "Set streetwear", "Peca limitada", "Look completo", "Sneaker destaque", "Oferta moda", "Novo drop", "Combo acessorios"],
+      default: ["Produto destaque", "Oferta especial", "Lancamento", "Mais vendido", "Pack recomendado", "Acessorio essencial", "Produto premium", "Combo economia", "Escolha popular", "Edicao limitada", "Achado especial", "Categoria estrela"],
+    },
+  };
+  const set = sets[language] || sets.en;
+  if (textSuggestsJewelryAccessoryStore(lower)) return set.jewelry;
+  if (/ropa|moda|fashion|camisa|zapato|sneaker|clothing|apparel|streetwear/.test(lower)) return set.fashion;
+  if (/carro|auto|automotriz|camioneta|anime|gadget|juguete|regalo|raro|curioso|hogar|home|toy|gift|collectible/.test(lower)) return set.variety;
+  return set.default;
+}
+
+function marketplacePriceForIndex(index) {
+  const prices = [19.99, 24.5, 34.99, 49, 12.5, 79, 9.99, 59, 129, 17.99, 89, 39.99];
+  return prices[index % prices.length];
 }
 
 function cleanPublicItemLabel(value) {
@@ -8046,7 +8106,17 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   );
   const description = professionalPublicDescription({ payload, template, catalogType, copy, name, products, language });
   const salesText = `${payload.salesMode || ""} ${payload.sales_mode || ""} ${payload.templateIntent || ""} ${template.category || ""} ${template.id || ""}`.toLowerCase();
-  const isOnlineShop = /sell online|online sales|shop|store|tienda|ecommerce|cart|checkout|vender|comprar/.test(salesText);
+  const isMarketplaceTemplate = catalogType === "dense_marketplace_catalog" || /mega-marketplace|marketplace-style/i.test(template.id || "");
+  const isOnlineShop = /sell online|online sales|shop|store|tienda|ecommerce|cart|checkout|vender|comprar|marketplace/.test(salesText) || isMarketplaceTemplate;
+  const categoryContext = [
+    payload.business_description,
+    payload.industry,
+    payload.templateIntent,
+    arrayValue(payload.services_products).join(" "),
+    products.join(" "),
+    template.id,
+    catalogType,
+  ].join(" ");
   const brand = normalizeBrand(payload.brand || createBrandSystem({
     logoUrl: payload.assets?.find((asset) => asset.asset_type === "logo")?.url || "",
     extractedColors: payload.logoPalette,
@@ -8061,24 +8131,23 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     sku: `SKU-${index + 1}`,
     name: item,
     description: copy.itemDescription(name),
-    category: marketplaceCategoryForIndex(index, copy),
+    category: marketplaceCategoryForIndex(index, copy, categoryContext, language),
     rating: (4.3 + ((index % 5) * 0.12)).toFixed(1),
     review_count: 42 + index * 31,
     shipping_label: index % 2 === 0 ? copy.fastDelivery : copy.freeShipping,
     deal_label: index % 3 === 0 ? copy.todayDeal : "",
     price_type: isOnlineShop ? "fixed" : "quote_only",
-    price_amount: "",
+    price_amount: isMarketplaceTemplate ? marketplacePriceForIndex(index) : "",
     currency: "USD",
-    price_label: isOnlineShop ? copy.priceNotSet : copy.askPrice,
+    price_label: isMarketplaceTemplate ? `USD ${marketplacePriceForIndex(index).toFixed(2)}` : (isOnlineShop ? copy.priceNotSet : copy.askPrice),
     button_label: isOnlineShop ? copy.viewProduct : copy.request,
-    inventory_quantity: "",
+    inventory_quantity: isMarketplaceTemplate ? 24 + index * 3 : "",
     track_inventory: isOnlineShop,
     image_url: "",
     is_active: true,
     is_featured: index < 3,
     sort_order: index,
   }));
-  const isMarketplaceTemplate = catalogType === "dense_marketplace_catalog" || /mega-marketplace|marketplace-style/i.test(template.id || "");
   const isPremiumTemplate = catalogType === "premium_editorial_catalog" || /apple-premium-product/i.test(template.id || "");
   const isFashionTemplate = catalogType === "lookbook_collection_catalog" || /fashion-drop-pro/i.test(template.id || "");
   const isCorporateTemplate = catalogType === "company_services_catalog" || /corporate-company-pro/i.test(template.id || "");
@@ -9844,6 +9913,7 @@ function buildLeadFunnelInstantPages(copy, name, description, payload = {}) {
 }
 
 function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
+  const productGridSettings = { layout: "marketplace_grid", columns: 4, spacing: "balanced", container_width: "wide", card_density: "compact", card_gap: "tight" };
   return [
     {
       page_key: "home",
@@ -9888,7 +9958,7 @@ function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
           type: "ProductGrid",
           order: 4,
           editable: { title: copy.bestSellers, text: copy.catalogText, images: [] },
-          settings: { layout: "marketplace_grid", columns: 4, spacing: "balanced", container_width: "wide", card_density: "compact", card_gap: "tight" },
+          settings: productGridSettings,
         },
         {
           id: "trust_strip",
@@ -9900,10 +9970,71 @@ function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
       ],
     },
     {
+      page_key: "deals",
+      title: copy.deals,
+      slug: "/deals",
+      order: 2,
+      sections: [
+        {
+          id: "deals_hero",
+          type: "MarketplaceHero",
+          order: 1,
+          editable: {
+            headline: copy.todayDeals,
+            subtitle: copy.dealsText,
+            primary_button: copy.shopDeals,
+            secondary_button: copy.viewCategories,
+            search_placeholder: copy.searchPlaceholder,
+            deal_badge: copy.todayDeal,
+            deal_title: copy.dealTitle,
+            deal_text: copy.dealText,
+            images: [],
+          },
+          settings: { layout: "marketplace_search", spacing: "compact", container_width: "wide" },
+        },
+        {
+          id: "deals_row",
+          type: "DealRow",
+          order: 2,
+          editable: { title: copy.todayDeals, text: copy.dealsText },
+          settings: { layout: "deal_row", spacing: "compact", container_width: "wide" },
+        },
+        {
+          id: "deals_grid",
+          type: "ProductGrid",
+          order: 3,
+          editable: { title: copy.bestSellers, text: copy.catalogText, images: [] },
+          settings: productGridSettings,
+        },
+      ],
+    },
+    {
+      page_key: "categories",
+      title: copy.categories,
+      slug: "/categories",
+      order: 3,
+      sections: [
+        {
+          id: "categories_rail",
+          type: "CategoryRail",
+          order: 1,
+          editable: { title: copy.shopByCategory, text: copy.categoryRailText },
+          settings: { layout: "category_tiles", spacing: "compact", container_width: "wide" },
+        },
+        {
+          id: "categories_grid",
+          type: "ProductGrid",
+          order: 2,
+          editable: { title: copy.catalog, text: copy.catalogText, images: [] },
+          settings: productGridSettings,
+        },
+      ],
+    },
+    {
       page_key: "catalog",
       title: copy.shop,
       slug: copy.shopSlug,
-      order: 2,
+      order: 4,
       sections: [
         {
           id: "catalog_search",
@@ -9927,7 +10058,7 @@ function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
           type: "ProductGrid",
           order: 2,
           editable: { title: copy.catalog, text: copy.catalogText, images: [] },
-          settings: { layout: "marketplace_grid", columns: 4, spacing: "compact", container_width: "wide", card_density: "compact", card_gap: "tight" },
+          settings: { ...productGridSettings, spacing: "compact" },
         },
       ],
     },
@@ -9935,21 +10066,67 @@ function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
       page_key: "about",
       title: copy.about,
       slug: copy.aboutSlug,
-      order: 3,
+      order: 5,
       sections: [{ id: "about", type: "About", order: 1, editable: { title: copy.aboutBrand, text: description }, settings: { layout: "feature", container_width: "wide" } }],
     },
     {
-      page_key: "contact",
-      title: copy.contact,
-      slug: copy.contactSlug,
-      order: 4,
-      sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: copy.letsTalk, text: copy.contactText }, settings: { layout: "simple", container_width: "wide" } }],
+      page_key: "support",
+      title: copy.support,
+      slug: "/support",
+      order: 6,
+      sections: [
+        {
+          id: "support_trust",
+          type: "TrustStrip",
+          order: 1,
+          editable: { title: copy.whyBuyHere, text: copy.trustText },
+          settings: { layout: "marketplace_trust", spacing: "compact", container_width: "wide" },
+        },
+        {
+          id: "contact",
+          type: "Contact",
+          order: 2,
+          editable: { title: copy.letsTalk, text: copy.contactText },
+          settings: { layout: "simple", container_width: "wide" },
+        },
+      ],
     },
   ];
 }
 
-function marketplaceCategoryForIndex(index, copy) {
-  const categories = copy.marketplaceCategories || ["Featured", "Deals", "New", "Popular"];
+function marketplaceCategoryForIndex(index, copy, contextText = "", language = selectedLanguage) {
+  const normalized = normalizeTemplateIntentText(contextText);
+  const localized = {
+    en: {
+      jewelry: ["Necklaces", "Bracelets", "Earrings", "Custom pieces", "Gift sets", "New arrivals"],
+      fashion: ["New arrivals", "Accessories", "Outfits", "Statement pieces", "Limited drop", "Best sellers"],
+      variety: ["Featured", "Auto accessories", "Collectibles", "Home finds", "Gifts", "Deals"],
+    },
+    es: {
+      jewelry: ["Collares", "Pulseras", "Aretes", "Piezas personalizadas", "Sets de regalo", "Novedades"],
+      fashion: ["Novedades", "Accesorios", "Looks", "Piezas destacadas", "Drop limitado", "Mas vendidos"],
+      variety: ["Destacados", "Accesorios auto", "Coleccionables", "Hogar", "Regalos", "Ofertas"],
+    },
+    fr: {
+      jewelry: ["Colliers", "Bracelets", "Boucles", "Pieces personnalisees", "Sets cadeaux", "Nouveautes"],
+      fashion: ["Nouveautes", "Accessoires", "Looks", "Pieces fortes", "Drop limite", "Meilleures ventes"],
+      variety: ["Selections", "Accessoires auto", "Objets de collection", "Maison", "Cadeaux", "Offres"],
+    },
+    pt: {
+      jewelry: ["Colares", "Pulseiras", "Brincos", "Pecas personalizadas", "Kits presente", "Novidades"],
+      fashion: ["Novidades", "Acessorios", "Looks", "Pecas destaque", "Drop limitado", "Mais vendidos"],
+      variety: ["Destaques", "Acessorios auto", "Colecionaveis", "Casa", "Presentes", "Ofertas"],
+    },
+  };
+  const set = localized[language] || localized.en;
+  let categories = copy.marketplaceCategories || ["Featured", "Deals", "New", "Popular"];
+  if (textSuggestsJewelryAccessoryStore(normalized)) {
+    categories = set.jewelry;
+  } else if (/ropa|moda|fashion|camisa|zapato|sneaker|clothing|apparel|streetwear|lookbook/.test(normalized)) {
+    categories = set.fashion;
+  } else if (/carro|auto|automotriz|anime|gadget|juguete|regalo|raro|curioso|hogar|home|gift|collectible|variedad|varied|variado/.test(normalized)) {
+    categories = set.variety;
+  }
   return categories[index % categories.length];
 }
 

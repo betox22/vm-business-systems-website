@@ -22,6 +22,9 @@ from .state_manager import StateManager
 
 def normalize_state_payload(payload: Dict[str, Any] | None) -> ProjectState:
     payload = payload or {}
+    preferred_colors = payload.get("preferredColors") or payload.get("preferred_colors")
+    if isinstance(preferred_colors, list):
+        preferred_colors = ", ".join(str(item).strip() for item in preferred_colors if str(item).strip())
     return ProjectState(
         businessName=payload.get("businessName") or payload.get("business_name"),
         businessDescription=payload.get("businessDescription") or payload.get("business_description"),
@@ -30,7 +33,7 @@ def normalize_state_payload(payload: Dict[str, Any] | None) -> ProjectState:
         servicesProducts=split_items(payload.get("servicesProducts") or payload.get("services_products")),
         targetAudience=payload.get("targetAudience") or payload.get("target_audience"),
         preferredTone=payload.get("preferredTone") or payload.get("preferred_tone"),
-        preferredColors=payload.get("preferredColors") or payload.get("preferred_colors"),
+        preferredColors=preferred_colors,
         contactInfo=payload.get("contactInfo") if isinstance(payload.get("contactInfo"), dict) else {},
         logoUrl=payload.get("logoUrl"),
         photoUrls=payload.get("photoUrls") or [],
