@@ -152,9 +152,12 @@ def suggests_focused_commerce(text: str) -> bool:
 
 def suggests_broad_marketplace(text: str, product_count: int = 0) -> bool:
     explicit = bool(re.search(r"\b(amazon|tipo amazon|como amazon|mega tienda|mega store|mega marketplace)\b", text))
+    explicit_marketplace = bool(re.search(r"\b(marketplace|market place|mercado online|multi vendedor|multi-vendedor|multi seller|multiseller)\b", text)) and not bool(
+        re.search(r"\b(ebay|tipo ebay|como ebay|clasificados|classifieds|listados|listings|segunda mano|usado|used)\b", text)
+    )
     cross_category = bool(re.search(r"(ropa|accesorios).*(carros|autos|juguetes|anime|gadgets)|(carros|autos|juguetes|anime|gadgets).*(ropa|accesorios)", text))
     broad_words = bool(re.search(r"\b(de todo|productos variados|catalogo grande|catalogo variado|muchas categorias|multi categoria|cosas raras|gadgets|anime|juguetes)\b", text))
-    if explicit or cross_category:
+    if explicit or explicit_marketplace or cross_category:
         return True
     if suggests_focused_commerce(text):
         return False
@@ -264,16 +267,18 @@ class StrategyAgent(BaseAgent):
         if existing_template_id in TEMPLATE_CATALOG:
             add(existing_template_id, 18, "existing valid template signal")
 
-        if suggests_broad_marketplace(text, product_count):
+        broad_marketplace = suggests_broad_marketplace(text, product_count)
+
+        if broad_marketplace:
             add("mega-marketplace", 150, "broad multi-category catalog")
 
         if re.search(r"\b(ebay|listing|listados|vendedores|seller|subasta|auction|usado|condition)\b", text):
             add("listing-marketplace-pro", 120, "listing and seller comparison flow")
 
-        if suggests_jewelry_or_handmade_accessories(text):
+        if suggests_jewelry_or_handmade_accessories(text) and not broad_marketplace:
             add("fashion-drop-pro", 125, "focused jewelry and handmade accessory store")
 
-        if re.search(r"\b(ropa|fashion|moda|boutique|streetwear|zapatos|sneaker|apparel|clothing|drop|lookbook)\b", text):
+        if re.search(r"\b(ropa|fashion|moda|boutique|streetwear|zapatos|sneaker|apparel|clothing|drop|lookbook)\b", text) and not broad_marketplace:
             add("fashion-drop-pro", 95, "fashion and collection browsing")
 
         focused_product = re.search(
