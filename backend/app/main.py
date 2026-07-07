@@ -24,6 +24,84 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 orchestrator = LyraOrchestrator()
 client_intake_sessions: Dict[str, Dict[str, Any]] = {}
 
+
+CLIENT_DRAFT_KEYS = {
+    "websiteIntent",
+    "businessName",
+    "businessDescription",
+    "industry",
+    "location",
+    "servicesProducts",
+    "targetAudience",
+    "preferredTone",
+    "preferredColors",
+    "contactInfo",
+    "desiredDomain",
+    "logoUrl",
+    "photoUrls",
+    "logoPalette",
+    "selectedLanguage",
+    "hasLogo",
+    "hasPhotos",
+    "salesMode",
+    "hasLogoPhotos",
+    "sectionsPreference",
+    "selectedTemplateId",
+    "selectedTemplateName",
+    "catalogType",
+    "websiteType",
+    "salesFlow",
+}
+
+
+def _trim_text(value: Any, limit: int = 1200) -> str:
+    text = str(value or "").strip()
+    return text[:limit]
+
+
+def _safe_list(value: Any, limit: int = 20) -> list[Any]:
+    if isinstance(value, list):
+        return value[:limit]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return []
+
+
+def sanitize_client_draft(raw: Any) -> Dict[str, Any]:
+    """Keep client sessions small and restoreable.
+
+    The public login gate only needs intake fields. Large generated objects such
+    as sitePlan, aiStudioPlan, designStrategy, qualityRules and previous schemas
+    are intentionally excluded because older sessions can grow enough to stall
+    mobile restore.
+    """
+
+    if not isinstance(raw, dict):
+        return {}
+    draft: Dict[str, Any] = {}
+    for key in CLIENT_DRAFT_KEYS:
+        if key not in raw:
+            continue
+        value = raw.get(key)
+        if key in {"servicesProducts", "preferredColors", "photoUrls", "logoPalette"}:
+            draft[key] = _safe_list(value)
+        elif key == "contactInfo":
+            info = value if isinstance(value, dict) else {}
+            draft[key] = {
+                "name": _trim_text(info.get("name"), 160),
+                "email": _trim_text(info.get("email"), 200),
+                "phone": _trim_text(info.get("phone"), 80),
+                "whatsapp": _trim_text(info.get("whatsapp"), 80),
+                "instagram": _trim_text(info.get("instagram"), 120),
+                "website": _trim_text(info.get("website"), 200),
+                "notes": _trim_text(info.get("notes"), 700),
+            }
+        elif key in {"hasLogo", "hasPhotos"}:
+            draft[key] = bool(value)
+        else:
+            draft[key] = _trim_text(value)
+    return draft
+
 app = FastAPI(title="KREATON LYRA API", version="0.1.0")
 
 app.add_middleware(
@@ -94,7 +172,7 @@ async def client_intake_session(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     force_new = bool(payload.get("forceNew"))
     existing = client_intake_sessions.get(email)
-    draft = payload.get("draft") if isinstance(payload.get("draft"), dict) else {}
+    draft = sanitize_client_draft(payload.get("draft"))
     name = str(payload.get("name") or draft.get("businessName") or "").strip()
     selected_language = payload.get("selectedLanguage") or draft.get("selectedLanguage") or "en"
 
@@ -118,7 +196,7 @@ async def client_intake_session(payload: Dict[str, Any]) -> Dict[str, Any]:
         client_intake_sessions[email] = session
         return session
 
-    existing["draft"] = {**(existing.get("draft") or {}), **draft}
+    existing["draft"] = sanitize_client_draft({**sanitize_client_draft(existing.get("draft")), **draft})
     existing["clientName"] = name or existing.get("clientName") or ""
     existing["selectedLanguage"] = selected_language
     existing["restored"] = True

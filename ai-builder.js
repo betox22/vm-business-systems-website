@@ -2678,9 +2678,13 @@ function readClientIntakeSession() {
 }
 
 function writeClientIntakeSession(session) {
+  const cleanSession = {
+    ...(session || {}),
+    draft: sanitizeClientSessionDraft(session?.draft || {}),
+  };
   clientIntakeSession = {
     ...(clientIntakeSession || {}),
-    ...(session || {}),
+    ...cleanSession,
     savedAt: new Date().toISOString(),
   };
   try {
@@ -2854,7 +2858,7 @@ async function resumeClientSessionFromAuthToken() {
 function hydrateClientIntakeSession(session, options = {}) {
   if (!session) return;
   currentRequestId = session.requestId || session.request_id || currentRequestId;
-  const draft = session.draft || {};
+  const draft = sanitizeClientSessionDraft(session.draft || {});
   if (draft.selectedLanguage) setSelectedLanguage(draft.selectedLanguage);
   const normalizedDraft = {
     ...draft,
@@ -2884,13 +2888,13 @@ function hydrateClientIntakeSession(session, options = {}) {
 async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false } = {}) {
   const cleanEmail = String(email || "").trim().toLowerCase();
   if (!cleanEmail) throw new Error("Email is required.");
-  const draft = immediateDraft || guidedStateForApi();
+  const draft = sanitizeClientSessionDraft(immediateDraft || guidedSessionDraftForApi());
   draft.contactInfo = {
     ...(draft.contactInfo || {}),
     email: draft.contactInfo?.email || cleanEmail,
     name: draft.contactInfo?.name || name || draft.businessName || "",
   };
-  const response = await fetch(CLIENT_INTAKE_SESSION_URL, {
+  const response = await fetchWithTimeout(CLIENT_INTAKE_SESSION_URL, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -2901,7 +2905,7 @@ async function createOrResumeClientIntakeSession({ email, name = "", reason = "s
       forceNew,
       draft,
     }),
-  });
+  }, 18000);
   if (!response.ok) throw new Error(await readErrorMessage(response));
   const session = await response.json();
   writeClientIntakeSession(session);
@@ -5833,6 +5837,97 @@ function guidedStateForApi() {
     };
   }
   return payload;
+}
+
+function guidedSessionDraftForApi() {
+  const logoUrl = isCloudSafeUrl(guidedState.logoUrl) ? guidedState.logoUrl : "";
+  return sanitizeClientSessionDraft({
+    websiteIntent: guidedState.websiteIntent,
+    businessName: guidedState.businessName,
+    businessDescription: guidedState.businessDescription,
+    industry: guidedState.industry,
+    location: guidedState.location,
+    servicesProducts: arrayValue(guidedState.servicesProducts),
+    targetAudience: guidedState.targetAudience,
+    preferredTone: guidedState.preferredTone,
+    preferredColors: arrayValue(guidedState.preferredColors),
+    contactInfo: guidedState.contactInfo || {},
+    desiredDomain: guidedState.desiredDomain,
+    logoUrl,
+    photoUrls: arrayValue(guidedState.photoUrls).filter(isCloudSafeUrl),
+    logoPalette: arrayValue(guidedState.logoPalette),
+    selectedLanguage,
+    hasLogo: Boolean(guidedState.hasLogo || guidedState.logoUrl),
+    hasPhotos: Boolean(guidedState.hasPhotos || arrayValue(guidedState.photoUrls).length),
+    salesMode: guidedState.salesMode,
+    hasLogoPhotos: guidedState.hasLogoPhotos,
+    sectionsPreference: guidedState.sectionsPreference,
+    selectedTemplateId: guidedState.selectedTemplateId || forcedTemplateSelection?.templateId || "",
+    selectedTemplateName: guidedState.selectedTemplateName || forcedTemplateSelection?.name || "",
+    catalogType: guidedState.catalogType || forcedTemplateSelection?.catalogType || "",
+    websiteType: guidedState.websiteType || "",
+    salesFlow: guidedState.salesFlow || "",
+  });
+}
+
+function sanitizeClientSessionDraft(raw = {}) {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const trimmed = (value, limit = 1200) => String(value || "").trim().slice(0, limit);
+  const cleanList = (value, limit = 20) => arrayValue(value).map((item) => String(item || "").trim()).filter(Boolean).slice(0, limit);
+  const contactInfo = source.contactInfo && typeof source.contactInfo === "object" ? source.contactInfo : {};
+  return {
+    websiteIntent: trimmed(source.websiteIntent),
+    businessName: trimmed(source.businessName, 180),
+    businessDescription: trimmed(source.businessDescription, 1600),
+    industry: trimmed(source.industry, 220),
+    location: trimmed(source.location, 220),
+    servicesProducts: cleanList(source.servicesProducts),
+    targetAudience: trimmed(source.targetAudience, 500),
+    preferredTone: trimmed(source.preferredTone, 240),
+    preferredColors: cleanList(source.preferredColors, 10),
+    contactInfo: {
+      name: trimmed(contactInfo.name, 180),
+      email: trimmed(contactInfo.email, 220),
+      phone: trimmed(contactInfo.phone, 80),
+      whatsapp: trimmed(contactInfo.whatsapp, 80),
+      instagram: trimmed(contactInfo.instagram, 140),
+      website: trimmed(contactInfo.website, 220),
+      notes: trimmed(contactInfo.notes, 800),
+    },
+    desiredDomain: trimmed(source.desiredDomain, 240),
+    logoUrl: isCloudSafeUrl(source.logoUrl) ? trimmed(source.logoUrl, 1200) : "",
+    photoUrls: cleanList(source.photoUrls).filter(isCloudSafeUrl),
+    logoPalette: cleanList(source.logoPalette, 12),
+    selectedLanguage: SUPPORTED_LANGUAGES.includes(source.selectedLanguage) ? source.selectedLanguage : selectedLanguage,
+    hasLogo: Boolean(source.hasLogo || source.logoUrl),
+    hasPhotos: Boolean(source.hasPhotos || cleanList(source.photoUrls).length),
+    salesMode: trimmed(source.salesMode, 160),
+    hasLogoPhotos: trimmed(source.hasLogoPhotos, 180),
+    sectionsPreference: trimmed(source.sectionsPreference, 600),
+    selectedTemplateId: trimmed(source.selectedTemplateId, 180),
+    selectedTemplateName: trimmed(source.selectedTemplateName, 180),
+    catalogType: trimmed(source.catalogType, 180),
+    websiteType: trimmed(source.websiteType, 180),
+    salesFlow: trimmed(source.salesFlow, 180),
+  };
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 18000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error("Request timed out. Check your connection and try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function isCloudSafeUrl(value) {
