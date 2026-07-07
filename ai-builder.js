@@ -8247,7 +8247,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const isFashionTemplate = catalogType === "lookbook_collection_catalog" || /fashion-drop-pro/i.test(template.id || "");
   const isCorporateTemplate = catalogType === "company_services_catalog" || /corporate-company-pro/i.test(template.id || "");
   const isLeadFunnelTemplate = catalogType === "lead_funnel_offer_catalog" || /lead-funnel-pro/i.test(template.id || "");
-  const isHomeServicesTemplate = catalogType === "home_services_quote_catalog" || /home-services-premium/i.test(template.id || "");
+  const isHomeServicesTemplate = catalogType === "home_services_quote_catalog" || catalogType === "service_area_catalog" || /home-services-premium|local-services-pro-plus/i.test(template.id || "");
   const isBookingTemplate = catalogType === "booking_menu_catalog" || /booking-appointment-pro/i.test(template.id || "");
   const isRestaurantTemplate = catalogType === "restaurant_menu_catalog" || catalogType === "menu_catalog" || /restaurant-food-business/i.test(template.id || "");
   const isDigitalTemplate = catalogType === "digital_offer_catalog" || /digital-products-store/i.test(template.id || "");
@@ -9708,7 +9708,56 @@ function buildRealEstateListingsInstantPages(copy, name, description, payload = 
   ];
 }
 
+function normalizeHomeServiceInstantCopy(input = {}, language = selectedLanguage) {
+  const base = instantLocaleCopy(language);
+  const source = input && typeof input === "object" ? input : {};
+  const merged = { ...base, ...source };
+  const textValue = (key) => {
+    const value = merged[key];
+    return typeof value === "string" && value.trim() ? value : base[key] || "";
+  };
+  const listValue = (key) => {
+    const values = arrayValue(merged[key]).filter(Boolean);
+    return values.length ? values : arrayValue(base[key]);
+  };
+  return {
+    ...merged,
+    services: textValue("services") || base.services || "Services",
+    servicesSlug: textValue("servicesSlug") || "/services",
+    serviceAreas: textValue("serviceAreas") || base.serviceAreas || "Service areas",
+    workProof: textValue("workProof") || base.workProof || "Work proof",
+    workSlug: textValue("workSlug") || "/work",
+    contactSlug: textValue("contactSlug") || "/contact",
+    freeQuote: textValue("freeQuote") || textValue("request") || "Request quote",
+    callNow: textValue("callNow") || "Call now",
+    askPrice: textValue("askPrice") || "Ask for price",
+    homeServiceHeadline: typeof merged.homeServiceHeadline === "function"
+      ? merged.homeServiceHeadline
+      : typeof base.homeServiceHeadline === "function"
+        ? base.homeServiceHeadline
+        : (businessName) => `${businessName} handles the job right the first time`,
+    homeServiceSubheadline: typeof merged.homeServiceSubheadline === "function"
+      ? merged.homeServiceSubheadline
+      : typeof base.homeServiceSubheadline === "function"
+        ? base.homeServiceSubheadline
+        : (value) => value || "Trusted service with clear communication, proof, and an easy quote path.",
+    homeServiceCategoriesTitle: textValue("homeServiceCategoriesTitle"),
+    homeServiceCategoriesText: textValue("homeServiceCategoriesText"),
+    homeServiceAreasTitle: textValue("homeServiceAreasTitle"),
+    homeServiceAreasText: textValue("homeServiceAreasText"),
+    serviceAreaItems: listValue("serviceAreaItems"),
+    beforeAfterTitle: textValue("beforeAfterTitle"),
+    beforeAfterText: textValue("beforeAfterText"),
+    homeServiceTrustTitle: textValue("homeServiceTrustTitle"),
+    homeServiceTrustText: textValue("homeServiceTrustText"),
+    homeServiceTrustItems: listValue("homeServiceTrustItems"),
+    homeServiceQuoteTitle: textValue("homeServiceQuoteTitle"),
+    homeServiceQuoteText: textValue("homeServiceQuoteText"),
+  };
+}
+
 function buildHomeServicesPremiumInstantPages(copy, name, description, payload = {}) {
+  copy = normalizeHomeServiceInstantCopy(copy, payload.selectedLanguage || selectedLanguage || "en");
   const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
   return [
     {
