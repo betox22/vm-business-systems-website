@@ -1713,7 +1713,15 @@ function hasEnoughContextForTemplatePreview() {
 function meaningfulOfferItems(value) {
   return arrayValue(value)
     .map((item) => cleanExtractedPhrase(item, 70))
-    .filter((item) => item && !isGenericCommerceIntent(item) && !/^(online|internet|web|ecommerce|e-commerce|venta|ventas|sell|selling|products?|productos?|services?|servicios?)$/i.test(item));
+    .filter((item) => item && !isGenericCommerceIntent(item) && !isWeakOfferItem(item));
+}
+
+function isWeakOfferItem(value) {
+  const text = normalizeTemplateIntentText(value);
+  if (!text) return true;
+  if (/^(online|internet|web|ecommerce|e-commerce|venta|ventas|sell|selling|products?|productos?|services?|servicios?|catalogo|catalog|marketplace)$/i.test(text)) return true;
+  return /^(aceptar|recibir|tomar|hacer|gestionar)?\s*(pedidos?|orders?|ordenes|online orders)$/i.test(text)
+    || /^(vender|venta|ventas)\s*(online|en linea)?$/i.test(text);
 }
 
 function renderNeutralLiveWorkspace() {
@@ -1932,11 +1940,17 @@ function inferLivePreviewTemplateId() {
 }
 
 function resolvedAiTemplateId() {
+  if (
+    forcedTemplateSelection?.intent === "client_visual_template_choice"
+    && isConcreteTemplateId(forcedTemplateSelection.templateId)
+  ) {
+    return forcedTemplateSelection.templateId;
+  }
   const candidates = [
-    forcedTemplateSelection?.templateId,
-    guidedState.sitePlan?.templateId,
     guidedState.designStrategy?.selectedTemplateId,
     guidedState.designStrategy?.diagnosis?.recommendedTemplateId,
+    guidedState.sitePlan?.templateId,
+    forcedTemplateSelection?.templateId,
   ];
   return candidates.find((templateId) => isConcreteTemplateId(templateId)) || "";
 }
@@ -1973,11 +1987,13 @@ function normalizeTemplateIntentText(value) {
 function textSuggestsBroadMarketplace(value) {
   const text = normalizeTemplateIntentText(value);
   const explicitBroad = /\b(amazon|tipo amazon|como amazon|mega tienda|mega store|mega marketplace|marketplace tipo amazon|marketplace estilo amazon)\b/.test(text);
+  const explicitMarketplace = /\b(marketplace|market place|mercado online|multi vendedor|multi-vendedor|multi seller|multiseller)\b/.test(text)
+    && !/\b(tipo ebay|como ebay|ebay|clasificados|classifieds|listados|listings|segunda mano|usado|used)\b/.test(text);
   const crossCategoryBroad = /(ropa|accesorios).*(carros|autos|juguetes|anime|gadgets)/.test(text)
     || /(carros|autos|juguetes|anime|gadgets).*(ropa|accesorios)/.test(text);
   const broadCatalog = /\b(de todo|todo tipo|variedad|variado|variados|productos variados|catalogo grande|catalogo variado|muchos productos|muchas categorias|multi categoria|cosas raras|cosas inusuales|inusual|unusual|nada comun|poco comun|dificil de encontrar|curiosidades|gadgets|anime|juguetes)\b/.test(text)
     || crossCategoryBroad;
-  if (explicitBroad) return true;
+  if (explicitBroad || explicitMarketplace) return true;
   if (textSuggestsFocusedCommerceStore(text) && !crossCategoryBroad) return false;
   return broadCatalog;
 }
@@ -2049,7 +2065,7 @@ function templateIntentScorecard(value, payload = {}) {
 
   if (has(/\b(tipo ebay|como ebay|clasificados|classifieds|listados|listings|vendedores|seller|usado|used|segunda mano)\b/)) scores.push(scoreFor("listing-marketplace-pro", 120, "seller/listing marketplace"));
   if (has(/\b(real estate|bienes raices|bienes raices|inmuebles|propiedades|casas|apartamentos|alquiler|renta|rentals|zillow|realtor|mls|autotrader|auto trader|vehiculos|vehiculos usados|carros usados)\b/)) scores.push(scoreFor("real-estate-listings-pro", 118, "searchable listing business"));
-  if (has(/\b(restaurante|restaurant|food truck|cafeteria|cafeteria|catering|menu|menu|comida|pizza|tacos|bakery|panaderia|bar|delivery|pickup|ordenar|pedidos)\b/)) scores.push(scoreFor("restaurant-food-business", 125, "restaurant/menu flow"));
+  if (has(/\b(restaurante|restaurant|food truck|cafeteria|cafeteria|catering|menu|menu|comida|pizza|tacos|bakery|panaderia|bar|delivery de comida|pickup de comida|ordenar comida|pedir comida|pedido de comida)\b/)) scores.push(scoreFor("restaurant-food-business", 125, "restaurant/menu flow"));
   if (has(/\b(barber|barberia|barberia|barbershop|salon|spa|citas|reservas|appointments|booking|agenda|agendar|calendar|calendario)\b/)) scores.push(scoreFor("booking-appointment-pro", 120, "appointment booking flow"));
   if (has(/\b(clinica|clinica|clinic|med spa|medical spa|spa medico|estetica|estetica|aesthetic|dental|dentist|doctor|wellness|salud|health|therapy|terapia|nutricion|laser|botox|facial|skincare|dermatology|fisio|physio|chiropractor|consulta medica)\b/)) scores.push(scoreFor("medical-wellness-clinic-pro", 118, "clinic/wellness trust flow"));
   if (has(/\b(abogado|lawyer|legal|law firm|contador|accountant|tax|taxes|impuestos|consulting|consultoria|seguros|insurance|asesor|advisor|financiero|compliance|firma profesional)\b/)) scores.push(scoreFor("legal-professional-services-pro", 115, "professional services trust flow"));
@@ -2058,7 +2074,7 @@ function templateIntentScorecard(value, payload = {}) {
   if (has(/\b(curso|cursos|course|courses|academy|academia|escuela online|bootcamp|training|formacion|clases|classes|lessons|masterclass|workshop|taller|coaching program|certificacion)\b/)) scores.push(scoreFor("education-course-academy-pro", 112, "course/academy flow"));
   if (has(/\b(digital|ebook|e-book|templates|plantillas|descarga|download|pdf|pack|membresia|membership|digital products|productos digitales)\b/)) scores.push(scoreFor("digital-products-store", 105, "digital product flow"));
   if (has(/\b(contratista|contractor|construccion|construction|limpieza|cleaning|plomeria|plumbing|electricista|electrician|hvac|aire acondicionado|mechanic|mecanico|landscaping|seguridad|security|servicio local|local service|reparacion|repair|presupuesto|cotizacion|quote|emergencia)\b/)) scores.push(scoreFor("home-services-premium", 108, "local service quote flow"));
-  if (textSuggestsJewelryAccessoryStore(text)) scores.push(scoreFor("fashion-drop-pro", 118, "focused jewelry/accessory boutique"));
+  if (textSuggestsJewelryAccessoryStore(text) && !textSuggestsBroadMarketplace(text)) scores.push(scoreFor("fashion-drop-pro", 118, "focused jewelry/accessory boutique"));
   if (has(/\b(ropa|fashion|moda|boutique|streetwear|zapato|sneaker|apparel|clothing|drop|lookbook)\b/) && !textSuggestsBroadMarketplace(text)) scores.push(scoreFor("fashion-drop-pro", 104, "fashion/lookbook commerce"));
   if (has(/\b(lujo|luxury|high ticket|alta gama|exclusivo|joyeria|joyería|jewelry|jewellery|perfumes|fragancia|relojes|watches|cuero|arte|coleccionable|private appointment|cita privada|precio a consultar)\b/)) scores.push(scoreFor("luxury-high-ticket-pro", 110, "luxury/high-ticket showroom"));
   if (textSuggestsFocusedProductLine(text) || textSuggestsSingleProductShowcase(text) || textSuggestsPremiumProductPreference(text)) scores.push(scoreFor("apple-premium-product", 108, "focused product line"));
@@ -2089,7 +2105,7 @@ function inferTemplateIdFromText(value) {
   if (textSuggestsBroadMarketplace(text)) return "mega-marketplace";
   if (textSuggestsFocusedProductLine(text)) return "apple-premium-product";
   if (/tipo ebay|como ebay|clasificados|listados|vendedores|usado|seller|listing/.test(text)) return "listing-marketplace-pro";
-  if (/restaurante|restaurant|menu|comida|food|cafe|cafeteria|delivery|pedidos/.test(text)) return "restaurant-food-business";
+  if (/restaurante|restaurant|menu|comida|food|cafe|cafeteria|delivery de comida|ordenar comida|pedir comida|pedido de comida/.test(text)) return "restaurant-food-business";
   if (/barber|barberia|salon|spa|cita|booking|reserva|appointment/.test(text)) return "booking-appointment-pro";
   if (/abogado|legal|lawyer|contador|tax|impuestos|consultoria|consulting|seguros|asesor/.test(text)) return "legal-professional-services-pro";
   if (/clinica|clinic|med spa|wellness|dental|doctor|estetica|salud|therapy|skincare/.test(text)) return "medical-wellness-clinic-pro";
@@ -3380,7 +3396,7 @@ async function sendGuidedReply() {
     guidedHistory.push({ role: "assistant", content: assistantMessage });
     mergeGuidedUpdates(updatedFields);
     await applyLumaAgentDecision(result);
-    refreshAiStudioPlanFromContext(message);
+    const planAfterAgent = refreshAiStudioPlanFromContext(message);
     const locallyReadyToGenerate = !result.readyToGenerate && hasEnoughContextForFirstDraft();
     const serverNextStep = result.next_step || result.nextStep || "";
     guidedStep = (result.readyToGenerate || locallyReadyToGenerate) ? "review" : normalizeNextGuidedStep(serverNextStep || guidedStep);
@@ -3394,7 +3410,7 @@ async function sendGuidedReply() {
           fr: "J'ai assez de contexte pour créer le premier brouillon. J'utiliserai vos notes comme stratégie, pas comme texte brut.",
           pt: "Ja tenho contexto suficiente para criar o primeiro rascunho. Vou usar suas notas como estrategia, nao como texto colado na pagina.",
         })
-      : assistantMessage;
+      : sanitizeAssistantTemplateClaim(assistantMessage, planAfterAgent);
     const publicAssistantMessage = composeAssistantReply(finalAssistantMessage, nextQuestion, usedDevFallback);
     appendUnderstandingCard({ updates: updatedFields, sourceMessage: message });
     appendChatMessage("assistant", publicAssistantMessage, usedDevFallback ? "alert" : emotion);
@@ -3487,6 +3503,18 @@ async function applyLumaAgentDecision(result = {}) {
     if (guidedState.sitePlan) guidedState.sitePlan.aiStudioPlan = localPlan;
     guidedState.sitePlanApproved = false;
   }
+}
+
+function sanitizeAssistantTemplateClaim(message = "", plan = {}) {
+  const text = String(message || "");
+  const templateName = plan?.recommendedTemplateName || localizedTemplateName(templatePreviewMeta(plan?.recommendedTemplateId || ""));
+  if (!templateName || !/selected .* as the base|use .* as the base|mapped .* as/i.test(text)) return text;
+  return langText({
+    en: `I mapped this to ${templateName}. I will use that proven structure as the base and adapt the copy, products, colors and flow professionally.`,
+    es: `Lo mapeé como ${templateName}. Usaré esa estructura probada como base y adaptaré textos, productos, colores y flujo de forma profesional.`,
+    fr: `Je l'ai associé à ${templateName}. J'utiliserai cette structure éprouvée comme base et j'adapterai les textes, produits, couleurs et parcours.`,
+    pt: `Mapeei isso como ${templateName}. Vou usar essa estrutura validada como base e adaptar textos, produtos, cores e fluxo profissionalmente.`,
+  });
 }
 
 function shouldPreferLocalStudioTemplate(serverTemplateId, localPlan = {}) {
@@ -3872,7 +3900,7 @@ function inferSalesFlowForPlan(contextText, websiteType) {
   const text = normalizeTemplateIntentText(contextText);
   if (/quote|cotizacion|cotización|presupuesto|consulta|inquiry/.test(text) || /service|quote/.test(websiteType)) return "quote_or_lead_request";
   if (/booking|appointment|reserva|cita/.test(text) || websiteType === "booking_site") return "appointment_booking";
-  if (/restaurant|menu|pedido|order/.test(text) || websiteType === "restaurant_menu") return "menu_order_or_contact";
+  if (/restaurant|restaurante|menu|comida|food|cafe|cafeteria|delivery de comida/.test(text) || websiteType === "restaurant_menu") return "menu_order_or_contact";
   if (/marketplace|store|shop|tienda|vender|venta online|checkout|carrito/.test(text) || /store|marketplace|digital/.test(websiteType)) return "online_sales";
   return "lead_capture";
 }
@@ -5715,6 +5743,11 @@ function mergeGuidedUpdates(updates) {
     if (key === "businessName" && isInvalidBusinessNameUpdate(value)) return;
     if (key === "contactInfo") {
       guidedState.contactInfo = { ...guidedState.contactInfo, ...(value || {}) };
+    } else if (key === "servicesProducts") {
+      const incoming = meaningfulOfferItems(value);
+      const existing = meaningfulOfferItems(guidedState.servicesProducts);
+      if (!incoming.length && existing.length) return;
+      guidedState.servicesProducts = [...new Set([...existing, ...incoming])];
     } else if (["servicesProducts", "preferredColors", "photoUrls"].includes(key)) {
       guidedState[key] = arrayValue(value);
     } else {
