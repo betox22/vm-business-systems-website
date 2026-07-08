@@ -580,6 +580,7 @@ function createEmptyGuidedState(language = selectedLanguage) {
     contactInfo: {},
     logoUrl: "",
     photoUrls: [],
+    videoUrls: [],
     logoPalette: [],
     brand: null,
     selectedLanguage: language,
@@ -1018,6 +1019,7 @@ safeBootStep("client-auth-reset", captureClientAuthResetIntent);
 safeBootStep("auth-redirect", captureStudioAuthRedirect);
 safeBootStep("request-hydration", hydrateFromSelectedRequest);
 safeBootStep("guided-intake", initGuidedIntake);
+safeBootStep("guided-media-drop", initGuidedMediaDrop);
 safeBootStep("client-session", initClientIntakeSessionGate);
 safeBootStep("client-account-control", renderClientAccountControl);
 safeBootStep("client-workspace-security", initClientWorkspaceSecurity);
@@ -2865,6 +2867,7 @@ function hydrateClientIntakeSession(session, options = {}) {
     servicesProducts: arrayValue(draft.servicesProducts),
     preferredColors: arrayValue(draft.preferredColors),
     photoUrls: arrayValue(draft.photoUrls),
+    videoUrls: arrayValue(draft.videoUrls),
     contactInfo: { ...(draft.contactInfo || {}) },
   };
   if (session.clientEmail && !normalizedDraft.contactInfo.email) {
@@ -3148,6 +3151,7 @@ function restoreGuidedDraft() {
         servicesProducts: arrayValue(draft.guidedState.servicesProducts),
         preferredColors: arrayValue(draft.guidedState.preferredColors),
         photoUrls: arrayValue(draft.guidedState.photoUrls),
+        videoUrls: arrayValue(draft.guidedState.videoUrls),
         logoPalette: arrayValue(draft.guidedState.logoPalette),
         brand: draft.guidedState.brand || null,
         contactInfo: draft.guidedState.contactInfo || {},
@@ -4596,6 +4600,11 @@ function translateChip(value) {
 async function handleGuidedLogoUpload() {
   const file = guidedLogoUpload.files?.[0];
   if (!file) return;
+  await processGuidedLogoFile(file);
+}
+
+async function processGuidedLogoFile(file) {
+  if (!file || !file.type?.startsWith("image/")) return;
   const localLogoUrl = await fileToDataUrl(file);
   let storedLogoUrl = localLogoUrl;
   try {
@@ -4644,6 +4653,12 @@ async function handleGuidedLogoUpload() {
 
 async function handleGuidedPhotoUpload() {
   const files = Array.from(guidedPhotoUpload.files || []).filter((file) => file.size > 0);
+  await processGuidedPhotoFiles(files.filter((file) => file.type?.startsWith("image/")));
+  await processGuidedVideoFiles(files.filter((file) => file.type?.startsWith("video/")));
+}
+
+async function processGuidedPhotoFiles(files) {
+  files = arrayValue(files).filter((file) => file?.size > 0 && file.type?.startsWith("image/"));
   if (!files.length) return;
   const urls = [];
   for (const file of files) {
@@ -4664,6 +4679,116 @@ async function handleGuidedPhotoUpload() {
   );
   renderGuidedSummary();
   saveGuidedDraft();
+}
+
+async function processGuidedVideoFiles(files) {
+  files = arrayValue(files).filter((file) => file?.size > 0 && file.type?.startsWith("video/"));
+  if (!files.length) return;
+  const urls = [];
+  for (const file of files) {
+    try {
+      const uploaded = await uploadAssetFile(file, "video", `Uploaded video ${urls.length + 1}`);
+      if (uploaded?.url) {
+        urls.push(uploaded.url);
+      }
+    } catch (error) {
+      console.warn("Video upload failed; keeping it as a session-only reference.", error);
+    }
+  }
+  guidedState.videoUrls = [...arrayValue(guidedState.videoUrls), ...urls];
+  guidedState.hasPhotos = true;
+  guidedState.hasLogoPhotos = guidedState.hasLogo ? "Logo, photos and videos uploaded" : "Photos/videos uploaded";
+  appendChatMessage(
+    "assistant",
+    urls.length
+      ? langText({
+          en: "Video received and saved as a visual reference for the draft.",
+          es: "Video recibido y guardado como referencia visual para el borrador.",
+          fr: "Video recue et enregistree comme reference visuelle pour le brouillon.",
+          pt: "Video recebido e salvo como referencia visual para o rascunho.",
+        })
+      : langText({
+          en: "I received the video as a session reference. For publishing, upload a smaller file or use cloud storage later.",
+          es: "Recibí el video como referencia de esta sesión. Para publicar, luego usa un archivo más pequeño o almacenamiento en la nube.",
+          fr: "J'ai recu la video comme reference de session. Pour publier, utilisez ensuite un fichier plus petit ou un stockage cloud.",
+          pt: "Recebi o video como referencia desta sessao. Para publicar, depois use um arquivo menor ou armazenamento em nuvem.",
+        }),
+    "success",
+  );
+  renderGuidedSummary();
+  saveGuidedDraft();
+}
+
+function initGuidedMediaDrop() {
+  if (!isPublicClientSetup || !guidedPanel || !guidedChatCard) return;
+  const dropTargets = [guidedPanel, guidedChatCard, guidedChat].filter(Boolean);
+  let dragDepth = 0;
+  const setActive = (active) => {
+    guidedChatCard.dataset.dropLabel = langText({
+      en: "Drop images or videos for LYRA",
+      es: "Suelta imágenes o videos para LYRA",
+      fr: "Déposez images ou vidéos pour LYRA",
+      pt: "Solte imagens ou videos para a LYRA",
+    });
+    guidedPanel.classList.toggle("media-drop-active", active);
+    setAssistantState(active ? "listening" : "neutral");
+  };
+  dropTargets.forEach((target) => {
+    target.addEventListener("dragenter", (event) => {
+      if (!event.dataTransfer?.types?.includes("Files")) return;
+      event.preventDefault();
+      event.stopPropagation();
+      dragDepth += 1;
+      setActive(true);
+    });
+    target.addEventListener("dragover", (event) => {
+      if (!event.dataTransfer?.types?.includes("Files")) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.dataTransfer.dropEffect = "copy";
+      setActive(true);
+    });
+    target.addEventListener("dragleave", (event) => {
+      event.stopPropagation();
+      dragDepth = Math.max(0, dragDepth - 1);
+      if (!dragDepth) setActive(false);
+    });
+    target.addEventListener("drop", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      dragDepth = 0;
+      setActive(false);
+      const files = Array.from(event.dataTransfer?.files || []);
+      await receiveGuidedDroppedFiles(files);
+    });
+  });
+}
+
+async function receiveGuidedDroppedFiles(files) {
+  const supported = arrayValue(files).filter((file) => file?.type?.startsWith("image/") || file?.type?.startsWith("video/"));
+  if (!supported.length) {
+    appendChatMessage("assistant", langText({
+      en: "Drop images or videos here and I will use them as visual references.",
+      es: "Arrastra imágenes o videos aquí y los usaré como referencias visuales.",
+      fr: "Deposez ici des images ou videos et je les utiliserai comme references visuelles.",
+      pt: "Arraste imagens ou videos aqui e eu usarei como referencias visuais.",
+    }), "alert");
+    return;
+  }
+  const images = supported.filter((file) => file.type.startsWith("image/"));
+  const videos = supported.filter((file) => file.type.startsWith("video/"));
+  const logoFile = images.find((file) => /logo|brand|marca/i.test(file.name || ""))
+    || (!guidedState.logoUrl && guidedStep === "preferredColors" && images.length === 1 ? images[0] : null);
+  const photoFiles = images.filter((file) => file !== logoFile);
+  if (logoFile) await processGuidedLogoFile(logoFile);
+  if (photoFiles.length) await processGuidedPhotoFiles(photoFiles);
+  if (videos.length) await processGuidedVideoFiles(videos);
+  guidedStatusText.textContent = langText({
+    en: "Media received. LYRA will use it as visual direction.",
+    es: "Archivo recibido. LYRA lo usará como dirección visual.",
+    fr: "Media recu. LYRA l'utilisera comme direction visuelle.",
+    pt: "Arquivo recebido. A LYRA usara como direcao visual.",
+  });
 }
 
 async function extractPaletteFromDataUrl(dataUrl) {
@@ -5731,7 +5856,7 @@ function syncGuidedStateFromSummary() {
     const key = field.dataset.summaryField;
     if (key === "selectedLanguage") {
       setSelectedLanguage(field.value);
-    } else if (["servicesProducts", "preferredColors", "photoUrls"].includes(key)) {
+    } else if (["servicesProducts", "preferredColors", "photoUrls", "videoUrls"].includes(key)) {
       guidedState[key] = splitCommaOrLines(field.value);
     } else if (key === "contactInfo") {
       guidedState[key] = parseKeyValueLines(field.value);
@@ -5752,7 +5877,7 @@ function mergeGuidedUpdates(updates) {
       const existing = meaningfulOfferItems(guidedState.servicesProducts);
       if (!incoming.length && existing.length) return;
       guidedState.servicesProducts = [...new Set([...existing, ...incoming])];
-    } else if (["servicesProducts", "preferredColors", "photoUrls"].includes(key)) {
+    } else if (["servicesProducts", "preferredColors", "photoUrls", "videoUrls"].includes(key)) {
       guidedState[key] = arrayValue(value);
     } else {
       guidedState[key] = value || guidedState[key];
@@ -5772,6 +5897,7 @@ function isPlaceholderBusinessName(value) {
 function guidedStateForApi() {
   const logoUrl = isCloudSafeUrl(guidedState.logoUrl) ? guidedState.logoUrl : "";
   const photoUrls = arrayValue(guidedState.photoUrls).filter(isCloudSafeUrl);
+  const videoUrls = arrayValue(guidedState.videoUrls).filter(isCloudSafeUrl);
   const aiStudioPlan = refreshAiStudioPlanFromContext();
   const sitePlan = guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan() : null);
   if (sitePlan && aiStudioPlan) sitePlan.aiStudioPlan = aiStudioPlan;
@@ -5789,6 +5915,7 @@ function guidedStateForApi() {
     desiredDomain: guidedState.desiredDomain,
     logoUrl,
     photoUrls,
+    videoUrls,
     logoPalette: arrayValue(guidedState.logoPalette),
     brand: normalizeBrand(guidedState.brand || { logoUrl, extractedColors: arrayValue(guidedState.logoPalette) }),
     designStrategy: {
@@ -5807,7 +5934,7 @@ function guidedStateForApi() {
     qualityRules: DESIGN_QUALITY_RULES,
     selectedLanguage,
     hasLogo: Boolean(guidedState.hasLogo || guidedState.logoUrl),
-    hasPhotos: Boolean(guidedState.hasPhotos || arrayValue(guidedState.photoUrls).length),
+    hasPhotos: Boolean(guidedState.hasPhotos || arrayValue(guidedState.photoUrls).length || arrayValue(guidedState.videoUrls).length),
     salesMode: guidedState.salesMode,
     hasLogoPhotos: guidedState.hasLogoPhotos,
     sectionsPreference: guidedState.sectionsPreference,
@@ -5855,10 +5982,11 @@ function guidedSessionDraftForApi() {
     desiredDomain: guidedState.desiredDomain,
     logoUrl,
     photoUrls: arrayValue(guidedState.photoUrls).filter(isCloudSafeUrl),
+    videoUrls: arrayValue(guidedState.videoUrls).filter(isCloudSafeUrl),
     logoPalette: arrayValue(guidedState.logoPalette),
     selectedLanguage,
     hasLogo: Boolean(guidedState.hasLogo || guidedState.logoUrl),
-    hasPhotos: Boolean(guidedState.hasPhotos || arrayValue(guidedState.photoUrls).length),
+    hasPhotos: Boolean(guidedState.hasPhotos || arrayValue(guidedState.photoUrls).length || arrayValue(guidedState.videoUrls).length),
     salesMode: guidedState.salesMode,
     hasLogoPhotos: guidedState.hasLogoPhotos,
     sectionsPreference: guidedState.sectionsPreference,
@@ -5897,10 +6025,11 @@ function sanitizeClientSessionDraft(raw = {}) {
     desiredDomain: trimmed(source.desiredDomain, 240),
     logoUrl: isCloudSafeUrl(source.logoUrl) ? trimmed(source.logoUrl, 1200) : "",
     photoUrls: cleanList(source.photoUrls).filter(isCloudSafeUrl),
+    videoUrls: cleanList(source.videoUrls).filter(isCloudSafeUrl),
     logoPalette: cleanList(source.logoPalette, 12),
     selectedLanguage: SUPPORTED_LANGUAGES.includes(source.selectedLanguage) ? source.selectedLanguage : selectedLanguage,
     hasLogo: Boolean(source.hasLogo || source.logoUrl),
-    hasPhotos: Boolean(source.hasPhotos || cleanList(source.photoUrls).length),
+    hasPhotos: Boolean(source.hasPhotos || cleanList(source.photoUrls).length || cleanList(source.videoUrls).length),
     salesMode: trimmed(source.salesMode, 160),
     hasLogoPhotos: trimmed(source.hasLogoPhotos, 180),
     sectionsPreference: trimmed(source.sectionsPreference, 600),
@@ -5932,11 +6061,14 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 18000) {
 
 function isCloudSafeUrl(value) {
   const text = String(value || "");
-  return Boolean(text) && !text.startsWith("data:");
+  return Boolean(text) && !text.startsWith("data:") && !text.startsWith("blob:");
 }
 
 function appendChatMessage(role, message, emotion = "neutral") {
   const cleanMessage = role === "assistant" || role === "system" ? sanitizeAssistantMessage(message) : message;
+  if ((role === "assistant" || role === "system") && shouldSuppressAssistantMessage(cleanMessage)) {
+    return;
+  }
   if ((role === "assistant" || role === "system") && cleanMessage) {
     trackAssistantPrompt(cleanMessage);
   }
@@ -5963,6 +6095,27 @@ function appendChatMessage(role, message, emotion = "neutral") {
   }
   guidedChat.appendChild(bubble);
   guidedChat.scrollTop = guidedChat.scrollHeight;
+}
+
+function shouldSuppressAssistantMessage(message) {
+  const text = String(message || "").trim();
+  if (!text) return true;
+  if (/homeServiceHeadline is not a function/i.test(text)) {
+    if (guidedStatusText) {
+      guidedStatusText.textContent = langText({
+        en: "Recovered a stale template error. You can generate again.",
+        es: "Se corrigió un error viejo de plantilla. Ya puedes generar otra vez.",
+        fr: "Une ancienne erreur de template a été corrigée. Vous pouvez regénérer.",
+        pt: "Um erro antigo de template foi corrigido. Você pode gerar novamente.",
+      });
+    }
+    return true;
+  }
+  const recentMessages = [...guidedChat.querySelectorAll(".chat-message.assistant span, .chat-message.system span")]
+    .slice(-5)
+    .map((node) => node.textContent?.trim())
+    .filter(Boolean);
+  return recentMessages.includes(text);
 }
 
 function trackAssistantPrompt(message) {
@@ -7978,7 +8131,13 @@ function improveWebsiteConfig(schema) {
 }
 
 function buildInstantTemplateResult(payload, error, templateSelection) {
-  const schema = buildInstantTemplateSchema(payload, templateSelection);
+  let schema;
+  try {
+    schema = buildInstantTemplateSchema(payload, templateSelection);
+  } catch (templateError) {
+    console.warn("Selected instant template failed; using emergency editable draft.", templateError);
+    schema = buildEmergencyEditableSchema(payload, templateError);
+  }
   return {
     business_id: null,
     site_id: null,
@@ -7987,6 +8146,91 @@ function buildInstantTemplateResult(payload, error, templateSelection) {
     schema,
     used_dev_mock: false,
     error: String(error?.message || error || ""),
+  };
+}
+
+function buildEmergencyEditableSchema(payload = {}, error = null) {
+  const language = payload.selectedLanguage || selectedLanguage || "en";
+  const copy = instantLocaleCopy(language);
+  const name = payload.business_name || copy.newStore || "New website";
+  const products = sanitizePublicProductList(
+    arrayValue(payload.services_products).length ? arrayValue(payload.services_products) : copy.defaultProducts,
+    payload,
+    copy,
+    language,
+    "emergency_editable",
+  );
+  const brand = normalizeBrand(payload.brand || createBrandSystem({
+    extractedColors: payload.logoPalette,
+    preferredColors: payload.preferred_colors,
+    businessName: name,
+    industry: payload.industry,
+    tone: payload.preferred_tone,
+  }));
+  const description = professionalPublicDescription({
+    payload,
+    template: { id: "emergency-editable", category: "business" },
+    catalogType: "editorial_minimal_grid",
+    copy,
+    name,
+    products,
+    language,
+  });
+  return {
+    schema_version: "1.0",
+    site_type: "business_website",
+    business: {
+      name,
+      description,
+      industry: payload.industry || copy.generalBusiness,
+      location: payload.location || "",
+      target_audience: payload.target_audience || "",
+      tone: payload.preferred_tone || copy.defaultTone,
+      selectedLanguage: language,
+    },
+    theme: {
+      colors: brandToThemeColors(brand),
+      fonts: brand.fontPairing,
+      buttons: {
+        primary_label: copy.request || copy.shopNow,
+        secondary_label: copy.contactRequest,
+        background: brand.buttonColor,
+        text: brand.buttonTextColor,
+        radius: brand.borderRadius,
+      },
+      radius: Number.parseInt(brand.borderRadius, 10) || 10,
+      shadow: brand.shadowStyle,
+    },
+    brand,
+    selected_template: {
+      id: "emergency-editable",
+      name: "Emergency editable draft",
+      architecture_locked: false,
+    },
+    layout_mode: {
+      id: "emergency_editable",
+      template_id: "emergency-editable",
+      catalog_type: "editorial_minimal_grid",
+      navigation: { show_header: true, sticky_header: true, show_cart: false },
+    },
+    navigation: [
+      { label: copy.home, page_key: "home" },
+      { label: copy.services || copy.catalog, page_key: "catalog" },
+      { label: copy.contactRequest, page_key: "contact" },
+    ],
+    products_services: products.map((item, index) => ({
+      id: `emergency_${index + 1}`,
+      name: item,
+      description: copy.itemDescription(name),
+      price_type: "quote_only",
+      price_label: copy.askPrice || "",
+      button_label: copy.request || copy.contactRequest,
+      is_active: true,
+      is_featured: index < 3,
+      sort_order: index + 1,
+    })),
+    pages: buildDefaultInstantPages(copy, name, description, payload),
+    fallback_error: String(error?.message || error || ""),
   };
 }
 
@@ -9759,6 +10003,12 @@ function normalizeHomeServiceInstantCopy(input = {}, language = selectedLanguage
 function buildHomeServicesPremiumInstantPages(copy, name, description, payload = {}) {
   copy = normalizeHomeServiceInstantCopy(copy, payload.selectedLanguage || selectedLanguage || "en");
   const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  const homeHeadline = typeof copy.homeServiceHeadline === "function"
+    ? copy.homeServiceHeadline(name)
+    : String(copy.homeServiceHeadline || `${name} handles the job right the first time`);
+  const homeSubheadline = typeof copy.homeServiceSubheadline === "function"
+    ? copy.homeServiceSubheadline(description)
+    : String(copy.homeServiceSubheadline || description || "Trusted local service with clear communication, proof, and an easy quote path.");
   return [
     {
       page_key: "home",
@@ -9771,8 +10021,8 @@ function buildHomeServicesPremiumInstantPages(copy, name, description, payload =
           type: "HomeServiceHero",
           order: 1,
           editable: {
-            headline: copy.homeServiceHeadline(name),
-            subtitle: copy.homeServiceSubheadline(description),
+            headline: homeHeadline,
+            subtitle: homeSubheadline,
             primary_button: copy.freeQuote,
             secondary_button: copy.callNow,
             image_url: heroImage,
@@ -12097,6 +12347,9 @@ async function collectPayload() {
   photoUrls.forEach((url, index) => {
     assets.push({ asset_type: "photo", label: `Photo ${index + 1}`, url });
   });
+  arrayValue(guidedState.videoUrls).filter(isCloudSafeUrl).forEach((url, index) => {
+    assets.push({ asset_type: "video", label: `Video ${index + 1}`, url });
+  });
 
   const logoFile = data.get("logo_file");
   if (logoFile instanceof File && logoFile.size > 0) {
@@ -12105,7 +12358,8 @@ async function collectPayload() {
 
   const photoFiles = data.getAll("photo_files").filter((file) => file instanceof File && file.size > 0);
   for (const [index, file] of photoFiles.entries()) {
-    assets.push({ asset_type: "photo", label: `Uploaded photo ${index + 1}`, url: await uploadAssetOrFallback(file, "photo", `Uploaded photo ${index + 1}`) });
+    const assetType = file.type?.startsWith("video/") ? "video" : "photo";
+    assets.push({ asset_type: assetType, label: `Uploaded ${assetType} ${index + 1}`, url: await uploadAssetOrFallback(file, assetType, `Uploaded ${assetType} ${index + 1}`) });
   }
 
   const sitePlan = guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan(forcedTemplateSelection) : null);
@@ -15368,10 +15622,14 @@ async function uploadAssetOrFallback(file, assetType, label) {
       storageStatus.textContent = "Asset storage unavailable. Using development image fallback.";
     }
   }
+  if (assetType === "video") return "";
   return fileToOptimizedDataUrl(file, assetType);
 }
 
 async function uploadAssetFile(file, assetType, label) {
+  if (assetType === "video" && file.size > 12 * 1024 * 1024) {
+    throw new Error("Video file is too large for direct upload.");
+  }
   const dataUrl = await fileToOptimizedDataUrl(file, assetType);
   const response = await fetch(ASSET_UPLOAD_URL, {
     method: "POST",
