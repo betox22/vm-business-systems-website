@@ -1,0 +1,100 @@
+{
+  "templateId": "mega_marketplace",
+  "securityModel": {
+    "roles": [
+      "admin",
+      "vendor",
+      "customer",
+      "support"
+    ],
+    "ownershipRules": [
+      {
+        "role": "vendor",
+        "rule": "Can create, edit, activate, deactivate, and view only products owned by the same vendor_id."
+      },
+      {
+        "role": "vendor",
+        "rule": "Can view only orders containing order_items assigned to the same vendor_id."
+      },
+      {
+        "role": "customer",
+        "rule": "Can view and manage only carts, orders, addresses, and saved items linked to the same user_id."
+      },
+      {
+        "role": "admin",
+        "rule": "Can manage marketplace-wide settings, vendors, catalog moderation, disputes, and payouts."
+      }
+    ],
+    "mandatoryControls": [
+      "jwt_or_session_authentication",
+      "role_based_access_control",
+      "vendor_id_row_level_checks",
+      "input_validation",
+      "output_encoding",
+      "strict_ai_json_schema_validation",
+      "no_raw_html_from_ai",
+      "no_client_side_secrets",
+      "csrf_protection_for_cookie_sessions",
+      "rate_limiting_for_auth_and_checkout",
+      "idempotency_keys_for_checkout",
+      "transactional_order_creation",
+      "immutable_vendor_ledger_entries",
+      "audit_log_for_admin_and_vendor_mutations",
+      "safe_media_upload_validation",
+      "content_security_policy"
+    ],
+    "checkoutControls": {
+      "cartSplitRequired": true,
+      "splitKey": "vendor_id",
+      "idempotencyRequired": true,
+      "transactionBoundary": "Create parent checkout, child vendor orders, order_items, payment intent reference, and ledger pending entries atomically.",
+      "ledgerRule": "Vendor ledger entries are append-only. Corrections require reversal entries, not mutation."
+    },
+    "mediaControls": {
+      "allowedImageMimeTypes": [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+      ],
+      "allowedVideoMimeTypes": [
+        "video/mp4",
+        "video/webm"
+      ],
+      "maxImageSizeMb": 10,
+      "maxVideoSizeMb": 100,
+      "scanBeforePublish": true,
+      "publicUrlsGeneratedServerSide": true
+    },
+    "aiControls": {
+      "allowedOutputs": [
+        "structured_json",
+        "copy_text",
+        "template_selection",
+        "section_order",
+        "image_search_queries",
+        "palette_tokens"
+      ],
+      "blockedOutputs": [
+        "raw_html",
+        "raw_javascript",
+        "arbitrary_css",
+        "database_credentials",
+        "api_keys",
+        "payment_secrets"
+      ],
+      "validationRequiredBeforeRender": true,
+      "fallbackBehavior": "If AI output fails validation, keep the last valid site schema and ask the user for one clarifying detail."
+    }
+  },
+  "dataIsolation": {
+    "tenantKey": "business_id",
+    "vendorKey": "vendor_id",
+    "customerKey": "user_id",
+    "rules": [
+      "Every vendor-owned record must include vendor_id.",
+      "Every business/site-owned record must include business_id.",
+      "Public storefront reads can only expose active and published records.",
+      "Admin writes must be audit logged with actor_user_id and role."
+    ]
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "id": "mega_marketplace",
+  "name": "Mega Marketplace",
+  "version": "0.1.0",
+  "runtimeEnabled": false,
+  "phaseStatus": "architecture_only",
+  "category": "marketplace",
+  "legalNaming": {
+    "thirdPartyBrandReferencesAllowed": false,
+    "blockedPublicTerms": [
+      "third_party_marketplace_brand_names",
+      "third_party_store_builder_brand_names"
+    ],
+    "internalDirection": "High-density multi-vendor retail marketplace"
+  },
+  "bestFor": [
+    "broad_catalog",
+    "multi_vendor",
+    "search_first_shopping",
+    "deals_and_categories",
+    "online_checkout",
+    "customer_accounts",
+    "vendor_dashboard"
+  ],
+  "notFor": [
+    "single_product_showcase",
+    "restaurant_menu_only",
+    "appointment_booking_only",
+    "simple_company_brochure",
+    "portfolio_only"
+  ],
+  "requiredPages": [
+    {
+      "id": "home",
+      "purpose": "Search-first marketplace landing page with departments, deals, product rails, and trust signals."
+    },
+    {
+      "id": "catalog",
+      "purpose": "Filterable product listing with categories, search, sorting, price filters, ratings, and vendor/product cards."
+    },
+    {
+      "id": "product_detail",
+      "purpose": "Product detail page with gallery, price, vendor, shipping, variants, reviews, and add-to-cart."
+    },
+    {
+      "id": "cart",
+      "purpose": "Multi-vendor cart grouped by vendor, showing shipping and checkout readiness."
+    },
+    {
+      "id": "checkout",
+      "purpose": "Secure checkout flow that can split one checkout into multiple vendor orders."
+    },
+    {
+      "id": "customer_account",
+      "purpose": "Customer orders, addresses, profile, saved items, and support."
+    },
+    {
+      "id": "vendor_dashboard",
+      "purpose": "Vendor product management, order management, sales summary, and payout status."
+    }
+  ],
+  "requiredSections": [
+    "marketplace_header",
+    "global_search_bar",
+    "department_navigation",
+    "hero_deal_band",
+    "category_tiles",
+    "deal_rail",
+    "recommended_product_grid",
+    "vendor_spotlight",
+    "trust_and_delivery_strip",
+    "newsletter_or_account_cta",
+    "marketplace_footer"
+  ],
+  "dataContracts": {
+    "productCard": {
+      "required": [
+        "id",
+        "vendorId",
+        "name",
+        "category",
+        "price",
+        "currency",
+        "rating",
+        "reviewCount",
+        "imageUrl",
+        "inventoryStatus",
+        "shippingBadge"
+      ]
+    },
+    "vendor": {
+      "required": [
+        "id",
+        "displayName",
+        "status",
+        "rating",
+        "fulfillmentPolicy"
+      ]
+    },
+    "cartGroup": {
+      "required": [
+        "vendorId",
+        "items",
+        "subtotal",
+        "shippingEstimate",
+        "checkoutEligible"
+      ]
+    },
+    "order": {
+      "required": [
+        "id",
+        "customerId",
+        "orderNumber",
+        "status",
+        "total",
+        "vendorSplits"
+      ]
+    },
+    "vendorLedgerEntry": {
+      "required": [
+        "id",
+        "vendorId",
+        "orderId",
+        "grossAmount",
+        "commissionAmount",
+        "netAmount",
+        "status"
+      ]
+    }
+  },
+  "aiUsageRules": [
+    "AI may choose copy, ordering, category labels, product descriptions, and visual tone.",
+    "AI must not invent unsupported component types.",
+    "AI must not output raw HTML, raw JavaScript, or arbitrary CSS.",
+    "AI must produce structured JSON that conforms to the template data contracts.",
+    "AI must preserve the selected template family unless the user explicitly asks to change it.",
+    "AI must adapt the marketplace to the client business instead of pasting client notes directly into the page."
+  ],
+  "securityControlsRef": "./contracts/security-controls.json"
+}
