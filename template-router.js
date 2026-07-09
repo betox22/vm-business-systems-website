@@ -4,6 +4,7 @@
   const TEMPLATE_ID_ALIASES = {
     "marketplace-style": "mega-marketplace",
     "luxury-product-store": "apple-premium-product",
+    "premium-product-showcase": "apple-premium-product",
     "appointment-booking": "booking-appointment-pro",
     "bold-fashion-store": "fashion-drop-pro",
     "local-business-pro": "local-services-pro-plus",

@@ -916,12 +916,12 @@ button {
   background: linear-gradient(135deg, #fff2df, #d97706);
 }
 
-.apple-template {
+.premium-product-template {
   background: #f5f5f7;
   color: #1d1d1f;
 }
 
-.apple-template .site-nav {
+.premium-product-template .site-nav {
   justify-content: center;
   gap: 34px;
   border-bottom: 1px solid rgba(29, 29, 31, 0.08);
@@ -929,13 +929,13 @@ button {
   backdrop-filter: blur(18px);
 }
 
-.apple-template .site-nav a,
-.apple-hero a {
+.premium-product-template .site-nav a,
+.product-showcase-hero a {
   background: #0071e3;
   color: #fff;
 }
 
-.apple-hero {
+.product-showcase-hero {
   position: relative;
   min-height: 760px;
   display: grid;
@@ -946,12 +946,12 @@ button {
   overflow: hidden;
 }
 
-.apple-hero span {
+.product-showcase-hero span {
   color: #0071e3;
   font-weight: 900;
 }
 
-.apple-hero h2 {
+.product-showcase-hero h2 {
   max-width: 860px;
   margin: 0;
   font-size: clamp(58px, 10vw, 138px);
@@ -961,7 +961,7 @@ button {
   z-index: 2;
 }
 
-.apple-hero p {
+.product-showcase-hero p {
   max-width: 620px;
   margin: 0;
   color: #6e6e73;
@@ -971,7 +971,7 @@ button {
   z-index: 2;
 }
 
-.apple-hero a {
+.product-showcase-hero a {
   position: relative;
   z-index: 3;
 }
@@ -1032,14 +1032,14 @@ button {
   filter: blur(28px);
 }
 
-.apple-specs {
+.product-showcase-specs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1px;
   background: rgba(29, 29, 31, 0.08);
 }
 
-.apple-specs article {
+.product-showcase-specs article {
   min-height: 160px;
   display: grid;
   place-items: center;
@@ -1047,16 +1047,16 @@ button {
   text-align: center;
 }
 
-.apple-specs strong {
+.product-showcase-specs strong {
   display: block;
   font-size: 46px;
 }
 
-.apple-specs span {
+.product-showcase-specs span {
   color: #6e6e73;
 }
 
-.apple-feature {
+.product-showcase-feature {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 30px;
@@ -1064,13 +1064,13 @@ button {
   padding: 54px;
 }
 
-.apple-feature > div:first-child {
+.product-showcase-feature > div:first-child {
   min-height: 280px;
   border-radius: 38px;
   background: linear-gradient(135deg, #111827, #dbeafe);
 }
 
-.apple-feature h3 {
+.product-showcase-feature h3 {
   margin: 8px 0 0;
   font-size: clamp(34px, 5vw, 68px);
   line-height: 0.92;
@@ -1295,7 +1295,7 @@ button {
   color: #667085;
 }
 
-.ebay-template {
+.listing-marketplace-template {
   background: #f7f7fb;
   color: #172033;
 }
@@ -1559,7 +1559,7 @@ button {
   .proof-band,
   .booking-hero,
   .booking-layout,
-  .apple-feature,
+  .product-showcase-feature,
   .market-nav,
   .market-layout,
   .market-hero,
@@ -1590,7 +1590,7 @@ button {
 
   .service-grid,
   .proof-band,
-  .apple-specs,
+  .product-showcase-specs,
   .market-grid {
     grid-template-columns: 1fr;
   }
