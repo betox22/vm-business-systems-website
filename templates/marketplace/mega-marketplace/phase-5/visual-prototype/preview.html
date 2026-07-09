@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mega Marketplace Visual Prototype</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="marketplace-shell">
+      <header class="marketplace-header">
+        <button class="icon-button menu-button" type="button" aria-label="Open departments">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <button class="brand" type="button" data-route="home" aria-label="Go to home">
+          <span class="brand-mark">K</span>
+          <span class="brand-copy">
+            <strong>KREATON</strong>
+            <small>Mega Marketplace</small>
+          </span>
+        </button>
+
+        <form class="search-shell" id="searchForm">
+          <select aria-label="Department">
+            <option>All departments</option>
+            <option>Electronics</option>
+            <option>Home</option>
+            <option>Fashion</option>
+            <option>Tools</option>
+          </select>
+          <input id="searchInput" type="search" placeholder="Search products, brands, vendors..." />
+          <button type="submit" aria-label="Search products">Search</button>
+        </form>
+
+        <nav class="header-actions" aria-label="Marketplace actions">
+          <button type="button" data-route="catalog"><span class="nav-icon nav-icon-deals"></span>Deals</button>
+          <button type="button" data-route="catalog"><span class="nav-icon nav-icon-grid"></span>Categories</button>
+          <button type="button" data-route="cart" class="cart-button">
+            <span class="nav-icon nav-icon-cart"></span>Cart <span id="cartCount">0</span>
+          </button>
+        </nav>
+      </header>
+
+      <main id="app" class="app-canvas" aria-live="polite"></main>
+
+      <footer class="marketplace-footer">
+        <div>
+          <strong>KREATON Mega Marketplace</strong>
+          <span>Broad catalog commerce with vendor-aware checkout.</span>
+        </div>
+        <div class="footer-links">
+          <button type="button" data-route="home">Home</button>
+          <button type="button" data-route="catalog">Catalog</button>
+          <button type="button" data-route="cart">Cart</button>
+          <button type="button" data-route="checkout">Checkout</button>
+        </div>
+      </footer>
+    </div>
+
+    <script src="./prototype.js"></script>
+  </body>
+</html>

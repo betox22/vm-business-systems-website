@@ -1,0 +1,68 @@
+{
+  "templateId": "mega_marketplace",
+  "phase": "phase_5_visual_prototype",
+  "status": "draft",
+  "purpose": "Rules for how Lyra should adapt this visual prototype without inventing a random layout.",
+  "routingIntent": {
+    "bestFor": [
+      "large catalogs",
+      "multi-category online stores",
+      "multi-vendor marketplaces",
+      "deal-heavy storefronts",
+      "businesses selling unrelated or broad product types"
+    ],
+    "avoidFor": [
+      "single premium product",
+      "service-only company website",
+      "restaurant menu only",
+      "appointment booking only",
+      "small portfolio site"
+    ]
+  },
+  "editableSlots": {
+    "brand": [
+      "businessName",
+      "logo",
+      "primaryColor",
+      "accentColor"
+    ],
+    "commerce": [
+      "departments",
+      "categoryLabels",
+      "featuredProducts",
+      "dealProducts",
+      "vendorBadges",
+      "shippingBadges"
+    ],
+    "copy": [
+      "heroHeadline",
+      "heroSubheadline",
+      "sectionTitles",
+      "trustMessages",
+      "productDescriptions"
+    ],
+    "media": [
+      "productImages",
+      "categoryImages",
+      "campaignVisuals"
+    ]
+  },
+  "lockedStructure": [
+    "MarketplaceHeader",
+    "SearchBar",
+    "DepartmentGrid",
+    "FeaturedDealsRail",
+    "ProductGrid",
+    "ProductDetail",
+    "VendorGroupedCart",
+    "QuoteFirstCheckout"
+  ],
+  "generationRules": [
+    "Lyra may rewrite copy but must not paste raw intake notes into the page.",
+    "Lyra may adapt colors but must keep contrast accessible.",
+    "Lyra must preserve search-first marketplace structure.",
+    "Lyra must show vendor grouping in cart and checkout.",
+    "Lyra must not invent final totals, shipping guarantees, reviews, or vendor verification.",
+    "Lyra should route this template when the user describes many products, broad categories, marketplace behavior, or a store similar in scale to a large catalog."
+  ]
+}
