@@ -124,6 +124,7 @@ const departments = [
 
 const cart = [];
 let currentRoute = "home";
+let selectedProductId = products[0].id;
 
 const app = document.querySelector("#app");
 const cartCount = document.querySelector("#cartCount");
@@ -362,43 +363,97 @@ function renderCatalog() {
 }
 
 function renderProduct() {
-  const product = products[0];
+  const product = products.find((item) => item.id === selectedProductId) || products[0];
+  const relatedProducts = products.filter((item) => item.category === product.category && item.id !== product.id).slice(0, 3);
   return `
-    <section class="product-detail">
-      <div class="gallery-panel">
-        <div class="main-product-visual"><span></span></div>
-        <div class="thumbnail-row">
-          <button class="active" type="button"></button>
-          <button type="button"></button>
-          <button type="button"></button>
-          <button type="button"></button>
-          <button type="button"></button>
-        </div>
+    <section class="product-page">
+      <div class="product-breadcrumb">
+        <button type="button" data-route="catalog">Catalog</button>
+        <span>/</span>
+        <button type="button" data-route="catalog">${product.category}</button>
+        <span>/</span>
+        <strong>${product.name}</strong>
       </div>
-      <div class="product-info-panel">
-        <span class="eyebrow">Verified vendor</span>
-        <h1>${product.name}</h1>
-        <div class="rating">★★★★★ ${product.rating} · ${product.reviews} reviews</div>
-        <p>${product.desc} Designed for a broad marketplace catalog where users can compare, review vendor trust, and buy with confidence.</p>
-        <h3>Choose color</h3>
-        <div class="option-grid">
-          <button class="active" type="button">Cyan</button>
-          <button type="button">Black</button>
-          <button type="button">Violet</button>
+
+      <section class="product-detail">
+        <div class="gallery-panel product-gallery-panel">
+          <div class="main-product-visual product-visual-stage">
+            ${productVisual(product, "detail-object")}
+            <span class="visual-shadow"></span>
+          </div>
+          <div class="thumbnail-row">
+            ${products.slice(0, 5).map((item) => `
+              <button class="${item.id === product.id ? "active" : ""}" type="button" data-route="product" data-product="${item.id}" aria-label="Preview ${item.name}">
+                ${productVisual(item, "thumb-object")}
+              </button>
+            `).join("")}
+          </div>
+          <div class="product-assurance-row">
+            <span><b></b> Verified seller</span>
+            <span><b></b> Protected checkout</span>
+            <span><b></b> Return eligible</span>
+          </div>
         </div>
-        <h3>Marketplace protections</h3>
-        <div class="status-note">Backend quote checks price, stock, shipping, and vendor split before checkout.</div>
-      </div>
-      <aside class="product-buy-box">
-        <span class="price">${money(product.price)}</span>
-        <p class="shipping">${product.shipping} · Free returns on eligible vendors</p>
-        <div class="qty-row">
-          <strong>Quantity</strong>
-          <select><option>1</option><option>2</option><option>3</option></select>
+
+        <div class="product-info-panel product-story-panel">
+          <span class="eyebrow">${product.badge} · ${product.category}</span>
+          <h1>${product.name}</h1>
+          <div class="rating">★★★★★ ${product.rating} · ${product.reviews.toLocaleString()} reviews</div>
+          <p>${product.desc} Compare seller reputation, delivery speed, returns and final quote before checkout.</p>
+
+          <div class="product-highlight-grid">
+            <article><strong>Ships fast</strong><span>${product.shipping} from verified vendor inventory.</span></article>
+            <article><strong>Quote protected</strong><span>Backend validates price, stock, tax and vendor split.</span></article>
+            <article><strong>Buyer trust</strong><span>Ratings, returns and seller status remain visible.</span></article>
+          </div>
+
+          <h3>Choose color</h3>
+          <div class="option-grid">
+            <button class="active" type="button">Cyber cyan</button>
+            <button type="button">Graphite</button>
+            <button type="button">Violet</button>
+          </div>
+
+          <div class="seller-card">
+            <div class="seller-avatar">${product.vendor.slice(0, 1)}</div>
+            <div>
+              <strong>${product.vendor}</strong>
+              <span>Verified marketplace seller · 98% on-time fulfillment</span>
+            </div>
+            <button type="button">View seller</button>
+          </div>
         </div>
-        <button class="primary-button" type="button" data-add="${product.id}">Add to cart</button>
-        <button class="ghost-button" type="button" data-route="cart">View cart</button>
-      </aside>
+
+        <aside class="product-buy-box product-purchase-card">
+          <div class="purchase-topline">
+            <span class="price">${money(product.price)}</span>
+            <span class="badge gold">${product.shipping}</span>
+          </div>
+          <p class="shipping">Free returns on eligible vendors. Final total is confirmed before payment.</p>
+          <div class="delivery-stack">
+            <div><strong>Arrives soon</strong><span>Estimated 2-4 business days</span></div>
+            <div><strong>Secure checkout</strong><span>Payment is captured after backend quote approval.</span></div>
+          </div>
+          <div class="qty-row">
+            <strong>Quantity</strong>
+            <select><option>1</option><option>2</option><option>3</option></select>
+          </div>
+          <button class="primary-button" type="button" data-add="${product.id}">Add to cart</button>
+          <button class="ghost-button" type="button" data-route="cart">View cart</button>
+        </aside>
+      </section>
+
+      <section class="related-products">
+        <div class="section-head">
+          <div>
+            <h2>More from ${product.category}</h2>
+            <p>Comparable products keep the buyer in the marketplace flow.</p>
+          </div>
+        </div>
+        <div class="product-grid related-grid">
+          ${(relatedProducts.length ? relatedProducts : products.slice(1, 4)).map((item) => productCard(item, "related-product-card")).join("")}
+        </div>
+      </section>
     </section>
   `;
 }
@@ -416,56 +471,88 @@ function cartGroups() {
 function renderCart() {
   const groups = cartGroups();
   const total = groups.flatMap(([, items]) => items).reduce((sum, item) => sum + item.price, 0);
+  const itemCount = groups.flatMap(([, items]) => items).length;
   return `
-    <div class="section-head">
-      <div>
-        <h2>Cart grouped by vendor</h2>
-        <p>Vendor grouping is visible before checkout.</p>
+    <section class="cart-page">
+      <div class="cart-hero">
+        <div>
+          <span class="catalog-kicker">Protected cart</span>
+          <h2>Review ${itemCount} item${itemCount === 1 ? "" : "s"} before checkout.</h2>
+          <p>One customer checkout can split into multiple vendor orders behind the scenes.</p>
+        </div>
+        <button class="ghost-button" type="button" data-route="catalog">Continue shopping</button>
       </div>
-      <button class="ghost-button" type="button" data-route="catalog">Continue shopping</button>
-    </div>
-    <section class="cart-layout">
+
+      <section class="cart-layout">
       <div>
         ${groups.map(([vendor, items]) => `
           <article class="cart-group">
             <div class="cart-group-header">
-              <strong>${vendor}</strong>
-              <span class="badge">vendor order preview</span>
+              <div>
+                <strong>${vendor}</strong>
+                <span>${items.length} item${items.length === 1 ? "" : "s"} · separate vendor order</span>
+              </div>
+              <span class="badge">verified seller</span>
             </div>
             ${items.map((item) => `
               <div class="cart-item">
-                <div class="cart-thumb"></div>
+                <div class="cart-thumb">${productVisual(item, "cart-object")}</div>
                 <div>
                   <h3>${item.name}</h3>
-                  <p>${item.category} · ${item.shipping}</p>
+                  <p>${item.category} · ${item.shipping} · ${item.badge}</p>
+                  <div class="cart-actions">
+                    <button type="button">Save for later</button>
+                    <button type="button">Remove</button>
+                  </div>
                 </div>
-                <strong>${money(item.price)}</strong>
+                <div class="cart-price-stack">
+                  <strong>${money(item.price)}</strong>
+                  <span>Qty 1</span>
+                </div>
               </div>
             `).join("")}
           </article>
         `).join("")}
       </div>
-      <aside class="summary-panel">
+      <aside class="summary-panel checkout-summary-card">
         <h3>Backend quote summary</h3>
+        <div class="summary-note">Totals are shown for preview. Production checkout re-quotes every line item before payment.</div>
         <div class="summary-line"><span>Items</span><strong>${money(total)}</strong></div>
         <div class="summary-line"><span>Estimated shipping</span><strong>${money(9.99)}</strong></div>
         <div class="summary-line"><span>Tax estimate</span><strong>${money(total * 0.07)}</strong></div>
         <div class="summary-line total"><span>Total</span><strong>${money(total + 9.99 + total * 0.07)}</strong></div>
         <button class="primary-button" type="button" data-route="checkout">Proceed to checkout</button>
+        <div class="secure-list">
+          <span><b></b> Payment isolated</span>
+          <span><b></b> Vendor split calculated server-side</span>
+          <span><b></b> Idempotent order creation</span>
+        </div>
       </aside>
+    </section>
     </section>
   `;
 }
 
 function renderCheckout() {
+  const groups = cartGroups();
+  const total = groups.flatMap(([, items]) => items).reduce((sum, item) => sum + item.price, 0);
+  const finalTotal = total + 9.99 + total * 0.07;
   return `
-    <div class="section-head">
-      <div>
-        <h2>Checkout</h2>
-        <p>One customer checkout, multiple vendor orders behind the scenes.</p>
+    <section class="checkout-page">
+      <div class="checkout-hero">
+        <div>
+          <span class="catalog-kicker">Secure checkout</span>
+          <h2>One payment, clean vendor split.</h2>
+          <p>The storefront feels simple for the buyer while the backend prepares separate vendor orders and payout entries.</p>
+        </div>
+        <div class="checkout-meter">
+          <span>Quote status</span>
+          <strong>Ready</strong>
+          <small>Fresh quote required before capture</small>
+        </div>
       </div>
-    </div>
-    <section class="checkout-layout">
+
+      <section class="checkout-layout">
       <div>
         <article class="checkout-step">
           <div class="checkout-step-header"><strong>1. Contact and shipping</strong><span class="badge">required</span></div>
@@ -479,25 +566,42 @@ function renderCheckout() {
         <article class="checkout-step">
           <div class="checkout-step-header"><strong>2. Payment</strong><span class="badge">provider isolated</span></div>
           <div class="checkout-step-body">
+            <div class="payment-options">
+              <button class="active" type="button"><strong>Card</strong><span>Encrypted provider field</span></button>
+              <button type="button"><strong>Wallet</strong><span>Fast buyer checkout</span></button>
+              <button type="button"><strong>Invoice</strong><span>B2B eligible vendors</span></button>
+            </div>
             <div class="status-note">Payment UI remains isolated. Place order requires an Idempotency-Key and fresh backend quote.</div>
           </div>
         </article>
         <article class="checkout-step">
           <div class="checkout-step-header"><strong>3. Review vendor split</strong><span class="badge">quote ready</span></div>
           <div class="checkout-step-body">
-            ${cartGroups().map(([vendor, items]) => `
-              <div class="summary-line"><span>${vendor} · ${items.length} item(s)</span><strong>${money(items.reduce((s, p) => s + p.price, 0))}</strong></div>
+            ${groups.map(([vendor, items]) => `
+              <div class="vendor-split-line">
+                <div><strong>${vendor}</strong><span>${items.length} item${items.length === 1 ? "" : "s"} · payout ledger pending</span></div>
+                <strong>${money(items.reduce((s, p) => s + p.price, 0))}</strong>
+              </div>
             `).join("")}
           </div>
         </article>
       </div>
-      <aside class="summary-panel">
+      <aside class="summary-panel checkout-summary-card">
         <h3>Place order</h3>
+        <div class="summary-line"><span>Items</span><strong>${money(total)}</strong></div>
+        <div class="summary-line"><span>Shipping</span><strong>${money(9.99)}</strong></div>
+        <div class="summary-line"><span>Tax</span><strong>${money(total * 0.07)}</strong></div>
         <div class="summary-line"><span>Backend quote</span><strong>ready</strong></div>
         <div class="summary-line"><span>Idempotency</span><strong>required</strong></div>
-        <div class="summary-line total"><span>Total</span><strong>$138.41</strong></div>
+        <div class="summary-line total"><span>Total</span><strong>${money(finalTotal)}</strong></div>
         <button class="primary-button" type="button">Place order securely</button>
+        <div class="secure-list">
+          <span><b></b> No double-charge on refresh</span>
+          <span><b></b> Inventory lock before payment</span>
+          <span><b></b> Vendor ledger entries after capture</span>
+        </div>
       </aside>
+    </section>
     </section>
   `;
 }
@@ -525,6 +629,7 @@ function addToCart(productId) {
 document.addEventListener("click", (event) => {
   const routeButton = event.target.closest("[data-route]");
   if (routeButton) {
+    if (routeButton.dataset.product) selectedProductId = routeButton.dataset.product;
     setRoute(routeButton.dataset.route);
     return;
   }
