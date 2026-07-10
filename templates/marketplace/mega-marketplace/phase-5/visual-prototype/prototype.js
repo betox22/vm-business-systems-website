@@ -178,6 +178,7 @@ function productCard(product, extraClass = "") {
 function renderHome() {
   const heroProducts = [products[0], products[3], products[7]];
   const dealProducts = [products[1], products[4], products[6], products[5]];
+  const promoProducts = [products[0], products[2], products[4]];
   return `
     <section class="trust-strip" aria-label="Marketplace trust signals">
       <span><b></b> Protected checkout</span>
@@ -189,9 +190,14 @@ function renderHome() {
     <section class="commerce-hero">
       <div class="hero-main">
         <div class="hero-copy">
-          <span class="eyebrow">One cart. Many trusted sellers.</span>
-          <h1>Find sharper deals across every department.</h1>
-          <p>Fast shipping picks, verified vendors, protected checkout, and fresh drops organized for quick discovery.</p>
+          <span class="eyebrow">Daily deals from verified sellers</span>
+          <h1>Shop smarter across every department.</h1>
+          <p>Compare prices, discover new drops, and check out once with protected payments across multiple vendors.</p>
+          <div class="hero-value-row" aria-label="Buyer benefits">
+            <span>Fast shipping picks</span>
+            <span>Buyer protection</span>
+            <span>Verified vendors</span>
+          </div>
           <div class="hero-actions">
             <button class="primary-button" type="button" data-route="catalog">Shop marketplace</button>
             <button class="secondary-button" type="button" data-route="catalog">Explore categories</button>
@@ -210,12 +216,12 @@ function renderHome() {
       <aside class="hero-side">
         <div class="side-card offer-board">
           <div class="side-card-title">
-            <h3>Flash picks</h3>
+            <h3>Live deals</h3>
             <button type="button" data-route="catalog">View all</button>
           </div>
           <div class="mini-deal-grid">
             ${dealProducts.map((product) => `
-              <button class="mini-deal" type="button" data-route="product">
+              <button class="mini-deal" type="button" data-route="product" data-product="${product.id}">
                 ${productVisual(product, "mini-object")}
                 <span>${product.name}</span>
                 <strong>${money(product.price)}</strong>
@@ -223,12 +229,22 @@ function renderHome() {
             `).join("")}
           </div>
         </div>
-        <div class="side-card market-status">
-          <h3>Today in stock</h3>
-          <div class="metric-row">
-            <div class="metric"><strong>48K</strong><span>items</span></div>
-            <div class="metric"><strong>860</strong><span>vendors</span></div>
-            <div class="metric"><strong>4.8</strong><span>avg rating</span></div>
+        <div class="side-card promo-board">
+          <div class="side-card-title">
+            <h3>Trending now</h3>
+            <button type="button" data-route="catalog">Open</button>
+          </div>
+          <div class="promo-stack">
+            ${promoProducts.map((product) => `
+              <button class="promo-row" type="button" data-route="product" data-product="${product.id}">
+                ${productVisual(product, "promo-object")}
+                <span>
+                  <strong>${product.name}</strong>
+                  <small>${product.badge} · ${product.shipping}</small>
+                </span>
+                <b>${money(product.price)}</b>
+              </button>
+            `).join("")}
           </div>
         </div>
       </aside>
@@ -252,6 +268,7 @@ function renderHome() {
             </span>
             <strong>${name}</strong>
             <span>${desc} · ${count}</span>
+            <em>Shop now</em>
           </button>
         `;
         }).join("")}
@@ -262,7 +279,7 @@ function renderHome() {
       <div class="section-head">
         <div>
           <h2>Featured deals</h2>
-          <p>Cards are consistent, scannable, and ready for real catalog data.</p>
+          <p>High-signal cards for fast comparison, price checks, and cart-ready decisions.</p>
         </div>
       </div>
       <div class="product-grid">
