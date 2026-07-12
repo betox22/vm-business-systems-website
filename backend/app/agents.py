@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from .models import AgentResult, ProjectState, WebsiteType
 
@@ -188,6 +188,166 @@ def suggests_multi_vendor_marketplace(text: str) -> bool:
     ))
 
 
+def unsplash_seed_url(keyword: str) -> str:
+    clean = re.sub(r"[^a-z0-9]+", "-", (keyword or "premium-product").lower()).strip("-")
+    return f"https://images.unsplash.com/featured/600x600/?{clean or 'premium-product'}"
+
+
+def infer_seed_profile(text: str) -> str:
+    text = normalize_text(text)
+    if suggests_broad_marketplace(text) or re.search(r"\b(tipo amazon|como amazon|mega tienda|catalogo variado|productos variados|muchas categorias|todo tipo|de todo)\b", text):
+        return "marketplace"
+    if re.search(r"\b(restaurante|restaurant|menu|food|comida|pizza|bar|bakery)\b", text):
+        return "restaurant"
+    if re.search(r"\b(cafe|coffee|espresso|cold brew)\b", text):
+        return "coffee"
+    if suggests_jewelry_or_handmade_accessories(text):
+        return "jewelry"
+    if re.search(r"\b(parachoques|bumper|4x4|off road|off-road|repuestos|automotriz|camioneta|truck|auto accessories)\b", text):
+        return "auto"
+    if re.search(r"\b(ropa|fashion|moda|streetwear|sneaker|zapato|camiseta|clothing|boutique)\b", text):
+        return "fashion"
+    if re.search(r"\b(beauty|belleza|skincare|cosmet|maquillaje|spa)\b", text):
+        return "beauty"
+    if re.search(r"\b(decor|hogar|home|furniture|muebles|interior|lampara|casa)\b", text):
+        return "home"
+    if re.search(r"\b(tech|tecnologia|gadget|electron|gaming|usb|phone|laptop|anime|juguete|toy|curioso|raro|inusual|cyberpunk)\b", text):
+        return "tech"
+    return "default"
+
+
+SEED_PRODUCT_LIBRARY: Dict[str, List[Dict[str, Any]]] = {
+    "jewelry": [
+        {"name": {"es": "Collar Aurora de Cristal", "en": "Aurora Crystal Necklace"}, "category": {"es": "Collares", "en": "Necklaces"}, "price": 42.0, "keyword": "handmade-crystal-necklace", "description": {"es": "Collar en capas con brillo delicado para uso diario y looks especiales. Ligero, listo para regalo y facil de combinar.", "en": "A luminous layered necklace designed for everyday shine and special looks. Lightweight, gift-ready, and easy to combine."}},
+        {"name": {"es": "Pulsera Luna con Dijes Perla", "en": "Luna Pearl Charm Bracelet"}, "category": {"es": "Pulseras", "en": "Bracelets"}, "price": 34.5, "keyword": "pearl-charm-bracelet", "description": {"es": "Pulsera pulida con detalles tipo perla y ajuste comodo. Refina cualquier outfit sin sentirse demasiado formal.", "en": "A polished bracelet with soft pearl accents and adjustable comfort. It refines any outfit without feeling too formal."}},
+        {"name": {"es": "Aretes Noir Statement", "en": "Noir Statement Earrings"}, "category": {"es": "Aretes", "en": "Earrings"}, "price": 29.99, "keyword": "statement-earrings", "description": {"es": "Aretes llamativos con acabado boutique para salidas, eventos y fotografia de producto de alto impacto.", "en": "Bold boutique-style earrings for nights out, events, and high-impact product photography."}},
+        {"name": {"es": "Set de Anillos Sol Minimal", "en": "Sol Minimal Ring Set"}, "category": {"es": "Anillos", "en": "Rings"}, "price": 26.0, "keyword": "minimal-ring-set", "description": {"es": "Set de anillos apilables con acabado limpio. Se puede usar por separado o como combinacion completa.", "en": "A stackable ring set with a clean finish. Wear one piece alone or combine the full set."}},
+        {"name": {"es": "Caja Regalo Celeste de Bisuteria", "en": "Celeste Jewelry Gift Box"}, "category": {"es": "Sets de regalo", "en": "Gift sets"}, "price": 58.0, "keyword": "jewelry-gift-box", "description": {"es": "Set coordinado listo para regalar con presentacion premium. Perfecto para fechas especiales y compras rapidas online.", "en": "A coordinated gift-ready set with premium presentation. Perfect for special dates and fast online gifting."}},
+        {"name": {"es": "Charm Muse con Inicial Personalizada", "en": "Muse Custom Initial Charm"}, "category": {"es": "Piezas personalizadas", "en": "Custom pieces"}, "price": 21.5, "keyword": "custom-initial-charm", "description": {"es": "Charm personal para cadenas, pulseras o sets de regalo. Pequeno, memorable e ideal para recompra.", "en": "A personal charm for chains, bracelets, or gift sets. Small, memorable, and ideal for repeat purchases."}},
+    ],
+    "fashion": [
+        {"name": {"es": "Chaqueta Street NeoFlex", "en": "NeoFlex Street Jacket"}, "category": {"es": "Abrigos", "en": "Outerwear"}, "price": 79.0, "keyword": "streetwear-jacket", "description": {"es": "Chaqueta ligera con energia urbana y comodidad diaria. Pieza protagonista para drops, combos y redes.", "en": "A lightweight jacket with urban energy and everyday comfort. A hero piece for drops, bundles, and social content."}},
+        {"name": {"es": "Camiseta Grafica Core Oversized", "en": "Core Oversized Graphic Tee"}, "category": {"es": "Camisetas", "en": "T-shirts"}, "price": 32.0, "keyword": "oversized-graphic-tshirt", "description": {"es": "Camiseta oversized suave con presencia grafica fuerte. Facil de combinar y lista para drops por temporada.", "en": "A soft oversized tee with a strong graphic presence. Easy to style and ready for seasonal drops."}},
+        {"name": {"es": "Bolso Cruzado Pulse Utility", "en": "Pulse Utility Crossbody"}, "category": {"es": "Accesorios", "en": "Accessories"}, "price": 46.5, "keyword": "utility-crossbody-bag", "description": {"es": "Bolso compacto para lo esencial con perfil moderno. Complementa outfits diarios sin perder utilidad.", "en": "Compact storage for essentials with a modern profile. It completes daily outfits without losing utility."}},
+        {"name": {"es": "Jean Cargo Apex", "en": "Apex Cargo Denim"}, "category": {"es": "Denim", "en": "Denim"}, "price": 68.0, "keyword": "cargo-denim-jeans", "description": {"es": "Denim cargo estructurado con detalles utilitarios. Candidato a best seller para clientes que quieren estilo y funcion.", "en": "Structured cargo denim with utility details. A best-seller candidate for customers who want style and function."}},
+        {"name": {"es": "Sneaker Orbit Low", "en": "Orbit Sneaker Low"}, "category": {"es": "Calzado", "en": "Footwear"}, "price": 89.0, "keyword": "modern-sneakers", "description": {"es": "Sneaker versatil con perfil limpio para movimiento diario. Completa looks casuales, streetwear y de viaje.", "en": "A versatile sneaker with a crisp profile for daily movement. It anchors casual, streetwear, and travel looks."}},
+        {"name": {"es": "Gorra Nova Drop", "en": "Nova Drop Cap"}, "category": {"es": "Accesorios", "en": "Accessories"}, "price": 24.0, "keyword": "fashion-cap", "description": {"es": "Gorra de temporada con acabado limpio y facil de vender como complemento de carrito.", "en": "A seasonal cap with a clean finish and easy cart add-on potential."}},
+    ],
+    "auto": [
+        {"name": {"es": "Parachoques Frontal TrailGuard 4x4", "en": "TrailGuard 4x4 Front Bumper"}, "category": {"es": "Parachoques", "en": "Bumpers"}, "price": 649.0, "keyword": "off-road-front-bumper", "description": {"es": "Proteccion frontal reforzada para camionetas 4x4, rutas off-road y estilo agresivo.", "en": "Heavy-duty front protection for 4x4 trucks, trail routes, and aggressive styling."}},
+        {"name": {"es": "Kit Protector RaptorLine Skid Plate", "en": "RaptorLine Skid Plate Kit"}, "category": {"es": "Proteccion", "en": "Protection"}, "price": 289.0, "keyword": "truck-skid-plate", "description": {"es": "Proteccion inferior para terrenos rocosos y camionetas de trabajo. Mejora practica fuera del asfalto.", "en": "Underbody protection for rocky terrain and work-ready trucks. A practical upgrade beyond pavement."}},
+        {"name": {"es": "Barra LED AeroMax", "en": "AeroMax LED Light Bar"}, "category": {"es": "Iluminacion", "en": "Lighting"}, "price": 159.99, "keyword": "led-light-bar-truck", "description": {"es": "Iluminacion potente para rutas nocturnas, trabajo y builds robustas. Agrega visibilidad y presencia.", "en": "High-output lighting for night trails, job sites, and rugged builds. It adds visibility and presence."}},
+        {"name": {"es": "Set de Eslingas Overland Recovery", "en": "Overland Recovery Strap Set"}, "category": {"es": "Rescate", "en": "Recovery"}, "price": 74.5, "keyword": "off-road-recovery-strap", "description": {"es": "Eslingas y herrajes para seguridad de ruta y respuesta rapida. Complemento de alta confianza.", "en": "Recovery straps and hardware for trail safety and fast response. A high-trust add-on."}},
+        {"name": {"es": "Extensiones Fender RidgeFit", "en": "RidgeFit Fender Flares"}, "category": {"es": "Exterior", "en": "Exterior"}, "price": 219.0, "keyword": "truck-fender-flares", "description": {"es": "Cobertura de guardafangos para rines anchos y presencia robusta. Ideal para filtrar por modelo.", "en": "Bold fender coverage for wider wheels and rugged stance. Ideal for model-based filtering."}},
+        {"name": {"es": "Organizador de Cabina CabinVault", "en": "CabinVault Cargo Organizer"}, "category": {"es": "Interior", "en": "Interior"}, "price": 54.99, "keyword": "car-cargo-organizer", "description": {"es": "Organizador practico para herramientas, cables, emergencia y viaje. Util para subir ticket promedio.", "en": "A practical organizer for tools, cables, emergency kits, and travel gear. Good for raising order value."}},
+    ],
+    "tech": [
+        {"name": {"es": "Base Magnetica HoloGrip", "en": "HoloGrip Magnetic Phone Stand"}, "category": {"es": "Accesorios moviles", "en": "Mobile accessories"}, "price": 19.99, "keyword": "magsafe-phone-stand", "description": {"es": "Base magnetica compacta para escritorio, videollamadas y uso manos libres. Pequena, util y facil de vender.", "en": "A compact magnetic stand for desk setups, video calls, and hands-free viewing. Small, useful, and easy to sell."}},
+        {"name": {"es": "Cable USB-C Turbo PulseDrive", "en": "PulseDrive USB-C Turbo Cable"}, "category": {"es": "Carga", "en": "Charging"}, "price": 12.5, "keyword": "usb-c-fast-charging-cable", "description": {"es": "Cable trenzado de carga rapida para uso diario. Esencial confiable para compradores tech.", "en": "A braided fast-charge cable for daily use. A reliable essential for tech shoppers."}},
+        {"name": {"es": "Mini Proyector Nebula", "en": "Mini Nebula Projector"}, "category": {"es": "Entretenimiento", "en": "Entertainment"}, "price": 129.0, "keyword": "mini-portable-projector", "description": {"es": "Proyector portatil para habitaciones, viajes y entretenimiento rapido. Producto visual fuerte.", "en": "A portable projector for rooms, trips, and quick entertainment setups. Strong visual product."}},
+        {"name": {"es": "Set de Keycaps Retro Reactor", "en": "Retro Reactor Keycap Set"}, "category": {"es": "Gaming", "en": "Gaming"}, "price": 49.0, "keyword": "mechanical-keyboard-keycaps", "description": {"es": "Set limitado de keycaps con alto impacto visual para gamers, creadores y setups personalizados.", "en": "A limited-run keycap set with bright desk appeal for gamers, creators, and custom setups."}},
+        {"name": {"es": "Lampara CyberLamp RGB", "en": "CyberLamp RGB Desk Light"}, "category": {"es": "Setup de escritorio", "en": "Desk setup"}, "price": 59.0, "keyword": "rgb-desk-lamp", "description": {"es": "Luz ambiental personalizable para escritorios y streaming. Agrega atmosfera y mejora el carrito.", "en": "Customizable ambient lighting for desks and streaming spaces. It adds mood and cart value."}},
+        {"name": {"es": "Pack Stickers GlowPatch", "en": "GlowPatch Sticker Pack"}, "category": {"es": "Coleccionables", "en": "Collectibles"}, "price": 9.99, "keyword": "holographic-sticker-pack", "description": {"es": "Stickers estilo glow para laptops, botellas, carros y regalos. Ideal como add-on accesible.", "en": "Glow-style stickers for laptops, bottles, cars, and gifts. Ideal as an affordable add-on."}},
+    ],
+    "coffee": [
+        {"name": {"es": "Blend Espresso Origen Unico", "en": "Single Origin Espresso Blend"}, "category": {"es": "Cafe en grano", "en": "Coffee beans"}, "price": 18.5, "keyword": "single-origin-coffee-beans", "description": {"es": "Blend balanceado con notas de cacao, cuerpo suave y final limpio. Cafe de calidad en casa.", "en": "A balanced blend with cocoa notes, smooth body, and a clean finish. Cafe-quality coffee at home."}},
+        {"name": {"es": "Concentrado Cold Brew", "en": "Cold Brew Concentrate"}, "category": {"es": "Listo para tomar", "en": "Ready to drink"}, "price": 14.99, "keyword": "cold-brew-coffee", "description": {"es": "Concentrado suave para bebidas frias premium. Mezcla con agua, leche o siropes de autor.", "en": "A smooth concentrate for premium iced drinks. Mix with water, milk, or signature syrups."}},
+        {"name": {"es": "Kit Pour Over Ceramico", "en": "Ceramic Pour-Over Kit"}, "category": {"es": "Equipo de preparacion", "en": "Brewing gear"}, "price": 38.0, "keyword": "ceramic-pour-over-coffee", "description": {"es": "Kit de preparacion para rituales de cafe lento y regalos de casa. Controla extraccion y aroma.", "en": "A brewing kit for slow coffee rituals and giftable home setups. Control extraction and aroma."}},
+        {"name": {"es": "Pack Latte Avena Vainilla", "en": "Vanilla Oat Latte Pack"}, "category": {"es": "Combos", "en": "Bundles"}, "price": 24.0, "keyword": "vanilla-oat-latte", "description": {"es": "Combo latte con notas de vainilla y opcion sin lacteos. Disenado para recompra.", "en": "A latte bundle with vanilla notes and dairy-free flexibility. Designed for repeat orders."}},
+        {"name": {"es": "Suscripcion House Roast", "en": "House Roast Subscription"}, "category": {"es": "Suscripciones", "en": "Subscriptions"}, "price": 29.0, "keyword": "coffee-subscription-box", "description": {"es": "Cafe recien tostado entregado de forma recurrente. Producto fuerte de retencion.", "en": "Fresh roasted coffee delivered on a recurring schedule. Strong retention product."}},
+        {"name": {"es": "Flight de Cata Signature", "en": "Signature Tasting Flight"}, "category": {"es": "Sets de regalo", "en": "Gift sets"}, "price": 36.0, "keyword": "coffee-tasting-set", "description": {"es": "Caja de cata con varios perfiles de tueste y notas claras. Perfecta para regalar.", "en": "A tasting box with multiple roast profiles and clear flavor notes. Perfect for gifting."}},
+    ],
+    "restaurant": [
+        {"name": {"es": "Tacos de Brisket Ahumado", "en": "Smoked Brisket Tacos"}, "category": {"es": "Principales", "en": "Mains"}, "price": 16.0, "keyword": "brisket-tacos", "description": {"es": "Brisket ahumado en tortillas calientes con toppings frescos y salsa de la casa.", "en": "Slow-smoked brisket in warm tortillas with fresh toppings and house sauce."}},
+        {"name": {"es": "Ensalada Citrus Avocado", "en": "Citrus Avocado Salad"}, "category": {"es": "Entradas", "en": "Starters"}, "price": 12.5, "keyword": "avocado-citrus-salad", "description": {"es": "Verdes frescos, aguacate y citricos para una entrada ligera y visual.", "en": "Fresh greens, avocado, and citrus for a bright starter."}},
+        {"name": {"es": "Flatbread de Hongos Trufados", "en": "Truffle Mushroom Flatbread"}, "category": {"es": "Especiales", "en": "Specials"}, "price": 18.0, "keyword": "mushroom-flatbread", "description": {"es": "Flatbread crujiente con hongos, queso fundido y aroma de trufa.", "en": "Crisp flatbread with mushrooms, melted cheese, and truffle aroma."}},
+        {"name": {"es": "Refrescante de Lima de la Casa", "en": "House Lime Refresher"}, "category": {"es": "Bebidas", "en": "Drinks"}, "price": 6.5, "keyword": "lime-mocktail", "description": {"es": "Bebida de la casa con lima, hierbas y final limpio.", "en": "A bright house drink with lime, herbs, and a clean finish."}},
+        {"name": {"es": "Postre del Chef en Jar", "en": "Chef's Dessert Jar"}, "category": {"es": "Postres", "en": "Desserts"}, "price": 8.0, "keyword": "dessert-jar", "description": {"es": "Postre en capas pensado para delivery y fotos atractivas.", "en": "A layered dessert jar built for delivery stability and strong photos."}},
+        {"name": {"es": "Combo Familiar Box", "en": "Family Combo Box"}, "category": {"es": "Combos", "en": "Combos"}, "price": 42.0, "keyword": "family-meal-box", "description": {"es": "Caja para compartir con principales, acompanantes y bebidas.", "en": "A shareable meal box with mains, sides, and drinks."}},
+    ],
+    "default": [
+        {"name": {"es": "Pack Inicial Signature", "en": "Signature Starter Pack"}, "category": {"es": "Destacados", "en": "Featured"}, "price": 39.0, "keyword": "premium-product-pack", "description": {"es": "Oferta inicial pulida que presenta la marca con beneficio claro y buena presentacion.", "en": "A polished starter offer that introduces the brand with a clear benefit and strong presentation."}},
+        {"name": {"es": "Bundle Favorito del Cliente", "en": "Customer Favorite Bundle"}, "category": {"es": "Combos", "en": "Bundles"}, "price": 58.0, "keyword": "customer-favorite-bundle", "description": {"es": "Combo practico que une productos utiles en una opcion simple.", "en": "A practical bundle that combines useful products into one simple choice."}},
+        {"name": {"es": "Upgrade Premium", "en": "Premium Upgrade"}, "category": {"es": "Premium", "en": "Premium"}, "price": 74.0, "keyword": "premium-upgrade-product", "description": {"es": "Opcion elevada para clientes que buscan mejor material, presentacion o soporte.", "en": "An elevated option for customers who want better materials, presentation, or support."}},
+        {"name": {"es": "Drop de Edicion Limitada", "en": "Limited Edition Drop"}, "category": {"es": "Limitado", "en": "Limited"}, "price": 49.0, "keyword": "limited-edition-product", "description": {"es": "Oferta de escasez para lanzamientos y temporadas sin depender de descuentos fuertes.", "en": "A scarcity-based offer for launches and seasonal campaigns without heavy discounts."}},
+        {"name": {"es": "Esencial de Uso Diario", "en": "Everyday Essential"}, "category": {"es": "Esenciales", "en": "Essentials"}, "price": 22.0, "keyword": "everyday-essential-product", "description": {"es": "Producto simple de uso diario pensado para recompra y checkout facil.", "en": "A simple everyday product positioned for repeat use and easy checkout."}},
+        {"name": {"es": "Seleccion Lista para Regalo", "en": "Gift Ready Selection"}, "category": {"es": "Regalos", "en": "Gifts"}, "price": 35.0, "keyword": "gift-ready-product", "description": {"es": "Opcion de regalo curada con presentacion limpia y atractivo amplio.", "en": "A curated gift option with clean presentation and broad appeal."}},
+    ],
+}
+
+
+def localized_seed(value: Dict[str, str], language: str) -> str:
+    return value.get(language) or value.get("es") or value.get("en") or next(iter(value.values()), "")
+
+
+def semantic_seed_catalog(state: ProjectState, user_input: str, count: int = 6) -> List[Dict[str, Any]]:
+    language = state.selectedLanguage if state.selectedLanguage in {"en", "es"} else "en"
+    context = " ".join([
+        user_input,
+        state.businessName or "",
+        state.businessDescription or "",
+        state.industry or "",
+        " ".join(state.servicesProducts),
+        state.preferredTone or "",
+        state.preferredColors or "",
+        state.selectedTemplateId or "",
+        state.catalogType or "",
+    ])
+    profile = infer_seed_profile(context)
+    if profile == "marketplace":
+        products = [
+            SEED_PRODUCT_LIBRARY["tech"][0],
+            SEED_PRODUCT_LIBRARY["fashion"][0],
+            SEED_PRODUCT_LIBRARY["auto"][5],
+            SEED_PRODUCT_LIBRARY["tech"][2],
+            SEED_PRODUCT_LIBRARY["jewelry"][4],
+            SEED_PRODUCT_LIBRARY["tech"][5],
+        ][:count]
+    else:
+        products = SEED_PRODUCT_LIBRARY.get(profile, SEED_PRODUCT_LIBRARY["default"])[:count]
+    catalog: List[Dict[str, Any]] = []
+    for index, product in enumerate(products):
+        price = float(product["price"])
+        catalog.append({
+            "id": f"prod_{index + 1:03d}",
+            "sku": f"{profile[:3].upper()}-{index + 1:03d}",
+            "name": localized_seed(product["name"], language),
+            "description": localized_seed(product["description"], language),
+            "category": localized_seed(product["category"], language),
+            "price_type": "fixed",
+            "price": price,
+            "price_amount": price,
+            "currency": "USD",
+            "price_label": f"USD {price:.2f}",
+            "rating": round(4.5 + (index % 4) * 0.1, 1),
+            "badge": "Best Seller" if index == 0 else "New" if index == 1 else "Featured",
+            "imageSearchQuery": product["keyword"],
+            "image_url": unsplash_seed_url(product["keyword"]),
+            "is_active": True,
+            "is_featured": index < 4,
+            "sort_order": index,
+        })
+    return catalog
+
+
+def state_is_commerce_seed_target(state: ProjectState, user_input: str = "") -> bool:
+    commerce_types = {"marketplace", "online_store", "premium_product", "restaurant", "fashion", "digital_products", "luxury"}
+    if state.websiteType in commerce_types:
+        return True
+    text = normalize_text(" ".join([
+        user_input,
+        state.businessDescription or "",
+        state.industry or "",
+        " ".join(state.servicesProducts),
+        state.selectedTemplateId or "",
+        state.catalogType or "",
+        state.salesFlow or "",
+    ]))
+    if re.search(r"\b(legal|abogado|clinic|clinica|booking|cita|b2b|industrial|consultoria|service_area|home_services)\b", text):
+        return False
+    return bool(re.search(r"\b(tienda|store|shop|marketplace|catalogo|producto|productos|vender|comprar|online|ecommerce|restaurant|menu)\b", text))
+
+
 class BaseAgent:
     name = "base"
 
@@ -337,11 +497,11 @@ class StrategyAgent(BaseAgent):
         if re.search(r"\b(real estate|inmueble|propiedad|casa|apartamento|terreno|listing|renta|alquiler)\b", text):
             add("real-estate-listings-pro", 124, "search-first listings")
 
-        if re.search(r"\b(clinica|clinic|medico|medical|dental|wellness|terapia|estetica|treatment|consulta)\b", text):
+        if re.search(r"\b(clinica|clinic|medico|medical|dental|wellness|terapia|estetica|treatment)\b", text):
             add("medical-wellness-clinic-pro", 122, "clinic trust and appointment flow")
 
         if re.search(r"\b(abogado|legal|law|contador|tax|impuesto|consultoria|insurance|seguro|asesoria)\b", text):
-            add("legal-professional-services-pro", 120, "professional authority and consultation")
+            add("legal-professional-services-pro", 135, "professional authority and consultation")
 
         if re.search(r"\b(saas|software|enterprise|b2b|automatizacion|automation|dashboard|crm|erp|api|integraciones|plataforma)\b", text):
             add("b2b-saas-enterprise-pro", 122, "B2B software decision flow")
@@ -520,41 +680,35 @@ class CatalogAgent(BaseAgent):
     name = "catalog"
 
     async def run(self, state: ProjectState, user_input: str) -> AgentResult:
-        products = split_items(state.servicesProducts)
-        text = normalize_text(" ".join([user_input, state.businessDescription or "", state.industry or "", " ".join(products)]))
-        if not products:
-            products = ["Featured item", "New arrival", "Limited find", "Customer favorite"]
-
-        if suggests_jewelry_or_handmade_accessories(text):
-            categories = ["Collares", "Pulseras", "Aretes y zarcillos", "Anillos", "Sets de regalo", "Piezas personalizadas"]
-        elif state.websiteType == "fashion":
-            categories = ["Novedades", "Colecciones", "Accesorios", "Mas vendidos", "Drop limitado", "Regalos"]
-        elif state.websiteType == "marketplace":
-            categories = ["Electronics", "Lifestyle", "Auto", "Collectibles", "Home", "Accessories"]
+        if state_is_commerce_seed_target(state, user_input):
+            catalog = semantic_seed_catalog(state, user_input, count=6)
+            summary = "Generated niche-specific editable seed catalog with prices, descriptions and product image URLs."
         else:
-            categories = ["Featured", "Popular", "New", "Recommended", "Packages", "Custom"]
-        catalog = []
-        for index, product in enumerate(products[:12]):
-            catalog.append({
-                "id": f"ai_item_{index + 1}",
-                "sku": f"AI-{index + 1:03d}",
-                "name": product.title()[:80],
-                "description": "Curated item ready for editing, pricing and publishing.",
-                "category": categories[index % len(categories)],
-                "price_type": "fixed",
-                "price_amount": "",
-                "currency": "USD",
-                "price_label": "Price to be set",
-                "is_active": True,
-                "is_featured": index < 4,
-                "sort_order": index,
-            })
+            services = split_items(state.servicesProducts) or ["Consultation", "Service package", "Custom request", "Follow-up"]
+            catalog = []
+            for index, service in enumerate(services[:6]):
+                catalog.append({
+                    "id": f"svc_{index + 1:03d}",
+                    "sku": f"SVC-{index + 1:03d}",
+                    "name": service[:80],
+                    "description": "Editable service entry focused on outcomes, trust and the next contact step.",
+                    "category": "Services",
+                    "price_type": "quote_only",
+                    "price": "",
+                    "price_amount": "",
+                    "currency": "USD",
+                    "price_label": "Quote required",
+                    "is_active": True,
+                    "is_featured": index < 4,
+                    "sort_order": index,
+                })
+            summary = "Structured the service intake into editable non-commerce catalog entries."
 
         return AgentResult(
             agentName=self.name,
             updates={"catalogItems": catalog},
-            reasoningSummary="Structured the product/service input into editable catalog items.",
-            confidence=0.76,
+            reasoningSummary=summary,
+            confidence=0.84,
         )
 
 

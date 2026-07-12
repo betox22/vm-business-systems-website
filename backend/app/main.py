@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .agents import split_items
+from .agents import semantic_seed_catalog, split_items, state_is_commerce_seed_target
 from .commerce import router as commerce_router
 from .models import LumaChatRequest, LumaChatResponse, WebsiteGenerationRequest, WebsiteGenerationResponse
 from .orchestrator import (
@@ -246,7 +246,17 @@ def build_schema_from_state(state) -> Dict[str, Any]:
     headline = copy.get("headline") or name
     subheadline = copy.get("subheadline") or state.businessDescription or ""
     primary_cta = copy.get("primaryCta") or "Explore"
-    items = state.catalogItems or []
+    fallback_context = " ".join([
+        state.businessName or "",
+        state.businessDescription or "",
+        state.industry or "",
+        " ".join(state.servicesProducts),
+    ])
+    items = state.catalogItems or (
+        semantic_seed_catalog(state, fallback_context, count=6)
+        if state_is_commerce_seed_target(state, fallback_context)
+        else []
+    )
     colors = state.colors or {}
 
     return {

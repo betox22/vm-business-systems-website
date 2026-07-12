@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
-from .agents import TEMPLATE_CATALOG, normalize_template_id
+from .agents import TEMPLATE_CATALOG, normalize_template_id, semantic_seed_catalog, state_is_commerce_seed_target, unsplash_seed_url
 from .models import AgentResult, ProjectState, WebsiteType
 
 
@@ -289,31 +290,36 @@ def state_to_client_summary(state: ProjectState, user_input: str) -> Dict[str, A
     }
 
 
-def site_plan_to_updates(plan: AISitePlan) -> Dict[str, Any]:
+def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None) -> Dict[str, Any]:
     template = TEMPLATE_CATALOG[plan.templateId]
     catalog_items = []
-    for index, item in enumerate(plan.catalogItems[:12]):
+    for index, item in enumerate(plan.catalogItems[:6]):
         name = str(item.get("name") or item.get("title") or f"Item {index + 1}").strip()
         if not name:
             continue
+        image_query = str(item.get("imageSearchQuery") or item.get("image_search_query") or name)
+        price_value = parse_price_amount(item.get("price_amount") or item.get("price"), None)
         catalog_items.append({
             "id": str(item.get("id") or f"ai_item_{index + 1}"),
             "sku": str(item.get("sku") or f"AI-{index + 1:03d}"),
             "name": name[:80],
-            "description": str(item.get("description") or "Editable product or service generated from the strategy."),
+            "description": str(item.get("description") or ""),
             "category": str(item.get("category") or (plan.catalogCategories[index % len(plan.catalogCategories)] if plan.catalogCategories else "Featured")),
             "price_type": str(item.get("price_type") or "fixed"),
-            "price": str(item.get("price") or item.get("price_label") or item.get("price_amount") or ""),
-            "price_amount": item.get("price_amount") or item.get("price") or "",
+            "price": price_value if price_value is not None else "",
+            "price_amount": price_value if price_value is not None else "",
             "currency": str(item.get("currency") or "USD"),
-            "price_label": str(item.get("price_label") or item.get("price") or "Price editable"),
+            "price_label": str(item.get("price_label") or (f"USD {price_value:.2f}" if price_value is not None else "")),
             "rating": item.get("rating") or 4.7,
             "badge": str(item.get("badge") or "Featured"),
-            "imageSearchQuery": str(item.get("imageSearchQuery") or item.get("image_search_query") or name),
+            "imageSearchQuery": image_query,
+            "image_url": str(item.get("image_url") or item.get("imageUrl") or unsplash_seed_url(image_query)),
             "is_active": bool(item.get("is_active", True)),
             "is_featured": bool(item.get("is_featured", index < 4)),
             "sort_order": int(item.get("sort_order", index)),
         })
+    if state:
+        catalog_items = ensure_plan_seed_catalog(catalog_items, state, plan)
 
     pages = []
     hero_copy: Dict[str, str] = {}
@@ -378,6 +384,89 @@ def site_plan_to_updates(plan: AISitePlan) -> Dict[str, Any]:
         "catalogItems": catalog_items,
         "confidence": plan.confidence,
     }
+
+
+def parse_price_amount(value: Any, fallback: Optional[float] = None) -> Optional[float]:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return round(float(value), 2)
+    match = re.search(r"\d+(?:[.,]\d+)?", str(value or ""))
+    if match:
+        return round(float(match.group(0).replace(",", ".")), 2)
+    return fallback
+
+
+def ensure_plan_seed_catalog(catalog_items: List[Dict[str, Any]], state: ProjectState, plan: AISitePlan) -> List[Dict[str, Any]]:
+    """Guarantee complete commerce seed data even if the model returns sparse catalogItems."""
+
+    commerce_text = " ".join([
+        plan.templateId,
+        plan.catalogStrategy,
+        plan.websiteType,
+        state.businessDescription or "",
+        state.industry or "",
+        " ".join(state.servicesProducts),
+    ])
+    is_commerce = state_is_commerce_seed_target(state, commerce_text) or any(term in commerce_text.lower() for term in [
+        "marketplace",
+        "store",
+        "retail",
+        "catalog",
+        "product",
+        "restaurant",
+        "menu",
+        "fashion",
+        "luxury",
+        "online",
+        "tienda",
+    ])
+    if not is_commerce:
+        return catalog_items
+
+    generic = 0
+    for item in catalog_items:
+        name = str(item.get("name") or "").strip().lower()
+        description = str(item.get("description") or "").strip().lower()
+        price = item.get("price_amount") or item.get("price")
+        if (
+            not name
+            or name in {"item", "product", "producto", "featured item", "new arrival"}
+            or "editable product" in description
+            or not description
+            or not price
+            or not item.get("image_url")
+        ):
+            generic += 1
+
+    seed = semantic_seed_catalog(state, commerce_text, count=6)
+    if len(catalog_items) < 4 or generic >= max(1, len(catalog_items) // 2):
+        return seed
+
+    merged: List[Dict[str, Any]] = []
+    for index, item in enumerate(catalog_items[:6]):
+        fallback = seed[index % len(seed)]
+        price = parse_price_amount(item.get("price_amount") or item.get("price"), float(fallback["price_amount"]))
+        image_query = item.get("imageSearchQuery") or item.get("image_search_query") or fallback["imageSearchQuery"]
+        merged.append({
+            **item,
+            "id": item.get("id") or fallback["id"],
+            "sku": item.get("sku") or fallback["sku"],
+            "name": item.get("name") or fallback["name"],
+            "description": item.get("description") or fallback["description"],
+            "category": item.get("category") or fallback["category"],
+            "price_type": item.get("price_type") or "fixed",
+            "price": price,
+            "price_amount": price,
+            "currency": item.get("currency") or "USD",
+            "price_label": item.get("price_label") or f"USD {float(price):.2f}",
+            "rating": item.get("rating") or fallback["rating"],
+            "badge": item.get("badge") or fallback["badge"],
+            "imageSearchQuery": image_query,
+            "image_url": item.get("image_url") or item.get("imageUrl") or unsplash_seed_url(str(image_query)),
+            "is_active": item.get("is_active", True),
+            "is_featured": item.get("is_featured", index < 4),
+            "sort_order": int(item.get("sort_order", index)),
+        })
+    return merged
 
 
 class OpenAISitePlanAgent:
@@ -449,7 +538,17 @@ class OpenAISitePlanAgent:
                     }],
                 }],
                 "catalogCategories": ["category names"],
-                "catalogItems": [{"name": "item", "description": "public copy", "category": "category"}],
+                "catalogItems": [{
+                    "id": "prod_001",
+                    "name": "specific commercial product name",
+                    "description": "2 to 3 lines of persuasive public product copy",
+                    "category": "specific category",
+                    "price": 39.99,
+                    "price_amount": 39.99,
+                    "price_label": "USD 39.99",
+                    "imageSearchQuery": "english-search-keyword",
+                    "image_url": "https://images.unsplash.com/featured/600x600/?english-search-keyword"
+                }],
                 "reasoningSummary": "short internal reason",
                 "confidence": 0.0,
             },
@@ -490,7 +589,7 @@ class OpenAISitePlanAgent:
             plan = AISitePlan.model_validate(parsed)
             return AgentResult(
                 agentName=self.name,
-                updates=site_plan_to_updates(plan),
+                updates=site_plan_to_updates(plan, state),
                 reasoningSummary=f"OpenAI site plan: {plan.reasoningSummary}",
                 confidence=plan.confidence,
             )
@@ -531,10 +630,14 @@ Hard rules:
 - For feature_spotlight, dataBinding.specs is required with complete product/service specifications.
 - Treat the client's intake as private strategy, not public copy.
 - Do not paste raw client notes into visible website text.
+- Identify the exact niche from the business name, industry, products/services and description before writing catalog or copy.
+- For commerce templates, catalogItems must contain exactly 4 to 6 real, niche-specific products. Do not use "Product 1", "Featured item", "Price editable", Lorem Ipsum, or empty fields.
+- Each catalogItems object must include id, name, description, category, numeric price, price_amount, price_label, imageSearchQuery, and image_url.
+- image_url must use this exact format: https://images.unsplash.com/featured/600x600/?english-keyword
 - If a client sells a focused product family such as jewelry, handmade accessories, fashion, candles, beauty, or crafts, choose a focused store/showroom template, not a broad marketplace.
 - Choose a broad marketplace only for explicit Amazon/general-store intent or unrelated multi-category catalogs.
 - Generate polished public copy in selectedLanguage.
 - Generate category names that match the actual product/service category.
 - Keep the output editable: page titles, section blocks, copy, media intent, catalog categories and items must be represented as JSON values.
-- You may use media.imageSearchQuery and media.visualDirection, but do not fabricate final image URLs unless provided by the client.
+- You may use media.imageSearchQuery and media.visualDirection for sections. For catalogItems, always provide the Unsplash image_url described above.
 """.strip()

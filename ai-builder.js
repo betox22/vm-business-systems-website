@@ -7302,6 +7302,7 @@ function applyTargetedSchemaPatch(schema, message, payload = {}, localContextUpd
   if (revisionFlags.visualSafety || revisionFlags.visualPolish || revisionFlags.copyRefresh) {
     nextSchema = applyReviewVisualPatch(nextSchema, message, payload, templateSelection, revisionFlags);
   }
+  nextSchema = ensureSemanticSeedContent(nextSchema, payload, templateSelection);
   nextSchema.revision_history = [
     ...arrayValue(nextSchema.revision_history).slice(-8),
     {
@@ -7482,6 +7483,342 @@ function mergeCatalogFromOfferItems(existingItems = [], offerItems = [], payload
   return [...existing, ...additions];
 }
 
+const SEMANTIC_SEED_PRODUCT_LIBRARY = {
+  jewelry: [
+    { name: { en: "Aurora Crystal Layered Necklace", es: "Collar Aurora de Cristal" }, category: { en: "Necklaces", es: "Collares" }, price: 42.0, keyword: "handmade-crystal-necklace", description: { en: "A luminous layered necklace designed for everyday shine and special looks. Lightweight, gift-ready, and easy to combine with minimalist or bold outfits.", es: "Collar en capas con brillo delicado para uso diario y looks especiales. Ligero, listo para regalo y facil de combinar con estilos minimalistas o llamativos." } },
+    { name: { en: "Luna Pearl Charm Bracelet", es: "Pulsera Luna con Dijes Perla" }, category: { en: "Bracelets", es: "Pulseras" }, price: 34.5, keyword: "pearl-charm-bracelet", description: { en: "A polished bracelet with soft pearl accents and adjustable comfort. Built for customers who want a refined detail without feeling too formal.", es: "Pulsera pulida con detalles tipo perla y ajuste comodo. Pensada para clientes que quieren un detalle refinado sin sentirse demasiado formal." } },
+    { name: { en: "Noir Statement Earrings", es: "Aretes Noir Statement" }, category: { en: "Earrings", es: "Aretes" }, price: 29.99, keyword: "statement-earrings", description: { en: "Bold earrings that frame the face with a clean boutique finish. Ideal for evening outfits, events, and high-impact product photography.", es: "Aretes llamativos que enmarcan el rostro con acabado boutique. Ideales para salidas, eventos y fotos de producto de alto impacto." } },
+    { name: { en: "Sol Minimal Ring Set", es: "Set de Anillos Sol Minimal" }, category: { en: "Rings", es: "Anillos" }, price: 26.0, keyword: "minimal-ring-set", description: { en: "A stackable ring set with a clean metallic look. Customers can wear one piece alone or combine the full set for a curated finish.", es: "Set de anillos apilables con acabado metalico limpio. El cliente puede usar una pieza sola o combinar el set completo para un look curado." } },
+    { name: { en: "Celeste Gift Jewelry Box", es: "Caja Regalo Celeste de Bisuteria" }, category: { en: "Gift sets", es: "Sets de regalo" }, price: 58.0, keyword: "jewelry-gift-box", description: { en: "A ready-to-gift accessory set with coordinated pieces and premium presentation. Perfect for birthdays, holidays, and quick online gifting.", es: "Set de accesorios listo para regalar con piezas coordinadas y presentacion premium. Perfecto para cumpleanos, temporadas y regalos online rapidos." } },
+    { name: { en: "Muse Custom Initial Charm", es: "Charm Muse con Inicial Personalizada" }, category: { en: "Custom pieces", es: "Piezas personalizadas" }, price: 21.5, keyword: "custom-initial-charm", description: { en: "A personal charm made to add identity to chains, bracelets, or gift sets. Small, memorable, and ideal for repeat purchases.", es: "Charm personal para agregar identidad a cadenas, pulseras o sets de regalo. Pequeno, memorable e ideal para compras recurrentes." } },
+  ],
+  fashion: [
+    { name: { en: "NeoFlex Street Jacket", es: "Chaqueta Street NeoFlex" }, category: { en: "Outerwear", es: "Abrigos" }, price: 79.0, keyword: "streetwear-jacket", description: { en: "A lightweight statement jacket with urban energy and everyday comfort. Designed as the hero piece for drops, bundles, and social-first product pages.", es: "Chaqueta ligera con energia urbana y comodidad diaria. Disenada como pieza protagonista para drops, combos y paginas enfocadas en redes." } },
+    { name: { en: "Core Graphic Oversized Tee", es: "Camiseta Grafica Core Oversized" }, category: { en: "T-shirts", es: "Camisetas" }, price: 32.0, keyword: "oversized-graphic-tshirt", description: { en: "A soft oversized tee with a strong graphic presence. Easy to style, easy to photograph, and built for repeat seasonal drops.", es: "Camiseta oversized suave con presencia grafica fuerte. Facil de combinar, facil de fotografiar y lista para drops por temporada." } },
+    { name: { en: "Pulse Utility Crossbody", es: "Bolso Cruzado Pulse Utility" }, category: { en: "Accessories", es: "Accesorios" }, price: 46.5, keyword: "utility-crossbody-bag", description: { en: "Compact storage with a clean fashion profile for daily carry. Fits essentials while keeping the outfit intentional and modern.", es: "Almacenamiento compacto con perfil moderno para uso diario. Guarda lo esencial y mantiene el outfit intencional y actual." } },
+    { name: { en: "Volt Ribbed Crop Top", es: "Top Crop Acanalado Volt" }, category: { en: "Tops", es: "Tops" }, price: 27.99, keyword: "ribbed-crop-top", description: { en: "A fitted staple with strong color potential and a premium hand feel. Ideal for lookbook grids, bundles, and quick-size selection.", es: "Pieza ajustada basica con potencial de color y tacto premium. Ideal para lookbooks, combos y seleccion rapida de tallas." } },
+    { name: { en: "Apex Cargo Denim", es: "Jean Cargo Apex" }, category: { en: "Denim", es: "Denim" }, price: 68.0, keyword: "cargo-denim-jeans", description: { en: "Structured cargo denim with utility details and a clean silhouette. A practical best-seller candidate for customers who want style and function.", es: "Denim cargo estructurado con detalles utilitarios y silueta limpia. Candidato a best seller para clientes que buscan estilo y funcion." } },
+    { name: { en: "Orbit Sneaker Low", es: "Sneaker Orbit Low" }, category: { en: "Footwear", es: "Calzado" }, price: 89.0, keyword: "modern-sneakers", description: { en: "A versatile sneaker with a crisp profile for everyday movement. Built to anchor outfits across casual, streetwear, and travel looks.", es: "Sneaker versatil con perfil limpio para movimiento diario. Pensado para completar looks casuales, streetwear y de viaje." } },
+  ],
+  coffee: [
+    { name: { en: "Single Origin Espresso Blend", es: "Blend Espresso Origen Unico" }, category: { en: "Coffee beans", es: "Cafe en grano" }, price: 18.5, keyword: "single-origin-coffee-beans", description: { en: "A balanced espresso blend with cocoa notes, smooth body, and a clean finish. Built for customers who want cafe-quality coffee at home.", es: "Blend espresso balanceado con notas de cacao, cuerpo suave y final limpio. Ideal para clientes que quieren cafe de calidad en casa." } },
+    { name: { en: "Cold Brew Concentrate", es: "Concentrado Cold Brew" }, category: { en: "Ready to drink", es: "Listo para tomar" }, price: 14.99, keyword: "cold-brew-coffee", description: { en: "A smooth cold brew concentrate made for fast morning routines and premium iced drinks. Mix with water, milk, or signature syrups.", es: "Concentrado cold brew suave para rutinas rapidas y bebidas frias premium. Mezcla con agua, leche o siropes de autor." } },
+    { name: { en: "Ceramic Pour-Over Kit", es: "Kit Pour Over Ceramico" }, category: { en: "Brewing gear", es: "Equipo de preparacion" }, price: 38.0, keyword: "ceramic-pour-over-coffee", description: { en: "A clean brewing kit for slow coffee rituals and giftable home setups. Helps customers control extraction, aroma, and presentation.", es: "Kit de preparacion limpio para rituales de cafe lento y regalos de casa. Ayuda a controlar extraccion, aroma y presentacion." } },
+    { name: { en: "Vanilla Oat Latte Pack", es: "Pack Latte Avena Vainilla" }, category: { en: "Bundles", es: "Combos" }, price: 24.0, keyword: "vanilla-oat-latte", description: { en: "A ready-to-enjoy latte bundle with cozy vanilla notes and dairy-free flexibility. Designed for repeat orders and seasonal campaigns.", es: "Combo latte listo para disfrutar con notas de vainilla y opcion sin lacteos. Disenado para recompra y campanas de temporada." } },
+    { name: { en: "House Roast Subscription", es: "Suscripcion House Roast" }, category: { en: "Subscriptions", es: "Suscripciones" }, price: 29.0, keyword: "coffee-subscription-box", description: { en: "Fresh roasted coffee delivered on a recurring schedule. A strong retention product for customers who never want to run out.", es: "Cafe recien tostado entregado de forma recurrente. Producto fuerte de retencion para clientes que no quieren quedarse sin cafe." } },
+    { name: { en: "Signature Tasting Flight", es: "Flight de Cata Signature" }, category: { en: "Gift sets", es: "Sets de regalo" }, price: 36.0, keyword: "coffee-tasting-set", description: { en: "A curated tasting box with multiple roast profiles and clear flavor notes. Perfect for gifting, discovery, and premium product storytelling.", es: "Caja de cata curada con varios perfiles de tueste y notas claras. Perfecta para regalos, descubrimiento y narrativa premium." } },
+  ],
+  auto: [
+    { name: { en: "TrailGuard 4x4 Front Bumper", es: "Parachoques Frontal TrailGuard 4x4" }, category: { en: "Bumpers", es: "Parachoques" }, price: 649.0, keyword: "off-road-front-bumper", description: { en: "Heavy-duty front protection built for 4x4 trucks, trail routes, and aggressive styling. Designed for buyers comparing durability, fitment, and finish.", es: "Proteccion frontal reforzada para camionetas 4x4, rutas off-road y estilo agresivo. Pensada para compradores que comparan resistencia, ajuste y acabado." } },
+    { name: { en: "RaptorLine Skid Plate Kit", es: "Kit Protector RaptorLine Skid Plate" }, category: { en: "Protection", es: "Proteccion" }, price: 289.0, keyword: "truck-skid-plate", description: { en: "Underbody protection for rocky terrain and work-ready trucks. A practical upgrade for customers who want confidence beyond the pavement.", es: "Proteccion inferior para terrenos rocosos y camionetas de trabajo. Mejora practica para clientes que quieren confianza fuera del asfalto." } },
+    { name: { en: "AeroMax LED Light Bar", es: "Barra LED AeroMax" }, category: { en: "Lighting", es: "Iluminacion" }, price: 159.99, keyword: "led-light-bar-truck", description: { en: "High-output lighting for night trails, job sites, and rugged builds. Adds visibility, presence, and a strong visual upgrade.", es: "Iluminacion potente para rutas nocturnas, trabajo y builds robustas. Agrega visibilidad, presencia y mejora visual fuerte." } },
+    { name: { en: "Overland Recovery Strap Set", es: "Set de Eslingas Overland Recovery" }, category: { en: "Recovery", es: "Rescate" }, price: 74.5, keyword: "off-road-recovery-strap", description: { en: "Recovery straps and hardware packed for trail safety and quick response. A high-trust add-on for off-road shoppers.", es: "Eslingas y herrajes para seguridad de ruta y respuesta rapida. Complemento de alta confianza para compradores off-road." } },
+    { name: { en: "RidgeFit Fender Flares", es: "Extensiones Fender RidgeFit" }, category: { en: "Exterior", es: "Exterior" }, price: 219.0, keyword: "truck-fender-flares", description: { en: "Bold fender coverage with a clean molded look for wider wheels and rugged stance. Built for model-based catalog filtering.", es: "Cobertura de guardafangos con acabado limpio para rines anchos y presencia robusta. Ideal para catalogo filtrado por modelo." } },
+    { name: { en: "CabinVault Cargo Organizer", es: "Organizador de Cabina CabinVault" }, category: { en: "Interior", es: "Interior" }, price: 54.99, keyword: "car-cargo-organizer", description: { en: "A practical organizer for tools, cables, emergency kits, and travel gear. Helps increase average order value with simple utility.", es: "Organizador practico para herramientas, cables, kit de emergencia y viaje. Ayuda a subir el ticket promedio con utilidad simple." } },
+  ],
+  tech: [
+    { name: { en: "HoloGrip MagSafe Phone Stand", es: "Base Magnetica HoloGrip para Telefono" }, category: { en: "Mobile accessories", es: "Accesorios moviles" }, price: 19.99, keyword: "magsafe-phone-stand", description: { en: "A compact magnetic stand for desk setups, video calls, and hands-free viewing. Small, useful, and easy to sell as an impulse add-on.", es: "Base magnetica compacta para escritorio, videollamadas y uso manos libres. Pequena, util y facil de vender como complemento." } },
+    { name: { en: "PulseDrive USB-C Turbo Cable", es: "Cable USB-C Turbo PulseDrive" }, category: { en: "Charging", es: "Carga" }, price: 12.5, keyword: "usb-c-fast-charging-cable", description: { en: "Braided fast-charge cable built for daily use and clean merchandising. A reliable essential for tech shoppers and bundle offers.", es: "Cable trenzado de carga rapida para uso diario y merchandising limpio. Esencial confiable para compradores tech y combos." } },
+    { name: { en: "Mini Nebula Projector", es: "Mini Proyector Nebula" }, category: { en: "Entertainment", es: "Entretenimiento" }, price: 129.0, keyword: "mini-portable-projector", description: { en: "A portable projector for rooms, trips, and quick entertainment setups. Strong visual product for marketplace hero placements.", es: "Proyector portatil para habitaciones, viajes y entretenimiento rapido. Producto visual fuerte para destacados de marketplace." } },
+    { name: { en: "Retro Reactor Keycap Set", es: "Set de Keycaps Retro Reactor" }, category: { en: "Gaming", es: "Gaming" }, price: 49.0, keyword: "mechanical-keyboard-keycaps", description: { en: "A limited-run mechanical keyboard keycap set with bright desk appeal. Built for gamers, creators, and customization shoppers.", es: "Set limitado de keycaps para teclado mecanico con alto impacto visual. Pensado para gamers, creadores y compradores de personalizacion." } },
+    { name: { en: "CyberLamp Ambient Desk Light", es: "Lampara de Escritorio CyberLamp" }, category: { en: "Desk setup", es: "Setup de escritorio" }, price: 59.0, keyword: "rgb-desk-lamp", description: { en: "Customizable ambient lighting for desks, rooms, and streaming spaces. Adds mood, color, and a strong upsell for tech carts.", es: "Luz ambiental personalizable para escritorios, habitaciones y streaming. Agrega atmosfera, color y mejora el valor del carrito." } },
+    { name: { en: "GlowPatch Sticker Pack", es: "Pack de Stickers GlowPatch" }, category: { en: "Collectibles", es: "Coleccionables" }, price: 9.99, keyword: "holographic-sticker-pack", description: { en: "A weatherproof glow-style sticker pack for laptops, bottles, cars, and gifts. Affordable, collectible, and ideal for checkout add-ons.", es: "Pack de stickers estilo glow resistente para laptops, botellas, carros y regalos. Accesible, coleccionable e ideal como add-on." } },
+  ],
+  beauty: [
+    { name: { en: "GlowReset Vitamin C Serum", es: "Serum Vitamina C GlowReset" }, category: { en: "Skincare", es: "Cuidado facial" }, price: 28.0, keyword: "vitamin-c-serum", description: { en: "A brightening serum positioned for daily routines and visible glow. Strong for educational product pages and subscription bundles.", es: "Serum iluminador para rutinas diarias y brillo visible. Ideal para paginas educativas de producto y combos de suscripcion." } },
+    { name: { en: "HydraCloud Moisture Cream", es: "Crema Hidratante HydraCloud" }, category: { en: "Moisturizers", es: "Hidratantes" }, price: 32.5, keyword: "moisturizing-face-cream", description: { en: "A rich but lightweight moisturizer for soft skin and simple routine building. Easy to pair with cleansers, serums, and bundles.", es: "Hidratante rica pero ligera para piel suave y rutina simple. Facil de combinar con limpiadores, serums y kits." } },
+    { name: { en: "SilkFinish Lip Oil", es: "Lip Oil SilkFinish" }, category: { en: "Lips", es: "Labios" }, price: 16.99, keyword: "lip-oil-beauty", description: { en: "A glossy lip oil with a soft finish and giftable look. Designed for quick purchases, social content, and shade collections.", es: "Aceite labial con brillo suave y apariencia lista para regalo. Disenado para compras rapidas, contenido social y colecciones de tonos." } },
+    { name: { en: "CleanSkin Travel Kit", es: "Kit de Viaje CleanSkin" }, category: { en: "Kits", es: "Kits" }, price: 44.0, keyword: "skincare-travel-kit", description: { en: "A travel-ready routine kit with essentials packed for convenience. A strong starter product for new customers.", es: "Kit de rutina listo para viaje con esenciales practicos. Producto ideal para iniciar a nuevos clientes." } },
+    { name: { en: "Rose Quartz Face Roller", es: "Rodillo Facial Rose Quartz" }, category: { en: "Tools", es: "Herramientas" }, price: 22.0, keyword: "rose-quartz-face-roller", description: { en: "A soothing beauty tool for self-care rituals and premium product photography. Pairs naturally with serums and creams.", es: "Herramienta de belleza calmante para rituales de cuidado y fotografia premium. Combina naturalmente con serums y cremas." } },
+    { name: { en: "NightRepair Mask", es: "Mascarilla NightRepair" }, category: { en: "Masks", es: "Mascarillas" }, price: 25.0, keyword: "night-face-mask-skincare", description: { en: "A replenishing night mask designed for soft, rested-looking skin. Good for routine bundles, promotions, and repeat purchases.", es: "Mascarilla nocturna reparadora para piel suave y descansada. Buena para combos de rutina, promociones y recompra." } },
+  ],
+  home: [
+    { name: { en: "Nordic Arc Table Lamp", es: "Lampara de Mesa Nordic Arc" }, category: { en: "Lighting", es: "Iluminacion" }, price: 68.0, keyword: "nordic-table-lamp", description: { en: "A sculptural lamp with warm light and a clean silhouette. Strong visual anchor for home decor collections and lifestyle shots.", es: "Lampara escultorica con luz calida y silueta limpia. Ancla visual fuerte para colecciones de hogar y fotos lifestyle." } },
+    { name: { en: "LinenSoft Throw Blanket", es: "Manta LinenSoft" }, category: { en: "Textiles", es: "Textiles" }, price: 39.99, keyword: "linen-throw-blanket", description: { en: "A soft throw blanket for sofas, bedrooms, and giftable home styling. Simple, tactile, and easy to bundle with cushions.", es: "Manta suave para sofas, habitaciones y regalos de hogar. Simple, tactil y facil de combinar con cojines." } },
+    { name: { en: "CasaMist Ceramic Diffuser", es: "Difusor Ceramico CasaMist" }, category: { en: "Wellness", es: "Bienestar" }, price: 45.0, keyword: "ceramic-aroma-diffuser", description: { en: "A quiet ceramic diffuser for calm rooms and daily rituals. Adds lifestyle value and pairs well with oils and gift sets.", es: "Difusor ceramico silencioso para espacios tranquilos y rituales diarios. Agrega valor lifestyle y combina con aceites y regalos." } },
+    { name: { en: "OakGrid Desk Organizer", es: "Organizador de Escritorio OakGrid" }, category: { en: "Organization", es: "Organizacion" }, price: 31.5, keyword: "wood-desk-organizer", description: { en: "A clean organizer for workspaces, shelves, and entry tables. Useful, photogenic, and built for productivity-focused shoppers.", es: "Organizador limpio para escritorios, repisas y entradas. Util, fotogenico y pensado para compradores enfocados en productividad." } },
+    { name: { en: "MarbleDot Coaster Set", es: "Set de Posavasos MarbleDot" }, category: { en: "Dining", es: "Mesa" }, price: 18.0, keyword: "marble-coaster-set", description: { en: "A refined coaster set for coffee tables and dining spaces. Small enough for add-ons, polished enough for gift positioning.", es: "Set de posavasos refinado para mesas de cafe y comedor. Pequeno para add-ons y pulido para posicionarlo como regalo." } },
+    { name: { en: "UrbanLeaf Planter Duo", es: "Duo de Macetas UrbanLeaf" }, category: { en: "Decor", es: "Decoracion" }, price: 36.0, keyword: "modern-indoor-planter", description: { en: "A modern planter pair for shelves, desks, and indoor greenery. Helps the store tell a warmer home lifestyle story.", es: "Par de macetas modernas para repisas, escritorios y plantas interiores. Ayuda a contar una historia de hogar mas calida." } },
+  ],
+  restaurant: [
+    { name: { en: "Smoked Brisket Tacos", es: "Tacos de Brisket Ahumado" }, category: { en: "Mains", es: "Principales" }, price: 16.0, keyword: "brisket-tacos", description: { en: "Slow-smoked brisket served in warm tortillas with fresh toppings and house sauce. A strong signature item for pickup, delivery, and specials.", es: "Brisket ahumado lentamente en tortillas calientes con toppings frescos y salsa de la casa. Plato fuerte para pickup, delivery y especiales." } },
+    { name: { en: "Citrus Avocado Salad", es: "Ensalada Citrus Avocado" }, category: { en: "Starters", es: "Entradas" }, price: 12.5, keyword: "avocado-citrus-salad", description: { en: "Fresh greens, avocado, citrus, and crunchy texture for a bright starter. Designed to balance heavier menu items and attract lighter orders.", es: "Verdes frescos, aguacate, citricos y textura crujiente para una entrada brillante. Equilibra platos fuertes y atrae pedidos ligeros." } },
+    { name: { en: "Truffle Mushroom Flatbread", es: "Flatbread de Hongos Trufados" }, category: { en: "Specials", es: "Especiales" }, price: 18.0, keyword: "mushroom-flatbread", description: { en: "Crisp flatbread with mushrooms, melted cheese, and truffle aroma. Premium enough for specials, approachable enough for repeat orders.", es: "Flatbread crujiente con hongos, queso fundido y aroma de trufa. Premium para especiales y accesible para pedidos recurrentes." } },
+    { name: { en: "House Lime Refresher", es: "Refrescante de Lima de la Casa" }, category: { en: "Drinks", es: "Bebidas" }, price: 6.5, keyword: "lime-mocktail", description: { en: "A bright house drink with lime, herbs, and a clean finish. Easy to promote with combos, lunch offers, and online ordering.", es: "Bebida de la casa con lima, hierbas y final limpio. Facil de promocionar con combos, almuerzos y pedidos online." } },
+    { name: { en: "Chef's Dessert Jar", es: "Postre del Chef en Jar" }, category: { en: "Desserts", es: "Postres" }, price: 8.0, keyword: "dessert-jar", description: { en: "A layered dessert jar built for delivery stability and strong photos. Sweet, portable, and ideal for upsells.", es: "Postre en capas pensado para delivery y fotos atractivas. Dulce, portable e ideal para agregar al pedido." } },
+    { name: { en: "Family Combo Box", es: "Combo Familiar Box" }, category: { en: "Combos", es: "Combos" }, price: 42.0, keyword: "family-meal-box", description: { en: "A shareable meal box with mains, sides, and drinks for simple group ordering. Built to raise average ticket value.", es: "Caja para compartir con principales, acompanantes y bebidas para pedidos grupales. Disenada para subir el ticket promedio." } },
+  ],
+  default: [
+    { name: { en: "Signature Starter Pack", es: "Pack Inicial Signature" }, category: { en: "Featured", es: "Destacados" }, price: 39.0, keyword: "premium-product-pack", description: { en: "A polished starter offer that introduces the brand with a clear benefit and strong presentation. Built to make the first purchase easy.", es: "Oferta inicial pulida que presenta la marca con beneficio claro y buena presentacion. Pensada para facilitar la primera compra." } },
+    { name: { en: "Customer Favorite Bundle", es: "Bundle Favorito del Cliente" }, category: { en: "Bundles", es: "Combos" }, price: 58.0, keyword: "customer-favorite-bundle", description: { en: "A practical bundle that combines the most useful products or services into one simple choice. Good for homepage highlights and promos.", es: "Combo practico que une los productos o servicios mas utiles en una opcion simple. Bueno para destacados y promociones." } },
+    { name: { en: "Premium Upgrade", es: "Upgrade Premium" }, category: { en: "Premium", es: "Premium" }, price: 74.0, keyword: "premium-upgrade-product", description: { en: "An elevated option for customers who want better materials, presentation, or support. Strong for upsells and comparison cards.", es: "Opcion elevada para clientes que buscan mejores materiales, presentacion o soporte. Fuerte para upsells y tarjetas comparativas." } },
+    { name: { en: "Limited Edition Drop", es: "Drop de Edicion Limitada" }, category: { en: "Limited", es: "Limitado" }, price: 49.0, keyword: "limited-edition-product", description: { en: "A scarcity-based offer made for launches, seasonal campaigns, and social announcements. Creates urgency without needing heavy discounts.", es: "Oferta basada en escasez para lanzamientos, temporadas y anuncios sociales. Crea urgencia sin depender de descuentos fuertes." } },
+    { name: { en: "Everyday Essential", es: "Esencial de Uso Diario" }, category: { en: "Essentials", es: "Esenciales" }, price: 22.0, keyword: "everyday-essential-product", description: { en: "A simple everyday product positioned for repeat use and easy checkout. Useful as an entry-level item and cart add-on.", es: "Producto simple de uso diario pensado para recompra y checkout facil. Util como entrada y complemento de carrito." } },
+    { name: { en: "Gift Ready Selection", es: "Seleccion Lista para Regalo" }, category: { en: "Gifts", es: "Regalos" }, price: 35.0, keyword: "gift-ready-product", description: { en: "A curated gift option with clean presentation and broad appeal. Designed to convert customers who need a fast, thoughtful choice.", es: "Opcion de regalo curada con presentacion limpia y atractivo amplio. Disenada para clientes que necesitan una compra rapida y considerada." } },
+  ],
+};
+
+function ensureSemanticSeedContent(schema, payload = {}, templateSelection = null) {
+  if (!schema) return schema;
+  const nextSchema = structuredClone(schema);
+  const language = nextSchema.business?.selectedLanguage || payload.selectedLanguage || selectedLanguage || "en";
+  const contextText = semanticSeedContextText(nextSchema, payload, templateSelection);
+  const templateText = `${templateSelection?.templateId || ""} ${templateSelection?.catalogType || ""} ${nextSchema.selected_template?.id || ""} ${nextSchema.layout_mode?.template_id || ""} ${nextSchema.catalog_model?.catalogType || ""}`;
+  const templateCommerce = /marketplace|retail|online_store|product|fashion|luxury|restaurant|menu|digital|ecommerce|dense_marketplace|dense_retail|single_vendor/i.test(`${templateText} ${nextSchema.site_type || ""}`);
+  const serviceOnlyTemplate = /legal|professional_services|clinic|medical|home_services|service_area|booking|b2b|industrial|company_services|lead_funnel/i.test(templateText)
+    && !/restaurant|menu|digital|product|fashion|marketplace|retail|luxury/i.test(templateText);
+  const clientCommerce = /tienda|store|shop|marketplace|catalogo|producto|productos|vender|comprar|restaurant|menu|online/i.test(contextText);
+  const shouldSeedCatalog = templateCommerce || (clientCommerce && !serviceOnlyTemplate);
+  if (!shouldSeedCatalog) return nextSchema;
+
+  const profileKey = inferSemanticSeedProfile(contextText, templateText);
+  const copyKit = semanticSeedCopyKit(profileKey, nextSchema.business?.name || payload.business_name || guidedState.businessName || "Kreaton Store", language, templateText);
+  const seedItems = buildSemanticSeedProducts(profileKey, language);
+  const existing = arrayValue(nextSchema.catalog_items || nextSchema.products_services);
+  const mergedCatalog = mergeSemanticSeedCatalog(existing, seedItems, language, contextText);
+
+  nextSchema.catalog_items = mergedCatalog;
+  if (Array.isArray(nextSchema.products_services)) {
+    nextSchema.products_services = mergedCatalog;
+  }
+  nextSchema.business = {
+    ...(nextSchema.business || {}),
+    industry: isWeakSeedCopy(nextSchema.business?.industry, payload) ? copyKit.industry : nextSchema.business?.industry,
+    description: isWeakSeedCopy(nextSchema.business?.description, payload) ? copyKit.businessDescription : nextSchema.business?.description,
+  };
+  nextSchema.pages = fillSemanticSeedPageCopy(nextSchema.pages, copyKit, payload);
+  nextSchema.seed_content_rules = {
+    ...(nextSchema.seed_content_rules || {}),
+    niche: profileKey,
+    catalog_count: mergedCatalog.length,
+    no_lorem: true,
+    no_generic_products: true,
+    unsplash_featured_urls: true,
+  };
+  return nextSchema;
+}
+
+function semanticSeedContextText(schema = {}, payload = {}, templateSelection = null) {
+  return normalizeTemplateIntentText([
+    payload.business_name,
+    payload.business_description,
+    payload.industry,
+    arrayValue(payload.services_products).join(" "),
+    payload.target_audience,
+    payload.preferred_tone,
+    arrayValue(payload.preferred_colors).join(" "),
+    schema.business?.name,
+    schema.business?.description,
+    schema.business?.industry,
+    arrayValue(schema.catalog_items || schema.products_services).map((item) => item.name || item.title || item).join(" "),
+    templateSelection?.templateId,
+    templateSelection?.catalogType,
+  ].join(" "));
+}
+
+function inferSemanticSeedProfile(contextText = "", templateText = "") {
+  const text = normalizeTemplateIntentText(`${contextText} ${templateText}`);
+  if (textSuggestsBroadMarketplace(text) || textSuggestsMegaRetailStore(text)) return "marketplace";
+  if (/restaurant|restaurante|menu|food|comida|cafe|coffee|bakery|bar|pizza|taco/.test(text)) return /coffee|cafe/.test(text) ? "coffee" : "restaurant";
+  if (textSuggestsJewelryAccessoryStore(text)) return "jewelry";
+  if (/parachoques|bumper|4x4|off road|off-road|auto parts|repuestos|automotriz|camioneta|truck|motos?|car accessories/.test(text)) return "auto";
+  if (/ropa|fashion|moda|streetwear|sneaker|zapato|camiseta|clothing|apparel|boutique/.test(text)) return "fashion";
+  if (/beauty|belleza|skincare|cosmet|maquillaje|spa/.test(text)) return "beauty";
+  if (/decor|hogar|home|furniture|muebles|interior|lampara|casa/.test(text)) return "home";
+  if (/tech|tecnologia|gadget|electron|gaming|usb|phone|laptop|anime|juguete|toy|curioso|raro|inusual|cyberpunk/.test(text)) return "tech";
+  if (/luxury|lujo|premium|exclusive|exclusivo|alta gama|private|privado/.test(text)) return "default";
+  return "default";
+}
+
+function buildSemanticSeedProducts(profileKey = "default", language = selectedLanguage) {
+  const products = profileKey === "marketplace"
+    ? [
+      SEMANTIC_SEED_PRODUCT_LIBRARY.tech[0],
+      SEMANTIC_SEED_PRODUCT_LIBRARY.fashion[0],
+      SEMANTIC_SEED_PRODUCT_LIBRARY.auto[5],
+      SEMANTIC_SEED_PRODUCT_LIBRARY.tech[2],
+      SEMANTIC_SEED_PRODUCT_LIBRARY.home[0],
+      SEMANTIC_SEED_PRODUCT_LIBRARY.tech[5],
+    ]
+    : SEMANTIC_SEED_PRODUCT_LIBRARY[profileKey] || SEMANTIC_SEED_PRODUCT_LIBRARY.default;
+  return products.slice(0, 6).map((product, index) => {
+    const name = localizedSeedValue(product.name, language);
+    const category = localizedSeedValue(product.category, language);
+    const description = localizedSeedValue(product.description, language);
+    return {
+      id: `prod_${String(index + 1).padStart(3, "0")}`,
+      sku: `${profileKey.slice(0, 3).toUpperCase()}-${String(index + 1).padStart(3, "0")}`,
+      name,
+      description,
+      category,
+      price: Number(product.price),
+      price_type: "fixed",
+      price_value: Number(product.price),
+      price_amount: Number(product.price),
+      currency: "USD",
+      price_label: `USD ${Number(product.price).toFixed(2)}`,
+      rating: Number((4.5 + (index % 4) * 0.1).toFixed(1)),
+      review_count: 36 + index * 29,
+      badge: index === 0 ? "Best Seller" : index === 1 ? "New" : index === 2 ? "Fast Ship" : "Featured",
+      deal_label: index === 0 ? "Best Seller" : index % 2 === 0 ? "Featured" : "",
+      shipping_label: index % 2 === 0 ? "Fast ship" : "Ready to ship",
+      button_label: language === "es" ? "Agregar al carrito" : language === "fr" ? "Ajouter" : language === "pt" ? "Adicionar" : "Add to cart",
+      inventory_quantity: 18 + index * 7,
+      track_inventory: true,
+      imageSearchQuery: product.keyword,
+      image_url: unsplashSeedUrl(product.keyword),
+      is_active: true,
+      is_featured: index < 4,
+      sort_order: index,
+    };
+  });
+}
+
+function localizedSeedValue(value, language = selectedLanguage) {
+  if (!value || typeof value !== "object") return String(value || "");
+  return value[language] || value.es || value.en || Object.values(value).find(Boolean) || "";
+}
+
+function unsplashSeedUrl(keyword = "") {
+  const clean = String(keyword || "premium-product")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "premium-product";
+  return `https://images.unsplash.com/featured/600x600/?${clean}`;
+}
+
+function mergeSemanticSeedCatalog(existingItems = [], seedItems = [], language = selectedLanguage, contextText = "") {
+  const existing = arrayValue(existingItems);
+  const genericCount = existing.filter((item) => isGenericSeedProduct(item, contextText)).length;
+  const needsReplacement = existing.length < 4 || genericCount >= Math.max(1, Math.ceil(existing.length / 2));
+  const base = needsReplacement ? seedItems : existing;
+  const merged = base.slice(0, 6).map((item, index) => {
+    const seed = seedItems[index % seedItems.length];
+    const source = typeof item === "string" ? { name: item } : { ...item };
+    const useSeedIdentity = needsReplacement || isGenericSeedProduct(source, contextText);
+    const price = Number(source.price_amount ?? source.price_value ?? source.price ?? seed.price);
+    return {
+      ...source,
+      id: source.id || seed.id || `prod_${String(index + 1).padStart(3, "0")}`,
+      sku: source.sku || seed.sku || `SKU-${String(index + 1).padStart(3, "0")}`,
+      name: useSeedIdentity ? seed.name : cleanShortText(source.name || source.title || seed.name, 90),
+      description: isWeakSeedCopy(source.description, {}) ? seed.description : source.description,
+      category: source.category && !isGenericText(source.category) ? source.category : seed.category,
+      price: Number.isFinite(price) && price > 0 ? price : seed.price,
+      price_type: source.price_type && source.price_type !== "quote_only" ? source.price_type : "fixed",
+      price_value: Number.isFinite(price) && price > 0 ? price : seed.price,
+      price_amount: Number.isFinite(price) && price > 0 ? price : seed.price,
+      currency: source.currency || "USD",
+      price_label: source.price_label && !/price editable|precio editable|price to be set|consultar/i.test(source.price_label)
+        ? source.price_label
+        : `USD ${(Number.isFinite(price) && price > 0 ? price : seed.price).toFixed(2)}`,
+      rating: Number(source.rating || seed.rating || 4.7),
+      review_count: source.review_count || seed.review_count,
+      badge: source.badge || seed.badge,
+      deal_label: source.deal_label || seed.deal_label || "",
+      shipping_label: source.shipping_label || seed.shipping_label,
+      button_label: source.button_label || seed.button_label,
+      inventory_quantity: source.inventory_quantity ?? seed.inventory_quantity,
+      track_inventory: source.track_inventory ?? seed.track_inventory,
+      imageSearchQuery: source.imageSearchQuery || source.image_search_query || seed.imageSearchQuery,
+      image_url: source.image_url || source.imageUrl || seed.image_url,
+      is_active: source.is_active !== false,
+      is_featured: source.is_featured ?? index < 4,
+      sort_order: Number(source.sort_order ?? index),
+    };
+  });
+  while (merged.length < 4 && seedItems[merged.length]) {
+    merged.push({ ...seedItems[merged.length], sort_order: merged.length });
+  }
+  return merged.slice(0, 6);
+}
+
+function isGenericSeedProduct(item = {}, contextText = "") {
+  const source = typeof item === "string" ? { name: item } : item || {};
+  const name = normalizeTemplateIntentText(source.name || source.title || source);
+  const description = normalizeTemplateIntentText(source.description || source.text || "");
+  const price = source.price_amount ?? source.price_value ?? source.price;
+  const image = source.image_url || source.imageUrl || "";
+  const nameIsRawContext = name && contextText && contextText.includes(name) && name.split(/\s+/).length > 7;
+  return !name
+    || /^(item|product|producto|service|servicio|featured item|new arrival|limited find|customer favorite|signature item|featured offer|popular choice|main offer)(\s+\d+)?$/.test(name)
+    || /price to be set|precio editable|editable product|lorem|placeholder/.test(description)
+    || nameIsRawContext
+    || !description
+    || price === "" || price === null || price === undefined
+    || !image;
+}
+
+function isWeakSeedCopy(value, payload = {}) {
+  const text = String(value || "").trim();
+  if (!text) return true;
+  const normalized = normalizeTemplateIntentText(text);
+  const raw = normalizeTemplateIntentText([
+    payload.business_description,
+    arrayValue(payload.services_products).join(" "),
+    payload.target_audience,
+  ].join(" "));
+  return isGenericText(text)
+    || /lorem|placeholder|your business|your site|producto 1|product 1|price to be set|editable product/i.test(text)
+    || text.length > 260
+    || (raw && normalized.length > 60 && raw.includes(normalized.slice(0, 60)));
+}
+
+function semanticSeedCopyKit(profileKey = "default", businessName = "Kreaton Store", language = selectedLanguage, templateText = "") {
+  const name = cleanShortText(businessName, 48);
+  const ecommerce = /marketplace|retail|store|shop|catalog|product|fashion|luxury/i.test(templateText);
+  const kits = {
+    es: {
+      jewelry: { industry: "Bisuteria y accesorios", headline: `${name}: piezas hechas para destacar`, subtitle: "Accesorios curados con brillo, detalle y una ruta simple para comprar o pedir una pieza especial.", productTitle: "Piezas listas para vender", productText: "Un catalogo inicial con nombres, precios, fotos y descripciones persuasivas para editar.", primary: "Ver coleccion", secondary: "Pedir asesoria" },
+      fashion: { industry: "Moda y accesorios", headline: `${name}: una tienda visual para comprar con confianza`, subtitle: "Colecciones claras, piezas destacadas y una experiencia lista para convertir visitas en compras.", productTitle: "Drop destacado", productText: "Productos iniciales creados para verse reales desde el primer preview.", primary: "Comprar ahora", secondary: "Ver categorias" },
+      coffee: { industry: "Cafe y bebidas", headline: `${name}: cafe con identidad propia`, subtitle: "Productos de cafe con narrativa clara, combos vendibles y una experiencia pensada para recompra.", productTitle: "Favoritos de la casa", productText: "Cafe, kits y bundles listos para editar y publicar.", primary: "Comprar cafe", secondary: "Ver combos" },
+      auto: { industry: "Repuestos y accesorios automotrices", headline: `${name}: equipamiento listo para rutas exigentes`, subtitle: "Catalogo de accesorios, proteccion y piezas utiles con precios claros, filtros y camino rapido al carrito.", productTitle: "Piezas destacadas", productText: "Productos semilla con categoria, precio, imagen y copy comercial.", primary: "Ver catalogo", secondary: "Consultar compatibilidad" },
+      tech: { industry: "Tecnologia y gadgets", headline: `${name}: hallazgos tech que se compran rapido`, subtitle: "Gadgets, accesorios y productos curiosos organizados para descubrir, comparar y agregar al carrito.", productTitle: "Deals destacados", productText: "Productos iniciales listos para un marketplace visual y editable.", primary: "Explorar deals", secondary: "Ver categorias" },
+      beauty: { industry: "Belleza y cuidado personal", headline: `${name}: belleza clara, deseable y facil de comprar`, subtitle: "Rutinas, kits y productos destacados con copy orientado a beneficios y recompra.", productTitle: "Rutina destacada", productText: "Catalogo semilla con productos reales, precios e imagenes.", primary: "Comprar rutina", secondary: "Ver productos" },
+      home: { industry: "Hogar y decoracion", headline: `${name}: piezas para elevar cada espacio`, subtitle: "Decoracion, organizacion y accesorios de hogar presentados con claridad comercial y visuales limpios.", productTitle: "Seleccion para el hogar", productText: "Productos iniciales listos para editar y convertir en tienda.", primary: "Ver seleccion", secondary: "Explorar ambientes" },
+      marketplace: { industry: "Tienda multi-categoria", headline: `${name}: hallazgos raros, utiles y listos para descubrir`, subtitle: "Una experiencia tipo gran tienda con categorias variadas, ofertas visibles y productos listos para agregar al carrito.", productTitle: "Deals y hallazgos destacados", productText: "Un catalogo mixto con productos reales para mostrar variedad desde el primer preview.", primary: "Explorar deals", secondary: "Ver categorias" },
+      restaurant: { industry: "Restaurante y menu", headline: `${name}: menu listo para pedir`, subtitle: "Platos destacados, combos y bebidas con precios claros y una experiencia simple para ordenar.", productTitle: "Especiales de la casa", productText: "Items de menu creados para publicar, ajustar y vender.", primary: "Ver menu", secondary: "Ordenar ahora" },
+      default: { industry: ecommerce ? "Comercio online" : "Negocio profesional", headline: `${name}: una experiencia lista para vender`, subtitle: "Catalogo inicial con productos especificos, precios realistas y mensajes pulidos para editar antes de publicar.", productTitle: "Productos destacados", productText: "Seleccion semilla creada por Lyra segun el nicho detectado.", primary: "Ver catalogo", secondary: "Contactar" },
+    },
+    en: {
+      jewelry: { industry: "Jewelry and accessories", headline: `${name}: pieces made to stand out`, subtitle: "Curated accessories with polish, detail, and a simple path to shop or request a special piece.", productTitle: "Ready-to-sell pieces", productText: "An initial catalog with names, prices, images, and persuasive editable descriptions.", primary: "View collection", secondary: "Ask for guidance" },
+      fashion: { industry: "Fashion and accessories", headline: `${name}: a visual store built for confident shopping`, subtitle: "Clear collections, highlighted pieces, and a buying path designed to turn visits into orders.", productTitle: "Featured drop", productText: "Seed products created to feel real from the first preview.", primary: "Shop now", secondary: "View categories" },
+      coffee: { industry: "Coffee and drinks", headline: `${name}: coffee with a clear identity`, subtitle: "Coffee products with strong storytelling, sellable bundles, and a repeat-purchase experience.", productTitle: "House favorites", productText: "Coffee, kits, and bundles ready to edit and publish.", primary: "Shop coffee", secondary: "View bundles" },
+      auto: { industry: "Automotive parts and accessories", headline: `${name}: equipment for serious routes`, subtitle: "Accessories, protection, and useful parts with clear prices, filters, and a fast path to cart.", productTitle: "Featured parts", productText: "Seed products with category, price, image, and commercial copy.", primary: "View catalog", secondary: "Check fitment" },
+      tech: { industry: "Technology and gadgets", headline: `${name}: tech finds made for fast discovery`, subtitle: "Gadgets, accessories, and curious products organized to discover, compare, and add to cart.", productTitle: "Featured deals", productText: "Initial products ready for a visual editable marketplace.", primary: "Explore deals", secondary: "View categories" },
+      beauty: { industry: "Beauty and personal care", headline: `${name}: beauty that is clear and easy to shop`, subtitle: "Routines, kits, and hero products with benefit-driven copy and repeat purchase potential.", productTitle: "Featured routine", productText: "Seed catalog with real products, prices, and images.", primary: "Shop routine", secondary: "View products" },
+      home: { industry: "Home and decor", headline: `${name}: pieces that elevate every space`, subtitle: "Decor, organization, and home accessories presented with clear commerce and clean visuals.", productTitle: "Home selection", productText: "Initial products ready to edit into a working store.", primary: "View selection", secondary: "Explore rooms" },
+      marketplace: { industry: "Multi-category retail", headline: `${name}: uncommon finds ready to discover`, subtitle: "A big-store experience with varied categories, visible deals, and products ready to add to cart.", productTitle: "Deals and featured finds", productText: "A mixed seed catalog with real products to show variety from the first preview.", primary: "Explore deals", secondary: "View categories" },
+      restaurant: { industry: "Restaurant and menu", headline: `${name}: a menu ready to order`, subtitle: "Signature dishes, combos, and drinks with clear prices and a simple ordering experience.", productTitle: "House specials", productText: "Menu items created to publish, adjust, and sell.", primary: "View menu", secondary: "Order now" },
+      default: { industry: ecommerce ? "Online commerce" : "Professional business", headline: `${name}: an experience ready to sell`, subtitle: "An initial catalog with specific products, realistic prices, and polished messages ready to edit before publishing.", productTitle: "Featured products", productText: "Seed selection created by Lyra from the detected niche.", primary: "View catalog", secondary: "Contact" },
+    },
+  };
+  const set = kits[language] || kits.en;
+  return set[profileKey] || set.default;
+}
+
+function fillSemanticSeedPageCopy(pages = [], copyKit = {}, payload = {}) {
+  return arrayValue(pages).map((page) => ({
+    ...page,
+    sections: arrayValue(page.sections).map((section) => {
+      const editable = { ...(section.editable || {}) };
+      if (/Hero|MarketplaceHero|PremiumHero|FashionHero|RestaurantHero/i.test(section.type || "")) {
+        if (isWeakSeedCopy(editable.headline, payload)) editable.headline = copyKit.headline;
+        if (isWeakSeedCopy(editable.subtitle || editable.text, payload)) editable.subtitle = copyKit.subtitle;
+        if (!editable.primary_button || isWeakCta(editable.primary_button)) editable.primary_button = copyKit.primary;
+        if (!editable.secondary_button || isWeakCta(editable.secondary_button)) editable.secondary_button = copyKit.secondary;
+      }
+      if (/ProductGrid|ServiceList|DealRow|CategoryRail/i.test(section.type || "")) {
+        if (isWeakSeedCopy(editable.title || editable.headline, payload)) editable.title = copyKit.productTitle;
+        if (isWeakSeedCopy(editable.text || editable.subtitle, payload)) editable.text = copyKit.productText;
+      }
+      return { ...section, editable };
+    }),
+  }));
+}
+
 function updatePrimaryHeroCopy(schema, message, payload = {}, templateSelection = null) {
   const copy = instantLocaleCopy(payload.selectedLanguage || selectedLanguage || "en");
   const description = professionalPublicDescription({
@@ -7599,12 +7936,14 @@ function prepareWebsiteConfig(schema, payload = {}, templateSelection = null) {
   });
   let nextSchema = applyBrandSystemToSchema(structuredClone(schema), brand);
   nextSchema = applyDesignIntelligence(nextSchema, payload, templateSelection);
+  nextSchema = ensureSemanticSeedContent(nextSchema, payload, templateSelection);
   nextSchema.quality_rules = DESIGN_QUALITY_RULES;
   nextSchema.design_score = scoreWebsiteConfig(nextSchema);
   nextSchema.designScore = nextSchema.design_score.total;
   for (let attempt = 0; attempt < 3 && nextSchema.design_score.total < 85; attempt += 1) {
     nextSchema = improveWebsiteConfig(nextSchema);
     nextSchema = applyDesignIntelligence(nextSchema, payload, templateSelection, { reviewOnly: true });
+    nextSchema = ensureSemanticSeedContent(nextSchema, payload, templateSelection);
     nextSchema.design_score = scoreWebsiteConfig(nextSchema);
     nextSchema.designScore = nextSchema.design_score.total;
   }
