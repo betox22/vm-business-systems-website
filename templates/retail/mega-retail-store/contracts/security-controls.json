@@ -1,0 +1,103 @@
+{
+  "templateId": "mega_retail_store",
+  "securityModel": {
+    "roles": [
+      "admin",
+      "store_owner",
+      "staff",
+      "customer",
+      "support"
+    ],
+    "ownershipRules": [
+      {
+        "role": "store_owner",
+        "rule": "Can manage products, categories, inventory, promotions, orders, pages, assets, and storefront settings for the same business_id."
+      },
+      {
+        "role": "staff",
+        "rule": "Can manage only the catalog, inventory, orders, or content permissions explicitly assigned by the store owner."
+      },
+      {
+        "role": "customer",
+        "rule": "Can view and manage only carts, orders, addresses, saved items, and profile records linked to the same user_id."
+      },
+      {
+        "role": "admin",
+        "rule": "Can manage platform-level settings, tenant support, billing status, domain status, and escalated support actions."
+      }
+    ],
+    "mandatoryControls": [
+      "jwt_or_session_authentication",
+      "role_based_access_control",
+      "business_id_row_level_checks",
+      "input_validation",
+      "output_encoding",
+      "strict_ai_json_schema_validation",
+      "no_raw_html_from_ai",
+      "no_client_side_secrets",
+      "csrf_protection_for_cookie_sessions",
+      "rate_limiting_for_auth_and_checkout",
+      "idempotency_keys_for_checkout",
+      "transactional_order_creation",
+      "inventory_lock_before_payment_capture",
+      "audit_log_for_owner_and_staff_mutations",
+      "safe_media_upload_validation",
+      "content_security_policy"
+    ],
+    "checkoutControls": {
+      "cartSplitRequired": false,
+      "splitKey": null,
+      "idempotencyRequired": true,
+      "transactionBoundary": "Create one store order, order_items, inventory reservations, payment intent reference, and audit trail atomically.",
+      "inventoryRule": "Inventory deductions occur only after payment authorization or confirmed order status. Adjustments require audit logged stock movement entries."
+    },
+    "mediaControls": {
+      "allowedImageMimeTypes": [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+      ],
+      "allowedVideoMimeTypes": [
+        "video/mp4",
+        "video/webm"
+      ],
+      "maxImageSizeMb": 10,
+      "maxVideoSizeMb": 100,
+      "scanBeforePublish": true,
+      "publicUrlsGeneratedServerSide": true
+    },
+    "aiControls": {
+      "allowedOutputs": [
+        "structured_json",
+        "copy_text",
+        "template_selection",
+        "section_order",
+        "image_search_queries",
+        "palette_tokens",
+        "category_strategy",
+        "product_copy"
+      ],
+      "blockedOutputs": [
+        "raw_html",
+        "raw_javascript",
+        "arbitrary_css",
+        "database_credentials",
+        "api_keys",
+        "payment_secrets"
+      ],
+      "validationRequiredBeforeRender": true,
+      "fallbackBehavior": "If AI output fails validation, keep the last valid site schema and ask the user for one clarifying detail."
+    }
+  },
+  "dataIsolation": {
+    "tenantKey": "business_id",
+    "ownerKey": "owner_user_id",
+    "customerKey": "user_id",
+    "rules": [
+      "Every store-owned record must include business_id.",
+      "Every owner/staff mutation must include actor_user_id and role.",
+      "Public storefront reads can only expose active and published records.",
+      "Customer records can only be read by the linked customer, store owner/staff with explicit permission, or platform admin support."
+    ]
+  }
+}

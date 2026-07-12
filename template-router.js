@@ -3,15 +3,19 @@
   let templateCache = null;
   const TEMPLATE_ID_ALIASES = {
     "marketplace-style": "mega-marketplace",
-    "luxury-product-store": "apple-premium-product",
-    "premium-product-showcase": "apple-premium-product",
+    "mega-store": "mega-retail-store",
+    "mega-retail": "mega-retail-store",
+    "large-retail-store": "mega-retail-store",
+    "apple-premium-product": "premium-product-store",
+    "luxury-product-store": "premium-product-store",
+    "premium-product-showcase": "premium-product-store",
     "appointment-booking": "booking-appointment-pro",
     "bold-fashion-store": "fashion-drop-pro",
     "local-business-pro": "local-services-pro-plus",
   };
   const PRO_TEMPLATES = [
     {
-      id: "apple-premium-product",
+      id: "premium-product-store",
       name: "Premium Product Showcase",
       category: "ecommerce",
       bestFor: ["premium products", "technology", "beauty devices", "single hero product", "luxury retail"],
@@ -31,7 +35,7 @@
         { type: "trust_strip", fields: { items: "{{trust_points}}" } },
         { type: "footer", fields: { businessName: "{{business_name}}", description: "{{short_description}}", socialLinks: "{{social_links}}" } },
       ],
-      aiPrompt: "Use a premium flagship product presentation layout without copying any brand. Generate a cinematic centered hero, refined product slogan, large product visual area, editorial story sections, feature spotlight, curated small catalog, comparison/spec strip, calm CTAs, and premium trust copy. This template is for small catalogs, flagship products, luxury portfolios, technology products, beauty devices, creator portfolios, and high-presentation offers. Preserve the premium structure; only adapt colors, copy, products, imagery, and CTAs to the business.",
+      aiPrompt: "Use the premium-product-store runtime layout without copying any brand. Generate a cinematic product-family presentation, refined product slogan, large product visual area, category navigation, product detail specs inside each product, curated catalog, comparison modules inside product context, calm CTAs, and premium trust copy. This template is for focused product lines, flagship products, luxury portfolios, technology products, beauty devices, creator portfolios, and high-presentation offers. Preserve the runtime structure; only adapt colors, copy, products, imagery, CTAs, categories, and backend-ready commerce content to the business.",
       catalogModel: {
         catalogType: "premium_editorial_catalog",
         productCardStyle: "large editorial cards with product imagery, short benefit, price, refined CTA, and minimal metadata",
@@ -305,10 +309,51 @@
       editableSlots: ["headline", "slogan", "hero image", "product specs", "MOQ labels", "lead times", "certifications", "capabilities", "supply chain proof", "logo", "colors", "CTAs", "contact info", "section order"],
     },
     {
+      id: "mega-retail-store",
+      name: "Mega Retail Store",
+      category: "ecommerce",
+      bestFor: ["large catalog", "general store", "multi-category retail", "owned inventory", "single-vendor ecommerce"],
+      style: {
+        tone: "organized, retail-focused, direct, conversion-ready",
+        layoutDensity: "high",
+        imageStyle: "product thumbnails, category cards, deal banners",
+        defaultColors: { background: "#f3f4f6", surface: "#ffffff", primary: "#111827", secondary: "#4b5563", accent: "#f59e0b" },
+        fonts: { heading: "Inter", body: "Inter" },
+      },
+      sections: [
+        { type: "retail_header", fields: { logo: "{{logo_url}}", businessName: "{{business_name}}", searchPlaceholder: "{{search_placeholder}}", navItems: ["Deals", "Categories", "Best Sellers", "Support"] } },
+        { type: "hero_deals", fields: { headline: "{{deal_headline}}", subheadline: "{{deal_subheadline}}", deals: "{{featured_deals}}" } },
+        { type: "category_tiles", fields: { title: "{{category_title}}", categories: "{{product_categories}}" } },
+        { type: "deal_carousel", fields: { title: "{{deal_row_title}}", products: "{{deal_products}}" } },
+        { type: "product_grid", fields: { title: "{{best_seller_title}}", products: "{{featured_products}}", columns: 5 } },
+        { type: "trust_strip", fields: { items: "{{retail_trust_points}}" } },
+        { type: "footer", fields: { businessName: "{{business_name}}", description: "{{short_description}}", legalLinks: ["Privacy", "Terms", "Returns"] } },
+      ],
+      aiPrompt: "Use a search-first mega retail store layout for a single business owner with a broad catalog. Generate a dense shopping homepage with utility header, prominent search, category rail, daily deal hero, compact deal rows, best sellers, sidebar filters, ratings, shipping badges, trust modules, customer account and checkout. Do not add external sellers, vendor onboarding, vendor payout, seller profiles, or multi-vendor order split unless the user explicitly asks for a marketplace with outside sellers. Preserve this structure; only adapt colors, copy, products, imagery, and CTAs to the business.",
+      catalogModel: {
+        catalogType: "single_vendor_dense_catalog",
+        productCardStyle: "compact retail cards with discount, rating, shipping badge, inventory status, quick CTA",
+        collectionLayout: "search bar, category rail, deal rows, sidebar filters, dense product grid",
+        filters: ["category", "brand", "price", "rating", "availability", "shipping_speed"],
+        productDetailModel: "retail detail with specs, reviews, shipping estimate, bundles and owned inventory status",
+        upsellModel: "frequently bought together, deal bundles, recently viewed",
+        customerFeeling: "Large catalog product discovery from one trusted store",
+      },
+      visualDifference: "Dense search-first retail store for one owner: categories, filters, deals, ratings, cart and checkout without external sellers.",
+      clientSelectionCard: { title: "Mega Retail Store", category: "ecommerce", bestForLabel: "large owned catalog, many categories", difference: "Dense catalog, search, deals, ratings, filters, one store checkout.", previewTags: ["mega store", "retail", "dense"] },
+      pages: [
+        { name: "Home", purpose: "Retail discovery hub", usesSections: ["retail_header", "marketplace_search_hero", "category_rail", "deal_row", "best_seller_grid", "trust_strip", "footer"] },
+        { name: "Catalog", purpose: "Search-first owned catalog", catalogType: "single_vendor_dense_catalog", layout: "left filters, category pills, sort bar, compact product grid, ratings, delivery badges", filters: ["category", "brand", "price", "rating", "shipping_speed"] },
+        { name: "Product", purpose: "Retail product detail", layout: "image gallery, price box, specs, reviews, shipping estimate, bundles", upsell: "frequently bought together and related products" },
+        { name: "Checkout", purpose: "Single-store cart and checkout readiness", layout: "cart summary, delivery options, payment setup, customer support" },
+      ],
+      editableSlots: ["search labels", "categories", "deal hero", "deal rows", "product rows", "filters", "ratings", "shipping badges", "trust badges", "colors", "logo", "navigation", "checkout CTA"],
+    },
+    {
       id: "mega-marketplace",
       name: "Mega Catalog Marketplace",
       category: "ecommerce",
-      bestFor: ["large catalog", "electronics", "general store", "multi-category retail", "dropshipping"],
+      bestFor: ["multi-vendor marketplace", "external sellers", "seller onboarding", "vendor payouts", "broad marketplace catalog"],
       style: {
         tone: "organized, practical, deal-focused, fast",
         layoutDensity: "high",
@@ -325,7 +370,7 @@
         { type: "trust_strip", fields: { items: "{{marketplace_trust_points}}" } },
         { type: "footer", fields: { businessName: "{{business_name}}", description: "{{short_description}}", legalLinks: ["Privacy", "Terms", "Returns"] } },
       ],
-      aiPrompt: "Use a search-first mega marketplace layout inspired by large retailers, without copying any brand. Generate a dense shopping homepage with a utility header, prominent search, category rail, daily deal hero, compact deal rows, best sellers, sidebar filters, ratings, shipping badges, comparison cues, trust modules, and editable product/category text. Preserve this structure; only adapt colors, copy, products, imagery, and CTAs to the business.",
+      aiPrompt: "Use a search-first mega marketplace layout for a platform with external sellers, vendor trust, vendor-aware cart, order splitting, seller profiles and payout-ready backend. Generate a dense shopping homepage with a utility header, prominent search, category rail, daily deal hero, compact deal rows, best sellers, sidebar filters, ratings, shipping badges, comparison cues, trust modules, and editable product/category text. Preserve this structure; only adapt colors, copy, products, imagery, and CTAs to the business.",
       catalogModel: {
         catalogType: "dense_marketplace_catalog",
         productCardStyle: "compact marketplace cards with discount, rating, shipping badge, compare, quick CTA",
@@ -335,8 +380,8 @@
         upsellModel: "frequently bought together, deal bundles, recently viewed",
         customerFeeling: "Large catalog product discovery and comparison",
       },
-      visualDifference: "Dense search-first shopping experience with categories, filters, deals, ratings and quick comparison.",
-      clientSelectionCard: { title: "Mega Marketplace", category: "ecommerce", bestForLabel: "large stores, many products, categories", difference: "Dense catalog, search, deals, ratings, filters.", previewTags: ["amazon", "marketplace", "dense"] },
+      visualDifference: "Dense multi-vendor shopping experience with categories, filters, deals, ratings, sellers and quick comparison.",
+      clientSelectionCard: { title: "Mega Marketplace", category: "ecommerce", bestForLabel: "external sellers, vendor marketplace", difference: "Dense catalog, sellers, search, deals, ratings, filters.", previewTags: ["multi-vendor", "marketplace", "dense"] },
       pages: [
         { name: "Home", purpose: "Marketplace discovery hub", usesSections: ["marketplace_header", "marketplace_search_hero", "category_rail", "deal_row", "best_seller_grid", "trust_strip", "footer"] },
         { name: "Catalog", purpose: "Search-first catalog", catalogType: "dense_marketplace_catalog", layout: "left filters, category pills, sort bar, compact product grid, ratings, delivery badges", filters: ["category", "brand", "price", "rating", "shipping_speed"] },
@@ -750,16 +795,29 @@
 
   const INTENT_RULES = [
     {
-      intent: "amazon_marketplace",
-      templateId: "mega-marketplace",
-      catalogType: "dense_marketplace_catalog",
+      intent: "mega_retail_store",
+      templateId: "mega-retail-store",
+      catalogType: "single_vendor_dense_catalog",
       keywords: [
-        "tipo amazon", "como amazon", "amazon style", "mega marketplace", "marketplace",
+        "tipo amazon", "como amazon", "amazon style", "mega tienda", "mega store", "tienda grande",
         "muchas categorias", "muchas categorías", "muchos productos", "busqueda y filtros", "búsqueda y filtros",
         "multi category", "multi-categoria", "catalogo grande", "catálogo grande", "catalogo variado", "catálogo variado",
         "productos variados", "variedad", "variado", "de todo", "todo tipo", "cosas raras", "cosas inusuales",
         "inusual", "unusual", "nada comun", "nada común", "poco comun", "poco común", "dificil de encontrar",
         "difícil de encontrar", "curiosidades", "gadgets", "anime", "juguetes", "accesorios para carros",
+        "mi tienda", "mis productos", "yo vendo", "voy a vender", "inventario propio", "un solo vendedor",
+        "una sola tienda", "single vendor", "owned inventory",
+      ],
+    },
+    {
+      intent: "amazon_marketplace",
+      templateId: "mega-marketplace",
+      catalogType: "dense_marketplace_catalog",
+      keywords: [
+        "mega marketplace", "marketplace multi vendor", "marketplace multi-vendedor", "multi vendedor",
+        "multi-vendedor", "multi seller", "multiseller", "vendedores externos", "external sellers",
+        "third party sellers", "que otros vendan", "otros vendedores", "plataforma para vendedores",
+        "seller onboarding", "vendor onboarding", "vendor payout", "payouts", "comisiones a vendedores",
       ],
     },
     {
@@ -866,7 +924,7 @@
     },
     {
       intent: "minimal_premium",
-      templateId: "apple-premium-product",
+      templateId: "premium-product-store",
       catalogType: "premium_editorial_catalog",
       keywords: [
         "premium minimalista", "producto premium", "minimalista para una linea",
@@ -921,6 +979,10 @@
     return broadCatalog;
   }
 
+  function suggestsMultiVendorMarketplace(normalizedPrompt) {
+    return /\b(multi vendedor|multi-vendedor|multi seller|multiseller|vendedores externos|external sellers|third party sellers|otros vendedores|que otros vendan|plataforma para vendedores|seller onboarding|vendor onboarding|vendor payout|payouts|comisiones a vendedores|marketplace multi vendor|marketplace multi-vendedor)\b/.test(normalizedPrompt);
+  }
+
   function suggestsJewelryAccessoryStore(normalizedPrompt) {
     const automotiveAccessory = /\b(accesorios? (para|de) (carros|autos|automotriz|automotrices|camionetas|motos|4x4)|auto accessories|car accessories)\b/.test(normalizedPrompt);
     if (automotiveAccessory) return false;
@@ -947,14 +1009,16 @@
     if (/\b(saas|enterprise|software|automatizacion|platform|plataforma|dashboard|crm|erp|api|demo|workflow)\b/.test(normalizedPrompt) && rule.intent === "b2b_enterprise_saas") return 118;
     if (/\b(manufacturing|industrial|fabrica|fabricante|maquinaria|repuestos|tools supplier|rfq|proveedor industrial|suministros industriales)\b/.test(normalizedPrompt) && rule.intent === "manufacturing_industrial_supplier") return 118;
     if (/\b(curso|cursos|course|academy|academia|bootcamp|training|clases|masterclass|workshop)\b/.test(normalizedPrompt) && rule.intent === "education_academy") return 116;
-    if (/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|mega marketplace)\b/.test(normalizedPrompt) && rule.intent === "amazon_marketplace") return 140;
-    if (rule.intent === "amazon_marketplace" && suggestsFocusedCommerceStore(normalizedPrompt) && !suggestsBroadMarketplace(normalizedPrompt)) return -80;
-    if (suggestsBroadMarketplace(normalizedPrompt) && rule.intent === "amazon_marketplace") return 105;
+    if (suggestsMultiVendorMarketplace(normalizedPrompt) && rule.intent === "amazon_marketplace") return 145;
+    if (/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|catalogo grande|catalogo variado|productos variados|de todo|todo tipo)\b/.test(normalizedPrompt) && rule.intent === "mega_retail_store" && !suggestsMultiVendorMarketplace(normalizedPrompt)) return 140;
+    if (rule.intent === "amazon_marketplace" && !suggestsMultiVendorMarketplace(normalizedPrompt)) return -90;
+    if (suggestsBroadMarketplace(normalizedPrompt) && rule.intent === "mega_retail_store" && !suggestsMultiVendorMarketplace(normalizedPrompt)) return 115;
+    if (rule.intent === "amazon_marketplace" && suggestsFocusedCommerceStore(normalizedPrompt) && !suggestsMultiVendorMarketplace(normalizedPrompt)) return -80;
     if (suggestsJewelryAccessoryStore(normalizedPrompt) && rule.intent === "fashion") return 124;
     if (suggestsFocusedCommerceStore(normalizedPrompt) && rule.intent === "fashion") return 112;
     if (suggestsFocusedProductLine(normalizedPrompt) && rule.intent === "minimal_premium") return 108;
     if (rule.intent === "minimal_premium" && !suggestsFocusedProductLine(normalizedPrompt)) return -30;
-    if (rule.intent === "fashion" && suggestsBroadMarketplace(normalizedPrompt)) return -20;
+    if (rule.intent === "fashion" && suggestsBroadMarketplace(normalizedPrompt) && !suggestsFocusedCommerceStore(normalizedPrompt)) return -20;
     return 0;
   }
 
@@ -1070,14 +1134,16 @@
     const fallbackIds = normalized.includes("restaurant") || normalized.includes("restaurante") || normalized.includes("comida") || /restaurant|menu|food/.test(primaryCatalogType)
       ? ["restaurant-food-business", "lead-funnel-pro", "home-services-premium", "booking-appointment-pro"]
       : normalized.includes("digital") || normalized.includes("curso") || /digital|pricing|software|course/.test(primaryCatalogType)
-        ? ["digital-products-store", "lead-funnel-pro", "apple-premium-product", "corporate-company-pro"]
+        ? ["digital-products-store", "lead-funnel-pro", "premium-product-store", "corporate-company-pro"]
       : suggestsFocusedCommerceStore(normalized) || /lookbook|collection/.test(primaryCatalogType)
-      ? ["fashion-drop-pro", "luxury-high-ticket-pro", "apple-premium-product", "listing-marketplace-pro"]
-      : normalized.includes("marketplace") || /real_estate|listing|dense/.test(primaryCatalogType)
-      ? ["real-estate-listings-pro", "mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro"]
+      ? ["fashion-drop-pro", "luxury-high-ticket-pro", "premium-product-store", "listing-marketplace-pro"]
+      : suggestsMultiVendorMarketplace(normalized) || /real_estate|listing/.test(primaryCatalogType)
+      ? ["mega-marketplace", "listing-marketplace-pro", "real-estate-listings-pro", "mega-retail-store"]
+      : /dense|single_vendor_dense/.test(primaryCatalogType) || suggestsBroadMarketplace(normalized)
+      ? ["mega-retail-store", "mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro"]
       : normalized.includes("servicio") || normalized.includes("service") || /service|booking/.test(primaryCatalogType)
         ? ["home-services-premium", "lead-funnel-pro", "local-services-pro-plus", "booking-appointment-pro"]
-        : ["lead-funnel-pro", "corporate-company-pro", "apple-premium-product", "fashion-drop-pro"];
+        : ["lead-funnel-pro", "corporate-company-pro", "premium-product-store", "fashion-drop-pro"];
 
     fallbackIds.forEach((templateId) => {
       const template = templates.find((item) => item.id === templateId);
@@ -1093,8 +1159,11 @@
   }
 
   function selectBestIntentRule(normalizedPrompt) {
-    if (/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|mega marketplace)\b/.test(normalizedPrompt) || suggestsBroadMarketplace(normalizedPrompt)) {
+    if (suggestsMultiVendorMarketplace(normalizedPrompt)) {
       return INTENT_RULES.find((rule) => rule.intent === "amazon_marketplace") || null;
+    }
+    if (/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|catalogo grande|catalogo variado|productos variados|de todo|todo tipo)\b/.test(normalizedPrompt) || suggestsBroadMarketplace(normalizedPrompt)) {
+      return INTENT_RULES.find((rule) => rule.intent === "mega_retail_store") || null;
     }
     if (suggestsFocusedProductLine(normalizedPrompt)) {
       return INTENT_RULES.find((rule) => rule.intent === "minimal_premium") || null;

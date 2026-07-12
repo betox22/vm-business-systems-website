@@ -1,25 +1,22 @@
 {
-  "id": "mega_marketplace",
-  "name": "Mega Marketplace",
+  "id": "mega_retail_store",
+  "name": "Mega Retail Store",
   "version": "0.1.0",
   "runtimeEnabled": true,
   "phaseStatus": "visual_prototype",
-  "category": "marketplace",
+  "category": "retail",
   "commerceCapabilitiesRef": "../../commerce-capabilities.json",
-  "commerceProfileId": "mega-marketplace",
+  "commerceProfileId": "mega-retail-store",
   "commerceModel": {
     "salesEnabled": true,
-    "ownershipModel": "multi_vendor",
-    "inventoryModel": "vendor_inventory",
-    "checkoutModel": "multi_vendor_checkout",
-    "orderSplitRequired": true,
+    "ownershipModel": "single_owner",
+    "inventoryModel": "owned_inventory",
+    "checkoutModel": "single_store_checkout",
+    "orderSplitRequired": false,
     "supportsPayments": true,
     "supportsShippingTracking": true,
     "supportsCustomerAccounts": true,
-    "supportsStoreAdmin": true,
-    "supportsVendorDashboard": true,
-    "supportsVendorLedger": true,
-    "supportsPayouts": true
+    "supportsStoreAdmin": true
   },
   "runtime": {
     "type": "static_visual_prototype",
@@ -39,7 +36,7 @@
   ],
   "missingPages": [
     "customer_account",
-    "vendor_dashboard"
+    "store_admin_inventory"
   ],
   "legalNaming": {
     "thirdPartyBrandReferencesAllowed": false,
@@ -47,18 +44,24 @@
       "third_party_marketplace_brand_names",
       "third_party_store_builder_brand_names"
     ],
-    "internalDirection": "High-density multi-vendor retail marketplace"
+    "internalDirection": "High-density single-owner retail catalog"
   },
   "bestFor": [
     "broad_catalog",
-    "multi_vendor",
+    "single_vendor",
+    "owned_inventory",
     "search_first_shopping",
     "deals_and_categories",
     "online_checkout",
     "customer_accounts",
-    "vendor_dashboard"
+    "store_admin_inventory"
   ],
   "notFor": [
+    "multi_vendor",
+    "external_sellers",
+    "seller_onboarding",
+    "vendor_payouts",
+    "classified_listings",
     "single_product_showcase",
     "restaurant_menu_only",
     "appointment_booking_only",
@@ -68,51 +71,50 @@
   "requiredPages": [
     {
       "id": "home",
-      "purpose": "Search-first marketplace landing page with departments, deals, product rails, and trust signals."
+      "purpose": "Search-first retail landing page with departments, deals, product rails, and trust signals."
     },
     {
       "id": "catalog",
-      "purpose": "Filterable product listing with categories, search, sorting, price filters, ratings, and vendor/product cards."
+      "purpose": "Filterable owned product catalog with categories, search, sorting, price filters, ratings, and product cards."
     },
     {
       "id": "product_detail",
-      "purpose": "Product detail page with gallery, price, vendor, shipping, variants, reviews, and add-to-cart."
+      "purpose": "Product detail page with gallery, price, shipping, variants, reviews, and add-to-cart."
     },
     {
       "id": "cart",
-      "purpose": "Multi-vendor cart grouped by vendor, showing shipping and checkout readiness."
+      "purpose": "Single-owner cart showing items, shipping estimate, tax estimate, and checkout readiness."
     },
     {
       "id": "checkout",
-      "purpose": "Secure checkout flow that can split one checkout into multiple vendor orders."
+      "purpose": "Secure checkout flow for one store order with inventory, tax, shipping, and payment validation."
     },
     {
       "id": "customer_account",
       "purpose": "Customer orders, addresses, profile, saved items, and support."
     },
     {
-      "id": "vendor_dashboard",
-      "purpose": "Vendor product management, order management, sales summary, and payout status."
+      "id": "store_admin_inventory",
+      "purpose": "Owner product management, inventory, promotions, categories, and order status."
     }
   ],
   "requiredSections": [
-    "marketplace_header",
+    "retail_header",
     "global_search_bar",
     "department_navigation",
     "hero_deal_band",
     "category_tiles",
     "deal_rail",
     "recommended_product_grid",
-    "vendor_spotlight",
-    "trust_and_delivery_strip",
+    "owned_inventory_trust_strip",
     "newsletter_or_account_cta",
-    "marketplace_footer"
+    "retail_footer"
   ],
   "dataContracts": {
     "productCard": {
       "required": [
         "id",
-        "vendorId",
+        "sku",
         "name",
         "category",
         "price",
@@ -122,23 +124,20 @@
         "imageUrl",
         "inventoryStatus",
         "shippingBadge"
+      ],
+      "optional": [
+        "brand",
+        "collection",
+        "discountLabel",
+        "variantOptions"
       ]
     },
-    "vendor": {
+    "cart": {
       "required": [
-        "id",
-        "displayName",
-        "status",
-        "rating",
-        "fulfillmentPolicy"
-      ]
-    },
-    "cartGroup": {
-      "required": [
-        "vendorId",
         "items",
         "subtotal",
         "shippingEstimate",
+        "taxEstimate",
         "checkoutEligible"
       ]
     },
@@ -148,29 +147,21 @@
         "customerId",
         "orderNumber",
         "status",
-        "total",
-        "vendorSplits"
-      ]
-    },
-    "vendorLedgerEntry": {
-      "required": [
-        "id",
-        "vendorId",
-        "orderId",
-        "grossAmount",
-        "commissionAmount",
-        "netAmount",
-        "status"
+        "subtotal",
+        "shippingAmount",
+        "taxAmount",
+        "total"
       ]
     }
   },
   "aiUsageRules": [
-    "AI may choose copy, ordering, category labels, product descriptions, and visual tone.",
+    "AI may choose copy, ordering, category labels, product descriptions, visual tone, and product grouping.",
     "AI must not invent unsupported component types.",
     "AI must not output raw HTML, raw JavaScript, or arbitrary CSS.",
     "AI must produce structured JSON that conforms to the template data contracts.",
     "AI must preserve the selected template family unless the user explicitly asks to change it.",
-    "AI must adapt the marketplace to the client business instead of pasting client notes directly into the page."
+    "AI must use this template for broad catalogs managed by one owner, not for external vendor marketplaces.",
+    "AI must adapt the store to the client business instead of pasting client notes directly into the page."
   ],
   "securityControlsRef": "./contracts/security-controls.json"
 }

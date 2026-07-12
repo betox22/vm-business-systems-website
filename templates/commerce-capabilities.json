@@ -1,0 +1,323 @@
+{
+  "version": 1,
+  "purpose": "Shared commerce capability contract used by every runtime template that sells products, services, bookings, tickets, menus, or digital goods.",
+  "policy": {
+    "templatesDoNotOwnCommerceLogic": true,
+    "templatesConsumeCommerceCapabilities": true,
+    "paymentSecretsMustStayServerSide": true,
+    "shippingProviderSecretsMustStayServerSide": true,
+    "manualPaymentMethodsRequireAdminVerification": true,
+    "webhooksAreRequiredForProductionPayments": true,
+    "auditLogsRequiredForAdminChanges": true
+  },
+  "platformCapabilities": {
+    "platformBilling": {
+      "purpose": "KREATON charges clients for platform access, plans, add-ons, usage, and optional platform fees. This ledger is separate from store sales.",
+      "billingModel": "subscription_first",
+      "revenueTypes": [
+        "monthly_subscription",
+        "annual_subscription",
+        "setup_fee",
+        "addon_fee",
+        "usage_fee",
+        "optional_transaction_fee",
+        "domain_or_service_fee"
+      ],
+      "requiredModules": [
+        "plans",
+        "subscriptions",
+        "subscription_invoices",
+        "subscription_payments",
+        "feature_entitlements",
+        "usage_metering",
+        "billing_events",
+        "account_balance",
+        "dunning_and_suspension",
+        "billing_audit_log"
+      ],
+      "rules": [
+        "KREATON billing records must never be stored inside customer store order tables.",
+        "Store payment provider payouts must never be treated as KREATON subscription revenue.",
+        "Every invoice, payment, credit, refund, plan change, and suspension must be auditable.",
+        "Plans decide feature access, limits, and usage allowances.",
+        "Optional transaction fees can exist, but subscriptions are the primary revenue model."
+      ],
+      "clientVisibleReports": [
+        "current_plan",
+        "next_renewal_date",
+        "monthly_platform_charges",
+        "open_invoices",
+        "paid_invoices",
+        "usage_summary",
+        "feature_limits",
+        "platform_fee_summary"
+      ]
+    },
+    "orders": {
+      "statuses": [
+        "draft",
+        "pending_payment",
+        "payment_processing",
+        "paid",
+        "partially_fulfilled",
+        "fulfilled",
+        "cancelled",
+        "refunded",
+        "failed"
+      ],
+      "requiredModules": [
+        "cart",
+        "checkout",
+        "order_confirmation",
+        "customer_order_history",
+        "admin_order_manager",
+        "inventory_reservation",
+        "payment_transaction_log",
+        "fulfillment_manager"
+      ]
+    },
+    "payments": {
+      "purpose": "Store payments are the money collected by the client's business from its buyers. This ledger is separate from KREATON subscription billing.",
+      "currentBuildScope": "stripe_first_provider_open_gateway",
+      "gatewayArchitecture": {
+        "strategy": "provider_adapter",
+        "activeProviderForPhase1": "stripe",
+        "firstCheckoutSurface": "stripe_checkout",
+        "firstMarketplaceSurface": "stripe_connect",
+        "inactiveButReservedProviderSlots": [
+          "paypal",
+          "local_manual",
+          "financing",
+          "alternate_card_processor"
+        ],
+        "providerInterface": [
+          "create_provider_account",
+          "connect_provider_account",
+          "create_checkout_session",
+          "confirm_payment_event",
+          "refund_payment",
+          "record_dispute",
+          "list_payouts",
+          "disconnect_provider_account"
+        ],
+        "rules": [
+          "Templates request payment capabilities but never call payment providers directly.",
+          "Backend provider adapters own all provider-specific API calls.",
+          "Stripe is the only production provider approved for the first payment build.",
+          "Other providers must be added behind the same adapter interface.",
+          "Manual/local payment methods never auto-confirm an order.",
+          "Financing/credit must be handled as a separate module from normal payment capture."
+        ]
+      },
+      "primaryProvider": "stripe",
+      "secondaryProvider": "paypal",
+      "futureProviders": [
+        "local_manual",
+        "financing",
+        "adyen",
+        "square",
+        "braintree"
+      ],
+      "secureMethods": [
+        {
+          "id": "card",
+          "label": "Credit and debit cards",
+          "provider": "stripe",
+          "productionRequirement": "Use provider-hosted/tokenized card entry. Never store card numbers."
+        },
+        {
+          "id": "apple_pay",
+          "label": "Apple Pay",
+          "provider": "stripe_or_paypal",
+          "productionRequirement": "Requires domain verification and wallet-capable checkout integration."
+        },
+        {
+          "id": "google_pay",
+          "label": "Google Pay",
+          "provider": "stripe_or_paypal",
+          "productionRequirement": "Requires wallet-capable checkout integration."
+        },
+        {
+          "id": "paypal",
+          "label": "PayPal",
+          "provider": "paypal",
+          "productionRequirement": "Use PayPal Orders/Checkout server-side capture and webhook reconciliation."
+        },
+        {
+          "id": "manual_transfer",
+          "label": "Manual transfer / Zelle / local bank method",
+          "provider": "manual",
+          "productionRequirement": "Order remains pending until an authorized admin verifies payment."
+        },
+        {
+          "id": "financing_manual",
+          "label": "Manual credit / installments",
+          "provider": "financing",
+          "productionRequirement": "Order requires merchant approval, installment schedule, and manual payment reconciliation."
+        }
+      ],
+      "adminControls": [
+        "enable_disable_methods_by_store",
+        "set_provider_account_per_store",
+        "set_currency",
+        "set_capture_mode",
+        "set_manual_payment_instructions",
+        "refund_or_partial_refund_when_provider_supports_it",
+        "view_payment_status_and_webhook_history"
+      ],
+      "clientVisibleReports": [
+        "gross_sales",
+        "refunds",
+        "net_sales",
+        "payment_provider_fees",
+        "manual_payments_pending_verification",
+        "payouts",
+        "disputes",
+        "tax_and_shipping_collected",
+        "order_payment_reconciliation"
+      ]
+    },
+    "shipping": {
+      "providerStrategy": "adapter",
+      "recommendedAggregator": "easypost",
+      "futureAggregators": [
+        "shippo",
+        "shipstation",
+        "direct_carrier_api"
+      ],
+      "capabilities": [
+        "carrier_rate_quote",
+        "label_purchase",
+        "manual_tracking_number",
+        "tracking_webhook",
+        "delivery_status_normalization",
+        "customer_tracking_page",
+        "admin_fulfillment_status"
+      ],
+      "trackingStatuses": [
+        "unknown",
+        "pre_transit",
+        "in_transit",
+        "out_for_delivery",
+        "delivered",
+        "available_for_pickup",
+        "return_to_sender",
+        "failure",
+        "cancelled",
+        "error"
+      ],
+      "adminControls": [
+        "connect_carrier_provider",
+        "set_shipping_zones",
+        "set_flat_rate_or_free_shipping_rules",
+        "create_or_enter_tracking_number",
+        "sync_tracking_status",
+        "send_customer_tracking_notifications"
+      ]
+    },
+    "storeAdmin": {
+      "requiredModulesForSalesTemplates": [
+        "dashboard",
+        "products",
+        "categories",
+        "inventory",
+        "orders",
+        "customers",
+        "payments",
+        "shipping_and_tracking",
+        "discounts",
+        "settings",
+        "staff_roles",
+        "audit_log"
+      ],
+      "roles": [
+        "owner",
+        "admin",
+        "manager",
+        "staff",
+        "fulfillment",
+        "support"
+      ]
+    }
+  },
+  "templateCommerceProfiles": {
+    "mega-retail-store": {
+      "salesEnabled": true,
+      "ownershipModel": "single_owner",
+      "orderSplitRequired": false,
+      "inventoryModel": "owned_inventory",
+      "checkoutModel": "single_store_checkout",
+      "requiredAdminModules": [
+        "products",
+        "categories",
+        "inventory",
+        "orders",
+        "customers",
+        "payments",
+        "shipping_and_tracking",
+        "discounts",
+        "staff_roles",
+        "audit_log"
+      ],
+      "requiredCustomerModules": [
+        "account",
+        "cart",
+        "checkout",
+        "order_history",
+        "tracking_page",
+        "support"
+      ]
+    },
+    "mega-marketplace": {
+      "salesEnabled": true,
+      "ownershipModel": "multi_vendor",
+      "orderSplitRequired": true,
+      "inventoryModel": "vendor_inventory",
+      "checkoutModel": "multi_vendor_checkout",
+      "requiredAdminModules": [
+        "vendor_approval",
+        "vendor_products",
+        "global_orders",
+        "vendor_orders",
+        "payments",
+        "shipping_and_tracking",
+        "commissions",
+        "vendor_ledger",
+        "payouts",
+        "disputes",
+        "audit_log"
+      ],
+      "requiredCustomerModules": [
+        "account",
+        "cart",
+        "checkout",
+        "order_history",
+        "tracking_page",
+        "support"
+      ],
+      "requiredVendorModules": [
+        "vendor_dashboard",
+        "vendor_products",
+        "vendor_inventory",
+        "vendor_orders",
+        "vendor_shipments",
+        "vendor_ledger",
+        "vendor_payouts"
+      ]
+    },
+    "sales-template-default": {
+      "salesEnabled": true,
+      "ownershipModel": "single_owner",
+      "orderSplitRequired": false,
+      "inventoryModel": "owned_inventory",
+      "checkoutModel": "single_store_checkout",
+      "requiredAdminModules": [
+        "products_or_services",
+        "orders_or_leads",
+        "payments",
+        "settings",
+        "audit_log"
+      ]
+    }
+  }
+}

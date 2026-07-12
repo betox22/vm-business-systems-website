@@ -13,13 +13,19 @@ TEMPLATE_CATALOG: Dict[str, Dict[str, str]] = {
         "catalogType": "dense_marketplace_catalog",
         "audience": "Shoppers comparing many categories, deals, novelty products and fast-buy options.",
     },
+    "mega-retail-store": {
+        "name": "Mega Retail Store",
+        "websiteType": "online_store",
+        "catalogType": "single_vendor_dense_catalog",
+        "audience": "Shoppers browsing a broad catalog owned and fulfilled by one business.",
+    },
     "listing-marketplace-pro": {
         "name": "Listing Marketplace",
         "websiteType": "marketplace",
         "catalogType": "listing_marketplace_catalog",
         "audience": "Buyers comparing listings, sellers, conditions, prices and availability.",
     },
-    "apple-premium-product": {
+    "premium-product-store": {
         "name": "Premium Product",
         "websiteType": "premium_product",
         "catalogType": "premium_editorial_catalog",
@@ -117,6 +123,17 @@ TEMPLATE_CATALOG: Dict[str, Dict[str, str]] = {
     },
 }
 
+TEMPLATE_ID_ALIASES: Dict[str, str] = {
+    "apple-premium-product": "premium-product-store",
+    "premium-product-showcase": "premium-product-store",
+    "luxury-product-store": "premium-product-store",
+}
+
+
+def normalize_template_id(template_id: str | None) -> str:
+    value = (template_id or "").strip()
+    return TEMPLATE_ID_ALIASES.get(value, value)
+
 
 def normalize_text(value: str | None) -> str:
     return re.sub(r"\s+", " ", (value or "").strip().lower())
@@ -162,6 +179,13 @@ def suggests_broad_marketplace(text: str, product_count: int = 0) -> bool:
     if suggests_focused_commerce(text):
         return False
     return broad_words or product_count >= 5
+
+
+def suggests_multi_vendor_marketplace(text: str) -> bool:
+    return bool(re.search(
+        r"\b(multi vendedor|multi-vendedor|multi seller|multiseller|vendedores externos|external sellers|third party sellers|otros vendedores|seller onboarding|vendor onboarding|vendor payout|payouts|comisiones a vendedores)\b",
+        text,
+    ))
 
 
 class BaseAgent:
@@ -261,16 +285,23 @@ class StrategyAgent(BaseAgent):
         reasons: Dict[str, List[str]] = {template_id: [] for template_id in TEMPLATE_CATALOG}
 
         def add(template_id: str, points: int, reason: str) -> None:
+            template_id = normalize_template_id(template_id)
+            if template_id not in TEMPLATE_CATALOG:
+                return
             scores[template_id] += points
             reasons[template_id].append(reason)
 
+        existing_template_id = normalize_template_id(existing_template_id)
         if existing_template_id in TEMPLATE_CATALOG:
             add(existing_template_id, 18, "existing valid template signal")
 
+        multi_vendor_marketplace = suggests_multi_vendor_marketplace(text)
         broad_marketplace = suggests_broad_marketplace(text, product_count)
 
-        if broad_marketplace:
+        if multi_vendor_marketplace:
             add("mega-marketplace", 150, "broad multi-category catalog")
+        elif broad_marketplace:
+            add("mega-retail-store", 150, "broad single-owner retail catalog")
 
         if re.search(r"\b(ebay|listing|listados|vendedores|seller|subasta|auction|usado|condition)\b", text):
             add("listing-marketplace-pro", 120, "listing and seller comparison flow")
@@ -286,7 +317,7 @@ class StrategyAgent(BaseAgent):
             text,
         )
         if focused_product and scores["mega-marketplace"] < 100:
-            add("apple-premium-product", 118, "focused premium product line")
+            add("premium-product-store", 118, "focused premium product line")
 
         if re.search(r"\b(lujo|luxury|joyeria|jewelry|reloj|watch|arte|coleccionable|carro de lujo|private viewing)\b", text):
             add("luxury-high-ticket-pro", 120, "high-ticket private-showroom offer")

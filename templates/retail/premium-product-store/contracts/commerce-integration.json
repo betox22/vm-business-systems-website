@@ -1,0 +1,154 @@
+{
+  "templateId": "premium_product_store",
+  "version": 1,
+  "purpose": "Backend and commerce integration contract for the premium single-owner product store template.",
+  "commerceProfileId": "sales-template-default",
+  "ownershipModel": "single_owner",
+  "checkoutModel": "single_store_checkout",
+  "paymentProviderStrategy": {
+    "templatesDoNotCallProvidersDirectly": true,
+    "primaryProvider": "stripe",
+    "secondaryProviderReserved": "paypal",
+    "manualMethodsReserved": [
+      "manual_transfer",
+      "financing_manual"
+    ],
+    "requiredBackendControls": [
+      "server_side_checkout_session_creation",
+      "idempotency_key_validation",
+      "payment_webhook_reconciliation",
+      "inventory_reservation",
+      "order_creation_transaction",
+      "refund_event_log",
+      "payment_status_history"
+    ]
+  },
+  "screens": [
+    {
+      "screen": "Home",
+      "area": "public_storefront",
+      "reads": [
+        "GET /api/v1/storefront/{businessId}/home",
+        "GET /api/v1/storefront/{businessId}/featured-products",
+        "GET /api/v1/storefront/{businessId}/categories"
+      ],
+      "writes": [
+        "POST /api/v1/checkout/cart/items"
+      ]
+    },
+    {
+      "screen": "CategoryIndex",
+      "area": "public_storefront",
+      "reads": [
+        "GET /api/v1/storefront/{businessId}/categories"
+      ],
+      "writes": []
+    },
+    {
+      "screen": "Shop",
+      "area": "public_storefront",
+      "reads": [
+        "GET /api/v1/storefront/{businessId}/products",
+        "GET /api/v1/storefront/{businessId}/categories"
+      ],
+      "writes": [
+        "POST /api/v1/checkout/cart/items"
+      ]
+    },
+    {
+      "screen": "ProductDetail",
+      "area": "public_storefront",
+      "reads": [
+        "GET /api/v1/storefront/{businessId}/products/{productSlug}",
+        "GET /api/v1/storefront/{businessId}/products/{productSlug}/related"
+      ],
+      "writes": [
+        "POST /api/v1/checkout/cart/items"
+      ]
+    },
+    {
+      "screen": "Cart",
+      "area": "customer_checkout",
+      "reads": [
+        "GET /api/v1/checkout/cart",
+        "POST /api/v1/checkout/quote"
+      ],
+      "writes": [
+        "PATCH /api/v1/checkout/cart/items/{cartItemId}",
+        "DELETE /api/v1/checkout/cart/items/{cartItemId}",
+        "POST /api/v1/checkout/quote"
+      ]
+    },
+    {
+      "screen": "Checkout",
+      "area": "customer_checkout",
+      "reads": [
+        "GET /api/v1/checkout/cart",
+        "POST /api/v1/checkout/quote"
+      ],
+      "writes": [
+        "POST /api/v1/checkout/create-session",
+        "POST /api/v1/checkout/place-manual-order"
+      ],
+      "requiredHeaders": [
+        "Idempotency-Key"
+      ]
+    },
+    {
+      "screen": "OrderConfirmation",
+      "area": "customer_checkout",
+      "reads": [
+        "GET /api/v1/customer/orders/{orderNumber}"
+      ],
+      "writes": []
+    },
+    {
+      "screen": "CustomerAccount",
+      "area": "customer_portal",
+      "requiresAuth": true,
+      "reads": [
+        "GET /api/v1/customer/me",
+        "GET /api/v1/customer/orders",
+        "GET /api/v1/customer/addresses",
+        "GET /api/v1/customer/support"
+      ],
+      "writes": [
+        "PATCH /api/v1/customer/me",
+        "POST /api/v1/customer/addresses",
+        "POST /api/v1/customer/support"
+      ]
+    },
+    {
+      "screen": "StoreAdminProducts",
+      "area": "store_owner_portal",
+      "requiresAuth": true,
+      "requiredRoles": [
+        "store_owner",
+        "manager"
+      ],
+      "reads": [
+        "GET /api/v1/store-owner/{businessId}/dashboard",
+        "GET /api/v1/store-owner/{businessId}/products",
+        "GET /api/v1/store-owner/{businessId}/orders",
+        "GET /api/v1/store-owner/{businessId}/payments",
+        "GET /api/v1/store-owner/{businessId}/shipping"
+      ],
+      "writes": [
+        "POST /api/v1/store-owner/{businessId}/products",
+        "PATCH /api/v1/store-owner/{businessId}/products/{productId}",
+        "PATCH /api/v1/store-owner/{businessId}/orders/{orderId}/status",
+        "PATCH /api/v1/store-owner/{businessId}/shipping/{orderId}"
+      ]
+    }
+  ],
+  "globalRules": [
+    "Every protected read and write must validate business_id ownership.",
+    "The storefront can display active published records only.",
+    "The template must never store payment secrets, provider keys, or raw card data.",
+    "Checkout mutations require an Idempotency-Key header.",
+    "Payment success is final only after backend provider webhook reconciliation.",
+    "Manual/local payments keep the order in pending_payment until verified by an authorized store user.",
+    "Customer accounts can only read records linked to the authenticated user_id.",
+    "Store owner and staff mutations must write audit log entries."
+  ]
+}

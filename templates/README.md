@@ -1,6 +1,9 @@
 # AI Store Builder Templates
 
-This package includes 12 reusable website templates for an AI website/store builder.
+This package includes reusable website templates for an AI website/store builder.
+Most entries are structural/reference templates. Runtime-enabled templates are
+tracked separately so Lyra only executes templates that have real HTML/CSS/JS or
+renderer support.
 
 ## Files
 
@@ -77,6 +80,33 @@ Your app needs section components matching the `section.type` values, for exampl
 - `startup_hero`
 
 That is the correct architecture because the AI should generate content, while your app controls design quality.
+
+## Runtime vs reference assets
+
+Template preview images are not executable templates. They are reference assets
+used to guide visual direction while real template packs are built one by one.
+
+Use `template-runtime-registry.json` as the source of truth for what Lyra can
+use as an executable runtime template. If `runtimeEnabled` is not `true`, the
+asset must stay isolated from runtime fallback generation.
+
+Current runtime-enabled packs:
+
+- `mega-marketplace`: multi-vendor marketplace with external sellers, seller
+  onboarding, split orders, commissions, and vendor payout logic.
+- `mega-retail-store`: large single-owner retail catalog with many categories,
+  one store-owned inventory model, one cart, and one checkout flow.
+- `premium-product-store`: premium single-owner product line store with
+  categories, product details, internal specs/compare, cart, checkout, customer
+  account, store owner admin, payment method configuration, and tracking hooks.
+
+Runtime templates must include backend contracts. Sales templates must expose
+catalog, cart, checkout, orders, customer account, store admin, payment method
+configuration, shipping/tracking, and audit-log paths. Informational templates
+must expose at least users, admin content updates, media, publish status, and
+audit log.
+
+See `TEMPLATE_PIPELINE.md` for the conversion process.
 
 
 ## Version 2 additions

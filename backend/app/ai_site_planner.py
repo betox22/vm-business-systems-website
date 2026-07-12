@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
-from .agents import TEMPLATE_CATALOG
+from .agents import TEMPLATE_CATALOG, normalize_template_id
 from .models import AgentResult, ProjectState, WebsiteType
 
 
@@ -67,6 +67,7 @@ SalesFlow = Literal[
 
 CatalogStrategy = Literal[
     "dense_marketplace_catalog",
+    "single_vendor_dense_catalog",
     "listing_marketplace_catalog",
     "focused_online_store",
     "premium_editorial_catalog",
@@ -235,9 +236,10 @@ class AIWebGenerationResponse(BaseModel):
     catalogItems: List[Dict[str, Any]] = Field(default_factory=list)
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
-    @field_validator("templateId")
+    @field_validator("templateId", mode="before")
     @classmethod
     def template_must_exist(cls, value: str) -> str:
+        value = normalize_template_id(str(value or ""))
         if value not in TEMPLATE_CATALOG:
             raise ValueError(f"Unsupported template id: {value}")
         return value
@@ -283,7 +285,7 @@ def state_to_client_summary(state: ProjectState, user_input: str) -> Dict[str, A
         "preferredColors": state.preferredColors,
         "selectedLanguage": state.selectedLanguage,
         "salesFlow": state.salesFlow,
-        "selectedTemplateId": state.selectedTemplateId,
+        "selectedTemplateId": normalize_template_id(state.selectedTemplateId),
     }
 
 

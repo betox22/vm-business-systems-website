@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Premium Product Store Visual Prototype</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="premium-shell">
+      <header class="premium-header">
+        <button class="brand" type="button" data-route="home" aria-label="Go to home">
+          <span class="brand-mark">K</span>
+          <span class="brand-name">KREATON Premium</span>
+        </button>
+
+        <nav class="main-nav" aria-label="Premium product navigation">
+          <button type="button" data-route="shop">Shop</button>
+          <button type="button" data-route="categories">Categories</button>
+          <button type="button" data-route="cart">Cart</button>
+        </nav>
+
+        <div class="header-actions">
+          <button class="ghost-link" type="button" data-route="categories">Collections</button>
+          <button class="ghost-link" type="button" data-route="account">Account</button>
+          <button class="buy-button" type="button" data-route="cart">Cart</button>
+        </div>
+      </header>
+
+      <main id="app" class="premium-canvas" aria-live="polite"></main>
+
+      <footer class="premium-footer">
+        <strong>KREATON Premium Product Store</strong>
+        <span>Focused product storytelling, direct checkout, and owned inventory.</span>
+        <div>
+          <button type="button" data-route="home">Home</button>
+          <button type="button" data-route="shop">Shop</button>
+          <button type="button" data-route="categories">Categories</button>
+          <button type="button" data-route="account">Account</button>
+          <button type="button" data-route="checkout">Checkout</button>
+          <button type="button" data-route="admin">Store admin</button>
+        </div>
+      </footer>
+    </div>
+
+    <script src="./prototype.js"></script>
+  </body>
+</html>

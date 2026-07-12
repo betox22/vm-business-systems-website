@@ -1,0 +1,196 @@
+{
+  "id": "premium_product_store",
+  "name": "Premium Product Store",
+  "version": "0.1.0",
+  "runtimeEnabled": true,
+  "phaseStatus": "runtime_backend_prototype",
+  "category": "retail",
+  "commerceCapabilitiesRef": "../../commerce-capabilities.json",
+  "commerceProfileId": "sales-template-default",
+  "commerceModel": {
+    "salesEnabled": true,
+    "ownershipModel": "single_owner",
+    "inventoryModel": "owned_inventory",
+    "checkoutModel": "single_store_checkout",
+    "orderSplitRequired": false,
+    "supportsPayments": true,
+    "supportsShippingTracking": true,
+    "supportsCustomerAccounts": true,
+    "supportsStoreAdmin": true
+  },
+  "runtime": {
+    "type": "static_visual_prototype",
+    "previewPath": "./phase-5/visual-prototype/preview.html",
+    "stylePath": "./phase-5/visual-prototype/styles.css",
+    "scriptPath": "./phase-5/visual-prototype/prototype.js"
+  },
+  "backend": {
+    "status": "prototype_api",
+    "framework": "FastAPI",
+    "router": "backend/app/commerce.py",
+    "contract": "./contracts/commerce-integration.json",
+    "paymentProviderStrategy": "stripe_checkout_sessions_server_side_first"
+  },
+  "referenceAssets": [
+    "/templates-preview/carousel-assets/apple_2.png"
+  ],
+  "implementedPages": [
+    "home",
+    "category_index",
+    "product_detail",
+    "cart",
+    "checkout",
+    "order_confirmation",
+    "customer_account",
+    "store_admin_products"
+  ],
+  "missingPages": [],
+  "legalNaming": {
+    "thirdPartyBrandReferencesAllowed": false,
+    "blockedPublicTerms": [
+      "third_party_premium_hardware_brand_names",
+      "third_party_store_builder_brand_names"
+    ],
+    "internalDirection": "Premium single-vendor product showcase with direct purchase flow"
+  },
+  "bestFor": [
+    "single_vendor",
+    "owned_inventory",
+    "single_product_showcase",
+    "small_product_line",
+    "premium_positioning",
+    "high_visual_impact",
+    "direct_checkout",
+    "product_specs",
+    "launch_story"
+  ],
+  "notFor": [
+    "broad_catalog",
+    "multi_vendor",
+    "external_sellers",
+    "marketplace_search_first",
+    "classified_listings",
+    "restaurant_menu_only",
+    "appointment_booking_only",
+    "simple_company_brochure"
+  ],
+  "requiredPages": [
+    {
+      "id": "home",
+      "purpose": "Premium first impression with one hero product, product story, feature proof, purchase CTA, and next-section visibility."
+    },
+    {
+      "id": "category_index",
+      "purpose": "Editable category and product-family index for premium single-vendor brands with multiple products, bundles, accessories, or care plans."
+    },
+    {
+      "id": "product_detail",
+      "purpose": "Product-focused detail page with gallery, variants, price, internal specs, internal model comparison, shipping, warranty, and add-to-cart."
+    },
+    {
+      "id": "cart",
+      "purpose": "Single-store cart for a focused product line."
+    },
+    {
+      "id": "checkout",
+      "purpose": "Secure checkout flow for one store order with tax, shipping, and payment validation."
+    },
+    {
+      "id": "customer_account",
+      "purpose": "Customer order history, support, addresses, and saved purchases."
+    },
+    {
+      "id": "store_admin_products",
+      "purpose": "Owner product management, inventory, variants, pricing, fulfillment status, media, and page content."
+    }
+  ],
+  "requiredSections": [
+    "premium_header",
+    "cinematic_hero",
+    "category_navigation",
+    "product_story_band",
+    "feature_spotlight",
+    "model_picker",
+    "product_specs_panel",
+    "product_compare_panel",
+    "review_proof",
+    "direct_purchase_cta",
+    "premium_footer"
+  ],
+  "dataContracts": {
+    "heroProduct": {
+      "required": [
+        "id",
+        "name",
+        "headline",
+        "subheadline",
+        "price",
+        "currency",
+        "imageUrl",
+        "primaryCta",
+        "secondaryCta"
+      ],
+      "optional": [
+        "launchLabel",
+        "videoUrl",
+        "imageSearchQuery",
+        "availabilityLabel"
+      ]
+    },
+    "productVariant": {
+      "required": [
+        "id",
+        "name",
+        "price",
+        "currency",
+        "colorName",
+        "inventoryStatus",
+        "sku"
+      ],
+      "optional": [
+        "storage",
+        "material",
+        "badge"
+      ]
+    },
+    "spec": {
+      "required": [
+        "specLabel",
+        "specValue"
+      ]
+    },
+    "cart": {
+      "required": [
+        "items",
+        "subtotal",
+        "shippingEstimate",
+        "taxEstimate",
+        "checkoutEligible"
+      ]
+    },
+    "order": {
+      "required": [
+        "id",
+        "customerId",
+        "orderNumber",
+        "status",
+        "subtotal",
+        "shippingAmount",
+        "taxAmount",
+        "total"
+      ]
+    }
+  },
+  "aiUsageRules": [
+    "AI may choose product copy, story sequence, model names, specs, color palette, and visual tone.",
+    "AI must not invent unsupported component types.",
+    "AI must not output raw HTML, raw JavaScript, or arbitrary CSS.",
+    "AI must produce structured JSON that conforms to the template data contracts.",
+    "AI must use this template for focused product lines, high-ticket products, electronics, premium accessories, specialized equipment, or portfolio-like product presentation.",
+    "AI must not use this template for broad multi-category stores or external vendor marketplaces.",
+    "AI must preserve the selected template family unless the user explicitly asks to change it.",
+    "AI must write persuasive product copy from the business description instead of pasting client notes directly into the page."
+  ],
+  "securityControlsRef": "./contracts/security-controls.json",
+  "commerceIntegrationRef": "./contracts/commerce-integration.json"
+}

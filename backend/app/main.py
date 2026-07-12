@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agents import split_items
+from .commerce import router as commerce_router
 from .models import LumaChatRequest, LumaChatResponse, WebsiteGenerationRequest, WebsiteGenerationResponse
 from .orchestrator import (
     LyraOrchestrator,
@@ -111,6 +112,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(commerce_router)
 
 
 @app.get("/healthz")

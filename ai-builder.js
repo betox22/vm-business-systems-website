@@ -632,7 +632,7 @@ let lastAssistantPromptSignature = "";
 
 const TEMPLATE_PREVIEW_CHOICES = [
   {
-    templateId: "apple-premium-product",
+    templateId: "premium-product-store",
     name: "Premium Product",
     names: { en: "Premium Product", es: "Producto premium", fr: "Produit premium", pt: "Produto premium" },
     catalogType: "premium_editorial_catalog",
@@ -727,6 +727,20 @@ const TEMPLATE_PREVIEW_CHOICES = [
       es: "Estilo proveedor B2B tecnico para manufactura, maquinaria, repuestos, herramientas, seguridad y cotizaciones por volumen.",
       fr: "Style fournisseur B2B technique pour fabrication, machines, pieces, outils, securite et demandes de devis.",
       pt: "Estilo fornecedor B2B tecnico para manufatura, maquinas, pecas, ferramentas, seguranca e cotacoes em volume.",
+    },
+  },
+  {
+    templateId: "mega-retail-store",
+    name: "Mega Retail Store",
+    names: { en: "Mega Retail Store", es: "Mega tienda retail", fr: "Mega boutique retail", pt: "Mega loja retail" },
+    catalogType: "single_vendor_dense_catalog",
+    image: "/templates-preview/carousel-assets/amazon_2.jpg",
+    description: "Large owned catalog store with search, categories, deals, filters, cart, checkout, and one-store inventory.",
+    descriptions: {
+      en: "Large owned catalog store with search, categories, deals, filters, cart, checkout, and one-store inventory.",
+      es: "Tienda de catalogo grande propia, con busqueda, categorias, ofertas, filtros, carrito, checkout e inventario de una sola empresa.",
+      fr: "Grande boutique catalogue avec recherche, categories, offres, filtres, panier, checkout et inventaire d'une seule entreprise.",
+      pt: "Loja de catalogo grande propria, com busca, categorias, ofertas, filtros, carrinho, checkout e inventario de uma empresa.",
     },
   },
   {
@@ -884,6 +898,104 @@ const TEMPLATE_PREVIEW_CHOICES = [
     },
   },
 ];
+
+const TEMPLATE_ID_ALIASES = Object.freeze({
+  "apple-premium-product": "premium-product-store",
+  "premium-product-showcase": "premium-product-store",
+  "luxury-product-store": "premium-product-store",
+});
+
+function normalizeTemplateId(templateId = "") {
+  const id = String(templateId || "").trim();
+  return TEMPLATE_ID_ALIASES[id] || id;
+}
+
+const TEMPLATE_REFERENCE_EXECUTION_STATUS = Object.freeze({
+  status: "reference_only",
+  sourceType: "reference_asset",
+  runtimeEnabled: false,
+  runtimePath: "",
+});
+
+const TEMPLATE_EXECUTION_STATUS = Object.freeze({
+  "premium-product-store": Object.freeze({
+    status: "runtime_backend_prototype",
+    sourceType: "runtime_template",
+    runtimeEnabled: true,
+    runtimePath: "/templates/retail/premium-product-store/phase-5/visual-prototype/preview.html",
+    manifestPath: "/templates/retail/premium-product-store/template.manifest.json",
+    backendContractPath: "/templates/retail/premium-product-store/contracts/commerce-integration.json",
+  }),
+  "mega-retail-store": Object.freeze({
+    status: "runtime_prototype",
+    sourceType: "runtime_template",
+    runtimeEnabled: true,
+    runtimePath: "/templates/retail/mega-retail-store/phase-5/visual-prototype/preview.html",
+    manifestPath: "/templates/retail/mega-retail-store/template.manifest.json",
+  }),
+  "mega-marketplace": Object.freeze({
+    status: "runtime_prototype",
+    sourceType: "runtime_template",
+    runtimeEnabled: true,
+    runtimePath: "/templates/marketplace/mega-marketplace/phase-5/visual-prototype/preview.html",
+    manifestPath: "/templates/marketplace/mega-marketplace/template.manifest.json",
+  }),
+});
+
+function templateExecutionStatus(templateId) {
+  const id = normalizeTemplateId(templateId);
+  return {
+    ...TEMPLATE_REFERENCE_EXECUTION_STATUS,
+    templateId: id,
+    ...(TEMPLATE_EXECUTION_STATUS[id] || {}),
+  };
+}
+
+function isRuntimeTemplateId(templateId) {
+  return Boolean(templateExecutionStatus(templateId).runtimeEnabled);
+}
+
+function withTemplateExecutionStatus(choice) {
+  if (!choice) return null;
+  const executionStatus = templateExecutionStatus(choice.templateId);
+  return {
+    ...choice,
+    executionStatus,
+    runtimeEnabled: executionStatus.runtimeEnabled,
+    sourceType: executionStatus.sourceType,
+  };
+}
+
+function runtimeTemplateSelection(selection) {
+  if (!selection || !isRuntimeTemplateId(selection.templateId)) return null;
+  return {
+    ...selection,
+    executionStatus: templateExecutionStatus(selection.templateId),
+  };
+}
+
+function stripReferenceTemplateRuntimePayload(payload = {}) {
+  const next = { ...payload };
+  delete next.templateId;
+  delete next.templateIntent;
+  delete next.catalogType;
+  delete next.selectedTemplate;
+  delete next.templateInstructions;
+  delete next.templateExecution;
+  delete next.sitePlan;
+  delete next.sitePlanApproved;
+  next.designStrategy = {
+    ...(next.designStrategy || {}),
+    diagnosis: null,
+    selectedTemplateId: "",
+    selectedCatalogType: "",
+    templateExecutionPolicy: {
+      status: "reference_selection_removed",
+      reason: "Reference-only visual assets are isolated from local runtime fallback generation.",
+    },
+  };
+  return next;
+}
 
 const TEMPLATE_PRESETS = [
   {
@@ -1626,20 +1738,20 @@ function canvasTemplateChoices(selectedTemplateId = "") {
     ["legal-professional-services-pro", "corporate-company-pro", "b2b-saas-enterprise-pro", "booking-appointment-pro", "medical-wellness-clinic-pro"].forEach(add);
   } else if (/clinic|medical|wellness|dental/.test(selectedText)) {
     ["medical-wellness-clinic-pro", "booking-appointment-pro", "local-services-pro-plus", "corporate-company-pro", "lead-funnel-pro"].forEach(add);
-  } else if (/marketplace|dense|mega/.test(selectedText)) {
-    ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro", "digital-products-store", "apple-premium-product"].forEach(add);
+  } else if (/single_vendor_dense|retail|dense|mega/.test(selectedText)) {
+    ["mega-retail-store", "mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro", "digital-products-store"].forEach(add);
   } else if (/listing|classified|real_estate|real-estate/.test(selectedText)) {
-    ["listing-marketplace-pro", "real-estate-listings-pro", "mega-marketplace", "corporate-company-pro", "lead-funnel-pro"].forEach(add);
+    ["listing-marketplace-pro", "real-estate-listings-pro", "mega-marketplace", "mega-retail-store", "corporate-company-pro"].forEach(add);
   } else if (/restaurant|menu|food/.test(selectedText)) {
     ["restaurant-food-business", "booking-appointment-pro", "lead-funnel-pro", "home-services-premium", "local-services-pro-plus"].forEach(add);
   } else if (/booking|appointment/.test(selectedText)) {
     ["booking-appointment-pro", "local-services-pro-plus", "home-services-premium", "lead-funnel-pro", "corporate-company-pro"].forEach(add);
   } else if (/industrial|manufacturing|supplier/.test(selectedText)) {
-    ["manufacturing-industrial-supplier-pro", "b2b-saas-enterprise-pro", "corporate-company-pro", "lead-funnel-pro", "mega-marketplace"].forEach(add);
+    ["manufacturing-industrial-supplier-pro", "b2b-saas-enterprise-pro", "corporate-company-pro", "lead-funnel-pro", "mega-retail-store"].forEach(add);
   } else if (/b2b|saas|enterprise|solution/.test(selectedText)) {
-    ["b2b-saas-enterprise-pro", "corporate-company-pro", "lead-funnel-pro", "manufacturing-industrial-supplier-pro", "apple-premium-product"].forEach(add);
+    ["b2b-saas-enterprise-pro", "corporate-company-pro", "lead-funnel-pro", "manufacturing-industrial-supplier-pro", "premium-product-store"].forEach(add);
   } else if (/fashion|lookbook|collection/.test(selectedText)) {
-    ["fashion-drop-pro", "luxury-high-ticket-pro", "apple-premium-product", "listing-marketplace-pro", "mega-marketplace"].forEach(add);
+    ["fashion-drop-pro", "luxury-high-ticket-pro", "premium-product-store", "mega-retail-store", "listing-marketplace-pro"].forEach(add);
   } else {
     rankedFallbackChoices(selectedTemplateId).forEach((choice) => add(choice.templateId));
   }
@@ -1792,15 +1904,15 @@ function renderNeutralLiveWorkspace() {
 
 function livePreviewTemplateSelection() {
   const profile = livePreviewTemplateProfile();
-  const meta = templatePreviewMeta(profile.templateId) || templatePreviewMeta("mega-marketplace");
+  const meta = templatePreviewMeta(profile.templateId) || templatePreviewMeta("mega-retail-store");
   const forcedMatchesProfile = forcedTemplateSelection?.templateId === profile.templateId;
   return {
-    templateId: meta?.templateId || profile.templateId || "mega-marketplace",
+    templateId: meta?.templateId || profile.templateId || "mega-retail-store",
     template: forcedMatchesProfile && forcedTemplateSelection?.template
       ? forcedTemplateSelection.template
-      : { id: meta?.templateId || profile.templateId || "mega-marketplace", name: localizedTemplateName(meta), catalogModel: { catalogType: meta?.catalogType || profile.catalogType || "dense_marketplace_catalog" } },
+      : { id: meta?.templateId || profile.templateId || "mega-retail-store", name: localizedTemplateName(meta), catalogModel: { catalogType: meta?.catalogType || profile.catalogType || "single_vendor_dense_catalog" } },
     intent: forcedMatchesProfile ? forcedTemplateSelection?.intent || "live_preview_template" : "live_preview_template",
-    catalogType: meta?.catalogType || profile.catalogType || "dense_marketplace_catalog",
+    catalogType: meta?.catalogType || profile.catalogType || "single_vendor_dense_catalog",
     reason: "Live preview selected from guided context",
   };
 }
@@ -1830,7 +1942,7 @@ function livePreviewPayload() {
 
 function livePreviewTemplateProfile() {
   const templateId = inferLivePreviewTemplateId();
-  const meta = templatePreviewMeta(templateId) || templatePreviewMeta("mega-marketplace");
+  const meta = templatePreviewMeta(templateId) || templatePreviewMeta("mega-retail-store");
   const catalogType = forcedTemplateSelection?.templateId === templateId
     ? forcedTemplateSelection?.catalogType || meta?.catalogType || ""
     : meta?.catalogType || "";
@@ -1846,6 +1958,21 @@ function livePreviewTemplateProfile() {
     sectionKicker: langText({ en: "Page structure", es: "Estructura de pagina", fr: "Structure de page", pt: "Estrutura da pagina" }),
     sectionTitle: langText({ en: "Editable sections ready for this business", es: "Secciones editables listas para este negocio", fr: "Sections modifiables pour cette entreprise", pt: "Secoes editaveis para este negocio" }),
   };
+  if (/mega-retail-store/.test(templateId) || /single_vendor_dense|dense_retail|retail/.test(catalogType)) {
+    return {
+      ...common,
+      kind: "retail",
+      kicker: langText({ en: "Search-first retail store", es: "Tienda retail con busqueda", fr: "Boutique retail avec recherche", pt: "Loja retail com busca" }),
+      cta: langText({ en: "Shop catalog", es: "Ver catalogo", fr: "Voir catalogue", pt: "Ver catalogo" }),
+      sectionKicker: langText({ en: "Retail catalog structure", es: "Estructura de catalogo retail", fr: "Structure catalogue retail", pt: "Estrutura de catalogo retail" }),
+      sectionTitle: langText({ en: "Categories, offers and owned product discovery", es: "Categorias, ofertas y productos propios", fr: "Categories, offres et produits propres", pt: "Categorias, ofertas e produtos proprios" }),
+      itemLabels: [
+        langText({ en: "Category", es: "Categoria", fr: "Categorie", pt: "Categoria" }),
+        langText({ en: "Deal", es: "Oferta", fr: "Offre", pt: "Oferta" }),
+        langText({ en: "Product", es: "Producto", fr: "Produit", pt: "Produto" }),
+      ],
+    };
+  }
   if (/mega-marketplace|marketplace-style/.test(templateId) || /dense_marketplace/.test(catalogType)) {
     return {
       ...common,
@@ -1938,7 +2065,7 @@ function inferLivePreviewTemplateId() {
   const aiSelectedTemplateId = resolvedAiTemplateId();
   if (aiSelectedTemplateId) return aiSelectedTemplateId;
   if (forcedTemplateSelection?.templateId) return forcedTemplateSelection.templateId;
-  return "mega-marketplace";
+  return "mega-retail-store";
 }
 
 function resolvedAiTemplateId() {
@@ -2000,6 +2127,18 @@ function textSuggestsBroadMarketplace(value) {
   return broadCatalog;
 }
 
+function textSuggestsMultiVendorMarketplace(value) {
+  const text = normalizeTemplateIntentText(value);
+  return /\b(multi vendedor|multi-vendedor|multi seller|multiseller|vendedores externos|external sellers|third party sellers|otros vendedores|que otros vendan|plataforma para vendedores|seller onboarding|vendor onboarding|vendor payout|payouts|comisiones a vendedores|marketplace multi vendor|marketplace multi-vendedor|varios vendedores independientes)\b/.test(text);
+}
+
+function textSuggestsMegaRetailStore(value) {
+  const text = normalizeTemplateIntentText(value);
+  if (!text || textSuggestsMultiVendorMarketplace(text)) return false;
+  const explicitRetail = /\b(tipo amazon|como amazon|amazon|mega tienda|mega store|tienda grande|catalogo grande|catalogo variado|productos variados|muchos productos|muchas categorias|de todo|todo tipo|inventario propio|mi tienda|mis productos|yo vendo|voy a vender|una sola tienda|un solo vendedor|single vendor|owned inventory)\b/.test(text);
+  return explicitRetail || textSuggestsBroadMarketplace(text);
+}
+
 function textSuggestsJewelryAccessoryStore(value) {
   const text = normalizeTemplateIntentText(value);
   const automotiveAccessory = /\b(accesorios? (para|de) (carros|autos|automotriz|automotrices|camionetas|motos|4x4)|auto accessories|car accessories)\b/.test(text);
@@ -2058,11 +2197,13 @@ function templateIntentScorecard(value, payload = {}) {
   const scores = [];
   const has = (pattern) => pattern.test(text);
 
-  if (has(/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|mega marketplace)\b/)) scores.push(scoreFor("mega-marketplace", 140, "explicit large marketplace reference"));
+  if (textSuggestsMultiVendorMarketplace(text)) scores.push(scoreFor("mega-marketplace", 145, "explicit multi-vendor marketplace reference"));
+  if (textSuggestsMegaRetailStore(text)) scores.push(scoreFor("mega-retail-store", 140, "large single-owner retail catalog"));
   if (textSuggestsProfessionalService(text)) scores.push(scoreFor("legal-professional-services-pro", 135, "professional services trust flow"));
-  if (textSuggestsBroadMarketplace(text)) scores.push(scoreFor("mega-marketplace", 105, "broad multi-category catalog"));
+  if (textSuggestsBroadMarketplace(text) && !textSuggestsMultiVendorMarketplace(text)) scores.push(scoreFor("mega-retail-store", 105, "broad owned catalog"));
+  if (textSuggestsBroadMarketplace(text) && textSuggestsMultiVendorMarketplace(text)) scores.push(scoreFor("mega-marketplace", 105, "broad multi-vendor catalog"));
   if (products.length >= 5 && !textSuggestsFocusedCommerceStore(text) && !textSuggestsProfessionalService(text) && !has(/\b(restaurante|restaurant|menu|comida|food|cafe|cafeteria|barber|barberia|salon|spa|clinica|clinic|servicio|service|contractor|curso|course)\b/)) {
-    scores.push(scoreFor("mega-marketplace", 55, "many independent product categories"));
+    scores.push(scoreFor(textSuggestsMultiVendorMarketplace(text) ? "mega-marketplace" : "mega-retail-store", 55, "many independent product categories"));
   }
 
   if (has(/\b(tipo ebay|como ebay|clasificados|classifieds|listados|listings|vendedores|seller|usado|used|segunda mano)\b/)) scores.push(scoreFor("listing-marketplace-pro", 120, "seller/listing marketplace"));
@@ -2079,7 +2220,7 @@ function templateIntentScorecard(value, payload = {}) {
   if (textSuggestsJewelryAccessoryStore(text) && !textSuggestsBroadMarketplace(text)) scores.push(scoreFor("fashion-drop-pro", 118, "focused jewelry/accessory boutique"));
   if (has(/\b(ropa|fashion|moda|boutique|streetwear|zapato|sneaker|apparel|clothing|drop|lookbook)\b/) && !textSuggestsBroadMarketplace(text)) scores.push(scoreFor("fashion-drop-pro", 104, "fashion/lookbook commerce"));
   if (has(/\b(lujo|luxury|high ticket|alta gama|exclusivo|joyeria|joyería|jewelry|jewellery|perfumes|fragancia|relojes|watches|cuero|arte|coleccionable|private appointment|cita privada|precio a consultar)\b/)) scores.push(scoreFor("luxury-high-ticket-pro", 110, "luxury/high-ticket showroom"));
-  if (textSuggestsFocusedProductLine(text) || textSuggestsSingleProductShowcase(text) || textSuggestsPremiumProductPreference(text)) scores.push(scoreFor("apple-premium-product", 108, "focused product line"));
+  if (textSuggestsFocusedProductLine(text) || textSuggestsSingleProductShowcase(text) || textSuggestsPremiumProductPreference(text)) scores.push(scoreFor("premium-product-store", 108, "focused product line"));
   if (has(/\b(landing|landing page|funnel|embudo|captar clientes|captar leads|leads|campana|campaign|oferta|offer|book call|agenda una llamada|alta conversion)\b/)) scores.push(scoreFor("lead-funnel-pro", 95, "lead capture funnel"));
   if (has(/\b(empresa|company|corporate|corporativo|pagina web|website|agencia|agency|firma|business website|organizacion|organization)\b/)) scores.push(scoreFor("corporate-company-pro", 90, "company website"));
 
@@ -2104,8 +2245,9 @@ function inferTemplateIdFromText(value) {
   if (!text) return "";
   const scoredTemplateId = bestTemplateIdFromContext(text);
   if (scoredTemplateId) return scoredTemplateId;
-  if (textSuggestsBroadMarketplace(text)) return "mega-marketplace";
-  if (textSuggestsFocusedProductLine(text)) return "apple-premium-product";
+  if (textSuggestsMultiVendorMarketplace(text)) return "mega-marketplace";
+  if (textSuggestsMegaRetailStore(text) || textSuggestsBroadMarketplace(text)) return "mega-retail-store";
+  if (textSuggestsFocusedProductLine(text)) return "premium-product-store";
   if (/tipo ebay|como ebay|clasificados|listados|vendedores|usado|seller|listing/.test(text)) return "listing-marketplace-pro";
   if (/restaurante|restaurant|menu|comida|food|cafe|cafeteria|delivery de comida|ordenar comida|pedir comida|pedido de comida/.test(text)) return "restaurant-food-business";
   if (/barber|barberia|salon|spa|cita|booking|reserva|appointment/.test(text)) return "booking-appointment-pro";
@@ -2118,7 +2260,7 @@ function inferTemplateIdFromText(value) {
   if (/servicio|service|contractor|limpieza|roofing|repair|reparacion|cotizacion|quote/.test(text)) return "local-services-pro-plus";
   if (textSuggestsJewelryAccessoryStore(text) || /ropa|fashion|moda|boutique|streetwear|zapato|sneaker|accesorio/.test(text)) return "fashion-drop-pro";
   if (/lujo|luxury|alta gama|exclusivo|joyeria|relojes|arte|coleccionable/.test(text)) return "luxury-high-ticket-pro";
-  if (textSuggestsPremiumProductPreference(text)) return "apple-premium-product";
+  if (textSuggestsPremiumProductPreference(text)) return "premium-product-store";
   if (/empresa|company|corporate|corporativo|pagina web|website|agencia|firma/.test(text)) return "corporate-company-pro";
   return "";
 }
@@ -3651,11 +3793,11 @@ async function selectTemplateFromFreeText(message) {
   }
   if (!window.TemplateRouter?.selectTemplateFromPrompt) {
     return {
-      templateId: "mega-marketplace",
+      templateId: "mega-retail-store",
       template: null,
-      intent: "default_marketplace_discovery",
-      catalogType: "dense_marketplace_catalog",
-      reason: "Template router unavailable; using marketplace discovery template",
+      intent: "default_retail_discovery",
+      catalogType: "single_vendor_dense_catalog",
+      reason: "Template router unavailable; using retail discovery template",
     };
   }
   return window.TemplateRouter.selectTemplateFromPrompt(message);
@@ -3693,27 +3835,28 @@ async function getTemplatePreviewCandidates(selection, sourceMessage = "") {
 function rankedFallbackChoices(selectedTemplateId = "") {
   const selected = templatePreviewMeta(selectedTemplateId);
   const selectedCatalog = selected?.catalogType || "";
-  const commerceHeavy = /marketplace|dense|listing/.test(selectedCatalog);
+  const commerceHeavy = /marketplace|dense|listing|retail|single_vendor/.test(selectedCatalog);
   const listingHeavy = /real_estate|listing/.test(selectedCatalog);
   const restaurantHeavy = /restaurant|menu|food/.test(selectedCatalog);
   const digitalHeavy = /digital|pricing|software|course/.test(selectedCatalog);
   const serviceHeavy = /service|booking/.test(selectedCatalog);
   const ordered = commerceHeavy
     ? listingHeavy
-      ? ["real-estate-listings-pro", "listing-marketplace-pro", "mega-marketplace", "corporate-company-pro"]
-      : ["mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro", "apple-premium-product"]
+      ? ["real-estate-listings-pro", "listing-marketplace-pro", "mega-marketplace", "mega-retail-store"]
+      : ["mega-retail-store", "mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro"]
     : restaurantHeavy
       ? ["restaurant-food-business", "lead-funnel-pro", "home-services-premium", "booking-appointment-pro"]
     : digitalHeavy
-      ? ["digital-products-store", "lead-funnel-pro", "apple-premium-product", "corporate-company-pro"]
+      ? ["digital-products-store", "lead-funnel-pro", "premium-product-store", "corporate-company-pro"]
     : serviceHeavy
       ? ["home-services-premium", "lead-funnel-pro", "local-services-pro-plus", "booking-appointment-pro"]
-      : ["lead-funnel-pro", "corporate-company-pro", "apple-premium-product", "fashion-drop-pro"];
+      : ["lead-funnel-pro", "corporate-company-pro", "premium-product-store", "fashion-drop-pro"];
   return ordered.map((templateId) => templatePreviewMeta(templateId)).filter(Boolean);
 }
 
 function templatePreviewMeta(templateId) {
-  return TEMPLATE_PREVIEW_CHOICES.find((choice) => choice.templateId === templateId) || null;
+  const id = normalizeTemplateId(templateId);
+  return withTemplateExecutionStatus(TEMPLATE_PREVIEW_CHOICES.find((choice) => normalizeTemplateId(choice.templateId) === id) || null);
 }
 
 function localizedTemplateName(choice) {
@@ -3895,7 +4038,8 @@ function inferWebsiteTypeFromContext(contextText, catalogType = "") {
   const text = normalizeTemplateIntentText(`${contextText} ${catalogType}`);
   if (/restaurant|restaurante|menu|comida|food|cafe|delivery/.test(text)) return "restaurant_menu";
   if (/booking|appointment|reserva|cita|barber|salon|spa/.test(text)) return "booking_site";
-  if (textSuggestsBroadMarketplace(text) || /dense|marketplace|amazon|de todo|todo tipo|variad[oa]s?|muchos productos|catalogo grande|multi.?category|multi.?categoria/.test(text)) return "mega_marketplace";
+  if (textSuggestsMultiVendorMarketplace(text) || /dense_marketplace_catalog/.test(text)) return "mega_marketplace";
+  if (textSuggestsMegaRetailStore(text) || /single_vendor_dense|dense_retail|retail|amazon|de todo|todo tipo|variad[oa]s?|muchos productos|catalogo grande|multi.?category|multi.?categoria/.test(text)) return "mega_retail_store";
   if (/listing|classified|real estate|inmueble|rental|alquiler|carros usados/.test(text)) return "listing_marketplace";
   if (/digital|download|curso|course|ebook|membership|membresia/.test(text)) return "digital_products";
   if (/quote|cotizacion|cotización|service|servicio|contractor|legal|clinic|industrial/.test(text)) return "service_or_quote_site";
@@ -3922,7 +4066,7 @@ function inferRequiredFeaturesForPlan(contextText, websiteType, catalogType = ""
   if (/online_sales|checkout|carrito|cart|shop|store|tienda|marketplace|digital/.test(text)) {
     ["cart", "checkout_path", "customer_account", "featured_deals"].forEach((feature) => features.add(feature));
   }
-  if (/marketplace|dense|amazon|muchos productos|de todo|todo tipo/.test(text)) {
+  if (/marketplace|dense|retail|amazon|muchos productos|de todo|todo tipo/.test(text)) {
     ["deal_sections", "best_sellers", "newsletter_or_deal_subscription", "ratings_reviews", "wishlist_ready"].forEach((feature) => features.add(feature));
   }
   if (/booking|appointment|reserva|cita/.test(text)) features.add("booking_request_flow");
@@ -3940,6 +4084,14 @@ function missingImportantFieldsForPlan() {
 }
 
 function explainTemplateDecision(templateId, websiteType, contextText) {
+  if (templateId === "mega-retail-store" || websiteType === "mega_retail_store") {
+    return langText({
+      en: "The offer reads as a broad catalog owned by one business, so the best base is a search-first retail store with categories, deals, filters, account and cart logic.",
+      es: "La oferta se entiende como un catalogo amplio de un solo negocio, asi que la mejor base es una tienda retail con busqueda, categorias, ofertas, filtros, cuenta y carrito.",
+      fr: "L'offre ressemble a un grand catalogue gere par une seule entreprise; la meilleure base est donc une boutique retail avec recherche, categories, offres, filtres, compte et panier.",
+      pt: "A oferta parece um catalogo amplo de um unico negocio; a melhor base e uma loja retail com busca, categorias, ofertas, filtros, conta e carrinho.",
+    });
+  }
   if (templateId === "mega-marketplace") {
     return langText({
       en: "The offer reads as a broad, varied catalog, so the best base is a search-first marketplace with categories, deals, filters, account and cart logic.",
@@ -3948,7 +4100,7 @@ function explainTemplateDecision(templateId, websiteType, contextText) {
       pt: "A oferta parece um catalogo amplo e variado; a melhor base e um marketplace com busca, categorias, ofertas, filtros, conta e carrinho.",
     });
   }
-  if (templateId === "apple-premium-product") {
+  if (normalizeTemplateId(templateId) === "premium-product-store") {
     return langText({
       en: "The offer is focused enough for a premium product presentation with stronger story, proof, feature sections and conversion.",
       es: "La oferta es suficientemente enfocada para una presentacion premium con historia, prueba, secciones de beneficios y conversion.",
@@ -3973,6 +4125,14 @@ function explainTemplateDecision(templateId, websiteType, contextText) {
 }
 
 function buildPlanPagesForContext(templateId, websiteType, catalogType) {
+  if (templateId === "mega-retail-store" || websiteType === "mega_retail_store") {
+    return [
+      { key: "home", title: "Home", purpose: "Search, categories, deals, best sellers and trust modules", sections: ["retail_header", "search_hero", "category_rail", "deal_row", "best_seller_grid", "subscribe"] },
+      { key: "catalog", title: "Catalog", purpose: "Dense searchable owned product catalog", sections: ["filters", "sort", "product_grid", "ratings", "shipping_badges"] },
+      { key: "deals", title: "Deals", purpose: "Promotions, drops and featured offers", sections: ["daily_deals", "featured_collections", "newsletter"] },
+      { key: "account", title: "Account / Cart", purpose: "Customer account, cart, checkout path and saved items", sections: ["cart", "wishlist", "checkout", "order_contact"] },
+    ];
+  }
   if (templateId === "mega-marketplace" || websiteType === "mega_marketplace") {
     return [
       { key: "home", title: "Home", purpose: "Search, categories, deals, best sellers and trust modules", sections: ["marketplace_header", "search_hero", "category_rail", "deal_row", "best_seller_grid", "subscribe"] },
@@ -3981,7 +4141,7 @@ function buildPlanPagesForContext(templateId, websiteType, catalogType) {
       { key: "account", title: "Account / Cart", purpose: "Customer account, cart, checkout path and saved items", sections: ["cart", "wishlist", "checkout", "order_contact"] },
     ];
   }
-  if (templateId === "apple-premium-product" || websiteType === "premium_showcase_store") {
+  if (normalizeTemplateId(templateId) === "premium-product-store" || websiteType === "premium_showcase_store") {
     return [
       { key: "home", title: "Home", purpose: "Cinematic product story and premium CTA", sections: ["premium_hero", "feature_spotlight", "proof", "cta"] },
       { key: "catalog", title: "Collection", purpose: "Curated product line or models", sections: ["featured_products", "specs", "comparison"] },
@@ -4258,6 +4418,7 @@ async function chooseTemplatePreview(choice, options = {}) {
     catalogType: choice.catalogType,
     intent: "client_visual_template_choice",
     reason: "Client selected a visual template preview in guided setup",
+    executionStatus: templateExecutionStatus(choice.templateId),
   };
   guidedState.websiteIntent = guidedState.websiteIntent || localizedTemplateName(choice);
   document.querySelectorAll(".template-choice-card.selected").forEach((card) => card.classList.remove("selected"));
@@ -5515,7 +5676,15 @@ function aiBuildFocusLine() {
 
 function aiCatalogStrategyLine(plan) {
   const catalog = `${plan.catalogType || forcedTemplateSelection?.catalogType || ""}`.toLowerCase();
-  if (/dense|marketplace/.test(catalog)) {
+  if (/single_vendor_dense|dense_retail|retail/.test(catalog)) {
+    return langText({
+      en: "The products look varied but owned by one business, so LYRA is using a search-first retail store structure instead of a multi-vendor marketplace.",
+      es: "Los productos se ven variados pero de un solo negocio, asi que LYRA usa una tienda retail con busqueda, no un marketplace multi-vendedor.",
+      fr: "Les produits semblent varies mais geres par une seule entreprise; LYRA utilise donc une boutique retail avec recherche.",
+      pt: "Os produtos parecem variados mas de um unico negocio, entao a LYRA usa uma loja retail com busca.",
+    });
+  }
+  if (/dense_marketplace|marketplace/.test(catalog)) {
     return langText({
       en: "The products look varied, so LYRA is using a search-first marketplace structure instead of a single-product landing.",
       es: "Los productos se ven variados, asi que LYRA usa una estructura tipo marketplace con busqueda, no una landing de producto unico.",
@@ -6709,15 +6878,17 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
   } catch (error) {
     builderAvatarManager?.setState("confused", { source: "generate-error" });
     setStudioProgressPhase("homepage");
-    const fallbackResult = buildInstantTemplateResult(payload, error, templateSelection);
-    applyGenerationResult(fallbackResult, payload, templateSelection);
+    const runtimeFallbackSelection = runtimeTemplateSelection(templateSelection);
+    const fallbackPayload = runtimeFallbackSelection ? payload : stripReferenceTemplateRuntimePayload(payload);
+    const fallbackResult = buildInstantTemplateResult(fallbackPayload, error, runtimeFallbackSelection);
+    applyGenerationResult(fallbackResult, fallbackPayload, runtimeFallbackSelection);
     setStudioProgressPhase("ready");
     const message = isPublicClientSetup
       ? `${langText({
-          en: "I created a fast editable draft from the selected template while the AI service recovers.",
-          es: "Creé un borrador editable rápido desde la plantilla elegida mientras se recupera el servicio de IA.",
-          fr: "J'ai créé un brouillon modifiable rapide depuis le template choisi pendant que le service IA récupère.",
-          pt: "Criei um rascunho editável rápido a partir do template escolhido enquanto o serviço de IA se recupera.",
+          en: runtimeFallbackSelection ? "I created a fast editable draft from the selected template while the AI service recovers." : "I created a safe editable draft while the AI service recovers.",
+          es: runtimeFallbackSelection ? "Creé un borrador editable rápido desde la plantilla elegida mientras se recupera el servicio de IA." : "Creé un borrador editable seguro mientras se recupera el servicio de IA.",
+          fr: runtimeFallbackSelection ? "J'ai créé un brouillon modifiable rapide depuis le template choisi pendant que le service IA récupère." : "J'ai créé un brouillon modifiable sûr pendant que le service IA récupère.",
+          pt: runtimeFallbackSelection ? "Criei um rascunho editável rápido a partir do template escolhido enquanto o serviço de IA se recupera." : "Criei um rascunho editável seguro enquanto o serviço de IA se recupera.",
         })}`
       : `${t("generateError")}: ${shortError(error.message)}. Showing a fast editable draft instead.`;
     statusText.textContent = message;
@@ -6729,6 +6900,7 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
 }
 
 function enrichPayloadDesignStrategy(payload, templateSelection) {
+  const executionStatus = templateExecutionStatus(templateSelection?.templateId || "");
   payload.designStrategy = {
     ...(payload.designStrategy || {}),
     designerMode: true,
@@ -6736,6 +6908,7 @@ function enrichPayloadDesignStrategy(payload, templateSelection) {
     selectedTemplateReason: templateSelection?.reason || "",
     selectedTemplateId: templateSelection?.templateId || "",
     selectedCatalogType: templateSelection?.catalogType || "",
+    templateExecutionPolicy: executionStatus,
     catalogComplexity: inferCatalogComplexity(payload),
     publicCopyPolicy: "Never paste intake answers verbatim into the website. Rewrite as polished customer-facing copy in the selected language.",
   };
@@ -6856,6 +7029,7 @@ async function selectTemplateForPayload(payload) {
       || textSuggestsSingleProductShowcase(prompt)
       || forcedTemplateSelection?.intent === "default_minimal"
       || forcedTemplateSelection?.intent === "default_pending"
+      || forcedTemplateSelection?.intent === "default_retail_discovery"
       || forcedTemplateSelection?.intent === "default_marketplace_discovery"
     );
   if (window.TemplateRouter.getTemplateById && (shouldOverrideForced || (!forcedTemplateSelection?.templateId && inferredTemplateId))) {
@@ -6914,10 +7088,13 @@ function inferDesignerTemplateIdFromPayload(payload = {}) {
   ].join(" "));
   const products = meaningfulOfferItems(payload.services_products);
   if (textSuggestsProfessionalService(text)) return "legal-professional-services-pro";
-  if (/\b(tipo amazon|como amazon|amazon|mega tienda|mega store|mega marketplace)\b/.test(text) || textSuggestsBroadMarketplace(text) || (products.length >= 5 && !textSuggestsFocusedCommerceStore(text) && !textSuggestsProfessionalService(text))) {
+  if (textSuggestsMultiVendorMarketplace(text)) {
     return "mega-marketplace";
   }
-  if (textSuggestsFocusedProductLine(text)) return "apple-premium-product";
+  if (textSuggestsMegaRetailStore(text) || textSuggestsBroadMarketplace(text) || (products.length >= 5 && !textSuggestsFocusedCommerceStore(text) && !textSuggestsProfessionalService(text))) {
+    return "mega-retail-store";
+  }
+  if (textSuggestsFocusedProductLine(text)) return "premium-product-store";
   const scoredTemplateId = bestTemplateIdFromContext(text, payload);
   if (scoredTemplateId) return scoredTemplateId;
   if (/restaurant|restaurante|menu|comida|food|cafe|cafeteria|delivery/.test(text)) return "restaurant-food-business";
@@ -6930,7 +7107,7 @@ function inferDesignerTemplateIdFromPayload(payload = {}) {
   if (/digital|ebook|templates|plantillas|descarga|download|membresia|membership/.test(text)) return "digital-products-store";
   if (textSuggestsJewelryAccessoryStore(text) || /ropa|fashion|moda|boutique|streetwear|zapato|sneaker|accesorio/.test(text)) return "fashion-drop-pro";
   if (textSuggestsSingleProductShowcase(text) || textSuggestsPremiumProductPreference(text)) {
-    return "apple-premium-product";
+    return "premium-product-store";
   }
   if (/servicio|service|contractor|limpieza|roofing|repair|reparacion|cotizacion|quote/.test(text)) return "local-services-pro-plus";
   if (/empresa|company|corporate|corporativo|pagina web|website|agencia|firma/.test(text)) return "corporate-company-pro";
@@ -6939,16 +7116,21 @@ function inferDesignerTemplateIdFromPayload(payload = {}) {
 
 function attachTemplateSelection(payload, selection) {
   if (!selection) return payload;
-  payload.templateId = selection.templateId;
+  const normalizedTemplateId = normalizeTemplateId(selection.templateId);
+  const executionStatus = templateExecutionStatus(normalizedTemplateId);
+  payload.templateId = normalizedTemplateId;
   payload.templateIntent = selection.intent;
   payload.catalogType = selection.catalogType;
   payload.selectedTemplate = selection.template || {};
   payload.templateInstructions = buildTemplateInstructions(selection);
+  payload.templateExecution = executionStatus;
   return payload;
 }
 
 function buildTemplateInstructions(selection) {
   const template = selection?.template || {};
+  const normalizedTemplateId = normalizeTemplateId(selection?.templateId || template.id || "");
+  const executionStatus = templateExecutionStatus(normalizedTemplateId);
   const sections = Array.isArray(template.sections)
     ? template.sections.map((section) => section.type).filter(Boolean).join(", ")
     : "";
@@ -6957,13 +7139,15 @@ function buildTemplateInstructions(selection) {
     : "";
   const catalog = template.catalogModel || {};
   return {
-    templateId: selection?.templateId || template.id || "",
+    templateId: normalizedTemplateId,
     intent: selection?.intent || "",
+    executionStatus,
     name: template.name || "",
     visualDifference: template.visualDifference || "",
     aiPrompt: template.aiPrompt || "",
     editableSlots: template.editableSlots || [],
     copyGenerationRules: [
+      "If executionStatus.runtimeEnabled is false, treat the template as visual reference only. Do not assume the reference image is an executable page.",
       "If payload.sitePlan exists, treat it as the approved structure contract for pages, major sections, and conversion flow.",
       "Generate a strong brand headline, slogan, section titles, CTAs, product/service descriptions, trust copy, and footer copy from the business context.",
       "All generated visible copy must remain editable in the JSON under section.editable, catalog_items, theme, navigation, business, or global_components.",
@@ -7209,12 +7393,14 @@ function draftAdjustmentReply(rebuiltFromTemplate, templateSelection = null) {
 function mergeTemplateSelectionIntoSchema(schema, selection) {
   if (!schema || !selection) return schema;
   const templateInstructions = buildTemplateInstructions(selection);
+  const executionStatus = templateExecutionStatus(selection.templateId);
   schema.selected_template = {
     id: selection.templateId,
     name: selection.template?.name || selection.templateId,
     category: selection.template?.category || "",
     intent: selection.intent,
     reason: selection.reason,
+    executionStatus,
     visualDifference: selection.template?.visualDifference || "",
     clientSelectionCard: selection.template?.clientSelectionCard || {},
     sections: selection.template?.sections || [],
@@ -7232,6 +7418,8 @@ function mergeTemplateSelectionIntoSchema(schema, selection) {
     template_id: selection.templateId,
     catalog_type: selection.catalogType,
     intent: selection.intent,
+    execution_status: executionStatus.status,
+    runtime_enabled: executionStatus.runtimeEnabled,
   };
   return schema;
 }
@@ -7448,7 +7636,52 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
     arrayValue(payload.preferred_colors).join(" "),
   ].join(" ");
   let nextSchema = lockSchemaToExecutableTemplate(schema, payload, templateSelection, { templateId, catalogType, brief });
-  if (/mega-marketplace/i.test(templateId) || /dense_marketplace_catalog/i.test(catalogType) || textSuggestsBroadMarketplace(brief)) {
+  if (/mega-retail-store/i.test(templateId) || /single_vendor_dense_catalog|dense_retail_catalog/i.test(catalogType) || textSuggestsMegaRetailStore(brief)) {
+    const copy = instantLocaleCopy(payload.selectedLanguage || selectedLanguage || "en");
+    const name = payload.business_name || schema.business?.name || copy.newStore;
+    const description = professionalPublicDescription({
+      payload,
+      template: templateSelection?.template || schema.selected_template || { id: "mega-retail-store", category: "ecommerce" },
+      catalogType: "single_vendor_dense_catalog",
+      copy,
+      name,
+      products: arrayValue(payload.services_products).length ? arrayValue(payload.services_products) : arrayValue(schema.products_services).map((item) => item.name),
+      language: payload.selectedLanguage || selectedLanguage || "en",
+    });
+    const retailPages = buildRetailInstantPages(copy, name, description, payload);
+    const retailPageKeys = new Set(retailPages.map((page) => page.page_key));
+    const existingPages = arrayValue(schema.pages).filter((page) => page.page_key && !retailPageKeys.has(page.page_key));
+    nextSchema = {
+      ...nextSchema,
+      site_type: "online_store",
+      selected_template: {
+        ...(nextSchema.selected_template || {}),
+        id: "mega-retail-store",
+        name: nextSchema.selected_template?.name || "Mega Retail Store",
+        intent: "mega_retail_store",
+      },
+      catalog_model: {
+        ...(nextSchema.catalog_model || {}),
+        catalogType: "single_vendor_dense_catalog",
+      },
+      layout_mode: {
+        ...(nextSchema.layout_mode || {}),
+        template_id: "mega-retail-store",
+        catalog_type: "single_vendor_dense_catalog",
+        intent: "mega_retail_store",
+        navigation: { ...(nextSchema.layout_mode?.navigation || {}), show_cart: true, show_header: true, sticky_header: true },
+        checkout: { ...(nextSchema.layout_mode?.checkout || {}), mode: "single_store_checkout", primary_action: copy.shopNow },
+      },
+      navigation: [
+        { label: copy.home, page_key: "home" },
+        { label: copy.deals, page_key: "deals" },
+        { label: copy.categories, page_key: "categories" },
+        { label: copy.catalog, page_key: "catalog" },
+        { label: copy.support, page_key: "support" },
+      ],
+      pages: [...retailPages, ...existingPages],
+    };
+  } else if (/mega-marketplace/i.test(templateId) || /dense_marketplace_catalog/i.test(catalogType) || textSuggestsMultiVendorMarketplace(brief)) {
     const copy = instantLocaleCopy(payload.selectedLanguage || selectedLanguage || "en");
     const name = payload.business_name || schema.business?.name || copy.newStore;
     const description = professionalPublicDescription({
@@ -7574,7 +7807,10 @@ function lockSchemaToExecutableTemplate(schema, payload = {}, templateSelection 
 }
 
 function normalizeTemplatePresetId(templateId = "", catalogType = "") {
+  templateId = normalizeTemplateId(templateId);
+  if (/mega-retail-store/i.test(templateId) || /single_vendor_dense_catalog|dense_retail_catalog/i.test(catalogType)) return "mega-retail-store";
   if (/mega-marketplace|marketplace-style/i.test(templateId) || /dense_marketplace_catalog/i.test(catalogType)) return "mega-marketplace";
+  if (/premium-product-store/i.test(templateId) || /premium_editorial_catalog/i.test(catalogType)) return "premium-product-store";
   return templateId || "";
 }
 
@@ -7606,8 +7842,9 @@ function mergeLockedTemplatePage(lockedPage, existingPage = null) {
 
 function executablePagesForTemplate(templateId = "", catalogType = "", copy, name, description, payload = {}) {
   const key = `${templateId} ${catalogType}`.toLowerCase();
+  if (/mega-retail-store|single_vendor_dense_catalog|dense_retail_catalog/.test(key)) return buildRetailInstantPages(copy, name, description, payload);
   if (/mega-marketplace|marketplace-style|dense_marketplace_catalog/.test(key)) return buildMarketplaceInstantPages(copy, name, description, payload);
-  if (/apple-premium-product|premium_editorial_catalog/.test(key)) return buildPremiumProductInstantPages(copy, name, description, payload);
+  if (/premium-product-store|apple-premium-product|premium_editorial_catalog/.test(key)) return buildPremiumProductInstantPages(copy, name, description, payload);
   if (/luxury-high-ticket-pro|luxury_high_ticket_catalog/.test(key)) return buildLuxuryHighTicketInstantPages(copy, name, description, payload);
   if (/education-course-academy-pro|education_course_catalog/.test(key)) return buildEducationAcademyInstantPages(copy, name, description, payload);
   if (/medical-wellness-clinic-pro|medical_wellness_service_catalog/.test(key)) return buildMedicalWellnessInstantPages(copy, name, description, payload);
@@ -8303,11 +8540,12 @@ function sanitizePublicProductList(products = [], payload = {}, copy = {}, langu
   const sourceText = `${payload.business_description || ""} ${payload.industry || ""} ${arrayValue(products).join(" ")} ${templateHint || ""}`;
   const sourceSuggestsBroadMarketplace = textSuggestsBroadMarketplace(sourceText);
   const usesMarketplaceTemplate = /mega-marketplace|marketplace-style|dense_marketplace_catalog/i.test(templateHint);
+  const usesMegaRetailTemplate = /mega-retail-store|single_vendor_dense_catalog|dense_retail_catalog/i.test(templateHint);
   const cleaned = arrayValue(products)
     .map((item) => cleanPublicItemLabel(item))
     .filter(Boolean)
     .slice(0, 8);
-  if (sourceSuggestsBroadMarketplace || usesMarketplaceTemplate) {
+  if (sourceSuggestsBroadMarketplace || usesMarketplaceTemplate || usesMegaRetailTemplate) {
     const inferred = inferredPublicCatalogLabels({ text: sourceText, language });
     return [
       ...new Set([
@@ -8445,8 +8683,9 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   );
   const description = professionalPublicDescription({ payload, template, catalogType, copy, name, products, language });
   const salesText = `${payload.salesMode || ""} ${payload.sales_mode || ""} ${payload.templateIntent || ""} ${template.category || ""} ${template.id || ""}`.toLowerCase();
+  const isMegaRetailTemplate = catalogType === "single_vendor_dense_catalog" || catalogType === "dense_retail_catalog" || /mega-retail-store/i.test(template.id || "");
   const isMarketplaceTemplate = catalogType === "dense_marketplace_catalog" || /mega-marketplace|marketplace-style/i.test(template.id || "");
-  const isOnlineShop = /sell online|online sales|shop|store|tienda|ecommerce|cart|checkout|vender|comprar|marketplace/.test(salesText) || isMarketplaceTemplate;
+  const isOnlineShop = /sell online|online sales|shop|store|tienda|ecommerce|cart|checkout|vender|comprar|marketplace/.test(salesText) || isMarketplaceTemplate || isMegaRetailTemplate;
   const categoryContext = [
     payload.business_description,
     payload.industry,
@@ -8476,18 +8715,18 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     shipping_label: index % 2 === 0 ? copy.fastDelivery : copy.freeShipping,
     deal_label: index % 3 === 0 ? copy.todayDeal : "",
     price_type: isOnlineShop ? "fixed" : "quote_only",
-    price_amount: isMarketplaceTemplate ? marketplacePriceForIndex(index) : "",
+    price_amount: (isMarketplaceTemplate || isMegaRetailTemplate) ? marketplacePriceForIndex(index) : "",
     currency: "USD",
-    price_label: isMarketplaceTemplate ? `USD ${marketplacePriceForIndex(index).toFixed(2)}` : (isOnlineShop ? copy.priceNotSet : copy.askPrice),
+    price_label: (isMarketplaceTemplate || isMegaRetailTemplate) ? `USD ${marketplacePriceForIndex(index).toFixed(2)}` : (isOnlineShop ? copy.priceNotSet : copy.askPrice),
     button_label: isOnlineShop ? copy.viewProduct : copy.request,
-    inventory_quantity: isMarketplaceTemplate ? 24 + index * 3 : "",
+    inventory_quantity: (isMarketplaceTemplate || isMegaRetailTemplate) ? 24 + index * 3 : "",
     track_inventory: isOnlineShop,
     image_url: "",
     is_active: true,
     is_featured: index < 3,
     sort_order: index,
   }));
-  const isPremiumTemplate = catalogType === "premium_editorial_catalog" || /apple-premium-product/i.test(template.id || "");
+  const isPremiumTemplate = catalogType === "premium_editorial_catalog" || /premium-product-store|apple-premium-product/i.test(template.id || "");
   const isFashionTemplate = catalogType === "lookbook_collection_catalog" || /fashion-drop-pro/i.test(template.id || "");
   const isCorporateTemplate = catalogType === "company_services_catalog" || /corporate-company-pro/i.test(template.id || "");
   const isLeadFunnelTemplate = catalogType === "lead_funnel_offer_catalog" || /lead-funnel-pro/i.test(template.id || "");
@@ -8618,8 +8857,10 @@ function buildInstantTemplateSchema(payload, templateSelection) {
       };
     });
   }
-  const instantPages = isMarketplaceTemplate
-    ? buildMarketplaceInstantPages(copy, name, description, payload)
+  const instantPages = isMegaRetailTemplate
+    ? buildRetailInstantPages(copy, name, description, payload)
+    : isMarketplaceTemplate
+      ? buildMarketplaceInstantPages(copy, name, description, payload)
     : isPremiumTemplate
       ? buildPremiumProductInstantPages(copy, name, description, payload)
       : isLuxuryHighTicketTemplate
@@ -8689,7 +8930,12 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     integrations: { contact: { whatsapp_enabled: true, email_enabled: true }, analytics: { enabled: false, provider: "" }, payments: { enabled: false, mode: "setup_required" } },
     custom_logic: { enabled: false, risk_level: "restricted", automations: "" },
     site_plan: payload.sitePlan || buildSitePlan(templateSelection),
-    navigation: isMarketplaceTemplate ? [
+    navigation: isMegaRetailTemplate ? [
+      { label: copy.home, page_key: "home" },
+      { label: copy.deals, page_key: "catalog" },
+      { label: copy.categories, page_key: "catalog" },
+      { label: copy.support, page_key: "contact" },
+    ] : isMarketplaceTemplate ? [
       { label: copy.home, page_key: "home" },
       { label: copy.deals, page_key: "catalog" },
       { label: copy.categories, page_key: "catalog" },
@@ -10304,6 +10550,61 @@ function buildLeadFunnelInstantPages(copy, name, description, payload = {}) {
       ],
     },
   ];
+}
+
+function retailCopyForInstant(copy, language = selectedLanguage) {
+  const localized = {
+    en: {
+      headline: (name) => `${name} store`,
+      dealText: "A high-density retail draft with categories, offers, ratings and checkout-ready product cards.",
+      trustText: "Clear delivery, secure checkout, inventory validation, support and simple returns.",
+      catalogText: "Products ready to organize, edit, price, activate and publish.",
+    },
+    es: {
+      headline: (name) => `${name} tienda online`,
+      dealText: "Borrador retail de alta densidad con categorias, ofertas, calificaciones y productos listos para checkout.",
+      trustText: "Entrega clara, checkout seguro, validacion de inventario, soporte y devoluciones simples.",
+      catalogText: "Productos listos para organizar, editar, colocar precio, activar y publicar.",
+    },
+    fr: {
+      headline: (name) => `Boutique ${name}`,
+      dealText: "Brouillon retail dense avec categories, offres, notes et fiches produits pretes pour le checkout.",
+      trustText: "Livraison claire, paiement securise, validation d'inventaire, support et retours simples.",
+      catalogText: "Produits prets a organiser, modifier, tarifer, activer et publier.",
+    },
+    pt: {
+      headline: (name) => `${name} loja online`,
+      dealText: "Rascunho retail de alta densidade com categorias, ofertas, avaliacoes e produtos prontos para checkout.",
+      trustText: "Entrega clara, checkout seguro, validacao de inventario, suporte e devolucoes simples.",
+      catalogText: "Produtos prontos para organizar, editar, precificar, ativar e publicar.",
+    },
+  };
+  const text = localized[language] || localized.en;
+  return {
+    ...copy,
+    marketplaceHeadline: text.headline,
+    dealText: text.dealText,
+    dealsText: text.dealText,
+    trustText: text.trustText,
+    catalogText: text.catalogText,
+  };
+}
+
+function buildRetailInstantPages(copy, name, description, payload = {}) {
+  const language = payload.selectedLanguage || selectedLanguage || "en";
+  return buildMarketplaceInstantPages(retailCopyForInstant(copy, language), name, description, payload)
+    .map((page) => ({
+      ...page,
+      sections: arrayValue(page.sections).map((section) => ({
+        ...section,
+        id: String(section.id || "").replace(/marketplace/g, "retail"),
+        settings: {
+          ...(section.settings || {}),
+          layout: String(section.settings?.layout || "").replace(/marketplace/g, "retail"),
+          ownership_model: "single_owner",
+        },
+      })),
+    }));
 }
 
 function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
@@ -14855,6 +15156,8 @@ function renderProductGrid(section, schema) {
 function renderCatalogByType(catalogType, items, schema) {
   const renderers = {
     premium_editorial_catalog: renderPremiumEditorialCatalog,
+    single_vendor_dense_catalog: renderMarketplaceCatalog,
+    dense_retail_catalog: renderMarketplaceCatalog,
     dense_marketplace_catalog: renderMarketplaceCatalog,
     listing_marketplace_catalog: renderClassifiedMarketplaceCatalog,
     real_estate_listing_catalog: renderRealEstateListingCatalog,
