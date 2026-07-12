@@ -7283,6 +7283,7 @@ function shouldRebuildDraftFromTemplate(message, payload = {}, templateSelection
 function applyTargetedSchemaPatch(schema, message, payload = {}, localContextUpdates = {}, templateSelection = null) {
   let nextSchema = structuredClone(schema);
   const text = normalizeTemplateIntentText(message);
+  const revisionFlags = draftRevisionFlags(text);
   if (briefRequestsCyberpunk(message)) {
     nextSchema = applyCyberpunkVisualDirection(nextSchema);
   }
@@ -7298,7 +7299,153 @@ function applyTargetedSchemaPatch(schema, message, payload = {}, localContextUpd
   if (/bot[oó]n|button|cta|llamada|call to action/.test(text)) {
     nextSchema = updatePrimaryCtaCopy(nextSchema, message);
   }
+  if (revisionFlags.visualSafety || revisionFlags.visualPolish || revisionFlags.copyRefresh) {
+    nextSchema = applyReviewVisualPatch(nextSchema, message, payload, templateSelection, revisionFlags);
+  }
+  nextSchema.revision_history = [
+    ...arrayValue(nextSchema.revision_history).slice(-8),
+    {
+      requested_at: new Date().toISOString(),
+      request: cleanShortText(message, 260),
+      applied_locally: true,
+      flags: revisionFlags,
+    },
+  ];
   return nextSchema;
+}
+
+function draftRevisionFlags(text) {
+  return {
+    visualSafety: /montad|encim|sobrepuest|solap|overlap|clip|cortad|descuadr|tapad|una sobre otra|no se ve|gigante|muy grande|demasiado grande|texto grande|se rompe/.test(text),
+    visualPolish: /pro|premium|profesional|pulid|elegante|limpio|ordenad|mejor|mejora|bonito|feo|mediocre|visual|diseñ|disen|layout|estructura|espaci/.test(text),
+    copyRefresh: /texto|copy|titulo|título|headline|slogan|frase|mensaje|redacci|copia|no pegues|notas/.test(text),
+  };
+}
+
+function applyReviewVisualPatch(schema, message, payload = {}, templateSelection = null, flags = {}) {
+  const nextSchema = structuredClone(schema);
+  const text = normalizeTemplateIntentText(message);
+  const selectedTemplateId = nextSchema.selected_template?.id || nextSchema.active_template?.id || templateSelection?.templateId || "";
+  const selectedCatalogType = nextSchema.catalog_model?.catalogType || nextSchema.layout_mode?.catalog_type || templateSelection?.catalogType || "";
+  nextSchema.layout_mode = {
+    ...(nextSchema.layout_mode || {}),
+    visual_safety: "no_overlap",
+    revision_mode: "targeted_client_edit",
+  };
+  nextSchema.pages = arrayValue(nextSchema.pages).map((page) => ({
+    ...page,
+    sections: arrayValue(page.sections).map((section) => {
+      const sectionType = section.type || "";
+      const isHeroSection = /Hero/i.test(sectionType);
+      const isVisualSection = /Hero|Signature|Feature|Story|ProductGrid|Collection|Provenance/i.test(sectionType);
+      if (!isVisualSection) return section;
+      const settings = {
+        ...(section.settings || {}),
+        mobile_stack: true,
+        visual_safety: "no_overlap",
+      };
+      if (isHeroSection) {
+        settings.heading_size = "safe";
+        settings.spacing = "balanced";
+        settings.container_width = settings.container_width || "wide";
+      }
+      const editable = { ...(section.editable || {}) };
+      if (isHeroSection) {
+        const currentHeadline = editable.headline || "";
+        const shouldReplaceHeadline = flags.visualSafety
+          || flags.copyRefresh
+          || isUnsafeHeroHeadline(currentHeadline, selectedTemplateId, selectedCatalogType);
+        if (shouldReplaceHeadline) {
+          editable.headline = safeRevisionHeadline(nextSchema, payload, templateSelection);
+        }
+        if (editable.subtitle || flags.copyRefresh || flags.visualSafety) {
+          editable.subtitle = safeRevisionSubtitle(nextSchema, payload, templateSelection);
+        }
+      }
+      if (flags.visualSafety && editable.text) {
+        editable.text = cleanShortText(editable.text, 220);
+      }
+      if (/color|paleta|cyberpunk|neon|neón|oscuro|dark|claro|minimal/.test(text) && briefRequestsCyberpunk(message)) {
+        settings.background = settings.background || "#070714";
+        settings.text_color = settings.text_color || "#f8fbff";
+      }
+      return { ...section, editable, settings };
+    }),
+  }));
+  return nextSchema;
+}
+
+function isUnsafeHeroHeadline(headline, templateId = "", catalogType = "") {
+  const value = String(headline || "").trim();
+  if (!value) return true;
+  const normalized = normalizeTemplateIntentText(value);
+  const isEditorialTemplate = /luxury|premium|fashion|editorial|high-ticket|product-store/.test(`${templateId} ${catalogType}`);
+  if (/quiero|necesito|debe|puede|para venderlo|lo que quiero/.test(normalized)) return true;
+  if (/\n/.test(value)) return true;
+  if (isEditorialTemplate && value.length > 42) return true;
+  return value.length > 70;
+}
+
+function safeRevisionHeadline(schema, payload = {}, templateSelection = null) {
+  const language = payload.selectedLanguage || schema.business?.selectedLanguage || selectedLanguage || "en";
+  const name = payload.business_name || schema.business?.name || guidedState.businessName || "Kreaton";
+  const key = `${templateSelection?.templateId || schema.selected_template?.id || schema.active_template?.id || ""} ${templateSelection?.catalogType || schema.catalog_model?.catalogType || ""}`;
+  if (/luxury|high-ticket/.test(key)) {
+    return langTextFor(language, {
+      en: `${name}: private collection`,
+      es: `${name}: colección privada`,
+      fr: `${name}: collection privée`,
+      pt: `${name}: coleção privada`,
+    });
+  }
+  if (/premium|product-store|editorial/.test(key)) {
+    return langTextFor(language, {
+      en: `${name}, designed to stand out`,
+      es: `${name}, diseñado para destacar`,
+      fr: `${name}, conçu pour se distinguer`,
+      pt: `${name}, criado para se destacar`,
+    });
+  }
+  if (/marketplace|retail|store|catalog/.test(key)) {
+    return langTextFor(language, {
+      en: `${name}: find it fast`,
+      es: `${name}: encuentra todo rápido`,
+      fr: `${name}: trouvez vite ce qu'il faut`,
+      pt: `${name}: encontre tudo rápido`,
+    });
+  }
+  return langTextFor(language, {
+    en: `${name} built with clarity`,
+    es: `${name} con una presencia clara`,
+    fr: `${name} avec une présence claire`,
+    pt: `${name} com presença clara`,
+  });
+}
+
+function safeRevisionSubtitle(schema, payload = {}, templateSelection = null) {
+  const language = payload.selectedLanguage || schema.business?.selectedLanguage || selectedLanguage || "en";
+  const description = payload.business_description || schema.business?.description || "";
+  const key = `${templateSelection?.templateId || schema.selected_template?.id || schema.active_template?.id || ""} ${templateSelection?.catalogType || schema.catalog_model?.catalogType || ""}`;
+  const context = cleanShortText(description, 130);
+  if (/luxury|high-ticket/.test(key)) {
+    return langTextFor(language, {
+      en: "A curated buying experience with clear categories, private inquiry, and a polished path from discovery to request.",
+      es: "Una experiencia de compra curada, con categorías claras, consulta privada y una ruta elegante desde descubrir hasta solicitar.",
+      fr: "Une expérience d'achat soignée, avec catégories claires, demande privée et parcours élégant.",
+      pt: "Uma experiência de compra curada, com categorias claras, consulta privada e caminho elegante até o pedido.",
+    });
+  }
+  if (context) return context;
+  return langTextFor(language, {
+    en: "A focused, editable draft with cleaner spacing, stronger hierarchy, and a safer responsive layout.",
+    es: "Un borrador editable con mejor espaciado, jerarquía más clara y layout responsive más seguro.",
+    fr: "Un brouillon modifiable avec meilleur espacement, hiérarchie claire et mise en page responsive sûre.",
+    pt: "Um rascunho editável com melhor espaçamento, hierarquia clara e layout responsivo mais seguro.",
+  });
+}
+
+function langTextFor(language, options = {}) {
+  return options[language] || options.en || Object.values(options).find(Boolean) || "";
 }
 
 function mergeCatalogFromOfferItems(existingItems = [], offerItems = [], payload = {}) {
