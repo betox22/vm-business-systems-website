@@ -133,7 +133,7 @@ def stable_seed_image_url(keyword: str) -> str:
     for fallback in STABLE_IMAGE_URLS:
         if re.search(fallback["match"], clean):
             return fallback["url"]
-    return "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=82"
+    return "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=900&q=82"
 
 
 def is_legacy_or_unstable_image_url(url: Any) -> bool:
@@ -141,6 +141,8 @@ def is_legacy_or_unstable_image_url(url: Any) -> bool:
     if not value:
         return True
     if "/featured/600x600" in value or "/source/" in value:
+        return True
+    if "photo-1523275335684-37898b6baf30" in value:
         return True
     return False
 

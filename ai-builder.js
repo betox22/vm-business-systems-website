@@ -7641,12 +7641,12 @@ const SEMANTIC_SEED_PRODUCT_LIBRARY = {
     { name: { en: "Family Combo Box", es: "Combo Familiar Box" }, category: { en: "Combos", es: "Combos" }, price: 42.0, keyword: "family-meal-box", description: { en: "A shareable meal box with mains, sides, and drinks for simple group ordering. Built to raise average ticket value.", es: "Caja para compartir con principales, acompanantes y bebidas para pedidos grupales. Disenada para subir el ticket promedio." } },
   ],
   default: [
-    { name: { en: "Signature Starter Pack", es: "Pack Inicial Signature" }, category: { en: "Featured", es: "Destacados" }, price: 39.0, keyword: "premium-product-pack", description: { en: "A polished starter offer that introduces the brand with a clear benefit and strong presentation. Built to make the first purchase easy.", es: "Oferta inicial pulida que presenta la marca con beneficio claro y buena presentacion. Pensada para facilitar la primera compra." } },
-    { name: { en: "Customer Favorite Bundle", es: "Bundle Favorito del Cliente" }, category: { en: "Bundles", es: "Combos" }, price: 58.0, keyword: "customer-favorite-bundle", description: { en: "A practical bundle that combines the most useful products or services into one simple choice. Good for homepage highlights and promos.", es: "Combo practico que une los productos o servicios mas utiles en una opcion simple. Bueno para destacados y promociones." } },
-    { name: { en: "Premium Upgrade", es: "Upgrade Premium" }, category: { en: "Premium", es: "Premium" }, price: 74.0, keyword: "premium-upgrade-product", description: { en: "An elevated option for customers who want better materials, presentation, or support. Strong for upsells and comparison cards.", es: "Opcion elevada para clientes que buscan mejores materiales, presentacion o soporte. Fuerte para upsells y tarjetas comparativas." } },
-    { name: { en: "Limited Edition Drop", es: "Drop de Edicion Limitada" }, category: { en: "Limited", es: "Limitado" }, price: 49.0, keyword: "limited-edition-product", description: { en: "A scarcity-based offer made for launches, seasonal campaigns, and social announcements. Creates urgency without needing heavy discounts.", es: "Oferta basada en escasez para lanzamientos, temporadas y anuncios sociales. Crea urgencia sin depender de descuentos fuertes." } },
-    { name: { en: "Everyday Essential", es: "Esencial de Uso Diario" }, category: { en: "Essentials", es: "Esenciales" }, price: 22.0, keyword: "everyday-essential-product", description: { en: "A simple everyday product positioned for repeat use and easy checkout. Useful as an entry-level item and cart add-on.", es: "Producto simple de uso diario pensado para recompra y checkout facil. Util como entrada y complemento de carrito." } },
-    { name: { en: "Gift Ready Selection", es: "Seleccion Lista para Regalo" }, category: { en: "Gifts", es: "Regalos" }, price: 35.0, keyword: "gift-ready-product", description: { en: "A curated gift option with clean presentation and broad appeal. Designed to convert customers who need a fast, thoughtful choice.", es: "Opcion de regalo curada con presentacion limpia y atractivo amplio. Disenada para clientes que necesitan una compra rapida y considerada." } },
+    { name: { en: "Studio Carry Tote", es: "Bolso Tote Studio" }, category: { en: "Accessories", es: "Accesorios" }, price: 39.0, keyword: "minimal-canvas-tote-bag", description: { en: "A clean everyday tote with sturdy handles and a polished retail look. Useful as a real starter product for lifestyle, gift, or boutique stores.", es: "Bolso tote limpio para uso diario, con asas resistentes y apariencia retail pulida. Sirve como producto inicial real para tiendas lifestyle, regalos o boutique." } },
+    { name: { en: "Ceramic Desk Tray", es: "Bandeja Ceramica de Escritorio" }, category: { en: "Home office", es: "Oficina en casa" }, price: 28.0, keyword: "ceramic-desk-tray", description: { en: "A refined tray for keys, jewelry, stationery, or daily essentials. Small, photogenic, and easy to position as an add-on purchase.", es: "Bandeja refinada para llaves, bisuteria, papeleria o esenciales diarios. Pequena, fotogenica y facil de vender como complemento." } },
+    { name: { en: "Soft Linen Pouch", es: "Pouch de Lino Soft" }, category: { en: "Storage", es: "Organizacion" }, price: 24.0, keyword: "linen-zip-pouch", description: { en: "A soft zip pouch for travel, cosmetics, accessories, or small tools. Practical enough for repeat use and clean enough for premium presentation.", es: "Pouch suave con cierre para viaje, cosmeticos, accesorios o herramientas pequenas. Practico para uso recurrente y limpio para presentacion premium." } },
+    { name: { en: "Matte Gift Card Set", es: "Set de Tarjetas Regalo Matte" }, category: { en: "Gift details", es: "Detalles de regalo" }, price: 18.0, keyword: "minimal-gift-card-set", description: { en: "A tasteful card set for wrapping, thank-you notes, and curated orders. Adds a personal touch without turning the catalog into fake bundles.", es: "Set de tarjetas sobrias para envoltorios, notas de agradecimiento y pedidos curados. Agrega detalle personal sin convertir el catalogo en combos falsos." } },
+    { name: { en: "Modern Display Stand", es: "Base de Exhibicion Moderna" }, category: { en: "Display", es: "Exhibicion" }, price: 34.0, keyword: "minimal-product-display-stand", description: { en: "A compact display stand for showcasing small products, samples, or featured pieces. Helps a new store look organized and ready to sell.", es: "Base compacta para exhibir productos pequenos, muestras o piezas destacadas. Ayuda a que una tienda nueva se vea ordenada y lista para vender." } },
+    { name: { en: "Signature Care Kit", es: "Kit de Cuidado Signature" }, category: { en: "Care", es: "Cuidado" }, price: 22.0, keyword: "product-care-kit", description: { en: "A simple care kit for keeping products clean, stored, and ready to use. Works as a realistic accessory item across many store types.", es: "Kit simple para mantener productos limpios, guardados y listos para usar. Funciona como accesorio realista para varios tipos de tienda." } },
   ],
 };
 
@@ -7815,7 +7815,9 @@ function mergeSemanticSeedCatalog(existingItems = [], seedItems = [], language =
       inventory_quantity: source.inventory_quantity ?? seed.inventory_quantity,
       track_inventory: source.track_inventory ?? seed.track_inventory,
       imageSearchQuery: source.imageSearchQuery || source.image_search_query || seed.imageSearchQuery,
-      image_url: source.image_url || source.imageUrl || seed.image_url,
+      image_url: (useSeedIdentity || shouldReplaceCatalogSeedImage(source, seed, contextText))
+        ? seed.image_url
+        : source.image_url || source.imageUrl || seed.image_url,
       is_active: source.is_active !== false,
       is_featured: source.is_featured ?? index < 4,
       sort_order: Number(source.sort_order ?? index),
@@ -7827,6 +7829,15 @@ function mergeSemanticSeedCatalog(existingItems = [], seedItems = [], language =
   return merged.slice(0, 6);
 }
 
+function shouldReplaceCatalogSeedImage(source = {}, seed = {}, contextText = "") {
+  const raw = String(source.image_url || source.imageUrl || "").trim();
+  if (!raw) return true;
+  if (/featured\/600x600|\/source\/|photo-1523275335684-37898b6baf30/i.test(raw)) return true;
+  if (isGenericSeedProduct(source, contextText)) return true;
+  const query = normalizeTemplateIntentText(source.imageSearchQuery || source.image_search_query || source.category || source.name || "");
+  return !query && Boolean(seed.image_url);
+}
+
 function isGenericSeedProduct(item = {}, contextText = "") {
   const source = typeof item === "string" ? { name: item } : item || {};
   const name = normalizeTemplateIntentText(source.name || source.title || source);
@@ -7836,6 +7847,7 @@ function isGenericSeedProduct(item = {}, contextText = "") {
   const nameIsRawContext = name && contextText && contextText.includes(name) && name.split(/\s+/).length > 7;
   return !name
     || /^(item|product|producto|service|servicio|featured item|new arrival|limited find|customer favorite|signature item|featured offer|popular choice|main offer)(\s+\d+)?$/.test(name)
+    || /^(signature starter pack|pack inicial signature|customer favorite bundle|bundle favorito del cliente|premium upgrade|upgrade premium|limited edition drop|drop de edicion limitada|everyday essential|esencial de uso diario|gift ready selection|seleccion lista para regalo)$/.test(name)
     || /price to be set|precio editable|editable product|lorem|placeholder/.test(description)
     || nameIsRawContext
     || !description
@@ -16151,13 +16163,13 @@ function stableCatalogImageUrl(seed = "") {
     [/home|decor|furniture|mueble|hogar/, "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82"],
     [/beauty|skincare|cosmetic|belleza|makeup/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
   ];
-  return (fallbacks.find(([pattern]) => pattern.test(text)) || [null, "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=82"])[1];
+  return (fallbacks.find(([pattern]) => pattern.test(text)) || [null, "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=900&q=82"])[1];
 }
 
 function resolveCatalogImageUrl(url, fallbackText = "") {
   const raw = String(url || "").trim();
   if (!raw) return stableCatalogImageUrl(fallbackText);
-  if (/images\.unsplash\.com\/featured\/600x600/i.test(raw)) {
+  if (/images\.unsplash\.com\/featured\/600x600|photo-1523275335684-37898b6baf30/i.test(raw)) {
     const query = raw.split("?").slice(1).join("?").replace(/[=&]/g, " ");
     return stableCatalogImageUrl(`${query} ${fallbackText}`);
   }

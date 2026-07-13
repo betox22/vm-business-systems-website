@@ -459,14 +459,20 @@ def ensure_plan_seed_catalog(catalog_items: List[Dict[str, Any]], state: Project
         return catalog_items
 
     generic = 0
+    generic_name_pattern = re.compile(
+        r"^(item|product|producto|featured item|new arrival|signature starter pack|pack inicial signature|customer favorite bundle|bundle favorito del cliente|premium upgrade|upgrade premium|limited edition drop|drop de edicion limitada|everyday essential|esencial de uso diario|gift ready selection|seleccion lista para regalo)$",
+        re.IGNORECASE,
+    )
     for item in catalog_items:
         name = str(item.get("name") or "").strip().lower()
         description = str(item.get("description") or "").strip().lower()
         price = item.get("price_amount") or item.get("price")
         if (
             not name
-            or name in {"item", "product", "producto", "featured item", "new arrival"}
+            or generic_name_pattern.search(name)
             or "editable product" in description
+            or "price to be set" in description
+            or "placeholder" in description
             or not description
             or not price
             or not item.get("image_url")
