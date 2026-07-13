@@ -188,9 +188,60 @@ def suggests_multi_vendor_marketplace(text: str) -> bool:
     ))
 
 
+IMAGE_SEED_FALLBACKS: List[Dict[str, str]] = [
+    {
+        "match": r"necklace|collar|jewel|joya|bisuter|crystal|cristal|gift-box|regalo",
+        "url": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=900&q=82",
+    },
+    {
+        "match": r"bracelet|pulsera|pearl|perla|charm",
+        "url": "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=900&q=82",
+    },
+    {
+        "match": r"earring|arete",
+        "url": "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=900&q=82",
+    },
+    {
+        "match": r"ring|anillo",
+        "url": "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=900&q=82",
+    },
+    {
+        "match": r"streetwear|jacket|chaqueta|fashion|moda|ropa|sneaker|denim|cap",
+        "url": "https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=900&q=82",
+    },
+    {
+        "match": r"usb|phone|gadget|tech|keyboard|lamp|projector|electronics",
+        "url": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=82",
+    },
+    {
+        "match": r"truck|bumper|4x4|off-road|auto|car|automotive",
+        "url": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=82",
+    },
+    {
+        "match": r"coffee|espresso|brew|latte|cafe",
+        "url": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=82",
+    },
+    {
+        "match": r"restaurant|food|menu|pizza|dish|comida",
+        "url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82",
+    },
+    {
+        "match": r"home|decor|furniture|mueble|hogar|lamp",
+        "url": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82",
+    },
+    {
+        "match": r"beauty|skincare|cosmetic|belleza|makeup",
+        "url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
+    },
+]
+
+
 def unsplash_seed_url(keyword: str) -> str:
-    clean = re.sub(r"[^a-z0-9]+", "-", (keyword or "premium-product").lower()).strip("-")
-    return f"https://images.unsplash.com/featured/600x600/?{clean or 'premium-product'}"
+    clean = re.sub(r"[^a-z0-9]+", "-", (keyword or "premium product").lower()).strip("-")
+    for fallback in IMAGE_SEED_FALLBACKS:
+        if re.search(fallback["match"], clean):
+            return fallback["url"]
+    return "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=82"
 
 
 def infer_seed_profile(text: str) -> str:

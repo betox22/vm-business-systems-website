@@ -547,7 +547,7 @@ class OpenAISitePlanAgent:
                     "price_amount": 39.99,
                     "price_label": "USD 39.99",
                     "imageSearchQuery": "english-search-keyword",
-                    "image_url": "https://images.unsplash.com/featured/600x600/?english-search-keyword"
+                    "image_url": "https://images.unsplash.com/photo-stable-id?auto=format&fit=crop&w=900&q=82"
                 }],
                 "reasoningSummary": "short internal reason",
                 "confidence": 0.0,
@@ -633,7 +633,7 @@ Hard rules:
 - Identify the exact niche from the business name, industry, products/services and description before writing catalog or copy.
 - For commerce templates, catalogItems must contain exactly 4 to 6 real, niche-specific products. Do not use "Product 1", "Featured item", "Price editable", Lorem Ipsum, or empty fields.
 - Each catalogItems object must include id, name, description, category, numeric price, price_amount, price_label, imageSearchQuery, and image_url.
-- image_url must use this exact format: https://images.unsplash.com/featured/600x600/?english-keyword
+- image_url must be a valid, directly loadable image URL. Prefer stable images.unsplash.com photo URLs with auto=format&fit=crop&w=900&q=82. Do not use /featured/600x600 URLs because they can return 404.
 - If a client sells a focused product family such as jewelry, handmade accessories, fashion, candles, beauty, or crafts, choose a focused store/showroom template, not a broad marketplace.
 - Choose a broad marketplace only for explicit Amazon/general-store intent or unrelated multi-category catalogs.
 - Generate polished public copy in selectedLanguage.

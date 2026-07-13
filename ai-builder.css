@@ -2917,6 +2917,12 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   background: linear-gradient(145deg, color-mix(in srgb, var(--site-secondary) 38%, #ffffff), #ffffff);
 }
 
+.premium-card-visual .image-shell {
+  height: 100%;
+  min-height: inherit;
+  aspect-ratio: auto;
+}
+
 .catalog-premium-editorial article > div:last-child {
   display: grid;
   gap: 12px;
@@ -3084,16 +3090,21 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   grid-column: span 2;
 }
 
-.lookbook-card img {
+.lookbook-card img,
+.lookbook-card .image-shell {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  aspect-ratio: auto;
   opacity: 0.38;
 }
 
-.lookbook-card > *:not(img) {
+.lookbook-card .image-shell img {
+  opacity: 1;
+}
+
+.lookbook-card > *:not(img):not(.image-shell) {
   position: relative;
   z-index: 1;
 }
@@ -5016,6 +5027,11 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   object-fit: cover;
 }
 
+.listing-image .image-shell {
+  height: 100%;
+  aspect-ratio: 16 / 10;
+}
+
 .listing-card-body {
   display: grid;
   gap: 12px;
@@ -6017,11 +6033,24 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 
 .image-shell {
   display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
   background: var(--site-secondary);
+}
+
+.image-shell img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .image-shell .card-placeholder {
   display: none;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
 }
 
 .image-shell.image-failed img {
@@ -6227,6 +6256,7 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 }
 
 .template-operational-catalog .rendered-card img,
+.template-operational-catalog .rendered-card .image-shell,
 .template-operational-catalog .card-placeholder {
   aspect-ratio: 1 / 1;
 }
@@ -6529,6 +6559,12 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .luxury-card-top {
   min-height: 330px;
   background: #1d140d;
+}
+
+.luxury-card-top .image-shell {
+  height: 100%;
+  min-height: inherit;
+  aspect-ratio: auto;
 }
 
 .luxury-card-bottom {
@@ -6902,6 +6938,11 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   background: #dbeafe;
 }
 
+.education-card-image .image-shell {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
 .education-card-body {
   padding: 20px;
 }
@@ -7256,6 +7297,11 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   border-radius: 18px;
   overflow: hidden;
   background: #ccfbf1;
+}
+
+.clinic-card-visual .image-shell {
+  height: 100%;
+  aspect-ratio: auto;
 }
 
 .clinic-card-body {

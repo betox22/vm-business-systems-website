@@ -7686,7 +7686,7 @@ function unsplashSeedUrl(keyword = "") {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "") || "premium-product";
-  return `https://images.unsplash.com/featured/600x600/?${clean}`;
+  return stableCatalogImageUrl(clean);
 }
 
 function mergeSemanticSeedCatalog(existingItems = [], seedItems = [], language = selectedLanguage, contextText = "") {
@@ -14388,7 +14388,7 @@ function renderFashionLookbook(section, schema) {
   const editable = section.editable || {};
   return `<section class="fashion-lookbook-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).lookbook)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
-    <div class="fashion-lookbook-strip">${marketplaceItems(schema).slice(0, 5).map((item, index) => `<article class="${index === 1 ? "tall" : ""}">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : fashionVisualPlaceholder(schema)}<strong>${escapeHtml(item.name)}</strong></article>`).join("")}</div>
+    <div class="fashion-lookbook-strip">${marketplaceItems(schema).slice(0, 5).map((item, index) => `<article class="${index === 1 ? "tall" : ""}">${renderResilientImage(item.image_url, item.name, item.name)}<strong>${escapeHtml(item.name)}</strong></article>`).join("")}</div>
   </section>`;
 }
 
@@ -15264,7 +15264,7 @@ function renderListingContact(section, schema) {
 function renderRealEstateListingCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-real-estate-listings">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
-    <div class="listing-image">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : listingVisualPlaceholder(schema)}</div>
+    <div class="listing-image">${renderResilientImage(item.image_url, item.name, item.name)}</div>
     <div class="listing-card-body">
       <div class="listing-card-top"><small>${escapeHtml(item.deal_label || labels.availableNow)}</small><span>${escapeHtml(item.category || labels.listings)}</span></div>
       <h3>${escapeHtml(item.name)}</h3>
@@ -15332,7 +15332,7 @@ function renderHomeServiceGallery(section, schema) {
   return `<section class="home-service-gallery ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.workProof)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
     <div class="home-service-work-grid">${items.map((item, index) => `<article>
-      ${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : homeServiceWorkPlaceholder(item, schema)}
+      ${renderResilientImage(item.image_url, item.name, item.name)}
       <div><small>${escapeHtml(index % 2 ? labels.after : labels.before)}</small><strong>${escapeHtml(item.name)}</strong></div>
     </article>`).join("")}</div>
   </section>`;
@@ -15743,7 +15743,7 @@ function renderPremiumEditorialCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-premium-editorial">
     ${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
-      <div class="premium-card-visual">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : premiumVisualPlaceholder(schema)}</div>
+      <div class="premium-card-visual">${renderResilientImage(item.image_url, item.name, item.name)}</div>
       <div>
         <small>${escapeHtml(index === 0 ? labels.flagship : labels.curated)}</small>
         <h3>${escapeHtml(item.name)}</h3>
@@ -15759,7 +15759,7 @@ function renderClassifiedMarketplaceCatalog(items) {
   const labels = catalogLocaleLabels(arguments[1]);
   return `<div class="catalog-shell catalog-classified">
     ${items.map((item, index) => `<article class="listing-card">
-      <div>${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : `<span>${escapeHtml(item.name.slice(0, 2))}</span>`}</div>
+      <div>${renderResilientImage(item.image_url, item.name, item.name)}</div>
       <section><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.description)}</p><small>${labels.sellerVerified} · ${index % 2 ? labels.used : labels.newItem} · ${labels.localPickup}</small></section>
       <aside><b>${escapeHtml(item.price_label || labels.makeOffer)}</b><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.contactSeller)}</a></aside>
     </article>`).join("")}
@@ -15773,7 +15773,7 @@ function renderMinimalProductGrid(items) {
 function renderFashionLookbookCatalog(items) {
   const labels = catalogLocaleLabels(arguments[1]);
   return `<div class="catalog-lookbook">${items.map((item, index) => `<article class="lookbook-card ${index === 0 ? "wide" : ""}">
-    ${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : `<div>${escapeHtml(item.name.slice(0, 2))}</div>`}
+    ${renderResilientImage(item.image_url, item.name, item.name)}
     <span>${labels.newDrop}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
   </article>`).join("")}</div>`;
 }
@@ -15817,7 +15817,7 @@ function renderLeadFunnelOfferCatalog(items, schema) {
 function renderLuxuryGalleryCatalog(items) {
   const labels = catalogLocaleLabels(arguments[1]);
   return `<div class="catalog-luxury">${items.map((item) => `<article>
-    <div>${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : ""}</div>
+    <div>${renderResilientImage(item.image_url, item.name, item.name)}</div>
     <small>${labels.limitedSelection}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
   </article>`).join("")}</div>`;
 }
@@ -15825,7 +15825,7 @@ function renderLuxuryGalleryCatalog(items) {
 function renderLuxuryHighTicketCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-luxury-high-ticket">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
-    <div class="luxury-card-top">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : luxuryVisualPlaceholder(schema)}</div>
+    <div class="luxury-card-top">${renderResilientImage(item.image_url, item.name, item.name)}</div>
     <div class="luxury-card-bottom">
       <small>${escapeHtml(item.deal_label || (index % 2 ? labels.authenticated : labels.limitedPiece))}</small>
       <h3>${escapeHtml(item.name)}</h3>
@@ -15843,7 +15843,7 @@ function renderEducationCourseCatalog(items, schema) {
       <small>${escapeHtml(item.deal_label || (index % 2 ? labels.beginnerFriendly : labels.certificateReady))}</small>
       <span>${escapeHtml(item.shipping_label || labels.educationDurations?.[index % (labels.educationDurations?.length || 1)] || "")}</span>
     </div>
-    ${item.image_url ? `<div class="education-card-image"><img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}"></div>` : ""}
+    <div class="education-card-image">${renderResilientImage(item.image_url, item.name, item.name)}</div>
     <div class="education-card-body">
       <small>${escapeHtml(item.category || labels.courseAcademy)}</small>
       <h3>${escapeHtml(item.name)}</h3>
@@ -15865,7 +15865,7 @@ function renderMedicalWellnessCatalog(items, schema) {
       <small>${escapeHtml(item.deal_label || (index % 2 ? labels.specialistLed : labels.popularTreatment))}</small>
       <span>${escapeHtml(item.shipping_label || labels.clinicDurations?.[index % (labels.clinicDurations?.length || 1)] || "")}</span>
     </div>
-    <div class="clinic-card-visual">${item.image_url ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.name)}">` : clinicVisualPlaceholder(schema)}</div>
+    <div class="clinic-card-visual">${renderResilientImage(item.image_url, item.name, item.name)}</div>
     <div class="clinic-card-body">
       <small>${escapeHtml(item.category || labels.treatments)}</small>
       <h3>${escapeHtml(item.name)}</h3>
@@ -16037,11 +16037,43 @@ function productStockBadge(item = {}) {
   return `<span class="stock-badge stock-in">In stock</span>`;
 }
 
+function stableCatalogImageUrl(seed = "") {
+  const text = String(seed || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  const fallbacks = [
+    [/bracelet|pulsera|pearl|perla|charm/, "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=900&q=82"],
+    [/earring|arete/, "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=900&q=82"],
+    [/ring|anillo/, "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=900&q=82"],
+    [/necklace|collar|jewel|joya|bisuter|crystal|cristal|gift|regalo/, "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=900&q=82"],
+    [/streetwear|jacket|chaqueta|fashion|moda|ropa|sneaker|denim|cap/, "https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=900&q=82"],
+    [/usb|phone|gadget|tech|keyboard|lamp|projector|electronics/, "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=82"],
+    [/truck|bumper|4x4|off-road|auto|car|automotive/, "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=82"],
+    [/coffee|espresso|brew|latte|cafe/, "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=82"],
+    [/restaurant|food|menu|pizza|dish|comida/, "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82"],
+    [/home|decor|furniture|mueble|hogar/, "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82"],
+    [/beauty|skincare|cosmetic|belleza|makeup/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+  ];
+  return (fallbacks.find(([pattern]) => pattern.test(text)) || [null, "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=82"])[1];
+}
+
+function resolveCatalogImageUrl(url, fallbackText = "") {
+  const raw = String(url || "").trim();
+  if (!raw) return stableCatalogImageUrl(fallbackText);
+  if (/images\.unsplash\.com\/featured\/600x600/i.test(raw)) {
+    const query = raw.split("?").slice(1).join("?").replace(/[=&]/g, " ");
+    return stableCatalogImageUrl(`${query} ${fallbackText}`);
+  }
+  return raw;
+}
+
 function renderResilientImage(url, alt = "", fallbackText = "") {
   const initials = String(fallbackText || alt || "Item").slice(0, 2).toUpperCase();
   const placeholder = `<div class="card-placeholder">${escapeHtml(initials)}</div>`;
-  if (!url) return placeholder;
-  return `<div class="image-shell"><img src="${escapeAttribute(url)}" alt="${escapeAttribute(alt)}" loading="lazy" decoding="async" onerror="this.closest('.image-shell').classList.add('image-failed')">${placeholder}</div>`;
+  const resolvedUrl = resolveCatalogImageUrl(url, `${fallbackText} ${alt}`);
+  if (!resolvedUrl) return placeholder;
+  return `<div class="image-shell"><img src="${escapeAttribute(resolvedUrl)}" alt="${escapeAttribute(alt)}" loading="lazy" decoding="async" onerror="this.closest('.image-shell').classList.add('image-failed')">${placeholder}</div>`;
 }
 
 function catalogLocaleLabels(schema) {
