@@ -160,3 +160,22 @@ class WebsiteGenerationResponse(BaseModel):
     business_id: Optional[str] = None
     site_id: Optional[str] = None
     generation_id: Optional[str] = None
+
+
+class LyraEditRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    currentSchema: Dict[str, Any] = Field(default_factory=dict)
+    instruction: str = ""
+    selectedLanguage: SupportedLanguage = "en"
+    userContext: Dict[str, Any] = Field(default_factory=dict)
+
+
+class LyraEditResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    patchedSchema: Dict[str, Any] = Field(default_factory=dict)
+    patchOperations: List[Dict[str, Any]] = Field(default_factory=list)
+    patchSummary: str = ""
+    changedFields: List[str] = Field(default_factory=list)
+    usedAI: bool = False

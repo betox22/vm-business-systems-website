@@ -2,6 +2,7 @@ const API_BASE_URL = resolveApiBaseUrl();
 const API_URL = `${API_BASE_URL}/ai/website-builder`;
 const INTAKE_ASSISTANT_URL = `${API_BASE_URL}/api/ai/intake-assistant`;
 const LUMA_AGENT_URL = `${API_BASE_URL}/api/luma/chat`;
+const LYRA_EDIT_URL = `${API_BASE_URL}/api/luma/edit`;
 const CLIENT_REQUESTS_URL = `${API_BASE_URL}/client-requests`;
 const CLIENT_INTAKE_SESSION_URL = `${API_BASE_URL}/api/client/intake-session`;
 const CLIENT_AUTH_ME_URL = `${API_BASE_URL}/api/client/auth/me`;
@@ -7223,6 +7224,41 @@ async function applyDraftAdjustmentFromChat(message, localContextUpdates = {}) {
       arrayValue(payload.preferred_colors).join(" "),
     ].join(" "));
     const templateSelection = await selectTemplateForPayload(payload);
+    const explicitTemplateSwitch = explicitlyRequestsTemplateSwitch(text);
+    const serverEdit = currentSchema && !explicitTemplateSwitch
+      ? await requestLyraSchemaEdit(message, payload, localContextUpdates, templateSelection).catch((error) => {
+          console.warn("Lyra server edit unavailable; falling back to local patch.", error);
+          return null;
+        })
+      : null;
+    if (serverEdit?.patchedSchema) {
+      currentSchema = prepareWebsiteConfig(serverEdit.patchedSchema, payload, templateSelection);
+      if (briefRequestsCyberpunk(text)) currentSchema = applyCyberpunkVisualDirection(currentSchema);
+      currentCatalogItems = catalogItemsFromSchema(currentSchema);
+      selectedPageKey = currentSchema.pages?.[0]?.page_key || "home";
+      selectedVariantId = currentSchema.design_variants?.[0]?.id || selectedVariantId || "";
+      saveGeneratedSite({
+        business_id: currentBusinessId,
+        site_id: currentSiteId,
+        generation_id: currentGenerationId,
+        storage_status: currentSiteId ? "ai_revision_preview" : "ai_revision_preview_unsaved",
+        schema: currentSchema,
+        used_dev_mock: false,
+      });
+      renderEditor();
+      renderPreview();
+      showGeneratedClientPreview();
+      document.body.classList.add("draft-adjust-open");
+      guidedPanel.classList.add("active");
+      appendChatMessage(
+        "assistant",
+        serverEdit.patchSummary || draftAdjustmentReply(false, templateSelection),
+        "success",
+      );
+      builderAvatarManager?.setState("success", { source: "draft-adjustment" });
+      return;
+    }
+
     const shouldRebuildFromTemplate = shouldRebuildDraftFromTemplate(message, payload, templateSelection);
     const nextSchema = shouldRebuildFromTemplate
       ? buildInstantTemplateSchema(payload, templateSelection)
@@ -7268,6 +7304,39 @@ async function applyDraftAdjustmentFromChat(message, localContextUpdates = {}) {
   } finally {
     setThinking(false);
   }
+}
+
+async function requestLyraSchemaEdit(message, payload = {}, localContextUpdates = {}, templateSelection = null) {
+  const response = await fetch(LYRA_EDIT_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      currentSchema,
+      instruction: message,
+      selectedLanguage,
+      userContext: {
+        businessName: guidedState.businessName || payload.business_name,
+        businessDescription: guidedState.businessDescription || payload.business_description,
+        industry: guidedState.industry || payload.industry,
+        servicesProducts: guidedState.servicesProducts || payload.services_products,
+        preferredTone: guidedState.preferredTone || payload.preferred_tone,
+        preferredColors: guidedState.preferredColors || payload.preferred_colors,
+        selectedTemplateId: templateSelection?.templateId || guidedState.sitePlan?.templateId || currentSchema?.selected_template?.id,
+        catalogType: templateSelection?.catalogType || guidedState.sitePlan?.catalogType || currentSchema?.catalog_model?.catalogType,
+        salesFlow: guidedState.salesFlow || payload.sales_flow,
+        ...localContextUpdates,
+      },
+    }),
+  });
+  if (!response.ok) {
+    const error = await readErrorMessage(response);
+    throw new Error(error || "Lyra edit failed.");
+  }
+  return response.json();
+}
+
+function explicitlyRequestsTemplateSwitch(text) {
+  return /cambia(?:r)?(?: la)? plantilla|otra plantilla|plantilla diferente|switch template|change template|different template|nuevo layout|layout diferente|otra estructura|estructura diferente/.test(text);
 }
 
 function shouldRebuildDraftFromTemplate(message, payload = {}, templateSelection = null) {

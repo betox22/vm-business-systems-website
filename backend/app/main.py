@@ -12,7 +12,15 @@ from fastapi.staticfiles import StaticFiles
 
 from .agents import semantic_seed_catalog, split_items, state_is_commerce_seed_target
 from .commerce import router as commerce_router
-from .models import LumaChatRequest, LumaChatResponse, WebsiteGenerationRequest, WebsiteGenerationResponse
+from .models import (
+    LumaChatRequest,
+    LumaChatResponse,
+    LyraEditRequest,
+    LyraEditResponse,
+    WebsiteGenerationRequest,
+    WebsiteGenerationResponse,
+)
+from .lyra_edit_engine import LyraEditEngine
 from .lyra_intake_engine import LyraIntakeDecision, LyraIntakeEngine
 from .orchestrator import (
     LyraOrchestrator,
@@ -26,6 +34,7 @@ from .orchestrator import (
 ROOT_DIR = Path(__file__).resolve().parents[2]
 orchestrator = LyraOrchestrator()
 intake_engine = LyraIntakeEngine()
+edit_engine = LyraEditEngine()
 client_intake_sessions: Dict[str, Dict[str, Any]] = {}
 
 
@@ -289,6 +298,25 @@ async def client_intake_session(payload: Dict[str, Any]) -> Dict[str, Any]:
     existing["storageStatus"] = "stored"
     existing["storage_status"] = "stored"
     return existing
+
+
+@app.post("/api/luma/edit", response_model=LyraEditResponse)
+async def luma_edit(request: LyraEditRequest) -> LyraEditResponse:
+    try:
+        result = await edit_engine.run(
+            current_schema=request.currentSchema,
+            instruction=request.instruction,
+            selected_language=request.selectedLanguage,
+            user_context=request.userContext,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=f"Lyra edit failed: {error}") from error
+
+    return LyraEditResponse(**result)
 
 
 @app.post("/ai/website-builder", response_model=WebsiteGenerationResponse)
