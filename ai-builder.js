@@ -3204,6 +3204,7 @@ function startNewClientProject() {
     "manual-form-open",
     "studio-auth-open",
   );
+  syncLyraExperienceMode();
   guidedPanel?.classList.add("active");
   form?.classList.remove("active");
   previewFrame.innerHTML = "";
@@ -5547,6 +5548,7 @@ function applyGuidedStateToForm() {
 function renderGuidedSummary() {
   syncTemplateSelectionFromGuidedContext();
   guidedStep = normalizeGuidedStepForCurrentState(guidedStep);
+  syncLyraExperienceMode();
   document.querySelectorAll("[data-summary-field]").forEach((field) => {
     const key = field.dataset.summaryField;
     const value = guidedState[key];
@@ -5578,6 +5580,17 @@ function renderGuidedSummary() {
   updateAssetPromptVisibility();
   renderSitePlanInChatIfNeeded();
   saveGuidedDraft();
+}
+
+function syncLyraExperienceMode() {
+  if (!isPublicClientSetup) return;
+  const hasGeneratedResult = Boolean(
+    currentSchema ||
+    document.body.classList.contains("generated-preview-open") ||
+    document.body.classList.contains("client-preview-mode")
+  );
+  document.body.classList.toggle("lyra-result-mode", hasGeneratedResult);
+  document.body.classList.toggle("lyra-conversation-mode", !hasGeneratedResult);
 }
 
 function normalizeGuidedStepForCurrentState(step) {
@@ -8002,6 +8015,7 @@ function applyGenerationResult(result, payload = {}, templateSelection = null) {
   renderEditor();
   renderPreview();
   showGeneratedClientPreview();
+  syncLyraExperienceMode();
   guidedState.revisionMode = "";
   guidedState.requestedAdjustments = [];
   builderAvatarManager?.setState("success", { source: "preview-generated" });
@@ -12933,6 +12947,7 @@ function showGeneratedClientPreview() {
   }
   document.body.classList.add("generated-preview-open", "client-preview-mode");
   document.body.classList.remove("review-details-open", "final-review-mode", "manual-form-open", "draft-adjust-open");
+  syncLyraExperienceMode();
   guidedPanel.classList.remove("active");
   storageStatus.textContent = currentSiteId ? t("generatedOpenAI") : t("generatedOpenAI");
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -13164,6 +13179,7 @@ function isValidWorkspaceEmail(email) {
 function adjustGeneratedDraftWithLuma() {
   document.body.classList.add("generated-preview-open", "client-preview-mode", "draft-adjust-open");
   document.body.classList.remove("review-details-open", "final-review-mode", "manual-form-open");
+  syncLyraExperienceMode();
   guidedPanel.classList.add("active");
   document.body.classList.remove("guided-modal-open");
   guidedStep = "review";
@@ -13190,6 +13206,7 @@ function closeDraftAdjustmentChat() {
   document.body.classList.remove("draft-adjust-open", "guided-modal-open", "review-details-open", "final-review-mode");
   guidedPanel.classList.remove("active");
   document.body.classList.add("generated-preview-open", "client-preview-mode");
+  syncLyraExperienceMode();
   storageStatus.textContent = langText({
     en: "Draft preview is still open.",
     es: "El preview del borrador sigue abierto.",

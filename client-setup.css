@@ -5420,3 +5420,119 @@ body.public-client-setup .live-site-preview-card.template-board-card-host .templ
     width: min(280px, 82vw) !important;
   }
 }
+
+/* LYRA two-state experience.
+   State 1: conversation before a site exists.
+   State 2: generated result with optional edit chat. */
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-progress,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-live-stage,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .summary-panel,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .lyra-agent-status,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .template-carousel-panel,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .template-board-panel,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .site-plan-card,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .brief-ready-card {
+  display: none !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-modal {
+  padding: clamp(12px, 2vw, 24px);
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-layout {
+  display: grid !important;
+  grid-template-columns: minmax(320px, 760px) !important;
+  justify-content: center;
+  align-items: stretch;
+  min-height: min(760px, calc(100vh - 128px));
+  gap: 0;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-chat-card {
+  width: 100%;
+  min-height: min(760px, calc(100vh - 128px));
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 32px 90px rgba(15, 23, 42, 0.12);
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-chat-log {
+  overflow-x: hidden;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message {
+  max-width: min(84%, 620px);
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-status-card {
+  justify-content: flex-end;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-status-card > div {
+  display: none !important;
+}
+
+body.public-client-setup.lyra-result-mode.draft-adjust-open .guided-progress,
+body.public-client-setup.lyra-result-mode.draft-adjust-open .summary-panel,
+body.public-client-setup.lyra-result-mode.draft-adjust-open .lyra-agent-status,
+body.public-client-setup.lyra-result-mode.draft-adjust-open .template-carousel-panel,
+body.public-client-setup.lyra-result-mode.draft-adjust-open .template-board-panel,
+body.public-client-setup.lyra-result-mode.draft-adjust-open .site-plan-card,
+body.public-client-setup.lyra-result-mode.draft-adjust-open .brief-ready-card {
+  display: none !important;
+}
+
+body.public-client-setup.lyra-result-mode.draft-adjust-open .guided-panel.active {
+  display: block !important;
+}
+
+body.public-client-setup.lyra-result-mode.draft-adjust-open .guided-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 440px) !important;
+  align-items: stretch;
+  gap: 18px;
+}
+
+body.public-client-setup.lyra-result-mode.draft-adjust-open .guided-live-stage {
+  display: block !important;
+  min-width: 0;
+}
+
+body.public-client-setup.lyra-result-mode.draft-adjust-open .guided-chat-card {
+  min-width: 0;
+  height: calc(100vh - 112px);
+  max-height: 820px;
+  overflow: hidden;
+}
+
+@media (max-width: 767px) {
+  body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-modal {
+    padding: 0;
+  }
+
+  body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-layout,
+  body.public-client-setup.lyra-result-mode.draft-adjust-open .guided-layout {
+    grid-template-columns: 1fr !important;
+    min-height: calc(100dvh - 64px);
+  }
+
+  body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-chat-card,
+  body.public-client-setup.lyra-result-mode.draft-adjust-open .guided-chat-card {
+    min-height: calc(100dvh - 64px);
+    height: calc(100dvh - 64px);
+    max-height: none;
+    border-radius: 0;
+  }
+
+  body.public-client-setup.lyra-result-mode.draft-adjust-open .guided-live-stage {
+    display: none !important;
+  }
+
+  body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message {
+    max-width: 88%;
+  }
+}
