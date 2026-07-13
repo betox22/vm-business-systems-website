@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from .agents import semantic_seed_catalog, split_items, state_is_commerce_seed_target
 from .commerce import router as commerce_router
 from .models import LumaChatRequest, LumaChatResponse, WebsiteGenerationRequest, WebsiteGenerationResponse
+from .lyra_intake_engine import LyraIntakeDecision, LyraIntakeEngine
 from .orchestrator import (
     LyraOrchestrator,
     assistant_message_for_state,
@@ -24,6 +25,7 @@ from .orchestrator import (
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 orchestrator = LyraOrchestrator()
+intake_engine = LyraIntakeEngine()
 client_intake_sessions: Dict[str, Dict[str, Any]] = {}
 
 
@@ -53,6 +55,7 @@ CLIENT_DRAFT_KEYS = {
     "catalogType",
     "websiteType",
     "salesFlow",
+    "fieldMeta",
 }
 
 
@@ -98,6 +101,15 @@ def sanitize_client_draft(raw: Any) -> Dict[str, Any]:
                 "website": _trim_text(info.get("website"), 200),
                 "notes": _trim_text(info.get("notes"), 700),
             }
+        elif key == "fieldMeta":
+            meta = value if isinstance(value, dict) else {}
+            draft[key] = {
+                str(field)[:80]: {
+                    "source": _trim_text((field_meta or {}).get("source"), 40) if isinstance(field_meta, dict) else "",
+                    "confidence": (field_meta or {}).get("confidence", 0) if isinstance(field_meta, dict) else 0,
+                }
+                for field, field_meta in list(meta.items())[:40]
+            }
         elif key in {"hasLogo", "hasPhotos"}:
             draft[key] = bool(value)
         else:
@@ -131,12 +143,29 @@ async def luma_chat(request: LumaChatRequest) -> LumaChatResponse:
         state.selectedTemplateId = request.selectedTemplateId
     apply_current_step_hint(state, request)
 
-    final_state = await orchestrator.run(request.message, state)
-    ready = not final_state.missingImportantFields
-    plan = site_plan_from_state(final_state)
+    intake_decision = await intake_engine.run(
+        message=request.message,
+        state=state,
+        conversation_history=request.history,
+        selected_language=state.selectedLanguage,
+    )
+    state = intake_engine.apply_decision(state, intake_decision)
+
+    if intake_decision.canGenerate:
+        final_state = await orchestrator.run(request.message, state, skip_intake_strategy=True)
+        ready = not final_state.missingImportantFields
+        plan = site_plan_from_state(final_state)
+        assistant_message = assistant_message_for_state(final_state)
+        next_question = intake_decision.nextQuestion or next_question_for_state(final_state)
+    else:
+        final_state = state
+        ready = False
+        plan = {}
+        assistant_message = intake_message_for_decision(intake_decision, final_state)
+        next_question = intake_decision.nextQuestion or next_question_for_state(final_state)
 
     return LumaChatResponse(
-        assistantMessage=assistant_message_for_state(final_state),
+        assistantMessage=assistant_message,
         emotion="success" if ready else "speaking",
         updatedFields={
             "businessName": final_state.businessName,
@@ -157,17 +186,34 @@ async def luma_chat(request: LumaChatRequest) -> LumaChatResponse:
             "typography": final_state.typography,
             "generatedCopy": final_state.generatedCopy,
             "catalogItems": final_state.catalogItems,
+            "fieldMeta": final_state.fieldMeta,
+            "detectedIntent": intake_decision.detectedIntent.model_dump(),
+            "intakeCanGenerate": intake_decision.canGenerate,
             "sitePlan": plan,
         },
-        nextQuestion=next_question_for_state(final_state),
+        nextQuestion=next_question,
         readyToGenerate=ready,
-        missingImportantFields=final_state.missingImportantFields,
+        missingImportantFields=intake_decision.missingCriticalFields if not ready else final_state.missingImportantFields,
         confidence=final_state.confidence,
         selectedTemplateId=final_state.selectedTemplateId,
         selected_template_id=final_state.selectedTemplateId,
         sitePlan=plan,
-        used_dev_fallback=False,
+        used_dev_fallback=not intake_decision.usedAI,
     )
+
+
+def intake_message_for_decision(decision: LyraIntakeDecision, state: Any) -> str:
+    if decision.warning:
+        return {
+            "es": "No pude procesar eso con suficiente precision.",
+            "fr": "Je n'ai pas pu traiter cela avec assez de precision.",
+            "pt": "Nao consegui processar isso com precisao suficiente.",
+        }.get(state.selectedLanguage, "I could not process that with enough precision.")
+    return {
+        "es": "Entendido. Actualice lo que pude confirmar.",
+        "fr": "Compris. J'ai mis a jour ce que je peux confirmer.",
+        "pt": "Entendido. Atualizei o que pude confirmar.",
+    }.get(state.selectedLanguage, "Got it. I updated what I could confirm.")
 
 
 def apply_current_step_hint(state: Any, request: LumaChatRequest) -> None:
@@ -183,14 +229,25 @@ def apply_current_step_hint(state: Any, request: LumaChatRequest) -> None:
 
     if step == "websiteIntent" and not state.websiteIntent:
         state.websiteIntent = message
+        mark_field_meta(state, "websiteIntent", "explicit", 0.95)
     elif step == "businessName" and not state.businessName and len(message) <= 70:
         state.businessName = message
+        mark_field_meta(state, "businessName", "explicit", 0.95)
     elif step == "businessDescription" and not state.businessDescription:
         state.businessDescription = message
+        mark_field_meta(state, "businessDescription", "explicit", 0.92)
     elif step == "servicesProducts" and not state.servicesProducts:
         state.servicesProducts = [item.strip() for item in re.split(r"[,;\n]+", message) if item.strip()]
+        mark_field_meta(state, "servicesProducts", "explicit", 0.9)
     elif step == "preferredColors" and not state.preferredColors:
         state.preferredColors = message
+        mark_field_meta(state, "preferredColors", "explicit", 0.9)
+
+
+def mark_field_meta(state: Any, field: str, source: str, confidence: float) -> None:
+    meta = dict(getattr(state, "fieldMeta", {}) or {})
+    meta[field] = {"source": source, "confidence": confidence}
+    state.fieldMeta = meta
 
 
 @app.post("/api/client/intake-session")

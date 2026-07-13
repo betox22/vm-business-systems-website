@@ -48,6 +48,7 @@ def normalize_state_payload(payload: Dict[str, Any] | None) -> ProjectState:
         typography=payload.get("typography") or {},
         generatedCopy=payload.get("generatedCopy") or {},
         catalogItems=payload.get("catalogItems") or [],
+        fieldMeta=payload.get("fieldMeta") if isinstance(payload.get("fieldMeta"), dict) else {},
     )
 
 
@@ -63,14 +64,25 @@ class LyraOrchestrator:
         self.ai_site_planner = OpenAISitePlanAgent()
         self.validator = ValidationAgent()
 
-    async def run(self, user_input: str, initial_state: ProjectState | None = None) -> ProjectState:
+    async def run(
+        self,
+        user_input: str,
+        initial_state: ProjectState | None = None,
+        *,
+        skip_intake_strategy: bool = False,
+    ) -> ProjectState:
         manager = StateManager(initial_state)
 
-        # 1. Extract natural-language fields first.
-        await self._run_and_merge(manager, self.extractor, user_input)
+        if not skip_intake_strategy:
+            # 1. Extract natural-language fields first.
+            await self._run_and_merge(manager, self.extractor, user_input)
 
-        # 2. Strategy must run before workers because it chooses template/type.
-        await self._run_and_merge(manager, self.strategist, user_input)
+            # 2. Strategy must run before workers because it chooses template/type.
+            await self._run_and_merge(manager, self.strategist, user_input)
+        else:
+            snapshot = await manager.snapshot()
+            if not snapshot.selectedTemplateId or not snapshot.websiteType:
+                await self._run_and_merge(manager, self.strategist, user_input)
 
         # 3. Independent workers run concurrently after strategy.
         snapshot = await manager.snapshot()
@@ -135,6 +147,7 @@ def site_plan_from_state(state: ProjectState) -> Dict[str, Any]:
         "pages": generated_pages,
         "catalogCategories": state.generatedCopy.get("catalogCategories", []) if isinstance(state.generatedCopy, dict) else [],
         "copyPolicy": "Use intake as private strategy. Generate polished public copy.",
+        "fieldMeta": state.fieldMeta,
         "notes": state.notes[-6:],
     }
 

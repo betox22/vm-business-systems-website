@@ -76,6 +76,7 @@ class ProjectState(BaseModel):
     generatedCopy: Dict[str, Any] = Field(default_factory=dict)
     catalogItems: List[Dict[str, Any]] = Field(default_factory=list)
     assets: Dict[str, Any] = Field(default_factory=dict)
+    fieldMeta: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     missingImportantFields: List[str] = Field(default_factory=list)
     confidence: float = 0.0
     notes: List[str] = Field(default_factory=list)

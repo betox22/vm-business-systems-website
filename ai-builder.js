@@ -595,6 +595,7 @@ function createEmptyGuidedState(language = selectedLanguage) {
     requestedAdjustments: [],
     sitePlan: null,
     sitePlanApproved: false,
+    fieldMeta: {},
     aiStudioPlan: null,
     designStrategy: null,
   };
@@ -6091,6 +6092,7 @@ function guidedStateForApi() {
     photoUrls,
     videoUrls,
     logoPalette: arrayValue(guidedState.logoPalette),
+    fieldMeta: guidedState.fieldMeta || {},
     brand: normalizeBrand(guidedState.brand || { logoUrl, extractedColors: arrayValue(guidedState.logoPalette) }),
     designStrategy: {
       ...createDesignStrategy({
@@ -6158,6 +6160,7 @@ function guidedSessionDraftForApi() {
     photoUrls: arrayValue(guidedState.photoUrls).filter(isCloudSafeUrl),
     videoUrls: arrayValue(guidedState.videoUrls).filter(isCloudSafeUrl),
     logoPalette: arrayValue(guidedState.logoPalette),
+    fieldMeta: guidedState.fieldMeta || {},
     selectedLanguage,
     hasLogo: Boolean(guidedState.hasLogo || guidedState.logoUrl),
     hasPhotos: Boolean(guidedState.hasPhotos || arrayValue(guidedState.photoUrls).length || arrayValue(guidedState.videoUrls).length),
@@ -6177,6 +6180,7 @@ function sanitizeClientSessionDraft(raw = {}) {
   const trimmed = (value, limit = 1200) => String(value || "").trim().slice(0, limit);
   const cleanList = (value, limit = 20) => arrayValue(value).map((item) => String(item || "").trim()).filter(Boolean).slice(0, limit);
   const contactInfo = source.contactInfo && typeof source.contactInfo === "object" ? source.contactInfo : {};
+  const fieldMeta = source.fieldMeta && typeof source.fieldMeta === "object" ? source.fieldMeta : {};
   return {
     websiteIntent: trimmed(source.websiteIntent),
     businessName: trimmed(source.businessName, 180),
@@ -6201,6 +6205,7 @@ function sanitizeClientSessionDraft(raw = {}) {
     photoUrls: cleanList(source.photoUrls).filter(isCloudSafeUrl),
     videoUrls: cleanList(source.videoUrls).filter(isCloudSafeUrl),
     logoPalette: cleanList(source.logoPalette, 12),
+    fieldMeta,
     selectedLanguage: SUPPORTED_LANGUAGES.includes(source.selectedLanguage) ? source.selectedLanguage : selectedLanguage,
     hasLogo: Boolean(source.hasLogo || source.logoUrl),
     hasPhotos: Boolean(source.hasPhotos || cleanList(source.photoUrls).length || cleanList(source.videoUrls).length),
