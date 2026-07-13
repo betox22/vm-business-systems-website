@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from .agents import TEMPLATE_CATALOG, normalize_template_id, semantic_seed_catalog, state_is_commerce_seed_target, unsplash_seed_url
+from .image_assets import attach_image_asset
 from .models import AgentResult, ProjectState, WebsiteType
 
 
@@ -292,6 +293,17 @@ def state_to_client_summary(state: ProjectState, user_input: str) -> Dict[str, A
 
 def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None) -> Dict[str, Any]:
     template = TEMPLATE_CATALOG[plan.templateId]
+    enrichment_context = " ".join([
+        str(plan.templateId or ""),
+        str(plan.catalogStrategy or ""),
+        str(plan.websiteType or ""),
+        str(plan.targetAudience or ""),
+        str(state.businessName or "") if state else "",
+        str(state.businessDescription or "") if state else "",
+        str(state.industry or "") if state else "",
+        " ".join(state.servicesProducts) if state else "",
+        str(state.preferredColors or "") if state else "",
+    ])
     catalog_items = []
     for index, item in enumerate(plan.catalogItems[:6]):
         name = str(item.get("name") or item.get("title") or f"Item {index + 1}").strip()
@@ -299,7 +311,7 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             continue
         image_query = str(item.get("imageSearchQuery") or item.get("image_search_query") or name)
         price_value = parse_price_amount(item.get("price_amount") or item.get("price"), None)
-        catalog_items.append({
+        normalized_item = {
             "id": str(item.get("id") or f"ai_item_{index + 1}"),
             "sku": str(item.get("sku") or f"AI-{index + 1:03d}"),
             "name": name[:80],
@@ -317,7 +329,8 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             "is_active": bool(item.get("is_active", True)),
             "is_featured": bool(item.get("is_featured", index < 4)),
             "sort_order": int(item.get("sort_order", index)),
-        })
+        }
+        catalog_items.append(attach_image_asset(normalized_item, context=enrichment_context))
     if state:
         catalog_items = ensure_plan_seed_catalog(catalog_items, state, plan)
 
@@ -446,7 +459,7 @@ def ensure_plan_seed_catalog(catalog_items: List[Dict[str, Any]], state: Project
         fallback = seed[index % len(seed)]
         price = parse_price_amount(item.get("price_amount") or item.get("price"), float(fallback["price_amount"]))
         image_query = item.get("imageSearchQuery") or item.get("image_search_query") or fallback["imageSearchQuery"]
-        merged.append({
+        merged_item = {
             **item,
             "id": item.get("id") or fallback["id"],
             "sku": item.get("sku") or fallback["sku"],
@@ -465,7 +478,8 @@ def ensure_plan_seed_catalog(catalog_items: List[Dict[str, Any]], state: Project
             "is_active": item.get("is_active", True),
             "is_featured": item.get("is_featured", index < 4),
             "sort_order": int(item.get("sort_order", index)),
-        })
+        }
+        merged.append(attach_image_asset(merged_item, context=commerce_text))
     return merged
 
 

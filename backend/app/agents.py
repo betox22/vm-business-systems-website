@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List
 
+from .image_assets import attach_image_asset, stable_seed_image_url
 from .models import AgentResult, ProjectState, WebsiteType
 
 
@@ -237,11 +238,7 @@ IMAGE_SEED_FALLBACKS: List[Dict[str, str]] = [
 
 
 def unsplash_seed_url(keyword: str) -> str:
-    clean = re.sub(r"[^a-z0-9]+", "-", (keyword or "premium product").lower()).strip("-")
-    for fallback in IMAGE_SEED_FALLBACKS:
-        if re.search(fallback["match"], clean):
-            return fallback["url"]
-    return "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=82"
+    return stable_seed_image_url(keyword)
 
 
 def infer_seed_profile(text: str) -> str:
@@ -359,7 +356,7 @@ def semantic_seed_catalog(state: ProjectState, user_input: str, count: int = 6) 
     catalog: List[Dict[str, Any]] = []
     for index, product in enumerate(products):
         price = float(product["price"])
-        catalog.append({
+        item = {
             "id": f"prod_{index + 1:03d}",
             "sku": f"{profile[:3].upper()}-{index + 1:03d}",
             "name": localized_seed(product["name"], language),
@@ -377,7 +374,8 @@ def semantic_seed_catalog(state: ProjectState, user_input: str, count: int = 6) 
             "is_active": True,
             "is_featured": index < 4,
             "sort_order": index,
-        })
+        }
+        catalog.append(attach_image_asset(item, context=context))
     return catalog
 
 
