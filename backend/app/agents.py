@@ -412,6 +412,28 @@ class IntakeExtractionAgent(BaseAgent):
         lower = normalize_text(text)
         updates: Dict[str, object] = {}
 
+        if any(
+            phrase in lower
+            for phrase in [
+                "sell online",
+                "vender online",
+                "vender productos online",
+                "tienda online",
+                "online store",
+                "ecommerce",
+            ]
+        ):
+            updates["websiteIntent"] = state.websiteIntent or "sell products online"
+            updates["salesFlow"] = state.salesFlow or "online_sales"
+        elif any(phrase in lower for phrase in ["show catalog", "mostrar catalogo", "mostrar catalogo", "catalogo"]):
+            updates["websiteIntent"] = state.websiteIntent or "show catalog"
+            updates["salesFlow"] = state.salesFlow or "catalog_or_quotes"
+        elif any(phrase in lower for phrase in ["booking", "reservas", "citas", "appointments"]):
+            updates["websiteIntent"] = state.websiteIntent or "booking"
+            updates["salesFlow"] = state.salesFlow or "booking"
+        elif any(phrase in lower for phrase in ["business info", "presentar empresa", "company site", "pagina de empresa"]):
+            updates["websiteIntent"] = state.websiteIntent or "business information site"
+
         name_match = re.search(
             r"(?:se llama|se llamara|se llamará|llamada|called|name is|nombre es|sera|será)\s+([a-z0-9 '&.-]{2,50}?)(?:\s+(?:vendo|vende|sell|con|ubicad[ao]|en usa|desde)|[.,;\n]|$)",
             text,
@@ -422,6 +444,7 @@ class IntakeExtractionAgent(BaseAgent):
 
         if not state.businessDescription and len(text) > 40:
             updates["businessDescription"] = text
+            updates["websiteIntent"] = updates.get("websiteIntent") or state.websiteIntent or text[:180]
 
         if "cyberpunk" in lower or "neon" in lower:
             updates["preferredColors"] = "cyberpunk neon"
@@ -446,6 +469,7 @@ class IntakeExtractionAgent(BaseAgent):
 
         if any(word in lower for word in ["online", "ecommerce", "tienda", "marketplace", "vender"]):
             updates["salesFlow"] = "online_sales"
+            updates["websiteIntent"] = updates.get("websiteIntent") or state.websiteIntent or "sell products online"
 
         return AgentResult(
             agentName=self.name,
@@ -461,6 +485,7 @@ class StrategyAgent(BaseAgent):
     async def run(self, state: ProjectState, user_input: str) -> AgentResult:
         text = normalize_text(" ".join([
             user_input,
+            state.websiteIntent or "",
             state.businessDescription or "",
             state.industry or "",
             " ".join(state.servicesProducts),
@@ -511,6 +536,11 @@ class StrategyAgent(BaseAgent):
             add("mega-marketplace", 150, "broad multi-category catalog")
         elif broad_marketplace:
             add("mega-retail-store", 150, "broad single-owner retail catalog")
+
+        if re.search(r"\b(online_sales|sell online|vender online|tienda online|online store|ecommerce)\b", text):
+            add("mega-retail-store", 78, "online selling intent")
+        if re.search(r"\b(show catalog|mostrar catalogo|catalog_or_quotes|catalogo|catálogo)\b", text):
+            add("mega-retail-store", 58, "catalog browsing intent")
 
         if re.search(r"\b(ebay|listing|listados|vendedores|seller|subasta|auction|usado|condition)\b", text):
             add("listing-marketplace-pro", 120, "listing and seller comparison flow")

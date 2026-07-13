@@ -602,8 +602,8 @@ function createEmptyGuidedState(language = selectedLanguage) {
 
 const GUIDED_STEPS = [
   "websiteIntent",
-  "businessDescription",
   "businessName",
+  "businessDescription",
   "servicesProducts",
   "preferredColors",
   "contactInfo",
@@ -612,14 +612,14 @@ const GUIDED_STEPS = [
 
 const REQUIRED_GUIDED_STEPS = [
   "websiteIntent",
-  "businessDescription",
   "businessName",
+  "businessDescription",
 ];
 
 const SMART_GUIDED_STEP_PRIORITY = [
   "websiteIntent",
-  "businessDescription",
   "businessName",
+  "businessDescription",
   "servicesProducts",
   "preferredColors",
   "contactInfo",
@@ -3135,6 +3135,7 @@ function resetAssistantConversation() {
   guidedHistory = [];
   setAssistantState("happy");
   renderGuidedCoachCard();
+  let askedPrompt = false;
   if (restoredGuidedDraftInfo) {
     appendRestoredDraftMessage();
   }
@@ -3149,6 +3150,7 @@ function resetAssistantConversation() {
       })}`,
       "speaking",
     );
+    askedPrompt = true;
   } else if (forcedTemplateSelection?.templateId && guidedState.websiteIntent) {
     appendTemplateDetectionMessage({
       templateId: forcedTemplateSelection.templateId,
@@ -3157,6 +3159,9 @@ function resetAssistantConversation() {
       catalogType: forcedTemplateSelection.catalogType || "",
       reason: forcedTemplateSelection.reason || "Template selected from landing page",
     });
+  }
+  if (!askedPrompt && guidedStep && guidedStep !== "review") {
+    appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
   }
 }
 

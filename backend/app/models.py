@@ -64,6 +64,7 @@ class ProjectState(BaseModel):
     photoUrls: List[str] = Field(default_factory=list)
     selectedLanguage: SupportedLanguage = "en"
 
+    websiteIntent: Optional[str] = None
     websiteType: Optional[WebsiteType] = None
     selectedTemplateId: Optional[str] = None
     selectedTemplateName: Optional[str] = None

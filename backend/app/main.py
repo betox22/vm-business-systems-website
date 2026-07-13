@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+import re
 from pathlib import Path
 from typing import Any, Dict
 
@@ -128,6 +129,7 @@ async def luma_chat(request: LumaChatRequest) -> LumaChatResponse:
     state = normalize_state_payload(request.current)
     if request.selectedTemplateId and not state.selectedTemplateId:
         state.selectedTemplateId = request.selectedTemplateId
+    apply_current_step_hint(state, request)
 
     final_state = await orchestrator.run(request.message, state)
     ready = not final_state.missingImportantFields
@@ -146,6 +148,7 @@ async def luma_chat(request: LumaChatRequest) -> LumaChatResponse:
             "preferredTone": final_state.preferredTone,
             "preferredColors": final_state.preferredColors,
             "salesFlow": final_state.salesFlow,
+            "websiteIntent": final_state.websiteIntent,
             "websiteType": final_state.websiteType,
             "selectedTemplateId": final_state.selectedTemplateId,
             "selectedTemplateName": final_state.selectedTemplateName,
@@ -165,6 +168,29 @@ async def luma_chat(request: LumaChatRequest) -> LumaChatResponse:
         sitePlan=plan,
         used_dev_fallback=False,
     )
+
+
+def apply_current_step_hint(state: Any, request: LumaChatRequest) -> None:
+    """Use the active guided step as a deterministic hint before AI extraction.
+
+    This prevents short answers like "Crazy Box" from being ignored just because
+    they do not match a natural-language regex.
+    """
+    step = request.currentStep or request.current_step or ""
+    message = str(request.message or "").strip()
+    if not message:
+        return
+
+    if step == "websiteIntent" and not state.websiteIntent:
+        state.websiteIntent = message
+    elif step == "businessName" and not state.businessName and len(message) <= 70:
+        state.businessName = message
+    elif step == "businessDescription" and not state.businessDescription:
+        state.businessDescription = message
+    elif step == "servicesProducts" and not state.servicesProducts:
+        state.servicesProducts = [item.strip() for item in re.split(r"[,;\n]+", message) if item.strip()]
+    elif step == "preferredColors" and not state.preferredColors:
+        state.preferredColors = message
 
 
 @app.post("/api/client/intake-session")

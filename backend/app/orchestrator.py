@@ -38,6 +38,7 @@ def normalize_state_payload(payload: Dict[str, Any] | None) -> ProjectState:
         logoUrl=payload.get("logoUrl"),
         photoUrls=payload.get("photoUrls") or [],
         selectedLanguage=payload.get("selectedLanguage") or "en",
+        websiteIntent=payload.get("websiteIntent") or payload.get("website_intent"),
         websiteType=payload.get("websiteType"),
         selectedTemplateId=payload.get("selectedTemplateId") or payload.get("selected_template_id"),
         selectedTemplateName=payload.get("selectedTemplateName"),
@@ -125,6 +126,7 @@ def site_plan_from_state(state: ProjectState) -> Dict[str, Any]:
         "recommendedTemplateName": state.selectedTemplateName,
         "templateId": state.selectedTemplateId,
         "templateName": state.selectedTemplateName,
+        "websiteIntent": state.websiteIntent,
         "websiteType": state.websiteType,
         "catalogType": state.catalogType,
         "salesFlow": state.salesFlow,
@@ -140,6 +142,12 @@ def site_plan_from_state(state: ProjectState) -> Dict[str, Any]:
 def next_question_for_state(state: ProjectState) -> str:
     language = state.selectedLanguage
     missing = set(state.missingImportantFields)
+    if not state.websiteIntent and not state.salesFlow and not state.websiteType:
+        return {
+            "es": "Dime qué quieres lograr: vender online, mostrar catálogo, recibir cotizaciones, reservas, presentar una empresa o crear un marketplace. Puedes responder en un párrafo completo.",
+            "fr": "Dites-moi l'objectif : vendre en ligne, montrer un catalogue, recevoir des devis, réserver, présenter une entreprise ou créer une marketplace. Vous pouvez répondre en un paragraphe.",
+            "pt": "Diga o objetivo: vender online, mostrar catálogo, receber orçamentos, agendamentos, apresentar uma empresa ou criar um marketplace. Pode responder em um parágrafo.",
+        }.get(language, "Tell me the goal: sell online, show a catalog, receive quotes, bookings, present a company, or create a marketplace. You can answer in one full paragraph.")
     if "businessName" in missing:
         return {
             "es": "¿Cómo se llama el negocio?",
@@ -148,10 +156,16 @@ def next_question_for_state(state: ProjectState) -> str:
         }.get(language, "What is the business name?")
     if "businessDescription" in missing:
         return {
-            "es": "Descríbeme en una frase qué vende o qué hace.",
-            "fr": "Décrivez en une phrase ce que l'entreprise vend ou fait.",
-            "pt": "Descreva em uma frase o que o negócio vende ou faz.",
-        }.get(language, "Tell me in one sentence what it sells or does.")
+            "es": "Ahora dime qué vende o qué hace. Si quieres, pon todo en un solo párrafo: productos, categoría, cliente ideal, estilo, ubicación, logo y colores.",
+            "fr": "Dites-moi maintenant ce que l'entreprise vend ou fait. Vous pouvez tout mettre dans un paragraphe : produits, catégorie, client idéal, style, localisation, logo et couleurs.",
+            "pt": "Agora diga o que o negócio vende ou faz. Se quiser, coloque tudo em um parágrafo: produtos, categoria, cliente ideal, estilo, localização, logo e cores.",
+        }.get(language, "Now tell me what it sells or does. You can put everything in one paragraph: products, category, audience, style, location, logo and colors.")
+    if not state.servicesProducts and state.businessDescription:
+        return {
+            "es": "¿Cuáles son las principales categorías de productos o servicios? Si ya lo dijiste, puedes responder “usa lo anterior”.",
+            "fr": "Quelles sont les principales catégories de produits ou services ? Si vous l'avez déjà dit, répondez “utilise ce qui précède”.",
+            "pt": "Quais são as principais categorias de produtos ou serviços? Se já disse, responda “use o anterior”.",
+        }.get(language, "What are the main product or service categories? If you already said it, answer “use the previous details”.")
     return ""
 
 
