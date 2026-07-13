@@ -67,6 +67,8 @@ SalesFlow = Literal[
     "informational",
 ]
 
+PaletteStyle = Literal["elegante", "organico", "tecnologico", "calido"]
+
 CatalogStrategy = Literal[
     "dense_marketplace_catalog",
     "single_vendor_dense_catalog",
@@ -104,6 +106,24 @@ class DesignTokens(BaseModel):
     text: str = "#0f172a"
     headingFont: str = "Inter"
     bodyFont: str = "Inter"
+
+
+class LogoConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    requires_ai_generation: bool
+    generation_prompt: str = Field(min_length=80, max_length=600)
+
+
+class BrandIdentity(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    palette_style: PaletteStyle
+    primary_color: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
+    secondary_color: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
+    font_family_headings: str = Field(min_length=2, max_length=80)
+    font_family_body: str = Field(min_length=2, max_length=80)
+    logo_config: LogoConfig
 
 
 class CopyProps(BaseModel):
@@ -232,6 +252,7 @@ class AIWebGenerationResponse(BaseModel):
     catalogStrategy: CatalogStrategy
     salesFlow: SalesFlow
     targetAudience: str
+    brand_identity: BrandIdentity
     designTokens: DesignTokens = Field(default_factory=DesignTokens)
     pages: List[PageSchema] = Field(default_factory=list)
     catalogCategories: List[str] = Field(default_factory=list)
@@ -371,17 +392,18 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
         "catalogType": plan.catalogStrategy,
         "salesFlow": plan.salesFlow,
         "targetAudience": plan.targetAudience,
+        "brand_identity": plan.brand_identity.model_dump(),
         "colors": {
             "background": plan.designTokens.background,
             "surface": plan.designTokens.surface,
-            "primary": plan.designTokens.primary,
+            "primary": plan.brand_identity.primary_color,
             "secondary": plan.designTokens.secondary,
-            "accent": plan.designTokens.accent,
+            "accent": plan.brand_identity.secondary_color,
             "text": plan.designTokens.text,
         },
         "typography": {
-            "heading": plan.designTokens.headingFont,
-            "body": plan.designTokens.bodyFont,
+            "heading": plan.brand_identity.font_family_headings,
+            "body": plan.brand_identity.font_family_body,
         },
         "generatedCopy": {
             "hero": {
@@ -393,6 +415,7 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             "pages": pages,
             "templateUse": template["name"],
             "catalogCategories": plan.catalogCategories,
+            "brandIdentity": plan.brand_identity.model_dump(),
         },
         "catalogItems": catalog_items,
         "confidence": plan.confidence,
@@ -518,6 +541,17 @@ class OpenAISitePlanAgent:
                 "catalogStrategy": "matching catalog model",
                 "targetAudience": "specific buyer profile",
                 "salesFlow": "online_sales | quote_request | booking | lead_capture | informational",
+                "brand_identity": {
+                    "palette_style": "elegante | organico | tecnologico | calido",
+                    "primary_color": "#hex matched to the selected palette_style and niche",
+                    "secondary_color": "#hex complementary accent",
+                    "font_family_headings": "Google Font for headings",
+                    "font_family_body": "Google Font for body text",
+                    "logo_config": {
+                        "requires_ai_generation": "true if user asks for an AI logo or has no logo and wants Lyra/KREATON to create one; otherwise false",
+                        "generation_prompt": "Minimalist flat vector logo for a [niche] brand named [Name], [palette_style] style, geometric clean shapes, solid colors, no gradients, high detail, white background, trending on Dribbble --vector",
+                    },
+                },
                 "designTokens": {
                     "background": "#hex",
                     "surface": "#hex",
@@ -645,6 +679,18 @@ Hard rules:
 - Treat the client's intake as private strategy, not public copy.
 - Do not paste raw client notes into visible website text.
 - Identify the exact niche from the business name, industry, products/services and description before writing catalog or copy.
+- The root JSON MUST include brand_identity.
+- brand_identity.palette_style MUST be exactly one of: elegante, organico, tecnologico, calido.
+- Infer palette_style from the client request. If unclear, choose the style that best fits the niche and target audience.
+- brand_identity.primary_color and brand_identity.secondary_color MUST be valid HEX colors and must match the selected palette_style:
+  - elegante: refined, high-contrast, premium tones such as deep charcoal, ivory, burgundy, champagne, navy, or gold accents.
+  - organico: natural, soft, grounded tones such as sage, olive, clay, cream, moss, or warm beige.
+  - tecnologico: clean futuristic tones such as electric cyan, deep indigo, graphite, violet, blue, or neon accents.
+  - calido: welcoming, human tones such as terracotta, amber, coral, honey, warm brown, or soft rose.
+- brand_identity.font_family_headings MUST be a real Google Font that fits the style. Examples: Playfair Display or Cinzel for elegante; Fraunces or Lora for organico; Space Grotesk or Sora for tecnologico; Manrope or Plus Jakarta Sans for calido.
+- brand_identity.font_family_body MUST be a clean real Google Font such as Inter, Plus Jakarta Sans, Roboto, Manrope, or Source Sans 3.
+- brand_identity.logo_config.requires_ai_generation MUST be true when the client asks for an AI logo, says they do not have a logo but wants one created, or asks Lyra/KREATON to create the brand identity. Otherwise it must be false.
+- brand_identity.logo_config.generation_prompt MUST always be present and must follow this exact structure with real niche/name/style substitutions: "Minimalist flat vector logo for a [niche] brand named [Name], [palette_style] style, geometric clean shapes, solid colors, no gradients, high detail, white background, trending on Dribbble --vector"
 - For commerce templates, catalogItems must contain exactly 4 to 6 real, niche-specific products. Do not use "Product 1", "Featured item", "Price editable", Lorem Ipsum, or empty fields.
 - Each catalogItems object must include id, name, description, category, numeric price, price_amount, price_label, imageSearchQuery, and image_url.
 - image_url must be a valid, directly loadable image URL. Prefer stable images.unsplash.com photo URLs with auto=format&fit=crop&w=900&q=82. Do not use /featured/600x600 URLs because they can return 404.
