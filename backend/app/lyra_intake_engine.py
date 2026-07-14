@@ -15,7 +15,7 @@ except Exception:  # pragma: no cover - dependency may be absent in local dev
     AsyncOpenAI = None  # type: ignore[assignment]
 
 
-FieldSource = Literal["explicit", "inferred", "default"]
+FieldSource = Literal["explicit", "inferred", "default", "explicit_delegation"]
 BusinessModel = Literal[
     "online_store",
     "marketplace",
@@ -27,6 +27,141 @@ BusinessModel = Literal[
 ]
 CommerceMode = Literal["single_vendor", "multi_vendor", "no_commerce"]
 SalesFlow = Literal["online_sales", "quote_request", "booking", "lead_capture", "informational"]
+
+
+NICHE_TAXONOMY_LIST = (
+    "general",
+    "fashion",
+    "jewelry",
+    "beauty",
+    "technology",
+    "automotive",
+    "motorcycle",
+    "home_decor",
+    "restaurant_food",
+    "coffee",
+    "bakery",
+    "health_wellness",
+    "clinic",
+    "legal_services",
+    "professional_services",
+    "local_services",
+    "home_services",
+    "real_estate",
+    "education",
+    "digital_products",
+    "b2b_saas",
+    "industrial_supplier",
+    "pets",
+    "plants",
+    "handmade",
+    "art",
+    "fitness",
+    "luxury_goods",
+)
+
+NICHE_ALIASES = {
+    "bisuteria": "jewelry",
+    "bisutería": "jewelry",
+    "joyeria": "jewelry",
+    "joyería": "jewelry",
+    "jewelry": "jewelry",
+    "accessories": "fashion",
+    "accesorios": "fashion",
+    "ropa": "fashion",
+    "moda": "fashion",
+    "fashion": "fashion",
+    "belleza": "beauty",
+    "cosmeticos": "beauty",
+    "cosméticos": "beauty",
+    "skincare": "beauty",
+    "tech": "technology",
+    "tecnologia": "technology",
+    "tecnología": "technology",
+    "electronics": "technology",
+    "electronica": "technology",
+    "electrónica": "technology",
+    "auto": "automotive",
+    "automotive": "automotive",
+    "carros": "automotive",
+    "cars": "automotive",
+    "motos": "motorcycle",
+    "motorcycle": "motorcycle",
+    "hogar": "home_decor",
+    "decoracion": "home_decor",
+    "decoración": "home_decor",
+    "restaurant": "restaurant_food",
+    "restaurante": "restaurant_food",
+    "comida": "restaurant_food",
+    "food": "restaurant_food",
+    "cafe": "coffee",
+    "café": "coffee",
+    "coffee": "coffee",
+    "panaderia": "bakery",
+    "panadería": "bakery",
+    "bakery": "bakery",
+    "salud": "health_wellness",
+    "wellness": "health_wellness",
+    "clinic": "clinic",
+    "clinica": "clinic",
+    "clínica": "clinic",
+    "legal": "legal_services",
+    "abogado": "legal_services",
+    "abogados": "legal_services",
+    "law": "legal_services",
+    "servicios": "professional_services",
+    "services": "professional_services",
+    "real estate": "real_estate",
+    "inmobiliaria": "real_estate",
+    "course": "education",
+    "curso": "education",
+    "education": "education",
+    "digital": "digital_products",
+    "saas": "b2b_saas",
+    "b2b": "b2b_saas",
+    "industrial": "industrial_supplier",
+    "mascotas": "pets",
+    "pets": "pets",
+    "plantas": "plants",
+    "plants": "plants",
+    "hecho a mano": "handmade",
+    "handmade": "handmade",
+    "arte": "art",
+    "art": "art",
+    "fitness": "fitness",
+    "lujo": "luxury_goods",
+    "luxury": "luxury_goods",
+}
+
+BUSINESS_INTAKE_REQUIRED_SLOTS = (
+    "business_name",
+    "business_description",
+    "niche",
+    "sales_flow",
+    "brand_style",
+    "logo",
+)
+
+SLOT_FIELD_ALIASES = {
+    "business_name": "businessName",
+    "business_description": "businessDescription",
+    "sales_flow": "salesFlow",
+    "target_audience": "targetAudience",
+}
+
+VALID_BRAND_STYLE_PATHS = {"explicit_preference", "explicit_delegation"}
+VALID_LOGO_PATHS = {"has_logo", "wants_generated", "explicit_skip"}
+
+
+def normalize_niche(value: Any) -> str:
+    text = str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
+    if text in NICHE_TAXONOMY_LIST:
+        return text
+    plain = str(value or "").strip().lower()
+    for needle, niche in NICHE_ALIASES.items():
+        if needle in plain:
+            return niche
+    return "general"
 
 
 class FieldMeta(BaseModel):
@@ -50,8 +185,13 @@ class DetectedIntent(BaseModel):
     businessModel: BusinessModel = "informational"
     commerceMode: CommerceMode = "no_commerce"
     salesFlow: SalesFlow = "informational"
-    niche: str = "general business"
+    niche: str = "general"
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    @field_validator("niche", mode="before")
+    @classmethod
+    def niche_must_use_closed_taxonomy(cls, value: Any) -> str:
+        return normalize_niche(value)
 
 
 class TemplateRecommendation(BaseModel):
@@ -102,6 +242,13 @@ INTAKE_STATE_FIELDS = {
     "selectedTemplateName",
     "catalogType",
     "salesFlow",
+    "business_name",
+    "business_description",
+    "niche",
+    "sales_flow",
+    "target_audience",
+    "brand_style",
+    "logo",
 }
 
 
@@ -146,13 +293,20 @@ class LyraIntakeEngine:
             "conversationHistory": self._compact_history(conversation_history or []),
             "selectedLanguage": selected_language,
             "availableTemplates": self._template_catalog_payload(),
+            "nicheTaxonomyList": list(NICHE_TAXONOMY_LIST),
+            "businessIntakeForm": self._business_intake_payload(state),
             "criticalFieldPolicy": {
                 "minimumToGenerate": [
-                    "websiteIntent or salesFlow or websiteType",
-                    "businessName",
-                    "businessDescription or servicesProducts",
+                    "business_name",
+                    "business_description",
+                    "niche",
+                    "sales_flow",
+                    "brand_style",
+                    "logo",
                 ],
                 "doNotRepeatWhenConfidenceAtLeast": 0.7,
+                "brandStyleCannotBeInferred": True,
+                "logoCannotBeInferred": True,
                 "askOneQuestionOnly": True,
             },
         }
@@ -213,20 +367,26 @@ class LyraIntakeEngine:
             tracked = TrackedField.model_validate(raw)
             if tracked.value is None or tracked.value == "":
                 continue
-            updated_state[key] = tracked.value
-            field_meta[key] = FieldMeta(source=tracked.source, confidence=tracked.confidence)
+            self._merge_tracked_field(key, tracked, updated_state, field_meta)
 
         detected_intent = DetectedIntent.model_validate(payload.get("detectedIntent") or {})
+        if detected_intent.niche and detected_intent.niche != "general" and "industry" not in updated_state:
+            updated_state["industry"] = detected_intent.niche
+            field_meta.setdefault(
+                "niche",
+                FieldMeta(source="inferred", confidence=max(0.0, min(detected_intent.confidence, 0.86))),
+            )
+
         recommendation = None
         if isinstance(payload.get("templateRecommendation"), dict):
             recommendation = TemplateRecommendation.model_validate(payload["templateRecommendation"])
 
-        missing = [str(item) for item in payload.get("missingCriticalFields") or [] if str(item).strip()]
-        can_generate = bool(payload.get("canGenerate"))
-        if can_generate:
-            missing = []
-        elif not missing:
-            missing = self._missing_fields_from_state(state, updated_state)
+        merged_meta = {**(state.fieldMeta or {}), **{key: value.model_dump() for key, value in field_meta.items()}}
+        missing = self._missing_fields_from_state(state, updated_state, merged_meta)
+        can_generate = len(missing) == 0
+        next_question = payload.get("nextQuestion") or None
+        if not can_generate and not next_question:
+            next_question = self._fallback_question(missing, state.selectedLanguage)
 
         return LyraIntakeDecision(
             updatedState=updated_state,
@@ -234,10 +394,102 @@ class LyraIntakeEngine:
             detectedIntent=detected_intent,
             missingCriticalFields=missing,
             reasoning=str(payload.get("reasoning") or ""),
-            nextQuestion=payload.get("nextQuestion") or None,
+            nextQuestion=next_question,
             canGenerate=can_generate,
             templateRecommendation=recommendation,
         )
+
+    def _merge_tracked_field(
+        self,
+        key: str,
+        tracked: TrackedField,
+        updated_state: Dict[str, Any],
+        field_meta: Dict[str, FieldMeta],
+    ) -> None:
+        canonical_key = SLOT_FIELD_ALIASES.get(key, key)
+
+        if key == "niche":
+            niche = normalize_niche(tracked.value)
+            confidence = tracked.confidence if niche != "general" else min(tracked.confidence, 0.45)
+            updated_state["industry"] = niche
+            field_meta["niche"] = FieldMeta(source=tracked.source, confidence=confidence)
+            field_meta["industry"] = FieldMeta(source=tracked.source, confidence=confidence)
+            return
+
+        if key == "brand_style":
+            brand_path = self._extract_choice_path(tracked.value)
+            if tracked.source not in {"explicit", "explicit_delegation"}:
+                return
+            if brand_path not in VALID_BRAND_STYLE_PATHS:
+                brand_path = "explicit_delegation" if tracked.source == "explicit_delegation" else "explicit_preference"
+            text_value = self._human_readable_slot_value(tracked.value)
+            if text_value and text_value.lower() not in {"lyra decides", "tu decides", "tú decides", "you decide"}:
+                updated_state.setdefault("preferredTone", text_value)
+            meta_source: FieldSource = "explicit_delegation" if brand_path == "explicit_delegation" else "explicit"
+            field_meta["brand_style"] = FieldMeta(source=meta_source, confidence=max(tracked.confidence, 0.82))
+            field_meta.setdefault("preferredTone", FieldMeta(source=meta_source, confidence=max(tracked.confidence, 0.82)))
+            return
+
+        if key == "logo":
+            logo_path = self._extract_choice_path(tracked.value)
+            if logo_path not in VALID_LOGO_PATHS or tracked.source not in {"explicit", "explicit_delegation"}:
+                return
+            field_meta["logo"] = FieldMeta(source="explicit", confidence=max(tracked.confidence, 0.82))
+            if logo_path == "has_logo" and isinstance(tracked.value, dict) and tracked.value.get("url"):
+                updated_state["logoUrl"] = tracked.value.get("url")
+                field_meta["logoUrl"] = FieldMeta(source="explicit", confidence=max(tracked.confidence, 0.9))
+            return
+
+        if canonical_key not in INTAKE_STATE_FIELDS:
+            return
+
+        updated_state[canonical_key] = tracked.value
+        field_meta[canonical_key] = FieldMeta(source=tracked.source, confidence=tracked.confidence)
+
+        if canonical_key == "salesFlow":
+            field_meta["sales_flow"] = FieldMeta(source=tracked.source, confidence=tracked.confidence)
+        elif canonical_key == "businessName":
+            field_meta["business_name"] = FieldMeta(source=tracked.source, confidence=tracked.confidence)
+        elif canonical_key == "businessDescription":
+            field_meta["business_description"] = FieldMeta(source=tracked.source, confidence=tracked.confidence)
+
+    @staticmethod
+    def _extract_choice_path(value: Any) -> str:
+        if isinstance(value, dict):
+            for key in ("path", "mode", "type", "value", "choice"):
+                candidate = str(value.get(key) or "").strip().lower()
+                if candidate:
+                    return LyraIntakeEngine._normalize_choice_path(candidate)
+        return LyraIntakeEngine._normalize_choice_path(str(value or "").strip().lower())
+
+    @staticmethod
+    def _normalize_choice_path(text: str) -> str:
+        compact = text.strip().lower().replace(" ", "_").replace("-", "_")
+        if compact in VALID_BRAND_STYLE_PATHS or compact in VALID_LOGO_PATHS:
+            return compact
+        if any(phrase in compact for phrase in ("tu_decide", "tú_decide", "sorprendeme", "sorpréndeme", "lyra_decides", "you_decide")):
+            return "explicit_delegation"
+        if any(phrase in compact for phrase in ("generate", "generar", "crear", "design_one", "diseñar", "disenar")):
+            return "wants_generated"
+        if any(phrase in compact for phrase in ("upload", "subir", "tengo_logo", "has_logo")):
+            return "has_logo"
+        if any(phrase in compact for phrase in ("skip", "despues", "después", "later", "no_logo", "sin_logo")):
+            return "explicit_skip"
+        return compact
+
+    @staticmethod
+    def _human_readable_slot_value(value: Any) -> str:
+        if isinstance(value, dict):
+            parts = [
+                str(value.get(key) or "").strip()
+                for key in ("style", "tone", "colors", "reference", "description", "value")
+                if str(value.get(key) or "").strip()
+            ]
+            text = ", ".join(dict.fromkeys(parts))
+            if text in VALID_BRAND_STYLE_PATHS or text in VALID_LOGO_PATHS:
+                return ""
+            return text
+        return str(value or "").strip()
 
     def _normalize_updates(self, updates: Dict[str, Any]) -> Dict[str, Any]:
         normalized = dict(updates)
@@ -273,6 +525,38 @@ class LyraIntakeEngine:
             "fieldMeta": state.fieldMeta,
         }
 
+    def _business_intake_payload(self, state: ProjectState) -> Dict[str, Any]:
+        meta = state.fieldMeta or {}
+        return {
+            "business_name": self._slot_snapshot(state.businessName, meta.get("business_name") or meta.get("businessName")),
+            "business_description": self._slot_snapshot(
+                state.businessDescription,
+                meta.get("business_description") or meta.get("businessDescription"),
+            ),
+            "niche": self._slot_snapshot(normalize_niche(state.industry), meta.get("niche") or meta.get("industry")),
+            "sales_flow": self._slot_snapshot(state.salesFlow, meta.get("sales_flow") or meta.get("salesFlow")),
+            "target_audience": self._slot_snapshot(
+                state.targetAudience,
+                meta.get("target_audience") or meta.get("targetAudience"),
+            ),
+            "brand_style": self._slot_snapshot(
+                state.preferredTone or state.preferredColors,
+                meta.get("brand_style") or meta.get("preferredTone") or meta.get("preferredColors"),
+            ),
+            "logo": self._slot_snapshot(state.logoUrl or "", meta.get("logo") or meta.get("logoUrl")),
+            "location": self._slot_snapshot(state.location, meta.get("location")),
+            "contact_info": self._slot_snapshot(state.contactInfo, meta.get("contactInfo")),
+        }
+
+    @staticmethod
+    def _slot_snapshot(value: Any, meta: Any) -> Dict[str, Any]:
+        meta_dict = meta if isinstance(meta, dict) else {}
+        return {
+            "value": value,
+            "source": meta_dict.get("source") or "",
+            "confidence": meta_dict.get("confidence") or 0,
+        }
+
     def _compact_history(self, history: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         compact = []
         for item in history[-8:]:
@@ -294,16 +578,73 @@ class LyraIntakeEngine:
             for template_id, data in TEMPLATE_CATALOG.items()
         ]
 
-    def _missing_fields_from_state(self, state: ProjectState, updates: Dict[str, Any]) -> List[str]:
+    def _missing_fields_from_state(
+        self,
+        state: ProjectState,
+        updates: Dict[str, Any],
+        merged_meta: Optional[Dict[str, Any]] = None,
+    ) -> List[str]:
         merged = {**self._state_payload(state), **updates}
-        missing = []
-        if not (merged.get("websiteIntent") or merged.get("salesFlow") or merged.get("websiteType")):
-            missing.append("websiteIntent")
-        if not merged.get("businessName"):
-            missing.append("businessName")
-        if not (merged.get("businessDescription") or split_items(merged.get("servicesProducts"))):
-            missing.append("businessDescription")
+        meta = merged_meta if merged_meta is not None else (state.fieldMeta or {})
+        missing: List[str] = []
+
+        if not str(merged.get("businessName") or "").strip():
+            missing.append("business_name")
+
+        if not str(merged.get("businessDescription") or "").strip():
+            missing.append("business_description")
+
+        niche = normalize_niche(merged.get("industry"))
+        if niche == "general" and not self._has_confident_meta(meta, "niche", min_confidence=0.7):
+            missing.append("niche")
+
+        sales_flow = str(merged.get("salesFlow") or "").strip()
+        if sales_flow not in {"online_sales", "quote_request", "booking", "lead_capture", "informational"}:
+            missing.append("sales_flow")
+
+        if not self._brand_style_resolved(merged, meta):
+            missing.append("brand_style")
+
+        if not self._logo_resolved(merged, meta):
+            missing.append("logo")
         return missing
+
+    def _brand_style_resolved(self, merged: Dict[str, Any], meta: Dict[str, Any]) -> bool:
+        has_value = bool(str(merged.get("preferredTone") or merged.get("preferredColors") or "").strip())
+        if self._has_confident_meta(meta, "brand_style", sources={"explicit", "explicit_delegation"}, min_confidence=0.7):
+            return True
+        if has_value and (
+            self._has_confident_meta(meta, "preferredTone", sources={"explicit", "explicit_delegation"}, min_confidence=0.7)
+            or self._has_confident_meta(meta, "preferredColors", sources={"explicit", "explicit_delegation"}, min_confidence=0.7)
+        ):
+            return True
+        return False
+
+    def _logo_resolved(self, merged: Dict[str, Any], meta: Dict[str, Any]) -> bool:
+        if str(merged.get("logoUrl") or "").strip():
+            return True
+        return self._has_confident_meta(meta, "logo", sources={"explicit", "explicit_delegation"}, min_confidence=0.7)
+
+    @staticmethod
+    def _has_confident_meta(
+        meta: Dict[str, Any],
+        key: str,
+        *,
+        sources: Optional[set[str]] = None,
+        min_confidence: float = 0.7,
+    ) -> bool:
+        raw = meta.get(key)
+        if not isinstance(raw, dict):
+            return False
+        source = str(raw.get("source") or "")
+        confidence = raw.get("confidence", 0)
+        try:
+            numeric_confidence = float(confidence)
+        except (TypeError, ValueError):
+            numeric_confidence = 0.0
+        if sources is not None and source not in sources:
+            return False
+        return numeric_confidence >= min_confidence
 
     def _local_unavailable_decision(self, state: ProjectState, language: SupportedLanguage) -> LyraIntakeDecision:
         missing = self._missing_fields_from_state(state, {})
@@ -325,19 +666,27 @@ class LyraIntakeEngine:
 
     def _fallback_question(self, missing: List[str], language: SupportedLanguage) -> str:
         if language == "es":
-            if "websiteIntent" in missing:
-                return "No pude procesarlo bien. Dime en una frase si quieres vender online, mostrar catalogo, recibir cotizaciones, reservas o presentar una empresa."
-            if "businessName" in missing:
+            if "niche" in missing or "sales_flow" in missing:
+                return "Necesito ubicar bien el tipo de proyecto. ¿Quieres vender online, recibir cotizaciones, aceptar reservas, captar clientes o solo presentar información?"
+            if "business_name" in missing:
                 return "No pude identificar el nombre del negocio. Como se llama?"
-            if "businessDescription" in missing:
-                return "No pude identificar claramente que vende o hace. Escribelo en un parrafo con productos, estilo y ubicacion si aplica."
+            if "business_description" in missing:
+                return "No pude identificar claramente que vende o hace. Escribelo en un parrafo con productos o servicios principales."
+            if "brand_style" in missing:
+                return "¿Tienes colores, tono o estilo preferido? Si prefieres, dime “tú decides” y yo elijo una dirección visual que combine con el negocio."
+            if "logo" in missing:
+                return "¿Tienes logo para subir, quieres que KREATON genere uno con IA, o lo dejamos para después?"
             return "No pude procesar eso bien. Puedes reformularlo en una frase mas clara?"
-        if "websiteIntent" in missing:
-            return "I could not process that clearly. Tell me in one sentence whether you want to sell online, show a catalog, receive quotes, take bookings, or present a company."
-        if "businessName" in missing:
+        if "niche" in missing or "sales_flow" in missing:
+            return "I need to classify the project correctly. Do you want to sell online, receive quotes, take bookings, capture leads, or present information?"
+        if "business_name" in missing:
             return "I could not identify the business name. What is it called?"
-        if "businessDescription" in missing:
-            return "I could not clearly identify what it sells or does. Write one paragraph with products, style and location if relevant."
+        if "business_description" in missing:
+            return "I could not clearly identify what it sells or does. Write one paragraph with the main products or services."
+        if "brand_style" in missing:
+            return "Do you have preferred colors, tone, or style? If you prefer, say “you decide” and I will choose a visual direction that fits the business."
+        if "logo" in missing:
+            return "Do you have a logo to upload, do you want KREATON to generate one with AI, or should we skip it for now?"
         return "I could not process that clearly. Please rephrase it in one clearer sentence."
 
     @staticmethod
@@ -355,7 +704,7 @@ class LyraIntakeEngine:
                         {"type": "object", "additionalProperties": {"type": "string"}},
                     ]
                 },
-                "source": {"type": "string", "enum": ["explicit", "inferred", "default"]},
+                "source": {"type": "string", "enum": ["explicit", "inferred", "default", "explicit_delegation"]},
                 "confidence": {"type": "number", "minimum": 0, "maximum": 1},
             },
             "required": ["value", "source", "confidence"],
@@ -397,7 +746,7 @@ class LyraIntakeEngine:
                                     "type": "string",
                                     "enum": ["online_sales", "quote_request", "booking", "lead_capture", "informational"],
                                 },
-                                "niche": {"type": "string"},
+                                "niche": {"type": "string", "enum": list(NICHE_TAXONOMY_LIST)},
                                 "confidence": {"type": "number", "minimum": 0, "maximum": 1},
                             },
                             "required": ["businessModel", "commerceMode", "salesFlow", "niche", "confidence"],
@@ -434,26 +783,66 @@ class LyraIntakeEngine:
 
     @staticmethod
     def _system_prompt() -> str:
-        return """
-You are Lyra, a senior website designer, ecommerce strategist, and intake director for KREATON.
+        niche_list = ", ".join(NICHE_TAXONOMY_LIST)
+        template_ids = ", ".join(TEMPLATE_CATALOG.keys())
+        return f"""
+Eres Lyra, directora de diseño e intake senior de KREATON. Tu único trabajo en este
+paso es llenar un formulario estructurado de intención de negocio (BusinessIntakeForm)
+a partir de la conversación con el cliente. No generas copy público, no generas HTML
+y no generas datos de catálogo aquí.
 
-Your job is to understand what the client wants, whether they describe it all at once or in fragments.
+FORMULARIO A COMPLETAR (slots):
+- business_name (string). Alias compatible: businessName.
+- business_description (string: qué vende/hace, en sus propias palabras). Alias compatible: businessDescription.
+- niche (debe ser EXACTAMENTE uno de: {niche_list}). Nunca inventes uno nuevo.
+  Si no calza claramente con ninguno, usa "general" y baja tu confidence.
+- sales_flow (uno de: online_sales, quote_request, booking, lead_capture, informational). Alias compatible: salesFlow.
+- target_audience (string, opcional pero deseable). Alias compatible: targetAudience.
+- brand_style: uno de dos caminos válidos:
+    (a) explicit_preference: el cliente da colores, tono o referencias concretas.
+    (b) explicit_delegation: el cliente dice textualmente que Lyra elija, con frases tipo
+        "tú decide", "sorpréndeme", "el que creas mejor", "no tengo preferencia, hazlo tú".
+  NUNCA marques este slot como resuelto solo porque el nicho sugiere un color.
+  Inferencia de estilo sin que el cliente lo pida es un error grave.
+- logo: uno de tres caminos válidos:
+    (a) has_logo: el cliente subirá/tiene logo.
+    (b) wants_generated: el cliente pide que KREATON diseñe uno.
+    (c) explicit_skip: el cliente dice que no le importa o que lo deja para después.
+  NUNCA marques este slot con source=inferred.
+- location (opcional, requerido solo si el negocio tiene presencia física).
+- contact_info (opcional en esta fase, se puede completar después).
 
-Every turn:
-1. Read the user's message, currentState JSON, fieldMeta, conversationHistory and selectedLanguage.
-2. Update only fields supported by the message. Do not invent explicit facts.
-3. Use source="explicit" when the user clearly said it.
-4. Use source="inferred" when you can confidently infer it from the business type, niche, or wording.
-5. Use source="default" only for safe secondary defaults.
-6. Never ask again for a field that already has source explicit or inferred with confidence >= 0.7.
-7. Ask exactly one nextQuestion only when a critical field is missing.
-8. Critical priority: business/site type, business name, products/services, sales flow, style/colors, location, contact.
-9. If the user already gave enough information in one paragraph, set canGenerate=true and stop asking minor questions.
-10. Treat client notes as private strategy. Do not write public page copy here.
-11. Recommend one template from availableTemplates. Choose semantically, not by keyword count.
-12. Use marketplace only when the client clearly wants multiple vendors or a true marketplace. Use online_store for one owner selling many categories.
-13. If the client says they do not have a logo and wants Lyra/KREATON to create one, record that preference in preferredTone or preferredColors as applicable, but do not ask them to upload a logo.
-14. nextQuestion must be in selectedLanguage.
+REGLA DE ORO:
+canGenerate=true SOLO si business_name, business_description, niche, sales_flow,
+brand_style y logo están resueltos con confianza suficiente. Ningún otro slot bloquea.
+No hay excepciones porque el mensaje fue largo: un párrafo largo puede llenar 4 slots
+a la vez, pero si brand_style o logo no aparecieron en ese párrafo, siguen vacíos.
 
-Call update_intake. Do not answer in normal prose.
+PROCESO EN CADA TURNO:
+1. Lee el mensaje, currentState, businessIntakeForm, fieldMeta e historial.
+2. Actualiza SOLO los slots que el mensaje realmente sustenta. Marca cada campo con:
+   - source=explicit cuando el cliente lo dijo con claridad.
+   - source=inferred solo para nicho, flujo, audiencia, descripción o modelo de negocio deducibles.
+   - source=explicit_delegation solo cuando el cliente delegó explícitamente una decisión a Lyra.
+   brand_style y logo NUNCA usan source=inferred.
+3. Si dos o más slots quedaron vacíos, prioriza preguntar por el de mayor peso:
+   niche/sales_flow > business_name > business_description > brand_style > logo > location > contact_info.
+4. Redacta nextQuestion como UNA sola pregunta conversacional en selectedLanguage:
+   - reconoce brevemente lo que ya entendiste, sin repetirlo todo.
+   - ofrece delegar cuando aplique: "si prefieres, dime que tú decides y yo elijo un estilo que combine con tu negocio".
+   - nunca hagas una lista de tres preguntas en una.
+5. Cuando canGenerate=true, recomienda UNA plantilla de estas: {template_ids}.
+   Elige por semántica de negocio, no por conteo de palabras clave.
+   Usa marketplace solo si el cliente quiere vendedores externos/multi-vendor.
+   Si un solo dueño vende muchas categorías, usa online_store / Mega Retail Store.
+6. Nunca escribas copy público aquí. Nunca generes HTML. Nunca inventes un nicho fuera de la taxonomía cerrada.
+7. Devuelve tu respuesta únicamente llamando a la función update_intake. Nunca respondas en prosa libre.
+
+Formato recomendado para slots especiales dentro de updatedFields:
+- brand_style.value = {{"path":"explicit_preference","style":"...","colors":"..."}} o
+  {{"path":"explicit_delegation","style":"Lyra decides"}}
+- logo.value = {{"path":"has_logo"}} o {{"path":"wants_generated"}} o {{"path":"explicit_skip"}}
+
+Recuerda: tu métrica de éxito no es generar rápido, es generar bien a la primera.
+Un sitio generado sin estilo definido y con catálogo genérico es peor que una pregunta más al cliente.
 """.strip()

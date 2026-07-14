@@ -251,6 +251,16 @@ def apply_current_step_hint(state: Any, request: LumaChatRequest) -> None:
     elif step == "preferredColors" and not state.preferredColors:
         state.preferredColors = message
         mark_field_meta(state, "preferredColors", "explicit", 0.9)
+        brand_source = "explicit_delegation" if re.search(r"\b(tu decides|tú decides|decide tu|decide tú|sorprendeme|sorpréndeme|you decide)\b", message, re.I) else "explicit"
+        mark_field_meta(state, "brand_style", brand_source, 0.9)
+    elif step in {"preferredTone", "brand_style"} and not state.preferredTone:
+        state.preferredTone = message
+        brand_source = "explicit_delegation" if re.search(r"\b(tu decides|tú decides|decide tu|decide tú|sorprendeme|sorpréndeme|you decide)\b", message, re.I) else "explicit"
+        mark_field_meta(state, "preferredTone", brand_source, 0.9)
+        mark_field_meta(state, "brand_style", brand_source, 0.9)
+    elif step in {"hasLogoPhotos", "logo"}:
+        logo_source = "explicit"
+        mark_field_meta(state, "logo", logo_source, 0.9)
 
 
 def mark_field_meta(state: Any, field: str, source: str, confidence: float) -> None:
