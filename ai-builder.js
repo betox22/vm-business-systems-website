@@ -566,6 +566,7 @@ let clientAccountButton = null;
 let clientWorkspaceIdleTimer = null;
 let clientWorkspaceUnlocked = false;
 let guidedState = createEmptyGuidedState();
+let pendingServerIntakeGate = null;
 
 function createEmptyGuidedState(language = selectedLanguage) {
   return {
@@ -6861,6 +6862,40 @@ async function readErrorMessage(response) {
   }
 }
 
+function ensureServerIntakeGate() {
+  let gate = document.querySelector("#serverIntakeGate");
+  if (gate) return gate;
+  gate = document.createElement("div");
+  gate.id = "serverIntakeGate";
+  gate.className = "server-intake-gate";
+  gate.innerHTML = `
+    <p class="server-intake-question"></p>
+    <textarea name="server_intake_reply" rows="2" placeholder="Type your answer..."></textarea>
+  `;
+  form.prepend(gate);
+  return gate;
+}
+
+function handleServerNeedsMoreInfo(result = {}) {
+  pendingServerIntakeGate = {
+    missing_fields: arrayValue(result.missing_fields),
+    next_question: result.next_question || "",
+  };
+  const gate = ensureServerIntakeGate();
+  const question = gate.querySelector(".server-intake-question");
+  const field = gate.querySelector("[name='server_intake_reply']");
+  if (question) question.textContent = pendingServerIntakeGate.next_question;
+  gate.hidden = false;
+  if (field) {
+    field.value = "";
+    field.focus();
+  }
+  const message = pendingServerIntakeGate.next_question || t("reviewGenerate");
+  statusText.textContent = message;
+  if (isPublicClientSetup) guidedStatusText.textContent = message;
+  builderAvatarManager?.setState("speaking", { source: "server-needs-more-info" });
+}
+
 async function generateWebsite(triggerButton = document.querySelector("#generateButton")) {
   setStudioProgressPhase("understanding");
   const payload = await collectPayload();
@@ -6888,6 +6923,10 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     }
 
     const result = await response.json();
+    if (result.needs_more_info) {
+      handleServerNeedsMoreInfo(result);
+      return;
+    }
     setStudioProgressPhase("shop");
     if (templateSelection) {
       result.schema = mergeTemplateSelectionIntoSchema(result.schema, templateSelection);
@@ -7667,7 +7706,10 @@ function ensureSemanticSeedContent(schema, payload = {}, templateSelection = nul
   const copyKit = semanticSeedCopyKit(profileKey, nextSchema.business?.name || payload.business_name || guidedState.businessName || "Kreaton Store", language, templateText);
   const seedItems = buildSemanticSeedProducts(profileKey, language);
   const existing = arrayValue(nextSchema.catalog_items || nextSchema.products_services);
-  const mergedCatalog = mergeSemanticSeedCatalog(existing, seedItems, language, contextText);
+  const catalogSource = catalogSourceFromSchema(nextSchema);
+  const mergedCatalog = mergeSemanticSeedCatalog(existing, seedItems, language, contextText, {
+    catalogSource,
+  });
 
   nextSchema.catalog_items = mergedCatalog;
   if (Array.isArray(nextSchema.products_services)) {
@@ -7686,6 +7728,7 @@ function ensureSemanticSeedContent(schema, payload = {}, templateSelection = nul
     no_lorem: true,
     no_generic_products: true,
     unsplash_featured_urls: true,
+    catalog_source: catalogSource || "unknown",
   };
   return nextSchema;
 }
@@ -7703,19 +7746,17 @@ function semanticSeedContextText(schema = {}, payload = {}, templateSelection = 
     schema.business?.description,
     schema.business?.industry,
     arrayValue(schema.catalog_items || schema.products_services).map((item) => item.name || item.title || item).join(" "),
-    templateSelection?.templateId,
-    templateSelection?.catalogType,
   ].join(" "));
 }
 
 function inferSemanticSeedProfile(contextText = "", templateText = "") {
-  const text = normalizeTemplateIntentText(`${contextText} ${templateText}`);
+  const text = normalizeTemplateIntentText(contextText);
   if (textSuggestsBroadMarketplace(text) || textSuggestsMegaRetailStore(text)) return "marketplace";
   if (/restaurant|restaurante|menu|food|comida|cafe|coffee|bakery|bar|pizza|taco/.test(text)) return /coffee|cafe/.test(text) ? "coffee" : "restaurant";
   if (textSuggestsJewelryAccessoryStore(text)) return "jewelry";
   if (/parachoques|bumper|4x4|off road|off-road|auto parts|repuestos|automotriz|camioneta|truck|motos?|car accessories/.test(text)) return "auto";
   if (/ropa|fashion|moda|streetwear|sneaker|zapato|camiseta|clothing|apparel|boutique/.test(text)) return "fashion";
-  if (/beauty|belleza|skincare|cosmet|maquillaje|spa/.test(text)) return "beauty";
+  if (/beauty|belleza|skincare|cosmet|maquillaje|spa|bath|bano|baño|jabon|jabón|soap|vela|velas|candle|personal care|cuidado personal/.test(text)) return "beauty";
   if (/decor|hogar|home|furniture|muebles|interior|lampara|casa/.test(text)) return "home";
   if (/tech|tecnologia|gadget|electron|gaming|usb|phone|laptop|anime|juguete|toy|curioso|raro|inusual|cyberpunk/.test(text)) return "tech";
   if (/luxury|lujo|premium|exclusive|exclusivo|alta gama|private|privado/.test(text)) return "default";
@@ -7781,23 +7822,25 @@ function unsplashSeedUrl(keyword = "") {
   return stableCatalogImageUrl(clean);
 }
 
-function mergeSemanticSeedCatalog(existingItems = [], seedItems = [], language = selectedLanguage, contextText = "") {
+function mergeSemanticSeedCatalog(existingItems = [], seedItems = [], language = selectedLanguage, contextText = "", options = {}) {
   const existing = arrayValue(existingItems);
+  const preserveAiGeneratedIdentity = options.catalogSource === "ai_generated";
   const genericCount = existing.filter((item) => isGenericSeedProduct(item, contextText)).length;
-  const needsReplacement = existing.length < 4 || genericCount >= Math.max(1, Math.ceil(existing.length / 2));
-  const base = needsReplacement ? seedItems : existing;
+  const needsReplacement = !preserveAiGeneratedIdentity && (existing.length < 4 || genericCount >= Math.max(1, Math.ceil(existing.length / 2)));
+  const base = preserveAiGeneratedIdentity ? existing : needsReplacement ? seedItems : existing;
   const merged = base.slice(0, 6).map((item, index) => {
     const seed = seedItems[index % seedItems.length];
     const source = typeof item === "string" ? { name: item } : { ...item };
-    const useSeedIdentity = needsReplacement || isGenericSeedProduct(source, contextText);
+    const sourceIsGeneric = isGenericSeedProduct(source, contextText);
+    const useSeedIdentity = !preserveAiGeneratedIdentity && (needsReplacement || sourceIsGeneric);
     const price = Number(source.price_amount ?? source.price_value ?? source.price ?? seed.price);
     return {
       ...source,
       id: source.id || seed.id || `prod_${String(index + 1).padStart(3, "0")}`,
       sku: source.sku || seed.sku || `SKU-${String(index + 1).padStart(3, "0")}`,
-      name: useSeedIdentity ? seed.name : cleanShortText(source.name || source.title || seed.name, 90),
-      description: isWeakSeedCopy(source.description, {}) ? seed.description : source.description,
-      category: source.category && !isGenericText(source.category) ? source.category : seed.category,
+      name: useSeedIdentity ? seed.name : cleanShortText(source.name || source.title || (preserveAiGeneratedIdentity ? "" : seed.name), 90),
+      description: useSeedIdentity || (!preserveAiGeneratedIdentity && isWeakSeedCopy(source.description, {})) ? seed.description : source.description,
+      category: useSeedIdentity || (!preserveAiGeneratedIdentity && (!source.category || isGenericText(source.category))) ? seed.category : source.category,
       price: Number.isFinite(price) && price > 0 ? price : seed.price,
       price_type: source.price_type && source.price_type !== "quote_only" ? source.price_type : "fixed",
       price_value: Number.isFinite(price) && price > 0 ? price : seed.price,
@@ -7815,15 +7858,17 @@ function mergeSemanticSeedCatalog(existingItems = [], seedItems = [], language =
       inventory_quantity: source.inventory_quantity ?? seed.inventory_quantity,
       track_inventory: source.track_inventory ?? seed.track_inventory,
       imageSearchQuery: source.imageSearchQuery || source.image_search_query || seed.imageSearchQuery,
-      image_url: (useSeedIdentity || shouldReplaceCatalogSeedImage(source, seed, contextText))
-        ? seed.image_url
-        : source.image_url || source.imageUrl || seed.image_url,
+      image_url: preserveAiGeneratedIdentity
+        ? source.image_url || source.imageUrl || seed.image_url
+        : (useSeedIdentity || shouldReplaceCatalogSeedImage(source, seed, contextText))
+          ? seed.image_url
+          : source.image_url || source.imageUrl || seed.image_url,
       is_active: source.is_active !== false,
       is_featured: source.is_featured ?? index < 4,
       sort_order: Number(source.sort_order ?? index),
     };
   });
-  while (merged.length < 4 && seedItems[merged.length]) {
+  while (!preserveAiGeneratedIdentity && merged.length < 4 && seedItems[merged.length]) {
     merged.push({ ...seedItems[merged.length], sort_order: merged.length });
   }
   return merged.slice(0, 6);
@@ -7851,8 +7896,7 @@ function isGenericSeedProduct(item = {}, contextText = "") {
     || /price to be set|precio editable|editable product|lorem|placeholder/.test(description)
     || nameIsRawContext
     || !description
-    || price === "" || price === null || price === undefined
-    || !image;
+    || price === "" || price === null || price === undefined;
 }
 
 function isWeakSeedCopy(value, payload = {}) {
@@ -8013,6 +8057,7 @@ function mergeTemplateSelectionIntoSchema(schema, selection) {
 }
 
 function applyGenerationResult(result, payload = {}, templateSelection = null) {
+  syncCatalogSourceMetadata(result);
   result.schema = prepareWebsiteConfig(result.schema, payload, templateSelection);
   currentSchema = result.schema;
   currentSiteId = result.site_id || null;
@@ -8031,6 +8076,25 @@ function applyGenerationResult(result, payload = {}, templateSelection = null) {
   guidedState.revisionMode = "";
   guidedState.requestedAdjustments = [];
   builderAvatarManager?.setState("success", { source: "preview-generated" });
+}
+
+function syncCatalogSourceMetadata(result = {}) {
+  if (!result?.schema || !result.catalog_source) return result;
+  result.schema.generation_metadata = {
+    ...(result.schema.generation_metadata || {}),
+    catalog_source: result.catalog_source,
+  };
+  return result;
+}
+
+function catalogSourceFromSchema(schema = {}) {
+  return String(
+    schema?.generation_metadata?.catalog_source
+    || schema?.generation_metadata?.catalogSource
+    || schema?.catalog_source
+    || schema?.catalogSource
+    || ""
+  );
 }
 
 function prepareWebsiteConfig(schema, payload = {}, templateSelection = null) {
@@ -13231,6 +13295,13 @@ async function collectPayload() {
   if (isPublicClientSetup) syncTemplateSelectionFromGuidedContext();
   const aiStudioPlan = isPublicClientSetup ? refreshAiStudioPlanFromContext() : guidedState.aiStudioPlan;
   const data = new FormData(form);
+  const intakeFollowupAnswer = data.get("server_intake_reply")?.toString().trim() || "";
+  const intakeFollowupField = pendingServerIntakeGate?.missing_fields?.[0] || "";
+  const preferredToneValue = data.get("preferred_tone")?.toString().trim()
+    || (intakeFollowupField === "brand_style" ? intakeFollowupAnswer : "");
+  const preferredColorsValue = splitCommaOrLines(data.get("preferred_colors")?.toString() || "");
+  const logoPreferenceValue = data.get("logo_preference")?.toString().trim()
+    || (intakeFollowupField === "logo" ? intakeFollowupAnswer : "");
   const contactInfo = parseKeyValueLines(data.get("contact_info")?.toString() || "");
   const logoUrl = data.get("logo_url")?.toString().trim();
   const photoUrls = splitLines(data.get("photo_urls")?.toString() || "");
@@ -13267,11 +13338,15 @@ async function collectPayload() {
     location: data.get("location")?.toString().trim(),
     services_products: splitCommaOrLines(data.get("services_products")?.toString() || ""),
     target_audience: data.get("target_audience")?.toString().trim(),
-    preferred_tone: data.get("preferred_tone")?.toString().trim(),
-    preferred_colors: splitCommaOrLines(data.get("preferred_colors")?.toString() || "").length
-      ? splitCommaOrLines(data.get("preferred_colors")?.toString() || "")
+    preferred_tone: preferredToneValue,
+    preferred_colors: preferredColorsValue.length
+      ? preferredColorsValue
       : arrayValue(guidedState.logoPalette),
+    brandStyle: preferredToneValue,
     contact_info: contactInfo,
+    logoPreference: logoPreferenceValue,
+    intakeFollowupAnswer,
+    salesFlow: guidedState.salesMode || data.get("sales_flow")?.toString().trim() || "",
     desiredDomain: data.get("desired_domain")?.toString().trim() || guidedState.desiredDomain || "",
     selectedLanguage,
     request_id: currentRequestId,
@@ -13281,9 +13356,9 @@ async function collectPayload() {
     brand: normalizeBrand(guidedState.brand || {
       logoUrl: assets.find((asset) => asset.asset_type === "logo")?.url || "",
       extractedColors: arrayValue(guidedState.logoPalette),
-      preferredColors: splitCommaOrLines(data.get("preferred_colors")?.toString() || ""),
+      preferredColors: preferredColorsValue,
       industry: data.get("industry")?.toString().trim(),
-      tone: data.get("preferred_tone")?.toString().trim(),
+      tone: preferredToneValue,
     }),
     designStrategy: {
       ...createDesignStrategy({
@@ -13291,8 +13366,8 @@ async function collectPayload() {
         business_description: data.get("business_description")?.toString().trim(),
         industry: data.get("industry")?.toString().trim(),
         target_audience: data.get("target_audience")?.toString().trim(),
-        preferred_tone: data.get("preferred_tone")?.toString().trim(),
-        salesMode: guidedState.salesMode,
+        preferred_tone: preferredToneValue,
+        salesMode: guidedState.salesMode || data.get("sales_flow")?.toString().trim() || "",
       }),
       aiStudioPlan,
       selectedTemplateId: aiStudioPlan?.recommendedTemplateId || "",

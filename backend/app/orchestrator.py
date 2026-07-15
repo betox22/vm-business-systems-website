@@ -36,6 +36,7 @@ def normalize_state_payload(payload: Dict[str, Any] | None) -> ProjectState:
         preferredColors=preferred_colors,
         contactInfo=payload.get("contactInfo") if isinstance(payload.get("contactInfo"), dict) else {},
         logoUrl=payload.get("logoUrl"),
+        logoPreference=payload.get("logoPreference") or payload.get("logo_preference"),
         photoUrls=payload.get("photoUrls") or [],
         selectedLanguage=payload.get("selectedLanguage") or "en",
         websiteIntent=payload.get("websiteIntent") or payload.get("website_intent"),
@@ -48,6 +49,7 @@ def normalize_state_payload(payload: Dict[str, Any] | None) -> ProjectState:
         typography=payload.get("typography") or {},
         generatedCopy=payload.get("generatedCopy") or {},
         catalogItems=payload.get("catalogItems") or [],
+        catalogSource=payload.get("catalogSource") or payload.get("catalog_source"),
         fieldMeta=payload.get("fieldMeta") if isinstance(payload.get("fieldMeta"), dict) else {},
     )
 

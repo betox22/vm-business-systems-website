@@ -40,6 +40,7 @@ AssistantEmotion = Literal[
     "alert",
     "confused",
 ]
+CatalogSource = Literal["ai_generated", "seed_fallback"]
 
 
 class ProjectState(BaseModel):
@@ -61,6 +62,7 @@ class ProjectState(BaseModel):
     preferredColors: Optional[str] = None
     contactInfo: Dict[str, Any] = Field(default_factory=dict)
     logoUrl: Optional[str] = None
+    logoPreference: Optional[str] = None
     photoUrls: List[str] = Field(default_factory=list)
     selectedLanguage: SupportedLanguage = "en"
 
@@ -75,6 +77,7 @@ class ProjectState(BaseModel):
     typography: Dict[str, str] = Field(default_factory=dict)
     generatedCopy: Dict[str, Any] = Field(default_factory=dict)
     catalogItems: List[Dict[str, Any]] = Field(default_factory=list)
+    catalogSource: Optional[CatalogSource] = None
     assets: Dict[str, Any] = Field(default_factory=dict)
     fieldMeta: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     missingImportantFields: List[str] = Field(default_factory=list)
@@ -145,9 +148,14 @@ class WebsiteGenerationRequest(BaseModel):
     contact_info: Dict[str, Any] | str | None = None
     contactInfo: Dict[str, Any] | str | None = None
     logoUrl: Optional[str] = None
+    logoPreference: Optional[str] = None
+    brandStyle: Optional[str] = None
+    intakeFollowupAnswer: Optional[str] = None
     photoUrls: List[str] = Field(default_factory=list)
     selectedLanguage: SupportedLanguage = "en"
     selected_template_id: Optional[str] = None
+    sales_flow: Optional[str] = None
+    salesFlow: Optional[str] = None
     designStrategy: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -155,6 +163,10 @@ class WebsiteGenerationResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     website_schema: Dict[str, Any] = Field(alias="schema")
+    catalog_source: CatalogSource = "seed_fallback"
+    needs_more_info: bool = False
+    missing_fields: List[str] = Field(default_factory=list)
+    next_question: Optional[str] = None
     storage_status: str = "generated"
     used_dev_mock: bool = False
     business_id: Optional[str] = None

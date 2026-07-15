@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 import re
+import os
 from pathlib import Path
 from typing import Any, Dict
 
@@ -17,6 +18,7 @@ from .models import (
     LumaChatResponse,
     LyraEditRequest,
     LyraEditResponse,
+    CatalogSource,
     WebsiteGenerationRequest,
     WebsiteGenerationResponse,
 )
@@ -29,6 +31,7 @@ from .orchestrator import (
     normalize_state_payload,
     site_plan_from_state,
 )
+from .taxonomy import infer_seed_profile
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -51,6 +54,7 @@ CLIENT_DRAFT_KEYS = {
     "contactInfo",
     "desiredDomain",
     "logoUrl",
+    "logoPreference",
     "photoUrls",
     "logoPalette",
     "selectedLanguage",
@@ -64,6 +68,8 @@ CLIENT_DRAFT_KEYS = {
     "catalogType",
     "websiteType",
     "salesFlow",
+    "brandStyle",
+    "intakeFollowupAnswer",
     "fieldMeta",
 }
 
@@ -125,6 +131,72 @@ def sanitize_client_draft(raw: Any) -> Dict[str, Any]:
             draft[key] = _trim_text(value)
     return draft
 
+
+def _has_form_value(value: Any) -> bool:
+    if isinstance(value, list):
+        return any(_has_form_value(item) for item in value)
+    if isinstance(value, dict):
+        return any(_has_form_value(item) for item in value.values())
+    return bool(str(value or "").strip())
+
+
+def _explicit_meta(source: str = "explicit") -> Dict[str, Any]:
+    return {"source": source, "confidence": 1.0}
+
+
+def build_generation_field_meta(request: WebsiteGenerationRequest) -> Dict[str, Dict[str, Any]]:
+    """Treat structured form fields as explicit evidence for the intake gate."""
+
+    meta: Dict[str, Dict[str, Any]] = {}
+    preferred_tone = request.preferredTone or request.preferred_tone or request.brandStyle
+    preferred_colors = request.preferredColors or request.preferred_colors
+    logo_preference = request.logoPreference
+
+    if _has_form_value(preferred_tone):
+        meta["preferredTone"] = _explicit_meta()
+        meta["brand_style"] = _explicit_meta()
+    if _has_form_value(preferred_colors):
+        meta["preferredColors"] = _explicit_meta()
+        meta["brand_style"] = _explicit_meta()
+    if _has_form_value(request.logoUrl):
+        meta["logo"] = _explicit_meta()
+    if _has_form_value(logo_preference):
+        meta["logo"] = _explicit_meta()
+        meta["logoPreference"] = _explicit_meta()
+    return meta
+
+
+def _generation_context_text(request: WebsiteGenerationRequest) -> str:
+    values = [
+        request.businessName or request.business_name or "",
+        request.businessDescription or request.business_description or "",
+        request.industry or "",
+        request.servicesProducts or request.services_products or "",
+    ]
+    return " ".join(str(value) for value in values if value)
+
+
+def infer_generation_industry(request: WebsiteGenerationRequest) -> str:
+    if _has_form_value(request.industry):
+        return str(request.industry)
+    profile = infer_seed_profile(_generation_context_text(request))
+    return "" if profile == "default" else profile
+
+
+def infer_generation_sales_flow(request: WebsiteGenerationRequest) -> str:
+    explicit = request.salesFlow or request.sales_flow or request.designStrategy.get("salesFlow") or request.designStrategy.get("salesMode")
+    if _has_form_value(explicit):
+        return str(explicit)
+
+    text = _generation_context_text(request).lower()
+    if re.search(r"\b(reserva|reservas|booking|cita|citas|appointment)\b", text):
+        return "booking"
+    if re.search(r"\b(cotiza|cotizacion|cotización|quote|presupuesto)\b", text):
+        return "quote_request"
+    if re.search(r"\b(vendo|vender|venta|ventas|tienda|shop|store|online|comprar|producto|productos|catalogo|catálogo)\b", text):
+        return "online_sales"
+    return ""
+
 app = FastAPI(title="KREATON LYRA API", version="0.1.0")
 
 app.add_middleware(
@@ -142,6 +214,37 @@ app.include_router(commerce_router)
 @app.get("/")
 async def healthz() -> Dict[str, Any]:
     return {"status": "ok", "service": "kreaton-lyra-api"}
+
+
+def storage_is_configured() -> bool:
+    """Report whether a server-side storage provider appears configured.
+
+    The current backend does not initialize a storage client yet, so this
+    checks the environment variables expected by the rebuild kit and common
+    S3/R2-compatible storage providers without exposing secret values.
+    """
+
+    supabase_ready = bool(os.getenv("SUPABASE_URL")) and bool(os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
+    object_storage_ready = bool(
+        os.getenv("STORAGE_BUCKET") or os.getenv("S3_BUCKET") or os.getenv("R2_BUCKET")
+    ) and bool(
+        os.getenv("STORAGE_ENDPOINT")
+        or os.getenv("S3_ENDPOINT_URL")
+        or os.getenv("R2_ENDPOINT")
+        or os.getenv("AWS_ENDPOINT_URL")
+    )
+    return supabase_ready or object_storage_ready
+
+
+@app.get("/api/ai-status")
+async def ai_status() -> Dict[str, bool]:
+    planner = getattr(orchestrator, "ai_site_planner", None)
+    return {
+        "openaiConfigured": bool(os.getenv("OPENAI_API_KEY")),
+        "intakeAIAvailable": getattr(intake_engine, "client", None) is not None,
+        "plannerAIAvailable": getattr(planner, "client", None) is not None,
+        "storageConfigured": storage_is_configured(),
+    }
 
 
 @app.post("/api/luma/chat", response_model=LumaChatResponse)
@@ -332,26 +435,43 @@ async def luma_edit(request: LyraEditRequest) -> LyraEditResponse:
 @app.post("/ai/website-builder", response_model=WebsiteGenerationResponse)
 async def website_builder(request: WebsiteGenerationRequest) -> WebsiteGenerationResponse:
     payload = request.model_dump()
+    field_meta = build_generation_field_meta(request)
     state = normalize_state_payload({
         "businessName": request.businessName or request.business_name,
         "businessDescription": request.businessDescription or request.business_description,
-        "industry": request.industry,
+        "industry": infer_generation_industry(request),
         "location": request.location,
         "servicesProducts": request.servicesProducts or request.services_products,
         "targetAudience": request.targetAudience or request.target_audience,
-        "preferredTone": request.preferredTone or request.preferred_tone,
+        "preferredTone": request.preferredTone or request.preferred_tone or request.brandStyle,
         "preferredColors": request.preferredColors or request.preferred_colors,
         "contactInfo": request.contactInfo or request.contact_info,
         "logoUrl": request.logoUrl,
+        "logoPreference": request.logoPreference,
         "photoUrls": request.photoUrls,
         "selectedLanguage": request.selectedLanguage,
         "selectedTemplateId": request.selected_template_id or request.designStrategy.get("selectedTemplateId"),
+        "salesFlow": infer_generation_sales_flow(request),
+        "fieldMeta": field_meta,
     })
+    missing_fields = intake_engine.missing_fields_from_state(state, {}, field_meta)
+    if missing_fields:
+        return WebsiteGenerationResponse(
+            website_schema={},
+            catalog_source="seed_fallback",
+            needs_more_info=True,
+            missing_fields=missing_fields,
+            next_question=intake_engine.fallback_question_for_missing(missing_fields, state.selectedLanguage),
+            storage_status="needs_more_info",
+            used_dev_mock=False,
+        )
     prompt_context = " ".join(str(value) for value in payload.values() if value)
     final_state = await orchestrator.run(prompt_context, state)
-    schema = build_schema_from_state(final_state)
+    catalog_items, catalog_source = resolve_catalog_items_and_source(final_state)
+    schema = build_schema_from_state(final_state, catalog_items=catalog_items, catalog_source=catalog_source)
     return WebsiteGenerationResponse(
         website_schema=schema,
+        catalog_source=catalog_source,
         storage_status="generated",
         used_dev_mock=False,
         business_id=f"biz_{uuid.uuid4().hex[:10]}",
@@ -360,28 +480,46 @@ async def website_builder(request: WebsiteGenerationRequest) -> WebsiteGeneratio
     )
 
 
-def build_schema_from_state(state) -> Dict[str, Any]:
-    name = state.businessName or "Your Business"
-    template_id = state.selectedTemplateId or "corporate-company-pro"
-    copy = state.generatedCopy.get("hero", {})
-    headline = copy.get("headline") or name
-    subheadline = copy.get("subheadline") or state.businessDescription or ""
-    primary_cta = copy.get("primaryCta") or "Explore"
+def resolve_catalog_items_and_source(state) -> tuple[list[Dict[str, Any]], CatalogSource]:
     fallback_context = " ".join([
         state.businessName or "",
         state.businessDescription or "",
         state.industry or "",
         " ".join(state.servicesProducts),
     ])
-    items = state.catalogItems or (
-        semantic_seed_catalog(state, fallback_context, count=6)
-        if state_is_commerce_seed_target(state, fallback_context)
-        else []
-    )
+    if state.catalogItems:
+        return state.catalogItems, getattr(state, "catalogSource", None) or "seed_fallback"
+    if state_is_commerce_seed_target(state, fallback_context):
+        return semantic_seed_catalog(state, fallback_context, count=6), "seed_fallback"
+    return [], getattr(state, "catalogSource", None) or "seed_fallback"
+
+
+def build_schema_from_state(
+    state,
+    *,
+    catalog_items: list[Dict[str, Any]] | None = None,
+    catalog_source: CatalogSource | None = None,
+) -> Dict[str, Any]:
+    name = state.businessName or "Your Business"
+    template_id = state.selectedTemplateId or "corporate-company-pro"
+    copy = state.generatedCopy.get("hero", {})
+    headline = copy.get("headline") or name
+    subheadline = copy.get("subheadline") or state.businessDescription or ""
+    primary_cta = copy.get("primaryCta") or "Explore"
+    if catalog_items is None or catalog_source is None:
+        catalog_items, catalog_source = resolve_catalog_items_and_source(state)
     colors = state.colors or {}
+    logo_preference = state.logoPreference or ""
+    logo_pending_generation = bool(logo_preference and not state.logoUrl)
+    logo_status = "provided" if state.logoUrl else "pending_ai_generation" if logo_pending_generation else "not_provided"
 
     return {
         "version": "1.0",
+        "generation_metadata": {
+            "catalog_source": catalog_source,
+            "logo_status": logo_status,
+            "logo_pending_generation": logo_pending_generation,
+        },
         "business": {
             "name": name,
             "description": state.businessDescription or subheadline,
@@ -392,6 +530,9 @@ def build_schema_from_state(state) -> Dict[str, Any]:
         },
         "brand": {
             "logoUrl": state.logoUrl or "",
+            "logoPreference": logo_preference,
+            "logoStatus": logo_status,
+            "logoPendingGeneration": logo_pending_generation,
             "preferredColors": state.preferredColors or "",
         },
         "theme": {
@@ -490,8 +631,13 @@ def build_schema_from_state(state) -> Dict[str, Any]:
                 ],
             },
         ],
-        "catalog_items": items,
-        "global_components": {"logo_url": state.logoUrl or ""},
+        "catalog_items": catalog_items,
+        "global_components": {
+            "logo_url": state.logoUrl or "",
+            "logo_status": logo_status,
+            "logo_pending_generation": logo_pending_generation,
+            "logo_preference": logo_preference,
+        },
         "quality_rules": {
             "intakeIsStrategyOnly": True,
             "visibleCopyPolicy": "Never paste raw intake notes verbatim.",

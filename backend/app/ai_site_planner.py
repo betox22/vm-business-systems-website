@@ -352,8 +352,9 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             "sort_order": int(item.get("sort_order", index)),
         }
         catalog_items.append(attach_image_asset(normalized_item, context=enrichment_context))
+    catalog_source = "ai_generated"
     if state:
-        catalog_items = ensure_plan_seed_catalog(catalog_items, state, plan)
+        catalog_items, catalog_source = ensure_plan_seed_catalog_with_source(catalog_items, state, plan)
 
     pages = []
     hero_copy: Dict[str, str] = {}
@@ -418,6 +419,7 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             "brandIdentity": plan.brand_identity.model_dump(),
         },
         "catalogItems": catalog_items,
+        "catalogSource": catalog_source,
         "confidence": plan.confidence,
     }
 
@@ -432,6 +434,15 @@ def parse_price_amount(value: Any, fallback: Optional[float] = None) -> Optional
 
 
 def ensure_plan_seed_catalog(catalog_items: List[Dict[str, Any]], state: ProjectState, plan: AISitePlan) -> List[Dict[str, Any]]:
+    catalog, _catalog_source = ensure_plan_seed_catalog_with_source(catalog_items, state, plan)
+    return catalog
+
+
+def ensure_plan_seed_catalog_with_source(
+    catalog_items: List[Dict[str, Any]],
+    state: ProjectState,
+    plan: AISitePlan,
+) -> tuple[List[Dict[str, Any]], Literal["ai_generated", "seed_fallback"]]:
     """Guarantee complete commerce seed data even if the model returns sparse catalogItems."""
 
     commerce_text = " ".join([
@@ -456,7 +467,7 @@ def ensure_plan_seed_catalog(catalog_items: List[Dict[str, Any]], state: Project
         "tienda",
     ])
     if not is_commerce:
-        return catalog_items
+        return catalog_items, "ai_generated"
 
     generic = 0
     generic_name_pattern = re.compile(
@@ -481,13 +492,22 @@ def ensure_plan_seed_catalog(catalog_items: List[Dict[str, Any]], state: Project
 
     seed = semantic_seed_catalog(state, commerce_text, count=6)
     if len(catalog_items) < 4 or generic >= max(1, len(catalog_items) // 2):
-        return seed
+        return seed, "seed_fallback"
 
     merged: List[Dict[str, Any]] = []
+    used_seed_fill = False
     for index, item in enumerate(catalog_items[:6]):
         fallback = seed[index % len(seed)]
         price = parse_price_amount(item.get("price_amount") or item.get("price"), float(fallback["price_amount"]))
         image_query = item.get("imageSearchQuery") or item.get("image_search_query") or fallback["imageSearchQuery"]
+        if (
+            not item.get("name")
+            or not item.get("description")
+            or not item.get("category")
+            or not (item.get("price_amount") or item.get("price"))
+            or not (item.get("imageSearchQuery") or item.get("image_search_query"))
+        ):
+            used_seed_fill = True
         merged_item = {
             **item,
             "id": item.get("id") or fallback["id"],
@@ -509,7 +529,7 @@ def ensure_plan_seed_catalog(catalog_items: List[Dict[str, Any]], state: Project
             "sort_order": int(item.get("sort_order", index)),
         }
         merged.append(attach_image_asset(merged_item, context=commerce_text))
-    return merged
+    return merged, "seed_fallback" if used_seed_fill else "ai_generated"
 
 
 class OpenAISitePlanAgent:

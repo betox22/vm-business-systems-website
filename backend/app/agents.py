@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from .image_assets import attach_image_asset, stable_seed_image_url
 from .models import AgentResult, ProjectState, WebsiteType
+from .taxonomy import infer_seed_profile
 
 
 TEMPLATE_CATALOG: Dict[str, Dict[str, str]] = {
@@ -241,29 +242,6 @@ def unsplash_seed_url(keyword: str) -> str:
     return stable_seed_image_url(keyword)
 
 
-def infer_seed_profile(text: str) -> str:
-    text = normalize_text(text)
-    if suggests_broad_marketplace(text) or re.search(r"\b(tipo amazon|como amazon|mega tienda|catalogo variado|productos variados|muchas categorias|todo tipo|de todo)\b", text):
-        return "marketplace"
-    if re.search(r"\b(restaurante|restaurant|menu|food|comida|pizza|bar|bakery)\b", text):
-        return "restaurant"
-    if re.search(r"\b(cafe|coffee|espresso|cold brew)\b", text):
-        return "coffee"
-    if suggests_jewelry_or_handmade_accessories(text):
-        return "jewelry"
-    if re.search(r"\b(parachoques|bumper|4x4|off road|off-road|repuestos|automotriz|camioneta|truck|auto accessories)\b", text):
-        return "auto"
-    if re.search(r"\b(ropa|fashion|moda|streetwear|sneaker|zapato|camiseta|clothing|boutique)\b", text):
-        return "fashion"
-    if re.search(r"\b(beauty|belleza|skincare|cosmet|maquillaje|spa)\b", text):
-        return "beauty"
-    if re.search(r"\b(decor|hogar|home|furniture|muebles|interior|lampara|casa)\b", text):
-        return "home"
-    if re.search(r"\b(tech|tecnologia|gadget|electron|gaming|usb|phone|laptop|anime|juguete|toy|curioso|raro|inusual|cyberpunk)\b", text):
-        return "tech"
-    return "default"
-
-
 SEED_PRODUCT_LIBRARY: Dict[str, List[Dict[str, Any]]] = {
     "jewelry": [
         {"name": {"es": "Collar Aurora de Cristal", "en": "Aurora Crystal Necklace"}, "category": {"es": "Collares", "en": "Necklaces"}, "price": 42.0, "keyword": "handmade-crystal-necklace", "description": {"es": "Collar en capas con brillo delicado para uso diario y looks especiales. Ligero, listo para regalo y facil de combinar.", "en": "A luminous layered necklace designed for everyday shine and special looks. Lightweight, gift-ready, and easy to combine."}},
@@ -312,6 +290,22 @@ SEED_PRODUCT_LIBRARY: Dict[str, List[Dict[str, Any]]] = {
         {"name": {"es": "Refrescante de Lima de la Casa", "en": "House Lime Refresher"}, "category": {"es": "Bebidas", "en": "Drinks"}, "price": 6.5, "keyword": "lime-mocktail", "description": {"es": "Bebida de la casa con lima, hierbas y final limpio.", "en": "A bright house drink with lime, herbs, and a clean finish."}},
         {"name": {"es": "Postre del Chef en Jar", "en": "Chef's Dessert Jar"}, "category": {"es": "Postres", "en": "Desserts"}, "price": 8.0, "keyword": "dessert-jar", "description": {"es": "Postre en capas pensado para delivery y fotos atractivas.", "en": "A layered dessert jar built for delivery stability and strong photos."}},
         {"name": {"es": "Combo Familiar Box", "en": "Family Combo Box"}, "category": {"es": "Combos", "en": "Combos"}, "price": 42.0, "keyword": "family-meal-box", "description": {"es": "Caja para compartir con principales, acompanantes y bebidas.", "en": "A shareable meal box with mains, sides, and drinks."}},
+    ],
+    "beauty": [
+        {"name": {"es": "Set de Toallas de Bano Spa", "en": "Spa Bath Towel Set"}, "category": {"es": "Toallas", "en": "Towels"}, "price": 32.0, "keyword": "spa-bath-towel-set", "description": {"es": "Set de toallas suaves de alta absorcion pensado para rutinas de bano diarias y regalo.", "en": "A soft, highly absorbent towel set built for daily bath routines and gifting."}},
+        {"name": {"es": "Barra de Jabon Artesanal", "en": "Handmade Bath Soap Bar"}, "category": {"es": "Jabones", "en": "Soaps"}, "price": 9.5, "keyword": "handmade-soap-bar", "description": {"es": "Jabon artesanal con aroma suave, ideal para uso diario o sets de regalo de bano.", "en": "A handmade soap bar with a gentle scent, ideal for daily use or bath gift sets."}},
+        {"name": {"es": "Kit de Sales de Bano Relajantes", "en": "Relaxing Bath Salts Kit"}, "category": {"es": "Cuidado de bano", "en": "Bath care"}, "price": 18.0, "keyword": "bath-salts-jar", "description": {"es": "Sales de bano para relajar musculos y crear una rutina de autocuidado en casa.", "en": "Bath salts designed to soothe muscles and build a relaxing self-care routine at home."}},
+        {"name": {"es": "Esponja Natural de Bano", "en": "Natural Bath Sponge"}, "category": {"es": "Accesorios de bano", "en": "Bath accessories"}, "price": 12.0, "keyword": "natural-bath-sponge", "description": {"es": "Esponja suave para exfoliar y limpiar la piel durante la ducha o el bano.", "en": "A gentle sponge for exfoliating and cleansing skin during a shower or bath."}},
+        {"name": {"es": "Aceite Corporal Hidratante", "en": "Hydrating Body Oil"}, "category": {"es": "Cuidado corporal", "en": "Body care"}, "price": 24.0, "keyword": "body-oil-bottle", "description": {"es": "Aceite corporal ligero para hidratar la piel despues del bano o la ducha.", "en": "A lightweight body oil to hydrate skin right after a bath or shower."}},
+        {"name": {"es": "Bomba de Bano Aromatica", "en": "Aromatic Bath Bomb Set"}, "category": {"es": "Sets de regalo", "en": "Gift sets"}, "price": 21.0, "keyword": "bath-bomb-set", "description": {"es": "Set de bombas de bano aromaticas listas para regalar o para una rutina de relajacion.", "en": "A set of aromatic bath bombs ready for gifting or a relaxing self-care night."}},
+    ],
+    "home": [
+        {"name": {"es": "Lampara de Mesa Nordica", "en": "Nordic Table Lamp"}, "category": {"es": "Iluminacion", "en": "Lighting"}, "price": 54.0, "keyword": "nordic-table-lamp", "description": {"es": "Lampara de mesa con lineas simples para salas, dormitorios y espacios de lectura.", "en": "A table lamp with clean lines for living rooms, bedrooms, and reading nooks."}},
+        {"name": {"es": "Set de Velas Aromaticas", "en": "Aromatic Candle Set"}, "category": {"es": "Decor", "en": "Decor"}, "price": 28.0, "keyword": "aromatic-candle-set", "description": {"es": "Velas aromaticas para ambientar cualquier espacio del hogar.", "en": "Aromatic candles that set the mood in any room of the home."}},
+        {"name": {"es": "Manta de Punto Suave", "en": "Soft Knit Throw Blanket"}, "category": {"es": "Textiles", "en": "Textiles"}, "price": 46.0, "keyword": "knit-throw-blanket", "description": {"es": "Manta tejida suave para sofa o cama, ideal para dias frios.", "en": "A soft knit throw for the sofa or bed, perfect for cold days."}},
+        {"name": {"es": "Set de Macetas Ceramicas", "en": "Ceramic Planter Set"}, "category": {"es": "Jardin interior", "en": "Indoor garden"}, "price": 34.0, "keyword": "ceramic-planter-set", "description": {"es": "Macetas ceramicas minimalistas para plantas de interior.", "en": "Minimalist ceramic planters for indoor plants."}},
+        {"name": {"es": "Marco de Fotos Minimalista", "en": "Minimalist Photo Frame Set"}, "category": {"es": "Decor de pared", "en": "Wall decor"}, "price": 22.0, "keyword": "minimalist-photo-frames", "description": {"es": "Set de marcos limpios para fotos y recuerdos familiares.", "en": "A clean frame set for photos and family memories."}},
+        {"name": {"es": "Difusor de Aromas Ceramico", "en": "Ceramic Aroma Diffuser"}, "category": {"es": "Ambiente", "en": "Ambience"}, "price": 39.0, "keyword": "ceramic-aroma-diffuser", "description": {"es": "Difusor ceramico para aceites esenciales y ambientes relajantes en casa.", "en": "A ceramic diffuser for essential oils and a relaxing home atmosphere."}},
     ],
     "default": [
         {"name": {"es": "Bolso Tote Studio", "en": "Studio Carry Tote"}, "category": {"es": "Accesorios", "en": "Accessories"}, "price": 39.0, "keyword": "minimal-canvas-tote-bag", "description": {"es": "Bolso tote limpio para uso diario, con asas resistentes y apariencia retail pulida.", "en": "A clean everyday tote with sturdy handles and a polished retail look."}},
@@ -785,7 +779,7 @@ class CatalogAgent(BaseAgent):
 
         return AgentResult(
             agentName=self.name,
-            updates={"catalogItems": catalog},
+            updates={"catalogItems": catalog, "catalogSource": "seed_fallback"},
             reasoningSummary=summary,
             confidence=0.84,
         )

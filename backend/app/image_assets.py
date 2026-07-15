@@ -5,6 +5,8 @@ from typing import Any, Dict, List, Literal, Mapping, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .taxonomy import CATEGORY_KEYWORDS, TAXONOMY, normalize_image_text
+
 
 ImageAssetSource = Literal[
     "seed_bank",
@@ -37,43 +39,6 @@ class ImageAsset(BaseModel):
     )
     variants: Dict[str, str] = Field(default_factory=dict)
     is_editable: bool = True
-
-
-TAXONOMY: Dict[str, List[str]] = {
-    "moda": ["ropa", "zapatos", "sombreros", "bolsos", "accesorios-textiles", "streetwear"],
-    "joyeria": ["aretes", "collares", "pulseras", "anillos", "relojes", "bisuteria"],
-    "automotriz": ["repuestos-auto", "accesorios-auto", "llantas", "audio-auto", "off-road", "4x4"],
-    "motos": ["repuestos-moto", "cascos", "accesorios-moto"],
-    "hogar": ["velas", "decoracion", "textiles-hogar", "cocina", "organizacion", "muebles"],
-    "belleza": ["jabones", "skincare", "cosmeticos", "cuidado-personal", "makeup"],
-    "plantas": ["plantas-interior", "macetas", "jardineria", "semillas"],
-    "manualidades": ["hilos", "telas", "botones", "abalorios"],
-    "materiales": ["metal", "madera", "ceramica", "vidrio", "cuero"],
-    "salud": ["suplementos", "equipo-medico", "cuidado-personal-salud"],
-    "tecnologia": ["gadgets", "accesorios-celular", "audio", "computo", "gaming", "electronica"],
-    "comida": ["cafe", "reposteria", "snacks", "bebidas", "restaurant", "menu"],
-    "mascotas": ["accesorios-mascota", "alimento-mascota", "juguetes-mascota"],
-}
-
-
-CATEGORY_KEYWORDS: Dict[str, str] = {
-    "collares": r"necklace|collar|collares|cadena|crystal|cristal",
-    "pulseras": r"bracelet|pulsera|pulseras|pearl|perla|charm|dije",
-    "aretes": r"earring|arete|aretes|zarcillo|zarcillos",
-    "anillos": r"ring|anillo|anillos",
-    "bisuteria": r"jewel|joya|joyeria|jewelry|bisuter",
-    "ropa": r"streetwear|jacket|chaqueta|fashion|moda|ropa|denim|camiseta|tshirt|apparel|clothing",
-    "zapatos": r"sneaker|zapato|calzado|shoe|shoes",
-    "bolsos": r"bag|bolso|crossbody|cartera",
-    "tecnologia": r"usb|phone|gadget|tech|keyboard|projector|electronics|laptop|gaming|rgb",
-    "automotriz": r"truck|bumper|parachoques|4x4|off-road|auto|car|automotive|camioneta|led-light",
-    "cafe": r"coffee|espresso|brew|latte|cafe|cold-brew",
-    "restaurant": r"restaurant|food|menu|pizza|dish|comida|tacos|salad|dessert|meal",
-    "hogar": r"home|decor|furniture|mueble|hogar|lamp|cocina|organizer",
-    "belleza": r"beauty|skincare|cosmetic|belleza|makeup|spa|jabones",
-    "plantas": r"plant|planta|jardin|garden|maceta",
-    "manualidades": r"craft|handmade|hilo|tela|abalorio|button|boton",
-}
 
 
 STABLE_IMAGE_URLS: List[Dict[str, str]] = [
@@ -122,10 +87,6 @@ STABLE_IMAGE_URLS: List[Dict[str, str]] = [
         "url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
     },
 ]
-
-
-def normalize_image_text(value: Any) -> str:
-    return re.sub(r"\s+", " ", str(value or "").strip().lower())
 
 
 def stable_seed_image_url(keyword: str) -> str:

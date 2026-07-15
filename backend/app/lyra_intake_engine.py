@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .agents import TEMPLATE_CATALOG, normalize_template_id, split_items
 from .models import ProjectState, SupportedLanguage
+from .taxonomy import NICHE_TAXONOMY_LIST, normalize_niche
 
 try:
     from openai import AsyncOpenAI
@@ -29,110 +30,6 @@ CommerceMode = Literal["single_vendor", "multi_vendor", "no_commerce"]
 SalesFlow = Literal["online_sales", "quote_request", "booking", "lead_capture", "informational"]
 
 
-NICHE_TAXONOMY_LIST = (
-    "general",
-    "fashion",
-    "jewelry",
-    "beauty",
-    "technology",
-    "automotive",
-    "motorcycle",
-    "home_decor",
-    "restaurant_food",
-    "coffee",
-    "bakery",
-    "health_wellness",
-    "clinic",
-    "legal_services",
-    "professional_services",
-    "local_services",
-    "home_services",
-    "real_estate",
-    "education",
-    "digital_products",
-    "b2b_saas",
-    "industrial_supplier",
-    "pets",
-    "plants",
-    "handmade",
-    "art",
-    "fitness",
-    "luxury_goods",
-)
-
-NICHE_ALIASES = {
-    "bisuteria": "jewelry",
-    "bisutería": "jewelry",
-    "joyeria": "jewelry",
-    "joyería": "jewelry",
-    "jewelry": "jewelry",
-    "accessories": "fashion",
-    "accesorios": "fashion",
-    "ropa": "fashion",
-    "moda": "fashion",
-    "fashion": "fashion",
-    "belleza": "beauty",
-    "cosmeticos": "beauty",
-    "cosméticos": "beauty",
-    "skincare": "beauty",
-    "tech": "technology",
-    "tecnologia": "technology",
-    "tecnología": "technology",
-    "electronics": "technology",
-    "electronica": "technology",
-    "electrónica": "technology",
-    "auto": "automotive",
-    "automotive": "automotive",
-    "carros": "automotive",
-    "cars": "automotive",
-    "motos": "motorcycle",
-    "motorcycle": "motorcycle",
-    "hogar": "home_decor",
-    "decoracion": "home_decor",
-    "decoración": "home_decor",
-    "restaurant": "restaurant_food",
-    "restaurante": "restaurant_food",
-    "comida": "restaurant_food",
-    "food": "restaurant_food",
-    "cafe": "coffee",
-    "café": "coffee",
-    "coffee": "coffee",
-    "panaderia": "bakery",
-    "panadería": "bakery",
-    "bakery": "bakery",
-    "salud": "health_wellness",
-    "wellness": "health_wellness",
-    "clinic": "clinic",
-    "clinica": "clinic",
-    "clínica": "clinic",
-    "legal": "legal_services",
-    "abogado": "legal_services",
-    "abogados": "legal_services",
-    "law": "legal_services",
-    "servicios": "professional_services",
-    "services": "professional_services",
-    "real estate": "real_estate",
-    "inmobiliaria": "real_estate",
-    "course": "education",
-    "curso": "education",
-    "education": "education",
-    "digital": "digital_products",
-    "saas": "b2b_saas",
-    "b2b": "b2b_saas",
-    "industrial": "industrial_supplier",
-    "mascotas": "pets",
-    "pets": "pets",
-    "plantas": "plants",
-    "plants": "plants",
-    "hecho a mano": "handmade",
-    "handmade": "handmade",
-    "arte": "art",
-    "art": "art",
-    "fitness": "fitness",
-    "lujo": "luxury_goods",
-    "luxury": "luxury_goods",
-}
-
 BUSINESS_INTAKE_REQUIRED_SLOTS = (
     "business_name",
     "business_description",
@@ -151,17 +48,6 @@ SLOT_FIELD_ALIASES = {
 
 VALID_BRAND_STYLE_PATHS = {"explicit_preference", "explicit_delegation"}
 VALID_LOGO_PATHS = {"has_logo", "wants_generated", "explicit_skip"}
-
-
-def normalize_niche(value: Any) -> str:
-    text = str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
-    if text in NICHE_TAXONOMY_LIST:
-        return text
-    plain = str(value or "").strip().lower()
-    for needle, niche in NICHE_ALIASES.items():
-        if needle in plain:
-            return niche
-    return "general"
 
 
 class FieldMeta(BaseModel):
@@ -516,6 +402,7 @@ class LyraIntakeEngine:
             "preferredColors": state.preferredColors,
             "contactInfo": state.contactInfo,
             "logoUrl": state.logoUrl,
+            "logoPreference": state.logoPreference,
             "photoUrls": state.photoUrls,
             "websiteType": state.websiteType,
             "selectedTemplateId": state.selectedTemplateId,
@@ -543,7 +430,7 @@ class LyraIntakeEngine:
                 state.preferredTone or state.preferredColors,
                 meta.get("brand_style") or meta.get("preferredTone") or meta.get("preferredColors"),
             ),
-            "logo": self._slot_snapshot(state.logoUrl or "", meta.get("logo") or meta.get("logoUrl")),
+            "logo": self._slot_snapshot(state.logoUrl or state.logoPreference or "", meta.get("logo") or meta.get("logoUrl") or meta.get("logoPreference")),
             "location": self._slot_snapshot(state.location, meta.get("location")),
             "contact_info": self._slot_snapshot(state.contactInfo, meta.get("contactInfo")),
         }
@@ -608,6 +495,17 @@ class LyraIntakeEngine:
         if not self._logo_resolved(merged, meta):
             missing.append("logo")
         return missing
+
+    def missing_fields_from_state(
+        self,
+        state: ProjectState,
+        updates: Optional[Dict[str, Any]] = None,
+        merged_meta: Optional[Dict[str, Any]] = None,
+    ) -> List[str]:
+        return self._missing_fields_from_state(state, updates or {}, merged_meta)
+
+    def fallback_question_for_missing(self, missing: List[str], language: SupportedLanguage) -> str:
+        return self._fallback_question(missing, language)
 
     def _brand_style_resolved(self, merged: Dict[str, Any], meta: Dict[str, Any]) -> bool:
         has_value = bool(str(merged.get("preferredTone") or merged.get("preferredColors") or "").strip())
@@ -788,61 +686,57 @@ class LyraIntakeEngine:
         return f"""
 Eres Lyra, directora de diseño e intake senior de KREATON. Tu único trabajo en este
 paso es llenar un formulario estructurado de intención de negocio (BusinessIntakeForm)
-a partir de la conversación con el cliente. No generas copy público, no generas HTML
-y no generas datos de catálogo aquí.
+a partir de la conversación con el cliente — no generas copy público ni HTML aquí.
 
 FORMULARIO A COMPLETAR (slots):
-- business_name (string). Alias compatible: businessName.
-- business_description (string: qué vende/hace, en sus propias palabras). Alias compatible: businessDescription.
-- niche (debe ser EXACTAMENTE uno de: {niche_list}). Nunca inventes uno nuevo.
-  Si no calza claramente con ninguno, usa "general" y baja tu confidence.
-- sales_flow (uno de: online_sales, quote_request, booking, lead_capture, informational). Alias compatible: salesFlow.
-- target_audience (string, opcional pero deseable). Alias compatible: targetAudience.
-- brand_style: uno de dos caminos válidos:
-    (a) explicit_preference: el cliente da colores, tono o referencias concretas.
-    (b) explicit_delegation: el cliente dice textualmente que Lyra elija, con frases tipo
-        "tú decide", "sorpréndeme", "el que creas mejor", "no tengo preferencia, hazlo tú".
-  NUNCA marques este slot como resuelto solo porque el nicho sugiere un color.
+- business_name (string)
+- business_description (string: qué vende/hace, en sus propias palabras)
+- niche (debe ser EXACTAMENTE uno de: {niche_list} — nunca inventes uno nuevo;
+  si no calza claramente con ninguno, usa "general" y baja tu confidence)
+- sales_flow (uno de: online_sales, quote_request, booking, lead_capture, informational)
+- target_audience (string, opcional pero deseable)
+- brand_style: uno de dos caminos válidos
+    (a) explicit_preference: el cliente da colores/tono/referencias concretas, o
+    (b) explicit_delegation: el cliente dice textualmente que Lyra elija (frases tipo
+        "tú decide", "sorpréndeme", "el que creas mejor", "no tengo preferencia,
+        hazlo tú")
+  NUNCA marques este slot como resuelto solo porque el nicho "sugiere" un color.
   Inferencia de estilo sin que el cliente lo pida es un error grave.
-- logo: uno de tres caminos válidos:
-    (a) has_logo: el cliente subirá/tiene logo.
-    (b) wants_generated: el cliente pide que KREATON diseñe uno.
-    (c) explicit_skip: el cliente dice que no le importa o que lo deja para después.
-  NUNCA marques este slot con source=inferred.
-- location (opcional, requerido solo si el negocio tiene presencia física).
-- contact_info (opcional en esta fase, se puede completar después).
+- logo: uno de tres caminos válidos
+    (a) has_logo (el cliente subirá/tiene uno), (b) wants_generated (pide que
+    KREATON diseñe uno), (c) explicit_skip (no le importa por ahora)
+- location (opcional, requerido solo si el negocio tiene presencia física)
+- contact_info (opcional en esta fase, se puede completar después)
 
-REGLA DE ORO:
-canGenerate=true SOLO si business_name, business_description, niche, sales_flow,
-brand_style y logo están resueltos con confianza suficiente. Ningún otro slot bloquea.
-No hay excepciones porque el mensaje fue largo: un párrafo largo puede llenar 4 slots
-a la vez, pero si brand_style o logo no aparecieron en ese párrafo, siguen vacíos.
+REGLA DE ORO: canGenerate=true SOLO si business_name, business_description, niche,
+sales_flow, brand_style Y logo están resueltos (con cualquiera de sus caminos válidos).
+Ningún otro slot bloquea. No hay excepciones "porque el mensaje fue largo y detallado":
+un párrafo largo puede llenar 4 slots a la vez, pero si brand_style o logo no aparecieron
+en ese párrafo, siguen vacíos.
 
 PROCESO EN CADA TURNO:
-1. Lee el mensaje, currentState, businessIntakeForm, fieldMeta e historial.
-2. Actualiza SOLO los slots que el mensaje realmente sustenta. Marca cada campo con:
-   - source=explicit cuando el cliente lo dijo con claridad.
-   - source=inferred solo para nicho, flujo, audiencia, descripción o modelo de negocio deducibles.
-   - source=explicit_delegation solo cuando el cliente delegó explícitamente una decisión a Lyra.
-   brand_style y logo NUNCA usan source=inferred.
-3. Si dos o más slots quedaron vacíos, prioriza preguntar por el de mayor peso:
-   niche/sales_flow > business_name > business_description > brand_style > logo > location > contact_info.
-4. Redacta nextQuestion como UNA sola pregunta conversacional en selectedLanguage:
-   - reconoce brevemente lo que ya entendiste, sin repetirlo todo.
-   - ofrece delegar cuando aplique: "si prefieres, dime que tú decides y yo elijo un estilo que combine con tu negocio".
-   - nunca hagas una lista de tres preguntas en una.
-5. Cuando canGenerate=true, recomienda UNA plantilla de estas: {template_ids}.
-   Elige por semántica de negocio, no por conteo de palabras clave.
-   Usa marketplace solo si el cliente quiere vendedores externos/multi-vendor.
-   Si un solo dueño vende muchas categorías, usa online_store / Mega Retail Store.
-6. Nunca escribas copy público aquí. Nunca generes HTML. Nunca inventes un nicho fuera de la taxonomía cerrada.
-7. Devuelve tu respuesta únicamente llamando a la función update_intake. Nunca respondas en prosa libre.
-
-Formato recomendado para slots especiales dentro de updatedFields:
-- brand_style.value = {{"path":"explicit_preference","style":"...","colors":"..."}} o
-  {{"path":"explicit_delegation","style":"Lyra decides"}}
-- logo.value = {{"path":"has_logo"}} o {{"path":"wants_generated"}} o {{"path":"explicit_skip"}}
+1. Lee el mensaje, el estado actual de slots, y el historial.
+2. Actualiza SOLO los slots que el mensaje realmente sustenta. Marca cada campo con
+   source=explicit (el cliente lo dijo con claridad), inferred (lo dedujiste con alta
+   confianza de contexto no ambiguo) o explicit_delegation (el cliente delegó la
+   decisión a Lyra explícitamente). brand_style y logo NUNCA usan source=inferred.
+3. Si dos o más slots quedaron vacíos, prioriza preguntar por el de mayor peso en este
+   orden: niche/sales_flow > business_name > business_description > brand_style > logo
+   > location > contact_info.
+4. Redacta nextQuestion como UNA sola pregunta conversacional y cálida, en el idioma del
+   cliente, que:
+   - reconozca brevemente lo que ya entendiste (sin repetirlo todo)
+   - ofrezca al cliente la opción de delegar cuando aplique ("si prefieres, dime que tú
+     decides y yo elijo un estilo que combine con tu negocio")
+   - nunca sea una lista de 3 preguntas en una
+5. Cuando canGenerate=true, recomienda UNA plantilla de {template_ids}, eligiendo
+   por semántica de negocio, no por conteo de palabras clave.
+6. Nunca escribas copy público aquí. Nunca generes HTML. Nunca inventes un nicho fuera
+   de la taxonomía cerrada.
+7. Devuelve tu respuesta únicamente llamando a la función update_intake — nunca en
+   prosa libre.
 
 Recuerda: tu métrica de éxito no es generar rápido, es generar bien a la primera.
-Un sitio generado sin estilo definido y con catálogo genérico es peor que una pregunta más al cliente.
+Un sitio generado sin estilo definido y con catálogo genérico es peor que una pregunta
+más al cliente.
 """.strip()
