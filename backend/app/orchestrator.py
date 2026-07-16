@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Dict
+from types import UnionType
+from typing import Any, Dict, Literal, Union, get_args, get_origin
 
 from pydantic import ValidationError
 
@@ -20,38 +21,65 @@ from .models import AgentResult, ProjectState
 from .state_manager import StateManager
 
 
+def _annotation_contains_literal(annotation: Any) -> bool:
+    origin = get_origin(annotation)
+    if origin is Literal:
+        return True
+    if origin in (Union, UnionType):
+        return any(_annotation_contains_literal(arg) for arg in get_args(annotation))
+    return False
+
+
+PROJECT_STATE_LITERAL_FIELDS = {
+    name
+    for name, field in ProjectState.model_fields.items()
+    if _annotation_contains_literal(field.annotation)
+}
+
+
+def _sanitize_project_state_payload(values: Dict[str, Any]) -> Dict[str, Any]:
+    cleaned = dict(values)
+    for field_name in PROJECT_STATE_LITERAL_FIELDS:
+        value = cleaned.get(field_name)
+        if isinstance(value, str) and not value.strip():
+            cleaned[field_name] = None
+
+    cleaned["selectedLanguage"] = cleaned.get("selectedLanguage") or "en"
+    return cleaned
+
+
 def normalize_state_payload(payload: Dict[str, Any] | None) -> ProjectState:
     payload = payload or {}
     preferred_colors = payload.get("preferredColors") or payload.get("preferred_colors")
     if isinstance(preferred_colors, list):
         preferred_colors = ", ".join(str(item).strip() for item in preferred_colors if str(item).strip())
-    return ProjectState(
-        businessName=payload.get("businessName") or payload.get("business_name"),
-        businessDescription=payload.get("businessDescription") or payload.get("business_description"),
-        industry=payload.get("industry"),
-        location=payload.get("location"),
-        servicesProducts=split_items(payload.get("servicesProducts") or payload.get("services_products")),
-        targetAudience=payload.get("targetAudience") or payload.get("target_audience"),
-        preferredTone=payload.get("preferredTone") or payload.get("preferred_tone"),
-        preferredColors=preferred_colors,
-        contactInfo=payload.get("contactInfo") if isinstance(payload.get("contactInfo"), dict) else {},
-        logoUrl=payload.get("logoUrl"),
-        logoPreference=payload.get("logoPreference") or payload.get("logo_preference"),
-        photoUrls=payload.get("photoUrls") or [],
-        selectedLanguage=payload.get("selectedLanguage") or "en",
-        websiteIntent=payload.get("websiteIntent") or payload.get("website_intent"),
-        websiteType=payload.get("websiteType"),
-        selectedTemplateId=payload.get("selectedTemplateId") or payload.get("selected_template_id"),
-        selectedTemplateName=payload.get("selectedTemplateName"),
-        catalogType=payload.get("catalogType"),
-        salesFlow=payload.get("salesFlow"),
-        colors=payload.get("colors") or {},
-        typography=payload.get("typography") or {},
-        generatedCopy=payload.get("generatedCopy") or {},
-        catalogItems=payload.get("catalogItems") or [],
-        catalogSource=payload.get("catalogSource") or payload.get("catalog_source"),
-        fieldMeta=payload.get("fieldMeta") if isinstance(payload.get("fieldMeta"), dict) else {},
-    )
+    return ProjectState(**_sanitize_project_state_payload({
+        "businessName": payload.get("businessName") or payload.get("business_name"),
+        "businessDescription": payload.get("businessDescription") or payload.get("business_description"),
+        "industry": payload.get("industry"),
+        "location": payload.get("location"),
+        "servicesProducts": split_items(payload.get("servicesProducts") or payload.get("services_products")),
+        "targetAudience": payload.get("targetAudience") or payload.get("target_audience"),
+        "preferredTone": payload.get("preferredTone") or payload.get("preferred_tone"),
+        "preferredColors": preferred_colors,
+        "contactInfo": payload.get("contactInfo") if isinstance(payload.get("contactInfo"), dict) else {},
+        "logoUrl": payload.get("logoUrl"),
+        "logoPreference": payload.get("logoPreference") or payload.get("logo_preference"),
+        "photoUrls": payload.get("photoUrls") or [],
+        "selectedLanguage": payload.get("selectedLanguage"),
+        "websiteIntent": payload.get("websiteIntent") or payload.get("website_intent"),
+        "websiteType": payload.get("websiteType"),
+        "selectedTemplateId": payload.get("selectedTemplateId") or payload.get("selected_template_id"),
+        "selectedTemplateName": payload.get("selectedTemplateName"),
+        "catalogType": payload.get("catalogType"),
+        "salesFlow": payload.get("salesFlow"),
+        "colors": payload.get("colors") or {},
+        "typography": payload.get("typography") or {},
+        "generatedCopy": payload.get("generatedCopy") or {},
+        "catalogItems": payload.get("catalogItems") or [],
+        "catalogSource": payload.get("catalogSource") or payload.get("catalog_source"),
+        "fieldMeta": payload.get("fieldMeta") if isinstance(payload.get("fieldMeta"), dict) else {},
+    }))
 
 
 class LyraOrchestrator:
