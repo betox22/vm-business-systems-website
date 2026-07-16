@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any, Dict, List, Literal, Optional
 
@@ -9,6 +10,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from .agents import TEMPLATE_CATALOG, normalize_template_id, split_items
 from .models import ProjectState, SupportedLanguage
 from .taxonomy import NICHE_TAXONOMY_LIST, normalize_niche
+
+logger = logging.getLogger("kreaton")
 
 try:
     from openai import AsyncOpenAI
@@ -225,6 +228,7 @@ class LyraIntakeEngine:
             decision.usedAI = True
             return decision
         except Exception as error:
+            logger.error("LyraIntakeEngine failed: %s", error, exc_info=True)
             return self._local_error_decision(state, selected_language, str(error))
 
     def apply_decision(self, state: ProjectState, decision: LyraIntakeDecision) -> ProjectState:
