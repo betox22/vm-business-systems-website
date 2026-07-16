@@ -156,6 +156,7 @@ class WebsiteGenerationRequest(BaseModel):
     selected_template_id: Optional[str] = None
     sales_flow: Optional[str] = None
     salesFlow: Optional[str] = None
+    fieldMeta: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     designStrategy: Dict[str, Any] = Field(default_factory=dict)
 
 

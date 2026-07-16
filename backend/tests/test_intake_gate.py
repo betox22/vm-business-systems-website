@@ -31,6 +31,10 @@ class IntakeGateTests(unittest.TestCase):
             industry="beauty",
             salesFlow="online_sales",
             selectedLanguage="es",
+            fieldMeta={
+                "sales_flow": {"source": "ai_recommended", "confidence": 0.9},
+                "salesFlow": {"source": "ai_recommended", "confidence": 0.9},
+            },
         )
 
         decision = engine._decision_from_tool_payload(_base_payload(), state)
@@ -47,6 +51,10 @@ class IntakeGateTests(unittest.TestCase):
             industry="beauty",
             salesFlow="online_sales",
             selectedLanguage="es",
+            fieldMeta={
+                "sales_flow": {"source": "ai_recommended", "confidence": 0.9},
+                "salesFlow": {"source": "ai_recommended", "confidence": 0.9},
+            },
         )
         payload = _base_payload()
         payload["updatedFields"] = {
@@ -66,6 +74,30 @@ class IntakeGateTests(unittest.TestCase):
 
         self.assertTrue(decision.canGenerate)
         self.assertEqual(decision.missingCriticalFields, [])
+
+    def test_low_confidence_regex_sales_flow_still_blocks_generation(self) -> None:
+        engine = LyraIntakeEngine()
+        state = ProjectState(
+            businessName="Bath All Day",
+            businessDescription="Vendo catalogo de jabones y velas.",
+            industry="beauty",
+            salesFlow="online_sales",
+            selectedLanguage="es",
+            preferredTone="verde y blanco, minimalista",
+            logoPreference="generate_ai_logo",
+            fieldMeta={
+                "sales_flow": {"source": "inferred", "confidence": 0.5},
+                "salesFlow": {"source": "inferred", "confidence": 0.5},
+                "brand_style": {"source": "explicit", "confidence": 1},
+                "preferredTone": {"source": "explicit", "confidence": 1},
+                "logo": {"source": "explicit", "confidence": 1},
+                "logoPreference": {"source": "explicit", "confidence": 1},
+            },
+        )
+
+        missing = engine.missing_fields_from_state(state)
+
+        self.assertIn("sales_flow", missing)
 
 
 if __name__ == "__main__":

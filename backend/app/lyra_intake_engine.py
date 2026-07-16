@@ -16,7 +16,14 @@ except Exception:  # pragma: no cover - dependency may be absent in local dev
     AsyncOpenAI = None  # type: ignore[assignment]
 
 
-FieldSource = Literal["explicit", "inferred", "default", "explicit_delegation"]
+FieldSource = Literal[
+    "explicit",
+    "inferred",
+    "default",
+    "explicit_delegation",
+    "ai_recommended",
+    "explicit_user_choice",
+]
 BusinessModel = Literal[
     "online_store",
     "marketplace",
@@ -48,6 +55,7 @@ SLOT_FIELD_ALIASES = {
 
 VALID_BRAND_STYLE_PATHS = {"explicit_preference", "explicit_delegation"}
 VALID_LOGO_PATHS = {"has_logo", "wants_generated", "explicit_skip"}
+VALID_SALES_FLOWS = {"online_sales", "quote_request", "booking", "lead_capture", "informational"}
 
 
 class FieldMeta(BaseModel):
@@ -221,18 +229,33 @@ class LyraIntakeEngine:
 
     def apply_decision(self, state: ProjectState, decision: LyraIntakeDecision) -> ProjectState:
         updates = dict(decision.updatedState)
+        ai_confidence = max(decision.detectedIntent.confidence or 0.0, 0.75)
         recommendation = decision.templateRecommendation
         if recommendation and recommendation.templateId:
             template = TEMPLATE_CATALOG.get(recommendation.templateId)
             if template:
-                updates.setdefault("selectedTemplateId", recommendation.templateId)
-                updates.setdefault("selectedTemplateName", template["name"])
-                updates.setdefault("catalogType", template["catalogType"])
-                updates.setdefault("websiteType", template["websiteType"])
+                can_replace_template = self._can_replace_ai_derived(state, "selectedTemplateId")
+                if can_replace_template:
+                    updates["selectedTemplateId"] = recommendation.templateId
+                    decision.fieldMeta["selectedTemplateId"] = FieldMeta(source="ai_recommended", confidence=ai_confidence)
+                if can_replace_template and self._can_replace_ai_derived(state, "selectedTemplateName"):
+                    updates["selectedTemplateName"] = template["name"]
+                    decision.fieldMeta["selectedTemplateName"] = FieldMeta(source="ai_recommended", confidence=ai_confidence)
+                if can_replace_template and self._can_replace_ai_derived(state, "catalogType"):
+                    updates["catalogType"] = template["catalogType"]
+                    decision.fieldMeta["catalogType"] = FieldMeta(source="ai_recommended", confidence=ai_confidence)
+                if can_replace_template and self._can_replace_ai_derived(state, "websiteType"):
+                    updates["websiteType"] = template["websiteType"]
+                    decision.fieldMeta["websiteType"] = FieldMeta(source="ai_recommended", confidence=ai_confidence)
 
         intent = decision.detectedIntent
-        updates.setdefault("salesFlow", intent.salesFlow)
-        updates.setdefault("websiteType", BUSINESS_MODEL_TO_WEBSITE_TYPE.get(intent.businessModel))
+        if self._can_replace_ai_derived(state, "salesFlow"):
+            updates["salesFlow"] = intent.salesFlow
+            decision.fieldMeta["salesFlow"] = FieldMeta(source="ai_recommended", confidence=ai_confidence)
+            decision.fieldMeta["sales_flow"] = FieldMeta(source="ai_recommended", confidence=ai_confidence)
+        if self._can_replace_ai_derived(state, "websiteType") and not updates.get("websiteType"):
+            updates["websiteType"] = BUSINESS_MODEL_TO_WEBSITE_TYPE.get(intent.businessModel)
+            decision.fieldMeta["websiteType"] = FieldMeta(source="ai_recommended", confidence=ai_confidence)
         updates["missingImportantFields"] = decision.missingCriticalFields
 
         state.update_safe(self._normalize_updates(updates))
@@ -241,6 +264,16 @@ class LyraIntakeEngine:
             existing_meta[key] = meta.model_dump()
         state.fieldMeta = existing_meta
         return state
+
+    @staticmethod
+    def _meta_source(state: ProjectState, key: str) -> str:
+        raw = (state.fieldMeta or {}).get(key)
+        if not isinstance(raw, dict):
+            return ""
+        return str(raw.get("source") or "")
+
+    def _can_replace_ai_derived(self, state: ProjectState, key: str) -> bool:
+        return self._meta_source(state, key) != "explicit_user_choice"
 
     def _decision_from_tool_payload(self, payload: Dict[str, Any], state: ProjectState) -> LyraIntakeDecision:
         tracked_fields = payload.get("updatedFields") if isinstance(payload.get("updatedFields"), dict) else {}
@@ -485,8 +518,7 @@ class LyraIntakeEngine:
         if niche == "general" and not self._has_confident_meta(meta, "niche", min_confidence=0.7):
             missing.append("niche")
 
-        sales_flow = str(merged.get("salesFlow") or "").strip()
-        if sales_flow not in {"online_sales", "quote_request", "booking", "lead_capture", "informational"}:
+        if not self._sales_flow_resolved(merged, meta):
             missing.append("sales_flow")
 
         if not self._brand_style_resolved(merged, meta):
@@ -517,6 +549,16 @@ class LyraIntakeEngine:
         ):
             return True
         return False
+
+    def _sales_flow_resolved(self, merged: Dict[str, Any], meta: Dict[str, Any]) -> bool:
+        sales_flow = str(merged.get("salesFlow") or "").strip()
+        if sales_flow not in VALID_SALES_FLOWS:
+            return False
+        sources = {"explicit", "explicit_delegation", "ai_recommended"}
+        return (
+            self._has_confident_meta(meta, "sales_flow", sources=sources, min_confidence=0.7)
+            or self._has_confident_meta(meta, "salesFlow", sources=sources, min_confidence=0.7)
+        )
 
     def _logo_resolved(self, merged: Dict[str, Any], meta: Dict[str, Any]) -> bool:
         if str(merged.get("logoUrl") or "").strip():

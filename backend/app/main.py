@@ -4,7 +4,7 @@ import uuid
 import re
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -140,14 +140,22 @@ def _has_form_value(value: Any) -> bool:
     return bool(str(value or "").strip())
 
 
-def _explicit_meta(source: str = "explicit") -> Dict[str, Any]:
-    return {"source": source, "confidence": 1.0}
+def _explicit_meta(source: str = "explicit", confidence: float = 1.0) -> Dict[str, Any]:
+    return {"source": source, "confidence": confidence}
+
+
+def _inferred_meta(confidence: float = 0.5) -> Dict[str, Any]:
+    return _explicit_meta("inferred", confidence)
 
 
 def build_generation_field_meta(request: WebsiteGenerationRequest) -> Dict[str, Dict[str, Any]]:
     """Treat structured form fields as explicit evidence for the intake gate."""
 
-    meta: Dict[str, Dict[str, Any]] = {}
+    meta: Dict[str, Dict[str, Any]] = {
+        key: value
+        for key, value in (request.fieldMeta or {}).items()
+        if isinstance(value, dict)
+    }
     preferred_tone = request.preferredTone or request.preferred_tone or request.brandStyle
     preferred_colors = request.preferredColors or request.preferred_colors
     logo_preference = request.logoPreference
@@ -183,19 +191,24 @@ def infer_generation_industry(request: WebsiteGenerationRequest) -> str:
     return "" if profile == "default" else profile
 
 
-def infer_generation_sales_flow(request: WebsiteGenerationRequest) -> str:
+def infer_generation_sales_flow_with_meta(request: WebsiteGenerationRequest) -> tuple[str, Optional[Dict[str, Any]]]:
     explicit = request.salesFlow or request.sales_flow or request.designStrategy.get("salesFlow") or request.designStrategy.get("salesMode")
     if _has_form_value(explicit):
-        return str(explicit)
+        return str(explicit), _explicit_meta()
 
     text = _generation_context_text(request).lower()
     if re.search(r"\b(reserva|reservas|booking|cita|citas|appointment)\b", text):
-        return "booking"
+        return "booking", _inferred_meta()
     if re.search(r"\b(cotiza|cotizacion|cotización|quote|presupuesto)\b", text):
-        return "quote_request"
+        return "quote_request", _inferred_meta()
     if re.search(r"\b(vendo|vender|venta|ventas|tienda|shop|store|online|comprar|producto|productos|catalogo|catálogo)\b", text):
-        return "online_sales"
-    return ""
+        return "online_sales", _inferred_meta()
+    return "", None
+
+
+def infer_generation_sales_flow(request: WebsiteGenerationRequest) -> str:
+    sales_flow, _meta = infer_generation_sales_flow_with_meta(request)
+    return sales_flow
 
 app = FastAPI(title="KREATON LYRA API", version="0.1.0")
 
@@ -436,6 +449,12 @@ async def luma_edit(request: LyraEditRequest) -> LyraEditResponse:
 async def website_builder(request: WebsiteGenerationRequest) -> WebsiteGenerationResponse:
     payload = request.model_dump()
     field_meta = build_generation_field_meta(request)
+    sales_flow, sales_flow_meta = infer_generation_sales_flow_with_meta(request)
+    if sales_flow_meta:
+        existing_sales_meta = field_meta.get("salesFlow") or field_meta.get("sales_flow")
+        normalized_sales_meta = existing_sales_meta if isinstance(existing_sales_meta, dict) else sales_flow_meta
+        field_meta["salesFlow"] = normalized_sales_meta
+        field_meta["sales_flow"] = normalized_sales_meta
     state = normalize_state_payload({
         "businessName": request.businessName or request.business_name,
         "businessDescription": request.businessDescription or request.business_description,
@@ -451,7 +470,7 @@ async def website_builder(request: WebsiteGenerationRequest) -> WebsiteGeneratio
         "photoUrls": request.photoUrls,
         "selectedLanguage": request.selectedLanguage,
         "selectedTemplateId": request.selected_template_id or request.designStrategy.get("selectedTemplateId"),
-        "salesFlow": infer_generation_sales_flow(request),
+        "salesFlow": sales_flow,
         "fieldMeta": field_meta,
     })
     missing_fields = intake_engine.missing_fields_from_state(state, {}, field_meta)

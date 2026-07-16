@@ -567,6 +567,7 @@ let clientWorkspaceIdleTimer = null;
 let clientWorkspaceUnlocked = false;
 let guidedState = createEmptyGuidedState();
 let pendingServerIntakeGate = null;
+const CLIENT_INTAKE_AUTOSAVE_DELAY_MS = 3200;
 
 function createEmptyGuidedState(language = selectedLanguage) {
   return {
@@ -589,8 +590,10 @@ function createEmptyGuidedState(language = selectedLanguage) {
     hasLogo: false,
     hasPhotos: false,
     salesMode: "",
+    salesFlow: "",
     hasLogoPhotos: "",
     aiGeneratedLogoRequested: false,
+    logoPreference: "",
     sectionsPreference: "",
     desiredDomain: "",
     revisionMode: "",
@@ -3092,7 +3095,7 @@ function syncClientIntakeSession({ immediate = false, reason = "autosave" } = {}
   if (immediate) {
     run();
   } else {
-    clientIntakeSyncTimer = setTimeout(run, 900);
+    clientIntakeSyncTimer = setTimeout(run, CLIENT_INTAKE_AUTOSAVE_DELAY_MS);
   }
 }
 
@@ -4577,9 +4580,16 @@ function updateAssetPromptVisibility() {
   guidedAssetPrompt?.classList.toggle("active", shouldShowAssetPrompt());
 }
 
-function wantsAiGeneratedLogo(value) {
+function wantsAiGeneratedLogo(value, options = {}) {
   const text = String(value || "").toLowerCase();
-  return /no tengo logo|sin logo|crea(?:r)?(?:me)?(?: un)? logo|crear(?: un)? logo|generate(?: a)? logo|make(?: a)? logo|haz(?:me)?(?: un)? logo|diseñ(?:a|ar)(?: un)? logo|disena(?:r)?(?: un)? logo/.test(text);
+  const logoContext = options.assumeLogoContext || /logo|brand mark|marca visual|identidad visual|brand identity/.test(text);
+  const directCreateRequest = /no tengo logo|sin logo|crea(?:r)?(?:me)?(?: un)? logo|crear(?: un)? logo|generate(?: a)? logo|make(?: a)? logo|haz(?:me)?(?: un)? logo|diseñ(?:a|ar)(?: un)? logo|disena(?:r)?(?: un)? logo|gen[eé]rame(?: un)? logo/.test(text);
+  const delegatedCreation = /(?:lyra|ia|ai|tu|t[uú]|you)\s+(?:decide|elige|choose|hazlo|create it)|(?:decide|elige|hazlo|crealo|créalo|generalo|gen[eé]ralo)\s+(?:tu|t[uú]|lyra|ia|ai|you)|sorpr[eé]ndeme|surprise me|you decide/.test(text);
+  return directCreateRequest || (logoContext && delegatedCreation);
+}
+
+function logoPreferenceFromText(value, options = {}) {
+  return wantsAiGeneratedLogo(value, options) ? "generate_ai_logo" : "";
 }
 
 function wantsToUploadAssets(value) {
@@ -5448,6 +5458,9 @@ function normalizeGuidedStateBeforeGenerate() {
     : arrayValue(guidedState.logoPalette).length
       ? arrayValue(guidedState.logoPalette)
       : [t("letAiDecide")];
+  if (guidedState.aiGeneratedLogoRequested && !guidedState.logoPreference) {
+    guidedState.logoPreference = "generate_ai_logo";
+  }
   guidedState.contactInfo = guidedState.contactInfo || {};
   guidedState.salesMode = guidedState.salesMode || t("letAiDecide");
   if (!guidedState.industry || guidedState.industry === t("generalBusiness")) {
@@ -5543,6 +5556,7 @@ function applyGuidedStateToForm() {
   setInputValue("contact_info", contactInfoToLines(guidedState.contactInfo));
   setInputValue("desired_domain", guidedState.desiredDomain);
   setInputValue("logo_url", guidedState.logoUrl);
+  setInputValue("logo_preference", guidedState.logoPreference || (guidedState.aiGeneratedLogoRequested ? "generate_ai_logo" : ""));
   setInputValue("photo_urls", arrayValue(guidedState.photoUrls).join("\n"));
 }
 
@@ -6060,7 +6074,9 @@ function mergeGuidedUpdates(updates) {
   Object.entries(updates).forEach(([key, value]) => {
     if (!(key in guidedState)) return;
     if (key === "businessName" && isInvalidBusinessNameUpdate(value)) return;
-    if (key === "contactInfo") {
+    if (key === "fieldMeta") {
+      guidedState.fieldMeta = { ...(guidedState.fieldMeta || {}), ...(value || {}) };
+    } else if (key === "contactInfo") {
       guidedState.contactInfo = { ...guidedState.contactInfo, ...(value || {}) };
     } else if (key === "servicesProducts") {
       const incoming = meaningfulOfferItems(value);
@@ -6091,6 +6107,12 @@ function guidedStateForApi() {
   const aiStudioPlan = refreshAiStudioPlanFromContext();
   const sitePlan = guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan() : null);
   if (sitePlan && aiStudioPlan) sitePlan.aiStudioPlan = aiStudioPlan;
+  const logoPreference = guidedState.logoPreference || (guidedState.aiGeneratedLogoRequested ? "generate_ai_logo" : "");
+  const fieldMeta = { ...(guidedState.fieldMeta || {}) };
+  if (logoPreference) {
+    fieldMeta.logo = fieldMeta.logo || { source: "explicit", confidence: 1 };
+    fieldMeta.logoPreference = fieldMeta.logoPreference || { source: "explicit", confidence: 1 };
+  }
   const payload = {
     websiteIntent: guidedState.websiteIntent,
     businessName: guidedState.businessName,
@@ -6107,7 +6129,9 @@ function guidedStateForApi() {
     photoUrls,
     videoUrls,
     logoPalette: arrayValue(guidedState.logoPalette),
-    fieldMeta: guidedState.fieldMeta || {},
+    logoPreference,
+    salesFlow: guidedState.salesFlow || "",
+    fieldMeta,
     brand: normalizeBrand(guidedState.brand || { logoUrl, extractedColors: arrayValue(guidedState.logoPalette) }),
     designStrategy: {
       ...createDesignStrategy({
@@ -6117,7 +6141,7 @@ function guidedStateForApi() {
         industry: guidedState.industry,
         target_audience: guidedState.targetAudience,
         preferred_tone: guidedState.preferredTone,
-        salesMode: guidedState.salesMode,
+        salesMode: guidedState.salesFlow || guidedState.salesMode,
       }),
       ...(guidedState.designStrategy || {}),
       aiStudioPlan,
@@ -6126,7 +6150,7 @@ function guidedStateForApi() {
     selectedLanguage,
     hasLogo: Boolean(guidedState.hasLogo || guidedState.logoUrl),
     hasPhotos: Boolean(guidedState.hasPhotos || arrayValue(guidedState.photoUrls).length || arrayValue(guidedState.videoUrls).length),
-    salesMode: guidedState.salesMode,
+    salesMode: guidedState.salesFlow || guidedState.salesMode,
     hasLogoPhotos: guidedState.hasLogoPhotos,
     sectionsPreference: guidedState.sectionsPreference,
     aiStudioPlan,
@@ -6159,6 +6183,12 @@ function guidedStateForApi() {
 
 function guidedSessionDraftForApi() {
   const logoUrl = isCloudSafeUrl(guidedState.logoUrl) ? guidedState.logoUrl : "";
+  const logoPreference = guidedState.logoPreference || (guidedState.aiGeneratedLogoRequested ? "generate_ai_logo" : "");
+  const fieldMeta = { ...(guidedState.fieldMeta || {}) };
+  if (logoPreference) {
+    fieldMeta.logo = fieldMeta.logo || { source: "explicit", confidence: 1 };
+    fieldMeta.logoPreference = fieldMeta.logoPreference || { source: "explicit", confidence: 1 };
+  }
   return sanitizeClientSessionDraft({
     websiteIntent: guidedState.websiteIntent,
     businessName: guidedState.businessName,
@@ -6175,7 +6205,8 @@ function guidedSessionDraftForApi() {
     photoUrls: arrayValue(guidedState.photoUrls).filter(isCloudSafeUrl),
     videoUrls: arrayValue(guidedState.videoUrls).filter(isCloudSafeUrl),
     logoPalette: arrayValue(guidedState.logoPalette),
-    fieldMeta: guidedState.fieldMeta || {},
+    logoPreference,
+    fieldMeta,
     selectedLanguage,
     hasLogo: Boolean(guidedState.hasLogo || guidedState.logoUrl),
     hasPhotos: Boolean(guidedState.hasPhotos || arrayValue(guidedState.photoUrls).length || arrayValue(guidedState.videoUrls).length),
@@ -6226,6 +6257,7 @@ function sanitizeClientSessionDraft(raw = {}) {
     hasPhotos: Boolean(source.hasPhotos || cleanList(source.photoUrls).length || cleanList(source.videoUrls).length),
     salesMode: trimmed(source.salesMode, 160),
     hasLogoPhotos: trimmed(source.hasLogoPhotos, 180),
+    logoPreference: trimmed(source.logoPreference, 180),
     sectionsPreference: trimmed(source.sectionsPreference, 600),
     selectedTemplateId: trimmed(source.selectedTemplateId, 180),
     selectedTemplateName: trimmed(source.selectedTemplateName, 180),
@@ -6445,7 +6477,7 @@ function isGuidedStepAnswered(step) {
   if (step === "contactInfo") return Object.keys(guidedState.contactInfo || {}).length > 0;
   if (step === "salesMode") return Boolean(guidedState.salesMode);
   if (step === "hasLogoPhotos") {
-    return Boolean(guidedState.hasLogoPhotos || guidedState.hasLogo || guidedState.hasPhotos || guidedState.aiGeneratedLogoRequested);
+    return Boolean(guidedState.hasLogoPhotos || guidedState.hasLogo || guidedState.hasPhotos || guidedState.aiGeneratedLogoRequested || guidedState.logoPreference);
   }
   if (step === "desiredDomain") return Boolean(guidedState.desiredDomain);
   return false;
@@ -6509,6 +6541,7 @@ function completeGuidedBriefFromMessage(message, pendingUpdates = {}) {
 
   if (wantsAiGeneratedLogo(text)) {
     updates.aiGeneratedLogoRequested = true;
+    updates.logoPreference = "generate_ai_logo";
     updates.hasLogoPhotos = langText({
       en: "Client has no logo and wants LYRA to create a simple brand mark from the business name and style.",
       es: "El cliente no tiene logo y quiere que LYRA cree una marca simple con el nombre y el estilo.",
@@ -6530,6 +6563,13 @@ function inferGuidedUpdates(step, message) {
   if (step === "servicesProducts") return { servicesProducts: splitCommaOrLines(message) };
   if (step === "preferredColors") return { preferredColors: splitCommaOrLines(message) };
   if (step === "contactInfo") return { contactInfo: parseKeyValueLines(message.includes(":") ? message : `notes: ${message}`) };
+  if (step === "hasLogoPhotos" && wantsAiGeneratedLogo(message, { assumeLogoContext: true })) {
+    return {
+      hasLogoPhotos: message,
+      aiGeneratedLogoRequested: true,
+      logoPreference: "generate_ai_logo",
+    };
+  }
   if (step === "businessName" && isRichIntakeMessage(message) && !extractBusinessName(message)) {
     return {};
   }
@@ -6599,8 +6639,9 @@ function inferGuidedUpdatesFromAnyMessage(message) {
   if (salesMode && !guidedState.salesMode) updates.salesMode = salesMode;
 
   if (/logo|foto|fotos|imagen|imagenes|photo|photos|image|images/.test(lower) && !guidedState.hasLogoPhotos) {
-    const wantsGeneratedLogo = wantsAiGeneratedLogo(text);
+    const wantsGeneratedLogo = wantsAiGeneratedLogo(text, { assumeLogoContext: true });
     if (wantsGeneratedLogo) updates.aiGeneratedLogoRequested = true;
+    if (wantsGeneratedLogo) updates.logoPreference = "generate_ai_logo";
     updates.hasLogoPhotos = wantsGeneratedLogo
       ? langText({
           en: "Client has no logo and wants LYRA to create a simple brand mark from the business name and style.",
@@ -6892,7 +6933,10 @@ function handleServerNeedsMoreInfo(result = {}) {
   }
   const message = pendingServerIntakeGate.next_question || t("reviewGenerate");
   statusText.textContent = message;
-  if (isPublicClientSetup) guidedStatusText.textContent = message;
+  if (isPublicClientSetup) {
+    guidedStatusText.textContent = message;
+    appendChatMessage("assistant", message, "alert");
+  }
   builderAvatarManager?.setState("speaking", { source: "server-needs-more-info" });
 }
 
@@ -13300,8 +13344,22 @@ async function collectPayload() {
   const preferredToneValue = data.get("preferred_tone")?.toString().trim()
     || (intakeFollowupField === "brand_style" ? intakeFollowupAnswer : "");
   const preferredColorsValue = splitCommaOrLines(data.get("preferred_colors")?.toString() || "");
-  const logoPreferenceValue = data.get("logo_preference")?.toString().trim()
+  const rawLogoPreferenceValue = data.get("logo_preference")?.toString().trim()
+    || guidedState.logoPreference
     || (intakeFollowupField === "logo" ? intakeFollowupAnswer : "");
+  const logoPreferenceValue = logoPreferenceFromText(rawLogoPreferenceValue, { assumeLogoContext: true })
+    || rawLogoPreferenceValue;
+  if (logoPreferenceValue) {
+    guidedState.logoPreference = logoPreferenceValue;
+    if (logoPreferenceValue === "generate_ai_logo") guidedState.aiGeneratedLogoRequested = true;
+  }
+  const fieldMeta = { ...(guidedState.fieldMeta || {}) };
+  if (logoPreferenceValue) {
+    fieldMeta.logo = fieldMeta.logo || { source: "explicit", confidence: 1 };
+    fieldMeta.logoPreference = fieldMeta.logoPreference || { source: "explicit", confidence: 1 };
+    guidedState.fieldMeta = fieldMeta;
+  }
+  const resolvedSalesFlow = guidedState.salesFlow || guidedState.salesMode || data.get("sales_flow")?.toString().trim() || "";
   const contactInfo = parseKeyValueLines(data.get("contact_info")?.toString() || "");
   const logoUrl = data.get("logo_url")?.toString().trim();
   const photoUrls = splitLines(data.get("photo_urls")?.toString() || "");
@@ -13345,8 +13403,9 @@ async function collectPayload() {
     brandStyle: preferredToneValue,
     contact_info: contactInfo,
     logoPreference: logoPreferenceValue,
+    fieldMeta,
     intakeFollowupAnswer,
-    salesFlow: guidedState.salesMode || data.get("sales_flow")?.toString().trim() || "",
+    salesFlow: resolvedSalesFlow,
     desiredDomain: data.get("desired_domain")?.toString().trim() || guidedState.desiredDomain || "",
     selectedLanguage,
     request_id: currentRequestId,
@@ -13367,7 +13426,7 @@ async function collectPayload() {
         industry: data.get("industry")?.toString().trim(),
         target_audience: data.get("target_audience")?.toString().trim(),
         preferred_tone: preferredToneValue,
-        salesMode: guidedState.salesMode || data.get("sales_flow")?.toString().trim() || "",
+        salesMode: resolvedSalesFlow,
       }),
       aiStudioPlan,
       selectedTemplateId: aiStudioPlan?.recommendedTemplateId || "",
