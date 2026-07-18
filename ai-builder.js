@@ -1694,7 +1694,7 @@ function renderCanvasTemplateCarousel(card) {
         ${choices.map((choice, index) => `
           <article class="template-choice-card template-board-card ${choice.templateId === selectedId ? "active-card recommended" : index === 0 ? "recommended" : ""}" style="--template-card-index: ${index};" data-template-choice="${escapeAttribute(choice.templateId)}" data-catalog-type="${escapeAttribute(choice.catalogType || "")}">
             <div class="template-board-image">
-              <img src="${escapeAttribute(choice.image)}" alt="${escapeAttribute(localizedTemplateName(choice))}">
+              ${templateLivePreviewMarkup(choice)}
             </div>
             <div class="template-board-body">
               <div class="template-board-meta">
@@ -3965,6 +3965,53 @@ function templateCardBadges(choice) {
     fr: ["Site", "Modifiable", "IA prete"],
     pt: ["Site", "Editavel", "IA pronta"],
   });
+}
+
+// Illustrative accent palette per template family, used only for the live mini
+// preview in the template picker (before generation). Real copy/colors are
+// decided by LYRA per-business once generation runs (see state.colors in
+// backend/app/main.py::build_schema_from_state) -- this is a style hint, not
+// the final result. Keyed with the same catalogType regexes as
+// templateCardBadges() above so the two stay visually consistent.
+function templateAccentPalette(catalogType) {
+  const type = String(catalogType || "").toLowerCase();
+  if (/premium|luxury/.test(type)) return { paper: "#f7f6ff", ink: "#10101a", accent: "#6d5dfc" };
+  if (/dense_marketplace|listing/.test(type)) return { paper: "#f4eee7", ink: "#261c17", accent: "#d8643d" };
+  if (/single_vendor_dense/.test(type)) return { paper: "#eef2ff", ink: "#101a33", accent: "#2563eb" };
+  if (/lookbook|collection/.test(type)) return { paper: "#f4f1e9", ink: "#1d1616", accent: "#c9262f" };
+  if (/education/.test(type)) return { paper: "#eef5ff", ink: "#101d33", accent: "#3275e7" };
+  if (/medical|wellness/.test(type)) return { paper: "#e8f4f0", ink: "#102624", accent: "#006b63" };
+  if (/legal|professional|company/.test(type)) return { paper: "#eef1f6", ink: "#131b2b", accent: "#1f3a63" };
+  if (/industrial|supplier/.test(type)) return { paper: "#f4f1e9", ink: "#1d2528", accent: "#ef6b32" };
+  if (/b2b|solution/.test(type)) return { paper: "#eef5ff", ink: "#101d33", accent: "#3275e7" };
+  if (/restaurant|menu/.test(type)) return { paper: "#fff7e8", ink: "#2c2116", accent: "#ec8c37" };
+  if (/booking/.test(type)) return { paper: "#faf5fc", ink: "#2b2134", accent: "#a579db" };
+  if (/digital/.test(type)) return { paper: "#f5f0ff", ink: "#211a33", accent: "#8b5cf6" };
+  if (/lead_funnel|service|quote/.test(type)) return { paper: "#eef8f0", ink: "#16231c", accent: "#1f9d55" };
+  return { paper: "#f2f2ec", ink: "#111111", accent: "#101828" };
+}
+
+// Renders a small live DOM mockup (mini nav / mini hero / mini cards) styled
+// with the template's illustrative palette, instead of a static screenshot.
+// Several TEMPLATE_PREVIEW_CHOICES entries reuse the same stock photo (see
+// docs/AGENT_LOG.md), which makes distinct templates look identical in the
+// picker. This gives every card a distinct, on-brand preview even when the
+// photo is shared.
+function templateLivePreviewMarkup(choice) {
+  const palette = templateAccentPalette(choice?.catalogType);
+  const brand = escapeHtml((guidedState.businessName || "").slice(0, 18) || langText({
+    en: "YOUR BRAND", es: "TU MARCA", fr: "VOTRE MARQUE", pt: "SUA MARCA",
+  }));
+  return `
+    <div class="template-live-preview" style="--tlp-paper:${palette.paper};--tlp-ink:${palette.ink};--tlp-accent:${palette.accent};">
+      <div class="tlp-nav"><b>${brand}</b><i></i><i></i><em></em></div>
+      <div class="tlp-hero">
+        <span class="tlp-copy"><b></b><b></b><i></i></span>
+        <span class="tlp-image"><i></i><i></i><i></i></span>
+      </div>
+      <div class="tlp-cards"><i></i><i></i><i></i></div>
+    </div>
+  `;
 }
 
 function buildAiStudioPlanFromGuidedState(extra = "") {
