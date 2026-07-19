@@ -150,6 +150,13 @@ const I18N = {
     reviewStep: "Review",
     step: "Step",
     of: "of",
+    railStepBusiness: "Your business",
+    railStepProducts: "Products/services",
+    railStepLocation: "Location",
+    railStepSales: "How you sell",
+    railStepStyle: "Style and audience",
+    railStepColors: "Colors and brand",
+    railStepReview: "Review",
     skipMessage: "Skip",
     letAiDecide: "Let AI decide",
     newClientWebsite: "New client website",
@@ -252,6 +259,13 @@ const I18N = {
     reviewStep: "Revision",
     step: "Paso",
     of: "de",
+    railStepBusiness: "Tu negocio",
+    railStepProducts: "Productos/servicios",
+    railStepLocation: "Ubicacion",
+    railStepSales: "Como vendes",
+    railStepStyle: "Estilo y audiencia",
+    railStepColors: "Colores y marca",
+    railStepReview: "Revision",
     skipMessage: "Saltar",
     letAiDecide: "Que IA decida",
     newClientWebsite: "Nuevo sitio de cliente",
@@ -354,6 +368,13 @@ const I18N = {
     reviewStep: "Vérification",
     step: "Étape",
     of: "sur",
+    railStepBusiness: "Votre entreprise",
+    railStepProducts: "Produits/services",
+    railStepLocation: "Emplacement",
+    railStepSales: "Comment vous vendez",
+    railStepStyle: "Style et audience",
+    railStepColors: "Couleurs et marque",
+    railStepReview: "Vérification",
     skipMessage: "Passer",
     letAiDecide: "Laisser l'IA décider",
     newClientWebsite: "Nouveau site client",
@@ -456,6 +477,13 @@ const I18N = {
     reviewStep: "Revisão",
     step: "Etapa",
     of: "de",
+    railStepBusiness: "Seu negócio",
+    railStepProducts: "Produtos/serviços",
+    railStepLocation: "Localização",
+    railStepSales: "Como você vende",
+    railStepStyle: "Estilo e público",
+    railStepColors: "Cores e marca",
+    railStepReview: "Revisão",
     skipMessage: "Pular",
     letAiDecide: "Deixar a IA decidir",
     newClientWebsite: "Novo site de cliente",
@@ -3052,9 +3080,20 @@ function resetGuidedStateForNewAccount() {
   guidedState = createEmptyGuidedState(selectedLanguage);
   currentSchema = null;
   currentRequestId = null;
+  currentSiteId = null;
+  currentBusinessId = null;
+  currentGenerationId = null;
+  currentCatalogItems = [];
+  selectedPageKey = "home";
+  selectedVariantId = "";
+  forcedTemplateSelection = null;
+  clientIntakeSession = null;
   restoredGuidedDraftInfo = null;
   try {
     localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
+    localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
+    localStorage.removeItem(CLIENT_INTAKE_SESSION_STORAGE_KEY);
+    localStorage.removeItem("lumaPendingGeneratedSite");
   } catch {
     // Best-effort only -- an in-memory reset already protects this session.
   }
@@ -3063,7 +3102,15 @@ function resetGuidedStateForNewAccount() {
 async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false } = {}) {
   const cleanEmail = String(email || "").trim().toLowerCase();
   if (!cleanEmail) throw new Error("Email is required.");
-  const lastKnownEmail = String(localStorage.getItem("lumaPendingClientEmail") || "").trim().toLowerCase();
+  const storedSession = readClientIntakeSession();
+  const lastKnownEmail = String(
+    clientIntakeSession?.clientEmail
+      || clientIntakeSession?.client_email
+      || storedSession?.clientEmail
+      || storedSession?.client_email
+      || localStorage.getItem("lumaPendingClientEmail")
+      || ""
+  ).trim().toLowerCase();
   if (lastKnownEmail && lastKnownEmail !== cleanEmail) {
     resetGuidedStateForNewAccount();
   }
@@ -5380,8 +5427,8 @@ async function reviewAndGenerateFromGuided() {
 
   setGuidedGenerateControlsBusy(true, t("generating"));
   guidedStatusText.textContent = t("generatingLong");
-  await generateWebsite(guidedGenerateButton);
-  if (currentSchema) {
+  const generated = await generateWebsite(guidedGenerateButton);
+  if (generated && currentSchema) {
     const successMessage = langText({
       en: "Draft generated. You can review and edit it now.",
       es: "Borrador generado. Ya puedes revisarlo y editarlo.",
@@ -5657,6 +5704,7 @@ function renderGuidedSummary() {
   if (isFinalReview && assistantState !== "success") setAssistantState("success");
   guidedStepLabel.textContent = isFinalReview ? t("reviewStep") : `${t("step")} ${stepIndex} ${t("of")} 7`;
   guidedProgressBar.style.width = `${Math.min(100, Math.round((stepIndex / 7) * 100))}%`;
+  renderGuidedStepRail(stepIndex);
   document.body.classList.toggle("ready-chat-mode", isFinalReview);
   document.body.classList.remove("final-review-mode");
   guidedGenerateButton.textContent = isFinalReview ? t("generateMyWebsite") : t("reviewGenerate");
@@ -6046,6 +6094,21 @@ function displayStepIndex(step) {
   if (["preferredTone", "targetAudience"].includes(step)) return 5;
   if (["preferredColors", "hasLogoPhotos"].includes(step)) return 6;
   return 7;
+}
+
+// Persistent step rail (2026-07-18, ai-builder.html only -- #guidedRailSteps
+// does not exist on client/setup/index.html, hence the null guard). Purely
+// presentational: reuses the stepIndex already computed by
+// renderGuidedSummary() from the real guidedStep/displayStepIndex() state,
+// no separate step-tracking logic.
+function renderGuidedStepRail(stepIndex) {
+  const items = document.querySelectorAll("#guidedRailSteps .guided-rail-step");
+  if (!items.length) return;
+  items.forEach((item) => {
+    const index = Number(item.dataset.stepIndex || 0);
+    item.classList.toggle("active", index === stepIndex);
+    item.classList.toggle("done", index < stepIndex);
+  });
 }
 
 function completedFieldCount() {
@@ -7044,7 +7107,7 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     const result = await response.json();
     if (result.needs_more_info) {
       handleServerNeedsMoreInfo(result);
-      return;
+      return false;
     }
     setStudioProgressPhase("shop");
     if (templateSelection) {
@@ -7057,9 +7120,22 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     setStudioProgressPhase("mobile");
     await createDomainOrderIfNeeded(payload, result);
     setStudioProgressPhase("ready");
+    return true;
   } catch (error) {
     builderAvatarManager?.setState("confused", { source: "generate-error" });
     setStudioProgressPhase("homepage");
+    if (isPublicClientSetup) {
+      const message = langText({
+        en: "The AI generator did not finish this request. I will not show a local fallback because it could be the wrong template. Please try again in a moment.",
+        es: "El generador de IA no terminó esta solicitud. No voy a mostrar un borrador local porque podría usar la plantilla equivocada. Intenta otra vez en un momento.",
+        fr: "Le générateur IA n'a pas terminé cette demande. Je ne vais pas afficher de brouillon local car il pourrait utiliser le mauvais template. Réessayez dans un instant.",
+        pt: "O gerador de IA não terminou esta solicitação. Não vou mostrar um rascunho local porque poderia usar o template errado. Tente novamente em instantes.",
+      });
+      statusText.textContent = message;
+      guidedStatusText.textContent = message;
+      appendChatMessage("assistant", message, "alert");
+      return false;
+    }
     const runtimeFallbackSelection = runtimeTemplateSelection(templateSelection);
     const fallbackPayload = runtimeFallbackSelection ? payload : stripReferenceTemplateRuntimePayload(payload);
     const fallbackResult = buildInstantTemplateResult(fallbackPayload, error, runtimeFallbackSelection);
@@ -7075,6 +7151,7 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
       : `${t("generateError")}: ${shortError(error.message)}. Showing a fast editable draft instead.`;
     statusText.textContent = message;
     guidedStatusText.textContent = message;
+    return true;
   } finally {
     button.disabled = false;
     button.textContent = button.id === "guidedGenerateButton" ? t("reviewGenerate") : t("generateButton");
