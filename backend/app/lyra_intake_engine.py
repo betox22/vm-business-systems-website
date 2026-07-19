@@ -294,11 +294,13 @@ class LyraIntakeEngine:
 
         detected_intent = DetectedIntent.model_validate(payload.get("detectedIntent") or {})
         ai_confidence = max(detected_intent.confidence or 0.0, 0.75)
+        state_payload = self._state_payload(state)
+        interim_meta = {**(state.fieldMeta or {}), **{key: value.model_dump() for key, value in field_meta.items()}}
         if (
             detected_intent.salesFlow
             and detected_intent.salesFlow in VALID_SALES_FLOWS
-            and "salesFlow" not in updated_state
             and self._can_replace_ai_derived(state, "salesFlow")
+            and not self._sales_flow_resolved({**state_payload, **updated_state}, interim_meta)
         ):
             updated_state["salesFlow"] = detected_intent.salesFlow
             field_meta["salesFlow"] = FieldMeta(source="ai_recommended", confidence=ai_confidence)
@@ -318,7 +320,7 @@ class LyraIntakeEngine:
         merged_meta = {**(state.fieldMeta or {}), **{key: value.model_dump() for key, value in field_meta.items()}}
         missing = self._missing_fields_from_state(state, updated_state, merged_meta)
         can_generate = len(missing) == 0
-        next_question = payload.get("nextQuestion") or None
+        next_question = None if can_generate else (payload.get("nextQuestion") or None)
         if not can_generate and not next_question:
             next_question = self._fallback_question(missing, state.selectedLanguage)
 
