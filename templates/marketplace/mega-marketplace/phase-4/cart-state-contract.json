@@ -1,0 +1,71 @@
+{
+  "templateId": "mega_marketplace",
+  "phase": "phase_4_frontend_architecture",
+  "contract": "cart_state_grouped_by_vendor",
+  "status": "draft",
+  "state": {
+    "version": "number",
+    "currency": "string",
+    "items": "CartItem[]",
+    "updatedAt": "ISO datetime string"
+  },
+  "cartItem": {
+    "productId": "string",
+    "vendorId": "string",
+    "vendorName": "string",
+    "name": "string",
+    "quantity": "positive integer",
+    "unitPrice": "number",
+    "currency": "string",
+    "imageUrl": "optional string"
+  },
+  "vendorGroup": {
+    "vendorId": "string",
+    "vendorName": "string",
+    "items": "CartItem[]",
+    "subtotal": "number",
+    "currency": "string"
+  },
+  "actions": [
+    "createEmptyCart",
+    "addCartItem",
+    "updateCartItemQuantity",
+    "removeCartItem",
+    "groupCartByVendor",
+    "getCartTotals",
+    "toCheckoutPayload",
+    "makeIdempotencyKey"
+  ],
+  "backendBoundaries": {
+    "frontendMayEstimate": [
+      "cart subtotal",
+      "vendor group subtotal",
+      "item count"
+    ],
+    "backendOwns": [
+      "final price",
+      "stock validation",
+      "tax",
+      "shipping",
+      "commission",
+      "order split",
+      "vendor ledger",
+      "payment state"
+    ]
+  },
+  "requiredEndpoints": [
+    {
+      "method": "POST",
+      "path": "/api/v1/checkout/quote",
+      "purpose": "Return authoritative checkout quote before order placement."
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/checkout/place-order",
+      "headers": [
+        "Idempotency-Key"
+      ],
+      "purpose": "Create order transactionally."
+    }
+  ]
+}

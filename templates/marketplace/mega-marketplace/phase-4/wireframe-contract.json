@@ -1,0 +1,379 @@
+{
+  "templateId": "mega_marketplace",
+  "phase": "phase_4_frontend_architecture",
+  "contract": "wireframe_contract",
+  "status": "draft",
+  "screens": [
+    {
+      "screen": "MarketplaceHome",
+      "area": "public_storefront",
+      "wireframe": "wireframes/storefront-home.md",
+      "primaryComponents": [
+        "MarketplaceHeader",
+        "DeliveryTrustStrip",
+        "HeroCommerceBand",
+        "DepartmentGrid",
+        "FeaturedDealsRail",
+        "TrendingProductsGrid",
+        "VendorSpotlightRail",
+        "MarketplaceFooter"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "empty",
+        "error",
+        "ready"
+      ],
+      "coreActions": [
+        "search",
+        "openDepartment",
+        "openProduct",
+        "addToCart",
+        "openCart",
+        "openAccount"
+      ]
+    },
+    {
+      "screen": "CatalogSearch",
+      "area": "public_storefront",
+      "wireframe": "wireframes/catalog-search.md",
+      "primaryComponents": [
+        "CatalogHeader",
+        "FilterSidebar",
+        "ActiveFilterChips",
+        "ProductGrid",
+        "Pagination"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "empty",
+        "error",
+        "ready"
+      ],
+      "coreActions": [
+        "search",
+        "filter",
+        "sort",
+        "paginate",
+        "openProduct",
+        "addToCart"
+      ]
+    },
+    {
+      "screen": "ProductDetail",
+      "area": "public_storefront",
+      "wireframe": "wireframes/product-detail.md",
+      "primaryComponents": [
+        "ProductMediaGallery",
+        "ProductInfoPanel",
+        "VariantSelector",
+        "AddToCartPanel",
+        "VendorTrustPanel",
+        "ProductDescriptionTabs",
+        "RelatedProductsRail"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "not_found",
+        "error",
+        "ready"
+      ],
+      "coreActions": [
+        "selectMedia",
+        "selectVariant",
+        "changeQuantity",
+        "addToCart",
+        "buyNow",
+        "openRelatedProduct"
+      ]
+    },
+    {
+      "screen": "Cart",
+      "area": "public_storefront",
+      "wireframe": "wireframes/cart.md",
+      "primaryComponents": [
+        "CartHeader",
+        "VendorGroupedCartList",
+        "VendorCartGroup",
+        "CartItemRow",
+        "CartSummaryPanel"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "empty",
+        "error",
+        "quote_pending",
+        "quote_ready"
+      ],
+      "coreActions": [
+        "updateQuantity",
+        "removeItem",
+        "refreshQuote",
+        "continueShopping",
+        "startCheckout"
+      ]
+    },
+    {
+      "screen": "Checkout",
+      "area": "public_storefront",
+      "wireframe": "wireframes/checkout.md",
+      "primaryComponents": [
+        "CheckoutSteps",
+        "ContactStep",
+        "ShippingStep",
+        "PaymentStep",
+        "ReviewStep",
+        "CheckoutSummaryPanel",
+        "VendorOrderPreview"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "quote_pending",
+        "payment_pending",
+        "placing_order",
+        "success",
+        "error"
+      ],
+      "coreActions": [
+        "updateContact",
+        "updateShipping",
+        "refreshQuote",
+        "submitPayment",
+        "placeOrder"
+      ],
+      "requiredHeaders": [
+        "Idempotency-Key"
+      ]
+    },
+    {
+      "screen": "VendorDashboard",
+      "area": "vendor_portal",
+      "wireframe": "wireframes/vendor-dashboard.md",
+      "primaryComponents": [
+        "VendorStatusBanner",
+        "VendorStatsCards",
+        "PendingOrdersPanel",
+        "InventoryAlertsPanel",
+        "SalesTrendPanel",
+        "LedgerSummaryPanel"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "empty",
+        "error",
+        "forbidden",
+        "ready"
+      ],
+      "coreActions": [
+        "openPendingOrders",
+        "openInventoryAlerts",
+        "openLedger",
+        "openProductManager"
+      ]
+    },
+    {
+      "screen": "VendorProductManager",
+      "area": "vendor_portal",
+      "wireframe": "wireframes/vendor-product-manager.md",
+      "primaryComponents": [
+        "ProductManagerToolbar",
+        "VendorProductTable",
+        "ProductEditorDrawer"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "empty",
+        "error",
+        "saving",
+        "ready"
+      ],
+      "coreActions": [
+        "searchProducts",
+        "filterProducts",
+        "createProduct",
+        "editProduct",
+        "duplicateProduct",
+        "activateProduct",
+        "deactivateProduct"
+      ]
+    },
+    {
+      "screen": "VendorOrders",
+      "area": "vendor_portal",
+      "wireframe": "wireframes/vendor-orders.md",
+      "primaryComponents": [
+        "OrdersToolbar",
+        "VendorOrderTable",
+        "VendorOrderDetailPanel"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "empty",
+        "error",
+        "updating",
+        "ready"
+      ],
+      "coreActions": [
+        "searchOrders",
+        "filterOrders",
+        "openVendorOrder",
+        "updateFulfillmentStatus",
+        "addTracking"
+      ]
+    },
+    {
+      "screen": "VendorLedger",
+      "area": "vendor_portal",
+      "wireframe": "wireframes/vendor-ledger.md",
+      "primaryComponents": [
+        "LedgerBalanceCards",
+        "LedgerFilters",
+        "VendorLedgerTable",
+        "PayoutMethodPanel"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "empty",
+        "error",
+        "ready"
+      ],
+      "coreActions": [
+        "filterLedger",
+        "openVendorOrder",
+        "exportLedger"
+      ]
+    },
+    {
+      "screen": "AdminDashboard",
+      "area": "admin_marketplace",
+      "wireframe": "wireframes/admin-dashboard.md",
+      "primaryComponents": [
+        "PlatformStatsCards",
+        "VendorApprovalQueueSummary",
+        "ProductModerationSummary",
+        "GlobalOrderSummary",
+        "PlatformLedgerSummary",
+        "RiskAlertsPanel"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "empty",
+        "error",
+        "forbidden",
+        "ready"
+      ],
+      "coreActions": [
+        "openVendorApprovals",
+        "openProductModeration",
+        "openGlobalOrders",
+        "openPlatformLedger"
+      ]
+    },
+    {
+      "screen": "VendorApprovalQueue",
+      "area": "admin_marketplace",
+      "wireframe": "wireframes/admin-vendor-approval.md",
+      "primaryComponents": [
+        "ApprovalQueueToolbar",
+        "VendorApplicationTable",
+        "VendorReviewPanel"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "empty",
+        "error",
+        "updating",
+        "ready"
+      ],
+      "coreActions": [
+        "reviewVendor",
+        "approveVendor",
+        "rejectVendor",
+        "requestMoreInformation",
+        "suspendVendor"
+      ]
+    },
+    {
+      "screen": "ProductModeration",
+      "area": "admin_marketplace",
+      "wireframe": "wireframes/admin-product-moderation.md",
+      "primaryComponents": [
+        "ModerationToolbar",
+        "ProductModerationQueue",
+        "ProductReviewPanel"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "empty",
+        "error",
+        "updating",
+        "ready"
+      ],
+      "coreActions": [
+        "reviewProduct",
+        "approveProduct",
+        "rejectProduct",
+        "requestProductEdits",
+        "flagVendor"
+      ]
+    },
+    {
+      "screen": "GlobalOrders",
+      "area": "admin_marketplace",
+      "wireframe": "wireframes/admin-global-orders.md",
+      "primaryComponents": [
+        "GlobalOrdersToolbar",
+        "ParentOrderTable",
+        "GlobalOrderDetailPanel"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "empty",
+        "error",
+        "forbidden",
+        "ready"
+      ],
+      "coreActions": [
+        "searchOrders",
+        "filterOrders",
+        "openParentOrder",
+        "inspectVendorOrderSplit"
+      ]
+    },
+    {
+      "screen": "MarketplaceSettings",
+      "area": "admin_marketplace",
+      "wireframe": "wireframes/admin-settings.md",
+      "primaryComponents": [
+        "CommissionSettingsPanel",
+        "VendorOnboardingRulesPanel",
+        "ProductModerationRulesPanel",
+        "StorefrontPolicyPanel",
+        "AuditSettingsPanel"
+      ],
+      "mustSupportStates": [
+        "loading",
+        "error",
+        "saving",
+        "ready"
+      ],
+      "coreActions": [
+        "updateCommission",
+        "updateVendorRules",
+        "updateModerationRules",
+        "updateStorefrontPolicy"
+      ]
+    }
+  ],
+  "globalRules": [
+    "A Mega Marketplace site must be search-first and catalog-first.",
+    "Every commerce screen must have loading, error, and empty/blocked states where applicable.",
+    "Cart and checkout must show vendor grouping.",
+    "Frontend estimates are never final totals.",
+    "Backend quote owns final prices, stock, shipping, tax, and checkout eligibility.",
+    "Frontend must not expose vendor or admin-only controls on public screens.",
+    "Vendor screens must be scoped to authenticated vendor id.",
+    "Admin screens must require admin role and audit sensitive mutations.",
+    "Mobile layouts must keep search, cart, and primary action visible without horizontal scrolling."
+  ]
+}

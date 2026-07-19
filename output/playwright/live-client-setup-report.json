@@ -1,0 +1,2055 @@
+{
+  "targetUrl": "http://127.0.0.1:8146/client/setup/",
+  "checkedAt": "2026-07-07T14:27:03.202Z",
+  "desktop": {
+    "gate": {
+      "title": "AI Website Builder",
+      "url": "http://127.0.0.1:8146/client/setup/?cb=1783434423267",
+      "bodyTextStart": "× PROTECTED WORKSPACE Start by saving your progress Use email so LYRA can save every answer, restore drafts, and keep you from repeating the same information. Email Enter my workspace",
+      "bodyTextLength": 183,
+      "buttons": [
+        "×",
+        "Enter my workspace"
+      ],
+      "inputs": [
+        {
+          "tag": "input",
+          "id": "studioAuthEmail",
+          "placeholder": "tu@email.com",
+          "type": "email",
+          "disabled": false
+        }
+      ],
+      "hasLyra": true,
+      "hasGenerateButton": false,
+      "horizontalOverflow": false,
+      "lyraDebug": {
+        "forcedTemplateSelection": null,
+        "aiStudioPlan": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "business_website",
+          "recommendedTemplateId": "",
+          "recommendedTemplateName": "",
+          "recommendedCatalogType": "",
+          "reasoningSummary": "LYRA is still identifying the strongest template from the business context.",
+          "salesFlow": "lead_capture",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Brand promise, hero, best offer, trust and primary CTA.",
+              "sections": [
+                "Hero",
+                "Featured",
+                "Trust",
+                "CTA"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Products/services with filters, cards and clear actions.",
+              "sections": [
+                "Search",
+                "Categories",
+                "Grid",
+                "Detail CTA"
+              ]
+            },
+            {
+              "key": "detail",
+              "title": "Product detail",
+              "purpose": "Gallery, benefits, price/quote logic, proof and related items.",
+              "sections": [
+                "Gallery",
+                "Benefits",
+                "Proof",
+                "Related"
+              ]
+            },
+            {
+              "key": "contact",
+              "title": "Checkout / Contact",
+              "purpose": "Final conversion path with contact, booking, quote or checkout intent.",
+              "sections": [
+                "Contact",
+                "Form",
+                "Social",
+                "Location"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName",
+            "businessDescription",
+            "websiteIntent"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        },
+        "designDiagnosis": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "business_website",
+          "recommendedTemplateId": "",
+          "recommendedTemplateName": "",
+          "recommendedCatalogType": "",
+          "reasoningSummary": "LYRA is still identifying the strongest template from the business context.",
+          "salesFlow": "lead_capture",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Brand promise, hero, best offer, trust and primary CTA.",
+              "sections": [
+                "Hero",
+                "Featured",
+                "Trust",
+                "CTA"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Products/services with filters, cards and clear actions.",
+              "sections": [
+                "Search",
+                "Categories",
+                "Grid",
+                "Detail CTA"
+              ]
+            },
+            {
+              "key": "detail",
+              "title": "Product detail",
+              "purpose": "Gallery, benefits, price/quote logic, proof and related items.",
+              "sections": [
+                "Gallery",
+                "Benefits",
+                "Proof",
+                "Related"
+              ]
+            },
+            {
+              "key": "contact",
+              "title": "Checkout / Contact",
+              "purpose": "Final conversion path with contact, booking, quote or checkout intent.",
+              "sections": [
+                "Contact",
+                "Form",
+                "Social",
+                "Location"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName",
+            "businessDescription",
+            "websiteIntent"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        },
+        "liveSelection": {
+          "templateId": "mega-marketplace",
+          "template": {
+            "id": "mega-marketplace",
+            "name": "Mega Marketplace",
+            "catalogModel": {
+              "catalogType": "dense_marketplace_catalog"
+            }
+          },
+          "intent": "live_preview_template",
+          "catalogType": "dense_marketplace_catalog",
+          "reason": "Live preview selected from guided context"
+        },
+        "contextText": "         ",
+        "servicesProducts": []
+      }
+    },
+    "afterLogin": {
+      "title": "AI Website Builder",
+      "url": "http://127.0.0.1:8146/client/setup/?cb=1783434423267",
+      "bodyTextStart": "LYRA AI WEBSITE ASSISTANT ONLINE Account: pwtest-178...@gmail.com New page Website language English Español Français Português Voice off × Step 7 of 7 BUILD WORKSPACE Business model and site architecture Your answers define the template family, catalog logic, page structure and conversion path before the editable draft is generated. KREATON AI STUDIO LYRA is mapping the business before designing Describe the business naturally. LYRA extracts the model, catalog depth, audience, style and sales flow, then chooses the right template family. 1 Business model Website, store, marketplace, catalog, booking, leads or company site 2 Offer intelligence LYRA is waiting for product, service or catalog context 3 Template decision No random preview. The visual base appears only when the business context",
+      "bodyTextLength": 1429,
+      "buttons": [
+        "Account: pwtest-178...@gmail.com",
+        "New page",
+        "Voice off",
+        "×",
+        "Review details",
+        "Sell online",
+        "Show catalog",
+        "Business info site",
+        "Booking",
+        "Request quotes",
+        "Marketplace",
+        "Use voice",
+        "Send"
+      ],
+      "inputs": [
+        {
+          "tag": "input",
+          "id": "guidedReply",
+          "placeholder": "Type your answer...",
+          "type": "text",
+          "disabled": false
+        }
+      ],
+      "hasLyra": true,
+      "hasGenerateButton": false,
+      "horizontalOverflow": false,
+      "lyraDebug": {
+        "forcedTemplateSelection": null,
+        "aiStudioPlan": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "business_website",
+          "recommendedTemplateId": "",
+          "recommendedTemplateName": "",
+          "recommendedCatalogType": "",
+          "reasoningSummary": "LYRA is still identifying the strongest template from the business context.",
+          "salesFlow": "lead_capture",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Brand promise, hero, best offer, trust and primary CTA.",
+              "sections": [
+                "Hero",
+                "Featured",
+                "Trust",
+                "CTA"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Products/services with filters, cards and clear actions.",
+              "sections": [
+                "Search",
+                "Categories",
+                "Grid",
+                "Detail CTA"
+              ]
+            },
+            {
+              "key": "detail",
+              "title": "Product detail",
+              "purpose": "Gallery, benefits, price/quote logic, proof and related items.",
+              "sections": [
+                "Gallery",
+                "Benefits",
+                "Proof",
+                "Related"
+              ]
+            },
+            {
+              "key": "contact",
+              "title": "Checkout / Contact",
+              "purpose": "Final conversion path with contact, booking, quote or checkout intent.",
+              "sections": [
+                "Contact",
+                "Form",
+                "Social",
+                "Location"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName",
+            "businessDescription",
+            "websiteIntent"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        },
+        "designDiagnosis": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "business_website",
+          "recommendedTemplateId": "",
+          "recommendedTemplateName": "",
+          "recommendedCatalogType": "",
+          "reasoningSummary": "LYRA is still identifying the strongest template from the business context.",
+          "salesFlow": "lead_capture",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Brand promise, hero, best offer, trust and primary CTA.",
+              "sections": [
+                "Hero",
+                "Featured",
+                "Trust",
+                "CTA"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Products/services with filters, cards and clear actions.",
+              "sections": [
+                "Search",
+                "Categories",
+                "Grid",
+                "Detail CTA"
+              ]
+            },
+            {
+              "key": "detail",
+              "title": "Product detail",
+              "purpose": "Gallery, benefits, price/quote logic, proof and related items.",
+              "sections": [
+                "Gallery",
+                "Benefits",
+                "Proof",
+                "Related"
+              ]
+            },
+            {
+              "key": "contact",
+              "title": "Checkout / Contact",
+              "purpose": "Final conversion path with contact, booking, quote or checkout intent.",
+              "sections": [
+                "Contact",
+                "Form",
+                "Social",
+                "Location"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName",
+            "businessDescription",
+            "websiteIntent"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        },
+        "liveSelection": {
+          "templateId": "mega-marketplace",
+          "template": {
+            "id": "mega-marketplace",
+            "name": "Mega Marketplace",
+            "catalogModel": {
+              "catalogType": "dense_marketplace_catalog"
+            }
+          },
+          "intent": "live_preview_template",
+          "catalogType": "dense_marketplace_catalog",
+          "reason": "Live preview selected from guided context"
+        },
+        "contextText": "         ",
+        "servicesProducts": []
+      }
+    },
+    "afterFirstAnswer": {
+      "title": "AI Website Builder",
+      "url": "http://127.0.0.1:8146/client/setup/?cb=1783434423267",
+      "bodyTextStart": "LYRA AI WEBSITE ASSISTANT ONLINE Account: pwtest-178...@gmail.com New page Website language English Español Français Português Voice off × Step 1 of 7 BUILD WORKSPACE Business model and site architecture Your answers define the template family, catalog logic, page structure and conversion path before the editable draft is generated. Select the structure LYRA should use These are real template bases. LYRA will adapt copy, colors, products and flow after you choose one. RECOMMENDED E-commerce Deals Search-first Mega Marketplace Large catalog marketplace with search, categories, deals, filters, and dense products. Preview ALTERNATIVE Marketplace Listings Offers Listing Marketplace Seller listing marketplace with condition labels, offers, and comparison layout. Preview ALTERNATIVE Fashion Look",
+      "bodyTextLength": 2118,
+      "buttons": [
+        "Account: pwtest-178...@gmail.com",
+        "New page",
+        "Voice off",
+        "×",
+        "Preview",
+        "Preview",
+        "Preview",
+        "Preview",
+        "Preview",
+        "Review details",
+        "Use voice",
+        "Send"
+      ],
+      "inputs": [
+        {
+          "tag": "input",
+          "id": "guidedReply",
+          "placeholder": "Type your answer...",
+          "type": "text",
+          "disabled": false
+        }
+      ],
+      "hasLyra": true,
+      "hasGenerateButton": false,
+      "horizontalOverflow": false,
+      "lyraDebug": {
+        "forcedTemplateSelection": {
+          "templateId": "mega-marketplace",
+          "template": {
+            "id": "mega-marketplace",
+            "name": "Mega Catalog Marketplace",
+            "category": "ecommerce",
+            "bestFor": [
+              "large catalog",
+              "electronics",
+              "general store",
+              "multi-category retail",
+              "dropshipping"
+            ],
+            "style": {
+              "tone": "organized, practical, deal-focused, fast",
+              "layoutDensity": "high",
+              "imageStyle": "product thumbnails, category cards, deal banners",
+              "defaultColors": {
+                "background": "#f3f4f6",
+                "surface": "#ffffff",
+                "primary": "#111827",
+                "secondary": "#4b5563",
+                "accent": "#f59e0b"
+              },
+              "fonts": {
+                "heading": "Inter",
+                "body": "Inter"
+              }
+            },
+            "sections": [
+              {
+                "type": "marketplace_header",
+                "fields": {
+                  "logo": "{{logo_url}}",
+                  "businessName": "{{business_name}}",
+                  "searchPlaceholder": "{{search_placeholder}}",
+                  "navItems": [
+                    "Deals",
+                    "Categories",
+                    "Best Sellers",
+                    "Support"
+                  ]
+                }
+              },
+              {
+                "type": "hero_deals",
+                "fields": {
+                  "headline": "{{deal_headline}}",
+                  "subheadline": "{{deal_subheadline}}",
+                  "deals": "{{featured_deals}}"
+                }
+              },
+              {
+                "type": "category_tiles",
+                "fields": {
+                  "title": "{{category_title}}",
+                  "categories": "{{product_categories}}"
+                }
+              },
+              {
+                "type": "deal_carousel",
+                "fields": {
+                  "title": "{{deal_row_title}}",
+                  "products": "{{deal_products}}"
+                }
+              },
+              {
+                "type": "product_grid",
+                "fields": {
+                  "title": "{{best_seller_title}}",
+                  "products": "{{featured_products}}",
+                  "columns": 5
+                }
+              },
+              {
+                "type": "trust_strip",
+                "fields": {
+                  "items": "{{marketplace_trust_points}}"
+                }
+              },
+              {
+                "type": "footer",
+                "fields": {
+                  "businessName": "{{business_name}}",
+                  "description": "{{short_description}}",
+                  "legalLinks": [
+                    "Privacy",
+                    "Terms",
+                    "Returns"
+                  ]
+                }
+              }
+            ],
+            "aiPrompt": "Use a search-first mega marketplace layout inspired by large retailers, without copying any brand. Generate a dense shopping homepage with a utility header, prominent search, category rail, daily deal hero, compact deal rows, best sellers, sidebar filters, ratings, shipping badges, comparison cues, trust modules, and editable product/category text. Preserve this structure; only adapt colors, copy, products, imagery, and CTAs to the business.",
+            "catalogModel": {
+              "catalogType": "dense_marketplace_catalog",
+              "productCardStyle": "compact marketplace cards with discount, rating, shipping badge, compare, quick CTA",
+              "collectionLayout": "search bar, category rail, deal rows, sidebar filters, dense product grid",
+              "filters": [
+                "category",
+                "brand",
+                "price",
+                "rating",
+                "availability",
+                "shipping_speed"
+              ],
+              "productDetailModel": "marketplace detail with specs, reviews, Q&A, shipping estimate, bundles",
+              "upsellModel": "frequently bought together, deal bundles, recently viewed",
+              "customerFeeling": "Large catalog product discovery and comparison"
+            },
+            "visualDifference": "Dense search-first shopping experience with categories, filters, deals, ratings and quick comparison.",
+            "clientSelectionCard": {
+              "title": "Mega Marketplace",
+              "category": "ecommerce",
+              "bestForLabel": "large stores, many products, categories",
+              "difference": "Dense catalog, search, deals, ratings, filters.",
+              "previewTags": [
+                "amazon",
+                "marketplace",
+                "dense"
+              ]
+            },
+            "pages": [
+              {
+                "name": "Home",
+                "purpose": "Marketplace discovery hub",
+                "usesSections": [
+                  "marketplace_header",
+                  "marketplace_search_hero",
+                  "category_rail",
+                  "deal_row",
+                  "best_seller_grid",
+                  "trust_strip",
+                  "footer"
+                ]
+              },
+              {
+                "name": "Catalog",
+                "purpose": "Search-first catalog",
+                "catalogType": "dense_marketplace_catalog",
+                "layout": "left filters, category pills, sort bar, compact product grid, ratings, delivery badges",
+                "filters": [
+                  "category",
+                  "brand",
+                  "price",
+                  "rating",
+                  "shipping_speed"
+                ]
+              },
+              {
+                "name": "Product",
+                "purpose": "Marketplace product detail",
+                "layout": "image gallery, price box, specs, reviews, Q&A, shipping estimate, bundles",
+                "upsell": "frequently bought together and related products"
+              },
+              {
+                "name": "Checkout",
+                "purpose": "Cart and checkout readiness",
+                "layout": "cart summary, delivery options, payment setup, customer support"
+              }
+            ],
+            "editableSlots": [
+              "search labels",
+              "categories",
+              "deal hero",
+              "deal rows",
+              "product rows",
+              "filters",
+              "ratings",
+              "shipping badges",
+              "trust badges",
+              "colors",
+              "logo",
+              "navigation",
+              "checkout CTA"
+            ]
+          },
+          "intent": "luma_agent_template",
+          "catalogType": "dense_marketplace_catalog",
+          "reason": "Selected by LYRA from the conversation"
+        },
+        "aiStudioPlan": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "mega_marketplace",
+          "recommendedTemplateId": "mega-marketplace",
+          "recommendedTemplateName": "Mega Marketplace",
+          "recommendedCatalogType": "dense_marketplace_catalog",
+          "reasoningSummary": "The offer reads as a broad, varied catalog, so the best base is a search-first marketplace with categories, deals, filters, account and cart logic.",
+          "salesFlow": "online_sales",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture",
+            "catalog_manager",
+            "categories",
+            "search",
+            "filters",
+            "product_cards",
+            "cart",
+            "checkout_path",
+            "customer_account",
+            "featured_deals",
+            "deal_sections",
+            "best_sellers",
+            "newsletter_or_deal_subscription",
+            "ratings_reviews",
+            "wishlist_ready"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Search, categories, deals, best sellers and trust modules",
+              "sections": [
+                "marketplace_header",
+                "search_hero",
+                "category_rail",
+                "deal_row",
+                "best_seller_grid",
+                "subscribe"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Dense searchable product catalog",
+              "sections": [
+                "filters",
+                "sort",
+                "product_grid",
+                "ratings",
+                "shipping_badges"
+              ]
+            },
+            {
+              "key": "deals",
+              "title": "Deals",
+              "purpose": "Promotions, drops and featured offers",
+              "sections": [
+                "daily_deals",
+                "featured_collections",
+                "newsletter"
+              ]
+            },
+            {
+              "key": "account",
+              "title": "Account / Cart",
+              "purpose": "Customer account, cart, checkout path and saved items",
+              "sections": [
+                "cart",
+                "wishlist",
+                "checkout",
+                "order_contact"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        },
+        "designDiagnosis": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "mega_marketplace",
+          "recommendedTemplateId": "mega-marketplace",
+          "recommendedTemplateName": "Mega Marketplace",
+          "recommendedCatalogType": "dense_marketplace_catalog",
+          "reasoningSummary": "The offer reads as a broad, varied catalog, so the best base is a search-first marketplace with categories, deals, filters, account and cart logic.",
+          "salesFlow": "online_sales",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture",
+            "catalog_manager",
+            "categories",
+            "search",
+            "filters",
+            "product_cards",
+            "cart",
+            "checkout_path",
+            "customer_account",
+            "featured_deals",
+            "deal_sections",
+            "best_sellers",
+            "newsletter_or_deal_subscription",
+            "ratings_reviews",
+            "wishlist_ready"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Search, categories, deals, best sellers and trust modules",
+              "sections": [
+                "marketplace_header",
+                "search_hero",
+                "category_rail",
+                "deal_row",
+                "best_seller_grid",
+                "subscribe"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Dense searchable product catalog",
+              "sections": [
+                "filters",
+                "sort",
+                "product_grid",
+                "ratings",
+                "shipping_badges"
+              ]
+            },
+            {
+              "key": "deals",
+              "title": "Deals",
+              "purpose": "Promotions, drops and featured offers",
+              "sections": [
+                "daily_deals",
+                "featured_collections",
+                "newsletter"
+              ]
+            },
+            {
+              "key": "account",
+              "title": "Account / Cart",
+              "purpose": "Customer account, cart, checkout path and saved items",
+              "sections": [
+                "cart",
+                "wishlist",
+                "checkout",
+                "order_contact"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        },
+        "liveSelection": {
+          "templateId": "mega-marketplace",
+          "template": {
+            "id": "mega-marketplace",
+            "name": "Mega Catalog Marketplace",
+            "category": "ecommerce",
+            "bestFor": [
+              "large catalog",
+              "electronics",
+              "general store",
+              "multi-category retail",
+              "dropshipping"
+            ],
+            "style": {
+              "tone": "organized, practical, deal-focused, fast",
+              "layoutDensity": "high",
+              "imageStyle": "product thumbnails, category cards, deal banners",
+              "defaultColors": {
+                "background": "#f3f4f6",
+                "surface": "#ffffff",
+                "primary": "#111827",
+                "secondary": "#4b5563",
+                "accent": "#f59e0b"
+              },
+              "fonts": {
+                "heading": "Inter",
+                "body": "Inter"
+              }
+            },
+            "sections": [
+              {
+                "type": "marketplace_header",
+                "fields": {
+                  "logo": "{{logo_url}}",
+                  "businessName": "{{business_name}}",
+                  "searchPlaceholder": "{{search_placeholder}}",
+                  "navItems": [
+                    "Deals",
+                    "Categories",
+                    "Best Sellers",
+                    "Support"
+                  ]
+                }
+              },
+              {
+                "type": "hero_deals",
+                "fields": {
+                  "headline": "{{deal_headline}}",
+                  "subheadline": "{{deal_subheadline}}",
+                  "deals": "{{featured_deals}}"
+                }
+              },
+              {
+                "type": "category_tiles",
+                "fields": {
+                  "title": "{{category_title}}",
+                  "categories": "{{product_categories}}"
+                }
+              },
+              {
+                "type": "deal_carousel",
+                "fields": {
+                  "title": "{{deal_row_title}}",
+                  "products": "{{deal_products}}"
+                }
+              },
+              {
+                "type": "product_grid",
+                "fields": {
+                  "title": "{{best_seller_title}}",
+                  "products": "{{featured_products}}",
+                  "columns": 5
+                }
+              },
+              {
+                "type": "trust_strip",
+                "fields": {
+                  "items": "{{marketplace_trust_points}}"
+                }
+              },
+              {
+                "type": "footer",
+                "fields": {
+                  "businessName": "{{business_name}}",
+                  "description": "{{short_description}}",
+                  "legalLinks": [
+                    "Privacy",
+                    "Terms",
+                    "Returns"
+                  ]
+                }
+              }
+            ],
+            "aiPrompt": "Use a search-first mega marketplace layout inspired by large retailers, without copying any brand. Generate a dense shopping homepage with a utility header, prominent search, category rail, daily deal hero, compact deal rows, best sellers, sidebar filters, ratings, shipping badges, comparison cues, trust modules, and editable product/category text. Preserve this structure; only adapt colors, copy, products, imagery, and CTAs to the business.",
+            "catalogModel": {
+              "catalogType": "dense_marketplace_catalog",
+              "productCardStyle": "compact marketplace cards with discount, rating, shipping badge, compare, quick CTA",
+              "collectionLayout": "search bar, category rail, deal rows, sidebar filters, dense product grid",
+              "filters": [
+                "category",
+                "brand",
+                "price",
+                "rating",
+                "availability",
+                "shipping_speed"
+              ],
+              "productDetailModel": "marketplace detail with specs, reviews, Q&A, shipping estimate, bundles",
+              "upsellModel": "frequently bought together, deal bundles, recently viewed",
+              "customerFeeling": "Large catalog product discovery and comparison"
+            },
+            "visualDifference": "Dense search-first shopping experience with categories, filters, deals, ratings and quick comparison.",
+            "clientSelectionCard": {
+              "title": "Mega Marketplace",
+              "category": "ecommerce",
+              "bestForLabel": "large stores, many products, categories",
+              "difference": "Dense catalog, search, deals, ratings, filters.",
+              "previewTags": [
+                "amazon",
+                "marketplace",
+                "dense"
+              ]
+            },
+            "pages": [
+              {
+                "name": "Home",
+                "purpose": "Marketplace discovery hub",
+                "usesSections": [
+                  "marketplace_header",
+                  "marketplace_search_hero",
+                  "category_rail",
+                  "deal_row",
+                  "best_seller_grid",
+                  "trust_strip",
+                  "footer"
+                ]
+              },
+              {
+                "name": "Catalog",
+                "purpose": "Search-first catalog",
+                "catalogType": "dense_marketplace_catalog",
+                "layout": "left filters, category pills, sort bar, compact product grid, ratings, delivery badges",
+                "filters": [
+                  "category",
+                  "brand",
+                  "price",
+                  "rating",
+                  "shipping_speed"
+                ]
+              },
+              {
+                "name": "Product",
+                "purpose": "Marketplace product detail",
+                "layout": "image gallery, price box, specs, reviews, Q&A, shipping estimate, bundles",
+                "upsell": "frequently bought together and related products"
+              },
+              {
+                "name": "Checkout",
+                "purpose": "Cart and checkout readiness",
+                "layout": "cart summary, delivery options, payment setup, customer support"
+              }
+            ],
+            "editableSlots": [
+              "search labels",
+              "categories",
+              "deal hero",
+              "deal rows",
+              "product rows",
+              "filters",
+              "ratings",
+              "shipping badges",
+              "trust badges",
+              "colors",
+              "logo",
+              "navigation",
+              "checkout CTA"
+            ]
+          },
+          "intent": "luma_agent_template",
+          "catalogType": "dense_marketplace_catalog",
+          "reason": "Live preview selected from guided context"
+        },
+        "contextText": "quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. necesito vender online y aceptar pedidos.  online store / ecommerce quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. necesito vender online y aceptar pedidos. accessories gifts aceptar pedidos. bisuteria artesanal, accesorios hechos a mano y regalos personalizados   online sales ",
+        "servicesProducts": [
+          "accessories",
+          "gifts",
+          "aceptar pedidos."
+        ]
+      }
+    },
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "networkEvents": [
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_0447ab919d88\",\"request_id\":\"req_0447ab919d88\",\"requestNumber\":\"KR-B2A42B\",\"request_number\":\"KR-B2A42B\",\"clientEmail\":\"pwtest-1783434426999@gmail.com\",\"client_email\":\"pwtest-1783434426999@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"\",\"businessName\":\"\",\"businessDescription\":\"\",\"industry\":\"\",\"location\":\"\",\"servicesProducts\":[],\"targetAudience\":\"\",\"preferredTone\":\"\",\"preferredColors\":[],\"contactInfo\":{\"email\":\"pwtest-1783434426999@gmail.com\",\"name\":"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_0447ab919d88\",\"request_id\":\"req_0447ab919d88\",\"requestNumber\":\"KR-B2A42B\",\"request_number\":\"KR-B2A42B\",\"clientEmail\":\"pwtest-1783434426999@gmail.com\",\"client_email\":\"pwtest-1783434426999@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"\",\"businessName\":\"\",\"businessDescription\":\"\",\"industry\":\"\",\"location\":\"\",\"servicesProducts\":[],\"targetAudience\":\"\",\"preferredTone\":\"\",\"preferredColors\":[],\"contactInfo\":{\"email\":\"pwtest-1783434426999@gmail.com\",\"name\":"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_0447ab919d88\",\"request_id\":\"req_0447ab919d88\",\"requestNumber\":\"KR-B2A42B\",\"request_number\":\"KR-B2A42B\",\"clientEmail\":\"pwtest-1783434426999@gmail.com\",\"client_email\":\"pwtest-1783434426999@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"\",\"businessName\":\"\",\"businessDescription\":\"\",\"industry\":\"\",\"location\":\"\",\"servicesProducts\":[],\"targetAudience\":\"\",\"preferredTone\":\"\",\"preferredColors\":[],\"contactInfo\":{\"email\":\"pwtest-1783434426999@gmail.com\",\"name\":"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/luma/chat",
+        "status": 200,
+        "body": "{\"assistantMessage\":\"I organized the intake and selected Mega Marketplace as the base. One important detail is still missing.\",\"emotion\":\"speaking\",\"updatedFields\":{\"businessName\":null,\"businessDescription\":\"Quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. Necesito vender online y aceptar pedidos.\",\"industry\":\"Online store / ecommerce\",\"location\":\"\",\"servicesProducts\":[\"online\",\"aceptar pedidos.\"],\"targetAudience\":\"bisuteria a"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_0447ab919d88\",\"request_id\":\"req_0447ab919d88\",\"requestNumber\":\"KR-B2A42B\",\"request_number\":\"KR-B2A42B\",\"clientEmail\":\"pwtest-1783434426999@gmail.com\",\"client_email\":\"pwtest-1783434426999@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"Quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. Necesito vender online y aceptar pedidos.\",\"businessName\":\"\",\"businessDescription\":\"Quiero una tien"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_0447ab919d88\",\"request_id\":\"req_0447ab919d88\",\"requestNumber\":\"KR-B2A42B\",\"request_number\":\"KR-B2A42B\",\"clientEmail\":\"pwtest-1783434426999@gmail.com\",\"client_email\":\"pwtest-1783434426999@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"Quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. Necesito vender online y aceptar pedidos.\",\"businessName\":\"\",\"businessDescription\":\"Quiero una tien"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_0447ab919d88\",\"request_id\":\"req_0447ab919d88\",\"requestNumber\":\"KR-B2A42B\",\"request_number\":\"KR-B2A42B\",\"clientEmail\":\"pwtest-1783434426999@gmail.com\",\"client_email\":\"pwtest-1783434426999@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"Quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. Necesito vender online y aceptar pedidos.\",\"businessName\":\"\",\"businessDescription\":\"Quiero una tien"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_0447ab919d88\",\"request_id\":\"req_0447ab919d88\",\"requestNumber\":\"KR-B2A42B\",\"request_number\":\"KR-B2A42B\",\"clientEmail\":\"pwtest-1783434426999@gmail.com\",\"client_email\":\"pwtest-1783434426999@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"Quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. Necesito vender online y aceptar pedidos.\",\"businessName\":\"\",\"businessDescription\":\"Quiero una tien"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_0447ab919d88\",\"request_id\":\"req_0447ab919d88\",\"requestNumber\":\"KR-B2A42B\",\"request_number\":\"KR-B2A42B\",\"clientEmail\":\"pwtest-1783434426999@gmail.com\",\"client_email\":\"pwtest-1783434426999@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"Quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. Necesito vender online y aceptar pedidos.\",\"businessName\":\"\",\"businessDescription\":\"Quiero una tien"
+      }
+    ]
+  },
+  "mobile": {
+    "gate": {
+      "title": "AI Website Builder",
+      "url": "http://127.0.0.1:8146/client/setup/?cb=1783434435056",
+      "bodyTextStart": "× PROTECTED WORKSPACE Start by saving your progress Use email so LYRA can save every answer, restore drafts, and keep you from repeating the same information. Email Enter my workspace",
+      "bodyTextLength": 183,
+      "buttons": [
+        "×",
+        "Enter my workspace"
+      ],
+      "inputs": [
+        {
+          "tag": "input",
+          "id": "studioAuthEmail",
+          "placeholder": "tu@email.com",
+          "type": "email",
+          "disabled": false
+        }
+      ],
+      "hasLyra": true,
+      "hasGenerateButton": false,
+      "horizontalOverflow": false,
+      "lyraDebug": {
+        "forcedTemplateSelection": null,
+        "aiStudioPlan": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "business_website",
+          "recommendedTemplateId": "",
+          "recommendedTemplateName": "",
+          "recommendedCatalogType": "",
+          "reasoningSummary": "LYRA is still identifying the strongest template from the business context.",
+          "salesFlow": "lead_capture",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Brand promise, hero, best offer, trust and primary CTA.",
+              "sections": [
+                "Hero",
+                "Featured",
+                "Trust",
+                "CTA"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Products/services with filters, cards and clear actions.",
+              "sections": [
+                "Search",
+                "Categories",
+                "Grid",
+                "Detail CTA"
+              ]
+            },
+            {
+              "key": "detail",
+              "title": "Product detail",
+              "purpose": "Gallery, benefits, price/quote logic, proof and related items.",
+              "sections": [
+                "Gallery",
+                "Benefits",
+                "Proof",
+                "Related"
+              ]
+            },
+            {
+              "key": "contact",
+              "title": "Checkout / Contact",
+              "purpose": "Final conversion path with contact, booking, quote or checkout intent.",
+              "sections": [
+                "Contact",
+                "Form",
+                "Social",
+                "Location"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName",
+            "businessDescription",
+            "websiteIntent"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        },
+        "designDiagnosis": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "business_website",
+          "recommendedTemplateId": "",
+          "recommendedTemplateName": "",
+          "recommendedCatalogType": "",
+          "reasoningSummary": "LYRA is still identifying the strongest template from the business context.",
+          "salesFlow": "lead_capture",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Brand promise, hero, best offer, trust and primary CTA.",
+              "sections": [
+                "Hero",
+                "Featured",
+                "Trust",
+                "CTA"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Products/services with filters, cards and clear actions.",
+              "sections": [
+                "Search",
+                "Categories",
+                "Grid",
+                "Detail CTA"
+              ]
+            },
+            {
+              "key": "detail",
+              "title": "Product detail",
+              "purpose": "Gallery, benefits, price/quote logic, proof and related items.",
+              "sections": [
+                "Gallery",
+                "Benefits",
+                "Proof",
+                "Related"
+              ]
+            },
+            {
+              "key": "contact",
+              "title": "Checkout / Contact",
+              "purpose": "Final conversion path with contact, booking, quote or checkout intent.",
+              "sections": [
+                "Contact",
+                "Form",
+                "Social",
+                "Location"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName",
+            "businessDescription",
+            "websiteIntent"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        },
+        "liveSelection": {
+          "templateId": "mega-marketplace",
+          "template": {
+            "id": "mega-marketplace",
+            "name": "Mega Marketplace",
+            "catalogModel": {
+              "catalogType": "dense_marketplace_catalog"
+            }
+          },
+          "intent": "live_preview_template",
+          "catalogType": "dense_marketplace_catalog",
+          "reason": "Live preview selected from guided context"
+        },
+        "contextText": "         ",
+        "servicesProducts": []
+      }
+    },
+    "afterLogin": {
+      "title": "AI Website Builder",
+      "url": "http://127.0.0.1:8146/client/setup/?cb=1783434435056",
+      "bodyTextStart": "LYRA AI WEBSITE ASSISTANT ONLINE Account: pwtest-178...@gmail.com New page Website language English Español Français Português Voice off × Step 7 of 7 Agente Estratega analizando... Tell me what you want to build in one rich paragraph: what the business sells or does, who buys, the style/colors, location, and whether it should sell online, book appointments, collect leads, or present the company. I will choose the best structure and ask only for what is missing. You can answer naturally, for example: a large catalog store, a restaurant menu, a booking site for a barbershop, or a cyberpunk online store. LYRA is collecting the essentials. 18% · missing 3 Review details Sell online Show catalog Business info site Booking Request quotes Marketplace Use voice Send",
+      "bodyTextLength": 769,
+      "buttons": [
+        "Account: pwtest-178...@gmail.com",
+        "New page",
+        "Voice off",
+        "×",
+        "Review details",
+        "Sell online",
+        "Show catalog",
+        "Business info site",
+        "Booking",
+        "Request quotes",
+        "Marketplace",
+        "Use voice",
+        "Send"
+      ],
+      "inputs": [
+        {
+          "tag": "input",
+          "id": "guidedReply",
+          "placeholder": "Type your answer...",
+          "type": "text",
+          "disabled": false
+        }
+      ],
+      "hasLyra": true,
+      "hasGenerateButton": false,
+      "horizontalOverflow": false,
+      "lyraDebug": {
+        "forcedTemplateSelection": null,
+        "aiStudioPlan": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "business_website",
+          "recommendedTemplateId": "",
+          "recommendedTemplateName": "",
+          "recommendedCatalogType": "",
+          "reasoningSummary": "LYRA is still identifying the strongest template from the business context.",
+          "salesFlow": "lead_capture",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Brand promise, hero, best offer, trust and primary CTA.",
+              "sections": [
+                "Hero",
+                "Featured",
+                "Trust",
+                "CTA"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Products/services with filters, cards and clear actions.",
+              "sections": [
+                "Search",
+                "Categories",
+                "Grid",
+                "Detail CTA"
+              ]
+            },
+            {
+              "key": "detail",
+              "title": "Product detail",
+              "purpose": "Gallery, benefits, price/quote logic, proof and related items.",
+              "sections": [
+                "Gallery",
+                "Benefits",
+                "Proof",
+                "Related"
+              ]
+            },
+            {
+              "key": "contact",
+              "title": "Checkout / Contact",
+              "purpose": "Final conversion path with contact, booking, quote or checkout intent.",
+              "sections": [
+                "Contact",
+                "Form",
+                "Social",
+                "Location"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName",
+            "businessDescription",
+            "websiteIntent"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        },
+        "designDiagnosis": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "business_website",
+          "recommendedTemplateId": "",
+          "recommendedTemplateName": "",
+          "recommendedCatalogType": "",
+          "reasoningSummary": "LYRA is still identifying the strongest template from the business context.",
+          "salesFlow": "lead_capture",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Brand promise, hero, best offer, trust and primary CTA.",
+              "sections": [
+                "Hero",
+                "Featured",
+                "Trust",
+                "CTA"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Products/services with filters, cards and clear actions.",
+              "sections": [
+                "Search",
+                "Categories",
+                "Grid",
+                "Detail CTA"
+              ]
+            },
+            {
+              "key": "detail",
+              "title": "Product detail",
+              "purpose": "Gallery, benefits, price/quote logic, proof and related items.",
+              "sections": [
+                "Gallery",
+                "Benefits",
+                "Proof",
+                "Related"
+              ]
+            },
+            {
+              "key": "contact",
+              "title": "Checkout / Contact",
+              "purpose": "Final conversion path with contact, booking, quote or checkout intent.",
+              "sections": [
+                "Contact",
+                "Form",
+                "Social",
+                "Location"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName",
+            "businessDescription",
+            "websiteIntent"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        },
+        "liveSelection": {
+          "templateId": "mega-marketplace",
+          "template": {
+            "id": "mega-marketplace",
+            "name": "Mega Marketplace",
+            "catalogModel": {
+              "catalogType": "dense_marketplace_catalog"
+            }
+          },
+          "intent": "live_preview_template",
+          "catalogType": "dense_marketplace_catalog",
+          "reason": "Live preview selected from guided context"
+        },
+        "contextText": "         ",
+        "servicesProducts": []
+      }
+    },
+    "afterFirstAnswer": {
+      "title": "AI Website Builder",
+      "url": "http://127.0.0.1:8146/client/setup/?cb=1783434435056",
+      "bodyTextStart": "LYRA AI WEBSITE ASSISTANT ONLINE Account: pwtest-178...@gmail.com New page Website language English Español Français Português Voice off × Step 1 of 7 Agente Estratega analizando... Tell me what you want to build in one rich paragraph: what the business sells or does, who buys, the style/colors, location, and whether it should sell online, book appointments, collect leads, or present the company. I will choose the best structure and ask only for what is missing. You can answer naturally, for example: a large catalog store, a restaurant menu, a booking site for a barbershop, or a cyberpunk online store. Quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. Necesito vender online y aceptar pedidos. I mapped this to Mega Marketp",
+      "bodyTextLength": 1023,
+      "buttons": [
+        "Account: pwtest-178...@gmail.com",
+        "New page",
+        "Voice off",
+        "×",
+        "Review details",
+        "Use voice",
+        "Send"
+      ],
+      "inputs": [
+        {
+          "tag": "input",
+          "id": "guidedReply",
+          "placeholder": "Type your answer...",
+          "type": "text",
+          "disabled": false
+        }
+      ],
+      "hasLyra": true,
+      "hasGenerateButton": false,
+      "horizontalOverflow": false,
+      "lyraDebug": {
+        "forcedTemplateSelection": {
+          "templateId": "mega-marketplace",
+          "template": {
+            "id": "mega-marketplace",
+            "name": "Mega Catalog Marketplace",
+            "category": "ecommerce",
+            "bestFor": [
+              "large catalog",
+              "electronics",
+              "general store",
+              "multi-category retail",
+              "dropshipping"
+            ],
+            "style": {
+              "tone": "organized, practical, deal-focused, fast",
+              "layoutDensity": "high",
+              "imageStyle": "product thumbnails, category cards, deal banners",
+              "defaultColors": {
+                "background": "#f3f4f6",
+                "surface": "#ffffff",
+                "primary": "#111827",
+                "secondary": "#4b5563",
+                "accent": "#f59e0b"
+              },
+              "fonts": {
+                "heading": "Inter",
+                "body": "Inter"
+              }
+            },
+            "sections": [
+              {
+                "type": "marketplace_header",
+                "fields": {
+                  "logo": "{{logo_url}}",
+                  "businessName": "{{business_name}}",
+                  "searchPlaceholder": "{{search_placeholder}}",
+                  "navItems": [
+                    "Deals",
+                    "Categories",
+                    "Best Sellers",
+                    "Support"
+                  ]
+                }
+              },
+              {
+                "type": "hero_deals",
+                "fields": {
+                  "headline": "{{deal_headline}}",
+                  "subheadline": "{{deal_subheadline}}",
+                  "deals": "{{featured_deals}}"
+                }
+              },
+              {
+                "type": "category_tiles",
+                "fields": {
+                  "title": "{{category_title}}",
+                  "categories": "{{product_categories}}"
+                }
+              },
+              {
+                "type": "deal_carousel",
+                "fields": {
+                  "title": "{{deal_row_title}}",
+                  "products": "{{deal_products}}"
+                }
+              },
+              {
+                "type": "product_grid",
+                "fields": {
+                  "title": "{{best_seller_title}}",
+                  "products": "{{featured_products}}",
+                  "columns": 5
+                }
+              },
+              {
+                "type": "trust_strip",
+                "fields": {
+                  "items": "{{marketplace_trust_points}}"
+                }
+              },
+              {
+                "type": "footer",
+                "fields": {
+                  "businessName": "{{business_name}}",
+                  "description": "{{short_description}}",
+                  "legalLinks": [
+                    "Privacy",
+                    "Terms",
+                    "Returns"
+                  ]
+                }
+              }
+            ],
+            "aiPrompt": "Use a search-first mega marketplace layout inspired by large retailers, without copying any brand. Generate a dense shopping homepage with a utility header, prominent search, category rail, daily deal hero, compact deal rows, best sellers, sidebar filters, ratings, shipping badges, comparison cues, trust modules, and editable product/category text. Preserve this structure; only adapt colors, copy, products, imagery, and CTAs to the business.",
+            "catalogModel": {
+              "catalogType": "dense_marketplace_catalog",
+              "productCardStyle": "compact marketplace cards with discount, rating, shipping badge, compare, quick CTA",
+              "collectionLayout": "search bar, category rail, deal rows, sidebar filters, dense product grid",
+              "filters": [
+                "category",
+                "brand",
+                "price",
+                "rating",
+                "availability",
+                "shipping_speed"
+              ],
+              "productDetailModel": "marketplace detail with specs, reviews, Q&A, shipping estimate, bundles",
+              "upsellModel": "frequently bought together, deal bundles, recently viewed",
+              "customerFeeling": "Large catalog product discovery and comparison"
+            },
+            "visualDifference": "Dense search-first shopping experience with categories, filters, deals, ratings and quick comparison.",
+            "clientSelectionCard": {
+              "title": "Mega Marketplace",
+              "category": "ecommerce",
+              "bestForLabel": "large stores, many products, categories",
+              "difference": "Dense catalog, search, deals, ratings, filters.",
+              "previewTags": [
+                "amazon",
+                "marketplace",
+                "dense"
+              ]
+            },
+            "pages": [
+              {
+                "name": "Home",
+                "purpose": "Marketplace discovery hub",
+                "usesSections": [
+                  "marketplace_header",
+                  "marketplace_search_hero",
+                  "category_rail",
+                  "deal_row",
+                  "best_seller_grid",
+                  "trust_strip",
+                  "footer"
+                ]
+              },
+              {
+                "name": "Catalog",
+                "purpose": "Search-first catalog",
+                "catalogType": "dense_marketplace_catalog",
+                "layout": "left filters, category pills, sort bar, compact product grid, ratings, delivery badges",
+                "filters": [
+                  "category",
+                  "brand",
+                  "price",
+                  "rating",
+                  "shipping_speed"
+                ]
+              },
+              {
+                "name": "Product",
+                "purpose": "Marketplace product detail",
+                "layout": "image gallery, price box, specs, reviews, Q&A, shipping estimate, bundles",
+                "upsell": "frequently bought together and related products"
+              },
+              {
+                "name": "Checkout",
+                "purpose": "Cart and checkout readiness",
+                "layout": "cart summary, delivery options, payment setup, customer support"
+              }
+            ],
+            "editableSlots": [
+              "search labels",
+              "categories",
+              "deal hero",
+              "deal rows",
+              "product rows",
+              "filters",
+              "ratings",
+              "shipping badges",
+              "trust badges",
+              "colors",
+              "logo",
+              "navigation",
+              "checkout CTA"
+            ]
+          },
+          "intent": "luma_agent_template",
+          "catalogType": "dense_marketplace_catalog",
+          "reason": "Selected by LYRA from the conversation"
+        },
+        "aiStudioPlan": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "mega_marketplace",
+          "recommendedTemplateId": "mega-marketplace",
+          "recommendedTemplateName": "Mega Marketplace",
+          "recommendedCatalogType": "dense_marketplace_catalog",
+          "reasoningSummary": "The offer reads as a broad, varied catalog, so the best base is a search-first marketplace with categories, deals, filters, account and cart logic.",
+          "salesFlow": "online_sales",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture",
+            "catalog_manager",
+            "categories",
+            "search",
+            "filters",
+            "product_cards",
+            "cart",
+            "checkout_path",
+            "customer_account",
+            "featured_deals",
+            "deal_sections",
+            "best_sellers",
+            "newsletter_or_deal_subscription",
+            "ratings_reviews",
+            "wishlist_ready"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Search, categories, deals, best sellers and trust modules",
+              "sections": [
+                "marketplace_header",
+                "search_hero",
+                "category_rail",
+                "deal_row",
+                "best_seller_grid",
+                "subscribe"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Dense searchable product catalog",
+              "sections": [
+                "filters",
+                "sort",
+                "product_grid",
+                "ratings",
+                "shipping_badges"
+              ]
+            },
+            {
+              "key": "deals",
+              "title": "Deals",
+              "purpose": "Promotions, drops and featured offers",
+              "sections": [
+                "daily_deals",
+                "featured_collections",
+                "newsletter"
+              ]
+            },
+            {
+              "key": "account",
+              "title": "Account / Cart",
+              "purpose": "Customer account, cart, checkout path and saved items",
+              "sections": [
+                "cart",
+                "wishlist",
+                "checkout",
+                "order_contact"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        },
+        "designDiagnosis": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "mega_marketplace",
+          "recommendedTemplateId": "mega-marketplace",
+          "recommendedTemplateName": "Mega Marketplace",
+          "recommendedCatalogType": "dense_marketplace_catalog",
+          "reasoningSummary": "The offer reads as a broad, varied catalog, so the best base is a search-first marketplace with categories, deals, filters, account and cart logic.",
+          "salesFlow": "online_sales",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture",
+            "catalog_manager",
+            "categories",
+            "search",
+            "filters",
+            "product_cards",
+            "cart",
+            "checkout_path",
+            "customer_account",
+            "featured_deals",
+            "deal_sections",
+            "best_sellers",
+            "newsletter_or_deal_subscription",
+            "ratings_reviews",
+            "wishlist_ready"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Search, categories, deals, best sellers and trust modules",
+              "sections": [
+                "marketplace_header",
+                "search_hero",
+                "category_rail",
+                "deal_row",
+                "best_seller_grid",
+                "subscribe"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Dense searchable product catalog",
+              "sections": [
+                "filters",
+                "sort",
+                "product_grid",
+                "ratings",
+                "shipping_badges"
+              ]
+            },
+            {
+              "key": "deals",
+              "title": "Deals",
+              "purpose": "Promotions, drops and featured offers",
+              "sections": [
+                "daily_deals",
+                "featured_collections",
+                "newsletter"
+              ]
+            },
+            {
+              "key": "account",
+              "title": "Account / Cart",
+              "purpose": "Customer account, cart, checkout path and saved items",
+              "sections": [
+                "cart",
+                "wishlist",
+                "checkout",
+                "order_contact"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        },
+        "liveSelection": {
+          "templateId": "mega-marketplace",
+          "template": {
+            "id": "mega-marketplace",
+            "name": "Mega Catalog Marketplace",
+            "category": "ecommerce",
+            "bestFor": [
+              "large catalog",
+              "electronics",
+              "general store",
+              "multi-category retail",
+              "dropshipping"
+            ],
+            "style": {
+              "tone": "organized, practical, deal-focused, fast",
+              "layoutDensity": "high",
+              "imageStyle": "product thumbnails, category cards, deal banners",
+              "defaultColors": {
+                "background": "#f3f4f6",
+                "surface": "#ffffff",
+                "primary": "#111827",
+                "secondary": "#4b5563",
+                "accent": "#f59e0b"
+              },
+              "fonts": {
+                "heading": "Inter",
+                "body": "Inter"
+              }
+            },
+            "sections": [
+              {
+                "type": "marketplace_header",
+                "fields": {
+                  "logo": "{{logo_url}}",
+                  "businessName": "{{business_name}}",
+                  "searchPlaceholder": "{{search_placeholder}}",
+                  "navItems": [
+                    "Deals",
+                    "Categories",
+                    "Best Sellers",
+                    "Support"
+                  ]
+                }
+              },
+              {
+                "type": "hero_deals",
+                "fields": {
+                  "headline": "{{deal_headline}}",
+                  "subheadline": "{{deal_subheadline}}",
+                  "deals": "{{featured_deals}}"
+                }
+              },
+              {
+                "type": "category_tiles",
+                "fields": {
+                  "title": "{{category_title}}",
+                  "categories": "{{product_categories}}"
+                }
+              },
+              {
+                "type": "deal_carousel",
+                "fields": {
+                  "title": "{{deal_row_title}}",
+                  "products": "{{deal_products}}"
+                }
+              },
+              {
+                "type": "product_grid",
+                "fields": {
+                  "title": "{{best_seller_title}}",
+                  "products": "{{featured_products}}",
+                  "columns": 5
+                }
+              },
+              {
+                "type": "trust_strip",
+                "fields": {
+                  "items": "{{marketplace_trust_points}}"
+                }
+              },
+              {
+                "type": "footer",
+                "fields": {
+                  "businessName": "{{business_name}}",
+                  "description": "{{short_description}}",
+                  "legalLinks": [
+                    "Privacy",
+                    "Terms",
+                    "Returns"
+                  ]
+                }
+              }
+            ],
+            "aiPrompt": "Use a search-first mega marketplace layout inspired by large retailers, without copying any brand. Generate a dense shopping homepage with a utility header, prominent search, category rail, daily deal hero, compact deal rows, best sellers, sidebar filters, ratings, shipping badges, comparison cues, trust modules, and editable product/category text. Preserve this structure; only adapt colors, copy, products, imagery, and CTAs to the business.",
+            "catalogModel": {
+              "catalogType": "dense_marketplace_catalog",
+              "productCardStyle": "compact marketplace cards with discount, rating, shipping badge, compare, quick CTA",
+              "collectionLayout": "search bar, category rail, deal rows, sidebar filters, dense product grid",
+              "filters": [
+                "category",
+                "brand",
+                "price",
+                "rating",
+                "availability",
+                "shipping_speed"
+              ],
+              "productDetailModel": "marketplace detail with specs, reviews, Q&A, shipping estimate, bundles",
+              "upsellModel": "frequently bought together, deal bundles, recently viewed",
+              "customerFeeling": "Large catalog product discovery and comparison"
+            },
+            "visualDifference": "Dense search-first shopping experience with categories, filters, deals, ratings and quick comparison.",
+            "clientSelectionCard": {
+              "title": "Mega Marketplace",
+              "category": "ecommerce",
+              "bestForLabel": "large stores, many products, categories",
+              "difference": "Dense catalog, search, deals, ratings, filters.",
+              "previewTags": [
+                "amazon",
+                "marketplace",
+                "dense"
+              ]
+            },
+            "pages": [
+              {
+                "name": "Home",
+                "purpose": "Marketplace discovery hub",
+                "usesSections": [
+                  "marketplace_header",
+                  "marketplace_search_hero",
+                  "category_rail",
+                  "deal_row",
+                  "best_seller_grid",
+                  "trust_strip",
+                  "footer"
+                ]
+              },
+              {
+                "name": "Catalog",
+                "purpose": "Search-first catalog",
+                "catalogType": "dense_marketplace_catalog",
+                "layout": "left filters, category pills, sort bar, compact product grid, ratings, delivery badges",
+                "filters": [
+                  "category",
+                  "brand",
+                  "price",
+                  "rating",
+                  "shipping_speed"
+                ]
+              },
+              {
+                "name": "Product",
+                "purpose": "Marketplace product detail",
+                "layout": "image gallery, price box, specs, reviews, Q&A, shipping estimate, bundles",
+                "upsell": "frequently bought together and related products"
+              },
+              {
+                "name": "Checkout",
+                "purpose": "Cart and checkout readiness",
+                "layout": "cart summary, delivery options, payment setup, customer support"
+              }
+            ],
+            "editableSlots": [
+              "search labels",
+              "categories",
+              "deal hero",
+              "deal rows",
+              "product rows",
+              "filters",
+              "ratings",
+              "shipping badges",
+              "trust badges",
+              "colors",
+              "logo",
+              "navigation",
+              "checkout CTA"
+            ]
+          },
+          "intent": "luma_agent_template",
+          "catalogType": "dense_marketplace_catalog",
+          "reason": "Live preview selected from guided context"
+        },
+        "contextText": "quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. necesito vender online y aceptar pedidos.  online store / ecommerce quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. necesito vender online y aceptar pedidos. accessories gifts aceptar pedidos. bisuteria artesanal, accesorios hechos a mano y regalos personalizados   online sales ",
+        "servicesProducts": [
+          "accessories",
+          "gifts",
+          "aceptar pedidos."
+        ]
+      }
+    },
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "networkEvents": [
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_7a4345559720\",\"request_id\":\"req_7a4345559720\",\"requestNumber\":\"KR-642BED\",\"request_number\":\"KR-642BED\",\"clientEmail\":\"pwtest-1783434438720@gmail.com\",\"client_email\":\"pwtest-1783434438720@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"\",\"businessName\":\"\",\"businessDescription\":\"\",\"industry\":\"\",\"location\":\"\",\"servicesProducts\":[],\"targetAudience\":\"\",\"preferredTone\":\"\",\"preferredColors\":[],\"contactInfo\":{\"email\":\"pwtest-1783434438720@gmail.com\",\"name\":"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_7a4345559720\",\"request_id\":\"req_7a4345559720\",\"requestNumber\":\"KR-642BED\",\"request_number\":\"KR-642BED\",\"clientEmail\":\"pwtest-1783434438720@gmail.com\",\"client_email\":\"pwtest-1783434438720@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"\",\"businessName\":\"\",\"businessDescription\":\"\",\"industry\":\"\",\"location\":\"\",\"servicesProducts\":[],\"targetAudience\":\"\",\"preferredTone\":\"\",\"preferredColors\":[],\"contactInfo\":{\"email\":\"pwtest-1783434438720@gmail.com\",\"name\":"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/luma/chat",
+        "status": 200,
+        "body": "{\"assistantMessage\":\"I organized the intake and selected Mega Marketplace as the base. One important detail is still missing.\",\"emotion\":\"speaking\",\"updatedFields\":{\"businessName\":null,\"businessDescription\":\"Quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. Necesito vender online y aceptar pedidos.\",\"industry\":\"Online store / ecommerce\",\"location\":\"\",\"servicesProducts\":[\"online\",\"aceptar pedidos.\"],\"targetAudience\":\"bisuteria a"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_7a4345559720\",\"request_id\":\"req_7a4345559720\",\"requestNumber\":\"KR-642BED\",\"request_number\":\"KR-642BED\",\"clientEmail\":\"pwtest-1783434438720@gmail.com\",\"client_email\":\"pwtest-1783434438720@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"Quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. Necesito vender online y aceptar pedidos.\",\"businessName\":\"\",\"businessDescription\":\"Quiero una tien"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_7a4345559720\",\"request_id\":\"req_7a4345559720\",\"requestNumber\":\"KR-642BED\",\"request_number\":\"KR-642BED\",\"clientEmail\":\"pwtest-1783434438720@gmail.com\",\"client_email\":\"pwtest-1783434438720@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"Quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. Necesito vender online y aceptar pedidos.\",\"businessName\":\"\",\"businessDescription\":\"Quiero una tien"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_7a4345559720\",\"request_id\":\"req_7a4345559720\",\"requestNumber\":\"KR-642BED\",\"request_number\":\"KR-642BED\",\"clientEmail\":\"pwtest-1783434438720@gmail.com\",\"client_email\":\"pwtest-1783434438720@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"Quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. Necesito vender online y aceptar pedidos.\",\"businessName\":\"\",\"businessDescription\":\"Quiero una tien"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_7a4345559720\",\"request_id\":\"req_7a4345559720\",\"requestNumber\":\"KR-642BED\",\"request_number\":\"KR-642BED\",\"clientEmail\":\"pwtest-1783434438720@gmail.com\",\"client_email\":\"pwtest-1783434438720@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"Quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. Necesito vender online y aceptar pedidos.\",\"businessName\":\"\",\"businessDescription\":\"Quiero una tien"
+      },
+      {
+        "type": "response",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "status": 200,
+        "body": "{\"requestId\":\"req_7a4345559720\",\"request_id\":\"req_7a4345559720\",\"requestNumber\":\"KR-642BED\",\"request_number\":\"KR-642BED\",\"clientEmail\":\"pwtest-1783434438720@gmail.com\",\"client_email\":\"pwtest-1783434438720@gmail.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"websiteIntent\":\"Quiero una tienda online tipo marketplace para bisuteria artesanal, accesorios hechos a mano y regalos personalizados. Necesito vender online y aceptar pedidos.\",\"businessName\":\"\",\"businessDescription\":\"Quiero una tien"
+      }
+    ]
+  }
+}

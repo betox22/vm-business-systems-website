@@ -1,0 +1,204 @@
+{
+  "templateId": "mega_marketplace",
+  "phase": "phase_4_frontend_architecture",
+  "contract": "api_consumption_by_screen",
+  "status": "draft",
+  "screens": [
+    {
+      "screen": "MarketplaceHome",
+      "area": "public_storefront",
+      "reads": [
+        "GET /api/v1/storefront/home",
+        "GET /api/v1/storefront/departments",
+        "GET /api/v1/storefront/products?featured=1",
+        "GET /api/v1/storefront/products?sort=trending"
+      ],
+      "writes": [
+        "POST /api/v1/checkout/cart/items"
+      ],
+      "states": [
+        "loading",
+        "empty",
+        "error",
+        "ready"
+      ]
+    },
+    {
+      "screen": "CatalogSearch",
+      "area": "public_storefront",
+      "reads": [
+        "GET /api/v1/storefront/products",
+        "GET /api/v1/storefront/departments",
+        "GET /api/v1/storefront/filters"
+      ],
+      "writes": [
+        "POST /api/v1/checkout/cart/items"
+      ],
+      "states": [
+        "loading",
+        "empty",
+        "error",
+        "ready"
+      ]
+    },
+    {
+      "screen": "ProductDetail",
+      "area": "public_storefront",
+      "reads": [
+        "GET /api/v1/storefront/products/{productSlug}",
+        "GET /api/v1/storefront/products/{productSlug}/related"
+      ],
+      "writes": [
+        "POST /api/v1/checkout/cart/items"
+      ],
+      "states": [
+        "loading",
+        "not_found",
+        "error",
+        "ready"
+      ]
+    },
+    {
+      "screen": "Cart",
+      "area": "public_storefront",
+      "reads": [
+        "GET /api/v1/checkout/cart",
+        "POST /api/v1/checkout/quote"
+      ],
+      "writes": [
+        "PATCH /api/v1/checkout/cart/items/{cartItem}",
+        "DELETE /api/v1/checkout/cart/items/{cartItem}",
+        "POST /api/v1/checkout/quote"
+      ],
+      "states": [
+        "loading",
+        "empty",
+        "error",
+        "quote_pending",
+        "quote_ready"
+      ]
+    },
+    {
+      "screen": "Checkout",
+      "area": "public_storefront",
+      "reads": [
+        "GET /api/v1/checkout/cart",
+        "POST /api/v1/checkout/quote"
+      ],
+      "writes": [
+        "POST /api/v1/checkout/place-order"
+      ],
+      "requiredHeaders": [
+        "Idempotency-Key"
+      ],
+      "states": [
+        "loading",
+        "quote_pending",
+        "payment_pending",
+        "placing_order",
+        "success",
+        "error"
+      ]
+    },
+    {
+      "screen": "VendorDashboard",
+      "area": "vendor_portal",
+      "reads": [
+        "GET /api/v1/vendors/me",
+        "GET /api/v1/vendor/summary",
+        "GET /api/v1/vendor/orders?status=pending",
+        "GET /api/v1/vendor/ledger?status=pending"
+      ],
+      "writes": [],
+      "states": [
+        "loading",
+        "empty",
+        "error",
+        "forbidden",
+        "ready"
+      ]
+    },
+    {
+      "screen": "VendorProductManager",
+      "area": "vendor_portal",
+      "reads": [
+        "GET /api/v1/vendor/products"
+      ],
+      "writes": [
+        "POST /api/v1/vendor/products",
+        "PATCH /api/v1/vendor/products/{product}",
+        "DELETE /api/v1/vendor/products/{product}"
+      ],
+      "states": [
+        "loading",
+        "empty",
+        "error",
+        "saving",
+        "ready"
+      ]
+    },
+    {
+      "screen": "VendorOrders",
+      "area": "vendor_portal",
+      "reads": [
+        "GET /api/v1/vendor/orders",
+        "GET /api/v1/vendor/orders/{vendorOrderNumber}"
+      ],
+      "writes": [
+        "PATCH /api/v1/vendor/orders/{vendorOrderNumber}/status"
+      ],
+      "states": [
+        "loading",
+        "empty",
+        "error",
+        "updating",
+        "ready"
+      ]
+    },
+    {
+      "screen": "AdminDashboard",
+      "area": "admin_marketplace",
+      "reads": [
+        "GET /api/v1/admin/summary",
+        "GET /api/v1/admin/vendor-applications?status=pending",
+        "GET /api/v1/admin/orders?status=placed"
+      ],
+      "writes": [],
+      "states": [
+        "loading",
+        "empty",
+        "error",
+        "forbidden",
+        "ready"
+      ]
+    },
+    {
+      "screen": "VendorApprovalQueue",
+      "area": "admin_marketplace",
+      "reads": [
+        "GET /api/v1/admin/vendor-applications",
+        "GET /api/v1/admin/vendors/{vendor}"
+      ],
+      "writes": [
+        "PATCH /api/v1/admin/vendors/{vendor}/approve",
+        "PATCH /api/v1/admin/vendors/{vendor}/suspend",
+        "PATCH /api/v1/admin/vendors/{vendor}/reject"
+      ],
+      "states": [
+        "loading",
+        "empty",
+        "error",
+        "updating",
+        "ready"
+      ]
+    }
+  ],
+  "globalRules": [
+    "Frontend must not invent marketplace data.",
+    "Frontend estimates are not final checkout totals.",
+    "All protected screens need unauthorized and forbidden states.",
+    "All mutation screens need saving/updating states.",
+    "Checkout must include Idempotency-Key.",
+    "Vendor screens must only show vendor-scoped data from the API."
+  ]
+}

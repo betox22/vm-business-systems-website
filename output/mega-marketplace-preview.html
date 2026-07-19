@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mega Marketplace Preview</title>
+    <link rel="stylesheet" href="../ai-builder.css?v=81">
+    <style>
+      body { margin: 0; background: #050510; }
+      .site-preview { min-height: 100vh; }
+    </style>
+  </head>
+  <body>
+    <main id="publicSite" class="site-preview"></main>
+    <script src="../site-viewer.js?v=22"></script>
+    <script>
+      const schema = {
+        business: {
+          name: "Crazy Box",
+          description: "Un marketplace cyberpunk para descubrir productos raros, accesorios automotrices, coleccionables, regalos y hallazgos dificiles de encontrar.",
+          selectedLanguage: "es",
+          salesMode: "online_sales",
+          industry: "Marketplace de productos variados"
+        },
+        brand: { logoUrl: "" },
+        theme: {
+          background: "#050510",
+          surface: "#111126",
+          primary: "#00f5ff",
+          secondary: "#ff2bd6",
+          accent: "#39ff14",
+          text: "#f8fbff",
+          muted: "#a7a7d9",
+          heading_font: "Inter",
+          body_font: "Inter"
+        },
+        selected_template: { id: "mega-marketplace", name: "Mega Marketplace" },
+        active_template: { id: "mega-marketplace", name: "Mega Marketplace" },
+        layout_mode: { id: "marketplace", catalog_type: "dense_marketplace_catalog" },
+        catalog_model: { catalogType: "dense_marketplace_catalog" },
+        navigation: [
+          { page_key: "home", label: "Inicio" },
+          { page_key: "catalog", label: "Ofertas" },
+          { page_key: "categories", label: "Categorías" },
+          { page_key: "support", label: "Soporte" }
+        ],
+        global_components: { footer_text: "Crazy Box - envios globales, compras seguras y drops raros." },
+        catalog_items: [
+          { id: "1", name: "Neon Flux Street Jacket", description: "Chaqueta reflectiva ligera con detalles neon para looks futuristas.", category: "Moda", price_label: "$79.00", button_label: "Agregar al carrito", rating: "4.8", review_count: 184, shipping_label: "Envio rapido", is_active: true, is_featured: true, image_url: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80" },
+          { id: "2", name: "HoloGrip Phone Stand", description: "Base magnetica compacta para escritorio, auto o setup gaming.", category: "Gadgets", price_label: "$19.99", button_label: "Agregar al carrito", rating: "4.6", review_count: 92, shipping_label: "Envio rapido", is_active: true, is_featured: true, image_url: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80" },
+          { id: "3", name: "PulseDrive USB-C Turbo Cable", description: "Cable trenzado de carga rapida con terminacion reforzada.", category: "Electronica", price_label: "$12.50", button_label: "Agregar al carrito", rating: "4.7", review_count: 236, shipping_label: "Envio rapido", is_active: true, is_featured: true, image_url: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80" },
+          { id: "4", name: "Mini Nebula Projector", description: "Proyector compacto para ambiente, gaming room o regalos especiales.", category: "Hogar", price_label: "$129.00", button_label: "Agregar al carrito", rating: "4.5", review_count: 71, shipping_label: "Oferta", is_active: true, is_featured: false, image_url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80" },
+          { id: "5", name: "Retro Reactor Keycap Set", description: "Set mecanico de teclas con look retro futurista.", category: "Gaming", price_label: "$49.00", button_label: "Agregar al carrito", rating: "4.9", review_count: 118, shipping_label: "Envio rapido", is_active: true, is_featured: false, image_url: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80" },
+          { id: "6", name: "GlowPatch Sticker Pack", description: "Stickers brillantes para laptop, consola, casco o accesorios.", category: "Anime", price_label: "$9.99", button_label: "Agregar al carrito", rating: "4.4", review_count: 66, shipping_label: "Oferta", is_active: true, is_featured: false, image_url: "" },
+          { id: "7", name: "CyberLamp Ambient Desk Light", description: "Lampara RGB para escritorio con app y presets cyberpunk.", category: "Hogar", price_label: "$59.00", button_label: "Agregar al carrito", rating: "4.8", review_count: 143, shipping_label: "Envio rapido", is_active: true, is_featured: false, image_url: "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=800&q=80" },
+          { id: "8", name: "TurboGear Trunk Organizer", description: "Organizador resistente para accesorios del carro y herramientas.", category: "Autos", price_label: "$34.99", button_label: "Agregar al carrito", rating: "4.6", review_count: 89, shipping_label: "Envio rapido", is_active: true, is_featured: false, image_url: "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?auto=format&fit=crop&w=800&q=80" }
+        ],
+        pages: [{
+          page_key: "home",
+          title: "Inicio",
+          order: 1,
+          sections: [
+            {
+              id: "marketplace_hero",
+              type: "MarketplaceHero",
+              order: 1,
+              editable: {
+                headline: "Hallazgos raros. Compra rapida. Estilo neon.",
+                subtitle: "Explora una seleccion de productos inesperados para regalos, carros, tecnologia, anime, hogar y setups futuristas.",
+                primary_button: "Comprar ofertas",
+                secondary_button: "Ver categorias",
+                search_placeholder: "Buscar productos raros, gadgets o accesorios",
+                deal_badge: "Drop cyberpunk",
+                deal_title: "Productos destacados"
+              },
+              settings: { layout: "marketplace_deals", container_width: "wide" }
+            },
+            {
+              id: "category_rail",
+              type: "CategoryRail",
+              order: 2,
+              editable: { title: "Compra por categoria", text: "Ropa, autos, anime, gadgets, hogar y regalos con una experiencia de catalogo rapido." },
+              settings: { layout: "category_tiles" }
+            },
+            {
+              id: "deal_row",
+              type: "DealRow",
+              order: 3,
+              editable: { title: "Deals del dia", text: "Productos con envio rapido, precios editables y tarjetas listas para carrito." },
+              settings: { layout: "deal_row" }
+            },
+            {
+              id: "marketplace_catalog",
+              type: "ProductGrid",
+              order: 4,
+              editable: { title: "Catalogo", text: "Resultados con filtros, ratings, precios, categorias y CTA de compra." },
+              settings: { layout: "marketplace_grid", columns: 4 }
+            },
+            {
+              id: "trust_strip",
+              type: "TrustStrip",
+              order: 5,
+              editable: { title: "Confianza marketplace", text: "Checkout seguro, envios, soporte y productos editables desde el panel." },
+              settings: { layout: "marketplace_trust" }
+            }
+          ]
+        }]
+      };
+      setTimeout(() => {
+        publicSite.innerHTML = renderWebsite(schema);
+        bindPublicSiteActions();
+      }, 50);
+    </script>
+  </body>
+</html>

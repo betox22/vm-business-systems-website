@@ -1,0 +1,3996 @@
+{
+  "url": "https://vmbusinesssystems.com/client/setup/?test-login=1&logout=1&codexDiag=1784166556554",
+  "email": "codex-bath-1784166556554@example.com",
+  "console": [],
+  "network": [
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/client/setup/?test-login=1&logout=1&codexDiag=1784166556554",
+      "resourceType": "document"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/css/avatar-assistant.css?v=2",
+      "resourceType": "stylesheet"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/ai-builder.css?v=83",
+      "resourceType": "stylesheet"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/client-setup.css?v=51",
+      "resourceType": "stylesheet"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/assets/nixie_idle.png",
+      "resourceType": "image"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/assets/nixie_thinking.png",
+      "resourceType": "image"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/assets/nixie_success.png",
+      "resourceType": "image"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/luma-config.js?v=1781138877",
+      "resourceType": "script"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/template-router.js?v=14",
+      "resourceType": "script"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/js/avatar-state-manager.js?v=1",
+      "resourceType": "script"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/js/avatar-assistant.js?v=2",
+      "resourceType": "script"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/ai-builder.js?v=162",
+      "resourceType": "script"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/luma/chat",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/templates-preview/carousel-assets/services_2.png",
+      "resourceType": "image"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/templates-preview/carousel-assets/booking_2.jpg",
+      "resourceType": "image"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/templates-preview/carousel-assets/apple_2.png",
+      "resourceType": "image"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/templates-preview/carousel-assets/professional_2.png",
+      "resourceType": "image"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/templates-preview/screenshots/education.png",
+      "resourceType": "image"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/templates/all-templates.json",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/ai/website-builder",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/assets/nixie_alert.png",
+      "resourceType": "image"
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "resourceType": "fetch"
+    }
+  ],
+  "responses": [
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/client/setup/?test-login=1&logout=1&codexDiag=1784166556554",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/ai-builder.css?v=83",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/css/avatar-assistant.css?v=2",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/client-setup.css?v=51",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/assets/nixie_idle.png",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/assets/nixie_thinking.png",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/assets/nixie_success.png",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/luma-config.js?v=1781138877",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/js/avatar-assistant.js?v=2",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/js/avatar-state-manager.js?v=1",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/template-router.js?v=14",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/ai-builder.js?v=162",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"\",\"businessName\":\"\",\"fieldMeta\":{},\"selectedLanguage\":\"en\",\"salesFlow\":\"\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"\",\"preferredColors\":[],\"location\":\"\",\"targetAudience\":\"\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"\",\"servicesProducts\":[],\"selectedTemplateId\":\"\",\"businessDescription\":\"\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"\"},\"restored\":false,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "",
+          "businessName": "",
+          "fieldMeta": {},
+          "selectedLanguage": "en",
+          "salesFlow": "",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "",
+          "preferredColors": [],
+          "location": "",
+          "targetAudience": "",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "",
+          "selectedTemplateName": "",
+          "websiteIntent": "",
+          "servicesProducts": [],
+          "selectedTemplateId": "",
+          "businessDescription": "",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "",
+          "logoPreference": "",
+          "hasLogoPhotos": ""
+        },
+        "restored": false,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"\",\"businessName\":\"\",\"fieldMeta\":{},\"selectedLanguage\":\"en\",\"salesFlow\":\"\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"\",\"preferredColors\":[],\"location\":\"\",\"targetAudience\":\"\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"\",\"servicesProducts\":[],\"selectedTemplateId\":\"\",\"businessDescription\":\"\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "",
+          "businessName": "",
+          "fieldMeta": {},
+          "selectedLanguage": "en",
+          "salesFlow": "",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "",
+          "preferredColors": [],
+          "location": "",
+          "targetAudience": "",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "",
+          "selectedTemplateName": "",
+          "websiteIntent": "",
+          "servicesProducts": [],
+          "selectedTemplateId": "",
+          "businessDescription": "",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "",
+          "logoPreference": "",
+          "hasLogoPhotos": ""
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"\",\"businessName\":\"\",\"fieldMeta\":{},\"selectedLanguage\":\"en\",\"salesFlow\":\"\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"\",\"preferredColors\":[],\"location\":\"\",\"targetAudience\":\"\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"\",\"servicesProducts\":[],\"selectedTemplateId\":\"\",\"businessDescription\":\"\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "",
+          "businessName": "",
+          "fieldMeta": {},
+          "selectedLanguage": "en",
+          "salesFlow": "",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "",
+          "preferredColors": [],
+          "location": "",
+          "targetAudience": "",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "",
+          "selectedTemplateName": "",
+          "websiteIntent": "",
+          "servicesProducts": [],
+          "selectedTemplateId": "",
+          "businessDescription": "",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "",
+          "logoPreference": "",
+          "hasLogoPhotos": ""
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"\",\"businessName\":\"\",\"fieldMeta\":{},\"selectedLanguage\":\"en\",\"salesFlow\":\"\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"\",\"preferredColors\":[],\"location\":\"\",\"targetAudience\":\"\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"\",\"servicesProducts\":[],\"selectedTemplateId\":\"\",\"businessDescription\":\"\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "",
+          "businessName": "",
+          "fieldMeta": {},
+          "selectedLanguage": "en",
+          "salesFlow": "",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "",
+          "preferredColors": [],
+          "location": "",
+          "targetAudience": "",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "",
+          "selectedTemplateName": "",
+          "websiteIntent": "",
+          "servicesProducts": [],
+          "selectedTemplateId": "",
+          "businessDescription": "",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "",
+          "logoPreference": "",
+          "hasLogoPhotos": ""
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{},\"selectedLanguage\":\"en\",\"salesFlow\":\"\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {},
+          "selectedLanguage": "en",
+          "salesFlow": "",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/templates-preview/carousel-assets/services_2.png",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/templates-preview/carousel-assets/apple_2.png",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/templates-preview/carousel-assets/booking_2.jpg",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/templates-preview/carousel-assets/professional_2.png",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/templates-preview/screenshots/education.png",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/luma/chat",
+      "status": 200,
+      "bodyText": "{\"assistantMessage\":\"I could not process that with enough precision.\",\"emotion\":\"speaking\",\"updatedFields\":{\"businessName\":\"Bath All Day\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"industry\":\"Online store / ecommerce\",\"location\":\"\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"preferredTone\":null,\"preferredColors\":null,\"salesFlow\":\"informational\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"websiteType\":\"corporate\",\"selectedTemplateId\":\"corporate-company-pro\",\"selectedTemplateName\":null,\"catalogType\":null,\"colors\":{},\"typography\":{},\"generatedCopy\":{},\"catalogItems\":[],\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"detectedIntent\":{\"businessModel\":\"informational\",\"commerceMode\":\"no_commerce\",\"salesFlow\":\"informational\",\"niche\":\"general\",\"confidence\":0.0},\"intakeCanGenerate\":false,\"sitePlan\":{}},\"nextQuestion\":\"I need to classify the project correctly. Do you want to sell online, receive quotes, take bookings, capture leads, or present information?\",\"readyToGenerate\":false,\"missingImportantFields\":[\"niche\",\"sales_flow\",\"brand_style\",\"logo\"],\"confidence\":0.0,\"selectedTemplateId\":\"corporate-company-pro\",\"selected_template_id\":\"corporate-company-pro\",\"sitePlan\":{},\"used_dev_fallback\":true}",
+      "bodyJson": {
+        "assistantMessage": "I could not process that with enough precision.",
+        "emotion": "speaking",
+        "updatedFields": {
+          "businessName": "Bath All Day",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "industry": "Online store / ecommerce",
+          "location": "",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "preferredTone": null,
+          "preferredColors": null,
+          "salesFlow": "informational",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "websiteType": "corporate",
+          "selectedTemplateId": "corporate-company-pro",
+          "selectedTemplateName": null,
+          "catalogType": null,
+          "colors": {},
+          "typography": {},
+          "generatedCopy": {},
+          "catalogItems": [],
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "detectedIntent": {
+            "businessModel": "informational",
+            "commerceMode": "no_commerce",
+            "salesFlow": "informational",
+            "niche": "general",
+            "confidence": 0
+          },
+          "intakeCanGenerate": false,
+          "sitePlan": {}
+        },
+        "nextQuestion": "I need to classify the project correctly. Do you want to sell online, receive quotes, take bookings, capture leads, or present information?",
+        "readyToGenerate": false,
+        "missingImportantFields": [
+          "niche",
+          "sales_flow",
+          "brand_style",
+          "logo"
+        ],
+        "confidence": 0,
+        "selectedTemplateId": "corporate-company-pro",
+        "selected_template_id": "corporate-company-pro",
+        "sitePlan": {},
+        "used_dev_fallback": true
+      }
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/templates/all-templates.json",
+      "status": 200
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "before_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[\"Let AI decide\"],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"Let AI decide\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [
+            "Let AI decide"
+          ],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "Let AI decide",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/ai/website-builder",
+      "status": 200,
+      "bodyText": "{\"schema\":{},\"catalog_source\":\"seed_fallback\",\"needs_more_info\":true,\"missing_fields\":[\"niche\",\"logo\"],\"next_question\":\"I need to classify the project correctly. Do you want to sell online, receive quotes, take bookings, capture leads, or present information?\",\"storage_status\":\"needs_more_info\",\"used_dev_mock\":false,\"business_id\":null,\"site_id\":null,\"generation_id\":null}",
+      "bodyJson": {
+        "schema": {},
+        "catalog_source": "seed_fallback",
+        "needs_more_info": true,
+        "missing_fields": [
+          "niche",
+          "logo"
+        ],
+        "next_question": "I need to classify the project correctly. Do you want to sell online, receive quotes, take bookings, capture leads, or present information?",
+        "storage_status": "needs_more_info",
+        "used_dev_mock": false,
+        "business_id": null,
+        "site_id": null,
+        "generation_id": null
+      }
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "GET",
+      "url": "https://vmbusinesssystems.com/assets/nixie_alert.png",
+      "status": 200
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[\"Let AI decide\"],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"Let AI decide\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [
+            "Let AI decide"
+          ],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "Let AI decide",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[\"Let AI decide\"],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"Let AI decide\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [
+            "Let AI decide"
+          ],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "Let AI decide",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[\"Let AI decide\"],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"Let AI decide\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [
+            "Let AI decide"
+          ],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "Let AI decide",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[\"Let AI decide\"],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"Let AI decide\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [
+            "Let AI decide"
+          ],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "Let AI decide",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[\"Let AI decide\"],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"Let AI decide\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [
+            "Let AI decide"
+          ],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "Let AI decide",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[\"Let AI decide\"],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"Let AI decide\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [
+            "Let AI decide"
+          ],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "Let AI decide",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[\"Let AI decide\"],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"Let AI decide\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [
+            "Let AI decide"
+          ],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "Let AI decide",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[\"Let AI decide\"],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"Let AI decide\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [
+            "Let AI decide"
+          ],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "Let AI decide",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    },
+    {
+      "phase": "after_generate_click",
+      "method": "POST",
+      "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+      "status": 200,
+      "bodyText": "{\"requestId\":\"req_752e25fe6948\",\"request_id\":\"req_752e25fe6948\",\"requestNumber\":\"KR-DCB7DF\",\"request_number\":\"KR-DCB7DF\",\"clientEmail\":\"codex-bath-1784166556554@example.com\",\"client_email\":\"codex-bath-1784166556554@example.com\",\"clientName\":\"Bath All Day\",\"selectedLanguage\":\"en\",\"draft\":{\"industry\":\"Online store / ecommerce\",\"businessName\":\"Bath All Day\",\"fieldMeta\":{\"salesFlow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"sales_flow\":{\"source\":\"ai_recommended\",\"confidence\":0.75},\"websiteType\":{\"source\":\"ai_recommended\",\"confidence\":0.75}},\"selectedLanguage\":\"en\",\"salesFlow\":\"informational\",\"logoPalette\":[],\"contactInfo\":{\"name\":\"Bath All Day\",\"email\":\"codex-bath-1784166556554@example.com\",\"phone\":\"\",\"whatsapp\":\"\",\"instagram\":\"\",\"website\":\"\",\"notes\":\"\"},\"sectionsPreference\":\"\",\"logoUrl\":\"\",\"salesMode\":\"online sales\",\"preferredColors\":[\"Let AI decide\"],\"location\":\"\",\"targetAudience\":\"vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles\",\"photoUrls\":[],\"hasLogo\":false,\"catalogType\":\"company_services_catalog\",\"selectedTemplateName\":\"\",\"websiteIntent\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"servicesProducts\":[\"velas\",\"bombas de bano\",\"ofrecer ofertas\",\"bundles\"],\"selectedTemplateId\":\"corporate-company-pro\",\"businessDescription\":\"quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\",\"hasPhotos\":false,\"websiteType\":\"\",\"desiredDomain\":\"\",\"preferredTone\":\"Let AI decide\",\"logoPreference\":\"\",\"hasLogoPhotos\":\"Client mentioned logo/photos\"},\"restored\":true,\"storageStatus\":\"stored\",\"storage_status\":\"stored\"}",
+      "bodyJson": {
+        "requestId": "req_752e25fe6948",
+        "request_id": "req_752e25fe6948",
+        "requestNumber": "KR-DCB7DF",
+        "request_number": "KR-DCB7DF",
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "client_email": "codex-bath-1784166556554@example.com",
+        "clientName": "Bath All Day",
+        "selectedLanguage": "en",
+        "draft": {
+          "industry": "Online store / ecommerce",
+          "businessName": "Bath All Day",
+          "fieldMeta": {
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.75
+            }
+          },
+          "selectedLanguage": "en",
+          "salesFlow": "informational",
+          "logoPalette": [],
+          "contactInfo": {
+            "name": "Bath All Day",
+            "email": "codex-bath-1784166556554@example.com",
+            "phone": "",
+            "whatsapp": "",
+            "instagram": "",
+            "website": "",
+            "notes": ""
+          },
+          "sectionsPreference": "",
+          "logoUrl": "",
+          "salesMode": "online sales",
+          "preferredColors": [
+            "Let AI decide"
+          ],
+          "location": "",
+          "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+          "photoUrls": [],
+          "hasLogo": false,
+          "catalogType": "company_services_catalog",
+          "selectedTemplateName": "",
+          "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "servicesProducts": [
+            "velas",
+            "bombas de bano",
+            "ofrecer ofertas",
+            "bundles"
+          ],
+          "selectedTemplateId": "corporate-company-pro",
+          "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+          "hasPhotos": false,
+          "websiteType": "",
+          "desiredDomain": "",
+          "preferredTone": "Let AI decide",
+          "logoPreference": "",
+          "hasLogoPhotos": "Client mentioned logo/photos"
+        },
+        "restored": true,
+        "storageStatus": "stored",
+        "storage_status": "stored"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "name": "loaded",
+      "text": "×\nPROTECTED WORKSPACE\nStart by saving your progress\n\nUse email so LYRA can save every answer, restore drafts, and keep you from repeating the same information.\n\nEmail\nEnter my workspace",
+      "controls": [
+        {
+          "idx": 86,
+          "tag": "BUTTON",
+          "id": "studioAuthCloseButton",
+          "name": null,
+          "text": "×",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 321,
+            "y": 198.703125,
+            "w": 34,
+            "h": 34
+          }
+        },
+        {
+          "idx": 87,
+          "tag": "INPUT",
+          "id": "studioAuthEmail",
+          "name": null,
+          "text": "tu@email.com",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 47,
+            "y": 507.28125,
+            "w": 296,
+            "h": 43
+          }
+        },
+        {
+          "idx": 88,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Enter my workspace",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 47,
+            "y": 572.28125,
+            "w": 296,
+            "h": 47
+          }
+        }
+      ]
+    },
+    {
+      "name": "after_login",
+      "text": "LYRA\nAI WEBSITE ASSISTANT\nONLINE\nAccount: codex-bath...@example.com\nNew page\nWebsite language\nEnglish\nEspañol\nFrançais\nPortuguês\nVoice off\n×\nTell me what you want to build in one rich paragraph: what the business sells or does, who buys, the style/colors, location, and whether it should sell online, book appointments, collect leads, or present the company. I will choose the best structure and ask only for what is missing. You can answer naturally, for example: a large catalog store, a restaurant menu, a booking site for a barbershop, or a cyberpunk online store.\nReview details\nSell online\nShow catalog\nBusiness info site\nBooking\nRequest quotes\nMarketplace\nUse voice\nSend",
+      "controls": [
+        {
+          "idx": 18,
+          "tag": "BUTTON",
+          "id": "clientAccountButton",
+          "name": null,
+          "text": "Account: codex-bath...@example.com",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 33.59375,
+            "y": 85.046875,
+            "w": 96,
+            "h": 32
+          }
+        },
+        {
+          "idx": 19,
+          "tag": "BUTTON",
+          "id": "startNewProjectButton",
+          "name": null,
+          "text": "New page",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 135.59375,
+            "y": 85.046875,
+            "w": 76.8125,
+            "h": 32
+          }
+        },
+        {
+          "idx": 20,
+          "tag": "BUTTON",
+          "id": "assistantAudioToggle",
+          "name": null,
+          "text": "Voice off",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 282.40625,
+            "y": 84.046875,
+            "w": 34,
+            "h": 34
+          }
+        },
+        {
+          "idx": 21,
+          "tag": "BUTTON",
+          "id": "guidedCloseButton",
+          "name": null,
+          "text": "×",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 322.40625,
+            "y": 84.046875,
+            "w": 34,
+            "h": 34
+          }
+        },
+        {
+          "idx": 22,
+          "tag": "BUTTON",
+          "id": "reviewDetailsButton",
+          "name": null,
+          "text": "Review details",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 271.78125,
+            "y": 633,
+            "w": 107.21875,
+            "h": 32
+          }
+        },
+        {
+          "idx": 23,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Sell online",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 22,
+            "y": 686,
+            "w": 83.0625,
+            "h": 30
+          }
+        },
+        {
+          "idx": 24,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Show catalog",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 112.0625,
+            "y": 686,
+            "w": 100.78125,
+            "h": 30
+          }
+        },
+        {
+          "idx": 25,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Business info site",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 219.84375,
+            "y": 686,
+            "w": 125,
+            "h": 30
+          }
+        },
+        {
+          "idx": 26,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Booking",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 22,
+            "y": 723,
+            "w": 71.53125,
+            "h": 30
+          }
+        },
+        {
+          "idx": 27,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Request quotes",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 100.53125,
+            "y": 723,
+            "w": 113.328125,
+            "h": 30
+          }
+        },
+        {
+          "idx": 28,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Marketplace",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 220.859375,
+            "y": 723,
+            "w": 95.453125,
+            "h": 30
+          }
+        },
+        {
+          "idx": 35,
+          "tag": "INPUT",
+          "id": "guidedReply",
+          "name": null,
+          "text": "Type your answer...",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 10,
+            "y": 772,
+            "w": 270,
+            "h": 46
+          }
+        },
+        {
+          "idx": 36,
+          "tag": "BUTTON",
+          "id": "guidedMicButton",
+          "name": null,
+          "text": "Use voice",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 292,
+            "y": 774,
+            "w": 42,
+            "h": 42
+          }
+        },
+        {
+          "idx": 37,
+          "tag": "BUTTON",
+          "id": "guidedSendButton",
+          "name": null,
+          "text": "Send",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 340,
+            "y": 774,
+            "w": 42,
+            "h": 42
+          }
+        }
+      ]
+    },
+    {
+      "name": "after_business_message",
+      "text": "LYRA\nAI WEBSITE ASSISTANT\nONLINE\nAccount: codex-bath...@example.com\nNew page\nWebsite language\nEnglish\nEspañol\nFrançais\nPortuguês\nVoice off\n×\nTell me what you want to build in one rich paragraph: what the business sells or does, who buys, the style/colors, location, and whether it should sell online, book appointments, collect leads, or present the company. I will choose the best structure and ask only for what is missing. You can answer naturally, for example: a large catalog store, a restaurant menu, a booking site for a barbershop, or a cyberpunk online store.\nquiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\nI have enough context to build the first draft. I will use your notes as strategy, not as page copy.\nSITE PLAN READY\nCorporate Company\n\nLYRA selected Corporate Company because it best matches service or quote site.\n\nEditable pages\nEditable sections\nEditable brand\nEditable draft\nNo raw notes pasted\nGenerate website now\nReview details\nReview details\nGenerate now\nReview details\nChange style\nUpload logo\nUse voice\nSend",
+      "controls": [
+        {
+          "idx": 18,
+          "tag": "BUTTON",
+          "id": "clientAccountButton",
+          "name": null,
+          "text": "Account: codex-bath...@example.com",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 33.59375,
+            "y": 85.046875,
+            "w": 96,
+            "h": 32
+          }
+        },
+        {
+          "idx": 19,
+          "tag": "BUTTON",
+          "id": "startNewProjectButton",
+          "name": null,
+          "text": "New page",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 135.59375,
+            "y": 85.046875,
+            "w": 76.8125,
+            "h": 32
+          }
+        },
+        {
+          "idx": 20,
+          "tag": "BUTTON",
+          "id": "assistantAudioToggle",
+          "name": null,
+          "text": "Voice off",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 282.40625,
+            "y": 84.046875,
+            "w": 34,
+            "h": 34
+          }
+        },
+        {
+          "idx": 21,
+          "tag": "BUTTON",
+          "id": "guidedCloseButton",
+          "name": null,
+          "text": "×",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 322.40625,
+            "y": 84.046875,
+            "w": 34,
+            "h": 34
+          }
+        },
+        {
+          "idx": 27,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Generate website now",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 25,
+            "y": 513.34375,
+            "w": 340,
+            "h": 42
+          }
+        },
+        {
+          "idx": 28,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Review details",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 25,
+            "y": 563.34375,
+            "w": 340,
+            "h": 42
+          }
+        },
+        {
+          "idx": 29,
+          "tag": "BUTTON",
+          "id": "reviewDetailsButton",
+          "name": null,
+          "text": "Review details",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 271.78125,
+            "y": 633,
+            "w": 107.21875,
+            "h": 32
+          }
+        },
+        {
+          "idx": 30,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Generate now",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 22,
+            "y": 686,
+            "w": 103.96875,
+            "h": 30
+          }
+        },
+        {
+          "idx": 31,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Review details",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 132.96875,
+            "y": 686,
+            "w": 107.21875,
+            "h": 30
+          }
+        },
+        {
+          "idx": 32,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Change style",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 247.1875,
+            "y": 686,
+            "w": 97.078125,
+            "h": 30
+          }
+        },
+        {
+          "idx": 33,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Upload logo",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 22,
+            "y": 723,
+            "w": 94.28125,
+            "h": 30
+          }
+        },
+        {
+          "idx": 40,
+          "tag": "INPUT",
+          "id": "guidedReply",
+          "name": null,
+          "text": "Type your answer...",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 10,
+            "y": 772,
+            "w": 270,
+            "h": 46
+          }
+        },
+        {
+          "idx": 41,
+          "tag": "BUTTON",
+          "id": "guidedMicButton",
+          "name": null,
+          "text": "Use voice",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 292,
+            "y": 774,
+            "w": 42,
+            "h": 42
+          }
+        },
+        {
+          "idx": 42,
+          "tag": "BUTTON",
+          "id": "guidedSendButton",
+          "name": null,
+          "text": "Send",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 340,
+            "y": 774,
+            "w": 42,
+            "h": 42
+          }
+        }
+      ]
+    },
+    {
+      "name": "after_logo_answer",
+      "text": "LYRA\nAI WEBSITE ASSISTANT\nONLINE\nAccount: codex-bath...@example.com\nNew page\nWebsite language\nEnglish\nEspañol\nFrançais\nPortuguês\nVoice off\n×\nTell me what you want to build in one rich paragraph: what the business sells or does, who buys, the style/colors, location, and whether it should sell online, book appointments, collect leads, or present the company. I will choose the best structure and ask only for what is missing. You can answer naturally, for example: a large catalog store, a restaurant menu, a booking site for a barbershop, or a cyberpunk online store.\nquiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\nI have enough context to build the first draft. I will use your notes as strategy, not as page copy.\nsáltalo por ahora\nPerfect, I added that to the plan. Anything else you want to change or add before I generate?\nSITE PLAN READY\nCorporate Company\n\nLYRA selected Corporate Company because it best matches service or quote site.\n\nEditable pages\nEditable sections\nEditable brand\nEditable draft\nNo raw notes pasted\nGenerate website now\nReview details\nReview details\nGenerate now\nReview details\nChange style\nUpload logo\nUse voice\nSend",
+      "controls": [
+        {
+          "idx": 18,
+          "tag": "BUTTON",
+          "id": "clientAccountButton",
+          "name": null,
+          "text": "Account: codex-bath...@example.com",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 33.59375,
+            "y": 85.046875,
+            "w": 96,
+            "h": 32
+          }
+        },
+        {
+          "idx": 19,
+          "tag": "BUTTON",
+          "id": "startNewProjectButton",
+          "name": null,
+          "text": "New page",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 135.59375,
+            "y": 85.046875,
+            "w": 76.8125,
+            "h": 32
+          }
+        },
+        {
+          "idx": 20,
+          "tag": "BUTTON",
+          "id": "assistantAudioToggle",
+          "name": null,
+          "text": "Voice off",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 282.40625,
+            "y": 84.046875,
+            "w": 34,
+            "h": 34
+          }
+        },
+        {
+          "idx": 21,
+          "tag": "BUTTON",
+          "id": "guidedCloseButton",
+          "name": null,
+          "text": "×",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 322.40625,
+            "y": 84.046875,
+            "w": 34,
+            "h": 34
+          }
+        },
+        {
+          "idx": 27,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Generate website now",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 25,
+            "y": 513.09375,
+            "w": 340,
+            "h": 42
+          }
+        },
+        {
+          "idx": 28,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Review details",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 25,
+            "y": 563.09375,
+            "w": 340,
+            "h": 42
+          }
+        },
+        {
+          "idx": 29,
+          "tag": "BUTTON",
+          "id": "reviewDetailsButton",
+          "name": null,
+          "text": "Review details",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 271.78125,
+            "y": 633,
+            "w": 107.21875,
+            "h": 32
+          }
+        },
+        {
+          "idx": 30,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Generate now",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 22,
+            "y": 686,
+            "w": 103.96875,
+            "h": 30
+          }
+        },
+        {
+          "idx": 31,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Review details",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 132.96875,
+            "y": 686,
+            "w": 107.21875,
+            "h": 30
+          }
+        },
+        {
+          "idx": 32,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Change style",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 247.1875,
+            "y": 686,
+            "w": 97.078125,
+            "h": 30
+          }
+        },
+        {
+          "idx": 33,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Upload logo",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 22,
+            "y": 723,
+            "w": 94.28125,
+            "h": 30
+          }
+        },
+        {
+          "idx": 40,
+          "tag": "INPUT",
+          "id": "guidedReply",
+          "name": null,
+          "text": "Type your answer...",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 10,
+            "y": 772,
+            "w": 270,
+            "h": 46
+          }
+        },
+        {
+          "idx": 41,
+          "tag": "BUTTON",
+          "id": "guidedMicButton",
+          "name": null,
+          "text": "Use voice",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 292,
+            "y": 774,
+            "w": 42,
+            "h": 42
+          }
+        },
+        {
+          "idx": 42,
+          "tag": "BUTTON",
+          "id": "guidedSendButton",
+          "name": null,
+          "text": "Send",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 340,
+            "y": 774,
+            "w": 42,
+            "h": 42
+          }
+        }
+      ]
+    },
+    {
+      "name": "after_generate",
+      "text": "LYRA\nAI WEBSITE ASSISTANT\nONLINE\nAccount: codex-bath...@example.com\nNew page\nWebsite language\nEnglish\nEspañol\nFrançais\nPortuguês\nVoice off\n×\nTell me what you want to build in one rich paragraph: what the business sells or does, who buys, the style/colors, location, and whether it should sell online, book appointments, collect leads, or present the company. I will choose the best structure and ask only for what is missing. You can answer naturally, for example: a large catalog store, a restaurant menu, a booking site for a barbershop, or a cyberpunk online store.\nquiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\nI have enough context to build the first draft. I will use your notes as strategy, not as page copy.\nsáltalo por ahora\nPerfect, I added that to the plan. Anything else you want to change or add before I generate?\nI found your saved workspace. We can continue from here.\nI need to classify the project correctly. Do you want to sell online, receive quotes, take bookings, capture leads, or present information?\nSITE PLAN READY\nCorporate Company\n\nLYRA selected Corporate Company because it best matches service or quote site.\n\nEditable pages\nEditable sections\nEditable brand\nEditable draft\nNo raw notes pasted\nGenerate website now\nReview details\nReview details\nGenerate now\nReview details\nChange style\nUpload logo\nUse voice\nSend",
+      "controls": [
+        {
+          "idx": 19,
+          "tag": "BUTTON",
+          "id": "clientAccountButton",
+          "name": null,
+          "text": "Account: codex-bath...@example.com",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 33.59375,
+            "y": 85.046875,
+            "w": 96,
+            "h": 32
+          }
+        },
+        {
+          "idx": 20,
+          "tag": "BUTTON",
+          "id": "startNewProjectButton",
+          "name": null,
+          "text": "New page",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 135.59375,
+            "y": 85.046875,
+            "w": 76.8125,
+            "h": 32
+          }
+        },
+        {
+          "idx": 21,
+          "tag": "BUTTON",
+          "id": "assistantAudioToggle",
+          "name": null,
+          "text": "Voice off",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 282.40625,
+            "y": 84.046875,
+            "w": 34,
+            "h": 34
+          }
+        },
+        {
+          "idx": 22,
+          "tag": "BUTTON",
+          "id": "guidedCloseButton",
+          "name": null,
+          "text": "×",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 322.40625,
+            "y": 84.046875,
+            "w": 34,
+            "h": 34
+          }
+        },
+        {
+          "idx": 28,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Generate website now",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 25,
+            "y": 513.09375,
+            "w": 340,
+            "h": 42
+          }
+        },
+        {
+          "idx": 29,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Review details",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 25,
+            "y": 563.09375,
+            "w": 340,
+            "h": 42
+          }
+        },
+        {
+          "idx": 30,
+          "tag": "BUTTON",
+          "id": "reviewDetailsButton",
+          "name": null,
+          "text": "Review details",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 271.78125,
+            "y": 633,
+            "w": 107.21875,
+            "h": 32
+          }
+        },
+        {
+          "idx": 31,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Generate now",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 22,
+            "y": 686,
+            "w": 103.96875,
+            "h": 30
+          }
+        },
+        {
+          "idx": 32,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Review details",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 132.96875,
+            "y": 686,
+            "w": 107.21875,
+            "h": 30
+          }
+        },
+        {
+          "idx": 33,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Change style",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 247.1875,
+            "y": 686,
+            "w": 97.078125,
+            "h": 30
+          }
+        },
+        {
+          "idx": 34,
+          "tag": "BUTTON",
+          "id": null,
+          "name": null,
+          "text": "Upload logo",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 22,
+            "y": 723,
+            "w": 94.28125,
+            "h": 30
+          }
+        },
+        {
+          "idx": 41,
+          "tag": "INPUT",
+          "id": "guidedReply",
+          "name": null,
+          "text": "Type your answer...",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 10,
+            "y": 772,
+            "w": 270,
+            "h": 46
+          }
+        },
+        {
+          "idx": 42,
+          "tag": "BUTTON",
+          "id": "guidedMicButton",
+          "name": null,
+          "text": "Use voice",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 292,
+            "y": 774,
+            "w": 42,
+            "h": 42
+          }
+        },
+        {
+          "idx": 43,
+          "tag": "BUTTON",
+          "id": "guidedSendButton",
+          "name": null,
+          "text": "Send",
+          "visible": true,
+          "disabled": null,
+          "rect": {
+            "x": 340,
+            "y": 774,
+            "w": 42,
+            "h": 42
+          }
+        }
+      ]
+    }
+  ],
+  "storage": {
+    "initial": {
+      "lumaPendingClientEmail": null,
+      "hasClientSession": false,
+      "clientSession": null,
+      "hasGuidedDraft": true,
+      "guidedDraft": {
+        "savedAt": "2026-07-16T01:49:17.162Z",
+        "guidedStep": "websiteIntent",
+        "stateKeys": [
+          "websiteIntent",
+          "businessName",
+          "businessDescription",
+          "industry",
+          "location",
+          "servicesProducts",
+          "targetAudience",
+          "preferredTone",
+          "preferredColors",
+          "contactInfo",
+          "desiredDomain",
+          "logoUrl",
+          "photoUrls",
+          "videoUrls",
+          "logoPalette",
+          "logoPreference",
+          "salesFlow",
+          "fieldMeta",
+          "brand",
+          "designStrategy",
+          "qualityRules",
+          "selectedLanguage",
+          "hasLogo",
+          "hasPhotos",
+          "salesMode",
+          "hasLogoPhotos",
+          "sectionsPreference",
+          "aiStudioPlan",
+          "sitePlan",
+          "sitePlanApproved",
+          "publicCopyPolicy",
+          "source",
+          "status",
+          "brandContextNote"
+        ],
+        "salesFlow": null,
+        "selectedTemplateId": null,
+        "fieldMeta": {},
+        "aiStudioPlan": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "business_website",
+          "recommendedTemplateId": "",
+          "recommendedTemplateName": "",
+          "recommendedCatalogType": "",
+          "reasoningSummary": "LYRA is still identifying the strongest template from the business context.",
+          "salesFlow": "lead_capture",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Brand promise, hero, best offer, trust and primary CTA.",
+              "sections": [
+                "Hero",
+                "Featured",
+                "Trust",
+                "CTA"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Products/services with filters, cards and clear actions.",
+              "sections": [
+                "Search",
+                "Categories",
+                "Grid",
+                "Detail CTA"
+              ]
+            },
+            {
+              "key": "detail",
+              "title": "Product detail",
+              "purpose": "Gallery, benefits, price/quote logic, proof and related items.",
+              "sections": [
+                "Gallery",
+                "Benefits",
+                "Proof",
+                "Related"
+              ]
+            },
+            {
+              "key": "contact",
+              "title": "Checkout / Contact",
+              "purpose": "Final conversion path with contact, booking, quote or checkout intent.",
+              "sections": [
+                "Contact",
+                "Form",
+                "Social",
+                "Location"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName",
+            "businessDescription",
+            "websiteIntent"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        }
+      }
+    },
+    "afterLogin": {
+      "lumaPendingClientEmail": "codex-bath-1784166556554@example.com",
+      "hasClientSession": true,
+      "clientSession": {
+        "id": null,
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "restored": true,
+        "draftKeys": [
+          "websiteIntent",
+          "businessName",
+          "businessDescription",
+          "industry",
+          "location",
+          "servicesProducts",
+          "targetAudience",
+          "preferredTone",
+          "preferredColors",
+          "contactInfo",
+          "desiredDomain",
+          "logoUrl",
+          "photoUrls",
+          "videoUrls",
+          "logoPalette",
+          "fieldMeta",
+          "selectedLanguage",
+          "hasLogo",
+          "hasPhotos",
+          "salesMode",
+          "hasLogoPhotos",
+          "logoPreference",
+          "sectionsPreference",
+          "selectedTemplateId",
+          "selectedTemplateName",
+          "catalogType",
+          "websiteType",
+          "salesFlow"
+        ],
+        "draftSalesFlow": null,
+        "draftTemplate": null,
+        "draftFieldMeta": {}
+      },
+      "hasGuidedDraft": true,
+      "guidedDraft": {
+        "savedAt": "2026-07-16T01:49:29.849Z",
+        "guidedStep": "websiteIntent",
+        "stateKeys": [
+          "websiteIntent",
+          "businessName",
+          "businessDescription",
+          "industry",
+          "location",
+          "servicesProducts",
+          "targetAudience",
+          "preferredTone",
+          "preferredColors",
+          "contactInfo",
+          "desiredDomain",
+          "logoUrl",
+          "photoUrls",
+          "videoUrls",
+          "logoPalette",
+          "logoPreference",
+          "salesFlow",
+          "fieldMeta",
+          "brand",
+          "designStrategy",
+          "qualityRules",
+          "selectedLanguage",
+          "hasLogo",
+          "hasPhotos",
+          "salesMode",
+          "hasLogoPhotos",
+          "sectionsPreference",
+          "aiStudioPlan",
+          "sitePlan",
+          "sitePlanApproved",
+          "publicCopyPolicy",
+          "source",
+          "status",
+          "brandContextNote"
+        ],
+        "salesFlow": null,
+        "selectedTemplateId": null,
+        "fieldMeta": {},
+        "aiStudioPlan": {
+          "version": 2,
+          "decisionState": "enough_to_plan_with_optional_gaps",
+          "websiteType": "business_website",
+          "recommendedTemplateId": "",
+          "recommendedTemplateName": "",
+          "recommendedCatalogType": "",
+          "reasoningSummary": "LYRA is still identifying the strongest template from the business context.",
+          "salesFlow": "lead_capture",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Brand promise, hero, best offer, trust and primary CTA.",
+              "sections": [
+                "Hero",
+                "Featured",
+                "Trust",
+                "CTA"
+              ]
+            },
+            {
+              "key": "catalog",
+              "title": "Catalog",
+              "purpose": "Products/services with filters, cards and clear actions.",
+              "sections": [
+                "Search",
+                "Categories",
+                "Grid",
+                "Detail CTA"
+              ]
+            },
+            {
+              "key": "detail",
+              "title": "Product detail",
+              "purpose": "Gallery, benefits, price/quote logic, proof and related items.",
+              "sections": [
+                "Gallery",
+                "Benefits",
+                "Proof",
+                "Related"
+              ]
+            },
+            {
+              "key": "contact",
+              "title": "Checkout / Contact",
+              "purpose": "Final conversion path with contact, booking, quote or checkout intent.",
+              "sections": [
+                "Contact",
+                "Form",
+                "Social",
+                "Location"
+              ]
+            }
+          ],
+          "missingImportantFields": [
+            "businessName",
+            "businessDescription",
+            "websiteIntent"
+          ],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        }
+      }
+    },
+    "afterBusinessMessage": {
+      "lumaPendingClientEmail": "codex-bath-1784166556554@example.com",
+      "hasClientSession": true,
+      "clientSession": {
+        "id": null,
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "restored": true,
+        "draftKeys": [
+          "websiteIntent",
+          "businessName",
+          "businessDescription",
+          "industry",
+          "location",
+          "servicesProducts",
+          "targetAudience",
+          "preferredTone",
+          "preferredColors",
+          "contactInfo",
+          "desiredDomain",
+          "logoUrl",
+          "photoUrls",
+          "videoUrls",
+          "logoPalette",
+          "fieldMeta",
+          "selectedLanguage",
+          "hasLogo",
+          "hasPhotos",
+          "salesMode",
+          "hasLogoPhotos",
+          "logoPreference",
+          "sectionsPreference",
+          "selectedTemplateId",
+          "selectedTemplateName",
+          "catalogType",
+          "websiteType",
+          "salesFlow"
+        ],
+        "draftSalesFlow": "informational",
+        "draftTemplate": "corporate-company-pro",
+        "draftFieldMeta": {
+          "salesFlow": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          },
+          "sales_flow": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          },
+          "websiteType": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          }
+        }
+      },
+      "hasGuidedDraft": true,
+      "guidedDraft": {
+        "savedAt": "2026-07-16T01:49:45.733Z",
+        "guidedStep": "review",
+        "stateKeys": [
+          "websiteIntent",
+          "businessName",
+          "businessDescription",
+          "industry",
+          "location",
+          "servicesProducts",
+          "targetAudience",
+          "preferredTone",
+          "preferredColors",
+          "contactInfo",
+          "desiredDomain",
+          "logoUrl",
+          "photoUrls",
+          "videoUrls",
+          "logoPalette",
+          "logoPreference",
+          "salesFlow",
+          "fieldMeta",
+          "brand",
+          "designStrategy",
+          "qualityRules",
+          "selectedLanguage",
+          "hasLogo",
+          "hasPhotos",
+          "salesMode",
+          "hasLogoPhotos",
+          "sectionsPreference",
+          "aiStudioPlan",
+          "sitePlan",
+          "sitePlanApproved",
+          "publicCopyPolicy",
+          "source",
+          "status",
+          "brandContextNote"
+        ],
+        "salesFlow": "informational",
+        "selectedTemplateId": null,
+        "fieldMeta": {
+          "salesFlow": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          },
+          "sales_flow": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          },
+          "websiteType": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          }
+        },
+        "aiStudioPlan": {
+          "version": 2,
+          "decisionState": "ready_to_generate",
+          "websiteType": "service_or_quote_site",
+          "recommendedTemplateId": "corporate-company-pro",
+          "recommendedTemplateName": "Corporate Company",
+          "recommendedCatalogType": "company_services_catalog",
+          "reasoningSummary": "LYRA selected Corporate Company because it best matches service or quote site.",
+          "salesFlow": "quote_or_lead_request",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture",
+            "catalog_manager",
+            "categories",
+            "search",
+            "filters",
+            "product_cards",
+            "cart",
+            "checkout_path",
+            "customer_account",
+            "featured_deals",
+            "quote_request_flow"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Company positioning and inquiry conversion",
+              "sections": [
+                "corporate_header",
+                "corporate_hero",
+                "corporate_services",
+                "corporate_process",
+                "corporate_proof",
+                "contact"
+              ]
+            },
+            {
+              "key": "services",
+              "title": "Services",
+              "purpose": "Capabilities and service details",
+              "sections": []
+            },
+            {
+              "key": "company",
+              "title": "Company",
+              "purpose": "About, credibility, team and proof",
+              "sections": []
+            },
+            {
+              "key": "contact",
+              "title": "Contact",
+              "purpose": "Consultation or inquiry request",
+              "sections": []
+            }
+          ],
+          "missingImportantFields": [],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        }
+      }
+    },
+    "afterLogoAnswer": {
+      "lumaPendingClientEmail": "codex-bath-1784166556554@example.com",
+      "hasClientSession": true,
+      "clientSession": {
+        "id": null,
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "restored": true,
+        "draftKeys": [
+          "websiteIntent",
+          "businessName",
+          "businessDescription",
+          "industry",
+          "location",
+          "servicesProducts",
+          "targetAudience",
+          "preferredTone",
+          "preferredColors",
+          "contactInfo",
+          "desiredDomain",
+          "logoUrl",
+          "photoUrls",
+          "videoUrls",
+          "logoPalette",
+          "fieldMeta",
+          "selectedLanguage",
+          "hasLogo",
+          "hasPhotos",
+          "salesMode",
+          "hasLogoPhotos",
+          "logoPreference",
+          "sectionsPreference",
+          "selectedTemplateId",
+          "selectedTemplateName",
+          "catalogType",
+          "websiteType",
+          "salesFlow"
+        ],
+        "draftSalesFlow": "informational",
+        "draftTemplate": "corporate-company-pro",
+        "draftFieldMeta": {
+          "salesFlow": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          },
+          "sales_flow": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          },
+          "websiteType": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          }
+        }
+      },
+      "hasGuidedDraft": true,
+      "guidedDraft": {
+        "savedAt": "2026-07-16T01:49:56.967Z",
+        "guidedStep": "review",
+        "stateKeys": [
+          "websiteIntent",
+          "businessName",
+          "businessDescription",
+          "industry",
+          "location",
+          "servicesProducts",
+          "targetAudience",
+          "preferredTone",
+          "preferredColors",
+          "contactInfo",
+          "desiredDomain",
+          "logoUrl",
+          "photoUrls",
+          "videoUrls",
+          "logoPalette",
+          "logoPreference",
+          "salesFlow",
+          "fieldMeta",
+          "brand",
+          "designStrategy",
+          "qualityRules",
+          "selectedLanguage",
+          "hasLogo",
+          "hasPhotos",
+          "salesMode",
+          "hasLogoPhotos",
+          "sectionsPreference",
+          "aiStudioPlan",
+          "sitePlan",
+          "sitePlanApproved",
+          "publicCopyPolicy",
+          "source",
+          "status",
+          "brandContextNote"
+        ],
+        "salesFlow": "informational",
+        "selectedTemplateId": null,
+        "fieldMeta": {
+          "salesFlow": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          },
+          "sales_flow": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          },
+          "websiteType": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          }
+        },
+        "aiStudioPlan": {
+          "version": 2,
+          "decisionState": "ready_to_generate",
+          "websiteType": "service_or_quote_site",
+          "recommendedTemplateId": "corporate-company-pro",
+          "recommendedTemplateName": "Corporate Company",
+          "recommendedCatalogType": "company_services_catalog",
+          "reasoningSummary": "LYRA selected Corporate Company because it best matches service or quote site.",
+          "salesFlow": "quote_or_lead_request",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture",
+            "catalog_manager",
+            "categories",
+            "search",
+            "filters",
+            "product_cards",
+            "cart",
+            "checkout_path",
+            "customer_account",
+            "featured_deals",
+            "quote_request_flow"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Company positioning and inquiry conversion",
+              "sections": [
+                "corporate_header",
+                "corporate_hero",
+                "corporate_services",
+                "corporate_process",
+                "corporate_proof",
+                "contact"
+              ]
+            },
+            {
+              "key": "services",
+              "title": "Services",
+              "purpose": "Capabilities and service details",
+              "sections": []
+            },
+            {
+              "key": "company",
+              "title": "Company",
+              "purpose": "About, credibility, team and proof",
+              "sections": []
+            },
+            {
+              "key": "contact",
+              "title": "Contact",
+              "purpose": "Consultation or inquiry request",
+              "sections": []
+            }
+          ],
+          "missingImportantFields": [],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        }
+      }
+    },
+    "afterGenerate": {
+      "lumaPendingClientEmail": "codex-bath-1784166556554@example.com",
+      "hasClientSession": true,
+      "clientSession": {
+        "id": null,
+        "clientEmail": "codex-bath-1784166556554@example.com",
+        "restored": true,
+        "draftKeys": [
+          "websiteIntent",
+          "businessName",
+          "businessDescription",
+          "industry",
+          "location",
+          "servicesProducts",
+          "targetAudience",
+          "preferredTone",
+          "preferredColors",
+          "contactInfo",
+          "desiredDomain",
+          "logoUrl",
+          "photoUrls",
+          "videoUrls",
+          "logoPalette",
+          "fieldMeta",
+          "selectedLanguage",
+          "hasLogo",
+          "hasPhotos",
+          "salesMode",
+          "hasLogoPhotos",
+          "logoPreference",
+          "sectionsPreference",
+          "selectedTemplateId",
+          "selectedTemplateName",
+          "catalogType",
+          "websiteType",
+          "salesFlow"
+        ],
+        "draftSalesFlow": "informational",
+        "draftTemplate": "corporate-company-pro",
+        "draftFieldMeta": {
+          "salesFlow": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          },
+          "sales_flow": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          },
+          "websiteType": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          }
+        }
+      },
+      "hasGuidedDraft": true,
+      "guidedDraft": {
+        "savedAt": "2026-07-16T01:50:29.048Z",
+        "guidedStep": "review",
+        "stateKeys": [
+          "websiteIntent",
+          "businessName",
+          "businessDescription",
+          "industry",
+          "location",
+          "servicesProducts",
+          "targetAudience",
+          "preferredTone",
+          "preferredColors",
+          "contactInfo",
+          "desiredDomain",
+          "logoUrl",
+          "photoUrls",
+          "videoUrls",
+          "logoPalette",
+          "logoPreference",
+          "salesFlow",
+          "fieldMeta",
+          "brand",
+          "designStrategy",
+          "qualityRules",
+          "selectedLanguage",
+          "hasLogo",
+          "hasPhotos",
+          "salesMode",
+          "hasLogoPhotos",
+          "sectionsPreference",
+          "aiStudioPlan",
+          "sitePlan",
+          "sitePlanApproved",
+          "publicCopyPolicy",
+          "source",
+          "status",
+          "brandContextNote"
+        ],
+        "salesFlow": "informational",
+        "selectedTemplateId": null,
+        "fieldMeta": {
+          "salesFlow": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          },
+          "sales_flow": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          },
+          "websiteType": {
+            "source": "ai_recommended",
+            "confidence": 0.75
+          }
+        },
+        "aiStudioPlan": {
+          "version": 2,
+          "decisionState": "ready_to_generate",
+          "websiteType": "service_or_quote_site",
+          "recommendedTemplateId": "corporate-company-pro",
+          "recommendedTemplateName": "Corporate Company",
+          "recommendedCatalogType": "company_services_catalog",
+          "reasoningSummary": "LYRA selected Corporate Company because it best matches service or quote site.",
+          "salesFlow": "quote_or_lead_request",
+          "requiredFeatures": [
+            "editable_pages",
+            "editable_sections",
+            "editable_brand_system",
+            "contact_capture",
+            "catalog_manager",
+            "categories",
+            "search",
+            "filters",
+            "product_cards",
+            "cart",
+            "checkout_path",
+            "customer_account",
+            "featured_deals",
+            "quote_request_flow"
+          ],
+          "pages": [
+            {
+              "key": "home",
+              "title": "Home",
+              "purpose": "Company positioning and inquiry conversion",
+              "sections": [
+                "corporate_header",
+                "corporate_hero",
+                "corporate_services",
+                "corporate_process",
+                "corporate_proof",
+                "contact"
+              ]
+            },
+            {
+              "key": "services",
+              "title": "Services",
+              "purpose": "Capabilities and service details",
+              "sections": []
+            },
+            {
+              "key": "company",
+              "title": "Company",
+              "purpose": "About, credibility, team and proof",
+              "sections": []
+            },
+            {
+              "key": "contact",
+              "title": "Contact",
+              "purpose": "Consultation or inquiry request",
+              "sections": []
+            }
+          ],
+          "missingImportantFields": [],
+          "copyPolicy": "Use intake as private strategy. Rewrite all visible copy as polished customer-facing content.",
+          "editabilityContract": [
+            "Every visible text block must be editable.",
+            "Every catalog item, category, price label and image must be editable.",
+            "Colors, fonts, buttons, page order and section order must remain editable.",
+            "Future chat changes must patch only the requested area unless the client asks for a full redesign."
+          ]
+        }
+      }
+    }
+  },
+  "visibleTextInputCount": 1,
+  "generateButtonCount": 1,
+  "screenshotPath": "C:\\Users\\alber\\Projects\\vm-business-systems-website\\output\\playwright\\lyra-intake-diagnostic.png",
+  "summary": {
+    "consoleCount": 0,
+    "intakeSessionResponses": [
+      {
+        "phase": "before_generate_click",
+        "status": 200,
+        "restored": false,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "before_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "before_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "before_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "before_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "before_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "before_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "before_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "before_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "before_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "before_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "after_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "after_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "after_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "after_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "after_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "after_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "after_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "after_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "after_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      },
+      {
+        "phase": "after_generate_click",
+        "status": 200,
+        "restored": true,
+        "email": "codex-bath-1784166556554@example.com"
+      }
+    ],
+    "lumaChatResponses": [
+      {
+        "phase": "before_generate_click",
+        "status": 200,
+        "bodyJson": {
+          "assistantMessage": "I could not process that with enough precision.",
+          "nextQuestion": "I need to classify the project correctly. Do you want to sell online, receive quotes, take bookings, capture leads, or present information?",
+          "missingImportantFields": [
+            "niche",
+            "sales_flow",
+            "brand_style",
+            "logo"
+          ],
+          "updatedFields": {
+            "businessName": "Bath All Day",
+            "businessDescription": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+            "industry": "Online store / ecommerce",
+            "location": "",
+            "servicesProducts": [
+              "velas",
+              "bombas de bano",
+              "ofrecer ofertas",
+              "bundles"
+            ],
+            "targetAudience": "vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles",
+            "preferredTone": null,
+            "preferredColors": null,
+            "salesFlow": "informational",
+            "websiteIntent": "quiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.",
+            "websiteType": "corporate",
+            "selectedTemplateId": "corporate-company-pro",
+            "selectedTemplateName": null,
+            "catalogType": null,
+            "colors": {},
+            "typography": {},
+            "generatedCopy": {},
+            "catalogItems": [],
+            "fieldMeta": {
+              "salesFlow": {
+                "source": "ai_recommended",
+                "confidence": 0.75
+              },
+              "sales_flow": {
+                "source": "ai_recommended",
+                "confidence": 0.75
+              },
+              "websiteType": {
+                "source": "ai_recommended",
+                "confidence": 0.75
+              }
+            },
+            "detectedIntent": {
+              "businessModel": "informational",
+              "commerceMode": "no_commerce",
+              "salesFlow": "informational",
+              "niche": "general",
+              "confidence": 0
+            },
+            "intakeCanGenerate": false,
+            "sitePlan": {}
+          }
+        }
+      }
+    ],
+    "websiteBuilderResponses": [
+      {
+        "phase": "after_generate_click",
+        "status": 200,
+        "bodyJson": {
+          "needs_more_info": true,
+          "missing_fields": [
+            "niche",
+            "logo"
+          ],
+          "next_question": "I need to classify the project correctly. Do you want to sell online, receive quotes, take bookings, capture leads, or present information?",
+          "catalog_source": "seed_fallback",
+          "used_dev_mock": false,
+          "schema_generation_metadata": null
+        }
+      }
+    ],
+    "requestsAfterGenerateClick": [
+      {
+        "method": "POST",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "resourceType": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://kreaton-lyra-api.onrender.com/ai/website-builder",
+        "resourceType": "fetch"
+      },
+      {
+        "method": "GET",
+        "url": "https://vmbusinesssystems.com/assets/nixie_alert.png",
+        "resourceType": "image"
+      },
+      {
+        "method": "POST",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "resourceType": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "resourceType": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "resourceType": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "resourceType": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "resourceType": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "resourceType": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "resourceType": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "resourceType": "fetch"
+      },
+      {
+        "method": "POST",
+        "url": "https://kreaton-lyra-api.onrender.com/api/client/intake-session",
+        "resourceType": "fetch"
+      }
+    ],
+    "finalTextStart": "LYRA\nAI WEBSITE ASSISTANT\nONLINE\nAccount: codex-bath...@example.com\nNew page\nWebsite language\nEnglish\nEspañol\nFrançais\nPortuguês\nVoice off\n×\nTell me what you want to build in one rich paragraph: what the business sells or does, who buys, the style/colors, location, and whether it should sell online, book appointments, collect leads, or present the company. I will choose the best structure and ask only for what is missing. You can answer naturally, for example: a large catalog store, a restaurant menu, a booking site for a barbershop, or a cyberpunk online store.\nquiero una pagina web para vender mi catalogo completo de jabones, velas y bombas de bano, ofrecer ofertas y bundles. Se va a llamar Bath All Day. Quiero vender online.\nI have enough context to build the first draft. I will use your notes as strategy, not as page copy.\nsáltalo por ahora\nPerfect, I added that to the plan. Anything else you want to change or add before I generate?\nI found your saved workspace. We can continue from here.\nI need to classify the project correctly. Do you want to sell online, receive quotes, take bookings, capture leads, or present information?\nSITE PLAN READY\nCorporate Company\n\nLYRA selected Cor"
+  }
+}

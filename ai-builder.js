@@ -2795,7 +2795,14 @@ function initClientIntakeSessionGate() {
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
   if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
-  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = isPublicClientSetup;
+  // Bug fix (2026-07-19): this used to hide Google for the public client
+  // flow too (isPublicClientSetup === true), which meant real clients could
+  // never see the Google button at all -- only email, which has no identity
+  // verification. Google is fully wired now (Supabase Auth, already enabled
+  // on the project), so it should always be offered. Apple stays hidden for
+  // public clients until it's enabled in Supabase (needs Beto's own Apple
+  // Developer Program setup) -- showing it today would just be a dead end.
+  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
   if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
   if (studioAuthEmail) {
     studioAuthEmail.value = guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
@@ -2852,7 +2859,14 @@ function lockClientWorkspace(reason = "idle") {
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
   if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
-  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = isPublicClientSetup;
+  // Bug fix (2026-07-19): this used to hide Google for the public client
+  // flow too (isPublicClientSetup === true), which meant real clients could
+  // never see the Google button at all -- only email, which has no identity
+  // verification. Google is fully wired now (Supabase Auth, already enabled
+  // on the project), so it should always be offered. Apple stays hidden for
+  // public clients until it's enabled in Supabase (needs Beto's own Apple
+  // Developer Program setup) -- showing it today would just be a dead end.
+  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
   if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
   if (guidedStatusText) {
     guidedStatusText.textContent = reason === "idle"
@@ -2956,7 +2970,14 @@ function switchClientAccount() {
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
   if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
-  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = isPublicClientSetup;
+  // Bug fix (2026-07-19): this used to hide Google for the public client
+  // flow too (isPublicClientSetup === true), which meant real clients could
+  // never see the Google button at all -- only email, which has no identity
+  // verification. Google is fully wired now (Supabase Auth, already enabled
+  // on the project), so it should always be offered. Apple stays hidden for
+  // public clients until it's enabled in Supabase (needs Beto's own Apple
+  // Developer Program setup) -- showing it today would just be a dead end.
+  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
   if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
   if (studioAuthEmail) {
     studioAuthEmail.value = "";
@@ -13798,7 +13819,10 @@ function openStudioAuthGate(action = "continue") {
   if (isPublicClientSetup) {
     if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
     if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
-    if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = true;
+    // See the 2026-07-19 fix note above other call sites: Google must stay
+    // visible for public clients now that it's actually wired up. Apple
+    // stays hidden until it's enabled in Supabase.
+    if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
     if (studioAppleAuthButton) studioAppleAuthButton.hidden = true;
     if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   }

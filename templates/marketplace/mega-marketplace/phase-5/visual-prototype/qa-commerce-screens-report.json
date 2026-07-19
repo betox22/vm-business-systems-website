@@ -1,0 +1,110 @@
+[
+  {
+    "name": "interaction",
+    "route": "catalog-product-cart-checkout",
+    "metrics": {
+      "openedTitle": "NovaCharge Magnetic Dock",
+      "cartCount": "1",
+      "cartGroups": 1,
+      "checkoutSteps": 3,
+      "route": "#checkout"
+    },
+    "errors": []
+  },
+  {
+    "name": "desktop",
+    "route": "product",
+    "metrics": {
+      "route": "#product",
+      "title": "Mega Marketplace Visual Prototype",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "productCards": 2,
+      "cartGroups": 0,
+      "checkoutSteps": 0,
+      "visibleText": "Catalog\n/\nElectronics\n/\nNovaCharge Magnetic Dock\nVerified seller\nProtected checkout\nReturn eligible\nBEST SELLER · ELECTRONICS\nNovaCharge Magnetic Dock\n★★★★★ 4.8"
+    },
+    "errors": []
+  },
+  {
+    "name": "mobile",
+    "route": "product",
+    "metrics": {
+      "route": "#product",
+      "title": "Mega Marketplace Visual Prototype",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "bodyScrollWidth": 390,
+      "productCards": 2,
+      "cartGroups": 0,
+      "checkoutSteps": 0,
+      "visibleText": "Catalog\n/\nElectronics\n/\nNovaCharge Magnetic Dock\nVerified seller\nProtected checkout\nReturn eligible\nBEST SELLER · ELECTRONICS\nNovaCharge Magnetic Dock\n★★★★★ 4.8"
+    },
+    "errors": []
+  },
+  {
+    "name": "desktop",
+    "route": "cart",
+    "metrics": {
+      "route": "#cart",
+      "title": "Mega Marketplace Visual Prototype",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "productCards": 0,
+      "cartGroups": 3,
+      "checkoutSteps": 0,
+      "visibleText": "PROTECTED CART\nReview 3 items before checkout.\n\nOne customer checkout can split into multiple vendor orders behind the scenes.\n\nContinue shopping\nOrbit Goods\n1 "
+    },
+    "errors": []
+  },
+  {
+    "name": "mobile",
+    "route": "cart",
+    "metrics": {
+      "route": "#cart",
+      "title": "Mega Marketplace Visual Prototype",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "bodyScrollWidth": 390,
+      "productCards": 0,
+      "cartGroups": 3,
+      "checkoutSteps": 0,
+      "visibleText": "PROTECTED CART\nReview 3 items before checkout.\n\nOne customer checkout can split into multiple vendor orders behind the scenes.\n\nContinue shopping\nOrbit Goods\n1 "
+    },
+    "errors": []
+  },
+  {
+    "name": "desktop",
+    "route": "checkout",
+    "metrics": {
+      "route": "#checkout",
+      "title": "Mega Marketplace Visual Prototype",
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "productCards": 0,
+      "cartGroups": 0,
+      "checkoutSteps": 3,
+      "visibleText": "SECURE CHECKOUT\nOne payment, clean vendor split.\n\nThe storefront feels simple for the buyer while the backend prepares separate vendor orders and payout entries"
+    },
+    "errors": []
+  },
+  {
+    "name": "mobile",
+    "route": "checkout",
+    "metrics": {
+      "route": "#checkout",
+      "title": "Mega Marketplace Visual Prototype",
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "bodyScrollWidth": 390,
+      "productCards": 0,
+      "cartGroups": 0,
+      "checkoutSteps": 3,
+      "visibleText": "SECURE CHECKOUT\nOne payment, clean vendor split.\n\nThe storefront feels simple for the buyer while the backend prepares separate vendor orders and payout entries"
+    },
+    "errors": []
+  }
+]

@@ -1,0 +1,203 @@
+{
+  "templateId": "mega_marketplace",
+  "phase": "phase_4_frontend_architecture",
+  "status": "draft",
+  "areas": [
+    {
+      "id": "public_storefront",
+      "basePath": "/",
+      "audience": "guest_or_customer",
+      "routes": [
+        {
+          "path": "/",
+          "screen": "MarketplaceHome",
+          "shell": "PublicStorefrontShell",
+          "purpose": "Search-first marketplace homepage."
+        },
+        {
+          "path": "/catalog",
+          "screen": "CatalogSearch",
+          "shell": "PublicStorefrontShell",
+          "purpose": "Search and filter products across vendors."
+        },
+        {
+          "path": "/categories/:categorySlug",
+          "screen": "CategoryPage",
+          "shell": "PublicStorefrontShell",
+          "purpose": "Category-specific product browsing."
+        },
+        {
+          "path": "/products/:productSlug",
+          "screen": "ProductDetail",
+          "shell": "PublicStorefrontShell",
+          "purpose": "Product detail, vendor info, variants, reviews, add to cart."
+        },
+        {
+          "path": "/cart",
+          "screen": "Cart",
+          "shell": "PublicStorefrontShell",
+          "purpose": "Cart grouped by vendor."
+        },
+        {
+          "path": "/checkout",
+          "screen": "Checkout",
+          "shell": "PublicStorefrontShell",
+          "purpose": "Customer checkout using backend quote and place-order endpoints."
+        },
+        {
+          "path": "/login",
+          "screen": "Login",
+          "shell": "AuthShell",
+          "purpose": "Customer/vendor/admin sign in."
+        },
+        {
+          "path": "/register",
+          "screen": "Register",
+          "shell": "AuthShell",
+          "purpose": "Customer account creation."
+        }
+      ]
+    },
+    {
+      "id": "customer_account",
+      "basePath": "/account",
+      "audience": "customer",
+      "routes": [
+        {
+          "path": "/account",
+          "screen": "AccountOverview",
+          "shell": "CustomerAccountShell",
+          "purpose": "Customer dashboard overview."
+        },
+        {
+          "path": "/account/orders",
+          "screen": "CustomerOrderList",
+          "shell": "CustomerAccountShell",
+          "purpose": "Customer order history."
+        },
+        {
+          "path": "/account/orders/:orderNumber",
+          "screen": "CustomerOrderDetail",
+          "shell": "CustomerAccountShell",
+          "purpose": "Customer order detail."
+        },
+        {
+          "path": "/account/addresses",
+          "screen": "AddressBook",
+          "shell": "CustomerAccountShell",
+          "purpose": "Customer shipping and billing addresses."
+        },
+        {
+          "path": "/account/saved",
+          "screen": "SavedItems",
+          "shell": "CustomerAccountShell",
+          "purpose": "Saved products."
+        }
+      ]
+    },
+    {
+      "id": "vendor_portal",
+      "basePath": "/vendor",
+      "audience": "vendor",
+      "routes": [
+        {
+          "path": "/vendor",
+          "screen": "VendorDashboard",
+          "shell": "VendorDashboardShell",
+          "purpose": "Vendor operational overview."
+        },
+        {
+          "path": "/vendor/products",
+          "screen": "VendorProductManager",
+          "shell": "VendorDashboardShell",
+          "purpose": "Manage vendor products."
+        },
+        {
+          "path": "/vendor/products/new",
+          "screen": "ProductCreate",
+          "shell": "VendorDashboardShell",
+          "purpose": "Create a product."
+        },
+        {
+          "path": "/vendor/products/:productId/edit",
+          "screen": "ProductEdit",
+          "shell": "VendorDashboardShell",
+          "purpose": "Edit a vendor-owned product."
+        },
+        {
+          "path": "/vendor/orders",
+          "screen": "VendorOrderList",
+          "shell": "VendorDashboardShell",
+          "purpose": "Vendor-specific orders."
+        },
+        {
+          "path": "/vendor/orders/:vendorOrderNumber",
+          "screen": "VendorOrderDetail",
+          "shell": "VendorDashboardShell",
+          "purpose": "Vendor order fulfillment details."
+        },
+        {
+          "path": "/vendor/ledger",
+          "screen": "VendorLedger",
+          "shell": "VendorDashboardShell",
+          "purpose": "Vendor earnings, pending amounts, payouts."
+        },
+        {
+          "path": "/vendor/settings",
+          "screen": "VendorSettings",
+          "shell": "VendorDashboardShell",
+          "purpose": "Vendor profile and store settings."
+        }
+      ]
+    },
+    {
+      "id": "admin_marketplace",
+      "basePath": "/admin",
+      "audience": "admin",
+      "routes": [
+        {
+          "path": "/admin",
+          "screen": "AdminDashboard",
+          "shell": "AdminDashboardShell",
+          "purpose": "Marketplace operator overview."
+        },
+        {
+          "path": "/admin/vendor-applications",
+          "screen": "VendorApprovalQueue",
+          "shell": "AdminDashboardShell",
+          "purpose": "Review and approve vendor applications."
+        },
+        {
+          "path": "/admin/vendors",
+          "screen": "VendorManagement",
+          "shell": "AdminDashboardShell",
+          "purpose": "Manage vendors."
+        },
+        {
+          "path": "/admin/products/moderation",
+          "screen": "ProductModeration",
+          "shell": "AdminDashboardShell",
+          "purpose": "Approve, reject, or flag products."
+        },
+        {
+          "path": "/admin/orders",
+          "screen": "GlobalOrders",
+          "shell": "AdminDashboardShell",
+          "purpose": "View global marketplace orders."
+        },
+        {
+          "path": "/admin/ledger",
+          "screen": "PlatformLedger",
+          "shell": "AdminDashboardShell",
+          "purpose": "View vendor ledger and marketplace commission."
+        },
+        {
+          "path": "/admin/settings",
+          "screen": "MarketplaceSettings",
+          "shell": "AdminDashboardShell",
+          "purpose": "Marketplace settings and commission controls."
+        }
+      ]
+    }
+  ]
+}

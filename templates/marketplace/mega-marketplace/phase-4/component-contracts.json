@@ -1,0 +1,100 @@
+{
+  "templateId": "mega_marketplace",
+  "status": "draft",
+  "sharedComponents": [
+    {
+      "name": "MoneyDisplay",
+      "props": {
+        "amount": "number",
+        "currency": "string",
+        "locale": "string"
+      },
+      "rules": [
+        "Never calculate backend totals.",
+        "Only format values received from API or local cart estimate."
+      ]
+    },
+    {
+      "name": "ProductCard",
+      "props": {
+        "product": "ProductSummary",
+        "onAddToCart": "function",
+        "onOpenProduct": "function"
+      },
+      "rules": [
+        "Show product image, name, price, rating, vendor badge, shipping badge.",
+        "Never trust client-side stock as final checkout truth."
+      ]
+    },
+    {
+      "name": "VendorGroupedCart",
+      "props": {
+        "groups": "VendorCartGroup[]",
+        "onUpdateQuantity": "function",
+        "onRemoveItem": "function"
+      },
+      "rules": [
+        "Group items by vendor_id.",
+        "Show vendor subtotal separately.",
+        "Checkout must call backend quote before order placement."
+      ]
+    },
+    {
+      "name": "DataTable",
+      "props": {
+        "columns": "ColumnDefinition[]",
+        "rows": "object[]",
+        "loading": "boolean",
+        "emptyMessage": "string"
+      },
+      "rules": [
+        "Used by vendor and admin dashboards.",
+        "Must support loading skeleton and empty state."
+      ]
+    },
+    {
+      "name": "StatusPill",
+      "props": {
+        "status": "string",
+        "tone": "neutral | success | warning | danger | info"
+      },
+      "rules": [
+        "Use consistent status colors across customer, vendor, and admin screens."
+      ]
+    }
+  ],
+  "shells": [
+    {
+      "name": "PublicStorefrontShell",
+      "requiredSlots": [
+        "header",
+        "main",
+        "footer"
+      ]
+    },
+    {
+      "name": "CustomerAccountShell",
+      "requiredSlots": [
+        "sidebar",
+        "topbar",
+        "main"
+      ]
+    },
+    {
+      "name": "VendorDashboardShell",
+      "requiredSlots": [
+        "sidebar",
+        "topbar",
+        "main"
+      ]
+    },
+    {
+      "name": "AdminDashboardShell",
+      "requiredSlots": [
+        "sidebar",
+        "topbar",
+        "main"
+      ]
+    }
+  ]
+}
