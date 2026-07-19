@@ -2879,10 +2879,10 @@ function switchClientAccount() {
   const hasSession = Boolean(clientIntakeSession?.clientEmail || readClientIntakeSession()?.clientEmail || storedClientAccessToken());
   if (hasSession) {
     const ok = window.confirm(langText({
-      en: "Switch account? This will keep this browser draft, but the next workspace will require login again.",
-      es: "¿Cambiar cuenta? Se conserva el borrador en este navegador, pero el siguiente workspace pedirá login otra vez.",
-      fr: "Changer de compte ? Le brouillon reste dans ce navigateur, mais le prochain espace demandera une connexion.",
-      pt: "Trocar de conta? O rascunho fica neste navegador, mas o próximo workspace pedirá login novamente.",
+      en: "Switch account? This clears the current business draft from this browser -- the next workspace starts clean.",
+      es: "¿Cambiar cuenta? Esto borra el borrador de negocio actual de este navegador -- el siguiente workspace empieza limpio.",
+      fr: "Changer de compte ? Cela efface le brouillon d'entreprise actuel de ce navigateur -- le prochain espace démarre à zéro.",
+      pt: "Trocar de conta? Isso apaga o rascunho de negócio atual deste navegador -- o próximo workspace começa limpo.",
     }));
     if (!ok) return;
   }
@@ -2893,6 +2893,9 @@ function switchClientAccount() {
   localStorage.removeItem("lumaPendingClientEmail");
   sessionStorage.removeItem("lumaClientAccessToken");
   sessionStorage.removeItem("lumaClientRefreshToken");
+  resetGuidedStateForNewAccount();
+  applyGuidedStateToForm();
+  renderGuidedSummary();
   clearClientWorkspaceUnlock();
   renderClientAccountControl();
   openStudioAuthGate("start");
@@ -3036,9 +3039,34 @@ function hydrateClientIntakeSession(session, options = {}) {
   }
 }
 
+// Bug fix (2026-07-18): GUIDED_DRAFT_STORAGE_KEY ("lumaGuidedDraft") is a
+// single browser-wide key, not scoped per account/email. Before this guard,
+// createOrResumeClientIntakeSession() would happily send whatever stale
+// guidedState was already in memory (business name, colors, catalog,
+// selectedLanguage...) as the "draft" for a *different* email the moment
+// someone signed in with another account on the same browser -- so the new
+// account looked like it already "knew" the previous person's business, and
+// its saved language silently overrode the language of the live
+// conversation. See docs/AGENT_LOG.md for the full trace.
+function resetGuidedStateForNewAccount() {
+  guidedState = createEmptyGuidedState(selectedLanguage);
+  currentSchema = null;
+  currentRequestId = null;
+  restoredGuidedDraftInfo = null;
+  try {
+    localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
+  } catch {
+    // Best-effort only -- an in-memory reset already protects this session.
+  }
+}
+
 async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false } = {}) {
   const cleanEmail = String(email || "").trim().toLowerCase();
   if (!cleanEmail) throw new Error("Email is required.");
+  const lastKnownEmail = String(localStorage.getItem("lumaPendingClientEmail") || "").trim().toLowerCase();
+  if (lastKnownEmail && lastKnownEmail !== cleanEmail) {
+    resetGuidedStateForNewAccount();
+  }
   const draft = sanitizeClientSessionDraft(immediateDraft || guidedSessionDraftForApi());
   draft.contactInfo = {
     ...(draft.contactInfo || {}),
