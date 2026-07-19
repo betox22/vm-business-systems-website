@@ -3049,6 +3049,14 @@ async function resumeClientSessionFromAuthToken() {
 function hydrateClientIntakeSession(session, options = {}) {
   if (!session) return;
   currentRequestId = session.requestId || session.request_id || currentRequestId;
+  if (session.restored) {
+    restoredGuidedDraftInfo = restoredGuidedDraftInfo || {
+      savedAt: "",
+      completionPercent: guidedCompletionPercent(),
+      missing: missingGuidedSteps(),
+      source: "client_intake_session",
+    };
+  }
   const draft = sanitizeClientSessionDraft(session.draft || {});
   if (draft.selectedLanguage) setSelectedLanguage(draft.selectedLanguage);
   const normalizedDraft = {
@@ -3107,6 +3115,22 @@ function resetGuidedStateForNewAccount() {
   } catch {
     // Best-effort only -- an in-memory reset already protects this session.
   }
+}
+
+function isNewProjectBriefMessage(message) {
+  const text = String(message || "").trim();
+  if (!isRichIntakeMessage(text)) return false;
+  return /\b(quiero|necesito|vamos a|deseo|crear|hacer|build|create|make)\b[\s\S]{0,80}\b(p[aá]gina|website|site|tienda|store|marketplace|cat[aá]logo|catalog)\b/i.test(text);
+}
+
+function shouldResetRestoredWorkspaceForMessage(message) {
+  if (!isPublicClientSetup || currentSchema) return false;
+  const restored = Boolean(restoredGuidedDraftInfo || clientIntakeSession?.restored || readClientIntakeSession()?.restored);
+  if (!restored || !isNewProjectBriefMessage(message)) return false;
+  const incomingName = extractBusinessName(message).toLowerCase();
+  const existingName = String(guidedState.businessName || "").trim().toLowerCase();
+  if (incomingName && existingName && incomingName !== existingName) return true;
+  return Boolean(guidedState.businessDescription || guidedState.websiteIntent || guidedState.selectedTemplateId || guidedState.catalogType);
 }
 
 async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false } = {}) {
@@ -3562,6 +3586,36 @@ async function sendGuidedReply() {
   if (!message) return;
   appendChatMessage("user", message);
   guidedReply.value = "";
+  if (shouldResetRestoredWorkspaceForMessage(message)) {
+    const email = clientIntakeSession?.clientEmail
+      || clientIntakeSession?.client_email
+      || readClientIntakeSession()?.clientEmail
+      || readClientIntakeSession()?.client_email
+      || localStorage.getItem("lumaPendingClientEmail")
+      || "";
+    resetGuidedStateForNewAccount();
+    if (email) {
+      guidedState.contactInfo.email = email;
+      localStorage.setItem("lumaPendingClientEmail", email);
+      try {
+        await createOrResumeClientIntakeSession({
+          email,
+          name: "",
+          reason: "new-brief",
+          forceNew: true,
+          immediateDraft: guidedSessionDraftForApi(),
+        });
+      } catch (error) {
+        console.warn("Could not reset restored client intake session", error);
+      }
+    }
+    appendChatMessage("assistant", langText({
+      en: "I started a clean workspace for this new project.",
+      es: "Empecé un espacio limpio para este nuevo proyecto.",
+      fr: "J'ai lancé un nouvel espace propre pour ce projet.",
+      pt: "Comecei um espaço limpo para este novo projeto.",
+    }), "success");
+  }
   const broadLocalUpdates = inferGuidedUpdatesFromAnyMessage(message);
   const stepUpdates = inferGuidedUpdates(guidedStep, message);
   const localContextUpdates = { ...broadLocalUpdates, ...stepUpdates };

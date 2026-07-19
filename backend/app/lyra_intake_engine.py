@@ -293,6 +293,17 @@ class LyraIntakeEngine:
             self._merge_tracked_field(key, tracked, updated_state, field_meta)
 
         detected_intent = DetectedIntent.model_validate(payload.get("detectedIntent") or {})
+        ai_confidence = max(detected_intent.confidence or 0.0, 0.75)
+        if (
+            detected_intent.salesFlow
+            and detected_intent.salesFlow in VALID_SALES_FLOWS
+            and "salesFlow" not in updated_state
+            and self._can_replace_ai_derived(state, "salesFlow")
+        ):
+            updated_state["salesFlow"] = detected_intent.salesFlow
+            field_meta["salesFlow"] = FieldMeta(source="ai_recommended", confidence=ai_confidence)
+            field_meta["sales_flow"] = FieldMeta(source="ai_recommended", confidence=ai_confidence)
+
         if detected_intent.niche and detected_intent.niche != "general" and "industry" not in updated_state:
             updated_state["industry"] = detected_intent.niche
             field_meta.setdefault(
