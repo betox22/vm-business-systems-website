@@ -192,3 +192,22 @@ class LyraEditResponse(BaseModel):
     patchSummary: str = ""
     changedFields: List[str] = Field(default_factory=list)
     usedAI: bool = False
+
+
+class AssetUploadRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    businessId: str = ""
+    siteId: str = ""
+    assetType: str = "photo"
+    fileName: str = "asset"
+    contentType: str = "application/octet-stream"
+    dataUrl: str = ""
+    label: str = ""
+
+
+class AssetUploadResponse(BaseModel):
+    url: str
+    provider: str = "supabase"
+    assetType: str = ""
+    fileName: str = ""

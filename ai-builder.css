@@ -657,6 +657,157 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   font-weight: 900;
 }
 
+.draft-restore-card,
+.guided-build-card {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--line));
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 0 0, color-mix(in srgb, var(--primary) 10%, transparent), transparent 36%),
+    #ffffff;
+  padding: 12px;
+  box-shadow: 0 16px 36px rgba(22, 39, 34, 0.08);
+}
+
+.draft-restore-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.draft-restore-card strong,
+.draft-restore-card span,
+.guided-build-card strong,
+.guided-build-card span,
+.guided-build-card em {
+  display: block;
+}
+
+.draft-restore-card strong,
+.guided-build-card strong {
+  color: #17241f;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.draft-restore-card span,
+.guided-build-card p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.draft-restore-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.draft-restore-actions button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 8px 10px;
+  color: #17241f;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.draft-restore-actions button:first-child {
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--line));
+  background: color-mix(in srgb, var(--soft) 72%, #ffffff);
+  color: var(--primary);
+}
+
+.guided-build-card {
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.96), rgba(248, 253, 255, 0.94)),
+    radial-gradient(circle at 100% 0, color-mix(in srgb, var(--lyra-cyan) 18%, transparent), transparent 34%);
+}
+
+.guided-build-card.is-error {
+  border-color: color-mix(in srgb, #b42318 28%, var(--line));
+  background: #fffafa;
+}
+
+.guided-build-card.is-ready {
+  border-color: color-mix(in srgb, var(--primary) 36%, var(--line));
+}
+
+.guided-build-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: center;
+}
+
+.guided-build-head span {
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.guided-build-head em {
+  grid-row: span 2;
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--soft) 70%, #ffffff);
+  padding: 6px 9px;
+  color: var(--primary);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.guided-build-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.guided-build-steps span {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #f8fbfa;
+  padding: 7px 8px;
+  overflow: hidden;
+  color: var(--muted);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.guided-build-steps span.done {
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--line));
+  background: color-mix(in srgb, var(--soft) 74%, #ffffff);
+  color: var(--primary);
+}
+
+.guided-build-steps span.active {
+  border-color: color-mix(in srgb, var(--lyra-cyan) 48%, var(--line));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--soft) 70%, #fff), #ffffff, color-mix(in srgb, var(--soft) 70%, #fff));
+  background-size: 220% 100%;
+  color: #0f766e;
+  animation: guided-build-shimmer 1.4s linear infinite;
+}
+
+@keyframes guided-build-shimmer {
+  from {
+    background-position: 0% 0;
+  }
+  to {
+    background-position: 220% 0;
+  }
+}
+
 .full-width {
   width: 100%;
   margin-top: 8px;

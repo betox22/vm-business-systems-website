@@ -16,6 +16,8 @@ from .commerce import router as commerce_router
 from .db import init_db
 from .domains import router as domains_router
 from .models import (
+    AssetUploadRequest,
+    AssetUploadResponse,
     LumaChatRequest,
     LumaChatResponse,
     LyraEditRequest,
@@ -33,6 +35,7 @@ from .orchestrator import (
     normalize_state_payload,
     site_plan_from_state,
 )
+from .storage import StorageError, parse_data_url, supabase_storage_configured, upload_asset_to_supabase
 from .taxonomy import infer_seed_profile
 
 
@@ -245,7 +248,7 @@ def storage_is_configured() -> bool:
     S3/R2-compatible storage providers without exposing secret values.
     """
 
-    supabase_ready = bool(os.getenv("SUPABASE_URL")) and bool(os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
+    supabase_ready = supabase_storage_configured()
     object_storage_ready = bool(
         os.getenv("STORAGE_BUCKET") or os.getenv("S3_BUCKET") or os.getenv("R2_BUCKET")
     ) and bool(
@@ -276,6 +279,45 @@ async def build_info() -> Dict[str, Any]:
         "branch": os.getenv("RENDER_GIT_BRANCH") or os.getenv("GIT_BRANCH") or "",
         "version": app.version,
     }
+
+
+@app.post("/api/admin/assets/upload", response_model=AssetUploadResponse)
+async def upload_asset(request: AssetUploadRequest) -> AssetUploadResponse:
+    """Persist a client-uploaded photo/logo to real storage instead of embedding base64.
+
+    The frontend (ai-builder.js uploadAssetFile) already calls this endpoint and
+    gracefully falls back to an embedded base64 data URL if it fails, so this can be
+    deployed without a frontend change. Today the only wired provider is Supabase
+    Storage; if it is not configured, we fail clearly so the frontend fallback kicks in
+    (rather than silently returning a broken URL).
+    """
+
+    if not supabase_storage_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Storage is not configured on the server (missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).",
+        )
+    if not request.dataUrl:
+        raise HTTPException(status_code=400, detail="dataUrl is required.")
+
+    try:
+        data, detected_content_type = parse_data_url(request.dataUrl)
+        public_url = upload_asset_to_supabase(
+            business_id=request.businessId,
+            site_id=request.siteId,
+            asset_type=request.assetType,
+            file_name=request.fileName,
+            content_type=request.contentType or detected_content_type,
+            data=data,
+        )
+    except StorageError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+
+    return AssetUploadResponse(
+        url=public_url,
+        assetType=request.assetType,
+        fileName=request.fileName,
+    )
 
 
 @app.post("/api/luma/chat", response_model=LumaChatResponse)

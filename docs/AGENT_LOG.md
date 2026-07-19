@@ -16,6 +16,90 @@ Formato de entrada:
 
 ---
 
+## 2026-07-19 — Claude — Storage real: endpoint de subida de assets + cliente de Supabase Storage
+
+**Contexto:** Beto notó que `GET /api/ai-status` devuelve
+`storageConfigured: false` y preguntó por qué. Investigación (sin tocar
+código, según pidió) confirmó dos huecos, no uno: (1) `storage_is_configured()`
+en `backend/app/main.py` ya buscaba `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`
+pero nunca se instanciaba ningún cliente real; (2) el frontend
+(`ai-builder.js::uploadAssetFile`) ya llama a
+`POST /api/admin/assets/upload` esperando `{url}` de vuelta, pero ese
+endpoint no existía en el backend en absoluto. Como resultado, toda foto/logo
+que el cliente sube cae en el fallback silencioso a base64 embebido
+(`fileToOptimizedDataUrl`) -- nunca llega a storage persistente.
+
+**Fix implementado (Beto ya tenía el proyecto de Supabase creado, solo
+faltaba conectar el backend):**
+- `backend/app/storage.py` (nuevo): cliente sync contra la API REST de
+  Supabase Storage (`POST /storage/v1/object/{bucket}/{path}` con
+  `Authorization: Bearer <service_role_key>`), sin agregar el SDK completo
+  de Supabase -- solo `httpx`. Incluye `parse_data_url()` (decodifica el
+  `data:` URL en base64 que ya arma el frontend) y
+  `upload_asset_to_supabase()` (sube el archivo a
+  `{businessId}/{siteId}/{assetType}/<uuid>-<fileName>` y devuelve la URL
+  pública `.../object/public/{bucket}/{path}`).
+- `backend/app/models.py`: nuevos `AssetUploadRequest` / `AssetUploadResponse`
+  con exactamente los campos que el frontend ya envía
+  (`businessId, siteId, assetType, fileName, contentType, dataUrl, label`).
+- `backend/app/main.py`: nuevo `POST /api/admin/assets/upload`. Si Supabase
+  no está configurado responde 503 (para que el frontend caiga a su
+  fallback existente en vez de mostrar una URL rota); si `dataUrl` es
+  inválido, 400; si Supabase rechaza la subida, 502 con el detalle. Sin capa
+  de auth nueva -- ningún endpoint de este backend valida el header
+  `x-admin-token` que manda el frontend todavía (gap pre-existente, no
+  introducido acá).
+- `backend/requirements.txt`: se agregó `httpx>=0.27,<1`.
+- Cero cambios en `ai-builder.js` -- el frontend ya estaba listo para esto
+  desde antes, solo le faltaba que el endpoint existiera.
+
+**Pendiente / abierto:**
+- **Beto tiene que hacer esto en Supabase y en Render (yo no puedo crear
+  cuentas ni tocar variables de entorno por él):**
+  1. En el dashboard de Supabase → Storage → crear un bucket. Nombre
+     sugerido: `site-assets` (si usa otro nombre, hay que setear
+     `SUPABASE_STORAGE_BUCKET` en Render). Marcarlo como **público** (Public
+     bucket) para que las URLs `.../object/public/...` sirvan directo sin
+     firmar cada request.
+  2. En Supabase → Settings → API: copiar `Project URL` y la
+     `service_role` key (NO la `anon` key -- esa no tiene permiso de
+     escritura).
+  3. En Render → el servicio del backend → Environment: agregar
+     `SUPABASE_URL` (el Project URL) y `SUPABASE_SERVICE_ROLE_KEY` (la
+     service role key). Con eso `storageConfigured` pasa a `true` solo, sin
+     tocar código.
+  4. Deploy/redeploy en Render para que tome las variables nuevas.
+- No se implementó el caso `assetType === "video"`: el frontend ya trata
+  video aparte (no cae a base64 si falla), pero el endpoint nuevo sí acepta
+  cualquier `assetType` sin distinción especial -- debería funcionar igual,
+  no se probó específicamente con archivos de video.
+- No hay límite de tamaño de archivo en el endpoint nuevo (el frontend sí
+  limita video a 12MB antes de intentar, pero fotos/logos no tienen tope
+  explícito del lado backend).
+- Catálogo de imágenes semilla (`image_assets.py`, seed products) sigue
+  usando URLs externas de Unsplash -- esto NO se tocó. Este cambio solo
+  resuelve el pipeline de subida real de fotos/logos que el cliente sube él
+  mismo, no las imágenes placeholder que Lyra genera para productos de
+  muestra. Serían dos proyectos separados si se quiere una librería propia
+  también para las imágenes semilla.
+- No se implementó autenticación real en `/api/admin/assets/upload` ni en
+  ningún otro endpoint `/api/admin/*` -- sigue siendo el mismo gap ya
+  documentado antes (junto con `/api/client/auth/me` y
+  `/api/client/auth/oauth/{provider}`, que tampoco existen).
+
+**Archivos tocados:** `backend/app/storage.py` (nuevo),
+`backend/app/models.py`, `backend/app/main.py`, `backend/requirements.txt`.
+
+**Notas para el siguiente agente:** no se corrió `generate_ai_seed_catalog`
+ni este endpoint contra credenciales reales de Supabase (no disponibles en
+este sandbox) -- verificado por lectura de código e inspección de la forma
+exacta del request/response, no por prueba end-to-end. Cuando Beto conecte
+las variables en Render, vale la pena confirmar en el navegador que subir
+una foto de cliente real efectivamente devuelve una URL de Supabase (no un
+`data:` URL) y que `GET /api/ai-status` muestra `storageConfigured: true`.
+
+---
+
 ## 2026-07-19 — Claude — Clasificación de nicho abierta (backend): reemplaza catálogo "default" ciego por generación vía IA
 
 **Contexto:** Beto reportó que Lyra sigue mostrando nombres e imágenes de

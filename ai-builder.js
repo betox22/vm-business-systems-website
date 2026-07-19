@@ -580,6 +580,9 @@ let assistantState = "neutral";
 let assistantVoiceEnabled = localStorage.getItem("gnuDevAssistantVoice") === "on";
 let forcedTemplateSelection = null;
 let restoredGuidedDraftInfo = null;
+let restoredDraftNoticeCard = null;
+let restoredDraftNoticeShown = false;
+let guidedBuildStatusCard = null;
 let guidedCoachCard = null;
 let liveSitePreviewCard = null;
 let templateBoardLoading = false;
@@ -3076,12 +3079,7 @@ function hydrateClientIntakeSession(session, options = {}) {
   refreshQuickChips();
   renderLiveSitePreview();
   if (!options.silent && session.restored) {
-    appendChatMessage("assistant", langText({
-      en: "I found your saved workspace. We can continue from here.",
-      es: "Encontré tu espacio guardado. Podemos continuar desde aquí.",
-      fr: "J'ai retrouvé votre espace sauvegardé. Nous pouvons continuer ici.",
-      pt: "Encontrei seu espaço salvo. Podemos continuar daqui.",
-    }), "success");
+    renderRestoredDraftNotice();
   }
 }
 
@@ -3107,6 +3105,10 @@ function resetGuidedStateForNewAccount() {
   forcedTemplateSelection = null;
   clientIntakeSession = null;
   restoredGuidedDraftInfo = null;
+  restoredDraftNoticeShown = false;
+  restoredDraftNoticeCard?.remove();
+  restoredDraftNoticeCard = null;
+  removeGuidedBuildStatusCard();
   guidedStep = "websiteIntent";
   try {
     localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
@@ -3272,7 +3274,7 @@ function resetAssistantConversation() {
   renderGuidedCoachCard();
   let askedPrompt = false;
   if (restoredGuidedDraftInfo) {
-    appendRestoredDraftMessage();
+    renderRestoredDraftNotice({ force: true });
   }
   if (guidedStep === "websiteIntent") {
     appendChatMessage(
@@ -3455,21 +3457,156 @@ function restoreGuidedDraft() {
 }
 
 function appendRestoredDraftMessage() {
-  const missingLabels = restoredGuidedDraftInfo.missing
+  renderRestoredDraftNotice({ force: true });
+}
+
+function renderRestoredDraftNotice({ force = false } = {}) {
+  if (!restoredGuidedDraftInfo || !guidedChatCard || !guidedChat) return;
+  if (restoredDraftNoticeShown && !force) return;
+  restoredDraftNoticeShown = true;
+  const missingLabels = arrayValue(restoredGuidedDraftInfo.missing)
     .slice(0, 3)
     .map((step) => t(step))
     .join(", ");
   const savedAt = formatDraftSavedAt(restoredGuidedDraftInfo.savedAt);
-  appendChatMessage(
-    "assistant",
-    langText({
-      en: `I found your saved draft${savedAt ? ` from ${savedAt}` : ""}. It is about ${restoredGuidedDraftInfo.completionPercent}% complete${missingLabels ? `. We still need: ${missingLabels}.` : "."} You can keep going without starting over.`,
-      es: `Encontré tu borrador guardado${savedAt ? ` de ${savedAt}` : ""}. Va como en ${restoredGuidedDraftInfo.completionPercent}%${missingLabels ? `. Todavía falta: ${missingLabels}.` : "."} Puedes seguir sin empezar de cero.`,
-      fr: `J'ai trouvé votre brouillon enregistré${savedAt ? ` de ${savedAt}` : ""}. Il est complété à environ ${restoredGuidedDraftInfo.completionPercent}%${missingLabels ? `. Il manque encore: ${missingLabels}.` : "."} Vous pouvez continuer sans recommencer.`,
-      pt: `Encontrei seu rascunho salvo${savedAt ? ` de ${savedAt}` : ""}. Ele está cerca de ${restoredGuidedDraftInfo.completionPercent}% completo${missingLabels ? `. Ainda falta: ${missingLabels}.` : "."} Você pode continuar sem começar do zero.`,
-    }),
-    "success",
-  );
+  if (!restoredDraftNoticeCard) {
+    restoredDraftNoticeCard = document.createElement("section");
+    restoredDraftNoticeCard.className = "draft-restore-card";
+  }
+  restoredDraftNoticeCard.innerHTML = `
+    <div>
+      <strong>${escapeHtml(langText({
+        en: "Saved draft found",
+        es: "Borrador guardado encontrado",
+        fr: "Brouillon enregistre trouve",
+        pt: "Rascunho salvo encontrado",
+      }))}</strong>
+      <span>${escapeHtml(langText({
+        en: `This workspace is ${restoredGuidedDraftInfo.completionPercent}% complete${savedAt ? ` from ${savedAt}` : ""}${missingLabels ? `. Missing: ${missingLabels}.` : "."}`,
+        es: `Este espacio va en ${restoredGuidedDraftInfo.completionPercent}%${savedAt ? ` desde ${savedAt}` : ""}${missingLabels ? `. Falta: ${missingLabels}.` : "."}`,
+        fr: `Cet espace est complete a ${restoredGuidedDraftInfo.completionPercent}%${savedAt ? ` depuis ${savedAt}` : ""}${missingLabels ? `. Il manque: ${missingLabels}.` : "."}`,
+        pt: `Este espaco esta ${restoredGuidedDraftInfo.completionPercent}% completo${savedAt ? ` desde ${savedAt}` : ""}${missingLabels ? `. Falta: ${missingLabels}.` : "."}`,
+      }))}</span>
+    </div>
+    <div class="draft-restore-actions">
+      <button type="button" data-draft-continue>${escapeHtml(langText({ en: "Continue", es: "Continuar", fr: "Continuer", pt: "Continuar" }))}</button>
+      <button type="button" data-draft-new>${escapeHtml(langText({ en: "Start new", es: "Nuevo", fr: "Nouveau", pt: "Novo" }))}</button>
+    </div>
+  `;
+  restoredDraftNoticeCard.querySelector("[data-draft-continue]")?.addEventListener("click", () => {
+    restoredDraftNoticeCard?.remove();
+    restoredDraftNoticeCard = null;
+  });
+  restoredDraftNoticeCard.querySelector("[data-draft-new]")?.addEventListener("click", () => {
+    restoredDraftNoticeCard?.remove();
+    restoredDraftNoticeCard = null;
+    startNewClientProject();
+  });
+  if (restoredDraftNoticeCard.parentElement !== guidedChatCard) {
+    guidedChatCard.insertBefore(restoredDraftNoticeCard, guidedChat);
+  }
+}
+
+function guidedBuildPhases() {
+  return [
+    {
+      key: "save",
+      label: langText({ en: "Save brief", es: "Guardar brief", fr: "Sauver le brief", pt: "Salvar brief" }),
+      body: langText({
+        en: "Locking the intake data to the client workspace.",
+        es: "Guardando la informacion en el workspace del cliente.",
+        fr: "Enregistrement des informations dans l'espace client.",
+        pt: "Salvando as informacoes no workspace do cliente.",
+      }),
+    },
+    {
+      key: "strategy",
+      label: langText({ en: "Choose structure", es: "Elegir estructura", fr: "Choisir la structure", pt: "Escolher estrutura" }),
+      body: langText({
+        en: "Matching the business model with the best available template base.",
+        es: "Cruzando el modelo de negocio con la mejor plantilla disponible.",
+        fr: "Association du modele d'affaires avec le meilleur template disponible.",
+        pt: "Cruzando o modelo de negocio com o melhor template disponivel.",
+      }),
+    },
+    {
+      key: "generate",
+      label: langText({ en: "Generate site", es: "Generar sitio", fr: "Generer le site", pt: "Gerar site" }),
+      body: langText({
+        en: "Writing customer-facing copy, catalog items, CTAs and page sections.",
+        es: "Creando textos publicos, catalogo, CTAs y secciones.",
+        fr: "Creation des textes publics, du catalogue, des CTA et des sections.",
+        pt: "Criando textos publicos, catalogo, CTAs e secoes.",
+      }),
+    },
+    {
+      key: "render",
+      label: langText({ en: "Render preview", es: "Renderizar preview", fr: "Rendre l'apercu", pt: "Renderizar preview" }),
+      body: langText({
+        en: "Assembling the editable preview so it can be reviewed immediately.",
+        es: "Armando el preview editable para revisarlo de inmediato.",
+        fr: "Assemblage de l'apercu modifiable pour revision immediate.",
+        pt: "Montando o preview editavel para revisar imediatamente.",
+      }),
+    },
+  ];
+}
+
+function ensureGuidedBuildStatusCard() {
+  if (!guidedChatCard || !guidedChat) return null;
+  if (!guidedBuildStatusCard) {
+    guidedBuildStatusCard = document.createElement("section");
+    guidedBuildStatusCard.className = "guided-build-card";
+    guidedBuildStatusCard.setAttribute("aria-live", "polite");
+  }
+  if (guidedBuildStatusCard.parentElement !== guidedChatCard) {
+    guidedChatCard.insertBefore(guidedBuildStatusCard, guidedChat);
+  }
+  return guidedBuildStatusCard;
+}
+
+function setGuidedBuildPhase(phase, detail = "") {
+  if (!isPublicClientSetup) return;
+  const card = ensureGuidedBuildStatusCard();
+  if (!card) return;
+  document.body.classList.add("lyra-build-mode");
+  const phases = guidedBuildPhases();
+  const activeIndex = phase === "ready"
+    ? phases.length
+    : Math.max(0, phases.findIndex((item) => item.key === phase));
+  const activePhase = phases[Math.min(activeIndex, phases.length - 1)] || phases[0];
+  const isError = phase === "error";
+  const isReady = phase === "ready";
+  card.classList.toggle("is-error", isError);
+  card.classList.toggle("is-ready", isReady);
+  card.innerHTML = `
+    <div class="guided-build-head">
+      <span>${escapeHtml(langText({ en: "LYRA build", es: "Construccion LYRA", fr: "Construction LYRA", pt: "Construcao LYRA" }))}</span>
+      <strong>${escapeHtml(isError
+        ? langText({ en: "Generation stopped", es: "Generacion detenida", fr: "Generation arretee", pt: "Geracao interrompida" })
+        : isReady
+          ? langText({ en: "Preview ready", es: "Preview listo", fr: "Apercu pret", pt: "Preview pronto" })
+          : activePhase.label)}</strong>
+      <em>${escapeHtml(isReady ? "100%" : `${Math.min(95, Math.round(((activeIndex + 1) / phases.length) * 100))}%`)}</em>
+    </div>
+    <p>${escapeHtml(detail || (isError
+      ? langText({ en: "The request did not complete. Keep the brief and retry.", es: "La solicitud no termino. Conserva el brief y reintenta.", fr: "La demande n'a pas abouti. Conservez le brief et reessayez.", pt: "A solicitacao nao terminou. Mantenha o brief e tente novamente." })
+      : isReady
+        ? langText({ en: "The editable draft is ready to review.", es: "El borrador editable esta listo para revisar.", fr: "Le brouillon modifiable est pret a etre revise.", pt: "O rascunho editavel esta pronto para revisar." })
+        : activePhase.body))}</p>
+    <div class="guided-build-steps">
+      ${phases.map((item, index) => {
+        const state = isReady || index < activeIndex ? "done" : index === activeIndex ? "active" : "pending";
+        return `<span class="${state}">${escapeHtml(item.label)}</span>`;
+      }).join("")}
+    </div>
+  `;
+}
+
+function removeGuidedBuildStatusCard() {
+  document.body.classList.remove("lyra-build-mode");
+  guidedBuildStatusCard?.remove();
+  guidedBuildStatusCard = null;
 }
 
 function formatDraftSavedAt(value) {
@@ -5496,6 +5633,7 @@ async function reviewAndGenerateFromGuided() {
     fr: "Enregistrement de la demande...",
     pt: "Salvando solicitação...",
   }));
+  setGuidedBuildPhase("save");
   guidedStatusText.textContent = t("savingRequest");
 
   try {
@@ -5510,9 +5648,11 @@ async function reviewAndGenerateFromGuided() {
   }
 
   setGuidedGenerateControlsBusy(true, t("generating"));
+  setGuidedBuildPhase("strategy");
   guidedStatusText.textContent = t("generatingLong");
   const generated = await generateWebsite(guidedGenerateButton);
   if (generated && currentSchema) {
+    setGuidedBuildPhase("ready");
     const successMessage = langText({
       en: "Draft generated. You can review and edit it now.",
       es: "Borrador generado. Ya puedes revisarlo y editarlo.",
@@ -5523,6 +5663,7 @@ async function reviewAndGenerateFromGuided() {
     appendChatMessage("assistant", successMessage, "success");
     showGeneratedClientPreview();
   } else {
+    setGuidedBuildPhase("error");
     guidedStatusText.textContent = langText({
       en: "LYRA could not create a draft yet. Try again or keep chatting with more details.",
       es: "LYRA no pudo crear el borrador todavía. Intenta otra vez o agrega más detalles.",
@@ -5589,6 +5730,7 @@ async function handleGuidedGenerateButton(event) {
   document.body.classList.remove("review-details-open");
   renderGuidedSummary();
   setGuidedGenerateControlsBusy(true, t("generating"));
+  setGuidedBuildPhase("save");
   guidedStatusText.textContent = t("generatingLong");
   isGeneratingWebsite = true;
   try {
@@ -7166,10 +7308,12 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
   setStudioProgressPhase("understanding");
   const payload = await collectPayload();
   setStudioProgressPhase("brand");
+  setGuidedBuildPhase("strategy");
   const templateSelection = await selectTemplateForPayload(payload);
   attachTemplateSelection(payload, templateSelection);
   enrichPayloadDesignStrategy(payload, templateSelection);
   setStudioProgressPhase("homepage");
+  setGuidedBuildPhase("generate");
   const button = triggerButton;
   button.disabled = true;
   button.textContent = t("generating");
@@ -7190,10 +7334,12 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
 
     const result = await response.json();
     if (result.needs_more_info) {
+      setGuidedBuildPhase("error", result.next_question || result.nextQuestion || "");
       handleServerNeedsMoreInfo(result);
       return false;
     }
     setStudioProgressPhase("shop");
+    setGuidedBuildPhase("render");
     if (templateSelection) {
       result.schema = mergeTemplateSelectionIntoSchema(result.schema, templateSelection);
     }
@@ -7204,10 +7350,12 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     setStudioProgressPhase("mobile");
     await createDomainOrderIfNeeded(payload, result);
     setStudioProgressPhase("ready");
+    setGuidedBuildPhase("ready");
     return true;
   } catch (error) {
     builderAvatarManager?.setState("confused", { source: "generate-error" });
     setStudioProgressPhase("homepage");
+    setGuidedBuildPhase("error");
     if (isPublicClientSetup) {
       const message = langText({
         en: "The AI generator did not finish this request. I will not show a local fallback because it could be the wrong template. Please try again in a moment.",
