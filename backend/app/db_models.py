@@ -32,9 +32,18 @@ def _now() -> int:
 
 class Store(Base):
     __tablename__ = "stores"
-    __table_args__ = (UniqueConstraint("owner_email", name="stores_owner_email_key"),)
 
+    # Design note (2026-07-19): this used to have UniqueConstraint("owner_email"),
+    # which meant one email could only ever own a single store/project -- a
+    # structural block on a client working on more than one site at a time.
+    # Nothing reads from this table yet (see module docstring), so dropping the
+    # constraint here is safe/additive. `owner_user_id` is the real Supabase
+    # auth user id (the `sub` claim from /api/client/auth/me) and is what
+    # multi-project lookups should key off going forward; `owner_email` is kept
+    # for display/search but is no longer treated as a unique identity. See
+    # docs/AGENT_LOG.md for the still-open project-switcher UI this enables.
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: _id("store"))
+    owner_user_id: Mapped[Optional[str]] = mapped_column(index=True, default=None)
     owner_email: Mapped[str] = mapped_column(index=True)
     name: Mapped[str]
     business_type: Mapped[str]
@@ -129,12 +138,14 @@ class GeneratedSite(Base):
     __tablename__ = "generated_sites"
     __table_args__ = (
         Index("generated_sites_owner_email_idx", "owner_email"),
+        Index("generated_sites_owner_user_id_idx", "owner_user_id"),
         Index("generated_sites_store_id_idx", "store_id"),
         UniqueConstraint("public_url", name="generated_sites_public_url_key"),
     )
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: _id("site"))
     store_id: Mapped[str] = mapped_column(ForeignKey("stores.id"))
+    owner_user_id: Mapped[Optional[str]] = mapped_column(index=True, default=None)
     owner_email: Mapped[str]
     business_name: Mapped[str]
     business_type: Mapped[str]

@@ -3,17 +3,22 @@ from __future__ import annotations
 import uuid
 import re
 import os
+import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import or_, select
+from sqlalchemy.orm import Session
 
 from .agents import semantic_seed_catalog, split_items, state_is_commerce_seed_target
+from .client_auth import fetch_supabase_user, supabase_auth_configured
 from .commerce import router as commerce_router
-from .db import init_db
+from .db import get_session, init_db
+from .db_models import GeneratedSite, Store
 from .domains import router as domains_router
 from .models import (
     AssetUploadRequest,
@@ -76,6 +81,9 @@ CLIENT_DRAFT_KEYS = {
     "brandStyle",
     "intakeFollowupAnswer",
     "fieldMeta",
+    "generatedSiteId",
+    "projectId",
+    "videoUrls",
 }
 
 
@@ -108,7 +116,7 @@ def sanitize_client_draft(raw: Any) -> Dict[str, Any]:
         if key not in raw:
             continue
         value = raw.get(key)
-        if key in {"servicesProducts", "preferredColors", "photoUrls", "logoPalette"}:
+        if key in {"servicesProducts", "preferredColors", "photoUrls", "videoUrls", "logoPalette"}:
             draft[key] = _safe_list(value)
         elif key == "contactInfo":
             info = value if isinstance(value, dict) else {}
@@ -320,6 +328,276 @@ async def upload_asset(request: AssetUploadRequest) -> AssetUploadResponse:
     )
 
 
+@app.get("/api/client/auth/me")
+async def client_auth_me(authorization: str = Header(default="")) -> Dict[str, Any]:
+    """Resolve the real Supabase user for the client's access token.
+
+    The frontend (ai-builder.js resumeClientSessionFromAuthToken /
+    fetchClientAuthUser) already calls this after a Google/Apple OAuth
+    redirect and sends `Authorization: Bearer <token>` -- this endpoint just
+    didn't exist before, so that call always failed and login silently fell
+    back to the unauthenticated "type any email" path. See client_auth.py.
+    """
+
+    token = authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing access token.")
+    if not supabase_auth_configured():
+        raise HTTPException(status_code=503, detail="Account login is not configured on the server yet.")
+    user = fetch_supabase_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired session.")
+    return {
+        "id": user.get("id"),
+        "email": user.get("email"),
+        "userMetadata": user.get("user_metadata") or {},
+    }
+
+
+def _bearer_token(authorization: str) -> str:
+    return authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
+
+
+def authenticated_client_user(authorization: str, *, required: bool = True) -> Optional[Dict[str, Any]]:
+    token = _bearer_token(authorization)
+    if not token:
+        if required:
+            raise HTTPException(status_code=401, detail="Missing access token.")
+        return None
+    if not supabase_auth_configured():
+        if required:
+            raise HTTPException(status_code=503, detail="Account login is not configured on the server yet.")
+        return None
+    user = fetch_supabase_user(token)
+    if not user:
+        if required:
+            raise HTTPException(status_code=401, detail="Invalid or expired session.")
+        return None
+    return user
+
+
+def _slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", (value or "").lower()).strip("-")
+    return (slug or "new-site")[:48]
+
+
+def _schema_json(schema: Dict[str, Any]) -> str:
+    return json.dumps(schema or {}, ensure_ascii=False, separators=(",", ":"))
+
+
+def _schema_summary(schema: Dict[str, Any]) -> Dict[str, str]:
+    business = schema.get("business") if isinstance(schema.get("business"), dict) else {}
+    selected_template = schema.get("selected_template") if isinstance(schema.get("selected_template"), dict) else {}
+    active_template = schema.get("active_template") if isinstance(schema.get("active_template"), dict) else {}
+    theme = schema.get("theme") if isinstance(schema.get("theme"), dict) else {}
+    navigation = schema.get("navigation") if isinstance(schema.get("navigation"), list) else []
+    first_page = (schema.get("pages") or [{}])[0] if isinstance(schema.get("pages"), list) and schema.get("pages") else {}
+    first_section = (first_page.get("sections") or [{}])[0] if isinstance(first_page.get("sections"), list) and first_page.get("sections") else {}
+    editable = first_section.get("editable") if isinstance(first_section.get("editable"), dict) else {}
+    template_id = selected_template.get("id") or active_template.get("id") or schema.get("template_id") or ""
+    template_name = selected_template.get("name") or active_template.get("name") or template_id or "Generated site"
+    return {
+        "business_name": str(business.get("name") or schema.get("businessName") or "Generated site").strip()[:220],
+        "business_type": str(business.get("industry") or selected_template.get("category") or "website").strip()[:140],
+        "template_id": str(template_id or "generated-site").strip()[:140],
+        "template_name": str(template_name).strip()[:180],
+        "template_mode": str(selected_template.get("category") or "ai_generated").strip()[:120],
+        "description": str(business.get("description") or "").strip()[:1200],
+        "hero_title": str(editable.get("headline") or first_page.get("title") or business.get("name") or "").strip()[:260],
+        "hero_body": str(editable.get("subtitle") or editable.get("text") or "").strip()[:1200],
+        "announcement": str((navigation[0] or {}).get("label") if navigation else "").strip()[:180],
+        "accent_color": str(theme.get("accent") or theme.get("primary") or "").strip()[:80],
+    }
+
+
+def _project_owner_filter(owner_user_id: str, owner_email: str):
+    clauses = []
+    if owner_user_id:
+        clauses.append(GeneratedSite.owner_user_id == owner_user_id)
+    if owner_email:
+        clauses.append(GeneratedSite.owner_email == owner_email)
+    return or_(*clauses) if clauses else GeneratedSite.owner_email == "__none__"
+
+
+def _get_or_create_store(
+    session: Session,
+    *,
+    owner_user_id: str,
+    owner_email: str,
+    business_name: str,
+    business_type: str,
+) -> Store:
+    query = select(Store)
+    if owner_user_id:
+        query = query.where(Store.owner_user_id == owner_user_id)
+    else:
+        query = query.where(Store.owner_email == owner_email)
+    store = session.execute(query.order_by(Store.updated_at.desc())).scalar_one_or_none()
+    if store:
+        store.owner_user_id = owner_user_id or store.owner_user_id
+        store.owner_email = owner_email or store.owner_email
+        store.name = business_name or store.name
+        store.business_type = business_type or store.business_type
+        return store
+
+    store_id = f"store_{uuid.uuid4().hex[:12]}"
+    store = Store(
+        id=store_id,
+        owner_user_id=owner_user_id or None,
+        owner_email=owner_email,
+        name=business_name or "Client workspace",
+        business_type=business_type or "website",
+        public_url=f"{_slugify(business_name or store_id)}.vmstores.com",
+        status="draft",
+    )
+    session.add(store)
+    return store
+
+
+def persist_generated_site(
+    session: Session,
+    *,
+    user: Dict[str, Any],
+    request: WebsiteGenerationRequest,
+    schema: Dict[str, Any],
+) -> GeneratedSite:
+    owner_user_id = str(user.get("id") or "").strip()
+    owner_email = str(user.get("email") or "").strip().lower()
+    if not owner_email:
+        raise HTTPException(status_code=401, detail="Authenticated user email missing.")
+
+    summary = _schema_summary(schema)
+    site_id = (
+        request.generatedSiteId
+        or request.generated_site_id
+        or request.projectId
+        or request.project_id
+        or ""
+    ).strip()
+    existing_site = None
+    if site_id:
+        existing_site = session.execute(
+            select(GeneratedSite).where(
+                GeneratedSite.id == site_id,
+                _project_owner_filter(owner_user_id, owner_email),
+            )
+        ).scalar_one_or_none()
+        if not existing_site:
+            raise HTTPException(status_code=404, detail="Generated site not found for this account.")
+
+    store = _get_or_create_store(
+        session,
+        owner_user_id=owner_user_id,
+        owner_email=owner_email,
+        business_name=summary["business_name"],
+        business_type=summary["business_type"],
+    )
+    if existing_site:
+        site = existing_site
+    else:
+        site_id = f"site_{uuid.uuid4().hex[:12]}"
+        site = GeneratedSite(
+            id=site_id,
+            store_id=store.id,
+            owner_user_id=owner_user_id or None,
+            owner_email=owner_email,
+            business_name=summary["business_name"],
+            business_type=summary["business_type"],
+            template_id=summary["template_id"],
+            template_name=summary["template_name"],
+            template_mode=summary["template_mode"],
+            domain_slug=_slugify(summary["business_name"]),
+            public_url=f"{_slugify(summary['business_name'])}-{site_id[-6:]}.vmstores.com",
+            status="draft",
+            generated_config="{}",
+        )
+        session.add(site)
+
+    site.store_id = store.id
+    site.owner_user_id = owner_user_id or site.owner_user_id
+    site.owner_email = owner_email
+    site.business_name = summary["business_name"]
+    site.business_type = summary["business_type"]
+    site.template_id = summary["template_id"]
+    site.template_name = summary["template_name"]
+    site.template_mode = summary["template_mode"]
+    site.description = summary["description"]
+    site.hero_title = summary["hero_title"]
+    site.hero_body = summary["hero_body"]
+    site.announcement = summary["announcement"]
+    site.accent_color = summary["accent_color"]
+    site.domain_slug = site.domain_slug or _slugify(summary["business_name"])
+    site.public_url = site.public_url or f"{site.domain_slug}-{site.id[-6:]}.vmstores.com"
+    site.status = "draft"
+    site.generated_config = _schema_json(schema)
+    session.commit()
+    session.refresh(site)
+    return site
+
+
+def _project_item(site: GeneratedSite) -> Dict[str, Any]:
+    return {
+        "id": site.id,
+        "business_name": site.business_name,
+        "template_name": site.template_name,
+        "status": site.status,
+        "updated_at": site.updated_at,
+        "public_url": site.public_url,
+    }
+
+
+def _intake_session_key(email: str, project_id: str = "", request_id: str = "") -> str:
+    identity = str(project_id or request_id or "active").strip() or "active"
+    return f"{email}:{identity}"
+
+
+@app.get("/api/client/projects")
+async def client_projects(
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    user = authenticated_client_user(authorization)
+    owner_user_id = str(user.get("id") or "").strip()
+    owner_email = str(user.get("email") or "").strip().lower()
+    sites = session.execute(
+        select(GeneratedSite)
+        .where(_project_owner_filter(owner_user_id, owner_email))
+        .order_by(GeneratedSite.updated_at.desc())
+    ).scalars().all()
+    return {"projects": [_project_item(site) for site in sites]}
+
+
+@app.get("/api/client/projects/{project_id}")
+async def client_project_detail(
+    project_id: str,
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    user = authenticated_client_user(authorization)
+    owner_user_id = str(user.get("id") or "").strip()
+    owner_email = str(user.get("email") or "").strip().lower()
+    site = session.execute(
+        select(GeneratedSite).where(
+            GeneratedSite.id == project_id,
+            _project_owner_filter(owner_user_id, owner_email),
+        )
+    ).scalar_one_or_none()
+    if not site:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    try:
+        schema = json.loads(site.generated_config or "{}")
+    except json.JSONDecodeError:
+        schema = {}
+    return {
+        "project": _project_item(site),
+        "schema": schema,
+        "business_id": site.store_id,
+        "site_id": site.id,
+        "generatedSiteId": site.id,
+        "storage_status": site.status,
+    }
+
+
 @app.post("/api/luma/chat", response_model=LumaChatResponse)
 @app.post("/api/ai/intake-assistant", response_model=LumaChatResponse)
 async def luma_chat(request: LumaChatRequest) -> LumaChatResponse:
@@ -446,22 +724,47 @@ def mark_field_meta(state: Any, field: str, source: str, confidence: float) -> N
 
 
 @app.post("/api/client/intake-session")
-async def client_intake_session(payload: Dict[str, Any]) -> Dict[str, Any]:
+async def client_intake_session(
+    payload: Dict[str, Any],
+    authorization: str = Header(default=""),
+) -> Dict[str, Any]:
     email = str(payload.get("email") or "").strip().lower()
+    auth_user = authenticated_client_user(authorization, required=False)
+    if auth_user:
+        auth_email = str(auth_user.get("email") or "").strip().lower()
+        if auth_email:
+            email = auth_email
     if "@" not in email or "." not in email.rsplit("@", 1)[-1]:
         raise HTTPException(status_code=400, detail="A complete email is required.")
 
     force_new = bool(payload.get("forceNew"))
-    existing = client_intake_sessions.get(email)
+    project_id = str(
+        payload.get("generatedSiteId")
+        or payload.get("projectId")
+        or payload.get("siteId")
+        or ""
+    ).strip()
+    incoming_request_id = str(payload.get("requestId") or "").strip()
+    session_key = _intake_session_key(email, project_id, incoming_request_id)
+    existing = client_intake_sessions.get(session_key)
+    if not existing and not force_new:
+        existing = client_intake_sessions.get(_intake_session_key(email, project_id, ""))
+        if not existing and incoming_request_id:
+            existing = client_intake_sessions.get(_intake_session_key(email, "", incoming_request_id))
+        if not existing:
+            existing = client_intake_sessions.get(email)
     draft = sanitize_client_draft(payload.get("draft"))
     name = str(payload.get("name") or draft.get("businessName") or "").strip()
     selected_language = payload.get("selectedLanguage") or draft.get("selectedLanguage") or "en"
 
     if force_new or not existing:
         request_id = payload.get("requestId") or f"req_{uuid.uuid4().hex[:12]}"
+        session_key = _intake_session_key(email, project_id, request_id)
         session = {
             "requestId": request_id,
             "request_id": request_id,
+            "projectId": project_id,
+            "generatedSiteId": project_id,
             "requestNumber": f"KR-{uuid.uuid4().hex[:6].upper()}",
             "request_number": "",
             "clientEmail": email,
@@ -474,15 +777,18 @@ async def client_intake_session(payload: Dict[str, Any]) -> Dict[str, Any]:
             "storage_status": "stored",
         }
         session["request_number"] = session["requestNumber"]
-        client_intake_sessions[email] = session
+        client_intake_sessions[session_key] = session
         return session
 
     existing["draft"] = sanitize_client_draft({**sanitize_client_draft(existing.get("draft")), **draft})
+    existing["projectId"] = project_id or existing.get("projectId") or ""
+    existing["generatedSiteId"] = project_id or existing.get("generatedSiteId") or ""
     existing["clientName"] = name or existing.get("clientName") or ""
     existing["selectedLanguage"] = selected_language
     existing["restored"] = True
     existing["storageStatus"] = "stored"
     existing["storage_status"] = "stored"
+    client_intake_sessions[_intake_session_key(email, existing.get("projectId") or "", existing.get("requestId") or "")] = existing
     return existing
 
 
@@ -506,7 +812,11 @@ async def luma_edit(request: LyraEditRequest) -> LyraEditResponse:
 
 
 @app.post("/ai/website-builder", response_model=WebsiteGenerationResponse)
-async def website_builder(request: WebsiteGenerationRequest) -> WebsiteGenerationResponse:
+async def website_builder(
+    request: WebsiteGenerationRequest,
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
+) -> WebsiteGenerationResponse:
     payload = request.model_dump()
     field_meta = build_generation_field_meta(request)
     sales_flow, sales_flow_meta = infer_generation_sales_flow_with_meta(request)
@@ -548,13 +858,19 @@ async def website_builder(request: WebsiteGenerationRequest) -> WebsiteGeneratio
     final_state = await orchestrator.run(prompt_context, state)
     catalog_items, catalog_source = resolve_catalog_items_and_source(final_state)
     schema = build_schema_from_state(final_state, catalog_items=catalog_items, catalog_source=catalog_source)
+    auth_user = authenticated_client_user(authorization, required=False)
+    db_site = persist_generated_site(session, user=auth_user, request=request, schema=schema) if auth_user else None
+    if not auth_user and (request.generatedSiteId or request.generated_site_id or request.projectId or request.project_id):
+        raise HTTPException(status_code=401, detail="Login is required to update a saved project.")
     return WebsiteGenerationResponse(
         website_schema=schema,
         catalog_source=catalog_source,
-        storage_status="generated",
+        storage_status="stored" if db_site else "generated",
         used_dev_mock=False,
-        business_id=f"biz_{uuid.uuid4().hex[:10]}",
-        site_id=f"site_{uuid.uuid4().hex[:10]}",
+        business_id=db_site.store_id if db_site else f"biz_{uuid.uuid4().hex[:10]}",
+        site_id=db_site.id if db_site else f"site_{uuid.uuid4().hex[:10]}",
+        generatedSiteId=db_site.id if db_site else None,
+        projectId=db_site.id if db_site else None,
         generation_id=f"gen_{uuid.uuid4().hex[:10]}",
     )
 

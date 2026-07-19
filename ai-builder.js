@@ -6,7 +6,16 @@ const LYRA_EDIT_URL = `${API_BASE_URL}/api/luma/edit`;
 const CLIENT_REQUESTS_URL = `${API_BASE_URL}/client-requests`;
 const CLIENT_INTAKE_SESSION_URL = `${API_BASE_URL}/api/client/intake-session`;
 const CLIENT_AUTH_ME_URL = `${API_BASE_URL}/api/client/auth/me`;
+const CLIENT_PROJECTS_URL = `${API_BASE_URL}/api/client/projects`;
 const ASSET_UPLOAD_URL = `${API_BASE_URL}/api/admin/assets/upload`;
+// Public Supabase project ref used for the Google/Apple OAuth redirect (2026-07-19).
+// Not a secret -- same trust level as the anon key, safe to ship client-side.
+// Google is enabled on this Supabase project already; Apple is not enabled yet
+// (needs Beto's own Apple Developer Program setup) -- until then this same URL
+// with provider=apple will land on Supabase's own "provider not enabled" page,
+// which is an honest failure, not a broken/undefined one. No code change will
+// be needed here once Apple is turned on in Supabase.
+const SUPABASE_AUTH_URL = "https://rzdidqclbvnqqlcaueoh.supabase.co/auth/v1/authorize";
 const SUPPORTED_LANGUAGES = ["en", "es", "fr", "pt"];
 const ASSISTANT_AVATAR_FALLBACK = "/assets/nixie_idle.png";
 const ASSISTANT_AVATARS = {
@@ -594,6 +603,8 @@ let clientIntakeSession = null;
 let clientIntakeSyncTimer = null;
 let clientIntakeSyncInFlight = false;
 let clientAccountButton = null;
+let clientProjectsPanel = null;
+let clientProjects = [];
 let clientWorkspaceIdleTimer = null;
 let clientWorkspaceUnlocked = false;
 let guidedState = createEmptyGuidedState();
@@ -632,6 +643,8 @@ function createEmptyGuidedState(language = selectedLanguage) {
     sitePlan: null,
     sitePlanApproved: false,
     fieldMeta: {},
+    generatedSiteId: "",
+    projectId: "",
     aiStudioPlan: null,
     designStrategy: null,
   };
@@ -2749,6 +2762,10 @@ function initGuidedIntake() {
 
 function initClientIntakeSessionGate() {
   if (!isPublicClientSetup) return;
+  if (storedClientAccessToken()) {
+    resumeClientSessionFromAuthToken();
+    return;
+  }
   if (!isClientWorkspaceUnlocked()) {
     openStudioAuthGate("start");
     if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
@@ -2772,10 +2789,6 @@ function initClientIntakeSessionGate() {
     clientIntakeSession = stored;
     hydrateClientIntakeSession(stored, { silent: true });
     syncClientIntakeSession({ immediate: true, reason: "resume" });
-    return;
-  }
-  if (storedClientAccessToken()) {
-    resumeClientSessionFromAuthToken();
     return;
   }
   openStudioAuthGate("start");
@@ -3004,6 +3017,150 @@ async function fetchClientAuthUser() {
   return response.json();
 }
 
+async function fetchClientProjects() {
+  if (!storedClientAccessToken()) return [];
+  const response = await fetchWithTimeout(CLIENT_PROJECTS_URL, {
+    headers: clientAuthHeaders(),
+  }, 12000);
+  if (!response.ok) throw new Error(await readErrorMessage(response));
+  const data = await response.json();
+  return Array.isArray(data.projects) ? data.projects : [];
+}
+
+function ensureClientProjectsPanel() {
+  if (clientProjectsPanel) return clientProjectsPanel;
+  clientProjectsPanel = document.createElement("section");
+  clientProjectsPanel.className = "client-projects-panel";
+  clientProjectsPanel.hidden = true;
+  clientProjectsPanel.setAttribute("aria-label", "Mis páginas");
+  clientProjectsPanel.addEventListener("click", (event) => {
+    const continueButton = event.target?.closest?.("[data-client-project-id]");
+    if (continueButton) {
+      loadClientProject(continueButton.dataset.clientProjectId);
+      return;
+    }
+    if (event.target?.closest?.("[data-client-new-project]")) {
+      startNewClientProject({ skipConfirm: true });
+    }
+  });
+  document.body.appendChild(clientProjectsPanel);
+  return clientProjectsPanel;
+}
+
+function renderClientProjectsPanel(projects = []) {
+  const panel = ensureClientProjectsPanel();
+  const rows = projects.map((project) => `
+    <article class="client-project-card">
+      <div>
+        <span>${escapeHtml(project.status || "draft")}</span>
+        <h3>${escapeHtml(project.business_name || "Untitled page")}</h3>
+        <p>${escapeHtml(project.template_name || "Generated website")} · ${escapeHtml(formatDateTime(project.updated_at ? Number(project.updated_at) * 1000 : ""))}</p>
+      </div>
+      <button type="button" data-client-project-id="${escapeAttribute(project.id)}">${escapeHtml(langText({
+        en: "Continue",
+        es: "Continuar",
+        fr: "Continuer",
+        pt: "Continuar",
+      }))}</button>
+    </article>
+  `).join("");
+  panel.innerHTML = `
+    <div class="client-projects-card">
+      <div class="client-projects-head">
+        <span>${escapeHtml(langText({ en: "Your workspace", es: "Tu espacio", fr: "Votre espace", pt: "Seu espaço" }))}</span>
+        <h2>${escapeHtml(langText({ en: "Choose a page to continue", es: "Elige una página para continuar", fr: "Choisissez une page à continuer", pt: "Escolha uma página para continuar" }))}</h2>
+        <p>${escapeHtml(langText({
+          en: "Each page stays separate under your account.",
+          es: "Cada página queda separada dentro de tu cuenta.",
+          fr: "Chaque page reste séparée dans votre compte.",
+          pt: "Cada página fica separada dentro da sua conta.",
+        }))}</p>
+      </div>
+      <div class="client-projects-list">${rows}</div>
+      <button class="client-new-project-button" type="button" data-client-new-project>${escapeHtml(t("startNewProject"))}</button>
+    </div>
+  `;
+  panel.hidden = false;
+  document.body.classList.add("client-projects-open");
+}
+
+function closeClientProjectsPanel() {
+  if (clientProjectsPanel) clientProjectsPanel.hidden = true;
+  document.body.classList.remove("client-projects-open");
+}
+
+async function handleClientProjectsAfterAuth(user, session) {
+  if (!isPublicClientSetup || !storedClientAccessToken()) return;
+  try {
+    clientProjects = await fetchClientProjects();
+  } catch (error) {
+    console.warn("Could not load client projects", error);
+    return;
+  }
+  if (clientProjects.length > 1) {
+    renderClientProjectsPanel(clientProjects);
+    guidedStatusText.textContent = langText({
+      en: "Choose which page you want to continue, or start a new one.",
+      es: "Elige qué página quieres continuar, o crea una nueva.",
+      fr: "Choisissez la page à continuer, ou créez-en une nouvelle.",
+      pt: "Escolha qual página deseja continuar, ou crie uma nova.",
+    });
+    return;
+  }
+  if (clientProjects.length === 1 && !currentSchema) {
+    await loadClientProject(clientProjects[0].id, { silent: true, session });
+  }
+}
+
+async function loadClientProject(projectId, options = {}) {
+  if (!projectId) return;
+  const response = await fetchWithTimeout(`${CLIENT_PROJECTS_URL}/${encodeURIComponent(projectId)}`, {
+    headers: clientAuthHeaders(),
+  }, 14000);
+  if (!response.ok) throw new Error(await readErrorMessage(response));
+  const data = await response.json();
+  const schema = data.schema || {};
+  currentSchema = prepareWebsiteConfig(schema, { brand: schema.brand || guidedState.brand || {} }, null);
+  currentSiteId = data.generatedSiteId || data.site_id || projectId;
+  currentBusinessId = data.business_id || currentBusinessId;
+  currentGenerationId = null;
+  currentCatalogItems = catalogItemsFromSchema(currentSchema);
+  selectedPageKey = currentSchema.pages?.[0]?.page_key || "home";
+  selectedVariantId = currentSchema.design_variants?.[0]?.id || "";
+  guidedState.businessName = currentSchema.business?.name || guidedState.businessName;
+  guidedState.businessDescription = currentSchema.business?.description || guidedState.businessDescription;
+  guidedState.industry = currentSchema.business?.industry || guidedState.industry;
+  guidedState.preferredTone = currentSchema.business?.tone || guidedState.preferredTone;
+  guidedState.logoUrl = currentSchema.brand?.logoUrl || guidedState.logoUrl;
+  guidedState.logoPreference = currentSchema.brand?.logoPreference || guidedState.logoPreference;
+  guidedState.generatedSiteId = currentSiteId;
+  guidedState.projectId = currentSiteId;
+  clientIntakeSession = {
+    ...(clientIntakeSession || options.session || {}),
+    generatedSiteId: currentSiteId,
+    projectId: currentSiteId,
+    clientEmail: clientIntakeSession?.clientEmail || options.session?.clientEmail || localStorage.getItem("lumaPendingClientEmail") || "",
+    draft: guidedSessionDraftForApi(),
+  };
+  writeClientIntakeSession(clientIntakeSession);
+  closeClientProjectsPanel();
+  saveGeneratedSite({
+    schema: currentSchema,
+    business_id: currentBusinessId,
+    site_id: currentSiteId,
+    generatedSiteId: currentSiteId,
+    storage_status: data.storage_status || "stored",
+    used_dev_mock: false,
+  });
+  siteTitle.textContent = currentSchema.business?.name || "Generated site";
+  storageStatus.textContent = storageLabel(data.storage_status || "stored", false);
+  renderEditor();
+  renderPreview();
+  renderGuidedSummary();
+  renderLiveSitePreview();
+  if (!options.silent) showGeneratedClientPreview();
+}
+
 async function resumeClientSessionFromAuthToken() {
   try {
     const user = await fetchClientAuthUser();
@@ -3032,6 +3189,7 @@ async function resumeClientSessionFromAuthToken() {
     }
     markClientWorkspaceUnlocked();
     closeStudioAuthGate();
+    await handleClientProjectsAfterAuth(user, session);
     return session;
   } catch (error) {
     console.warn("Could not resume auth session", error);
@@ -3052,6 +3210,7 @@ async function resumeClientSessionFromAuthToken() {
 function hydrateClientIntakeSession(session, options = {}) {
   if (!session) return;
   currentRequestId = session.requestId || session.request_id || currentRequestId;
+  currentSiteId = session.generatedSiteId || session.projectId || session.siteId || currentSiteId;
   if (session.restored) {
     restoredGuidedDraftInfo = restoredGuidedDraftInfo || {
       savedAt: "",
@@ -3070,6 +3229,8 @@ function hydrateClientIntakeSession(session, options = {}) {
     videoUrls: arrayValue(draft.videoUrls),
     contactInfo: { ...(draft.contactInfo || {}) },
   };
+  normalizedDraft.generatedSiteId = session.generatedSiteId || session.projectId || normalizedDraft.generatedSiteId || "";
+  normalizedDraft.projectId = session.projectId || session.generatedSiteId || normalizedDraft.projectId || "";
   if (session.clientEmail && !normalizedDraft.contactInfo.email) {
     normalizedDraft.contactInfo.email = session.clientEmail;
   }
@@ -3092,7 +3253,8 @@ function hydrateClientIntakeSession(session, options = {}) {
 // account looked like it already "knew" the previous person's business, and
 // its saved language silently overrode the language of the live
 // conversation. See docs/AGENT_LOG.md for the full trace.
-function resetGuidedStateForNewAccount() {
+function resetGuidedStateForNewAccount(options = {}) {
+  const preserveAuth = Boolean(options.preserveAuth);
   guidedState = createEmptyGuidedState(selectedLanguage);
   currentSchema = null;
   currentRequestId = null;
@@ -3115,11 +3277,13 @@ function resetGuidedStateForNewAccount() {
     localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
     localStorage.removeItem(CLIENT_INTAKE_SESSION_STORAGE_KEY);
     localStorage.removeItem("lumaPendingGeneratedSite");
-    localStorage.removeItem("lumaPendingClientEmail");
-    localStorage.removeItem("lumaClientAccessToken");
-    localStorage.removeItem("lumaClientRefreshToken");
-    sessionStorage.removeItem("lumaClientAccessToken");
-    sessionStorage.removeItem("lumaClientRefreshToken");
+    if (!preserveAuth) {
+      localStorage.removeItem("lumaPendingClientEmail");
+      localStorage.removeItem("lumaClientAccessToken");
+      localStorage.removeItem("lumaClientRefreshToken");
+      sessionStorage.removeItem("lumaClientAccessToken");
+      sessionStorage.removeItem("lumaClientRefreshToken");
+    }
   } catch {
     // Best-effort only -- an in-memory reset already protects this session.
   }
@@ -3168,7 +3332,7 @@ async function createOrResumeClientIntakeSession({ email, name = "", reason = "s
       || ""
   ).trim().toLowerCase();
   if (lastKnownEmail && lastKnownEmail !== cleanEmail) {
-    resetGuidedStateForNewAccount();
+    resetGuidedStateForNewAccount({ preserveAuth: Boolean(storedClientAccessToken()) });
   }
   const draft = sanitizeClientSessionDraft(immediateDraft || guidedSessionDraftForApi());
   draft.contactInfo = {
@@ -3178,12 +3342,14 @@ async function createOrResumeClientIntakeSession({ email, name = "", reason = "s
   };
   const response = await fetchWithTimeout(CLIENT_INTAKE_SESSION_URL, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: clientAuthHeaders({ "content-type": "application/json" }),
     body: JSON.stringify({
       email: cleanEmail,
       name,
       selectedLanguage,
       requestId: forceNew ? null : currentRequestId,
+      generatedSiteId: forceNew ? "" : currentSiteId || clientIntakeSession?.generatedSiteId || clientIntakeSession?.projectId || "",
+      projectId: forceNew ? "" : currentSiteId || clientIntakeSession?.generatedSiteId || clientIntakeSession?.projectId || "",
       forceNew,
       draft,
     }),
@@ -3302,11 +3468,12 @@ function resetAssistantConversation() {
   }
 }
 
-function startNewClientProject() {
+function startNewClientProject(options = {}) {
   if (!isPublicClientSetup) return;
   const hasExistingWork = Boolean(currentSchema || guidedState.businessName || guidedState.businessDescription || guidedState.websiteIntent);
-  if (hasExistingWork && !window.confirm(t("startNewProjectConfirm"))) return;
+  if (hasExistingWork && !options.skipConfirm && !window.confirm(t("startNewProjectConfirm"))) return;
   const existingEmail = clientIntakeSession?.clientEmail || readClientIntakeSession()?.clientEmail || "";
+  closeClientProjectsPanel();
 
   localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
   localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
@@ -3647,7 +3814,7 @@ function restoreGeneratedSite() {
     const result = saved.result || {};
     if (!result.schema) return;
     currentSchema = prepareWebsiteConfig(result.schema, { brand: result.schema.brand || guidedState.brand || {} }, null);
-    currentSiteId = result.site_id || null;
+    currentSiteId = result.generatedSiteId || result.projectId || result.site_id || null;
     currentBusinessId = result.business_id || null;
     currentGenerationId = result.generation_id || null;
     currentCatalogItems = catalogItemsFromSchema(currentSchema);
@@ -6478,6 +6645,8 @@ function guidedStateForApi() {
     fieldMeta.logoPreference = fieldMeta.logoPreference || { source: "explicit", confidence: 1 };
   }
   const payload = {
+    generatedSiteId: currentSiteId || clientIntakeSession?.generatedSiteId || clientIntakeSession?.projectId || guidedState.generatedSiteId || "",
+    projectId: currentSiteId || clientIntakeSession?.projectId || clientIntakeSession?.generatedSiteId || guidedState.projectId || "",
     websiteIntent: guidedState.websiteIntent,
     businessName: guidedState.businessName,
     businessDescription: guidedState.businessDescription,
@@ -6554,6 +6723,8 @@ function guidedSessionDraftForApi() {
     fieldMeta.logoPreference = fieldMeta.logoPreference || { source: "explicit", confidence: 1 };
   }
   return sanitizeClientSessionDraft({
+    generatedSiteId: currentSiteId || clientIntakeSession?.generatedSiteId || clientIntakeSession?.projectId || guidedState.generatedSiteId || "",
+    projectId: currentSiteId || clientIntakeSession?.projectId || clientIntakeSession?.generatedSiteId || guidedState.projectId || "",
     websiteIntent: guidedState.websiteIntent,
     businessName: guidedState.businessName,
     businessDescription: guidedState.businessDescription,
@@ -6592,6 +6763,8 @@ function sanitizeClientSessionDraft(raw = {}) {
   const contactInfo = source.contactInfo && typeof source.contactInfo === "object" ? source.contactInfo : {};
   const fieldMeta = source.fieldMeta && typeof source.fieldMeta === "object" ? source.fieldMeta : {};
   return {
+    generatedSiteId: trimmed(source.generatedSiteId || source.siteId || source.projectId, 180),
+    projectId: trimmed(source.projectId || source.generatedSiteId || source.siteId, 180),
     websiteIntent: trimmed(source.websiteIntent),
     businessName: trimmed(source.businessName, 180),
     businessDescription: trimmed(source.businessDescription, 1600),
@@ -7324,7 +7497,7 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
   try {
     const response = await fetch(API_URL, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: clientAuthHeaders({ "content-type": "application/json" }),
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
@@ -8551,13 +8724,25 @@ function applyGenerationResult(result, payload = {}, templateSelection = null) {
   syncCatalogSourceMetadata(result);
   result.schema = prepareWebsiteConfig(result.schema, payload, templateSelection);
   currentSchema = result.schema;
-  currentSiteId = result.site_id || null;
+  currentSiteId = result.generatedSiteId || result.projectId || result.site_id || null;
   currentBusinessId = result.business_id || null;
   currentGenerationId = result.generation_id || null;
   currentCatalogItems = catalogItemsFromSchema(currentSchema);
   selectedPageKey = currentSchema.pages[0]?.page_key || "home";
   selectedVariantId = currentSchema.design_variants?.[0]?.id || "";
   saveGeneratedSite(result);
+  if (currentSiteId) {
+    guidedState.generatedSiteId = currentSiteId;
+    guidedState.projectId = currentSiteId;
+    clientIntakeSession = {
+      ...(clientIntakeSession || {}),
+      generatedSiteId: currentSiteId,
+      projectId: currentSiteId,
+      clientEmail: clientIntakeSession?.clientEmail || guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "",
+      draft: guidedSessionDraftForApi(),
+    };
+    writeClientIntakeSession(clientIntakeSession);
+  }
   siteTitle.textContent = currentSchema.business?.name || "Generated site";
   storageStatus.textContent = storageLabel(result.storage_status, result.used_dev_mock);
   renderEditor();
@@ -13663,9 +13848,8 @@ function persistPendingStudioAccountAction(action) {
 function continueWithStudioAuth(provider) {
   persistPendingStudioAccountAction(provider);
   const returnTo = encodeURIComponent(window.location.href);
-  const configured = provider === "google" ? window.LUMA_GOOGLE_AUTH_URL : window.LUMA_APPLE_AUTH_URL;
-  const fallback = `${API_BASE_URL}/api/client/auth/oauth/${encodeURIComponent(provider)}?return_to=${returnTo}`;
-  window.location.href = configured || fallback;
+  const supabaseProvider = provider === "apple" ? "apple" : "google";
+  window.location.href = `${SUPABASE_AUTH_URL}?provider=${supabaseProvider}&redirect_to=${returnTo}`;
 }
 
 async function continueWithEmailAuth(event) {
@@ -13837,6 +14021,8 @@ async function collectPayload() {
   if (sitePlan && aiStudioPlan) sitePlan.aiStudioPlan = aiStudioPlan;
 
   const payload = {
+    generatedSiteId: currentSiteId || clientIntakeSession?.generatedSiteId || clientIntakeSession?.projectId || guidedState.generatedSiteId || "",
+    projectId: currentSiteId || clientIntakeSession?.projectId || clientIntakeSession?.generatedSiteId || guidedState.projectId || "",
     business_name: data.get("business_name")?.toString().trim(),
     business_description: data.get("business_description")?.toString().trim(),
     industry: data.get("industry")?.toString().trim(),

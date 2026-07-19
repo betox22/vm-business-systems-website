@@ -154,6 +154,10 @@ class WebsiteGenerationRequest(BaseModel):
     photoUrls: List[str] = Field(default_factory=list)
     selectedLanguage: SupportedLanguage = "en"
     selected_template_id: Optional[str] = None
+    generatedSiteId: Optional[str] = None
+    generated_site_id: Optional[str] = None
+    projectId: Optional[str] = None
+    project_id: Optional[str] = None
     sales_flow: Optional[str] = None
     salesFlow: Optional[str] = None
     fieldMeta: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
@@ -172,6 +176,8 @@ class WebsiteGenerationResponse(BaseModel):
     used_dev_mock: bool = False
     business_id: Optional[str] = None
     site_id: Optional[str] = None
+    generatedSiteId: Optional[str] = None
+    projectId: Optional[str] = None
     generation_id: Optional[str] = None
 
 

@@ -16,6 +16,137 @@ Formato de entrada:
 
 ---
 
+## 2026-07-19 — Codex — Panel "Mis páginas" y persistencia multi-proyecto por cliente
+
+**Hecho:** se integró el flujo para que un cliente autenticado con Supabase/Google pueda tener varias páginas generadas bajo la misma cuenta. El backend ahora valida el bearer token, lista proyectos del usuario, devuelve detalle de cada proyecto y guarda/actualiza cada generación en `GeneratedSite` con `owner_user_id`/`owner_email`. El frontend ahora intenta restaurar sesión real por token antes que un borrador local, muestra un panel "Mis páginas" cuando hay varios proyectos, permite continuar un proyecto existente o crear uno nuevo sin borrar la autenticación, y envía `generatedSiteId/projectId` + Authorization al generar.
+
+**Pendiente / abierto:** `client_intake_sessions` sigue en memoria del proceso Render; sirve para continuidad corta, pero debe moverse a DB si queremos persistencia real entre deploys/restarts. El panel no reemplaza todavía un dashboard completo de cliente con edición/publicación avanzada.
+
+**Archivos tocados:** `ai-builder.js`, `ai-builder.css`, `backend/app/main.py`, `backend/app/models.py`, `backend/app/db.py`, `backend/app/db_models.py`, `backend/app/client_auth.py`.
+
+**Notas para el siguiente agente:** no usar `git add .`: el repo tiene muchos logs/previews sin trackear. Stagear solo los archivos funcionales. Si se prueba en producción, verificar `GET /api/client/projects` con token válido y confirmar que `/ai/website-builder` retorna `generatedSiteId`.
+
+## 2026-07-19 — Claude — Responsive del builder de Lyra + login real con Google (Supabase Auth)
+
+**Contexto:** Beto reportó dos problemas nuevos en la misma sesión: (1) el
+chat de Lyra no se adapta a NINGÚN dispositivo que no sea desktop -- probó en
+tablet y "se monta todo, los botones se mueven"; (2) un "gran gran problema":
+el sistema no distingue si la cuenta es diferente, simplemente jala lo mismo,
+y si un cliente quiere trabajar en varias páginas a la vez no hay forma de
+saber dónde está "porque no crea cuentas realmente". Pidió arreglar ambos, y
+para cuentas específicamente pidió login real con Google/Apple "como
+cualquier otro servicio en línea".
+
+**1) Responsive -- causa raíz encontrada:**
+`ai-builder.css` tiene breakpoints en 640/760/1040/1100px, pero el chrome del
+builder (`.guided-shell`, con un rail de pasos de `200px` fijo, y
+`.guided-header`/`.guided-header-actions` con varios botones + un `<select>`
+de 180px en una sola fila sin `flex-wrap`) **nunca se ajustaba en ningún
+breakpoint** -- ni el rail fijo ni el header se tocaban hasta los 760px
+(tamaño de teléfono), dejando un hueco total entre ~761px y desktop (todo el
+rango real de tablets) sin ningún ajuste, y en tablet/desktop chico el rail
+de 200px + botones sin wrap simplemente se superponían.
+
+**Fix (`ai-builder.css`):**
+- `flex-wrap: wrap` agregado a `.guided-header` y `.guided-header-actions`
+  como red de seguridad a CUALQUIER ancho -- nunca más deberían montarse
+  botones, en el peor caso bajan a una segunda fila.
+- Nuevo `@media (max-width: 1024px)` (línea ~233), acotado sólo a los
+  selectores `guided-*` del chrome del builder (no se tocó el bloque de
+  760px existente, que es compartido con componentes no relacionados,
+  incluyendo plantillas de sitios ya generados -- ampliarlo hubiera sido
+  mucho más riesgoso). Convierte `.guided-shell` de `200px + 1fr` en
+  columnas a una sola columna con el rail arriba en fila horizontal
+  angosta (scroll horizontal, sólo números, sin las etiquetas de texto de
+  cada paso vía `.grs-label { display:none }`).
+- **No verificado visualmente en navegador real** -- lo confirmé leyendo el
+  archivo real (no la copia stale del sandbox de bash, ver notas de
+  sesiones anteriores) y razonando sobre las reglas CSS, pero no hay forma
+  de levantar el sitio real desde este entorno para tomar screenshots.
+  Pedirle a Beto o a Codex que lo pruebe en tablet real antes de darlo por
+  cerrado.
+
+**2) Cuentas -- causa raíz encontrada (más profunda de lo esperado):**
+- `continueWithEmailAuth()` en `ai-builder.js` (línea ~13671) sólo valida
+  que el texto tenga forma de email -- cero contraseña, cero código de
+  verificación, cero magic link. Cualquiera que escriba el mismo correo
+  entra directo a lo que sea que haya guardado ahí. No es un bug, es que
+  nunca se construyó autenticación real.
+- `Store.owner_email` en `backend/app/db_models.py` tenía
+  `UniqueConstraint("owner_email")` -- un correo sólo podía tener UNA
+  tienda/proyecto para siempre, aunque la autenticación fuera real.
+- `client_intake_sessions` en `main.py` sigue siendo un diccionario de
+  Python en memoria (se pierde completo en cada redeploy de Render).
+- Los botones de Google/Apple en el auth gate ya existían en el HTML pero
+  apuntaban a `window.LUMA_GOOGLE_AUTH_URL`/`LUMA_APPLE_AUTH_URL`, que
+  nunca se definían en ningún lado -- siempre caían al fallback
+  `/api/client/auth/oauth/{provider}`, un endpoint que no existe en el
+  backend. Login con Google/Apple estaba 100% roto.
+- Revisé el dashboard de Supabase directamente: **Google ya está habilitado
+  y configurado** (Client ID + Secret ya cargados, probablemente por
+  Codex). Apple está deshabilitado -- requiere que Beto se inscriba en
+  Apple Developer Program (cuenta/pago propio) y genere sus credenciales;
+  eso no lo puede hacer un agente.
+
+**Fix implementado (Google ahora, Apple queda pendiente de que Beto haga su
+setup en Apple Developer):**
+- `backend/app/client_auth.py` (nuevo): `fetch_supabase_user(access_token)`
+  -- en vez de verificar el JWT localmente (necesitaría manejar
+  JWKS/rotación de llaves), hace proxy a `GET {SUPABASE_URL}/auth/v1/user`
+  de Supabase con el token del cliente. Ventaja sobre verificar
+  localmente: también respeta sesiones cerradas/revocadas, no sólo la
+  firma.
+- `backend/app/main.py`: nuevo `GET /api/client/auth/me` -- el frontend ya
+  lo llamaba (`fetchClientAuthUser()`), simplemente no existía. Ahora
+  responde 401 si el token es inválido/expiró, 503 si Supabase no está
+  configurado, o el usuario real (id, email, userMetadata) si es válido.
+- `ai-builder.js`: nueva constante `SUPABASE_AUTH_URL` (URL pública del
+  proyecto Supabase, incluida en el JS -- mismo nivel de confianza que la
+  key `anon`, no es secreto). `continueWithStudioAuth(provider)` reescrito
+  para construir directamente
+  `${SUPABASE_AUTH_URL}?provider=google&redirect_to=...` en vez de
+  depender de globals que nunca se definían. El flujo de vuelta
+  (`captureStudioAuthRedirect()`, que ya sabía leer `access_token`/
+  `refresh_token` del hash de la URL) no necesitó cambios -- ya esperaba
+  exactamente ese formato, señal de que esto se diseñó para Supabase desde
+  el inicio y sólo faltaba conectar los cables.
+- `backend/app/db_models.py`: quitado `UniqueConstraint("owner_email")` de
+  `Store`, agregada columna `owner_user_id` (nullable, indexada) para
+  guardar el id real de Supabase (`user.id`) y usarlo como identidad de
+  ahora en adelante en vez del email. Cambio seguro/aditivo: nada lee de
+  esta tabla todavía (ver docstring del módulo).
+
+**Pendiente / abierto -- la pieza más grande que falta:**
+- **Selector de proyectos ("mis páginas")**: no existe ningún UI para que
+  un cliente vea sus proyectos existentes y elija continuar uno o empezar
+  otro. Hoy, aunque el login ya sea real, el flujo de intake sigue
+  resumiendo "el" único borrador asociado -- falta: (a) endpoints
+  backend para listar/crear `Store`/`GeneratedSite` por `owner_user_id`,
+  (b) migrar `client_intake_sessions` de memoria a la base de datos real
+  (SQLAlchemy, ya existe la capa) para que sobreviva redeploys y soporte
+  varios proyectos en paralelo, (c) una pantalla o panel nuevo en
+  `ai-builder.js`/`ai-builder.html` para elegir/crear proyecto. Es
+  trabajo de UI + backend considerable, no se tocó esta sesión por su
+  tamaño -- recomiendo que sea su propia sesión dedicada.
+- Apple login: código ya compatible (mismo `SUPABASE_AUTH_URL` con
+  `provider=apple`), sólo falta que Beto habilite el provider en Supabase
+  con sus credenciales de Apple Developer.
+- El fix responsive no se vio en navegador real, sólo se razonó sobre el
+  CSS -- falta confirmación visual en dispositivo real.
+
+**Archivos tocados:** `ai-builder.css`, `ai-builder.js`,
+`backend/app/client_auth.py` (nuevo), `backend/app/main.py`,
+`backend/app/db_models.py`.
+
+**Notas para el siguiente agente:** si retomas el selector de proyectos,
+empieza por decidir la forma del endpoint (`GET /api/client/projects?
+ownerId=`, `POST /api/client/projects`) y cómo se relaciona con
+`client_intake_sessions` -- probablemente conviene fusionarlos en una sola
+tabla en vez de mantener dos sistemas de sesión paralelos (el dict en
+memoria y las tablas SQLAlchemy).
+
+---
+
 ## 2026-07-19 — Claude — Storage real: endpoint de subida de assets + cliente de Supabase Storage
 
 **Contexto:** Beto notó que `GET /api/ai-status` devuelve

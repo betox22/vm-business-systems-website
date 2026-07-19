@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 """Shared SQLAlchemy engine/session setup.
@@ -42,6 +42,40 @@ def init_db() -> None:
     from . import db_models  # noqa: F401  (ensures models are registered on Base)
 
     Base.metadata.create_all(bind=engine)
+    _ensure_additive_columns()
+
+
+def _ensure_additive_columns() -> None:
+    """Apply tiny additive migrations for existing SQLite/Render demo DBs.
+
+    This project does not have Alembic wired yet. `create_all()` will not add
+    columns to tables that already exist, so we handle the small nullable columns
+    introduced while the prototype is still on SQLite. Managed Postgres should
+    use a real migration before production.
+    """
+
+    if not DATABASE_URL.startswith("sqlite"):
+        return
+
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    migrations = {
+        "stores": {
+            "owner_user_id": "owner_user_id TEXT",
+        },
+        "generated_sites": {
+            "owner_user_id": "owner_user_id TEXT",
+        },
+    }
+
+    with engine.begin() as connection:
+        for table_name, columns in migrations.items():
+            if table_name not in existing_tables:
+                continue
+            existing_columns = {column["name"] for column in inspector.get_columns(table_name)}
+            for column_name, ddl in columns.items():
+                if column_name not in existing_columns:
+                    connection.exec_driver_sql(f"ALTER TABLE {table_name} ADD COLUMN {ddl}")
 
 
 def get_session() -> Iterator[Session]:
