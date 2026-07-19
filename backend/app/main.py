@@ -291,7 +291,7 @@ async def luma_chat(request: LumaChatRequest) -> LumaChatResponse:
         ready = not final_state.missingImportantFields
         plan = site_plan_from_state(final_state)
         assistant_message = assistant_message_for_state(final_state)
-        next_question = None if ready else (intake_decision.nextQuestion or next_question_for_state(final_state))
+        next_question = "" if ready else (intake_decision.nextQuestion or next_question_for_state(final_state))
     else:
         final_state = state
         ready = False
