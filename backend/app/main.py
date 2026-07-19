@@ -260,6 +260,16 @@ async def ai_status() -> Dict[str, bool]:
     }
 
 
+@app.get("/api/build-info")
+async def build_info() -> Dict[str, Any]:
+    return {
+        "service": os.getenv("RENDER_SERVICE_NAME") or "kreaton-lyra-api",
+        "commit": os.getenv("RENDER_GIT_COMMIT") or os.getenv("GIT_COMMIT") or "",
+        "branch": os.getenv("RENDER_GIT_BRANCH") or os.getenv("GIT_BRANCH") or "",
+        "version": app.version,
+    }
+
+
 @app.post("/api/luma/chat", response_model=LumaChatResponse)
 @app.post("/api/ai/intake-assistant", response_model=LumaChatResponse)
 async def luma_chat(request: LumaChatRequest) -> LumaChatResponse:
