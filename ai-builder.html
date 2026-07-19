@@ -56,11 +56,27 @@ instagram: @lunamarket</textarea></label>
 
         <section id="guidedPanel" class="guided-panel mode-panel" aria-modal="true" role="dialog">
           <div class="guided-shell">
+            <aside class="guided-rail">
+              <div class="guided-rail-brand">
+                <span class="guided-rail-orb">L</span>
+                <b>LYRA</b>
+              </div>
+              <ol class="guided-rail-steps" id="guidedRailSteps">
+                <li class="guided-rail-step" data-step-index="1"><span class="grs-num">1</span><span class="grs-label" data-i18n="railStepBusiness">Your business</span></li>
+                <li class="guided-rail-step" data-step-index="2"><span class="grs-num">2</span><span class="grs-label" data-i18n="railStepProducts">Products/services</span></li>
+                <li class="guided-rail-step" data-step-index="3"><span class="grs-num">3</span><span class="grs-label" data-i18n="railStepLocation">Location</span></li>
+                <li class="guided-rail-step" data-step-index="4"><span class="grs-num">4</span><span class="grs-label" data-i18n="railStepSales">How you sell</span></li>
+                <li class="guided-rail-step" data-step-index="5"><span class="grs-num">5</span><span class="grs-label" data-i18n="railStepStyle">Style and audience</span></li>
+                <li class="guided-rail-step" data-step-index="6"><span class="grs-num">6</span><span class="grs-label" data-i18n="railStepColors">Colors and brand</span></li>
+                <li class="guided-rail-step" data-step-index="7"><span class="grs-num">7</span><span class="grs-label" data-i18n="railStepReview">Review</span></li>
+              </ol>
+            </aside>
+            <div class="guided-main">
             <header class="guided-header">
               <div class="assistant-identity">
-                <img class="assistant-avatar large" src="/assets/nixie_idle.png" alt="Luma">
+                <img class="assistant-avatar large" src="/assets/nixie_idle.png" alt="Lyra">
                 <div>
-                  <strong>Luma</strong>
+                  <strong>Lyra</strong>
                   <span data-i18n="assistantSubtitle">Website setup assistant</span>
                 </div>
               </div>
@@ -89,7 +105,7 @@ instagram: @lunamarket</textarea></label>
                 <div id="guidedChat" class="guided-chat" aria-live="polite"></div>
                 <div id="guidedThinking" class="guided-thinking">
                   <img class="assistant-avatar tiny" src="/assets/nixie_thinking.png" alt="">
-                  <span data-i18n="thinking">Luma is thinking...</span>
+                  <span data-i18n="thinking">Lyra is thinking...</span>
                 </div>
                 <div class="chat-status-card">
                   <div>
@@ -105,11 +121,11 @@ instagram: @lunamarket</textarea></label>
                   <button data-ai-decide="targetAudience" type="button" data-i18n="decideAudience">Audience: Let AI decide</button>
                   <button data-ai-decide="sectionsPreference" type="button" data-i18n="decideSections">Sections: Let AI decide</button>
                 </div>
-                <div class="chat-input-label">
+                <div class="chat-input-row">
                   <input id="guidedReply" type="text" placeholder="Type your answer..." data-i18n-placeholder="replyPlaceholder" autocomplete="off">
+                  <button id="guidedSendButton" class="chat-send-button" type="button" aria-label="Send">➤</button>
                 </div>
-                <div class="guided-actions">
-                  <button id="guidedSendButton" type="button" data-i18n="send">Send</button>
+                <div class="guided-actions guided-actions-secondary">
                   <button id="guidedMicButton" class="secondary-action" type="button" data-i18n="micButton">Use voice</button>
                   <button id="guidedSkipButton" class="secondary-action" type="button" data-i18n="skip">Skip</button>
                 </div>
@@ -154,6 +170,7 @@ instagram: @lunamarket</textarea></label>
                 <button id="keepChattingButton" class="secondary-action full-width" type="button" data-i18n="keepChatting">Keep chatting</button>
                 <p id="guidedStatusText" class="status-text" data-i18n="assistantServerNotice">The assistant talks only to the secure backend route.</p>
               </div>
+            </div>
             </div>
           </div>
         </section>
@@ -208,11 +225,11 @@ instagram: @lunamarket</textarea></label>
             <div id="clientReviewBar" class="client-review-bar">
               <div>
                 <strong id="generatedReadyTitle">Your draft is ready</strong>
-                <span id="generatedReadySubtitle">Review it completely. You can send it to the team or ask Luma for changes.</span>
+                <span id="generatedReadySubtitle">Review it completely. You can send it to the team or ask Lyra for changes.</span>
               </div>
               <div>
                 <button id="submitDraftReviewButton" type="button">Send for review</button>
-                <button id="adjustWithLumaButton" type="button">Adjust with Luma</button>
+                <button id="adjustWithLumaButton" type="button">Adjust with Lyra</button>
                 <button id="exitClientPreviewButton" type="button">Keep reviewing</button>
               </div>
             </div>
@@ -221,7 +238,7 @@ instagram: @lunamarket</textarea></label>
               <button type="button" data-selection-action="up">↑</button>
               <button type="button" data-selection-action="down">↓</button>
               <button type="button" data-selection-action="duplicate">Duplicate</button>
-              <button type="button" data-selection-action="luma">Ask Luma</button>
+              <button type="button" data-selection-action="luma">Ask Lyra</button>
               <button type="button" data-selection-action="delete">Delete</button>
             </div>
             <div id="previewFrame" class="site-preview"></div>
@@ -230,11 +247,11 @@ instagram: @lunamarket</textarea></label>
           <aside class="studio-side studio-luma-panel">
             <div class="studio-card luma-studio-card">
               <div class="studio-luma-avatar">
-                <img class="assistant-avatar large" src="/assets/nixie_idle.png" alt="Luma">
+                <img class="assistant-avatar large" src="/assets/nixie_idle.png" alt="Lyra">
                 <span></span>
               </div>
               <div class="studio-card-head">
-                <strong>Luma</strong>
+                <strong>Lyra</strong>
                 <span>AI site designer</span>
               </div>
               <p class="studio-luma-message">Click a section or tell me what to improve. I can adjust layout, products, copy and style.</p>
@@ -244,7 +261,7 @@ instagram: @lunamarket</textarea></label>
                 <div><i></i><strong>Online shop</strong></div>
                 <div><em></em><strong>Contact page</strong></div>
               </div>
-              <button id="studioAdjustButton" class="studio-primary-action" type="button">Adjust with Luma</button>
+              <button id="studioAdjustButton" class="studio-primary-action" type="button">Adjust with Lyra</button>
             </div>
           </aside>
         </div>
@@ -254,11 +271,11 @@ instagram: @lunamarket</textarea></label>
         <div class="studio-auth-card">
           <button id="studioAuthCloseButton" class="icon-button" type="button" aria-label="Close">×</button>
           <div class="studio-auth-avatar">
-            <img class="assistant-avatar large" src="/assets/nixie_success.png" alt="Luma">
+            <img class="assistant-avatar large" src="/assets/nixie_success.png" alt="Lyra">
           </div>
           <span>Save your progress</span>
           <h2>Your first draft is ready to keep editing</h2>
-          <p>Create an account to save this site, manage products, prices, inventory, and continue with Luma without losing anything.</p>
+          <p>Create an account to save this site, manage products, prices, inventory, and continue with Lyra without losing anything.</p>
           <div class="studio-auth-actions">
             <button id="studioGoogleAuthButton" type="button">Continue with Google</button>
             <button id="studioAppleAuthButton" type="button">Continue with Apple</button>

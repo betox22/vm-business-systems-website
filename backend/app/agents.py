@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+import json
+import os
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .image_assets import attach_image_asset, stable_seed_image_url
 from .models import AgentResult, ProjectState, WebsiteType
 from .taxonomy import infer_seed_profile
+
+try:
+    from openai import OpenAI
+except Exception:  # pragma: no cover - optional dependency guard
+    OpenAI = None  # type: ignore[assignment]
 
 
 TEMPLATE_CATALOG: Dict[str, Dict[str, str]] = {
@@ -322,6 +329,99 @@ def localized_seed(value: Dict[str, str], language: str) -> str:
     return value.get(language) or value.get("es") or value.get("en") or next(iter(value.values()), "")
 
 
+def generate_ai_seed_catalog(context: str, language: str, count: int = 6) -> Optional[List[Dict[str, Any]]]:
+    """LLM fallback for niches outside the hand-authored SEED_PRODUCT_LIBRARY.
+
+    infer_seed_profile() only recognizes a handful of hardcoded categories
+    (jewelry, fashion, coffee, auto, tech, beauty, home, restaurant,
+    marketplace). Anything else -- boat parts, fishing gear, extreme sports
+    gear, or literally whatever the client actually said -- used to collapse
+    into a generic "default" filler catalog (tote bags, desk trays) with no
+    relation to the real business. This asks the model directly for a small
+    set of realistic sample products for the client's actual niche, so the
+    placeholder catalog is at least topically relevant instead of random.
+
+    This intentionally uses the SYNC OpenAI client and stays a plain
+    function (not async), even though it is called from async agent code.
+    semantic_seed_catalog() is called from several places across
+    agents.py/ai_site_planner.py/main.py that are not all async; threading
+    async through that whole chain is a much bigger, riskier change than a
+    single occasional blocking call on the rare "unmatched niche" path (most
+    requests hit a known category and never reach this function at all).
+
+    Returns None (never raises) if no API key is configured, the openai
+    package is unavailable, or the call fails for any reason -- callers must
+    fall back to the static default library with zero behavior change.
+    """
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key or not OpenAI or not context.strip():
+        return None
+    try:
+        client = OpenAI(api_key=api_key, timeout=12.0)
+        model = os.getenv("OPENAI_SEED_CATALOG_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-4o-mini"
+        response = client.chat.completions.create(
+            model=model,
+            temperature=0.4,
+            response_format={"type": "json_object"},
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You write short sample product/service catalogs for a website "
+                        "builder. Given a business description in any language and any "
+                        "niche -- it can be anything: boat parts, fishing gear, extreme "
+                        "sports equipment, car accessories, bathroom fixtures, literally "
+                        "anything -- return realistic, specific sample items for THAT "
+                        "niche. Never fall back to generic filler like 'featured item' or "
+                        "unrelated products. Reply in the same language as the business "
+                        "description. Return strict JSON: {\"items\": [{\"name\": str, "
+                        "\"category\": str, \"description\": str, \"price\": number, "
+                        "\"image_search_query\": \"2-4 English keywords for stock photo "
+                        "search\"}]}"
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Business description: {context.strip()[:800]}\n"
+                        f"Language: {language}\nReturn exactly {count} items."
+                    ),
+                },
+            ],
+        )
+        raw = response.choices[0].message.content or "{}"
+        parsed = json.loads(raw)
+        items = parsed.get("items")
+        if not isinstance(items, list) or not items:
+            return None
+        catalog: List[Dict[str, Any]] = []
+        for index, item in enumerate(items[:count]):
+            if not isinstance(item, dict) or not item.get("name"):
+                continue
+            price = float(item.get("price") or 0) or 29.0
+            catalog.append({
+                "id": f"prod_{index + 1:03d}",
+                "sku": f"AI-{index + 1:03d}",
+                "name": str(item.get("name"))[:90],
+                "description": str(item.get("description") or "")[:400],
+                "category": str(item.get("category") or "")[:60],
+                "price_type": "fixed",
+                "price": price,
+                "price_amount": price,
+                "currency": "USD",
+                "price_label": f"USD {price:.2f}",
+                "rating": round(4.5 + (index % 4) * 0.1, 1),
+                "badge": "Best Seller" if index == 0 else "New" if index == 1 else "Featured",
+                "imageSearchQuery": str(item.get("image_search_query") or item.get("name")),
+                "is_active": True,
+                "is_featured": index < 4,
+                "sort_order": index,
+            })
+        return catalog or None
+    except Exception:
+        return None
+
+
 def semantic_seed_catalog(state: ProjectState, user_input: str, count: int = 6) -> List[Dict[str, Any]]:
     language = state.selectedLanguage if state.selectedLanguage in {"en", "es"} else "en"
     context = " ".join([
@@ -350,6 +450,17 @@ def semantic_seed_catalog(state: ProjectState, user_input: str, count: int = 6) 
             SEED_PRODUCT_LIBRARY["jewelry"][4],
             SEED_PRODUCT_LIBRARY["tech"][5],
         ][:count]
+    elif profile == "default":
+        # infer_seed_profile() only recognizes a handful of hardcoded niches.
+        # Anything else used to fall straight into the generic "default"
+        # filler (tote bags, desk trays) with no relation to the real
+        # business. Try the LLM first so the client's actual words (boat
+        # parts, fishing gear, whatever they said) drive the sample catalog;
+        # fall back to the static default library if AI is unavailable.
+        ai_catalog = generate_ai_seed_catalog(context, state.selectedLanguage or language, count)
+        if ai_catalog:
+            return [attach_image_asset(item, context=context) for item in ai_catalog]
+        products = SEED_PRODUCT_LIBRARY["default"][:count]
     else:
         products = SEED_PRODUCT_LIBRARY.get(profile, SEED_PRODUCT_LIBRARY["default"])[:count]
     catalog: List[Dict[str, Any]] = []

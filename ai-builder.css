@@ -4,8 +4,13 @@
   --ink: #111827;
   --muted: #667085;
   --line: #d7dfda;
-  --primary: #0e7c66;
-  --soft: #e7f4ef;
+  --primary: #2563eb;
+  --soft: #eff6ff;
+  --lyra-indigo: #1e1b4b;
+  --lyra-cobalt: #2f4cdd;
+  --lyra-violet: #7c3aed;
+  --lyra-cyan: #22d3ee;
+  --lyra-gold: #e8b84b;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
@@ -144,7 +149,6 @@ textarea:focus {
 }
 
 .intake-mode-tabs button.active,
-.guided-actions button:first-child,
 #guidedGenerateButton {
   border-color: var(--primary);
   background: var(--primary);
@@ -180,34 +184,150 @@ select {
   overflow: hidden;
 }
 
+/* Full-page treatment (2026-07-18): this used to render as a centered
+   floating card over a dark scrim -- a lightbox/modal look, not a real app
+   screen. client-setup.css already solved this correctly for the public
+   client flow (.public-client-setup .guided-panel / .guided-shell: no
+   backdrop, no card, edge-to-edge, 100vh). Porting the same treatment here
+   so the internal ai-builder tool feels like one continuous app instead of a
+   popup floating over the Quick Form page behind it. */
 .guided-panel {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(15, 23, 42, 0.45);
-  padding: 22px;
+  background: var(--bg);
+  padding: 0;
 }
 
 .guided-panel.active {
   display: grid;
-  place-items: center;
 }
 
 .guided-shell {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  width: min(1120px, 100%);
-  max-height: calc(100vh - 44px);
+  grid-template-columns: 200px minmax(0, 1fr);
+  width: 100%;
+  height: 100vh;
+  max-height: 100vh;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--line) 72%, white);
-  border-radius: 18px;
+  border: 0;
+  border-radius: 0;
   background: linear-gradient(135deg, #f7fbff 0%, #ffffff 46%, #f5fff9 100%);
-  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.24);
+  box-shadow: none;
 }
 
 .review-details-open .guided-shell,
 .final-review-mode .guided-shell {
-  width: min(1180px, 100%);
+  width: 100%;
+}
+
+/* Persistent step rail (2026-07-18) -- replaces the plain "Step 1" text +
+   thin progress bar with an always-visible list of guided steps, matching
+   the sidebar step nav in the Codex prototype Beto liked. Driven by
+   renderGuidedStepRail() in ai-builder.js, which reuses the existing
+   displayStepIndex()/guidedStep state -- no new step-tracking logic. */
+.guided-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-right: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.6);
+  padding: 16px 12px;
+  overflow-y: auto;
+}
+
+.guided-rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 0 4px;
+}
+
+.guided-rail-orb {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.guided-rail-brand b {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.guided-rail-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guided-rail-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  padding: 7px 8px;
+  color: #9aa5a1;
+}
+
+.guided-rail-step.active {
+  background: var(--soft);
+}
+
+.guided-rail-step.done {
+  color: var(--muted);
+}
+
+.grs-num {
+  display: grid;
+  flex: 0 0 18px;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #eef1f0;
+  color: #9aa5a1;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.guided-rail-step.active .grs-num,
+.guided-rail-step.done .grs-num {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.grs-label {
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.guided-rail-step.active .grs-label {
+  color: var(--ink);
+}
+
+.guided-main {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* The rail above now carries the step indicator; the old thin bar stays in
+   the DOM (JS still writes to #guidedStepLabel/#guidedProgressBar) but is
+   visually retired to avoid showing progress twice. */
+.guided-progress {
+  display: none;
 }
 
 .guided-header,
@@ -278,7 +398,7 @@ select {
 
 body[data-assistant-state="speaking"] .assistant-identity .assistant-avatar,
 .assistant-avatar[data-state="speaking"] {
-  box-shadow: 0 0 0 5px rgba(14, 124, 102, 0.14);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--primary) 14%, transparent);
   animation: assistant-speaking 1.2s ease-in-out infinite;
 }
 
@@ -302,7 +422,7 @@ body[data-assistant-state="alert"] .assistant-identity .assistant-avatar,
 
 body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .assistant-avatar[data-state="success"] {
-  box-shadow: 0 0 0 6px rgba(14, 124, 102, 0.18);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary) 18%, transparent);
   animation: assistant-success 1.8s ease-in-out infinite;
 }
 
@@ -395,11 +515,28 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   min-height: 40px;
 }
 
-.guided-actions button:first-child,
 #guidedGenerateButton {
   border-color: color-mix(in srgb, var(--primary) 42%, var(--line));
   background: var(--primary);
   color: #ffffff;
+}
+
+.guided-actions-secondary {
+  gap: 6px;
+}
+
+.guided-actions-secondary button {
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  background: transparent;
+  border-color: transparent;
+}
+
+.guided-actions-secondary button:hover {
+  background: color-mix(in srgb, var(--primary) 6%, white);
+  border-color: color-mix(in srgb, var(--line) 84%, white);
 }
 
 .compact-language {
@@ -547,6 +684,11 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   padding: 14px;
 }
 
+.guided-chat-card {
+  display: flex;
+  flex-direction: column;
+}
+
 .assistant-welcome {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -567,22 +709,28 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 
 .guided-chat {
   display: grid;
-  gap: 8px;
+  align-content: start;
+  gap: 10px;
+  flex: 1;
   min-height: 220px;
-  max-height: 34vh;
   overflow-y: auto;
   padding-right: 3px;
 }
 
+/* Rounded, borderless bubbles (2026-07-18) -- replaces the bordered
+   rectangular cards used for every message with a modern messaging-app look:
+   filled/solid for the user's own messages, light with a hairline border for
+   the assistant. Matches the mockup Beto approved. */
 .chat-message {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  max-width: 92%;
+  max-width: 78%;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
   background: white;
-  padding: 9px 10px;
+  padding: 10px 14px;
   color: #27352f;
   font-size: 13px;
   line-height: 1.45;
@@ -595,8 +743,11 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .chat-message.user {
   display: block;
   justify-self: end;
-  border-color: color-mix(in srgb, var(--primary) 35%, var(--line));
-  background: var(--soft);
+  border: 0;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 4px;
+  background: var(--primary);
+  color: #ffffff;
 }
 
 .chat-message.system {
@@ -1549,15 +1700,44 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   color: var(--ink) !important;
 }
 
-.chat-input-label {
+.chat-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 12px;
 }
 
-.chat-input-label input {
+.chat-input-row input {
+  flex: 1;
   min-height: 46px;
+  border: 1px solid var(--line);
   border-radius: 999px;
   padding-inline: 16px;
   background: white;
+}
+
+.chat-input-row input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.chat-send-button {
+  display: grid;
+  flex: 0 0 46px;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.chat-send-button:hover {
+  background: color-mix(in srgb, var(--primary) 88%, black);
 }
 
 .summary-head {

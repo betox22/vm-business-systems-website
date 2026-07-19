@@ -3107,14 +3107,34 @@ function resetGuidedStateForNewAccount() {
   forcedTemplateSelection = null;
   clientIntakeSession = null;
   restoredGuidedDraftInfo = null;
+  guidedStep = "websiteIntent";
   try {
     localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
     localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
     localStorage.removeItem(CLIENT_INTAKE_SESSION_STORAGE_KEY);
     localStorage.removeItem("lumaPendingGeneratedSite");
+    localStorage.removeItem("lumaPendingClientEmail");
+    localStorage.removeItem("lumaClientAccessToken");
+    localStorage.removeItem("lumaClientRefreshToken");
+    sessionStorage.removeItem("lumaClientAccessToken");
+    sessionStorage.removeItem("lumaClientRefreshToken");
   } catch {
     // Best-effort only -- an in-memory reset already protects this session.
   }
+  // Bug fix (2026-07-18 follow-up): the reset above only cleared the JS
+  // model and localStorage -- it never repainted the page. That's fine when
+  // called from switchClientAccount() (which repaints manually right after),
+  // but createOrResumeClientIntakeSession() calls this mid-request and only
+  // repaints later via hydrateClientIntakeSession(), which only runs AFTER a
+  // network round-trip succeeds. Until then (or if that request fails/times
+  // out), the old account's chat transcript, form fields, template preview,
+  // and page title stayed frozen on screen -- looking exactly like "it still
+  // has my data" even though the underlying state was already clean. Forcing
+  // an immediate repaint here closes that gap regardless of network timing.
+  if (typeof siteTitle !== "undefined" && siteTitle) siteTitle.textContent = "";
+  applyGuidedStateToForm();
+  renderGuidedSummary();
+  resetAssistantConversation();
 }
 
 function isNewProjectBriefMessage(message) {
@@ -7973,7 +7993,20 @@ function ensureSemanticSeedContent(schema, payload = {}, templateSelection = nul
 
   const profileKey = inferSemanticSeedProfile(contextText, templateText);
   const copyKit = semanticSeedCopyKit(profileKey, nextSchema.business?.name || payload.business_name || guidedState.businessName || "Kreaton Store", language, templateText);
-  const seedItems = buildSemanticSeedProducts(profileKey, language);
+  // Bug fix (2026-07-19): inferSemanticSeedProfile() only recognizes ~9
+  // hardcoded niches (jewelry, fashion, coffee, auto, tech, beauty, home,
+  // restaurant, marketplace). Anything else the client actually describes
+  // -- boat parts, fishing gear, extreme sports, whatever -- fell into
+  // "default", which returned a fixed, unrelated catalog (tote bags, desk
+  // trays) with no connection to the real business. When the client has
+  // already named real products/services in the conversation, build the
+  // seed items from THEIR OWN WORDS instead of the generic library, so an
+  // unmatched niche still looks like their business. Only falls back to
+  // the generic placeholder when there is truly nothing to go on yet
+  // (empty conversation). See AGENT_LOG.md for the matching backend fix.
+  const seedItems = profileKey === "default"
+    ? (buildContextDerivedSeedProducts(contextText, language) || buildSemanticSeedProducts(profileKey, language))
+    : buildSemanticSeedProducts(profileKey, language);
   const existing = arrayValue(nextSchema.catalog_items || nextSchema.products_services);
   const catalogSource = catalogSourceFromSchema(nextSchema);
   const mergedCatalog = mergeSemanticSeedCatalog(existing, seedItems, language, contextText, {
@@ -8069,6 +8102,47 @@ function buildSemanticSeedProducts(profileKey = "default", language = selectedLa
       track_inventory: true,
       imageSearchQuery: product.keyword,
       image_url: unsplashSeedUrl(product.keyword),
+      is_active: true,
+      is_featured: index < 4,
+      sort_order: index,
+    };
+  });
+}
+
+function buildContextDerivedSeedProducts(contextText = "", language = selectedLanguage) {
+  const offerItems = meaningfulOfferItems(guidedState.servicesProducts);
+  if (!offerItems.length) return null;
+  const addLabel = language === "es" ? "Agregar al carrito" : language === "fr" ? "Ajouter" : language === "pt" ? "Adicionar" : "Add to cart";
+  const businessName = guidedState.businessName || "";
+  return offerItems.slice(0, 6).map((rawName, index) => {
+    const name = cleanShortText(rawName, 90) || rawName;
+    return {
+      id: `prod_${String(index + 1).padStart(3, "0")}`,
+      sku: `CTX-${String(index + 1).padStart(3, "0")}`,
+      name,
+      description: langText({
+        en: `A featured offer from ${businessName || "this business"}. Edit this with the real details.`,
+        es: `Una oferta destacada de ${businessName || "este negocio"}. Edita esto con los detalles reales.`,
+        fr: `Une offre en vedette de ${businessName || "cette entreprise"}. Modifiez avec les vrais details.`,
+        pt: `Uma oferta em destaque de ${businessName || "este negocio"}. Edite com os detalhes reais.`,
+      }, language),
+      category: langText({ en: "Featured", es: "Destacado", fr: "En vedette", pt: "Destaque" }, language),
+      price: 29,
+      price_type: "fixed",
+      price_value: 29,
+      price_amount: 29,
+      currency: "USD",
+      price_label: "USD 29.00",
+      rating: Number((4.5 + (index % 4) * 0.1).toFixed(1)),
+      review_count: 36 + index * 29,
+      badge: index === 0 ? "Best Seller" : index === 1 ? "New" : index === 2 ? "Fast Ship" : "Featured",
+      deal_label: index === 0 ? "Best Seller" : "",
+      shipping_label: index % 2 === 0 ? "Fast ship" : "Ready to ship",
+      button_label: addLabel,
+      inventory_quantity: 18 + index * 7,
+      track_inventory: true,
+      imageSearchQuery: name,
+      image_url: unsplashSeedUrl(name),
       is_active: true,
       is_featured: index < 4,
       sort_order: index,

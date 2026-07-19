@@ -13,6 +13,8 @@ from fastapi.staticfiles import StaticFiles
 
 from .agents import semantic_seed_catalog, split_items, state_is_commerce_seed_target
 from .commerce import router as commerce_router
+from .db import init_db
+from .domains import router as domains_router
 from .models import (
     LumaChatRequest,
     LumaChatResponse,
@@ -221,6 +223,12 @@ app.add_middleware(
 )
 
 app.include_router(commerce_router)
+app.include_router(domains_router)
+
+
+@app.on_event("startup")
+async def on_startup() -> None:
+    init_db()
 
 
 @app.get("/healthz")
