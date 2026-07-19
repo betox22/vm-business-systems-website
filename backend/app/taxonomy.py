@@ -10,7 +10,7 @@ TAXONOMY: Dict[str, List[str]] = {
     "automotriz": ["repuestos-auto", "accesorios-auto", "llantas", "audio-auto", "off-road", "4x4"],
     "motos": ["repuestos-moto", "cascos", "accesorios-moto"],
     "hogar": ["velas", "decoracion", "textiles-hogar", "cocina", "organizacion", "muebles"],
-    "belleza": ["jabones", "skincare", "cosmeticos", "cuidado-personal", "makeup", "bath"],
+    "belleza": ["jabones", "soap", "velas", "candles", "bath-bombs", "skincare", "cosmeticos", "cuidado-personal", "makeup", "bath"],
     "plantas": ["plantas-interior", "macetas", "jardineria", "semillas"],
     "manualidades": ["hilos", "telas", "botones", "abalorios"],
     "materiales": ["metal", "madera", "ceramica", "vidrio", "cuero"],
@@ -35,7 +35,7 @@ CATEGORY_KEYWORDS: Dict[str, str] = {
     "cafe": r"coffee|espresso|brew|latte|cafe|cold-brew",
     "restaurant": r"restaurant|food|menu|pizza|dish|comida|tacos|salad|dessert|meal",
     "hogar": r"home|decor|furniture|mueble|hogar|lamp|cocina|organizer",
-    "belleza": r"beauty|belleza|skincare|cosmetic|cosmet|makeup|maquillaje|spa|jabones|bath|body-care|body care",
+    "belleza": r"beauty|belleza|skincare|cosmetic|cosmet|makeup|maquillaje|spa|jabones|jabon|jabón|soap|velas|vela|candles|candle|bath|bath-bomb|bath bomb|bombas de bano|bombas de baño|body-care|body care",
     "plantas": r"plant|planta|jardin|garden|maceta",
     "manualidades": r"craft|handmade|hilo|tela|abalorio|button|boton",
 }
@@ -178,12 +178,12 @@ def infer_seed_profile(text: str, is_broad_marketplace: bool = False, is_jewelry
         return "coffee"
     if re.search(r"\b(bisuteria|bijouterie|joyeria|jewelry|jewellery|collar|collares|pulsera|pulseras|arete|aretes|zarcillo|zarcillos|anillo|anillos|cadena|cadenas|dije|dijes|charm|charms|handmade accessories|handmade jewelry)\b", value):
         return "jewelry"
+    if re.search(r"\b(bath|bano|baño|body care|beauty|belleza|skincare|cosmet|maquillaje|spa|jabon|jabón|jabones|soap|vela|velas|candle|candles|sales de bano|sales de baño)\b", value):
+        return "beauty"
     if re.search(r"\b(parachoques|bumper|4x4|off road|off-road|repuestos|automotriz|camioneta|truck|auto accessories)\b", value):
         return "auto"
     if re.search(r"\b(ropa|fashion|moda|streetwear|sneaker|zapato|camiseta|clothing|boutique)\b", value):
         return "fashion"
-    if re.search(r"\b(bath|bano|baño|body care|beauty|belleza|skincare|cosmet|maquillaje|spa|jabon|jabón|jabones|soap|vela|velas|candle|candles|sales de bano|sales de baño)\b", value):
-        return "beauty"
     if re.search(r"\b(decor|hogar|home|furniture|muebles|interior|lampara|casa)\b", value):
         return "home"
     if re.search(r"\b(tech|tecnologia|gadget|electron|gaming|usb|phone|laptop|anime|juguete|toy|curioso|raro|inusual|cyberpunk)\b", value):

@@ -332,9 +332,14 @@ def semantic_seed_catalog(state: ProjectState, user_input: str, count: int = 6) 
         " ".join(state.servicesProducts),
         state.preferredTone or "",
         state.preferredColors or "",
-        state.selectedTemplateId or "",
-        state.catalogType or "",
     ])
+    template_records = TEMPLATE_CATALOG.items() if isinstance(TEMPLATE_CATALOG, dict) else enumerate(TEMPLATE_CATALOG)
+    for template_id, template in template_records:
+        if not isinstance(template, dict):
+            continue
+        for internal_token in [template_id, template.get("id"), template.get("catalogType"), template.get("websiteType"), template.get("name")]:
+            if internal_token:
+                context = re.sub(re.escape(str(internal_token)), " ", context, flags=re.IGNORECASE)
     profile = infer_seed_profile(context)
     if profile == "marketplace":
         products = [

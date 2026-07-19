@@ -453,6 +453,15 @@ def ensure_plan_seed_catalog_with_source(
         state.industry or "",
         " ".join(state.servicesProducts),
     ])
+    seed_context = " ".join([
+        state.businessName or "",
+        state.businessDescription or "",
+        state.industry or "",
+        " ".join(state.servicesProducts),
+        state.targetAudience or "",
+        state.preferredTone or "",
+        state.preferredColors or "",
+    ])
     is_commerce = state_is_commerce_seed_target(state, commerce_text) or any(term in commerce_text.lower() for term in [
         "marketplace",
         "store",
@@ -486,11 +495,10 @@ def ensure_plan_seed_catalog_with_source(
             or "placeholder" in description
             or not description
             or not price
-            or not item.get("image_url")
         ):
             generic += 1
 
-    seed = semantic_seed_catalog(state, commerce_text, count=6)
+    seed = semantic_seed_catalog(state, seed_context, count=6)
     if len(catalog_items) < 4 or generic >= max(1, len(catalog_items) // 2):
         return seed, "seed_fallback"
 
@@ -528,7 +536,7 @@ def ensure_plan_seed_catalog_with_source(
             "is_featured": item.get("is_featured", index < 4),
             "sort_order": int(item.get("sort_order", index)),
         }
-        merged.append(attach_image_asset(merged_item, context=commerce_text))
+        merged.append(attach_image_asset(merged_item, context=seed_context))
     return merged, "seed_fallback" if used_seed_fill else "ai_generated"
 
 

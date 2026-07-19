@@ -83,7 +83,35 @@ STABLE_IMAGE_URLS: List[Dict[str, str]] = [
         "url": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82",
     },
     {
-        "match": r"beauty|skincare|cosmetic|belleza|makeup|spa",
+        "match": r"spa-bath-towel|bath-towel|toalla|towel",
+        "url": "https://source.unsplash.com/900x900/?spa-towels",
+    },
+    {
+        "match": r"handmade-soap|soap-bar|jabon|jabón|jabones|soap",
+        "url": "https://source.unsplash.com/900x900/?handmade-soap",
+    },
+    {
+        "match": r"bath-salts|sales-de-bano|sales de bano|sales de baño",
+        "url": "https://source.unsplash.com/900x900/?bath-salts",
+    },
+    {
+        "match": r"bath-sponge|bano-sponge|natural-bath-sponge|esponja",
+        "url": "https://source.unsplash.com/900x900/?bath-sponge",
+    },
+    {
+        "match": r"body-oil|aceite-corporal|body oil",
+        "url": "https://source.unsplash.com/900x900/?body-oil-skincare",
+    },
+    {
+        "match": r"bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño",
+        "url": "https://source.unsplash.com/900x900/?bath-bombs",
+    },
+    {
+        "match": r"aromatic-candle|scented-candle|candle|candles|vela|velas",
+        "url": "https://source.unsplash.com/900x900/?scented-candle",
+    },
+    {
+        "match": r"soap|jabon|jabón|jabones|bath|bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño|body-care|body care|candle|candles|vela|velas|beauty|skincare|cosmetic|belleza|makeup|spa",
         "url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
     },
 ]

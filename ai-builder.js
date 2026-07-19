@@ -2193,6 +2193,14 @@ function textSuggestsFocusedCommerceStore(value) {
     || /\b(ropa|fashion|moda|boutique|streetwear|zapato|sneaker|apparel|clothing|beauty|belleza|skincare|cosmeticos|cosméticos|velas|candles|decoracion|decoración|ceramica|cerámica|arte hecho a mano|manualidades|crafts|productos artesanales|artesania|artesanía|coleccion propia|coleccion de|colección de)\b/.test(text);
 }
 
+function textSuggestsBeautyCommerceStore(value) {
+  const text = normalizeTemplateIntentText(value);
+  if (!text || textSuggestsBroadMarketplace(text) || textSuggestsMultiVendorMarketplace(text)) return false;
+  const beautyProduct = /\b(jabones?|soap|velas?|candles?|bath|bano|baño|bath bombs?|bombas de bano|bombas de baño|body care|cuidado personal|skincare|cosmeticos|cosméticos|spa products|productos de spa)\b/.test(text);
+  const commerceIntent = /\b(vender|venta|ventas|tienda|store|shop|catalogo|catálogo|productos|online|ecommerce|e-commerce|checkout|carrito)\b/.test(text);
+  return beautyProduct && commerceIntent;
+}
+
 function textSuggestsFocusedProductLine(value) {
   const text = normalizeTemplateIntentText(value);
   return /\b(linea de|linea para|product line|same niche|mismo nicho|mismo tipo|una categoria|una categoria|varios modelos|modelos para|parachoques|bumper|4x4|off road|pickup|camioneta|camionetas)\b/.test(text)
@@ -2234,6 +2242,7 @@ function templateIntentScorecard(value, payload = {}) {
   if (textSuggestsMultiVendorMarketplace(text)) scores.push(scoreFor("mega-marketplace", 145, "explicit multi-vendor marketplace reference"));
   if (textSuggestsMegaRetailStore(text)) scores.push(scoreFor("mega-retail-store", 140, "large single-owner retail catalog"));
   if (textSuggestsProfessionalService(text)) scores.push(scoreFor("legal-professional-services-pro", 135, "professional services trust flow"));
+  if (textSuggestsBeautyCommerceStore(text)) scores.push(scoreFor("mega-retail-store", 122, "beauty and personal-care retail catalog"));
   if (textSuggestsBroadMarketplace(text) && !textSuggestsMultiVendorMarketplace(text)) scores.push(scoreFor("mega-retail-store", 105, "broad owned catalog"));
   if (textSuggestsBroadMarketplace(text) && textSuggestsMultiVendorMarketplace(text)) scores.push(scoreFor("mega-marketplace", 105, "broad multi-vendor catalog"));
   if (products.length >= 5 && !textSuggestsFocusedCommerceStore(text) && !textSuggestsProfessionalService(text) && !has(/\b(restaurante|restaurant|menu|comida|food|cafe|cafeteria|barber|barberia|salon|spa|clinica|clinic|servicio|service|contractor|curso|course)\b/)) {
@@ -2280,6 +2289,7 @@ function inferTemplateIdFromText(value) {
   const scoredTemplateId = bestTemplateIdFromContext(text);
   if (scoredTemplateId) return scoredTemplateId;
   if (textSuggestsMultiVendorMarketplace(text)) return "mega-marketplace";
+  if (textSuggestsBeautyCommerceStore(text)) return "mega-retail-store";
   if (textSuggestsMegaRetailStore(text) || textSuggestsBroadMarketplace(text)) return "mega-retail-store";
   if (textSuggestsFocusedProductLine(text)) return "premium-product-store";
   if (/tipo ebay|como ebay|clasificados|listados|vendedores|usado|seller|listing/.test(text)) return "listing-marketplace-pro";
@@ -7238,7 +7248,36 @@ async function selectTemplateForPayload(payload) {
     arrayValue(payload.preferred_colors).join(" "),
     payload.salesMode || guidedState.salesMode,
   ].join(" ");
-  const aiSelectedTemplateId = resolvedAiTemplateId();
+
+  const explicitForcedTemplate = forcedTemplateSelection?.templateId
+    && forcedTemplateSelection?.intent === "client_visual_template_choice"
+    ? forcedTemplateSelection
+    : null;
+  if (explicitForcedTemplate?.templateId && window.TemplateRouter.getTemplateById) {
+    const template = await window.TemplateRouter.getTemplateById(explicitForcedTemplate.templateId);
+    if (template) {
+      return {
+        ...explicitForcedTemplate,
+        template,
+        catalogType: explicitForcedTemplate.catalogType || template.catalogModel?.catalogType || "",
+      };
+    }
+  }
+
+  const inferredTemplateId = inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(prompt);
+  if (inferredTemplateId && window.TemplateRouter.getTemplateById) {
+    const template = await window.TemplateRouter.getTemplateById(inferredTemplateId);
+    if (template) {
+      return {
+        templateId: inferredTemplateId,
+        template,
+        intent: "guided_context_template",
+        catalogType: template.catalogModel?.catalogType || templatePreviewMeta(inferredTemplateId)?.catalogType || "",
+        reason: "Selected from the current business context",
+      };
+    }
+  }
+
   const studioPlanTemplateId = guidedState.aiStudioPlan?.recommendedTemplateId || guidedState.designStrategy?.diagnosis?.recommendedTemplateId || "";
   if (studioPlanTemplateId && window.TemplateRouter.getTemplateById) {
     const template = await window.TemplateRouter.getTemplateById(studioPlanTemplateId);
@@ -7258,6 +7297,7 @@ async function selectTemplateForPayload(payload) {
       };
     }
   }
+  const aiSelectedTemplateId = resolvedAiTemplateId();
   if (aiSelectedTemplateId && window.TemplateRouter.getTemplateById) {
     const template = await window.TemplateRouter.getTemplateById(aiSelectedTemplateId);
     if (template) {
@@ -7276,30 +7316,6 @@ async function selectTemplateForPayload(payload) {
           || guidedState.designStrategy?.selectedTemplateReason
           || guidedState.designStrategy?.diagnosis?.reasoningSummary
           || "Selected by LYRA from the guided conversation",
-      };
-    }
-  }
-  const inferredTemplateId = inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(prompt);
-  const shouldOverrideForced = inferredTemplateId
-    && inferredTemplateId !== forcedTemplateSelection?.templateId
-    && (
-      textSuggestsBroadMarketplace(prompt)
-      || textSuggestsFocusedProductLine(prompt)
-      || textSuggestsSingleProductShowcase(prompt)
-      || forcedTemplateSelection?.intent === "default_minimal"
-      || forcedTemplateSelection?.intent === "default_pending"
-      || forcedTemplateSelection?.intent === "default_retail_discovery"
-      || forcedTemplateSelection?.intent === "default_marketplace_discovery"
-    );
-  if (window.TemplateRouter.getTemplateById && (shouldOverrideForced || (!forcedTemplateSelection?.templateId && inferredTemplateId))) {
-    const template = await window.TemplateRouter.getTemplateById(inferredTemplateId);
-    if (template) {
-      return {
-        templateId: inferredTemplateId,
-        template,
-        intent: "guided_context_template",
-        catalogType: template.catalogModel?.catalogType || templatePreviewMeta(inferredTemplateId)?.catalogType || "",
-        reason: "Selected from the complete guided intake context",
       };
     }
   }
@@ -7349,6 +7365,9 @@ function inferDesignerTemplateIdFromPayload(payload = {}) {
   if (textSuggestsProfessionalService(text)) return "legal-professional-services-pro";
   if (textSuggestsMultiVendorMarketplace(text)) {
     return "mega-marketplace";
+  }
+  if (textSuggestsBeautyCommerceStore(text)) {
+    return "mega-retail-store";
   }
   if (textSuggestsMegaRetailStore(text) || textSuggestsBroadMarketplace(text) || (products.length >= 5 && !textSuggestsFocusedCommerceStore(text) && !textSuggestsProfessionalService(text))) {
     return "mega-retail-store";
@@ -16447,7 +16466,14 @@ function stableCatalogImageUrl(seed = "") {
     [/coffee|espresso|brew|latte|cafe/, "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=82"],
     [/restaurant|food|menu|pizza|dish|comida/, "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82"],
     [/home|decor|furniture|mueble|hogar/, "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82"],
-    [/beauty|skincare|cosmetic|belleza|makeup/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/spa-bath-towel|bath-towel|toalla|towel/, "https://source.unsplash.com/900x900/?spa-towels"],
+    [/handmade-soap|soap-bar|jabon|jabón|jabones|soap/, "https://source.unsplash.com/900x900/?handmade-soap"],
+    [/bath-salts|sales-de-bano|sales de bano|sales de baño/, "https://source.unsplash.com/900x900/?bath-salts"],
+    [/bath-sponge|bano-sponge|natural-bath-sponge|esponja/, "https://source.unsplash.com/900x900/?bath-sponge"],
+    [/body-oil|aceite-corporal|body oil/, "https://source.unsplash.com/900x900/?body-oil-skincare"],
+    [/bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño/, "https://source.unsplash.com/900x900/?bath-bombs"],
+    [/aromatic-candle|scented-candle|candle|candles|vela|velas/, "https://source.unsplash.com/900x900/?scented-candle"],
+    [/soap|jabon|jabón|jabones|bath|bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño|body-care|body care|candle|candles|vela|velas|beauty|skincare|cosmetic|belleza|makeup|spa/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
   ];
   return (fallbacks.find(([pattern]) => pattern.test(text)) || [null, "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=900&q=82"])[1];
 }

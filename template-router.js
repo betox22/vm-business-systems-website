@@ -1247,6 +1247,24 @@
     `;
   }
 
+  function renderProductVisual(item = {}) {
+    const imageUrl = item.image_url || item.imageUrl || "";
+    const label = item.imageSearchQuery || item.category || item.name || "Product visual";
+    const initials = String(item.name || "Item").slice(0, 2).toUpperCase();
+    const fallback = `<span>${safeHtml(initials)}</span><small>${safeHtml(label)}</small>`;
+    if (!imageUrl) return fallback;
+    return `
+      <img
+        src="${safeAttribute(imageUrl)}"
+        alt="${safeAttribute(item.name || label)}"
+        loading="lazy"
+        decoding="async"
+        onerror="this.remove();"
+      >
+      ${fallback}
+    `;
+  }
+
   function renderHeroSplitConversion(section = {}) {
     const copy = sectionCopy(section);
     const media = sectionMedia(section);
@@ -1324,16 +1342,10 @@
         </div>
         <div class="kreaton-ai-grid kreaton-ai-market-grid">
           ${products.slice(0, 16).map((item, index) => {
-            const imageUrl = item.image_url || item.imageUrl || "";
-            const initials = String(item.name || "Item").slice(0, 2);
             const badge = item.badge || item.shippingBadge || (index < 4 ? "Best Seller" : "Fast ship");
             return `
             <article class="kreaton-ai-product-card">
-              <div class="kreaton-ai-product-media">
-                ${imageUrl
-                  ? `<img src="${safeAttribute(imageUrl)}" alt="${safeAttribute(item.name || "")}" loading="lazy" decoding="async">`
-                  : `<span>${safeHtml(initials)}</span><small>${safeHtml(item.imageSearchQuery || item.category || "Product visual")}</small>`}
-              </div>
+              <div class="kreaton-ai-product-media">${renderProductVisual(item)}</div>
               <div class="kreaton-ai-product-meta">
                 <b>${safeHtml(badge)}</b>
                 <strong>${safeHtml(item.name || "Product")}</strong>

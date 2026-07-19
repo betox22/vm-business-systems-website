@@ -474,7 +474,31 @@ body.public-client-setup {
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 14px;
   min-height: 0;
+  overflow: hidden;
   position: relative;
+}
+
+.public-client-setup .kreaton-ai-product-media img {
+  display: block;
+  height: 100%;
+  inset: 0;
+  object-fit: cover;
+  position: absolute;
+  width: 100%;
+  z-index: 2;
+}
+
+.public-client-setup .kreaton-ai-product-media span {
+  align-items: center;
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.14), rgba(59, 130, 246, 0.1));
+  color: rgba(15, 23, 42, 0.64);
+  display: flex;
+  font-size: 32px;
+  font-weight: 950;
+  height: 100%;
+  justify-content: center;
+  letter-spacing: 0.02em;
+  width: 100%;
 }
 
 .public-client-setup .kreaton-ai-product-media small {
@@ -937,10 +961,17 @@ body.public-client-setup.generated-preview-open {
   min-height: calc(100vh - 112px);
   height: auto;
   overflow: visible;
+  width: 100%;
+  padding: 0;
+  justify-items: stretch;
+  background: #fff;
 }
 
 .public-client-setup.generated-preview-open #previewFrame .rendered-site {
   min-height: calc(100vh - 112px);
+  width: 100%;
+  max-width: none;
+  box-shadow: none;
 }
 
 .public-client-setup.generated-preview-open.draft-adjust-open .workspace {
