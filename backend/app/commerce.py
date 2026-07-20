@@ -10,9 +10,15 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List, Literal, Optional
 from urllib import parse, request as urllib_request
 
-from fastapi import APIRouter, Header, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
 
+from .client_auth import fetch_supabase_user, supabase_auth_configured
+from .db import get_session
+from .db_models import Product as DbProduct
+from .db_models import Store
 
 router = APIRouter(prefix="/api/v1", tags=["commerce"])
 
@@ -355,6 +361,78 @@ def cart_response(cart_id: str) -> Dict[str, Any]:
 def require_store_role(role: Optional[str]) -> None:
     if role not in {"admin", "store_owner", "manager"}:
         raise HTTPException(status_code=403, detail="Store owner or manager role required.")
+
+
+def _bearer_token(authorization: str) -> str:
+    return authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
+
+
+def authenticated_store_user(authorization: str) -> Dict[str, Any]:
+    token = _bearer_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing access token.")
+    if not supabase_auth_configured():
+        raise HTTPException(status_code=503, detail="Account login is not configured on the server yet.")
+    user = fetch_supabase_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired session.")
+    return user
+
+
+def require_store_owner(session: Session, business_id: str, authorization: str) -> tuple[Store, Dict[str, Any]]:
+    user = authenticated_store_user(authorization)
+    store = session.get(Store, business_id)
+    if not store:
+        raise HTTPException(status_code=404, detail="Business not found.")
+
+    owner_user_id = str(user.get("id") or "").strip()
+    owner_email = str(user.get("email") or "").strip().lower()
+    store_owner_user_id = str(store.owner_user_id or "").strip()
+    store_owner_email = str(store.owner_email or "").strip().lower()
+
+    owns_by_user_id = bool(owner_user_id and store_owner_user_id and owner_user_id == store_owner_user_id)
+    owns_by_email = bool(owner_email and store_owner_email and owner_email == store_owner_email)
+    if not owns_by_user_id and not owns_by_email:
+        raise HTTPException(status_code=403, detail="Store does not belong to this account.")
+    return store, user
+
+
+def price_to_cents(price: Decimal | int | float | str) -> int:
+    return int((money(price) * 100).to_integral_value(rounding=ROUND_HALF_UP))
+
+
+def cents_to_price(cents: int) -> float:
+    return money_float(Decimal(int(cents or 0)) / Decimal("100"))
+
+
+def product_slug(value: str) -> str:
+    slug = "".join(character if character.isalnum() else "-" for character in (value or "").lower())
+    slug = "-".join(part for part in slug.split("-") if part)
+    return (slug or "product")[:80]
+
+
+def product_status(*, active: bool, published: bool) -> str:
+    if not active:
+        return "Archived"
+    return "Published" if published else "Draft"
+
+
+def db_product_to_api(product: DbProduct) -> Product:
+    status = product.status or "Published"
+    return Product(
+        id=product.id,
+        businessId=product.store_id,
+        slug=product_slug(product.name),
+        name=product.name,
+        categoryId=product.category,
+        description="",
+        price=cents_to_price(product.price_cents),
+        sku=product.id,
+        stock=int(product.inventory or 0),
+        active=status != "Archived",
+        published=status == "Published",
+        status=status,
+    )
 
 
 def audit(actor: str, action: str, business_id: str, payload: Dict[str, Any]) -> None:
@@ -747,24 +825,43 @@ async def create_customer_support(payload: SupportRequest, x_user_id: str = Head
 
 
 @router.get("/store-owner/{business_id}/dashboard")
-async def owner_dashboard(business_id: str, x_user_role: Optional[str] = Header(default=None)) -> Dict[str, Any]:
-    assert_business(business_id)
-    require_store_role(x_user_role)
-    business_orders = [order for order in ORDERS.values() if order["businessId"] == business_id]
+async def owner_dashboard(
+    business_id: str,
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    require_store_owner(session, business_id, authorization)
+    low_stock = session.scalar(
+        select(func.count())
+        .select_from(DbProduct)
+        .where(DbProduct.store_id == business_id, DbProduct.inventory <= 10)
+    ) or 0
+    # Phase 2 will move orders/payments/carts out of in-memory ORDERS and into
+    # the relational tables. Until then, only product inventory is real here.
     return {
         "businessId": business_id,
-        "salesToday": round(sum(order["total"] for order in business_orders if order["status"] in {"paid", "fulfilled"}), 2),
-        "openOrders": len([order for order in business_orders if order["status"] not in {"fulfilled", "cancelled", "refunded"}]),
-        "lowStock": len([product for product in PRODUCTS.values() if product.businessId == business_id and product.stock <= 10]),
-        "pendingPayments": len([order for order in business_orders if order["status"] == "pending_payment"]),
+        "salesToday": 0,
+        "openOrders": 0,
+        "lowStock": int(low_stock),
+        "pendingPayments": 0,
     }
 
 
 @router.get("/store-owner/{business_id}/products")
-async def owner_products(business_id: str, x_user_role: Optional[str] = Header(default=None)) -> Dict[str, Any]:
-    assert_business(business_id)
-    require_store_role(x_user_role)
-    products = [product.model_dump() for product in PRODUCTS.values() if product.businessId == business_id]
+async def owner_products(
+    business_id: str,
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    require_store_owner(session, business_id, authorization)
+    products = [
+        db_product_to_api(product).model_dump()
+        for product in session.execute(
+            select(DbProduct)
+            .where(DbProduct.store_id == business_id)
+            .order_by(DbProduct.created_at.desc())
+        ).scalars()
+    ]
     return {"businessId": business_id, "products": products}
 
 
@@ -772,22 +869,25 @@ async def owner_products(business_id: str, x_user_role: Optional[str] = Header(d
 async def owner_create_product(
     business_id: str,
     payload: ProductCreate,
-    x_user_role: Optional[str] = Header(default=None),
-    x_user_id: str = Header(default="demo-owner"),
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    assert_business(business_id)
-    require_store_role(x_user_role)
+    _, user = require_store_owner(session, business_id, authorization)
     product_id = f"prod_{uuid.uuid4().hex[:10]}"
-    product = Product(
+    product = DbProduct(
         id=product_id,
-        businessId=business_id,
-        slug=payload.name.lower().replace(" ", "-")[:80],
-        status="Published" if payload.published else "Draft",
-        **payload.model_dump(),
+        store_id=business_id,
+        name=payload.name,
+        category=payload.categoryId,
+        price_cents=price_to_cents(payload.price),
+        inventory=payload.stock,
+        status=product_status(active=payload.active, published=payload.published),
     )
-    PRODUCTS[product_id] = product
-    audit(x_user_id, "product_created", business_id, {"productId": product_id})
-    return product.model_dump()
+    session.add(product)
+    session.commit()
+    session.refresh(product)
+    audit(str(user.get("id") or user.get("email") or "store-owner"), "product_created", business_id, {"productId": product_id})
+    return db_product_to_api(product).model_dump()
 
 
 @router.patch("/store-owner/{business_id}/products/{product_id}")
@@ -795,21 +895,30 @@ async def owner_update_product(
     business_id: str,
     product_id: str,
     payload: ProductUpdate,
-    x_user_role: Optional[str] = Header(default=None),
-    x_user_id: str = Header(default="demo-owner"),
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    assert_business(business_id)
-    require_store_role(x_user_role)
-    product = PRODUCTS.get(product_id)
-    if not product or product.businessId != business_id:
+    _, user = require_store_owner(session, business_id, authorization)
+    product = session.get(DbProduct, product_id)
+    if not product or product.store_id != business_id:
         raise HTTPException(status_code=404, detail="Product not found.")
     updates = payload.model_dump(exclude_unset=True)
-    for key, value in updates.items():
-        setattr(product, key, value)
-    if "published" in updates:
-        product.status = "Published" if product.published else "Draft"
-    audit(x_user_id, "product_updated", business_id, {"productId": product_id, "updates": updates})
-    return product.model_dump()
+    if "name" in updates:
+        product.name = updates["name"]
+    if "categoryId" in updates:
+        product.category = updates["categoryId"]
+    if "price" in updates:
+        product.price_cents = price_to_cents(updates["price"])
+    if "stock" in updates:
+        product.inventory = updates["stock"]
+    if "active" in updates or "published" in updates:
+        active = bool(updates.get("active", product.status != "Archived"))
+        published = bool(updates.get("published", product.status == "Published"))
+        product.status = product_status(active=active, published=published)
+    session.commit()
+    session.refresh(product)
+    audit(str(user.get("id") or user.get("email") or "store-owner"), "product_updated", business_id, {"productId": product_id, "updates": updates})
+    return db_product_to_api(product).model_dump()
 
 
 @router.get("/store-owner/{business_id}/orders")

@@ -16,6 +16,41 @@ Formato de entrada:
 
 ---
 
+## 2026-07-20 — Codex — Store owner products connected to real account stores
+
+**Hecho:** Fase 1 del backend de tienda conectada a cuentas reales para
+productos:
+- `backend/app/commerce.py` ahora valida `Authorization: Bearer <token>` en
+  `GET /api/v1/store-owner/{business_id}/dashboard`,
+  `GET /api/v1/store-owner/{business_id}/products`,
+  `POST /api/v1/store-owner/{business_id}/products` y
+  `PATCH /api/v1/store-owner/{business_id}/products/{product_id}`.
+- La autorización verifica que `stores.id == business_id` pertenezca al usuario
+  autenticado por `owner_user_id`, con fallback por `owner_email`, igual que el
+  patrón de proyectos del cliente.
+- Los productos del owner ya no leen/escriben el dict en memoria `PRODUCTS`;
+  ahora usan la tabla real `products` vía SQLAlchemy y `Depends(get_session)`.
+- Se agregó conversión `price` dólares ↔ `price_cents` y `stock` ↔ `inventory`
+  para mantener compatible el contrato actual del frontend.
+- El dashboard ya calcula `lowStock` desde la tabla real `products`.
+
+**Pendiente / abierto — Fase 2:**
+- `salesToday`, `openOrders` y `pendingPayments` quedan en `0` temporalmente
+  porque `ORDERS`, carts, checkout y payments siguen en memoria por diseño de
+  esta fase. Migrarlos requiere revisar dinero real, estados de pago y reserva
+  de inventario por separado.
+- El storefront público, carts, customer endpoints, payments, shipping y audit
+  log siguen usando las estructuras demo en memoria para no romper el flujo que
+  ya funcionaba.
+- La tabla `products` actual solo tiene campos base (`name`, `category`,
+  `price_cents`, `inventory`, `status`). Si se quiere persistir descripción,
+  SKU, imagen, badges o specs desde el panel visual, hace falta una migración
+  aditiva posterior.
+
+**Archivos tocados:** `backend/app/commerce.py`, `docs/AGENT_LOG.md`.
+
+---
+
 ## 2026-07-19 — Claude — Review del trabajo de Codex (multi-proyecto) + bug real encontrado: Google seguía escondido
 
 **Contexto:** Beto le pasó a Codex el prompt de multi-proyecto (ver entrada
