@@ -16,6 +16,71 @@ Formato de entrada:
 
 ---
 
+## 2026-07-20 — Claude — Limpieza: código muerto de commerce.py + archivos sueltos
+
+**Hecho (segunda pasada, misma sesión):**
+- Confirmé que `templates/templateRegistry.js` y `templateRegistry.ts` eran
+  código muerto idéntico entre sí (ninguna importada por nada) -- el sistema
+  real (`template-router.js`, cargado en `ai-builder.html`) lee
+  `templates/all-templates.json` directamente. Las borré ambas.
+- `handoff/` (paquetes de contexto de una sola vez armados para dar a Claude y
+  a Gemini acceso a un prototipo que no podían abrir por URL -- ver
+  `handoff/claude-ai-site-builder/HANDOFF_FOR_CLAUDE.md` para el detalle
+  completo) sigue en disco (51MB, capturas + zips), pero ya no está trackeado
+  en git (`git rm -r --cached handoff` + agregado a `.gitignore`). No se borró
+  el contenido, solo se sacó del repo.
+
+**Hecho:**
+- `backend/app/commerce.py`: quité `BUSINESSES`, `PRODUCTS`, `ORDERS`,
+  `reserved_quantity()`, `available_stock()` y `deduct_inventory_for_order()` —
+  quedaron huérfanos después de que Fase 1/Fase 2 conectaron todo a la DB
+  real. `cart_response()` ya no tiene la rama en memoria; `session` pasó a ser
+  obligatorio (todos los call sites ya lo pasaban). `BUSINESS_ID` se mantiene
+  porque `/customer/me` y `/customer/addresses` (fuera de alcance de Fase 1/2)
+  todavía lo usan como placeholder.
+- Borré ~70 archivos `.err.log`/`.out.log` de servidores de prueba locales
+  (estaban trackeados en git desde un commit viejo "chore: commit pending
+  project artifacts") y 3 scripts de depuración `.codex_tmp_*.js` que también
+  quedaron commiteados por accidente ese mismo día. Ese commit también había
+  metido copias completas de `backend/app/*.py` dentro de `.codex_tmp/` y
+  `.codex_tmp_salesflow_fix/` — también fuera.
+- Agregué `*.err.log`, `*.out.log`, `.codex_tmp*` y `.pytest_cache/` al
+  `.gitignore` para que esto no vuelva a pasar.
+- Borré (solo local, nunca estuvieron en git) ~50MB de perfiles de Edge de
+  pruebas de automatización de navegador dentro de
+  `templates/marketplace/mega-marketplace/phase-5/visual-prototype/` y
+  `output/edge-test-profile` — ya estaban en `.gitignore` desde antes, pero
+  seguían ocupando espacio en disco.
+
+**Pendiente / abierto:**
+- Sigue sin explicación un puñado de archivos modificados en el working tree
+  que no tocamos nosotros: `client-portal-preview.html`, `client-portal.html`,
+  `client.css`, `client/setup/index.html`, `contact.html`,
+  `css/interactive.css`, `css/styles.css`, `index.html`, `js/*.js`,
+  `plans.html`, `services.html`, `site.html`, `solutions.html`,
+  `src/components/NixieAvatarController.css`. No sé si son cambios reales a
+  medias o efecto secundario de alguna herramienta local -- antes de tocarlos
+  hay que revisar el diff de cada uno con calma.
+- Quedaron dos carpetas `.codex_tmp/` y `.codex_tmp_salesflow_fix/` vacías
+  (todo su contenido tracked ya se borró) excepto por una subcarpeta
+  `.pytest_cache/` interna que el entorno de Claude no pudo ni leer
+  (permiso denegado incluso para `stat`) -- no estaba tracked en git así que
+  no bloquea nada, pero alguien con acceso normal al filesystem debería
+  poder borrar esas dos carpetas vacías a mano.
+- `templates/templateRegistry.js` y `templateRegistry.ts` conviven en la
+  misma carpeta -- probablemente uno es el que corre de verdad y el otro es
+  un resto de una migración a TypeScript sin terminar. No confirmado cuál.
+- No se hizo commit/push de nada de esto (mismo problema de índice de git
+  corrupto en el sandbox de Claude que ya está documentado en entradas
+  anteriores) -- queda para Codex.
+
+**Archivos tocados:** `backend/app/commerce.py`, `.gitignore`, borrado de
+~70 archivos de log + 3 scripts `.codex_tmp_*.js` + contenido de
+`.codex_tmp/` y `.codex_tmp_salesflow_fix/` + carpetas de perfil de Edge
+(no trackeadas).
+
+---
+
 ## 2026-07-20 — Codex — Storefront real + orders reales sin Stripe live
 
 **Hecho:** Se empujó primero el fix ya revisado de login/modal en `main`:

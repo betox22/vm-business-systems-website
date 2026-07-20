@@ -1,1 +1,0 @@
-"""KREATON backend package."""

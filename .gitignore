@@ -8,6 +8,20 @@ node-static-*.log
 static*.log
 backend/*.db
 
+# Local dev-server logs (http-*, premium-api-*, etc.) and ad-hoc debug scripts
+# from browser-automation sessions. These should never be committed -- see the
+# 2026-07-20 AGENT_LOG cleanup entry.
+*.err.log
+*.out.log
+.codex_tmp*
+.pytest_cache/
+
+# One-time context packages prepared for other AI assistants (Claude/Gemini)
+# when they couldn't reach a live prototype URL. Kept on disk for reference,
+# not tracked in git -- 51MB of screenshots/zips with no reason to ship on
+# every clone. See the 2026-07-20 AGENT_LOG cleanup entry.
+handoff/
+
 # Browser automation/runtime profiles can contain cookies, login databases, and session tokens.
 edge-*-profile/
 edge-profile/

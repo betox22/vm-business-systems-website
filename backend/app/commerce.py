@@ -184,14 +184,12 @@ class CustomerAddressCreate(BaseModel):
 
 
 BUSINESS_ID = "demo-premium"
-BUSINESSES: Dict[str, Dict[str, Any]] = {
-    BUSINESS_ID: {
-        "id": BUSINESS_ID,
-        "name": "KREATON Premium",
-        "currency": "USD",
-        "templateId": "premium-product-store",
-    }
-}
+# Cleanup (2026-07-20): the old BUSINESSES/PRODUCTS in-memory seed dicts were
+# removed here. assert_business() and the storefront/checkout endpoints read
+# real Store/Product rows from the database now (see the Fase 1/Fase 2 log
+# entries below); BUSINESS_ID stays only because the still-in-memory
+# customer/{me,addresses} endpoints and the PAYMENT_METHODS seed use it as a
+# placeholder businessId, and those weren't in scope for Fase 1/2.
 
 CATEGORIES: Dict[str, Category] = {
     "flagship": Category(id="flagship", name="Flagship devices", description="Hero products and premium models.", productCount=3),
@@ -200,65 +198,7 @@ CATEGORIES: Dict[str, Category] = {
     "care": Category(id="care", name="Care plans", description="Warranty, support, and replacement plans.", productCount=0),
 }
 
-PRODUCTS: Dict[str, Product] = {
-    "nova-air": Product(
-        id="nova-air",
-        businessId=BUSINESS_ID,
-        slug="nova-air",
-        name="Nova Air",
-        categoryId="flagship",
-        description="Lightweight premium model for everyday use.",
-        price=799,
-        sku="NVA-AIR-256",
-        stock=42,
-        badge="Lightweight",
-        specs={"Storage": "256 GB", "Battery": "28h battery", "Finish": "Sky graphite"},
-    ),
-    "nova-pro": Product(
-        id="nova-pro",
-        businessId=BUSINESS_ID,
-        slug="nova-pro",
-        name="Nova Pro",
-        categoryId="flagship",
-        description="Best-fit premium model with balanced performance and storage.",
-        price=1099,
-        sku="NVA-PRO-512",
-        stock=18,
-        badge="Best fit",
-        specs={"Storage": "512 GB", "Battery": "36h battery", "Finish": "Titanium violet"},
-    ),
-    "nova-studio": Product(
-        id="nova-studio",
-        businessId=BUSINESS_ID,
-        slug="nova-studio",
-        name="Nova Studio",
-        categoryId="flagship",
-        description="Creator-focused model with maximum storage and battery.",
-        price=1499,
-        sku="NVA-STU-1TB",
-        stock=8,
-        badge="Creator",
-        specs={"Storage": "1 TB", "Battery": "42h battery", "Finish": "Obsidian blue"},
-    ),
-    "dock-kit": Product(
-        id="dock-kit",
-        businessId=BUSINESS_ID,
-        slug="magsafe-dock-kit",
-        name="MagSafe Dock Kit",
-        categoryId="accessories",
-        description="Premium desk dock accessory kit.",
-        price=129,
-        sku="ACC-DOCK-001",
-        stock=126,
-        published=False,
-        status="Draft",
-        badge="Accessory",
-        specs={"Compatibility": "Nova Series", "Included": "Dock, cable, stand"},
-    ),
-}
-
 CARTS: Dict[str, List[Dict[str, Any]]] = {}
-ORDERS: Dict[str, Dict[str, Any]] = {}
 IDEMPOTENCY_KEYS: Dict[str, str] = {}
 PAYMENT_METHODS: Dict[str, Dict[str, Any]] = {
     BUSINESS_ID: {
@@ -345,23 +285,6 @@ def cart_lines(cart_id: str) -> list[Dict[str, Any]]:
     return CARTS.setdefault(cart_id, [])
 
 
-def reserved_quantity(product_id: str) -> int:
-    reserved_statuses = {"pending_payment", "payment_processing"}
-    return sum(
-        int(item["quantity"])
-        for order in ORDERS.values()
-        if order.get("inventoryReserved")
-        and not order.get("inventoryDeducted")
-        and order.get("status") in reserved_statuses
-        for item in order.get("items", [])
-        if item.get("productId") == product_id
-    )
-
-
-def available_stock(product: Product) -> int:
-    return max(0, product.stock - reserved_quantity(product.id))
-
-
 def payment_methods_for_business(business_id: str) -> Dict[str, Any]:
     methods = PAYMENT_METHODS.setdefault(
         business_id,
@@ -386,29 +309,24 @@ def db_product_for_cart(session: Session, business_id: str, product_id: str) -> 
     return product
 
 
-def cart_response(cart_id: str, session: Optional[Session] = None, business_id: Optional[str] = None) -> Dict[str, Any]:
+def cart_response(cart_id: str, session: Session, business_id: Optional[str] = None) -> Dict[str, Any]:
+    # Cleanup (2026-07-20): this used to have an in-memory PRODUCTS fallback
+    # for when `session` wasn't passed. Every call site has passed a real
+    # session since Fase 2, so `session` is now required and the cart always
+    # validates against real DB products -- no more silent stale-data path.
     lines = []
     subtotal = money(0)
     for line in cart_lines(cart_id):
         if business_id and line.get("businessId") != business_id:
             continue
 
-        product: Optional[Product] = None
-        stock_available = 0
-        if session:
-            store_id = str(line.get("businessId") or "")
-            db_product = session.get(DbProduct, line["productId"])
-            if not db_product or db_product.store_id != store_id or db_product.status != "Published":
-                continue
-            product = db_product_to_api(db_product)
-            stock_available = max(0, int(db_product.inventory or 0))
-        else:
-            product = PRODUCTS.get(line["productId"])
-            if product:
-                stock_available = available_stock(product)
-
-        if not product:
+        store_id = str(line.get("businessId") or "")
+        db_product = session.get(DbProduct, line["productId"])
+        if not db_product or db_product.store_id != store_id or db_product.status != "Published":
             continue
+        product = db_product_to_api(db_product)
+        stock_available = max(0, int(db_product.inventory or 0))
+
         qty = int(line["quantity"])
         line_total = money(product.price) * qty
         subtotal += line_total
@@ -700,34 +618,6 @@ def restock_order_inventory(session: Session, order: DbOrder, business_id: str) 
 
     order.inventory_restocked = True
     return movements
-
-
-def deduct_inventory_for_order(order: Dict[str, Any], actor: str) -> None:
-    if order.get("inventoryDeducted"):
-        return
-
-    for item in order["items"]:
-        product = PRODUCTS[item["productId"]]
-        if product.stock < item["quantity"]:
-            raise HTTPException(status_code=409, detail=f"{product.name} does not have enough stock.")
-
-    movements = []
-    for item in order["items"]:
-        product = PRODUCTS[item["productId"]]
-        before = product.stock
-        product.stock = max(0, product.stock - item["quantity"])
-        movements.append(
-            {
-                "productId": product.id,
-                "sku": product.sku,
-                "quantity": item["quantity"],
-                "before": before,
-                "after": product.stock,
-            }
-        )
-    order["inventoryDeducted"] = True
-    order["inventoryReserved"] = False
-    audit(actor, "inventory_deducted", order["businessId"], {"orderId": order["id"], "movements": movements})
 
 
 def stripe_checkout_session(order: Dict[str, Any], success_url: str, cancel_url: str) -> Dict[str, Any]:

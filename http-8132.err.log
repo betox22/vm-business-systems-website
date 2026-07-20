@@ -1,5 +1,0 @@
-127.0.0.1 - - [06/Jul/2026 18:10:04] "GET /client/setup/ HTTP/1.1" 200 -
-127.0.0.1 - - [06/Jul/2026 18:10:04] "GET /ai-builder.js HTTP/1.1" 200 -
-127.0.0.1 - - [06/Jul/2026 18:10:04] "GET /client-setup.css HTTP/1.1" 200 -
-127.0.0.1 - - [06/Jul/2026 18:10:04] "GET /template-router.js HTTP/1.1" 200 -
-127.0.0.1 - - [06/Jul/2026 18:10:04] "GET /luma-config.js HTTP/1.1" 200 -
