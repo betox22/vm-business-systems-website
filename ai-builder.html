@@ -270,20 +270,22 @@ instagram: @lunamarket</textarea></label>
       <section id="studioAuthGate" class="studio-auth-gate" hidden aria-modal="true" role="dialog">
         <div class="studio-auth-card">
           <button id="studioAuthCloseButton" class="icon-button" type="button" aria-label="Close">×</button>
-          <div class="studio-auth-avatar">
-            <img class="assistant-avatar large" src="/assets/nixie_success.png" alt="Lyra">
-          </div>
-          <span>Save your progress</span>
-          <h2>Your first draft is ready to keep editing</h2>
-          <p>Create an account to save this site, manage products, prices, inventory, and continue with Lyra without losing anything.</p>
+          <h2>Sign up</h2>
+          <p>Your first draft is ready. Create an account to save it and keep editing with Lyra.</p>
           <div class="studio-auth-actions">
-            <button id="studioGoogleAuthButton" type="button">Continue with Google</button>
-            <button id="studioAppleAuthButton" type="button">Continue with Apple</button>
-            <button id="studioEmailAuthButton" type="button">Continue with email</button>
+            <button id="studioGoogleAuthButton" class="studio-auth-provider" type="button">
+              <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.5-2.1 14.2-5.6l-6.6-5.5C29.6 34.7 27 35.6 24 35.6c-5.3 0-9.6-3.4-11.2-8l-6.6 5.1C9.6 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.5.1 0 6.6 5.5 6.6 5.5C41.5 35.9 44 30.4 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+              <span>Continue with Google</span>
+            </button>
+            <button id="studioAppleAuthButton" class="studio-auth-provider" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16.365 1.43c0 1.14-.468 2.16-1.222 2.917-.788.79-1.99 1.4-3.024 1.32-.13-1.06.398-2.19 1.16-2.96.78-.79 2.13-1.38 3.086-1.277zm3.06 15.5c-.55 1.24-1.21 2.44-2.14 3.5-.9 1.02-1.99 2.18-3.4 2.2-1.33.02-1.76-.87-3.28-.87-1.52 0-2 .85-3.25.9-1.37.05-2.42-1.1-3.34-2.11-1.86-2.05-3.29-5.79-1.38-8.32.94-1.24 2.62-2.03 4.13-2.05 1.29-.02 2.5.87 3.28.87.78 0 2.24-1.07 3.79-.92.64.03 2.45.26 3.62 1.94-.09.06-2.16 1.26-2.14 3.76.02 2.98 2.6 3.97 2.62 3.98-.02.06-.41 1.42-1.35 2.81z"/></svg>
+              <span>Continue with Apple</span>
+            </button>
           </div>
-          <form id="studioEmailAuthForm" class="studio-email-auth" hidden>
-            <label>Email<input id="studioAuthEmail" type="email" placeholder="you@email.com"></label>
-            <button type="submit">Send magic link</button>
+          <div class="studio-auth-divider"><span>or</span></div>
+          <form id="studioEmailAuthForm" class="studio-email-auth">
+            <label>Email<input id="studioAuthEmail" type="email" placeholder="Email"></label>
+            <button type="submit">Continue with Email</button>
           </form>
           <button id="studioAuthDemoButton" class="studio-auth-demo" type="button">Keep viewing demo</button>
         </div>

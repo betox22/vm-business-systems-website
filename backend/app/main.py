@@ -243,9 +243,15 @@ async def on_startup() -> None:
 
 
 @app.get("/healthz")
-@app.get("/")
 async def healthz() -> Dict[str, Any]:
     return {"status": "ok", "service": "kreaton-lyra-api"}
+# Bug fix (2026-07-19): this route used to also answer GET "/", which meant the
+# bare domain (and Supabase's OAuth "Site URL" fallback, used whenever the
+# actual redirect_to isn't on the allow list) always showed this raw JSON
+# instead of the real site -- because an explicit route always wins over the
+# StaticFiles mount at "/" below, regardless of what's in ROOT_DIR. Render's
+# own health check already targets /healthz (see render.yaml), so "/" is now
+# free for the static mount to serve index.html like a normal homepage.
 
 
 def storage_is_configured() -> bool:

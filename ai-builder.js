@@ -83,6 +83,10 @@ const I18N = {
     generateMyWebsite: "Generate my website",
     keepChatting: "Keep chatting",
     thinking: "LYRA is thinking...",
+    myPages: "My pages",
+    openProject: "Open",
+    emptyProjects: "You do not have saved pages yet — generate your first one with LYRA.",
+    loadProjectsError: "I could not load your saved pages. Sign in again and try once more.",
     startNewProject: "New page",
     startNewProjectConfirm: "Start a new page? This clears the current client draft from this browser.",
     micButton: "Use voice",
@@ -192,6 +196,10 @@ const I18N = {
     generateMyWebsite: "Generar mi pagina",
     keepChatting: "Seguir conversando",
     thinking: "LYRA esta pensando...",
+    myPages: "Mis páginas",
+    openProject: "Abrir",
+    emptyProjects: "Aún no tienes páginas guardadas — genera tu primera con LYRA.",
+    loadProjectsError: "No pude cargar tus páginas guardadas. Inicia sesión otra vez e intenta de nuevo.",
     startNewProject: "Nueva página",
     startNewProjectConfirm: "¿Iniciar una página nueva? Esto borra el borrador actual de este navegador.",
     micButton: "Usar voz",
@@ -301,6 +309,10 @@ const I18N = {
     generateMyWebsite: "Générer mon site",
     keepChatting: "Continuer la discussion",
     thinking: "LYRA réfléchit...",
+    myPages: "Mes pages",
+    openProject: "Ouvrir",
+    emptyProjects: "Vous n'avez pas encore de pages enregistrées — générez votre première avec LYRA.",
+    loadProjectsError: "Impossible de charger vos pages enregistrées. Connectez-vous à nouveau puis réessayez.",
     startNewProject: "Nouvelle page",
     startNewProjectConfirm: "Commencer une nouvelle page ? Cela efface le brouillon actuel de ce navigateur.",
     micButton: "Utiliser la voix",
@@ -410,6 +422,10 @@ const I18N = {
     generateMyWebsite: "Gerar meu site",
     keepChatting: "Continuar conversando",
     thinking: "LYRA está pensando...",
+    myPages: "Minhas páginas",
+    openProject: "Abrir",
+    emptyProjects: "Você ainda não tem páginas salvas — gere a primeira com a LYRA.",
+    loadProjectsError: "Não consegui carregar suas páginas salvas. Entre novamente e tente outra vez.",
     startNewProject: "Nova página",
     startNewProjectConfirm: "Iniciar uma nova página? Isso limpa o rascunho atual deste navegador.",
     micButton: "Usar voz",
@@ -603,6 +619,7 @@ let clientIntakeSession = null;
 let clientIntakeSyncTimer = null;
 let clientIntakeSyncInFlight = false;
 let clientAccountButton = null;
+let clientProjectsButton = null;
 let clientProjectsPanel = null;
 let clientProjects = [];
 let clientWorkspaceIdleTimer = null;
@@ -2923,6 +2940,14 @@ function renderClientAccountControl() {
     clientAccountButton.addEventListener("click", switchClientAccount);
     guidedHeaderActions.insertBefore(clientAccountButton, guidedHeaderActions.firstChild);
   }
+  if (!clientProjectsButton) {
+    clientProjectsButton = document.createElement("button");
+    clientProjectsButton.id = "clientProjectsButton";
+    clientProjectsButton.className = "secondary-action compact-action client-projects-button";
+    clientProjectsButton.type = "button";
+    clientProjectsButton.addEventListener("click", openClientProjectsPanel);
+    guidedHeaderActions.insertBefore(clientProjectsButton, clientAccountButton.nextSibling);
+  }
   const session = clientIntakeSession || readClientIntakeSession();
   const email = session?.clientEmail || localStorage.getItem("lumaPendingClientEmail") || "";
   clientAccountButton.textContent = email
@@ -2933,6 +2958,8 @@ function renderClientAccountControl() {
         pt: `Conta: ${compactEmailLabel(email)}`,
       })
     : langText({ en: "Sign in", es: "Iniciar sesión", fr: "Connexion", pt: "Entrar" });
+  clientProjectsButton.textContent = t("myPages");
+  clientProjectsButton.hidden = !storedClientAccessToken();
 }
 
 function compactEmailLabel(email) {
@@ -3022,6 +3049,33 @@ function clientAuthHeaders(extra = {}) {
   };
 }
 
+function handleExpiredClientAuth() {
+  localStorage.removeItem("lumaClientAccessToken");
+  localStorage.removeItem("lumaClientRefreshToken");
+  sessionStorage.removeItem("lumaClientAccessToken");
+  sessionStorage.removeItem("lumaClientRefreshToken");
+  closeClientProjectsPanel();
+  renderClientAccountControl();
+  openStudioAuthGate("start");
+}
+
+function formatProjectUpdatedAt(value) {
+  if (!value) return langText({ en: "No recent edits", es: "Sin ediciones recientes", fr: "Aucune édition récente", pt: "Sem edições recentes" });
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  try {
+    return new Intl.DateTimeFormat(selectedLanguage || "en", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  } catch {
+    return date.toLocaleString();
+  }
+}
+
 async function fetchClientAuthUser() {
   const token = storedClientAccessToken();
   if (!token) return null;
@@ -3030,8 +3084,7 @@ async function fetchClientAuthUser() {
   });
   if (!response.ok) {
     if (response.status === 401) {
-      localStorage.removeItem("lumaClientAccessToken");
-      sessionStorage.removeItem("lumaClientAccessToken");
+      handleExpiredClientAuth();
     }
     throw new Error(await readErrorMessage(response));
   }
@@ -3043,7 +3096,10 @@ async function fetchClientProjects() {
   const response = await fetchWithTimeout(CLIENT_PROJECTS_URL, {
     headers: clientAuthHeaders(),
   }, 12000);
-  if (!response.ok) throw new Error(await readErrorMessage(response));
+  if (!response.ok) {
+    if (response.status === 401) handleExpiredClientAuth();
+    throw new Error(await readErrorMessage(response));
+  }
   const data = await response.json();
   return Array.isArray(data.projects) ? data.projects : [];
 }
@@ -3055,9 +3111,16 @@ function ensureClientProjectsPanel() {
   clientProjectsPanel.hidden = true;
   clientProjectsPanel.setAttribute("aria-label", "Mis páginas");
   clientProjectsPanel.addEventListener("click", (event) => {
+    if (event.target?.closest?.("[data-client-projects-close]")) {
+      closeClientProjectsPanel();
+      return;
+    }
     const continueButton = event.target?.closest?.("[data-client-project-id]");
     if (continueButton) {
-      loadClientProject(continueButton.dataset.clientProjectId);
+      loadClientProject(continueButton.dataset.clientProjectId).catch((error) => {
+        console.warn("Could not open client project", error);
+        if (storageStatus) storageStatus.textContent = t("loadProjectsError");
+      });
       return;
     }
     if (event.target?.closest?.("[data-client-new-project]")) {
@@ -3068,25 +3131,44 @@ function ensureClientProjectsPanel() {
   return clientProjectsPanel;
 }
 
+function renderClientProjectsLoading() {
+  const panel = ensureClientProjectsPanel();
+  panel.innerHTML = `
+    <div class="client-projects-card">
+      <div class="client-projects-head">
+        <span>${escapeHtml(t("myPages"))}</span>
+        <h2>${escapeHtml(langText({ en: "Loading your saved pages", es: "Cargando tus páginas", fr: "Chargement de vos pages", pt: "Carregando suas páginas" }))}</h2>
+        <p>${escapeHtml(langText({ en: "LYRA is checking the projects saved under your account.", es: "LYRA está revisando los proyectos guardados en tu cuenta.", fr: "LYRA vérifie les projets enregistrés sur votre compte.", pt: "LYRA está verificando os projetos salvos na sua conta." }))}</p>
+      </div>
+      <div class="client-projects-skeleton"></div>
+    </div>
+  `;
+  panel.hidden = false;
+  document.body.classList.add("client-projects-open");
+}
+
 function renderClientProjectsPanel(projects = []) {
   const panel = ensureClientProjectsPanel();
+  const emptyState = `
+    <div class="client-projects-empty">
+      <strong>${escapeHtml(t("myPages"))}</strong>
+      <p>${escapeHtml(t("emptyProjects"))}</p>
+    </div>
+  `;
   const rows = projects.map((project) => `
     <article class="client-project-card">
       <div>
         <span>${escapeHtml(project.status || "draft")}</span>
         <h3>${escapeHtml(project.business_name || "Untitled page")}</h3>
-        <p>${escapeHtml(project.template_name || "Generated website")} · ${escapeHtml(formatDateTime(project.updated_at ? Number(project.updated_at) * 1000 : ""))}</p>
+        <p>${escapeHtml(project.template_name || "Generated website")} · ${escapeHtml(formatProjectUpdatedAt(project.updated_at))}</p>
+        ${project.public_url ? `<small>${escapeHtml(project.public_url)}</small>` : ""}
       </div>
-      <button type="button" data-client-project-id="${escapeAttribute(project.id)}">${escapeHtml(langText({
-        en: "Continue",
-        es: "Continuar",
-        fr: "Continuer",
-        pt: "Continuar",
-      }))}</button>
+      <button type="button" data-client-project-id="${escapeAttribute(project.id)}">${escapeHtml(t("openProject"))}</button>
     </article>
   `).join("");
   panel.innerHTML = `
     <div class="client-projects-card">
+      <button class="client-projects-close" type="button" data-client-projects-close aria-label="Close">×</button>
       <div class="client-projects-head">
         <span>${escapeHtml(langText({ en: "Your workspace", es: "Tu espacio", fr: "Votre espace", pt: "Seu espaço" }))}</span>
         <h2>${escapeHtml(langText({ en: "Choose a page to continue", es: "Elige una página para continuar", fr: "Choisissez une page à continuer", pt: "Escolha uma página para continuar" }))}</h2>
@@ -3097,7 +3179,7 @@ function renderClientProjectsPanel(projects = []) {
           pt: "Cada página fica separada dentro da sua conta.",
         }))}</p>
       </div>
-      <div class="client-projects-list">${rows}</div>
+      <div class="client-projects-list">${rows || emptyState}</div>
       <button class="client-new-project-button" type="button" data-client-new-project>${escapeHtml(t("startNewProject"))}</button>
     </div>
   `;
@@ -3108,6 +3190,24 @@ function renderClientProjectsPanel(projects = []) {
 function closeClientProjectsPanel() {
   if (clientProjectsPanel) clientProjectsPanel.hidden = true;
   document.body.classList.remove("client-projects-open");
+}
+
+async function openClientProjectsPanel() {
+  if (!isPublicClientSetup) return;
+  if (!storedClientAccessToken()) {
+    openStudioAuthGate("start");
+    return;
+  }
+  renderClientProjectsLoading();
+  try {
+    clientProjects = await fetchClientProjects();
+    renderClientProjectsPanel(clientProjects);
+  } catch (error) {
+    console.warn("Could not load client projects", error);
+    if (!storedClientAccessToken()) return;
+    if (storageStatus) storageStatus.textContent = t("loadProjectsError");
+    renderClientProjectsPanel([]);
+  }
 }
 
 async function handleClientProjectsAfterAuth(user, session) {
@@ -3135,10 +3235,21 @@ async function handleClientProjectsAfterAuth(user, session) {
 
 async function loadClientProject(projectId, options = {}) {
   if (!projectId) return;
+  if (storageStatus && !options.silent) {
+    storageStatus.textContent = langText({
+      en: "Opening saved page...",
+      es: "Abriendo página guardada...",
+      fr: "Ouverture de la page enregistrée...",
+      pt: "Abrindo página salva...",
+    });
+  }
   const response = await fetchWithTimeout(`${CLIENT_PROJECTS_URL}/${encodeURIComponent(projectId)}`, {
     headers: clientAuthHeaders(),
   }, 14000);
-  if (!response.ok) throw new Error(await readErrorMessage(response));
+  if (!response.ok) {
+    if (response.status === 401) handleExpiredClientAuth();
+    throw new Error(await readErrorMessage(response));
+  }
   const data = await response.json();
   const schema = data.schema || {};
   currentSchema = prepareWebsiteConfig(schema, { brand: schema.brand || guidedState.brand || {} }, null);
@@ -3506,8 +3617,8 @@ function startNewClientProject(options = {}) {
   selectedVariantId = "";
   selectedStudioSectionId = "";
   currentRequestId = null;
-  currentSiteId = null;
-  currentBusinessId = null;
+  currentSiteId = "";
+  currentBusinessId = "";
   currentGenerationId = null;
   currentCatalogItems = [];
   forcedTemplateSelection = null;
