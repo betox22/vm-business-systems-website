@@ -16,6 +16,45 @@ Formato de entrada:
 
 ---
 
+## 2026-07-20 — Codex — Storefront real + orders reales sin Stripe live
+
+**Hecho:** Se empujó primero el fix ya revisado de login/modal en `main`:
+commit `80d811e` (`fix: improve client login modal`). Después se migró el
+paso 1 de commerce:
+- `assert_business()` ahora valida tiendas reales en `stores`.
+- El storefront público (`home`, `categories`, `featured-products`, `products`,
+  `product_detail`, `related`) lee `Store`/`Product` reales con
+  `db_product_to_api()` en vez de `BUSINESSES`/`PRODUCTS` en memoria.
+- El carrito sigue en memoria, pero agrega/actualiza/cotiza validando contra
+  filas reales de `products` por `store_id + product_id`.
+- Checkout/manual order crean filas reales en `orders`, buscan o crean
+  `customers` por `store_id + email`, guardan snapshots JSON y descuentan
+  `products.inventory` en la misma operación.
+- `owner_orders`, `owner_payments`, `owner_shipping`,
+  `owner_update_order_status`, `owner_update_payment_methods`,
+  `owner_update_shipping` y `owner_audit_log` ahora usan
+  `Authorization: Bearer <token>` con `require_store_owner()`.
+- El dashboard del owner ya calcula ventas, órdenes abiertas y pagos pendientes
+  desde `orders`.
+- Si un owner cambia una orden a `cancelled`, `refunded` o `failed`, el backend
+  restaura una sola vez el inventario descontado y marca `inventory_restocked`
+  para evitar doble suma en cambios repetidos de status.
+
+**Pendiente / abierto:** Stripe/pagos en vivo siguen fuera de alcance. Payment
+methods siguen como configuración en memoria hasta definir persistencia de
+métodos/conectores. El carrito tampoco se persiste, por decisión explícita de
+esta fase.
+
+**Archivos tocados:** `backend/app/commerce.py`, `backend/app/db.py`,
+`backend/app/db_models.py`, `backend/tests/test_commerce_products.py`,
+`docs/AGENT_LOG.md`.
+
+**Verificado:** `py_compile` OK, import de app completa OK y
+`PYTHONPATH=backend .venv\Scripts\python.exe -m pytest backend\tests` -> 19
+tests OK.
+
+---
+
 ## 2026-07-20 — Codex — Store owner products connected to real account stores
 
 **Hecho:** Fase 1 del backend de tienda conectada a cuentas reales para

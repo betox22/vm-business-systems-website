@@ -68,6 +68,7 @@ class Product(Base):
 
 class Customer(Base):
     __tablename__ = "customers"
+    __table_args__ = (UniqueConstraint("store_id", "email", name="customers_store_email_key"),)
 
     id: Mapped[str] = mapped_column(primary_key=True, default=lambda: _id("cust"))
     store_id: Mapped[str] = mapped_column(ForeignKey("stores.id"), index=True)
@@ -90,6 +91,11 @@ class Order(Base):
     total_cents: Mapped[int]
     status: Mapped[str]
     placed_at_label: Mapped[str] = mapped_column(default="")
+    items_json: Mapped[str] = mapped_column(default="[]")
+    shipping_address_json: Mapped[str] = mapped_column(default="{}")
+    customer_snapshot_json: Mapped[str] = mapped_column(default="{}")
+    payment_json: Mapped[str] = mapped_column(default="{}")
+    inventory_restocked: Mapped[bool] = mapped_column(default=False)
     shipping_carrier: Mapped[Optional[str]] = mapped_column(nullable=True)
     tracking_code: Mapped[Optional[str]] = mapped_column(nullable=True)
     created_at: Mapped[int] = mapped_column(default=_now)

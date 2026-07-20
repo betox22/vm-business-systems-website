@@ -66,6 +66,13 @@ def _ensure_additive_columns() -> None:
         "generated_sites": {
             "owner_user_id": "owner_user_id TEXT",
         },
+        "orders": {
+            "items_json": "items_json TEXT DEFAULT '[]'",
+            "shipping_address_json": "shipping_address_json TEXT DEFAULT '{}'",
+            "customer_snapshot_json": "customer_snapshot_json TEXT DEFAULT '{}'",
+            "payment_json": "payment_json TEXT DEFAULT '{}'",
+            "inventory_restocked": "inventory_restocked BOOLEAN DEFAULT 0",
+        },
     }
 
     with engine.begin() as connection:

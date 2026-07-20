@@ -17,6 +17,8 @@ from sqlalchemy.orm import Session
 
 from .client_auth import fetch_supabase_user, supabase_auth_configured
 from .db import get_session
+from .db_models import Customer as DbCustomer
+from .db_models import Order as DbOrder
 from .db_models import Product as DbProduct
 from .db_models import Store
 
@@ -287,18 +289,56 @@ CUSTOMER_ADDRESSES: Dict[str, List[Dict[str, Any]]] = {
 }
 
 
-def assert_business(business_id: str) -> None:
-    if business_id not in BUSINESSES:
+def assert_business(session: Session, business_id: str) -> Store:
+    store = session.get(Store, business_id)
+    if not store:
         raise HTTPException(status_code=404, detail="Business not found.")
+    return store
 
 
-def public_products(business_id: str) -> list[Product]:
-    assert_business(business_id)
+def store_to_api(store: Store) -> Dict[str, Any]:
+    return {
+        "id": store.id,
+        "name": store.name,
+        "currency": "USD",
+        "templateId": store.business_type or "premium-product-store",
+        "publicUrl": store.public_url,
+        "status": store.status,
+    }
+
+
+def public_products(session: Session, business_id: str) -> list[Product]:
+    assert_business(session, business_id)
     return [
-        product
-        for product in PRODUCTS.values()
-        if product.businessId == business_id and product.active and product.published
+        db_product_to_api(product)
+        for product in session.execute(
+            select(DbProduct)
+            .where(DbProduct.store_id == business_id, DbProduct.status == "Published")
+            .order_by(DbProduct.created_at.desc())
+        ).scalars()
     ]
+
+
+def public_categories_from_products(products: list[Product]) -> list[Category]:
+    counts: Dict[str, int] = {}
+    for product in products:
+        counts[product.categoryId] = counts.get(product.categoryId, 0) + 1
+
+    categories: list[Category] = []
+    for category_id, count in sorted(counts.items()):
+        default = CATEGORIES.get(category_id)
+        if default:
+            categories.append(default.model_copy(update={"productCount": count}))
+        else:
+            categories.append(
+                Category(
+                    id=category_id,
+                    name=category_id.replace("-", " ").replace("_", " ").title(),
+                    description="",
+                    productCount=count,
+                )
+            )
+    return categories
 
 
 def cart_lines(cart_id: str) -> list[Dict[str, Any]]:
@@ -322,11 +362,51 @@ def available_stock(product: Product) -> int:
     return max(0, product.stock - reserved_quantity(product.id))
 
 
-def cart_response(cart_id: str) -> Dict[str, Any]:
+def payment_methods_for_business(business_id: str) -> Dict[str, Any]:
+    methods = PAYMENT_METHODS.setdefault(
+        business_id,
+        {
+            "businessId": business_id,
+            "enabledMethods": ["card"],
+            "currency": "USD",
+            "captureMode": "automatic",
+            "manualInstructions": "",
+            "provider": "stripe",
+            "providerConfigured": False,
+        },
+    )
+    methods["providerConfigured"] = bool(os.getenv("STRIPE_SECRET_KEY"))
+    return methods
+
+
+def db_product_for_cart(session: Session, business_id: str, product_id: str) -> DbProduct:
+    product = session.get(DbProduct, product_id)
+    if not product or product.store_id != business_id or product.status != "Published":
+        raise HTTPException(status_code=404, detail="Product not found.")
+    return product
+
+
+def cart_response(cart_id: str, session: Optional[Session] = None, business_id: Optional[str] = None) -> Dict[str, Any]:
     lines = []
     subtotal = money(0)
     for line in cart_lines(cart_id):
-        product = PRODUCTS.get(line["productId"])
+        if business_id and line.get("businessId") != business_id:
+            continue
+
+        product: Optional[Product] = None
+        stock_available = 0
+        if session:
+            store_id = str(line.get("businessId") or "")
+            db_product = session.get(DbProduct, line["productId"])
+            if not db_product or db_product.store_id != store_id or db_product.status != "Published":
+                continue
+            product = db_product_to_api(db_product)
+            stock_available = max(0, int(db_product.inventory or 0))
+        else:
+            product = PRODUCTS.get(line["productId"])
+            if product:
+                stock_available = available_stock(product)
+
         if not product:
             continue
         qty = int(line["quantity"])
@@ -341,7 +421,7 @@ def cart_response(cart_id: str) -> Dict[str, Any]:
                 "quantity": qty,
                 "unitPrice": money_float(product.price),
                 "lineTotal": money_float(line_total),
-                "stockAvailable": available_stock(product),
+                "stockAvailable": stock_available,
             }
         )
     shipping = money(0) if subtotal else money(0)
@@ -448,44 +528,178 @@ def audit(actor: str, action: str, business_id: str, payload: Dict[str, Any]) ->
     )
 
 
+def json_field(value: Any, fallback: Any) -> Any:
+    if not value:
+        return fallback
+    try:
+        parsed = json.loads(value)
+    except (TypeError, json.JSONDecodeError):
+        return fallback
+    return parsed
+
+
+def order_tracking(order: DbOrder) -> Optional[Dict[str, str]]:
+    if not order.shipping_carrier and not order.tracking_code:
+        return None
+    return {
+        "carrier": order.shipping_carrier or "",
+        "trackingNumber": order.tracking_code or "",
+    }
+
+
+def order_to_api(order: DbOrder) -> Dict[str, Any]:
+    items = json_field(order.items_json, [])
+    customer = json_field(order.customer_snapshot_json, {})
+    shipping_address = json_field(order.shipping_address_json, {})
+    payment = json_field(order.payment_json, {})
+    subtotal = money(sum(money(item.get("lineTotal", 0)) for item in items))
+    total = money(cents_to_price(order.total_cents))
+    tax = money(max(Decimal("0"), total - subtotal))
+    return {
+        "id": order.id,
+        "orderNumber": order.order_number,
+        "businessId": order.store_id,
+        "customer": customer,
+        "shippingAddress": shipping_address,
+        "items": items,
+        "subtotal": money_float(subtotal),
+        "shippingAmount": 0,
+        "taxAmount": money_float(tax),
+        "total": money_float(total),
+        "status": order.status,
+        "payment": payment,
+        "tracking": order_tracking(order),
+        "inventoryReserved": False,
+        "inventoryDeducted": True,
+        "createdAt": order.created_at,
+    }
+
+
+def customer_display_name(customer: CustomerInfo) -> str:
+    name = f"{customer.firstName} {customer.lastName}".strip()
+    return name or customer.email
+
+
+def find_or_create_customer(session: Session, business_id: str, customer: CustomerInfo) -> DbCustomer:
+    email = customer.email.strip().lower()
+    existing = session.execute(
+        select(DbCustomer).where(
+            DbCustomer.store_id == business_id,
+            func.lower(DbCustomer.email) == email,
+        )
+    ).scalar_one_or_none()
+    name = customer_display_name(customer)
+    if existing:
+        existing.email = email
+        if name and existing.name != name:
+            existing.name = name
+        return existing
+
+    db_customer = DbCustomer(
+        id=f"cust_{uuid.uuid4().hex[:12]}",
+        store_id=business_id,
+        name=name,
+        email=email,
+    )
+    session.add(db_customer)
+    return db_customer
+
+
+def generate_order_number(session: Session) -> str:
+    for _ in range(20):
+        order_number = f"KR-{uuid.uuid4().hex[:6].upper()}"
+        existing = session.scalar(select(DbOrder.id).where(DbOrder.order_number == order_number))
+        if not existing:
+            return order_number
+    raise HTTPException(status_code=500, detail="Could not allocate order number.")
+
+
 def create_order_from_cart(
+    session: Session,
     cart_id: str,
     business_id: str,
     customer: CustomerInfo,
     shipping_address: ShippingAddress,
     status: OrderStatus,
     payment: Dict[str, Any],
-) -> Dict[str, Any]:
-    quote = cart_response(cart_id)
+) -> DbOrder:
+    assert_business(session, business_id)
+    quote = cart_response(cart_id, session, business_id)
     if not quote["checkoutEligible"]:
         raise HTTPException(status_code=400, detail="Cart is empty.")
-    for item in quote["items"]:
-        product = PRODUCTS[item["productId"]]
-        if available_stock(product) < item["quantity"]:
-            raise HTTPException(status_code=409, detail=f"{product.name} does not have enough stock.")
 
+    products_by_id: Dict[str, DbProduct] = {}
+    for item in quote["items"]:
+        product = db_product_for_cart(session, business_id, item["productId"])
+        if int(product.inventory or 0) < int(item["quantity"]):
+            raise HTTPException(status_code=409, detail=f"{product.name} does not have enough stock.")
+        products_by_id[item["productId"]] = product
+
+    movements = []
+    for item in quote["items"]:
+        product = products_by_id[item["productId"]]
+        before = int(product.inventory or 0)
+        product.inventory = before - int(item["quantity"])
+        movements.append(
+            {
+                "productId": product.id,
+                "sku": product.id,
+                "quantity": int(item["quantity"]),
+                "before": before,
+                "after": product.inventory,
+            }
+        )
+
+    db_customer = find_or_create_customer(session, business_id, customer)
     order_id = f"ord_{uuid.uuid4().hex[:12]}"
-    order_number = f"KR-{uuid.uuid4().hex[:6].upper()}"
-    order = {
-        "id": order_id,
-        "orderNumber": order_number,
-        "businessId": business_id,
-        "customer": customer.model_dump(),
-        "shippingAddress": shipping_address.model_dump(),
-        "items": quote["items"],
-        "subtotal": quote["subtotal"],
-        "shippingAmount": quote["shippingEstimate"],
-        "taxAmount": quote["taxEstimate"],
-        "total": quote["total"],
-        "status": status,
-        "payment": payment,
-        "tracking": None,
-        "inventoryReserved": status in {"payment_processing", "pending_payment"},
-        "inventoryDeducted": False,
-        "createdAt": int(time.time()),
-    }
-    ORDERS[order_id] = order
+    order = DbOrder(
+        id=order_id,
+        store_id=business_id,
+        customer_id=db_customer.id,
+        order_number=generate_order_number(session),
+        item_count=sum(int(item["quantity"]) for item in quote["items"]),
+        total_cents=price_to_cents(quote["total"]),
+        status=status,
+        placed_at_label="",
+        items_json=json.dumps(quote["items"]),
+        shipping_address_json=json.dumps(shipping_address.model_dump()),
+        customer_snapshot_json=json.dumps(customer.model_dump()),
+        payment_json=json.dumps(payment),
+    )
+    session.add(order)
+    session.commit()
+    session.refresh(order)
+    audit(customer.email, "inventory_deducted", business_id, {"orderId": order.id, "movements": movements})
     return order
+
+
+def restock_order_inventory(session: Session, order: DbOrder, business_id: str) -> list[Dict[str, Any]]:
+    if order.inventory_restocked:
+        return []
+
+    movements = []
+    for item in json_field(order.items_json, []):
+        product_id = str(item.get("productId") or "")
+        quantity = int(item.get("quantity") or 0)
+        if not product_id or quantity <= 0:
+            continue
+        product = session.get(DbProduct, product_id)
+        if not product or product.store_id != business_id:
+            continue
+        before = int(product.inventory or 0)
+        product.inventory = before + quantity
+        movements.append(
+            {
+                "productId": product.id,
+                "sku": product.id,
+                "quantity": quantity,
+                "before": before,
+                "after": product.inventory,
+            }
+        )
+
+    order.inventory_restocked = True
+    return movements
 
 
 def deduct_inventory_for_order(order: Dict[str, Any], actor: str) -> None:
@@ -576,44 +790,55 @@ def verify_stripe_signature(raw_body: bytes, signature_header: str, secret: str)
 
 
 @router.get("/storefront/{business_id}/home")
-async def storefront_home(business_id: str) -> Dict[str, Any]:
-    assert_business(business_id)
-    products = public_products(business_id)
+async def storefront_home(business_id: str, session: Session = Depends(get_session)) -> Dict[str, Any]:
+    store = assert_business(session, business_id)
+    products = public_products(session, business_id)
+    categories = public_categories_from_products(products)
     return {
-        "business": BUSINESSES[business_id],
+        "business": store_to_api(store),
         "heroProduct": products[1].model_dump() if len(products) > 1 else (products[0].model_dump() if products else None),
-        "categories": [category.model_dump() for category in CATEGORIES.values()],
+        "categories": [category.model_dump() for category in categories],
         "featuredProducts": [product.model_dump() for product in products[:8]],
     }
 
 
 @router.get("/storefront/{business_id}/categories")
-async def storefront_categories(business_id: str) -> Dict[str, Any]:
-    assert_business(business_id)
-    return {"businessId": business_id, "categories": [category.model_dump() for category in CATEGORIES.values()]}
+async def storefront_categories(business_id: str, session: Session = Depends(get_session)) -> Dict[str, Any]:
+    assert_business(session, business_id)
+    products = public_products(session, business_id)
+    categories = public_categories_from_products(products)
+    return {"businessId": business_id, "categories": [category.model_dump() for category in categories]}
 
 
 @router.get("/storefront/{business_id}/featured-products")
-async def storefront_featured_products(business_id: str) -> Dict[str, Any]:
-    products = public_products(business_id)
+async def storefront_featured_products(business_id: str, session: Session = Depends(get_session)) -> Dict[str, Any]:
+    products = public_products(session, business_id)
     featured = [product.model_dump() for product in products if product.badge][:8]
     return {"businessId": business_id, "products": featured or [product.model_dump() for product in products[:8]]}
 
 
 @router.get("/storefront/{business_id}/products")
-async def storefront_products(business_id: str, category: Optional[str] = None) -> Dict[str, Any]:
-    products = public_products(business_id)
+async def storefront_products(
+    business_id: str,
+    category: Optional[str] = None,
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    products = public_products(session, business_id)
     if category:
         products = [product for product in products if product.categoryId == category]
     return {"businessId": business_id, "products": [product.model_dump() for product in products]}
 
 
 @router.get("/storefront/{business_id}/products/{product_slug}")
-async def storefront_product_detail(business_id: str, product_slug: str) -> Dict[str, Any]:
+async def storefront_product_detail(
+    business_id: str,
+    product_slug: str,
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
     product = next(
         (
             item
-            for item in public_products(business_id)
+            for item in public_products(session, business_id)
             if item.slug == product_slug or item.id == product_slug
         ),
         None,
@@ -622,34 +847,44 @@ async def storefront_product_detail(business_id: str, product_slug: str) -> Dict
         raise HTTPException(status_code=404, detail="Product not found.")
     related = [
         item.model_dump()
-        for item in public_products(business_id)
+        for item in public_products(session, business_id)
         if item.categoryId == product.categoryId and item.id != product.id
     ]
     return {"product": product.model_dump(), "related": related}
 
 
 @router.get("/storefront/{business_id}/products/{product_slug}/related")
-async def storefront_product_related(business_id: str, product_slug: str) -> Dict[str, Any]:
-    detail = await storefront_product_detail(business_id, product_slug)
+async def storefront_product_related(
+    business_id: str,
+    product_slug: str,
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    detail = await storefront_product_detail(business_id, product_slug, session)
     return {"businessId": business_id, "related": detail["related"]}
 
 
 @router.get("/checkout/cart")
-async def get_cart(cart_id: str = "demo-cart") -> Dict[str, Any]:
-    return cart_response(cart_id)
+async def get_cart(cart_id: str = "demo-cart", session: Session = Depends(get_session)) -> Dict[str, Any]:
+    return cart_response(cart_id, session)
 
 
 @router.post("/checkout/cart/items")
-async def add_cart_item(payload: AddCartItemRequest) -> Dict[str, Any]:
-    assert_business(payload.businessId)
-    product = PRODUCTS.get(payload.productId)
-    if not product or product.businessId != payload.businessId or not product.active:
-        raise HTTPException(status_code=404, detail="Product not found.")
-    if available_stock(product) < payload.quantity:
+async def add_cart_item(payload: AddCartItemRequest, session: Session = Depends(get_session)) -> Dict[str, Any]:
+    assert_business(session, payload.businessId)
+    product = db_product_for_cart(session, payload.businessId, payload.productId)
+    lines = cart_lines(payload.cartId)
+    existing = next(
+        (
+            line
+            for line in lines
+            if line["productId"] == product.id and line.get("businessId") == payload.businessId
+        ),
+        None,
+    )
+    existing_quantity = int(existing["quantity"]) if existing else 0
+    if int(product.inventory or 0) < existing_quantity + payload.quantity:
         raise HTTPException(status_code=409, detail="Not enough stock.")
 
-    lines = cart_lines(payload.cartId)
-    existing = next((line for line in lines if line["productId"] == product.id), None)
     if existing:
         existing["quantity"] += payload.quantity
     else:
@@ -661,41 +896,58 @@ async def add_cart_item(payload: AddCartItemRequest) -> Dict[str, Any]:
                 "quantity": payload.quantity,
             }
         )
-    return cart_response(payload.cartId)
+    return cart_response(payload.cartId, session)
 
 
 @router.patch("/checkout/cart/items/{cart_item_id}")
-async def update_cart_item(cart_item_id: str, payload: UpdateCartItemRequest, cart_id: str = "demo-cart") -> Dict[str, Any]:
+async def update_cart_item(
+    cart_item_id: str,
+    payload: UpdateCartItemRequest,
+    cart_id: str = "demo-cart",
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
     line = next((item for item in cart_lines(cart_id) if item["cartItemId"] == cart_item_id), None)
     if not line:
         raise HTTPException(status_code=404, detail="Cart item not found.")
+    product = db_product_for_cart(session, str(line.get("businessId") or ""), line["productId"])
+    if int(product.inventory or 0) < payload.quantity:
+        raise HTTPException(status_code=409, detail="Not enough stock.")
     line["quantity"] = payload.quantity
-    return cart_response(cart_id)
+    return cart_response(cart_id, session)
 
 
 @router.delete("/checkout/cart/items/{cart_item_id}")
-async def delete_cart_item(cart_item_id: str, cart_id: str = "demo-cart") -> Dict[str, Any]:
+async def delete_cart_item(
+    cart_item_id: str,
+    cart_id: str = "demo-cart",
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
     CARTS[cart_id] = [item for item in cart_lines(cart_id) if item["cartItemId"] != cart_item_id]
-    return cart_response(cart_id)
+    return cart_response(cart_id, session)
 
 
 @router.post("/checkout/quote")
-async def checkout_quote(payload: CheckoutQuoteRequest) -> Dict[str, Any]:
-    return cart_response(payload.cartId)
+async def checkout_quote(payload: CheckoutQuoteRequest, session: Session = Depends(get_session)) -> Dict[str, Any]:
+    return cart_response(payload.cartId, session)
 
 
 @router.post("/checkout/create-session")
 async def create_checkout_session(
     payload: CheckoutSessionRequest,
     idempotency_key: Optional[str] = Header(default=None, alias="Idempotency-Key"),
+    session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
     if not idempotency_key:
         raise HTTPException(status_code=400, detail="Idempotency-Key header is required.")
     if idempotency_key in IDEMPOTENCY_KEYS:
-        order = ORDERS[IDEMPOTENCY_KEYS[idempotency_key]]
-        return {"order": order, "payment": order["payment"], "idempotentReplay": True}
+        order = session.get(DbOrder, IDEMPOTENCY_KEYS[idempotency_key])
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found.")
+        api_order = order_to_api(order)
+        return {"order": api_order, "payment": api_order["payment"], "idempotentReplay": True}
 
     order = create_order_from_cart(
+        session,
         payload.cartId,
         payload.businessId,
         payload.customer,
@@ -703,20 +955,25 @@ async def create_checkout_session(
         "payment_processing",
         {"provider": "stripe", "providerStatus": "creating_session"},
     )
-    payment = stripe_checkout_session(order, payload.successUrl, payload.cancelUrl)
+    api_order = order_to_api(order)
+    payment = stripe_checkout_session(api_order, payload.successUrl, payload.cancelUrl)
     if payment.get("providerStatus") == "not_configured":
-        order["status"] = "pending_payment"
-    order["payment"] = payment
-    IDEMPOTENCY_KEYS[idempotency_key] = order["id"]
-    audit(payload.customer.email, "checkout_session_created", payload.businessId, {"orderId": order["id"], "payment": payment})
-    return {"order": order, "payment": payment, "idempotentReplay": False}
+        order.status = "pending_payment"
+    order.payment_json = json.dumps(payment)
+    session.commit()
+    session.refresh(order)
+    api_order = order_to_api(order)
+    IDEMPOTENCY_KEYS[idempotency_key] = order.id
+    audit(payload.customer.email, "checkout_session_created", payload.businessId, {"orderId": order.id, "payment": payment})
+    return {"order": api_order, "payment": payment, "idempotentReplay": False}
 
 
 @router.post("/checkout/place-manual-order")
-async def place_manual_order(payload: ManualOrderRequest) -> Dict[str, Any]:
+async def place_manual_order(payload: ManualOrderRequest, session: Session = Depends(get_session)) -> Dict[str, Any]:
     if not payload.paymentInstructionsAccepted:
         raise HTTPException(status_code=400, detail="Manual payment instructions must be accepted.")
     order = create_order_from_cart(
+        session,
         payload.cartId,
         payload.businessId,
         payload.customer,
@@ -724,12 +981,16 @@ async def place_manual_order(payload: ManualOrderRequest) -> Dict[str, Any]:
         "pending_payment",
         {"provider": "manual", "providerStatus": "pending_verification"},
     )
-    audit(payload.customer.email, "manual_order_created", payload.businessId, {"orderId": order["id"]})
-    return {"order": order}
+    audit(payload.customer.email, "manual_order_created", payload.businessId, {"orderId": order.id})
+    return {"order": order_to_api(order)}
 
 
 @router.post("/payments/stripe/webhook")
-async def stripe_webhook(request: Request, stripe_signature: Optional[str] = Header(default=None, alias="Stripe-Signature")) -> Dict[str, Any]:
+async def stripe_webhook(
+    request: Request,
+    stripe_signature: Optional[str] = Header(default=None, alias="Stripe-Signature"),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
     raw = await request.body()
     if not webhook_secret:
@@ -739,14 +1000,17 @@ async def stripe_webhook(request: Request, stripe_signature: Optional[str] = Hea
 
     event = json.loads(raw.decode("utf-8"))
     event_type = event.get("type")
-    session = event.get("data", {}).get("object", {})
-    order_id = session.get("metadata", {}).get("order_id")
-    if order_id and order_id in ORDERS and event_type == "checkout.session.completed":
-        order = ORDERS[order_id]
-        deduct_inventory_for_order(order, "stripe_webhook")
-        order["status"] = "paid"
-        order["payment"]["providerStatus"] = "paid"
-        audit("stripe_webhook", "order_paid", order["businessId"], {"orderId": order_id})
+    stripe_session = event.get("data", {}).get("object", {})
+    order_id = stripe_session.get("metadata", {}).get("order_id")
+    if order_id and event_type == "checkout.session.completed":
+        order = session.get(DbOrder, order_id)
+        if order:
+            payment = json_field(order.payment_json, {})
+            payment["providerStatus"] = "paid"
+            order.status = "paid"
+            order.payment_json = json.dumps(payment)
+            session.commit()
+            audit("stripe_webhook", "order_paid", order.store_id, {"orderId": order_id})
     return {"received": True}
 
 
@@ -768,9 +1032,24 @@ async def update_customer_me(payload: CustomerProfilePatch, x_user_id: str = Hea
 
 
 @router.get("/customer/orders")
-async def customer_orders(x_user_id: str = Header(default="demo-customer")) -> Dict[str, Any]:
+async def customer_orders(
+    x_user_id: str = Header(default="demo-customer"),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
     profile = await customer_me(x_user_id)
-    orders = [order for order in ORDERS.values() if order.get("customer", {}).get("email") == profile.get("email")]
+    email = str(profile.get("email") or "").strip().lower()
+    db_orders = []
+    if email:
+        db_orders = [
+            order_to_api(order)
+            for order in session.execute(
+                select(DbOrder)
+                .join(DbCustomer, DbOrder.customer_id == DbCustomer.id)
+                .where(func.lower(DbCustomer.email) == email)
+                .order_by(DbOrder.created_at.desc())
+            ).scalars()
+        ]
+    orders = db_orders
     if not orders:
         orders = [
             {
@@ -784,16 +1063,21 @@ async def customer_orders(x_user_id: str = Header(default="demo-customer")) -> D
 
 
 @router.get("/customer/orders/{order_number}")
-async def customer_order_detail(order_number: str, x_user_id: str = Header(default="demo-customer")) -> Dict[str, Any]:
+async def customer_order_detail(
+    order_number: str,
+    x_user_id: str = Header(default="demo-customer"),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
     profile = await customer_me(x_user_id)
-    order = next(
-        (
-            item
-            for item in ORDERS.values()
-            if item.get("orderNumber") == order_number and item.get("customer", {}).get("email") == profile.get("email")
-        ),
-        None,
-    )
+    email = str(profile.get("email") or "").strip().lower()
+    order = None
+    if email:
+        db_order = session.execute(
+            select(DbOrder)
+            .join(DbCustomer, DbOrder.customer_id == DbCustomer.id)
+            .where(DbOrder.order_number == order_number, func.lower(DbCustomer.email) == email)
+        ).scalar_one_or_none()
+        order = order_to_api(db_order) if db_order else None
     if not order:
         raise HTTPException(status_code=404, detail="Order not found.")
     return order
@@ -836,14 +1120,19 @@ async def owner_dashboard(
         .select_from(DbProduct)
         .where(DbProduct.store_id == business_id, DbProduct.inventory <= 10)
     ) or 0
-    # Phase 2 will move orders/payments/carts out of in-memory ORDERS and into
-    # the relational tables. Until then, only product inventory is real here.
+    orders = list(
+        session.execute(
+            select(DbOrder).where(DbOrder.store_id == business_id)
+        ).scalars()
+    )
+    paid_statuses = {"paid", "partially_fulfilled", "fulfilled"}
+    closed_statuses = {"fulfilled", "cancelled", "refunded", "failed"}
     return {
         "businessId": business_id,
-        "salesToday": 0,
-        "openOrders": 0,
+        "salesToday": cents_to_price(sum(order.total_cents for order in orders if order.status in paid_statuses)),
+        "openOrders": sum(1 for order in orders if order.status not in closed_statuses),
         "lowStock": int(low_stock),
-        "pendingPayments": 0,
+        "pendingPayments": sum(1 for order in orders if order.status == "pending_payment"),
     }
 
 
@@ -922,10 +1211,21 @@ async def owner_update_product(
 
 
 @router.get("/store-owner/{business_id}/orders")
-async def owner_orders(business_id: str, x_user_role: Optional[str] = Header(default=None)) -> Dict[str, Any]:
-    assert_business(business_id)
-    require_store_role(x_user_role)
-    return {"businessId": business_id, "orders": [order for order in ORDERS.values() if order["businessId"] == business_id]}
+async def owner_orders(
+    business_id: str,
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    require_store_owner(session, business_id, authorization)
+    orders = [
+        order_to_api(order)
+        for order in session.execute(
+            select(DbOrder)
+            .where(DbOrder.store_id == business_id)
+            .order_by(DbOrder.created_at.desc())
+        ).scalars()
+    ]
+    return {"businessId": business_id, "orders": orders}
 
 
 @router.patch("/store-owner/{business_id}/orders/{order_id}/status")
@@ -933,32 +1233,50 @@ async def owner_update_order_status(
     business_id: str,
     order_id: str,
     payload: OrderStatusPatch,
-    x_user_role: Optional[str] = Header(default=None),
-    x_user_id: str = Header(default="demo-owner"),
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    assert_business(business_id)
-    require_store_role(x_user_role)
-    order = ORDERS.get(order_id)
-    if not order or order["businessId"] != business_id:
+    _, user = require_store_owner(session, business_id, authorization)
+    order = session.get(DbOrder, order_id)
+    if not order or order.store_id != business_id:
         raise HTTPException(status_code=404, detail="Order not found.")
-    if payload.status == "paid":
-        deduct_inventory_for_order(order, x_user_id)
-    if payload.status in {"cancelled", "failed"} and not order.get("inventoryDeducted"):
-        order["inventoryReserved"] = False
-    order["status"] = payload.status
-    audit(x_user_id, "order_status_updated", business_id, {"orderId": order_id, "status": payload.status})
-    return order
+    movements = []
+    if payload.status in {"cancelled", "refunded", "failed"}:
+        movements = restock_order_inventory(session, order, business_id)
+    order.status = payload.status
+    payment = json_field(order.payment_json, {})
+    if payload.status in {"paid", "refunded", "failed"}:
+        payment["providerStatus"] = payload.status
+        order.payment_json = json.dumps(payment)
+    session.commit()
+    session.refresh(order)
+    actor = str(user.get("id") or user.get("email") or "store-owner")
+    audit(actor, "order_status_updated", business_id, {"orderId": order_id, "status": payload.status})
+    if movements:
+        audit(actor, "inventory_restocked", business_id, {"orderId": order_id, "movements": movements})
+    return order_to_api(order)
 
 
 @router.get("/store-owner/{business_id}/payments")
-async def owner_payments(business_id: str, x_user_role: Optional[str] = Header(default=None)) -> Dict[str, Any]:
-    assert_business(business_id)
-    require_store_role(x_user_role)
-    methods = PAYMENT_METHODS[business_id]
+async def owner_payments(
+    business_id: str,
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    require_store_owner(session, business_id, authorization)
+    methods = payment_methods_for_business(business_id)
     payment_events = [
-        {"orderId": order["id"], "orderNumber": order["orderNumber"], "status": order["status"], "payment": order["payment"]}
-        for order in ORDERS.values()
-        if order["businessId"] == business_id
+        {
+            "orderId": order.id,
+            "orderNumber": order.order_number,
+            "status": order.status,
+            "payment": json_field(order.payment_json, {}),
+        }
+        for order in session.execute(
+            select(DbOrder)
+            .where(DbOrder.store_id == business_id)
+            .order_by(DbOrder.created_at.desc())
+        ).scalars()
     ]
     return {"businessId": business_id, "methods": methods, "events": payment_events}
 
@@ -967,29 +1285,35 @@ async def owner_payments(business_id: str, x_user_role: Optional[str] = Header(d
 async def owner_update_payment_methods(
     business_id: str,
     payload: PaymentMethodPatch,
-    x_user_role: Optional[str] = Header(default=None),
-    x_user_id: str = Header(default="demo-owner"),
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    assert_business(business_id)
-    require_store_role(x_user_role)
-    PAYMENT_METHODS[business_id].update(payload.model_dump())
-    PAYMENT_METHODS[business_id]["providerConfigured"] = bool(os.getenv("STRIPE_SECRET_KEY"))
-    audit(x_user_id, "payment_methods_updated", business_id, payload.model_dump())
-    return PAYMENT_METHODS[business_id]
+    _, user = require_store_owner(session, business_id, authorization)
+    methods = payment_methods_for_business(business_id)
+    methods.update(payload.model_dump())
+    methods["providerConfigured"] = bool(os.getenv("STRIPE_SECRET_KEY"))
+    audit(str(user.get("id") or user.get("email") or "store-owner"), "payment_methods_updated", business_id, payload.model_dump())
+    return methods
 
 
 @router.get("/store-owner/{business_id}/shipping")
-async def owner_shipping(business_id: str, x_user_role: Optional[str] = Header(default=None)) -> Dict[str, Any]:
-    assert_business(business_id)
-    require_store_role(x_user_role)
+async def owner_shipping(
+    business_id: str,
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    require_store_owner(session, business_id, authorization)
     return {
         "businessId": business_id,
         "providerStrategy": "adapter",
         "recommendedAggregator": "easypost",
         "shipments": [
-            {"orderId": order["id"], "tracking": order.get("tracking"), "status": order["status"]}
-            for order in ORDERS.values()
-            if order["businessId"] == business_id
+            {"orderId": order.id, "tracking": order_tracking(order), "status": order.status}
+            for order in session.execute(
+                select(DbOrder)
+                .where(DbOrder.store_id == business_id)
+                .order_by(DbOrder.created_at.desc())
+            ).scalars()
         ],
     }
 
@@ -999,23 +1323,32 @@ async def owner_update_shipping(
     business_id: str,
     order_id: str,
     payload: ShippingPatch,
-    x_user_role: Optional[str] = Header(default=None),
-    x_user_id: str = Header(default="demo-owner"),
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    assert_business(business_id)
-    require_store_role(x_user_role)
-    order = ORDERS.get(order_id)
-    if not order or order["businessId"] != business_id:
+    _, user = require_store_owner(session, business_id, authorization)
+    order = session.get(DbOrder, order_id)
+    if not order or order.store_id != business_id:
         raise HTTPException(status_code=404, detail="Order not found.")
-    order["tracking"] = payload.model_dump(exclude_none=True)
-    audit(x_user_id, "shipping_updated", business_id, {"orderId": order_id, "tracking": order["tracking"]})
-    return order
+    updates = payload.model_dump(exclude_none=True)
+    order.shipping_carrier = payload.carrier if payload.carrier is not None else order.shipping_carrier
+    order.tracking_code = payload.trackingNumber if payload.trackingNumber is not None else order.tracking_code
+    if payload.status:
+        order.status = payload.status
+    session.commit()
+    session.refresh(order)
+    actor = str(user.get("id") or user.get("email") or "store-owner")
+    audit(actor, "shipping_updated", business_id, {"orderId": order_id, "tracking": updates})
+    return order_to_api(order)
 
 
 @router.get("/store-owner/{business_id}/audit-log")
-async def owner_audit_log(business_id: str, x_user_role: Optional[str] = Header(default=None)) -> Dict[str, Any]:
-    assert_business(business_id)
-    require_store_role(x_user_role)
+async def owner_audit_log(
+    business_id: str,
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    require_store_owner(session, business_id, authorization)
     return {"businessId": business_id, "events": [event for event in AUDIT_LOG if event["businessId"] == business_id]}
 
 
