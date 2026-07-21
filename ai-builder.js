@@ -1126,6 +1126,8 @@ const studioSelectionToolbar = document.querySelector("#studioSelectionToolbar")
 const studioProgressList = document.querySelector("#studioProgressList");
 const studioAdjustButton = document.querySelector("#studioAdjustButton");
 const studioLumaMessage = document.querySelector(".studio-luma-message");
+const studioSuggestedList = document.querySelector("#studioSuggestedList");
+const studioRecentList = document.querySelector("#studioRecentList");
 const studioAuthGate = document.querySelector("#studioAuthGate");
 const studioAuthCloseButton = document.querySelector("#studioAuthCloseButton");
 const studioGoogleAuthButton = document.querySelector("#studioGoogleAuthButton");
@@ -1199,6 +1201,7 @@ safeBootStep("auth-redirect", captureStudioAuthRedirect);
 safeBootStep("request-hydration", hydrateFromSelectedRequest);
 safeBootStep("guided-intake", initGuidedIntake);
 safeBootStep("guided-media-drop", initGuidedMediaDrop);
+safeBootStep("studio-lyra-panel", renderStudioLyraInsights);
 safeBootStep("client-session", initClientIntakeSessionGate);
 safeBootStep("client-account-control", renderClientAccountControl);
 safeBootStep("client-workspace-security", initClientWorkspaceSecurity);
@@ -1751,9 +1754,9 @@ function renderCanvasTemplateCarousel(card) {
           pt: "Estas sao bases reais. A LYRA adapta textos, cores, produtos e fluxo depois da escolha.",
         }))}</span>
       </div>
-      <div class="template-board-grid ${shouldAnimateCards ? "template-board-grid-enter" : ""}" aria-label="Template options">
+      <div class="template-board-grid template-coverflow-track ${shouldAnimateCards ? "template-board-grid-enter" : ""}" aria-label="Template options">
         ${choices.map((choice, index) => `
-          <article class="template-choice-card template-board-card ${choice.templateId === selectedId ? "active-card recommended" : index === 0 ? "recommended" : ""}" style="--template-card-index: ${index};" data-template-choice="${escapeAttribute(choice.templateId)}" data-catalog-type="${escapeAttribute(choice.catalogType || "")}">
+          <article class="template-choice-card template-board-card template-coverflow-card template-carousel-card ${choice.templateId === selectedId ? "active-card recommended" : index === 0 ? "recommended" : ""}" style="--template-card-index: ${index};" data-template-choice="${escapeAttribute(choice.templateId)}" data-catalog-type="${escapeAttribute(choice.catalogType || "")}" tabindex="0">
             <div class="template-board-image">
               ${templateLivePreviewMarkup(choice)}
             </div>
@@ -1775,6 +1778,7 @@ function renderCanvasTemplateCarousel(card) {
   `;
   window.__lyraTemplateBoardAnimated = true;
   const panel = card.querySelector(".template-board-panel");
+  initTemplateCarousel(card.querySelector(".template-board-grid"));
   panel?.addEventListener("click", (event) => {
     const button = event.target?.closest?.("[data-template-preview]");
     if (!button) return;
@@ -4414,7 +4418,7 @@ async function getTemplatePreviewCandidates(selection, sourceMessage = "") {
   const candidates = [];
   const addCandidate = (candidate) => {
     if (!candidate?.templateId || candidates.some((item) => item.templateId === candidate.templateId)) return;
-    const meta = templatePreviewMeta(candidate.templateId);
+    const meta = templatePreviewMeta(candidate.templateId) || {};
     candidates.push({
       ...meta,
       ...candidate,
@@ -4562,13 +4566,37 @@ function templateCardBadges(choice) {
   });
 }
 
-// Illustrative accent palette per template family, used only for the live mini
+const TEMPLATE_PREVIEW_PALETTES = Object.freeze({
+  "premium-product-store": { paper: "#f7f6ff", ink: "#10101a", accent: "#6d5dfc" },
+  "luxury-high-ticket-pro": { paper: "#11100f", ink: "#f7efe2", accent: "#d6a84f" },
+  "education-course-academy-pro": { paper: "#eef5ff", ink: "#101d33", accent: "#3275e7" },
+  "medical-wellness-clinic-pro": { paper: "#e8f4f0", ink: "#102624", accent: "#006b63" },
+  "legal-professional-services-pro": { paper: "#eef1f6", ink: "#131b2b", accent: "#1f3a63" },
+  "b2b-saas-enterprise-pro": { paper: "#edf7ff", ink: "#101d33", accent: "#0f7cc7" },
+  "manufacturing-industrial-supplier-pro": { paper: "#f4f1e9", ink: "#1d2528", accent: "#ef6b32" },
+  "mega-retail-store": { paper: "#eef2ff", ink: "#101a33", accent: "#2563eb" },
+  "mega-marketplace": { paper: "#f4eee7", ink: "#261c17", accent: "#d8643d" },
+  "listing-marketplace-pro": { paper: "#f0f7f5", ink: "#12231f", accent: "#0f8c78" },
+  "fashion-drop-pro": { paper: "#f4f1e9", ink: "#1d1616", accent: "#c9262f" },
+  "corporate-company-pro": { paper: "#f2f6fb", ink: "#14213a", accent: "#335c81" },
+  "lead-funnel-pro": { paper: "#eef8f0", ink: "#16231c", accent: "#1f9d55" },
+  "restaurant-food-business": { paper: "#fff7e8", ink: "#2c2116", accent: "#ec8c37" },
+  "digital-products-store": { paper: "#f5f0ff", ink: "#211a33", accent: "#8b5cf6" },
+  "real-estate-listings-pro": { paper: "#eff6f7", ink: "#13252a", accent: "#147c8c" },
+  "home-services-premium": { paper: "#f0f8f3", ink: "#16231c", accent: "#16803f" },
+  "local-services-pro-plus": { paper: "#fff7ed", ink: "#2a1c12", accent: "#e46a2a" },
+  "booking-appointment-pro": { paper: "#faf5fc", ink: "#2b2134", accent: "#a579db" },
+});
+
+// Illustrative accent palette per template, used only for the live mini
 // preview in the template picker (before generation). Real copy/colors are
 // decided by LYRA per-business once generation runs (see state.colors in
 // backend/app/main.py::build_schema_from_state) -- this is a style hint, not
-// the final result. Keyed with the same catalogType regexes as
-// templateCardBadges() above so the two stay visually consistent.
-function templateAccentPalette(catalogType) {
+// the final result. It keeps related templates visually distinct without
+// depending on a small shared stock-image pool.
+function templateAccentPalette(catalogType, templateId = "") {
+  const override = TEMPLATE_PREVIEW_PALETTES[normalizeTemplateId(templateId)];
+  if (override) return override;
   const type = String(catalogType || "").toLowerCase();
   if (/premium|luxury/.test(type)) return { paper: "#f7f6ff", ink: "#10101a", accent: "#6d5dfc" };
   if (/dense_marketplace|listing/.test(type)) return { paper: "#f4eee7", ink: "#261c17", accent: "#d8643d" };
@@ -4593,7 +4621,7 @@ function templateAccentPalette(catalogType) {
 // picker. This gives every card a distinct, on-brand preview even when the
 // photo is shared.
 function templateLivePreviewMarkup(choice) {
-  const palette = templateAccentPalette(choice?.catalogType);
+  const palette = templateAccentPalette(choice?.catalogType, choice?.templateId);
   const brand = escapeHtml((guidedState.businessName || "").slice(0, 18) || langText({
     en: "YOUR BRAND", es: "TU MARCA", fr: "VOTRE MARQUE", pt: "SUA MARCA",
   }));
@@ -4990,16 +5018,17 @@ async function appendTemplatePreviewChoices(selection, sourceMessage = "") {
     pt: "Escolha a base. A LYRA adapta textos, catalogo, cores e fluxo.",
   }))}</span>`;
   const grid = document.createElement("div");
-  grid.className = "template-choice-grid template-carousel-track";
+  grid.className = "template-choice-grid template-carousel-track template-coverflow-track";
   grid.setAttribute("aria-label", "Template carousel");
   choices.forEach((choice, index) => {
     const item = document.createElement("article");
-    item.className = `template-choice-card template-carousel-card ${choice.templateId === selectedId || index === 0 ? "active-card recommended" : ""}`;
+    item.className = `template-choice-card template-carousel-card template-coverflow-card ${choice.templateId === selectedId || index === 0 ? "active-card recommended" : ""}`;
     item.dataset.templateChoice = choice.templateId;
     item.dataset.catalogType = choice.catalogType || "";
+    item.tabIndex = 0;
     item.innerHTML = `
-      <div class="template-carousel-image">
-        <img src="${escapeAttribute(choice.image)}" alt="${escapeAttribute(localizedTemplateName(choice))}">
+      <div class="template-carousel-image" role="img" aria-label="${escapeAttribute(localizedTemplateName(choice))} preview">
+        ${templateLivePreviewMarkup(choice)}
       </div>
       <div class="template-carousel-body">
         <span>${escapeHtml(choice.templateId === selectedId || index === 0 ? langText({ en: "Recommended", es: "Recomendada", fr: "Recommandee", pt: "Recomendada" }) : langText({ en: "Alternative", es: "Alternativa", fr: "Alternative", pt: "Alternativa" }))}</span>
@@ -5011,11 +5040,7 @@ async function appendTemplatePreviewChoices(selection, sourceMessage = "") {
     `;
     item.querySelector("[data-template-preview]")?.addEventListener("click", (event) => {
       event.stopPropagation();
-      if (window.Lyra?.selectTemplate) {
-        window.Lyra.selectTemplate(choice.templateId);
-      } else {
-        chooseTemplatePreview(choice, { hideCarousel: true, fadeCanvas: true });
-      }
+      chooseTemplatePreview(choice, { hideCarousel: true, fadeCanvas: true });
     });
     item.addEventListener("click", () => {
       item.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
@@ -5035,8 +5060,24 @@ function initTemplateCarousel(track) {
   let rafId = 0;
   const schedule = () => {
     cancelAnimationFrame(rafId);
+    updateTemplateCarouselActiveCard(track);
     rafId = requestAnimationFrame(() => updateTemplateCarouselActiveCard(track));
   };
+  track.addEventListener("click", (event) => {
+    if (event.target?.closest?.("[data-template-preview]")) return;
+    const card = event.target?.closest?.(".template-carousel-card");
+    if (!card) return;
+    card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    schedule();
+  });
+  track.addEventListener("keydown", (event) => {
+    if (!["Enter", " "].includes(event.key)) return;
+    const card = event.target?.closest?.(".template-carousel-card");
+    if (!card) return;
+    event.preventDefault();
+    card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    schedule();
+  });
   track.addEventListener("scroll", schedule, { passive: true });
   window.addEventListener("resize", schedule, { passive: true });
   schedule();
@@ -5059,7 +5100,31 @@ function updateTemplateCarouselActiveCard(track) {
       smallestDistance = distance;
     }
   });
-  cards.forEach((card) => card.classList.toggle("active-card", card === active));
+  cards.forEach((card) => {
+    const rect = card.getBoundingClientRect();
+    const cardCenter = rect.left + rect.width / 2;
+    const cardWidth = Math.max(1, rect.width);
+    const rawOffset = (cardCenter - center) / cardWidth;
+    const offset = Math.max(-2.4, Math.min(2.4, rawOffset));
+    const distance = Math.min(2.4, Math.abs(offset));
+    const rotate = -offset * 17;
+    const scale = Math.max(0.78, 1 - distance * 0.085);
+    const depth = Math.max(-30, 26 - distance * 24);
+    const shift = -offset * 14;
+    const opacity = Math.max(0.62, 1 - distance * 0.16);
+    const brightness = Math.max(0.86, 1 - distance * 0.055);
+    const saturate = Math.max(0.78, 1 - distance * 0.07);
+    card.style.setProperty("--coverflow-rotate", `${rotate.toFixed(2)}deg`);
+    card.style.setProperty("--coverflow-scale", scale.toFixed(3));
+    card.style.setProperty("--coverflow-depth", `${depth.toFixed(1)}px`);
+    card.style.setProperty("--coverflow-shift", `${shift.toFixed(1)}px`);
+    card.style.setProperty("--coverflow-opacity", opacity.toFixed(3));
+    card.style.setProperty("--coverflow-brightness", brightness.toFixed(3));
+    card.style.setProperty("--coverflow-saturate", saturate.toFixed(3));
+    card.style.setProperty("--coverflow-z", String(Math.round(100 - distance * 18)));
+    card.classList.toggle("active-card", card === active);
+    card.setAttribute("aria-current", card === active ? "true" : "false");
+  });
 }
 
 async function chooseTemplatePreview(choice, options = {}) {
@@ -14669,7 +14734,10 @@ function handleStudioSelectionAction(action) {
 }
 
 function renderStudioProgress() {
-  if (!studioProgressList) return;
+  if (!studioProgressList) {
+    renderStudioLyraInsights();
+    return;
+  }
   if (!currentSchema) {
     studioProgressList.innerHTML = studioProgressItems([
       ["pending", "Home page"],
@@ -14677,6 +14745,7 @@ function renderStudioProgress() {
       ["pending", "Online shop"],
       ["pending", "Contact page"],
     ]);
+    renderStudioLyraInsights();
     return;
   }
   const pages = arrayValue(currentSchema.pages);
@@ -14689,10 +14758,14 @@ function renderStudioProgress() {
     [sections.some((section) => section.type === "Contact") || currentSchema.contact?.email || currentSchema.contact?.phone ? "done" : "pending", "Contact page"],
   ];
   studioProgressList.innerHTML = studioProgressItems(items);
+  renderStudioLyraInsights();
 }
 
 function setStudioProgressPhase(phase) {
-  if (!studioProgressList) return;
+  if (!studioProgressList) {
+    renderStudioLyraInsights();
+    return;
+  }
   const steps = [
     ["understanding", "Understanding business"],
     ["brand", "Building brand kit"],
@@ -14706,11 +14779,68 @@ function setStudioProgressPhase(phase) {
     phase === "ready" || index < activeIndex ? "done" : index === activeIndex ? "active" : "pending",
     label,
   ]));
+  renderStudioLyraInsights();
 }
 
 function studioProgressItems(items) {
   const icon = { done: "<span></span>", active: "<i></i>", pending: "<em></em>" };
   return items.map(([state, label]) => `<div data-progress-state="${escapeAttribute(state)}">${icon[state] || icon.pending}<strong>${escapeHtml(label)}</strong></div>`).join("");
+}
+
+function renderStudioLyraInsights() {
+  if (studioSuggestedList) studioSuggestedList.innerHTML = studioInsightItems(studioSuggestedImprovements());
+  if (studioRecentList) studioRecentList.innerHTML = studioInsightItems(studioRecentChanges());
+}
+
+function studioInsightItems(items) {
+  const cleaned = arrayValue(items).map((item) => String(item || "").trim()).filter(Boolean).slice(0, 4);
+  const fallback = ["Sin cambios recientes."];
+  return (cleaned.length ? cleaned : fallback).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+}
+
+function studioSuggestedImprovements() {
+  if (!currentSchema) {
+    return [
+      "Elegir una plantilla base.",
+      "Completar marca y productos.",
+      "Generar el primer borrador.",
+    ];
+  }
+  const pages = arrayValue(currentSchema.pages);
+  const sections = pages.flatMap((page) => arrayValue(page.sections));
+  const catalogItems = arrayValue(currentSchema.catalog_items || currentSchema.products_services);
+  const suggestions = [];
+  if (!currentSchema.brand?.logoUrl && !currentSchema.brand?.logo_url) suggestions.push("Subir logo o confirmar identidad visual.");
+  if (!catalogItems.length && !sections.some((section) => /ProductGrid|ServiceList/.test(section.type))) suggestions.push("Agregar productos o servicios editables.");
+  if (!sections.some((section) => section.type === "Contact") && !currentSchema.contact?.email && !currentSchema.contact?.phone) suggestions.push("Completar contacto visible para clientes.");
+  if (!sections.some((section) => /Testimonials|Gallery|Proof|Trust/i.test(section.type))) suggestions.push("Agregar prueba visual o testimonios.");
+  if (selectedStudioSectionId) suggestions.unshift("Pulir la sección seleccionada con Lyra.");
+  if (!suggestions.length) {
+    suggestions.push("Revisar versión móvil antes de publicar.");
+    suggestions.push("Guardar cambios y enviar a revisión.");
+    suggestions.push("Probar CTA principal desde el preview.");
+  }
+  return suggestions;
+}
+
+function studioRecentChanges() {
+  if (!currentSchema) return ["Sin cambios recientes."];
+  const changes = [];
+  arrayValue(currentSchema.revision_history).slice(-3).reverse().forEach((item) => {
+    const request = cleanShortText(item.request || item.message || "", 88);
+    if (request) changes.push(`Ajuste aplicado: ${request}`);
+  });
+  arrayValue(currentSchema.design_review?.improvements).slice(-2).forEach((item) => {
+    const mapped = {
+      "Strengthened hero headline": "Titular principal reforzado.",
+      "Clarified primary CTA": "CTA principal aclarado.",
+    }[item] || item;
+    if (mapped) changes.push(mapped);
+  });
+  const templateName = currentSchema.selected_template?.name || currentSchema.active_template?.name || localizedTemplateName(templatePreviewMeta(currentSchema.layout_mode?.template_id || ""));
+  if (templateName) changes.push(`Base activa: ${templateName}.`);
+  if (!changes.length) changes.push("Borrador generado y listo para revisar.");
+  return changes;
 }
 
 function addStudioSection(type = "FeatureBand") {

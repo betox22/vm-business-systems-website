@@ -183,8 +183,12 @@ instagram: @lunamarket</textarea></label>
             <span id="storageStatus">Waiting for generation</span>
           </div>
           <div class="toolbar-actions">
-            <button id="desktopButton" class="active" type="button">Desktop</button>
-            <button id="mobileButton" type="button">Mobile</button>
+            <button id="desktopButton" class="active preview-mode-button" type="button" aria-label="Desktop preview" title="Desktop preview">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"></rect><path d="M8 20h8"></path><path d="M12 16v4"></path></svg>
+            </button>
+            <button id="mobileButton" class="preview-mode-button" type="button" aria-label="Mobile preview" title="Mobile preview">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"></rect><path d="M11 18h2"></path></svg>
+            </button>
             <button id="clientPreviewButton" type="button">Client preview</button>
             <button id="saveSchemaButton" type="button">Save edits</button>
             <button id="publishButton" type="button">Publish</button>
@@ -261,6 +265,26 @@ instagram: @lunamarket</textarea></label>
                 <div><i></i><strong>Online shop</strong></div>
                 <div><em></em><strong>Contact page</strong></div>
               </div>
+              <section class="luma-panel-section" aria-labelledby="studioSuggestedTitle">
+                <div class="luma-panel-section-head">
+                  <strong id="studioSuggestedTitle">Mejoras sugeridas</strong>
+                  <span>Prioridad</span>
+                </div>
+                <ul id="studioSuggestedList" class="luma-insight-list">
+                  <li>Elegir una plantilla base.</li>
+                  <li>Completar marca y productos.</li>
+                  <li>Generar el primer borrador.</li>
+                </ul>
+              </section>
+              <section class="luma-panel-section" aria-labelledby="studioRecentTitle">
+                <div class="luma-panel-section-head">
+                  <strong id="studioRecentTitle">Cambios recientes</strong>
+                  <span>Historial</span>
+                </div>
+                <ul id="studioRecentList" class="luma-insight-list luma-recent-list">
+                  <li>Sin cambios recientes.</li>
+                </ul>
+              </section>
               <button id="studioAdjustButton" class="studio-primary-action" type="button">Adjust with Lyra</button>
             </div>
           </aside>
@@ -299,7 +323,6 @@ instagram: @lunamarket</textarea></label>
     <script src="/ai-builder.js?v=162"></script>
   </body>
 </html>
-
 
 
 

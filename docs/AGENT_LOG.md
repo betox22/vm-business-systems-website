@@ -16,6 +16,47 @@ Formato de entrada:
 
 ---
 
+## 2026-07-20 — Codex — Carrusel 3D para selector de plantillas
+
+**Hecho:** Mejoré el selector visual de plantillas en `ai-builder` con un
+efecto coverflow/3D aplicado a las tarjetas existentes. No se copiaron assets ni
+código del prototipo externo; se mantuvieron los datos actuales de
+`TemplateRouter` / `templates/all-templates.json`.
+- `ai-builder.js`: el carrusel calcula la tarjeta activa según el centro del
+  scroll y escribe variables CSS por tarjeta (`rotate`, `scale`, `depth`,
+  `opacity`). También permite centrar tarjetas con click/Enter/Espacio.
+- `ai-builder.js`: el botón `Preview` ahora selecciona directamente el `choice`
+  renderizado, para que opciones provenientes de `TemplateRouter` sin metadata
+  duplicada en `templatePreviewMeta()` también funcionen.
+- `ai-builder.js`: el carrusel del editor principal dejó de renderizar los
+  paths legacy de stock (`apple_2.png`, `services_2.png`, etc.) como `<img>`;
+  ahora usa el mismo mini-preview DOM por template que la superficie pública,
+  con paleta propia por `templateId`.
+- `ai-builder.css`: agregué las clases `template-coverflow-track/card` con
+  `perspective`, `rotateY`, escala, transición suave, ajuste móvil y
+  `prefers-reduced-motion`.
+- `ai-builder.html` y `client/setup/index.html`: el toggle Desktop/Mobile quedó
+  como botones de solo ícono con `aria-label`/`title`.
+- Panel de Lyra: agregadas las secciones "Mejoras sugeridas" y "Cambios
+  recientes"; el contenido se actualiza desde `currentSchema`,
+  `revision_history`, `design_review` y el estado del editor.
+
+**Pendiente / abierto:** No se hizo push. Las capturas de aprobación se tomaron
+con Playwright/Edge porque el in-app browser bloqueó localhost.
+
+**Verificado:** `node --check ai-builder.js` OK y `git diff --check` sin
+errores. QA visual en `http://127.0.0.1:8139/ai-builder.html` y
+`http://127.0.0.1:8139/client/setup/index.html` con Edge headless: carrusel
+coverflow activo en ambas superficies, 0 imágenes `<img>` stock dentro del
+carrusel renderizado, mini-previews DOM por tarjeta, toggles Desktop/Mobile sin
+texto visible y panel Lyra con mensaje, checklist, "Mejoras sugeridas" y
+"Cambios recientes". Vista móvil 390x844 sin overflow horizontal.
+
+**Archivos tocados:** `ai-builder.js`, `ai-builder.css`, `ai-builder.html`,
+`client/setup/index.html`, `docs/AGENT_LOG.md`.
+
+---
+
 ## 2026-07-20 — Claude — Limpieza: código muerto de commerce.py + archivos sueltos
 
 **Hecho (segunda pasada, misma sesión):**
