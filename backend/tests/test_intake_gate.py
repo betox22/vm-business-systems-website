@@ -99,6 +99,34 @@ class IntakeGateTests(unittest.TestCase):
 
         self.assertIn("sales_flow", missing)
 
+    def test_explicit_user_choice_style_and_logo_resolve_gate(self) -> None:
+        engine = LyraIntakeEngine()
+        state = ProjectState(
+            businessName="Bath All Day",
+            businessDescription="Vendo catalogo de jabones y velas.",
+            industry="beauty",
+            salesFlow="online_sales",
+            selectedLanguage="es",
+            preferredTone="verde y blanco, minimalista y natural",
+            logoPreference="generate_ai_logo",
+            fieldMeta={
+                "businessName": {"source": "explicit", "confidence": 1},
+                "businessDescription": {"source": "explicit", "confidence": 1},
+                "niche": {"source": "inferred", "confidence": 0.9},
+                "industry": {"source": "inferred", "confidence": 0.9},
+                "sales_flow": {"source": "ai_recommended", "confidence": 0.9},
+                "salesFlow": {"source": "ai_recommended", "confidence": 0.9},
+                "brand_style": {"source": "explicit_user_choice", "confidence": 1},
+                "preferredTone": {"source": "explicit_user_choice", "confidence": 1},
+                "logo": {"source": "explicit_user_choice", "confidence": 1},
+                "logoPreference": {"source": "explicit_user_choice", "confidence": 1},
+            },
+        )
+
+        missing = engine.missing_fields_from_state(state)
+
+        self.assertEqual(missing, [])
+
 
 if __name__ == "__main__":
     unittest.main()

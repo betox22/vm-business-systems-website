@@ -558,11 +558,12 @@ class LyraIntakeEngine:
 
     def _brand_style_resolved(self, merged: Dict[str, Any], meta: Dict[str, Any]) -> bool:
         has_value = bool(str(merged.get("preferredTone") or merged.get("preferredColors") or "").strip())
-        if self._has_confident_meta(meta, "brand_style", sources={"explicit", "explicit_delegation"}, min_confidence=0.7):
+        explicit_sources = {"explicit", "explicit_delegation", "explicit_user_choice"}
+        if self._has_confident_meta(meta, "brand_style", sources=explicit_sources, min_confidence=0.7):
             return True
         if has_value and (
-            self._has_confident_meta(meta, "preferredTone", sources={"explicit", "explicit_delegation"}, min_confidence=0.7)
-            or self._has_confident_meta(meta, "preferredColors", sources={"explicit", "explicit_delegation"}, min_confidence=0.7)
+            self._has_confident_meta(meta, "preferredTone", sources=explicit_sources, min_confidence=0.7)
+            or self._has_confident_meta(meta, "preferredColors", sources=explicit_sources, min_confidence=0.7)
         ):
             return True
         return False
@@ -580,7 +581,7 @@ class LyraIntakeEngine:
     def _logo_resolved(self, merged: Dict[str, Any], meta: Dict[str, Any]) -> bool:
         if str(merged.get("logoUrl") or "").strip():
             return True
-        return self._has_confident_meta(meta, "logo", sources={"explicit", "explicit_delegation"}, min_confidence=0.7)
+        return self._has_confident_meta(meta, "logo", sources={"explicit", "explicit_delegation", "explicit_user_choice"}, min_confidence=0.7)
 
     @staticmethod
     def _has_confident_meta(
