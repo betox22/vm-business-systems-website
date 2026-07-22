@@ -12447,7 +12447,7 @@ function listingLocationForIndex(index, copy) {
 function marketplaceCategories(schema) {
   const items = marketplaceItems(schema);
   const fromItems = [...new Set(items.map((item) => item.category).filter(Boolean))];
-  if (fromItems.length >= 4) return fromItems;
+  if (fromItems.length > 0) return fromItems;
   const copy = instantLocaleCopy(schema?.business?.selectedLanguage || selectedLanguage || "en");
   return [...new Set([...fromItems, ...(copy.marketplaceCategories || [])])];
 }
