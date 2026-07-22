@@ -1116,6 +1116,7 @@ const DESIGN_QUALITY_RULES = [
   "Review and improve headline, CTA, section order, contrast, visual rhythm, mobile layout, and brand consistency before preview.",
 ];
 
+const isLegacyBuilderPage = Boolean(document.querySelector("#intakeForm"));
 const form = document.querySelector("#intakeForm");
 const statusText = document.querySelector("#statusText");
 const storageStatus = document.querySelector("#storageStatus");
@@ -1188,23 +1189,24 @@ const builderAvatarRoot = document.querySelector("#builderAvatarAssistant");
 const builderAvatarManager = window.AvatarStateManager ? new window.AvatarStateManager("idle") : null;
 let builderAvatarAssistant = null;
 
-document.body.classList.toggle("embedded-chat", isEmbeddedClientSetup);
+function bootLegacyBuilderPage() {
+  document.body.classList.toggle("embedded-chat", isEmbeddedClientSetup);
 
-registerCriticalGuidedControls();
-safeBootStep("avatar", initBuilderAvatarAssistant);
-safeBootStep("language", initLanguageControls);
-safeBootStep("voice", initVoiceInput);
-safeBootStep("audio-toggle", updateAssistantAudioToggle);
-safeBootStep("assistant-state", () => setAssistantState("happy"));
-safeBootStep("client-auth-reset", captureClientAuthResetIntent);
-safeBootStep("auth-redirect", captureStudioAuthRedirect);
-safeBootStep("request-hydration", hydrateFromSelectedRequest);
-safeBootStep("guided-intake", initGuidedIntake);
-safeBootStep("guided-media-drop", initGuidedMediaDrop);
-safeBootStep("studio-lyra-panel", renderStudioLyraInsights);
-safeBootStep("client-session", initClientIntakeSessionGate);
-safeBootStep("client-account-control", renderClientAccountControl);
-safeBootStep("client-workspace-security", initClientWorkspaceSecurity);
+  registerCriticalGuidedControls();
+  safeBootStep("avatar", initBuilderAvatarAssistant);
+  safeBootStep("language", initLanguageControls);
+  safeBootStep("voice", initVoiceInput);
+  safeBootStep("audio-toggle", updateAssistantAudioToggle);
+  safeBootStep("assistant-state", () => setAssistantState("happy"));
+  safeBootStep("client-auth-reset", captureClientAuthResetIntent);
+  safeBootStep("auth-redirect", captureStudioAuthRedirect);
+  safeBootStep("request-hydration", hydrateFromSelectedRequest);
+  safeBootStep("guided-intake", initGuidedIntake);
+  safeBootStep("guided-media-drop", initGuidedMediaDrop);
+  safeBootStep("studio-lyra-panel", renderStudioLyraInsights);
+  safeBootStep("client-session", initClientIntakeSessionGate);
+  safeBootStep("client-account-control", renderClientAccountControl);
+  safeBootStep("client-workspace-security", initClientWorkspaceSecurity);
 
 function safeBootStep(label, callback) {
   try {
@@ -1392,6 +1394,11 @@ window.addEventListener("beforeunload", () => {
     saveGuidedDraft();
   }
 });
+}
+
+if (isLegacyBuilderPage) {
+  bootLegacyBuilderPage();
+}
 
 function initLanguageControls() {
   const params = new URLSearchParams(window.location.search);
