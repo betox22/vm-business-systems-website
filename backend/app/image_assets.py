@@ -84,31 +84,31 @@ STABLE_IMAGE_URLS: List[Dict[str, str]] = [
     },
     {
         "match": r"spa-bath-towel|bath-towel|toalla|towel",
-        "url": "https://source.unsplash.com/900x900/?spa-towels",
+        "url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
     },
     {
         "match": r"handmade-soap|soap-bar|jabon|jabón|jabones|soap",
-        "url": "https://source.unsplash.com/900x900/?handmade-soap",
+        "url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
     },
     {
         "match": r"bath-salts|sales-de-bano|sales de bano|sales de baño",
-        "url": "https://source.unsplash.com/900x900/?bath-salts",
+        "url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
     },
     {
         "match": r"bath-sponge|bano-sponge|natural-bath-sponge|esponja",
-        "url": "https://source.unsplash.com/900x900/?bath-sponge",
+        "url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
     },
     {
         "match": r"body-oil|aceite-corporal|body oil",
-        "url": "https://source.unsplash.com/900x900/?body-oil-skincare",
+        "url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
     },
     {
         "match": r"bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño",
-        "url": "https://source.unsplash.com/900x900/?bath-bombs",
+        "url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
     },
     {
         "match": r"aromatic-candle|scented-candle|candle|candles|vela|velas",
-        "url": "https://source.unsplash.com/900x900/?scented-candle",
+        "url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
     },
     {
         "match": r"soap|jabon|jabón|jabones|bath|bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño|body-care|body care|candle|candles|vela|velas|beauty|skincare|cosmetic|belleza|makeup|spa",
@@ -126,10 +126,16 @@ def stable_seed_image_url(keyword: str) -> str:
 
 
 def is_legacy_or_unstable_image_url(url: Any) -> bool:
+    """Reject missing or historically brittle external image URLs.
+
+    LLM-generated catalog URLs are ignored before this module runs. This guard
+    remains for other entry points, such as imported products or user-provided
+    URLs, so a known-brittle external URL falls back to the stable seed bank.
+    """
     value = str(url or "").strip()
     if not value:
         return True
-    if "/featured/600x600" in value or "/source/" in value:
+    if "/featured/600x600" in value or "/source/" in value or "source.unsplash.com" in value:
         return True
     if "photo-1523275335684-37898b6baf30" in value:
         return True
@@ -137,13 +143,32 @@ def is_legacy_or_unstable_image_url(url: Any) -> bool:
 
 
 def resolve_product_category(product: Mapping[str, Any], context: str = "") -> str:
-    product_text = normalize_image_text(
+    product_core_text = normalize_image_text(
         " ".join(
             [
                 str(product.get("name") or ""),
-                str(product.get("description") or ""),
                 str(product.get("category") or ""),
                 str(product.get("imageSearchQuery") or product.get("image_search_query") or ""),
+            ]
+        )
+    )
+
+    for category, pattern in CATEGORY_KEYWORDS.items():
+        if re.search(pattern, product_core_text):
+            return category
+
+    for broad, subcategories in TAXONOMY.items():
+        for subcategory in subcategories:
+            if subcategory.replace("-", " ") in product_core_text:
+                return subcategory
+        if broad in product_core_text:
+            return broad
+
+    product_text = normalize_image_text(
+        " ".join(
+            [
+                product_core_text,
+                str(product.get("description") or ""),
             ]
         )
     )
@@ -175,6 +200,7 @@ def resolve_product_category(product: Mapping[str, Any], context: str = "") -> s
 
 
 def resolve_product_image_url(product: Mapping[str, Any], context: str = "") -> str:
+    category = resolve_product_category(product, context)
     query = str(
         product.get("imageSearchQuery")
         or product.get("image_search_query")
@@ -186,7 +212,7 @@ def resolve_product_image_url(product: Mapping[str, Any], context: str = "") -> 
     url = product.get("image_url") or product.get("imageUrl")
     if not is_legacy_or_unstable_image_url(url):
         return str(url)
-    return stable_seed_image_url(query)
+    return stable_seed_image_url(f"{category} {query}")
 
 
 def build_image_asset(product: Mapping[str, Any], context: str = "") -> Dict[str, Any]:
@@ -198,7 +224,7 @@ def build_image_asset(product: Mapping[str, Any], context: str = "") -> Dict[str
         or product.get("name")
         or category
     )
-    seed_url = stable_seed_image_url(query)
+    seed_url = stable_seed_image_url(f"{category} {query}")
     url = resolve_product_image_url(product, context)
     existing_url = str(product.get("image_url") or product.get("imageUrl") or "")
     stable_urls = {entry["url"] for entry in STABLE_IMAGE_URLS}

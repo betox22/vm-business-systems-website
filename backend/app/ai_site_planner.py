@@ -346,7 +346,7 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             "rating": item.get("rating") or 4.7,
             "badge": str(item.get("badge") or "Featured"),
             "imageSearchQuery": image_query,
-            "image_url": str(item.get("image_url") or item.get("imageUrl") or unsplash_seed_url(image_query)),
+            "image_url": unsplash_seed_url(image_query),
             "is_active": bool(item.get("is_active", True)),
             "is_featured": bool(item.get("is_featured", index < 4)),
             "sort_order": int(item.get("sort_order", index)),
@@ -531,7 +531,7 @@ def ensure_plan_seed_catalog_with_source(
             "rating": item.get("rating") or fallback["rating"],
             "badge": item.get("badge") or fallback["badge"],
             "imageSearchQuery": image_query,
-            "image_url": item.get("image_url") or item.get("imageUrl") or unsplash_seed_url(str(image_query)),
+            "image_url": unsplash_seed_url(str(image_query)),
             "is_active": item.get("is_active", True),
             "is_featured": item.get("is_featured", index < 4),
             "sort_order": int(item.get("sort_order", index)),
@@ -628,8 +628,7 @@ class OpenAISitePlanAgent:
                     "price": 39.99,
                     "price_amount": 39.99,
                     "price_label": "USD 39.99",
-                    "imageSearchQuery": "english-search-keyword",
-                    "image_url": "https://images.unsplash.com/photo-stable-id?auto=format&fit=crop&w=900&q=82"
+                    "imageSearchQuery": "english-search-keyword"
                 }],
                 "reasoningSummary": "short internal reason",
                 "confidence": 0.0,
@@ -726,12 +725,12 @@ Hard rules:
 - brand_identity.logo_config.requires_ai_generation MUST be true when the client asks for an AI logo, says they do not have a logo but wants one created, or asks Lyra/KREATON to create the brand identity. Otherwise it must be false.
 - brand_identity.logo_config.generation_prompt MUST always be present and must follow this exact structure with real niche/name/style substitutions: "Minimalist flat vector logo for a [niche] brand named [Name], [palette_style] style, geometric clean shapes, solid colors, no gradients, high detail, white background, trending on Dribbble --vector"
 - For commerce templates, catalogItems must contain exactly 4 to 6 real, niche-specific products. Do not use "Product 1", "Featured item", "Price editable", Lorem Ipsum, or empty fields.
-- Each catalogItems object must include id, name, description, category, numeric price, price_amount, price_label, imageSearchQuery, and image_url.
-- image_url must be a valid, directly loadable image URL. Prefer stable images.unsplash.com photo URLs with auto=format&fit=crop&w=900&q=82. Do not use /featured/600x600 URLs because they can return 404.
+- Each catalogItems object must include id, name, description, category, numeric price, price_amount, price_label, and imageSearchQuery.
+- Do not generate image_url, imageUrl, stock image URLs, Unsplash URLs, CDN URLs, or any other image URL in catalogItems. KREATON resolves product imagery server-side from imageSearchQuery.
 - If a client sells a focused product family such as jewelry, handmade accessories, fashion, candles, beauty, or crafts, choose a focused store/showroom template, not a broad marketplace.
 - Choose a broad marketplace only for explicit Amazon/general-store intent or unrelated multi-category catalogs.
 - Generate polished public copy in selectedLanguage.
 - Generate category names that match the actual product/service category.
 - Keep the output editable: page titles, section blocks, copy, media intent, catalog categories and items must be represented as JSON values.
-- You may use media.imageSearchQuery and media.visualDirection for sections. For catalogItems, always provide the Unsplash image_url described above.
+- You may use media.imageSearchQuery and media.visualDirection for sections. For catalogItems, provide only imageSearchQuery; never provide image_url.
 """.strip()
