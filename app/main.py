@@ -1,3 +1,5 @@
+import time
+
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -129,6 +131,57 @@ app.add_middleware(
 )
 
 
+LOGIN_RATE_LIMIT_MAX_FAILURES = 5
+LOGIN_RATE_LIMIT_WINDOW_SECONDS = 15 * 60
+# In-memory login rate limiting is sufficient for the current Render free single-instance
+# deployment. If this service scales to multiple instances, move this state to Redis or
+# another shared store so failed attempts are counted across instances.
+_login_failure_attempts: dict[tuple[str, str, str], list[float]] = {}
+
+
+def _client_ip(request: Request) -> str:
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _login_rate_limit_key(request: Request, email: str, scope: str) -> tuple[str, str, str]:
+    return (scope, _client_ip(request), email.strip().lower())
+
+
+def _prune_login_failures(key: tuple[str, str, str], now: float) -> list[float]:
+    cutoff = now - LOGIN_RATE_LIMIT_WINDOW_SECONDS
+    attempts = [timestamp for timestamp in _login_failure_attempts.get(key, []) if timestamp >= cutoff]
+    if attempts:
+        _login_failure_attempts[key] = attempts
+    else:
+        _login_failure_attempts.pop(key, None)
+    return attempts
+
+
+def enforce_login_rate_limit(request: Request, email: str, scope: str) -> tuple[str, str, str]:
+    key = _login_rate_limit_key(request, email, scope)
+    attempts = _prune_login_failures(key, time.monotonic())
+    if len(attempts) >= LOGIN_RATE_LIMIT_MAX_FAILURES:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed login attempts. Try again later.",
+        )
+    return key
+
+
+def record_failed_login_attempt(key: tuple[str, str, str]) -> None:
+    now = time.monotonic()
+    attempts = _prune_login_failures(key, now)
+    attempts.append(now)
+    _login_failure_attempts[key] = attempts
+
+
+def clear_failed_login_attempts(key: tuple[str, str, str]) -> None:
+    _login_failure_attempts.pop(key, None)
+
+
 @app.get("/health")
 def healthcheck() -> dict:
     settings = get_settings()
@@ -201,15 +254,19 @@ def client_portal_context(
 
 
 @app.post("/api/auth/login", response_model=AdminLoginResponse)
-def login_admin_user(payload: AdminLoginPayload) -> AdminLoginResponse:
+def login_admin_user(payload: AdminLoginPayload, request: Request) -> AdminLoginResponse:
+    rate_limit_key = enforce_login_rate_limit(request, payload.email, "admin")
     try:
-        return AdminLoginResponse(**login_admin(payload.email, payload.password))
+        response = AdminLoginResponse(**login_admin(payload.email, payload.password))
+        clear_failed_login_attempts(rate_limit_key)
+        return response
     except AuthNotConfiguredError as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(error),
         ) from error
     except AuthError as error:
+        record_failed_login_attempt(rate_limit_key)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(error),
@@ -245,15 +302,19 @@ def change_admin_password(
 
 
 @app.post("/api/client/auth/login", response_model=ClientLoginResponse)
-def login_client_user(payload: ClientLoginPayload) -> ClientLoginResponse:
+def login_client_user(payload: ClientLoginPayload, request: Request) -> ClientLoginResponse:
+    rate_limit_key = enforce_login_rate_limit(request, payload.email, "client")
     try:
-        return ClientLoginResponse(**login_client(payload.email, payload.password, payload.business_id))
+        response = ClientLoginResponse(**login_client(payload.email, payload.password, payload.business_id))
+        clear_failed_login_attempts(rate_limit_key)
+        return response
     except AuthNotConfiguredError as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(error),
         ) from error
     except AuthError as error:
+        record_failed_login_attempt(rate_limit_key)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(error),
