@@ -6,8 +6,12 @@ const LYRA_EDIT_URL = `${API_BASE_URL}/api/luma/edit`;
 const CLIENT_REQUESTS_URL = `${API_BASE_URL}/client-requests`;
 const CLIENT_INTAKE_SESSION_URL = `${API_BASE_URL}/api/client/intake-session`;
 const CLIENT_AUTH_ME_URL = `${API_BASE_URL}/api/client/auth/me`;
+const CLIENT_AUTH_SESSION_URL = `${API_BASE_URL}/api/client/auth/session`;
+const CLIENT_AUTH_LOGOUT_URL = `${API_BASE_URL}/api/client/auth/logout`;
 const CLIENT_PROJECTS_URL = `${API_BASE_URL}/api/client/projects`;
 const ASSET_UPLOAD_URL = `${API_BASE_URL}/api/admin/assets/upload`;
+const CLIENT_CSRF_HEADER_NAME = "X-Requested-With";
+const CLIENT_CSRF_HEADER_VALUE = "XMLHttpRequest";
 // Public Supabase project ref used for the Google/Apple OAuth redirect (2026-07-19).
 // Not a secret -- same trust level as the anon key, safe to ship client-side.
 // Google is enabled on this Supabase project already; Apple is not enabled yet
@@ -43,6 +47,7 @@ const CLIENT_WORKSPACE_IDLE_LOCK_MS = 5 * 60 * 1000;
 function adminHeaders(extra = {}) {
   const token = localStorage.getItem("lumaAdminToken") || "";
   return {
+    [CLIENT_CSRF_HEADER_NAME]: CLIENT_CSRF_HEADER_VALUE,
     ...extra,
     ...(token ? { "x-admin-token": token } : {}),
   };
@@ -1131,6 +1136,7 @@ const studioSuggestedList = document.querySelector("#studioSuggestedList");
 const studioRecentList = document.querySelector("#studioRecentList");
 const studioAuthGate = document.querySelector("#studioAuthGate");
 const studioAuthCloseButton = document.querySelector("#studioAuthCloseButton");
+const studioAuthActions = document.querySelector(".secondary-auth-options");
 const studioGoogleAuthButton = document.querySelector("#studioGoogleAuthButton");
 const studioAppleAuthButton = document.querySelector("#studioAppleAuthButton");
 const studioEmailAuthButton = document.querySelector("#studioEmailAuthButton");
@@ -2830,7 +2836,7 @@ function initClientIntakeSessionGate() {
   // on the project), so it should always be offered. Apple stays hidden for
   // public clients until it's enabled in Supabase (needs Beto's own Apple
   // Developer Program setup) -- showing it today would just be a dead end.
-  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
+  revealStudioGoogleAuthButton();
   if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
   if (studioAuthEmail) {
     studioAuthEmail.value = guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
@@ -2894,7 +2900,7 @@ function lockClientWorkspace(reason = "idle") {
   // on the project), so it should always be offered. Apple stays hidden for
   // public clients until it's enabled in Supabase (needs Beto's own Apple
   // Developer Program setup) -- showing it today would just be a dead end.
-  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
+  revealStudioGoogleAuthButton();
   if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
   if (guidedStatusText) {
     guidedStatusText.textContent = reason === "idle"
@@ -2992,6 +2998,7 @@ function switchClientAccount() {
     }));
     if (!ok) return;
   }
+  clearClientCookieSession();
   clientIntakeSession = null;
   localStorage.removeItem(CLIENT_INTAKE_SESSION_STORAGE_KEY);
   localStorage.removeItem("lumaClientAccessToken");
@@ -3015,7 +3022,7 @@ function switchClientAccount() {
   // on the project), so it should always be offered. Apple stays hidden for
   // public clients until it's enabled in Supabase (needs Beto's own Apple
   // Developer Program setup) -- showing it today would just be a dead end.
-  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
+  revealStudioGoogleAuthButton();
   if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
   if (studioAuthEmail) {
     studioAuthEmail.value = "";
@@ -3023,8 +3030,25 @@ function switchClientAccount() {
   }
 }
 
+function revealStudioGoogleAuthButton() {
+  if (studioAuthActions) studioAuthActions.hidden = false;
+  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
+}
+
 function storedClientAccessToken() {
-  return localStorage.getItem("lumaClientAccessToken") || sessionStorage.getItem("lumaClientAccessToken") || "";
+  if (!isPublicClientSetup) return "";
+  return hasStoredClientSessionHint() ? "cookie-session" : "";
+}
+
+function hasStoredClientSessionHint() {
+  return Boolean(
+    isClientWorkspaceUnlocked()
+    || clientIntakeSession?.clientEmail
+    || readClientIntakeSession()?.clientEmail
+    || localStorage.getItem("lumaPendingClientEmail")
+    || localStorage.getItem("vm_portal_preview_token")
+    || sessionStorage.getItem("vm_portal_preview_token"),
+  );
 }
 
 function captureClientAuthResetIntent() {
@@ -3053,14 +3077,15 @@ function captureClientAuthResetIntent() {
 }
 
 function clientAuthHeaders(extra = {}) {
-  const token = storedClientAccessToken();
   return {
+    [CLIENT_CSRF_HEADER_NAME]: CLIENT_CSRF_HEADER_VALUE,
     ...extra,
-    ...(token ? { authorization: `Bearer ${token}` } : {}),
   };
 }
 
 function handleExpiredClientAuth() {
+  console.error("Client auth session expired or could not be validated.");
+  clearClientCookieSession();
   localStorage.removeItem("lumaClientAccessToken");
   localStorage.removeItem("lumaClientRefreshToken");
   sessionStorage.removeItem("lumaClientAccessToken");
@@ -3068,6 +3093,40 @@ function handleExpiredClientAuth() {
   closeClientProjectsPanel();
   renderClientAccountControl();
   openStudioAuthGate("start");
+}
+
+async function createClientCookieSession(accessToken, refreshToken = "", expiresIn = 3600) {
+  const response = await fetch(CLIENT_AUTH_SESSION_URL, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "content-type": "application/json",
+      [CLIENT_CSRF_HEADER_NAME]: CLIENT_CSRF_HEADER_VALUE,
+    },
+    body: JSON.stringify({
+      accessToken,
+      refreshToken,
+      expiresIn,
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+  return response.json();
+}
+
+async function clearClientCookieSession() {
+  try {
+    await fetch(CLIENT_AUTH_LOGOUT_URL, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        [CLIENT_CSRF_HEADER_NAME]: CLIENT_CSRF_HEADER_VALUE,
+      },
+    });
+  } catch (error) {
+    console.warn("Could not clear client auth cookie", error);
+  }
 }
 
 function formatProjectUpdatedAt(value) {
@@ -3088,16 +3147,17 @@ function formatProjectUpdatedAt(value) {
 }
 
 async function fetchClientAuthUser() {
-  const token = storedClientAccessToken();
-  if (!token) return null;
   const response = await fetch(CLIENT_AUTH_ME_URL, {
+    credentials: "include",
     headers: clientAuthHeaders(),
   });
   if (!response.ok) {
+    const message = await readErrorMessage(response);
     if (response.status === 401) {
+      console.error("Client auth /me returned 401", message);
       handleExpiredClientAuth();
     }
-    throw new Error(await readErrorMessage(response));
+    throw new Error(message);
   }
   return response.json();
 }
@@ -3975,14 +4035,24 @@ function captureStudioAuthRedirect() {
   const queryParams = new URLSearchParams(window.location.search);
   const accessToken = hashParams.get("access_token") || queryParams.get("access_token") || "";
   const refreshToken = hashParams.get("refresh_token") || queryParams.get("refresh_token") || "";
+  const expiresIn = Number(hashParams.get("expires_in") || queryParams.get("expires_in") || 3600);
   if (!accessToken) return;
-  localStorage.setItem("lumaClientAccessToken", accessToken);
-  if (refreshToken) localStorage.setItem("lumaClientRefreshToken", refreshToken);
-  markClientWorkspaceUnlocked();
-  restorePendingStudioAfterAuth();
-  if (isPublicClientSetup) {
-    setTimeout(() => resumeClientSessionFromAuthToken(), 0);
-  }
+  createClientCookieSession(accessToken, refreshToken, expiresIn)
+    .then(() => {
+      localStorage.removeItem("lumaClientAccessToken");
+      localStorage.removeItem("lumaClientRefreshToken");
+      sessionStorage.removeItem("lumaClientAccessToken");
+      sessionStorage.removeItem("lumaClientRefreshToken");
+      markClientWorkspaceUnlocked();
+      restorePendingStudioAfterAuth();
+      if (isPublicClientSetup) {
+        setTimeout(() => resumeClientSessionFromAuthToken(), 0);
+      }
+    })
+    .catch((error) => {
+      console.error("Could not create client auth cookie session", error);
+      handleExpiredClientAuth();
+    });
   const cleanUrl = new URL(window.location.href);
   cleanUrl.hash = "";
   ["access_token", "refresh_token", "expires_in", "expires_at", "token_type", "type"].forEach((param) => cleanUrl.searchParams.delete(param));
@@ -4141,7 +4211,8 @@ async function sendGuidedReply() {
   try {
     const response = await fetch(LUMA_AGENT_URL, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      credentials: "include",
+      headers: clientAuthHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({
         current: guidedStateForApi(),
         message,
@@ -6224,7 +6295,8 @@ async function saveGuidedClientRequest() {
   }
   const response = await fetch(CLIENT_REQUESTS_URL, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    credentials: "include",
+    headers: clientAuthHeaders({ "content-type": "application/json" }),
     body: JSON.stringify(guidedStateForApi()),
   });
   if (!response.ok) {
@@ -6598,7 +6670,9 @@ async function checkDesiredDomainOptions() {
   domainCheckStatus.textContent = t("checkingDomain");
   domainResults.innerHTML = "";
   try {
-    const response = await fetch(`${API_BASE_URL}/public/domain-search?q=${encodeURIComponent(query)}`);
+    const response = await fetch(`${API_BASE_URL}/public/domain-search?q=${encodeURIComponent(query)}`, {
+      credentials: "include",
+    });
     if (!response.ok) throw new Error(await readErrorMessage(response));
     renderDomainResults(await response.json());
   } catch (error) {
@@ -7013,6 +7087,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 18000) {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(url, {
+      credentials: "include",
       ...options,
       signal: controller.signal,
     });
@@ -7701,6 +7776,7 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
   try {
     const response = await fetch(API_URL, {
       method: "POST",
+      credentials: "include",
       headers: clientAuthHeaders({ "content-type": "application/json" }),
       body: JSON.stringify(payload),
     });
@@ -7794,7 +7870,9 @@ async function createDomainOrderIfNeeded(payload, result) {
   const requestedDomain = payload.desiredDomain || payload.desired_domain || "";
   if (!requestedDomain.trim() || !result.business_id) return;
   try {
-    const search = await fetch(`${API_BASE_URL}/public/domain-search?q=${encodeURIComponent(requestedDomain)}`);
+    const search = await fetch(`${API_BASE_URL}/public/domain-search?q=${encodeURIComponent(requestedDomain)}`, {
+      credentials: "include",
+    });
     const searchResult = search.ok ? await search.json() : { results: [] };
     const selectedResult = (searchResult.results || []).find((item) => item.domain === requestedDomain.trim().toLowerCase())
       || (searchResult.results || [])[0]
@@ -7811,7 +7889,8 @@ async function createDomainOrderIfNeeded(payload, result) {
     };
     const response = await fetch(`${API_BASE_URL}/domain-orders`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      credentials: "include",
+      headers: clientAuthHeaders({ "content-type": "application/json" }),
       body: JSON.stringify(orderPayload),
     });
     if (!response.ok) throw new Error(await readErrorMessage(response));
@@ -8175,7 +8254,8 @@ async function applyDraftAdjustmentFromChat(message, localContextUpdates = {}) {
 async function requestLyraSchemaEdit(message, payload = {}, localContextUpdates = {}, templateSelection = null) {
   const response = await fetch(LYRA_EDIT_URL, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    credentials: "include",
+    headers: clientAuthHeaders({ "content-type": "application/json" }),
     body: JSON.stringify({
       currentSchema,
       instruction: message,
@@ -13936,7 +14016,8 @@ async function submitGeneratedDraftForReview() {
   try {
     const response = await fetch(`${API_BASE_URL}/public/leads`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      credentials: "include",
+      headers: clientAuthHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({
         siteId: currentSiteId,
         businessId: currentBusinessId,
@@ -13981,8 +14062,6 @@ function requireStudioAccount(event, action, callback) {
 function hasStudioAccountSession() {
   if (isPublicClientSetup && !isClientWorkspaceUnlocked()) return false;
   return Boolean(
-    localStorage.getItem("lumaClientAccessToken") ||
-    sessionStorage.getItem("lumaClientAccessToken") ||
     clientIntakeSession?.clientEmail ||
     localStorage.getItem("vm_portal_preview_token") ||
     sessionStorage.getItem("vm_portal_preview_token"),
@@ -14005,7 +14084,7 @@ function openStudioAuthGate(action = "continue") {
     // See the 2026-07-19 fix note above other call sites: Google must stay
     // visible for public clients now that it's actually wired up. Apple
     // stays hidden until it's enabled in Supabase.
-    if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
+    revealStudioGoogleAuthButton();
     if (studioAppleAuthButton) studioAppleAuthButton.hidden = true;
     if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   }
@@ -14302,6 +14381,7 @@ async function saveCurrentSchema() {
   }
   const response = await fetch(`${API_BASE_URL}/sites/${currentSiteId}/schema`, {
     method: "PUT",
+    credentials: "include",
     headers: adminHeaders({ "content-type": "application/json" }),
     body: JSON.stringify({ schema: currentSchema, catalog_items: catalogItemsForApi() }),
   });
@@ -14324,6 +14404,7 @@ async function publishCurrentSite() {
   }
   const response = await fetch(`${API_BASE_URL}/sites/${currentSiteId}/publish`, {
     method: "POST",
+    credentials: "include",
     headers: adminHeaders({ "content-type": "application/json" }),
     body: JSON.stringify({ schema: currentSchema, catalog_items: catalogItemsForApi() }),
   });
@@ -17608,6 +17689,7 @@ async function uploadAssetFile(file, assetType, label) {
   const dataUrl = await fileToOptimizedDataUrl(file, assetType);
   const response = await fetch(ASSET_UPLOAD_URL, {
     method: "POST",
+    credentials: "include",
     headers: adminHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({
       businessId: currentBusinessId,
