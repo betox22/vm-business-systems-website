@@ -6,6 +6,8 @@ const LYRA_EDIT_URL = `${API_BASE_URL}/api/luma/edit`;
 const CLIENT_REQUESTS_URL = `${API_BASE_URL}/client-requests`;
 const CLIENT_INTAKE_SESSION_URL = `${API_BASE_URL}/api/client/intake-session`;
 const CLIENT_AUTH_ME_URL = `${API_BASE_URL}/api/client/auth/me`;
+const CLIENT_AUTH_SESSION_URL = `${API_BASE_URL}/api/client/auth/session`;
+const CLIENT_AUTH_LOGOUT_URL = `${API_BASE_URL}/api/client/auth/logout`;
 const CLIENT_PROJECTS_URL = `${API_BASE_URL}/api/client/projects`;
 const ASSET_UPLOAD_URL = `${API_BASE_URL}/api/admin/assets/upload`;
 // Public Supabase project ref used for the Google/Apple OAuth redirect (2026-07-19).
@@ -624,6 +626,8 @@ let clientProjectsPanel = null;
 let clientProjects = [];
 let clientWorkspaceIdleTimer = null;
 let clientWorkspaceUnlocked = false;
+let clientAuthResumePromise = null;
+let studioAuthRedirectCaptureComplete = false;
 let guidedState = createEmptyGuidedState();
 let pendingServerIntakeGate = null;
 const CLIENT_INTAKE_AUTOSAVE_DELAY_MS = 3200;
@@ -2790,6 +2794,7 @@ function initGuidedIntake() {
 
 function initClientIntakeSessionGate() {
   if (!isPublicClientSetup) return;
+  ensureStudioAuthRedirectCaptured();
   if (storedClientAccessToken()) {
     resumeClientSessionFromAuthToken();
     return;
@@ -3060,11 +3065,17 @@ function clientAuthHeaders(extra = {}) {
   };
 }
 
-function handleExpiredClientAuth() {
+function handleExpiredClientAuth(reason = "unknown", detail = null) {
+  console.error("Client OAuth session expired or rejected", {
+    reason,
+    detail,
+    tokenPresent: Boolean(storedClientAccessToken()),
+  });
   localStorage.removeItem("lumaClientAccessToken");
   localStorage.removeItem("lumaClientRefreshToken");
   sessionStorage.removeItem("lumaClientAccessToken");
   sessionStorage.removeItem("lumaClientRefreshToken");
+  fetch(CLIENT_AUTH_LOGOUT_URL, { method: "POST", credentials: "include" }).catch(() => {});
   closeClientProjectsPanel();
   renderClientAccountControl();
   openStudioAuthGate("start");
@@ -3089,15 +3100,25 @@ function formatProjectUpdatedAt(value) {
 
 async function fetchClientAuthUser() {
   const token = storedClientAccessToken();
-  if (!token) return null;
+  if (!token) {
+    console.error("Cannot validate client auth: no stored access token.");
+    return null;
+  }
   const response = await fetch(CLIENT_AUTH_ME_URL, {
     headers: clientAuthHeaders(),
+    credentials: "include",
   });
   if (!response.ok) {
+    const message = await readErrorMessage(response);
+    console.error("Client auth /me validation failed", {
+      status: response.status,
+      message,
+      tokenPresent: Boolean(token),
+    });
     if (response.status === 401) {
-      handleExpiredClientAuth();
+      handleExpiredClientAuth("auth-me-401", { status: response.status, message });
     }
-    throw new Error(await readErrorMessage(response));
+    throw new Error(message);
   }
   return response.json();
 }
@@ -3106,6 +3127,7 @@ async function fetchClientProjects() {
   if (!storedClientAccessToken()) return [];
   const response = await fetchWithTimeout(CLIENT_PROJECTS_URL, {
     headers: clientAuthHeaders(),
+    credentials: "include",
   }, 12000);
   if (!response.ok) {
     if (response.status === 401) handleExpiredClientAuth();
@@ -3256,6 +3278,7 @@ async function loadClientProject(projectId, options = {}) {
   }
   const response = await fetchWithTimeout(`${CLIENT_PROJECTS_URL}/${encodeURIComponent(projectId)}`, {
     headers: clientAuthHeaders(),
+    credentials: "include",
   }, 14000);
   if (!response.ok) {
     if (response.status === 401) handleExpiredClientAuth();
@@ -3305,6 +3328,8 @@ async function loadClientProject(projectId, options = {}) {
 }
 
 async function resumeClientSessionFromAuthToken() {
+  if (clientAuthResumePromise) return clientAuthResumePromise;
+  clientAuthResumePromise = (async () => {
   try {
     const user = await fetchClientAuthUser();
     const email = user?.email || "";
@@ -3335,7 +3360,11 @@ async function resumeClientSessionFromAuthToken() {
     await handleClientProjectsAfterAuth(user, session);
     return session;
   } catch (error) {
-    console.warn("Could not resume auth session", error);
+    console.error("Could not resume client OAuth session", {
+      message: error?.message || String(error),
+      tokenPresent: Boolean(storedClientAccessToken()),
+      clientIntakeSessionPresent: Boolean(clientIntakeSession),
+    }, error);
     openStudioAuthGate("start");
     if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
     if (storageStatus) {
@@ -3347,7 +3376,11 @@ async function resumeClientSessionFromAuthToken() {
       });
     }
     return null;
+  } finally {
+    clientAuthResumePromise = null;
   }
+  })();
+  return clientAuthResumePromise;
 }
 
 function hydrateClientIntakeSession(session, options = {}) {
@@ -3486,6 +3519,7 @@ async function createOrResumeClientIntakeSession({ email, name = "", reason = "s
   const response = await fetchWithTimeout(CLIENT_INTAKE_SESSION_URL, {
     method: "POST",
     headers: clientAuthHeaders({ "content-type": "application/json" }),
+    credentials: "include",
     body: JSON.stringify({
       email: cleanEmail,
       name,
@@ -3970,23 +4004,51 @@ function restoreGeneratedSite() {
   }
 }
 
+function ensureStudioAuthRedirectCaptured() {
+  if (studioAuthRedirectCaptureComplete) return;
+  captureStudioAuthRedirect();
+}
+
+function establishServerSession(accessToken, refreshToken) {
+  fetch(CLIENT_AUTH_SESSION_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ access_token: accessToken, refresh_token: refreshToken || "" }),
+  }).catch((error) => {
+    console.error("Could not establish httpOnly session cookie (non-fatal, header-based auth still works)", error);
+  });
+}
+
 function captureStudioAuthRedirect() {
-  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  const queryParams = new URLSearchParams(window.location.search);
-  const accessToken = hashParams.get("access_token") || queryParams.get("access_token") || "";
-  const refreshToken = hashParams.get("refresh_token") || queryParams.get("refresh_token") || "";
-  if (!accessToken) return;
-  localStorage.setItem("lumaClientAccessToken", accessToken);
-  if (refreshToken) localStorage.setItem("lumaClientRefreshToken", refreshToken);
-  markClientWorkspaceUnlocked();
-  restorePendingStudioAfterAuth();
-  if (isPublicClientSetup) {
-    setTimeout(() => resumeClientSessionFromAuthToken(), 0);
+  if (studioAuthRedirectCaptureComplete) return;
+  try {
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const queryParams = new URLSearchParams(window.location.search);
+    const accessToken = hashParams.get("access_token") || queryParams.get("access_token") || "";
+    const refreshToken = hashParams.get("refresh_token") || queryParams.get("refresh_token") || "";
+    if (!accessToken) return;
+    localStorage.setItem("lumaClientAccessToken", accessToken);
+    if (refreshToken) localStorage.setItem("lumaClientRefreshToken", refreshToken);
+    // 2026-07-25: also hand the token to the backend so it can set it as an
+    // httpOnly cookie (see POST /api/client/auth/session). This runs
+    // alongside the existing localStorage/Authorization-header flow rather
+    // than replacing it -- if the cookie call fails for any reason (e.g. a
+    // third-party-cookie block in some browser), login still works exactly
+    // as it did before via the header.
+    establishServerSession(accessToken, refreshToken);
+    markClientWorkspaceUnlocked();
+    restorePendingStudioAfterAuth();
+    if (isPublicClientSetup) {
+      setTimeout(() => resumeClientSessionFromAuthToken(), 0);
+    }
+    const cleanUrl = new URL(window.location.href);
+    cleanUrl.hash = "";
+    ["access_token", "refresh_token", "expires_in", "expires_at", "token_type", "type"].forEach((param) => cleanUrl.searchParams.delete(param));
+    window.history.replaceState({}, "", cleanUrl);
+  } finally {
+    studioAuthRedirectCaptureComplete = true;
   }
-  const cleanUrl = new URL(window.location.href);
-  cleanUrl.hash = "";
-  ["access_token", "refresh_token", "expires_in", "expires_at", "token_type", "type"].forEach((param) => cleanUrl.searchParams.delete(param));
-  window.history.replaceState({}, "", cleanUrl);
 }
 
 function restorePendingStudioAfterAuth() {
@@ -7702,6 +7764,7 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     const response = await fetch(API_URL, {
       method: "POST",
       headers: clientAuthHeaders({ "content-type": "application/json" }),
+      credentials: "include",
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
@@ -13989,6 +14052,13 @@ function hasStudioAccountSession() {
   );
 }
 
+function revealStudioAuthProviderButtons() {
+  const providerActions = studioGoogleAuthButton?.closest(".studio-auth-actions");
+  if (providerActions) providerActions.hidden = false;
+  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
+  if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
+}
+
 function openStudioAuthGate(action = "continue") {
   if (!studioAuthGate) return;
   persistPendingStudioAccountAction(action);
@@ -14005,7 +14075,7 @@ function openStudioAuthGate(action = "continue") {
     // See the 2026-07-19 fix note above other call sites: Google must stay
     // visible for public clients now that it's actually wired up. Apple
     // stays hidden until it's enabled in Supabase.
-    if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
+    revealStudioAuthProviderButtons();
     if (studioAppleAuthButton) studioAppleAuthButton.hidden = true;
     if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   }
@@ -14635,6 +14705,42 @@ function renderPreview() {
     });
   });
 }
+
+function renderSchemaPreviewInto(schema, containerElement, payload = {}, templateSelection = null) {
+  if (!schema || !containerElement) return null;
+  const preparedSchema = prepareWebsiteConfig(schema, payload, templateSelection);
+  const defaultPageKey = preparedSchema.pages?.find((page) => page.page_key === "home")?.page_key
+    || preparedSchema.pages?.[0]?.page_key
+    || "home";
+  const hadClientPreviewMode = document.body.classList.contains("client-preview-mode");
+  const previousSchema = currentSchema;
+
+  const renderPage = (pageKey = defaultPageKey) => {
+    currentSchema = preparedSchema;
+    document.body.classList.add("client-preview-mode");
+    try {
+      containerElement.innerHTML = renderWebsite(preparedSchema, pageKey);
+    } finally {
+      currentSchema = previousSchema;
+      document.body.classList.toggle("client-preview-mode", hadClientPreviewMode);
+    }
+    containerElement.querySelectorAll("[data-page-link]").forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        renderPage(link.dataset.pageLink || defaultPageKey);
+      });
+    });
+  };
+
+  renderPage(defaultPageKey);
+  return preparedSchema;
+}
+
+window.KreatonBuilderRenderer = {
+  ...(window.KreatonBuilderRenderer || {}),
+  prepareWebsiteConfig,
+  renderSchemaPreviewInto,
+};
 
 function studioInspector() {
   const selectedSection = selectedStudioSection();
@@ -17199,15 +17305,15 @@ function stableCatalogImageUrl(seed = "") {
     [/truck|bumper|4x4|off-road|auto|car|automotive/, "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=82"],
     [/coffee|espresso|brew|latte|cafe/, "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=82"],
     [/restaurant|food|menu|pizza|dish|comida/, "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82"],
-    [/home|decor|furniture|mueble|hogar/, "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82"],
-    [/spa-bath-towel|bath-towel|toalla|towel/, "https://source.unsplash.com/900x900/?spa-towels"],
-    [/handmade-soap|soap-bar|jabon|jabón|jabones|soap/, "https://source.unsplash.com/900x900/?handmade-soap"],
-    [/bath-salts|sales-de-bano|sales de bano|sales de baño/, "https://source.unsplash.com/900x900/?bath-salts"],
-    [/bath-sponge|bano-sponge|natural-bath-sponge|esponja/, "https://source.unsplash.com/900x900/?bath-sponge"],
-    [/body-oil|aceite-corporal|body oil/, "https://source.unsplash.com/900x900/?body-oil-skincare"],
-    [/bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño/, "https://source.unsplash.com/900x900/?bath-bombs"],
-    [/aromatic-candle|scented-candle|candle|candles|vela|velas/, "https://source.unsplash.com/900x900/?scented-candle"],
+    [/spa-bath-towel|bath-towel|toalla|towel/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/handmade-soap|soap-bar|jabon|jabón|jabones|soap/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/bath-salts|sales-de-bano|sales de bano|sales de baño/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/bath-sponge|bano-sponge|natural-bath-sponge|esponja/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/body-oil|aceite-corporal|body oil/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/aromatic-candle|scented-candle|candle|candles|vela|velas/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
     [/soap|jabon|jabón|jabones|bath|bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño|body-care|body care|candle|candles|vela|velas|beauty|skincare|cosmetic|belleza|makeup|spa/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/home|decor|furniture|mueble|hogar/, "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82"],
   ];
   return (fallbacks.find(([pattern]) => pattern.test(text)) || [null, "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=900&q=82"])[1];
 }
@@ -17215,7 +17321,7 @@ function stableCatalogImageUrl(seed = "") {
 function resolveCatalogImageUrl(url, fallbackText = "") {
   const raw = String(url || "").trim();
   if (!raw) return stableCatalogImageUrl(fallbackText);
-  if (/images\.unsplash\.com\/featured\/600x600|photo-1523275335684-37898b6baf30/i.test(raw)) {
+  if (/images\.unsplash\.com\/featured\/600x600|source\.unsplash\.com|photo-1523275335684-37898b6baf30/i.test(raw)) {
     const query = raw.split("?").slice(1).join("?").replace(/[=&]/g, " ");
     return stableCatalogImageUrl(`${query} ${fallbackText}`);
   }

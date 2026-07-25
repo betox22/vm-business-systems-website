@@ -1760,8 +1760,15 @@ function stableCatalogImageUrl(seed = "") {
     [/truck|bumper|4x4|off-road|auto|car|automotive/, "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=82"],
     [/coffee|espresso|brew|latte|cafe/, "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=82"],
     [/restaurant|food|menu|pizza|dish|comida/, "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82"],
+    [/spa-bath-towel|bath-towel|toalla|towel/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/handmade-soap|soap-bar|jabon|jabón|jabones|soap/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/bath-salts|sales-de-bano|sales de bano|sales de baño/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/bath-sponge|bano-sponge|natural-bath-sponge|esponja/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/body-oil|aceite-corporal|body oil/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/aromatic-candle|scented-candle|candle|candles|vela|velas/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/soap|jabon|jabón|jabones|bath|bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño|body-care|body care|candle|candles|vela|velas|beauty|skincare|cosmetic|belleza|makeup|spa/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
     [/home|decor|furniture|mueble|hogar/, "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82"],
-    [/beauty|skincare|cosmetic|belleza|makeup/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
   ];
   return (fallbacks.find(([pattern]) => pattern.test(text)) || [null, "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=82"])[1];
 }
@@ -1769,7 +1776,7 @@ function stableCatalogImageUrl(seed = "") {
 function resolveCatalogImageUrl(url, fallbackText = "") {
   const raw = String(url || "").trim();
   if (!raw) return stableCatalogImageUrl(fallbackText);
-  if (/images\.unsplash\.com\/featured\/600x600/i.test(raw)) {
+  if (/images\.unsplash\.com\/featured\/600x600|source\.unsplash\.com/i.test(raw)) {
     const query = raw.split("?").slice(1).join("?").replace(/[=&]/g, " ");
     return stableCatalogImageUrl(`${query} ${fallbackText}`);
   }

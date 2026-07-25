@@ -4,13 +4,16 @@ import uuid
 import re
 import os
 import json
+import time
+from collections import defaultdict, deque
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -225,10 +228,24 @@ def infer_generation_sales_flow(request: WebsiteGenerationRequest) -> str:
 
 app = FastAPI(title="KREATON LYRA API", version="0.1.0")
 
+# 2026-07-25 security hardening: this used to be allow_origins=["*"] with
+# allow_credentials=False. A wildcard origin can never be combined with
+# credentials (browsers reject that combination outright), which is exactly
+# what blocked moving client sessions from localStorage to an httpOnly
+# cookie. Pin this to the real frontend origins instead so cookies can flow
+# between vmbusinesssystems.com and this API's custom domain.
+CLIENT_ALLOWED_ORIGINS = [
+    "https://vmbusinesssystems.com",
+    "https://www.vmbusinesssystems.com",
+    "https://lyra.vmbusinesssystems.com",
+    "http://127.0.0.1:5177",
+    "http://localhost:5177",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=CLIENT_ALLOWED_ORIGINS,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -335,7 +352,11 @@ async def upload_asset(request: AssetUploadRequest) -> AssetUploadResponse:
 
 
 @app.get("/api/client/auth/me")
-async def client_auth_me(authorization: str = Header(default="")) -> Dict[str, Any]:
+async def client_auth_me(
+    request: Request,
+    authorization: str = Header(default=""),
+    luma_client_session: str = Cookie(default=""),
+) -> Dict[str, Any]:
     """Resolve the real Supabase user for the client's access token.
 
     The frontend (ai-builder.js resumeClientSessionFromAuthToken /
@@ -343,9 +364,14 @@ async def client_auth_me(authorization: str = Header(default="")) -> Dict[str, A
     redirect and sends `Authorization: Bearer <token>` -- this endpoint just
     didn't exist before, so that call always failed and login silently fell
     back to the unauthenticated "type any email" path. See client_auth.py.
+
+    Also accepts the httpOnly `luma_client_session` cookie set by
+    POST /api/client/auth/session, so callers that have migrated off
+    localStorage don't need to send the header at all.
     """
 
-    token = authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
+    _enforce_rate_limit(request, "client_auth_me")
+    token = _bearer_token(authorization, luma_client_session)
     if not token:
         raise HTTPException(status_code=401, detail="Missing access token.")
     if not supabase_auth_configured():
@@ -360,12 +386,109 @@ async def client_auth_me(authorization: str = Header(default="")) -> Dict[str, A
     }
 
 
-def _bearer_token(authorization: str) -> str:
-    return authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
+class ClientAuthSessionRequest(BaseModel):
+    access_token: str
+    refresh_token: str = ""
 
 
-def authenticated_client_user(authorization: str, *, required: bool = True) -> Optional[Dict[str, Any]]:
-    token = _bearer_token(authorization)
+@app.post("/api/client/auth/session")
+async def client_auth_session(
+    payload: ClientAuthSessionRequest,
+    request: Request,
+    response: Response,
+) -> Dict[str, Any]:
+    """Exchange a Supabase access token for an httpOnly session cookie.
+
+    The frontend still receives the access token from Supabase in the OAuth
+    redirect's URL fragment (browsers never send fragments to a server, so
+    there's no way around capturing it client-side first) -- but instead of
+    only keeping it in localStorage, it now also POSTs it here once, and this
+    sets it as an httpOnly cookie that JavaScript can no longer read. Scoped
+    to the shared parent domain so the cookie is sent to both
+    vmbusinesssystems.com and this API's luma-api.vmbusinesssystems.com.
+    """
+
+    _enforce_rate_limit(request, "client_auth_session", limit=10)
+    if not supabase_auth_configured():
+        raise HTTPException(status_code=503, detail="Account login is not configured on the server yet.")
+    user = fetch_supabase_user(payload.access_token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired session.")
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=payload.access_token,
+        max_age=SESSION_COOKIE_MAX_AGE,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        path="/",
+        domain=".vmbusinesssystems.com",
+    )
+    return {
+        "id": user.get("id"),
+        "email": user.get("email"),
+        "userMetadata": user.get("user_metadata") or {},
+    }
+
+
+@app.post("/api/client/auth/logout")
+async def client_auth_logout(response: Response) -> Dict[str, str]:
+    response.delete_cookie(key=SESSION_COOKIE_NAME, path="/", domain=".vmbusinesssystems.com")
+    return {"status": "logged_out"}
+
+
+# --- Client session cookie -------------------------------------------------
+#
+# The frontend used to keep the Supabase access token only in localStorage
+# and send it as `Authorization: Bearer <token>`. That is readable by any
+# script that runs on the page (e.g. via a future XSS bug), so
+# POST /api/client/auth/session below exchanges that token for an httpOnly
+# cookie instead. Every endpoint that used to only read the Authorization
+# header now also accepts this cookie, so both the old header-based flow and
+# the new cookie-based flow work side by side during the transition.
+SESSION_COOKIE_NAME = "luma_client_session"
+SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
+
+# --- Basic in-memory rate limiting ------------------------------------------
+#
+# There is no password-login endpoint in this API today (that flow goes
+# straight from the frontend to Supabase), so brute-forcing a password isn't
+# a real concern here. What is worth limiting is abuse of the endpoints that
+# accept a client-supplied token and call out to Supabase on every request.
+# This is a simple per-process sliding window, which is fine as long as this
+# service runs as a single Render instance (see render.yaml) -- if it's ever
+# scaled to multiple instances, this needs to move to something shared like
+# Redis, since each instance would otherwise track its own counts.
+_rate_limit_buckets: Dict[str, deque] = defaultdict(deque)
+
+
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _enforce_rate_limit(request: Request, scope: str, *, limit: int = 20, window_seconds: int = 60) -> None:
+    key = f"{scope}:{_client_ip(request)}"
+    now = time.monotonic()
+    bucket = _rate_limit_buckets[key]
+    while bucket and now - bucket[0] > window_seconds:
+        bucket.popleft()
+    if len(bucket) >= limit:
+        raise HTTPException(status_code=429, detail="Too many requests. Please wait a moment and try again.")
+    bucket.append(now)
+
+
+def _bearer_token(authorization: str, session_cookie: str = "") -> str:
+    token = authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
+    return token or (session_cookie or "").strip()
+
+
+def authenticated_client_user(
+    authorization: str, session_cookie: str = "", *, required: bool = True
+) -> Optional[Dict[str, Any]]:
+    token = _bearer_token(authorization, session_cookie)
     if not token:
         if required:
             raise HTTPException(status_code=401, detail="Missing access token.")
@@ -560,9 +683,10 @@ def _intake_session_key(email: str, project_id: str = "", request_id: str = "") 
 @app.get("/api/client/projects")
 async def client_projects(
     authorization: str = Header(default=""),
+    luma_client_session: str = Cookie(default=""),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    user = authenticated_client_user(authorization)
+    user = authenticated_client_user(authorization, luma_client_session)
     owner_user_id = str(user.get("id") or "").strip()
     owner_email = str(user.get("email") or "").strip().lower()
     sites = session.execute(
@@ -577,9 +701,10 @@ async def client_projects(
 async def client_project_detail(
     project_id: str,
     authorization: str = Header(default=""),
+    luma_client_session: str = Cookie(default=""),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    user = authenticated_client_user(authorization)
+    user = authenticated_client_user(authorization, luma_client_session)
     owner_user_id = str(user.get("id") or "").strip()
     owner_email = str(user.get("email") or "").strip().lower()
     site = session.execute(
@@ -733,9 +858,10 @@ def mark_field_meta(state: Any, field: str, source: str, confidence: float) -> N
 async def client_intake_session(
     payload: Dict[str, Any],
     authorization: str = Header(default=""),
+    luma_client_session: str = Cookie(default=""),
 ) -> Dict[str, Any]:
     email = str(payload.get("email") or "").strip().lower()
-    auth_user = authenticated_client_user(authorization, required=False)
+    auth_user = authenticated_client_user(authorization, luma_client_session, required=False)
     if auth_user:
         auth_email = str(auth_user.get("email") or "").strip().lower()
         if auth_email:
@@ -821,6 +947,7 @@ async def luma_edit(request: LyraEditRequest) -> LyraEditResponse:
 async def website_builder(
     request: WebsiteGenerationRequest,
     authorization: str = Header(default=""),
+    luma_client_session: str = Cookie(default=""),
     session: Session = Depends(get_session),
 ) -> WebsiteGenerationResponse:
     payload = request.model_dump()
@@ -864,7 +991,7 @@ async def website_builder(
     final_state = await orchestrator.run(prompt_context, state)
     catalog_items, catalog_source = resolve_catalog_items_and_source(final_state)
     schema = build_schema_from_state(final_state, catalog_items=catalog_items, catalog_source=catalog_source)
-    auth_user = authenticated_client_user(authorization, required=False)
+    auth_user = authenticated_client_user(authorization, luma_client_session, required=False)
     db_site = persist_generated_site(session, user=auth_user, request=request, schema=schema) if auth_user else None
     if not auth_user and (request.generatedSiteId or request.generated_site_id or request.projectId or request.project_id):
         raise HTTPException(status_code=401, detail="Login is required to update a saved project.")
