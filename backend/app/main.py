@@ -747,13 +747,22 @@ async def luma_chat(request: LumaChatRequest) -> LumaChatResponse:
 
     if intake_decision.canGenerate:
         final_state = await orchestrator.run(request.message, state, skip_intake_strategy=True)
-        ready = not final_state.missingImportantFields
+        generation_missing_fields = intake_engine.missing_fields_from_state(
+            final_state,
+            {},
+            final_state.fieldMeta,
+        )
+        ready = not generation_missing_fields
         plan = site_plan_from_state(final_state)
-        assistant_message = assistant_message_for_state(final_state)
-        next_question = "" if ready else (intake_decision.nextQuestion or next_question_for_state(final_state))
+        assistant_message = assistant_message_for_state(final_state) if ready else intake_message_for_decision(intake_decision, final_state)
+        next_question = "" if ready else intake_engine.fallback_question_for_missing(
+            generation_missing_fields,
+            final_state.selectedLanguage,
+        )
     else:
         final_state = state
         ready = False
+        generation_missing_fields = intake_decision.missingCriticalFields
         plan = {}
         assistant_message = intake_message_for_decision(intake_decision, final_state)
         next_question = intake_decision.nextQuestion or next_question_for_state(final_state)
@@ -787,7 +796,7 @@ async def luma_chat(request: LumaChatRequest) -> LumaChatResponse:
         },
         nextQuestion=next_question,
         readyToGenerate=ready,
-        missingImportantFields=intake_decision.missingCriticalFields if not ready else final_state.missingImportantFields,
+        missingImportantFields=generation_missing_fields,
         confidence=final_state.confidence,
         selectedTemplateId=final_state.selectedTemplateId,
         selected_template_id=final_state.selectedTemplateId,

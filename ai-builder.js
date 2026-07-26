@@ -3904,7 +3904,7 @@ function ensureGuidedBuildStatusCard() {
     guidedBuildStatusCard.setAttribute("aria-live", "polite");
   }
   if (guidedBuildStatusCard.parentElement !== guidedChatCard) {
-    guidedChatCard.insertBefore(guidedBuildStatusCard, guidedChat);
+    guidedChatCard.appendChild(guidedBuildStatusCard);
   }
   return guidedBuildStatusCard;
 }
@@ -3945,6 +3945,9 @@ function setGuidedBuildPhase(phase, detail = "") {
       }).join("")}
     </div>
   `;
+  requestAnimationFrame(() => {
+    card.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  });
 }
 
 function removeGuidedBuildStatusCard() {
@@ -4227,7 +4230,8 @@ async function sendGuidedReply() {
     mergeGuidedUpdates(updatedFields);
     await applyLumaAgentDecision(result);
     const planAfterAgent = refreshAiStudioPlanFromContext(message);
-    const locallyReadyToGenerate = !result.readyToGenerate && hasEnoughContextForFirstDraft();
+    const serverMissingImportantFields = arrayValue(result.missingImportantFields || result.missing_important_fields || result.missing_fields);
+    const locallyReadyToGenerate = !result.readyToGenerate && !serverMissingImportantFields.length && hasEnoughContextForFirstDraft();
     const serverNextStep = result.next_step || result.nextStep || "";
     guidedStep = (result.readyToGenerate || locallyReadyToGenerate) ? "review" : normalizeNextGuidedStep(serverNextStep || guidedStep);
     const serverNextQuestion = result.nextQuestion || result.next_question;
@@ -6095,6 +6099,13 @@ async function reviewAndGenerateFromGuided() {
     guidedStatusText.textContent = successMessage;
     appendChatMessage("assistant", successMessage, "success");
     showGeneratedClientPreview();
+  } else if (generated === "needs_more_info") {
+    guidedStatusText.textContent = langText({
+      en: "LYRA needs one more detail before generating. Answer the question above and try again.",
+      es: "LYRA necesita un dato más antes de generar. Responde la pregunta de arriba e intenta otra vez.",
+      fr: "LYRA a besoin d'un détail de plus avant de générer. Répondez à la question ci-dessus puis réessayez.",
+      pt: "A LYRA precisa de mais um detalhe antes de gerar. Responda à pergunta acima e tente novamente.",
+    });
   } else {
     setGuidedBuildPhase("error");
     guidedStatusText.textContent = langText({
@@ -7774,9 +7785,8 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
 
     const result = await response.json();
     if (result.needs_more_info) {
-      setGuidedBuildPhase("error", result.next_question || result.nextQuestion || "");
       handleServerNeedsMoreInfo(result);
-      return false;
+      return "needs_more_info";
     }
     setStudioProgressPhase("shop");
     setGuidedBuildPhase("render");
