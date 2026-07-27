@@ -3,15 +3,18 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .image_assets import attach_image_asset, stable_seed_image_url
 from .models import AgentResult, ProjectState, WebsiteType
 from .taxonomy import infer_seed_profile
 
 try:
-    from openai import OpenAI
+    from openai import AsyncOpenAI, OpenAI
 except Exception:  # pragma: no cover - optional dependency guard
+    AsyncOpenAI = None  # type: ignore[assignment]
     OpenAI = None  # type: ignore[assignment]
 
 
@@ -674,13 +677,17 @@ class StrategyAgent(BaseAgent):
         if re.search(r"\b(restaurante|restaurant|menu|comida|food|pizza|burger|cafe|bar|plato|pedido)\b", text):
             add("restaurant-food-business", 130, "restaurant and menu flow")
 
-        if re.search(r"\b(cita|booking|reserva|agenda|appointment|barber|salon|spa|calendario)\b", text):
+        if re.search(r"\b(cita|booking|reserva|agenda|appointment|barber|salon|calendario)\b", text):
             add("booking-appointment-pro", 125, "appointment booking flow")
 
         if re.search(r"\b(curso|course|academy|academia|clase|coaching|bootcamp|training|formacion)\b", text):
             add("education-course-academy-pro", 124, "course and education offer")
 
-        if re.search(r"\b(digital|download|descarga|template|plantilla|ebook|software|membresia|membership|bundle)\b", text):
+        if re.search(
+            r"\b(digital|download|descarga|ebook|software|membresia|membership)\b|"
+            r"\b(digital templates|templates digitales|plantillas digitales)\b",
+            text,
+        ):
             add("digital-products-store", 118, "digital product delivery")
 
         if re.search(r"\b(real estate|inmueble|propiedad|casa|apartamento|terreno|listing|renta|alquiler)\b", text):
@@ -923,3 +930,225 @@ class ValidationAgent(BaseAgent):
             reasoningSummary="Validated whether the state has enough information for a first draft.",
             confidence=0.9 if ready else 0.62,
         )
+
+
+class ReviewIssue(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    agent: Literal["copywriter", "catalog", "strategist"]
+    detail: str = Field(min_length=8, max_length=500)
+    suggested_template_id: Optional[str] = None
+
+
+class ReviewerVerdict(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    passed: bool
+    severity: Literal["none", "minor", "critical"]
+    issues: List[ReviewIssue] = Field(default_factory=list)
+
+
+class ReviewerAgent(BaseAgent):
+    name = "reviewer"
+
+    def __init__(self) -> None:
+        self.model = os.getenv("OPENAI_REVIEWER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-4o-mini"
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        self.client = AsyncOpenAI(api_key=self.api_key) if AsyncOpenAI and self.api_key else None
+
+    async def run(self, state: ProjectState, user_input: str) -> AgentResult:
+        if not self.client:
+            return AgentResult(
+                agentName=self.name,
+                updates={},
+                reasoningSummary="Reviewer skipped because OPENAI_API_KEY or OpenAI SDK is not configured.",
+                warnings=["OPENAI_API_KEY missing or OpenAI SDK unavailable"],
+                confidence=0.0,
+            )
+
+        payload = {
+            "businessName": state.businessName,
+            "businessDescription": state.businessDescription,
+            "industry": state.industry,
+            "servicesProducts": state.servicesProducts,
+            "selectedTemplateName": state.selectedTemplateName,
+            "selectedTemplateId": state.selectedTemplateId,
+            "websiteType": state.websiteType,
+            "catalogType": state.catalogType,
+            "salesFlow": state.salesFlow,
+            "generatedCopy": state.generatedCopy,
+            "catalogItems": state.catalogItems[:16],
+            "notes": state.notes[-8:],
+            "templateCatalog": [
+                {
+                    "templateId": template_id,
+                    "name": template.get("name"),
+                    "websiteType": template.get("websiteType"),
+                    "catalogType": template.get("catalogType"),
+                    "audience": template.get("audience"),
+                }
+                for template_id, template in TEMPLATE_CATALOG.items()
+            ],
+        }
+        messages = [
+            {"role": "system", "content": self._system_prompt()},
+            {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+        ]
+
+        try:
+            try:
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    temperature=0.0,
+                    response_format=self._strict_response_format(),
+                    messages=messages,
+                )
+            except Exception:
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    temperature=0.0,
+                    response_format={"type": "json_object"},
+                    messages=messages,
+                )
+            raw = response.choices[0].message.content or "{}"
+            verdict = self._parse_verdict(json.loads(raw))
+            verdict = self._filter_verdict_issues(verdict)
+            summary = (
+                "Reviewer verdict: "
+                f"severity={verdict.severity}; passed={verdict.passed}; "
+                f"issues={json.dumps([issue.model_dump() for issue in verdict.issues], ensure_ascii=False)}"
+            )
+            return AgentResult(
+                agentName=self.name,
+                updates={
+                    "generatedCopy": {
+                        **(state.generatedCopy or {}),
+                        "reviewerVerdict": verdict.model_dump(),
+                    }
+                },
+                reasoningSummary=summary,
+                confidence=0.92 if verdict.passed else 0.78,
+            )
+        except (json.JSONDecodeError, ValidationError, Exception) as error:
+            return AgentResult(
+                agentName=self.name,
+                updates={},
+                reasoningSummary="Reviewer failed; generation continued without review.",
+                warnings=[str(error)],
+                confidence=0.0,
+            )
+
+    @staticmethod
+    def _parse_verdict(parsed: Any) -> ReviewerVerdict:
+        if isinstance(parsed, dict):
+            try:
+                return ReviewerVerdict.model_validate(parsed)
+            except ValidationError:
+                issues_payload = parsed.get("issues")
+                if isinstance(issues_payload, list):
+                    normalized_issues = []
+                    severities = []
+                    for issue in issues_payload:
+                        if not isinstance(issue, dict):
+                            continue
+                        severity = str(issue.get("severity") or "").strip()
+                        if severity in {"none", "minor", "critical"}:
+                            severities.append(severity)
+                        detail = str(issue.get("detail") or "")
+                        if not ReviewerAgent._looks_actionable_issue(detail):
+                            continue
+                        normalized_issues.append({
+                            "agent": issue.get("agent"),
+                            "detail": detail,
+                            "suggested_template_id": issue.get("suggested_template_id") or issue.get("suggestedTemplateId"),
+                        })
+                    root_severity = parsed.get("severity")
+                    if root_severity not in {"none", "minor", "critical"}:
+                        root_severity = "critical" if "critical" in severities else "minor" if normalized_issues else "none"
+                    if not normalized_issues:
+                        root_severity = "none"
+                    return ReviewerVerdict.model_validate({
+                        "passed": bool(parsed.get("passed", root_severity == "none")),
+                        "severity": root_severity,
+                        "issues": normalized_issues,
+                    })
+        raise ValueError("Reviewer response was not a JSON object")
+
+    @staticmethod
+    def _filter_verdict_issues(verdict: ReviewerVerdict) -> ReviewerVerdict:
+        issues = [
+            issue
+            for issue in verdict.issues
+            if ReviewerAgent._looks_actionable_issue(issue.detail)
+        ]
+        if not issues:
+            return ReviewerVerdict(passed=True, severity="none", issues=[])
+        return ReviewerVerdict(
+            passed=verdict.passed and verdict.severity == "none",
+            severity=verdict.severity,
+            issues=issues,
+        )
+
+    @staticmethod
+    def _looks_actionable_issue(detail: str) -> bool:
+        text = normalize_text(detail)
+        if not text:
+            return False
+        negative_markers = [
+            "generic",
+            "unrelated",
+            "wrong",
+            "incorrect",
+            "incorrectly",
+            "mismatch",
+            "does not",
+            "do not",
+            "not align",
+            "not specific",
+            "too generic",
+            "placeholder",
+            "incoherent",
+            "inconsistent",
+            "contradict",
+            "missing",
+            "lacks",
+            "should",
+            "could apply",
+            "raw intake",
+        ]
+        return any(marker in text for marker in negative_markers)
+
+    @staticmethod
+    def _strict_response_format() -> Dict[str, Any]:
+        return {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "kreaton_reviewer_verdict",
+                "strict": True,
+                "schema": ReviewerVerdict.model_json_schema(),
+            },
+        }
+
+    @staticmethod
+    def _system_prompt() -> str:
+        return """
+You are LYRA's final QA reviewer for KREATON.
+
+Review the finished ProjectState after copy, catalog, template strategy and validation.
+Return ONLY valid JSON.
+
+Evaluate exactly these risks:
+1. Copy specificity: the headline/subheadline must mention something specific to the real business or offer. Generic copy that could apply to any company is an issue for agent "copywriter".
+2. Catalog coherence: catalog items must match the client's described niche. Unrelated products, mixed-in wrong categories, generic bundles, or placeholders are issues for agent "catalog".
+3. Template fit: selectedTemplateName/websiteType/catalogType must make sense for the client's requested business model. Wrong marketplace/service/store direction is an issue for agent "strategist".
+When you create a "strategist" issue, you MUST include suggested_template_id with one exact templateId from templateCatalog that better fits the business. If no template clearly fits, omit the strategist issue.
+
+Severity rules:
+- "none": no meaningful issue.
+- "minor": imperfect but usable; do not block generation.
+- "critical": a customer would see a clearly wrong or generic result, especially unrelated catalog items, raw intake pasted as public copy, or a template type that contradicts the requested business.
+
+Issue agent must be exactly one of: "copywriter", "catalog", "strategist".
+Keep each issue detail concrete and actionable.
+Do not include positive observations in issues. If an area passes, omit it from issues entirely.
+""".strip()

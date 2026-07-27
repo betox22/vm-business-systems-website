@@ -997,7 +997,7 @@ async def website_builder(
             used_dev_mock=False,
         )
     prompt_context = " ".join(str(value) for value in payload.values() if value)
-    final_state = await orchestrator.run(prompt_context, state)
+    final_state = await orchestrator.run(prompt_context, state, run_review=True)
     catalog_items, catalog_source = resolve_catalog_items_and_source(final_state)
     schema = build_schema_from_state(final_state, catalog_items=catalog_items, catalog_source=catalog_source)
     auth_user = authenticated_client_user(authorization, luma_client_session, required=False)

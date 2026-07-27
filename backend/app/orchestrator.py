@@ -13,7 +13,9 @@ from .agents import (
     CatalogAgent,
     CopywriterAgent,
     IntakeExtractionAgent,
+    ReviewerAgent,
     StrategyAgent,
+    TEMPLATE_CATALOG,
     ValidationAgent,
     split_items,
 )
@@ -93,6 +95,7 @@ class LyraOrchestrator:
         self.catalog = CatalogAgent()
         self.ai_site_planner = OpenAISitePlanAgent()
         self.validator = ValidationAgent()
+        self.reviewer = ReviewerAgent()
 
     async def run(
         self,
@@ -100,6 +103,7 @@ class LyraOrchestrator:
         initial_state: ProjectState | None = None,
         *,
         skip_intake_strategy: bool = False,
+        run_review: bool = False,
     ) -> ProjectState:
         manager = StateManager(initial_state)
 
@@ -132,6 +136,8 @@ class LyraOrchestrator:
 
         # 5. Validate final state strictly before returning to the frontend.
         await self._run_and_merge(manager, self.validator, user_input)
+        if run_review:
+            await self._review_and_correct_once(manager, user_input)
         return await manager.snapshot()
 
     async def _run_and_merge(self, manager: StateManager, agent: BaseAgent, user_input: str) -> AgentResult:
@@ -158,6 +164,110 @@ class LyraOrchestrator:
                 confidence=0.0,
             )
 
+    async def _review_and_correct_once(self, manager: StateManager, user_input: str) -> None:
+        snapshot = await manager.snapshot()
+        review = await self._safe_run(self.reviewer, snapshot, user_input)
+        await manager.update(review.updates)
+        await manager.add_note(review.reasoningSummary or "")
+
+        verdict = {}
+        generated_copy = review.updates.get("generatedCopy")
+        if isinstance(generated_copy, dict):
+            verdict = generated_copy.get("reviewerVerdict") or {}
+        if verdict.get("severity") != "critical":
+            return
+
+        issues = verdict.get("issues") if isinstance(verdict.get("issues"), list) else []
+        issue_details_by_agent: Dict[str, list[str]] = {"copywriter": [], "catalog": [], "strategist": []}
+        suggested_strategy_template_id = ""
+        for issue in issues:
+            if isinstance(issue, dict):
+                agent_name = str(issue.get("agent") or "")
+                detail = str(issue.get("detail") or "").strip()
+                if agent_name in issue_details_by_agent and detail:
+                    issue_details_by_agent[agent_name].append(detail)
+                if agent_name == "strategist" and not suggested_strategy_template_id:
+                    suggested = str(issue.get("suggested_template_id") or issue.get("suggestedTemplateId") or "").strip()
+                    if suggested in TEMPLATE_CATALOG:
+                        suggested_strategy_template_id = suggested
+
+        if issue_details_by_agent["strategist"]:
+            details = " | ".join(issue_details_by_agent["strategist"])
+            if not suggested_strategy_template_id:
+                await manager.add_note(
+                    "Reviewer strategist issue had no valid suggested_template_id; no strategy correction applied: "
+                    f"{details}"
+                )
+                return
+            selected_template = TEMPLATE_CATALOG[suggested_strategy_template_id]
+            snapshot = await manager.snapshot()
+            correction_input = (
+                f"Business name: {snapshot.businessName or ''}\n"
+                f"Business description: {snapshot.businessDescription or ''}\n"
+                f"Products/services: {', '.join(snapshot.servicesProducts)}\n"
+                f"Sales flow: {snapshot.salesFlow or ''}\n\n"
+                f"Reviewer selected template correction: {suggested_strategy_template_id} "
+                f"({selected_template['name']}).\n"
+                f"Reviewer detail: {details}\n"
+                "Regenerate visual direction, copy and catalog for this corrected template. "
+                "Do not change intake facts."
+            )
+            await manager.update({
+                "selectedTemplateId": suggested_strategy_template_id,
+                "selectedTemplateName": selected_template["name"],
+                "websiteType": selected_template["websiteType"],
+                "catalogType": selected_template["catalogType"],
+            })
+            await manager.add_note(
+                "Reviewer-triggered strategist correction: "
+                f"{details}; applied template={suggested_strategy_template_id}"
+            )
+
+            snapshot = await manager.snapshot()
+            worker_results = await asyncio.gather(
+                self._safe_run(self.art_director, snapshot, correction_input),
+                self._safe_run(self.copywriter, snapshot, correction_input),
+                self._safe_run(self.catalog, snapshot, correction_input),
+            )
+            for worker_result in worker_results:
+                await manager.update(worker_result.updates)
+                await manager.add_note(worker_result.reasoningSummary or "")
+
+            snapshot = await manager.snapshot()
+            await manager.update({
+                "generatedCopy": {
+                    **(snapshot.generatedCopy or {}),
+                    "reviewerVerdict": verdict,
+                }
+            })
+            return
+
+        correction_agents: list[tuple[str, BaseAgent]] = []
+        if issue_details_by_agent["copywriter"]:
+            correction_agents.append(("copywriter", self.copywriter))
+        if issue_details_by_agent["catalog"]:
+            correction_agents.append(("catalog", self.catalog))
+
+        for agent_name, agent in correction_agents:
+            details = " | ".join(issue_details_by_agent[agent_name])
+            correction_input = (
+                f"{user_input}\n\n"
+                f"Reviewer correction request for {agent_name}: {details}\n"
+                "Correct only your own output. Do not change unrelated strategy or intake."
+            )
+            snapshot = await manager.snapshot()
+            result = await self._safe_run(agent, snapshot, correction_input)
+            await manager.update(result.updates)
+            await manager.add_note(f"Reviewer-triggered {agent_name} correction: {details}")
+            await manager.add_note(result.reasoningSummary or "")
+
+        snapshot = await manager.snapshot()
+        await manager.update({
+            "generatedCopy": {
+                **(snapshot.generatedCopy or {}),
+                "reviewerVerdict": verdict,
+            }
+        })
 
 def site_plan_from_state(state: ProjectState) -> Dict[str, Any]:
     generated_pages = []
