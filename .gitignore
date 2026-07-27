@@ -1,5 +1,6 @@
 node_modules/
 dist/
+public-dist/
 .npm-cache/
 .python-packages/
 .u2net/
