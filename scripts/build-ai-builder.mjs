@@ -7,7 +7,7 @@ await build({
   absWorkingDir: rootDir,
   entryPoints: ["./src/ai-builder/index.js"],
   outfile: resolve(rootDir, "dist/ai-builder.js"),
-  bundle: false,
+  bundle: true,
   minify: false,
   sourcemap: false,
   logLevel: "warning",
