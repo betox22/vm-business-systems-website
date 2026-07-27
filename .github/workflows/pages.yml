@@ -1,0 +1,47 @@
+name: Deploy static site to GitHub Pages
+
+# Replaces the old "Deploy from a branch" mode, which published the entire
+# repo root as-is -- including backend/ (Python source), supabase/ (SQL),
+# and internal docs -- to the public production domain. See
+# scripts/stage-public-site.mjs for the allowlist that decides what's public.
+# Found + fixed 2026-07-27: backend/app/main.py, supabase/enable_rls.sql, and
+# project-rebuild-kit/README.md were all publicly fetchable on
+# vmbusinesssystems.com before this change.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: node scripts/stage-public-site.mjs
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public-dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
