@@ -1,3 +1,20 @@
+function resolveApiBaseUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const apiFromQuery = params.get("api");
+  if (apiFromQuery) {
+    localStorage.setItem("lumaApiBaseUrl", apiFromQuery);
+    return apiFromQuery.replace(/\/$/, "");
+  }
+  if (window.LUMA_API_BASE_URL) {
+    localStorage.removeItem("lumaApiBaseUrl");
+    return String(window.LUMA_API_BASE_URL).replace(/\/$/, "");
+  }
+  if (window.location.hostname.endsWith("trycloudflare.com")) return window.location.origin;
+  const savedApi = localStorage.getItem("lumaApiBaseUrl");
+  if (savedApi) return savedApi.replace(/\/$/, "");
+  return "http://127.0.0.1:8010";
+}
+
 export const API_BASE_URL = resolveApiBaseUrl();
 export const API_URL = `${API_BASE_URL}/ai/website-builder`;
 export const INTAKE_ASSISTANT_URL = `${API_BASE_URL}/api/ai/intake-assistant`;
@@ -41,5 +58,4 @@ export const GUIDED_DRAFT_STORAGE_KEY = "lumaGuidedDraft";
 export const GENERATED_SITE_STORAGE_KEY = "lumaGeneratedSite";
 export const CLIENT_INTAKE_SESSION_STORAGE_KEY = "lumaClientIntakeSession";
 export const CLIENT_WORKSPACE_IDLE_LOCK_MS = 5 * 60 * 1000;
-
 
