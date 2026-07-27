@@ -3,12 +3,16 @@
   "private": true,
   "version": "0.1.0",
   "description": "Static public site and AI website builder assets for VM Business Systems.",
+  "scripts": {
+    "build:ai-builder": "node scripts/build-ai-builder.mjs"
+  },
   "dependencies": {
     "lottie-react": "^2.4.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "esbuild": "^0.28.1",
     "playwright": "^1.61.1"
   }
 }
