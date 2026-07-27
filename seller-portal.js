@@ -2,7 +2,7 @@ const state = {
   businessId: new URLSearchParams(window.location.search).get("business_id") || "",
   currentView: "catalog",
   overview: null,
-  accessToken: localStorage.getItem("lumaClientAccessToken") || "",
+  hasSession: true,
   demoAccess: new URLSearchParams(window.location.search).get("demo") === "1",
   selectedItemId: "",
   query: "",
@@ -24,7 +24,7 @@ const demoAccessButton = document.querySelector("#sellerDemoAccessButton");
 const existingAccessButton = document.querySelector("#existingAccessButton");
 const logoutButton = document.querySelector("#sellerLogoutButton");
 
-captureAuthRedirect();
+clearLegacyTokenStorage();
 
 function resolveApiBase() {
   if (window.LUMA_API_BASE_URL) return String(window.LUMA_API_BASE_URL).replace(/\/$/, "");
@@ -39,21 +39,20 @@ function apiUrl(path) {
 }
 
 function authHeaders(extra = {}) {
-  return {
-    ...extra,
-    ...(state.accessToken ? { authorization: `Bearer ${state.accessToken}` } : {}),
-  };
+  return { ...extra };
 }
 
-function captureAuthRedirect() {
+function clearLegacyTokenStorage() {
+  localStorage.removeItem("lumaClientAccessToken");
+  localStorage.removeItem("lumaClientRefreshToken");
+}
+
+async function captureAuthRedirect() {
   const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
   const queryParams = new URLSearchParams(window.location.search);
   const accessToken = hashParams.get("access_token") || queryParams.get("access_token") || "";
   const refreshToken = hashParams.get("refresh_token") || queryParams.get("refresh_token") || "";
-  if (!accessToken) return;
-  state.accessToken = accessToken;
-  localStorage.setItem("lumaClientAccessToken", accessToken);
-  if (refreshToken) localStorage.setItem("lumaClientRefreshToken", refreshToken);
+  if (!accessToken) return false;
   const cleanUrl = new URL(window.location.href);
   cleanUrl.hash = "";
   cleanUrl.searchParams.delete("access_token");
@@ -63,6 +62,31 @@ function captureAuthRedirect() {
   cleanUrl.searchParams.delete("token_type");
   cleanUrl.searchParams.delete("type");
   window.history.replaceState({}, "", cleanUrl);
+
+  try {
+    await establishCookieSession(accessToken, refreshToken);
+    state.hasSession = true;
+    await loadPortal();
+  } catch (error) {
+    state.hasSession = false;
+    showLogin(`No se pudo completar el acceso: ${shortError(error)}`, true);
+  }
+  return true;
+}
+
+async function establishCookieSession(accessToken, refreshToken = "") {
+  const response = await fetch(apiUrl("/api/client/auth/session"), {
+    method: "POST",
+    credentials: "include",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    }),
+  });
+  if (!response.ok) throw new Error(await response.text());
+  clearLegacyTokenStorage();
+  return response.json().catch(() => ({}));
 }
 
 function money(value) {
@@ -86,7 +110,7 @@ function escapeAttribute(value) {
 }
 
 async function loadPortal() {
-  if (!state.accessToken && !state.demoAccess) {
+  if (!state.hasSession && !state.demoAccess) {
     showLogin();
     return;
   }
@@ -98,6 +122,7 @@ async function loadPortal() {
   renderLoading();
   try {
     const response = await fetch(apiUrl(`/api/client/portal?business_id=${encodeURIComponent(state.businessId)}`), {
+      credentials: "include",
       headers: authHeaders(),
     });
     if (response.status === 401 || response.status === 403) {
@@ -126,9 +151,14 @@ function hideLogin() {
 }
 
 function clearSession() {
-  state.accessToken = "";
-  localStorage.removeItem("lumaClientAccessToken");
-  localStorage.removeItem("lumaClientRefreshToken");
+  state.hasSession = false;
+  clearLegacyTokenStorage();
+  fetch(apiUrl("/api/client/auth/logout"), {
+    method: "POST",
+    credentials: "include",
+  }).catch((error) => {
+    console.warn("Could not clear seller portal auth cookie", error);
+  });
 }
 
 async function loginSeller(event) {
@@ -138,6 +168,7 @@ async function loginSeller(event) {
   try {
     const response = await fetch(apiUrl("/api/client/auth/login"), {
       method: "POST",
+      credentials: "include",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         email: form.elements.email.value.trim(),
@@ -147,9 +178,11 @@ async function loginSeller(event) {
     });
     if (!response.ok) throw new Error(await response.text());
     const result = await response.json();
-    state.accessToken = result.accessToken;
-    localStorage.setItem("lumaClientAccessToken", result.accessToken);
-    if (result.refreshToken) localStorage.setItem("lumaClientRefreshToken", result.refreshToken);
+    const accessToken = result.accessToken || result.access_token || "";
+    const refreshToken = result.refreshToken || result.refresh_token || "";
+    if (!accessToken) throw new Error("Login response did not include an access token.");
+    await establishCookieSession(accessToken, refreshToken);
+    state.hasSession = true;
     if (!state.businessId && result.memberships?.[0]?.business_id) {
       state.businessId = result.memberships[0].business_id;
       const url = new URL(window.location.href);
@@ -508,6 +541,7 @@ async function saveCatalogItem(event) {
     const itemId = state.selectedItemId;
     const response = await fetch(apiUrl(`/api/client/catalog-items${itemId ? `/${encodeURIComponent(itemId)}` : ""}?business_id=${encodeURIComponent(state.businessId)}`), {
       method: itemId ? "PATCH" : "POST",
+      credentials: "include",
       headers: authHeaders({ "content-type": "application/json" }),
       body: JSON.stringify(data),
     });
@@ -586,6 +620,7 @@ async function toggleCatalogItem(itemId, field) {
   try {
     const response = await fetch(apiUrl(`/api/client/catalog-items/${encodeURIComponent(itemId)}?business_id=${encodeURIComponent(state.businessId)}`), {
       method: "PATCH",
+      credentials: "include",
       headers: authHeaders({ "content-type": "application/json" }),
       body: JSON.stringify(payloadFromItem(item, { [field]: nextValue })),
     });
@@ -613,6 +648,7 @@ async function duplicateCatalogItem(itemId) {
     });
     const response = await fetch(apiUrl(`/api/client/catalog-items?business_id=${encodeURIComponent(state.businessId)}`), {
       method: "POST",
+      credentials: "include",
       headers: authHeaders({ "content-type": "application/json" }),
       body: JSON.stringify(payload),
     });
@@ -632,6 +668,7 @@ async function uploadImage(file) {
   const dataUrl = await fileToDataUrl(file);
   const response = await fetch(apiUrl(`/api/client/assets/upload?business_id=${encodeURIComponent(state.businessId)}`), {
     method: "POST",
+    credentials: "include",
     headers: authHeaders({ "content-type": "application/json" }),
     body: JSON.stringify({
       businessId: state.businessId,
@@ -662,6 +699,7 @@ async function deleteSelectedItem() {
   try {
     const response = await fetch(apiUrl(`/api/client/catalog-items/${encodeURIComponent(state.selectedItemId)}?business_id=${encodeURIComponent(state.businessId)}`), {
       method: "DELETE",
+      credentials: "include",
       headers: authHeaders(),
     });
     if (!response.ok) throw new Error(await response.text());
@@ -674,6 +712,7 @@ async function deleteSelectedItem() {
 
 async function refreshOverview() {
   const response = await fetch(apiUrl(`/api/client/portal?business_id=${encodeURIComponent(state.businessId)}`), {
+    credentials: "include",
     headers: authHeaders(),
   });
   if (!response.ok) throw new Error(await response.text());
@@ -736,4 +775,9 @@ logoutButton.addEventListener("click", () => {
 });
 document.querySelector("#refreshButton").addEventListener("click", loadPortal);
 
-loadPortal();
+async function bootSellerPortal() {
+  const handledRedirect = await captureAuthRedirect();
+  if (!handledRedirect) await loadPortal();
+}
+
+bootSellerPortal();
