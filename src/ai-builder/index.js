@@ -41,6 +41,84 @@ import {
   resolveColor,
   stableCatalogImageUrl,
 } from './renderers.js';
+import {
+  builderState,
+  createEmptyGuidedState,
+  normalizeBrowserLanguage,
+} from './state.js';
+import {
+  isLegacyBuilderPage,
+  form,
+  statusText,
+  storageStatus,
+  siteTitle,
+  editorMount,
+  previewFrame,
+  studioSelectionToolbar,
+  studioProgressList,
+  studioAdjustButton,
+  studioLumaMessage,
+  studioSuggestedList,
+  studioRecentList,
+  studioAuthGate,
+  studioAuthCloseButton,
+  studioGoogleAuthButton,
+  studioAppleAuthButton,
+  studioEmailAuthButton,
+  studioEmailAuthForm,
+  studioAuthEmail,
+  studioAuthDemoButton,
+  quickModeButton,
+  guidedModeButton,
+  guidedPanel,
+  guidedChatCard,
+  liveSitePreviewMount,
+  guidedChat,
+  guidedReply,
+  guidedSendButton,
+  guidedStatusText,
+  guidedStepLabel,
+  guidedGenerateButton,
+  guidedCloseButton,
+  guidedMicButton,
+  assistantAudioToggle,
+  voiceStatusText,
+  guidedThinking,
+  guidedProgressBar,
+  reviewDetailsButton,
+  keepChattingButton,
+  currentInfoPreview,
+  currentInfoMeta,
+  quickChipRow,
+  guidedLogoUpload,
+  guidedPhotoUpload,
+  guidedLogoPreview,
+  guidedPhotoPreview,
+  brandKitPanel,
+  guidedAssetPrompt,
+  chatLogoUploadButton,
+  chatPhotoUploadButton,
+  guidedBriefReview,
+  summaryLogoUploadButton,
+  summaryPhotoUploadButton,
+  editDetailsButton,
+  checkDomainButton,
+  domainCheckStatus,
+  domainResults,
+  languageSelector,
+  summaryLanguageSelector,
+  isPublicClientSetup,
+  isEmbeddedClientSetup,
+  switchManualFormButton,
+  backToChatButton,
+  submitDraftReviewButton,
+  adjustWithLumaButton,
+  startNewProjectButton,
+  startNewGeneratedProjectButton,
+  guidedHeaderActions,
+  builderAvatarRoot,
+  builderAvatarManager,
+} from './dom.js';
 
 function adminHeaders(extra = {}) {
   const token = localStorage.getItem("lumaAdminToken") || "";
@@ -117,88 +195,7 @@ const GUIDED_QUESTIONS = {
   },
 };
 
-let selectedLanguage = detectBrowserLanguage();
-
-let currentSchema = null;
-let selectedPageKey = "home";
-let selectedVariantId = "";
-let selectedStudioSectionId = "";
-let advancedInspectorOpen = false;
-let currentSiteId = null;
-let currentBusinessId = null;
-let currentGenerationId = null;
-let currentRequestId = null;
-let currentCatalogItems = [];
-let isGeneratingWebsite = false;
-let guidedStep = "websiteIntent";
-let guidedHistory = [];
-let assistantState = "neutral";
-let assistantVoiceEnabled = localStorage.getItem("gnuDevAssistantVoice") === "on";
-let forcedTemplateSelection = null;
-let restoredGuidedDraftInfo = null;
-let restoredDraftNoticeCard = null;
-let restoredDraftNoticeShown = false;
-let guidedBuildStatusCard = null;
-let guidedCoachCard = null;
-let liveSitePreviewCard = null;
-let templateBoardLoading = false;
-let templateBoardLoadingSignature = "";
-let templateBoardLoadingTimer = null;
-let guidedSendLocked = false;
-let guidedLastSendAt = 0;
-let clientIntakeSession = null;
-let clientIntakeSyncTimer = null;
-let clientIntakeSyncInFlight = false;
-let clientAccountButton = null;
-let clientProjectsButton = null;
-let clientProjectsPanel = null;
-let clientProjects = [];
-let clientWorkspaceIdleTimer = null;
-let clientWorkspaceUnlocked = false;
-let clientAuthResumePromise = null;
-let studioAuthRedirectCaptureComplete = false;
-let guidedState = createEmptyGuidedState();
-let pendingServerIntakeGate = null;
 const CLIENT_INTAKE_AUTOSAVE_DELAY_MS = 3200;
-
-function createEmptyGuidedState(language = selectedLanguage) {
-  return {
-    websiteIntent: "",
-    businessName: "",
-    businessDescription: "",
-    industry: "",
-    location: "",
-    servicesProducts: [],
-    targetAudience: "",
-    preferredTone: "",
-    preferredColors: [],
-    contactInfo: {},
-    logoUrl: "",
-    photoUrls: [],
-    videoUrls: [],
-    logoPalette: [],
-    brand: null,
-    selectedLanguage: language,
-    hasLogo: false,
-    hasPhotos: false,
-    salesMode: "",
-    salesFlow: "",
-    hasLogoPhotos: "",
-    aiGeneratedLogoRequested: false,
-    logoPreference: "",
-    sectionsPreference: "",
-    desiredDomain: "",
-    revisionMode: "",
-    requestedAdjustments: [],
-    sitePlan: null,
-    sitePlanApproved: false,
-    fieldMeta: {},
-    generatedSiteId: "",
-    projectId: "",
-    aiStudioPlan: null,
-    designStrategy: null,
-  };
-}
 
 const GUIDED_STEPS = [
   "websiteIntent",
@@ -228,80 +225,6 @@ const SMART_GUIDED_STEP_PRIORITY = [
 const OPTIONAL_GUIDED_STEPS = new Set([]);
 
 const guidedAskedSteps = new Map();
-let lastAssistantPromptSignature = "";
-
-const isLegacyBuilderPage = Boolean(document.querySelector("#intakeForm"));
-const form = document.querySelector("#intakeForm");
-const statusText = document.querySelector("#statusText");
-const storageStatus = document.querySelector("#storageStatus");
-const siteTitle = document.querySelector("#siteTitle");
-const editorMount = document.querySelector("#editorMount");
-const previewFrame = document.querySelector("#previewFrame");
-const studioSelectionToolbar = document.querySelector("#studioSelectionToolbar");
-const studioProgressList = document.querySelector("#studioProgressList");
-const studioAdjustButton = document.querySelector("#studioAdjustButton");
-const studioLumaMessage = document.querySelector(".studio-luma-message");
-const studioSuggestedList = document.querySelector("#studioSuggestedList");
-const studioRecentList = document.querySelector("#studioRecentList");
-const studioAuthGate = document.querySelector("#studioAuthGate");
-const studioAuthCloseButton = document.querySelector("#studioAuthCloseButton");
-const studioGoogleAuthButton = document.querySelector("#studioGoogleAuthButton");
-const studioAppleAuthButton = document.querySelector("#studioAppleAuthButton");
-const studioEmailAuthButton = document.querySelector("#studioEmailAuthButton");
-const studioEmailAuthForm = document.querySelector("#studioEmailAuthForm");
-const studioAuthEmail = document.querySelector("#studioAuthEmail");
-const studioAuthDemoButton = document.querySelector("#studioAuthDemoButton");
-const quickModeButton = document.querySelector("#quickModeButton");
-const guidedModeButton = document.querySelector("#guidedModeButton");
-const guidedPanel = document.querySelector("#guidedPanel");
-const guidedChatCard = document.querySelector(".guided-chat-card");
-const liveSitePreviewMount = document.querySelector("#liveSitePreviewMount");
-const guidedChat = document.querySelector("#guidedChat");
-const guidedReply = document.querySelector("#guidedReply");
-const guidedSendButton = document.querySelector("#guidedSendButton");
-const guidedStatusText = document.querySelector("#guidedStatusText");
-const guidedStepLabel = document.querySelector("#guidedStepLabel");
-const guidedGenerateButton = document.querySelector("#guidedGenerateButton");
-const guidedCloseButton = document.querySelector("#guidedCloseButton");
-const guidedMicButton = document.querySelector("#guidedMicButton");
-const assistantAudioToggle = document.querySelector("#assistantAudioToggle");
-const voiceStatusText = document.querySelector("#voiceStatusText");
-const guidedThinking = document.querySelector("#guidedThinking");
-const guidedProgressBar = document.querySelector("#guidedProgressBar");
-const reviewDetailsButton = document.querySelector("#reviewDetailsButton");
-const keepChattingButton = document.querySelector("#keepChattingButton");
-const currentInfoPreview = document.querySelector("#currentInfoPreview");
-const currentInfoMeta = document.querySelector("#currentInfoMeta");
-const quickChipRow = document.querySelector("#quickChipRow");
-const guidedLogoUpload = document.querySelector("#guidedLogoUpload");
-const guidedPhotoUpload = document.querySelector("#guidedPhotoUpload");
-const guidedLogoPreview = document.querySelector("#guidedLogoPreview");
-const guidedPhotoPreview = document.querySelector("#guidedPhotoPreview");
-const brandKitPanel = document.querySelector("#brandKitPanel");
-const guidedAssetPrompt = document.querySelector("#guidedAssetPrompt");
-const chatLogoUploadButton = document.querySelector("#chatLogoUploadButton");
-const chatPhotoUploadButton = document.querySelector("#chatPhotoUploadButton");
-const guidedBriefReview = document.querySelector("#guidedBriefReview");
-const summaryLogoUploadButton = document.querySelector("#summaryLogoUploadButton");
-const summaryPhotoUploadButton = document.querySelector("#summaryPhotoUploadButton");
-const editDetailsButton = document.querySelector("#editDetailsButton");
-const checkDomainButton = document.querySelector("#checkDomainButton");
-const domainCheckStatus = document.querySelector("#domainCheckStatus");
-const domainResults = document.querySelector("#domainResults");
-const languageSelector = document.querySelector("#languageSelector");
-const summaryLanguageSelector = document.querySelector("#summaryLanguageSelector");
-const isPublicClientSetup = document.body.dataset.context === "client-setup";
-const isEmbeddedClientSetup = new URLSearchParams(window.location.search).get("embedded") === "1";
-const switchManualFormButton = document.querySelector("#switchManualFormButton");
-const backToChatButton = document.querySelector("#backToChatButton");
-const submitDraftReviewButton = document.querySelector("#submitDraftReviewButton");
-const adjustWithLumaButton = document.querySelector("#adjustWithLumaButton");
-const startNewProjectButton = document.querySelector("#startNewProjectButton");
-const startNewGeneratedProjectButton = document.querySelector("#startNewGeneratedProjectButton");
-const guidedHeaderActions = document.querySelector(".guided-header-actions");
-const builderAvatarRoot = document.querySelector("#builderAvatarAssistant");
-const builderAvatarManager = window.AvatarStateManager ? new window.AvatarStateManager("idle") : null;
-let builderAvatarAssistant = null;
 
 function bootLegacyBuilderPage() {
   document.body.classList.toggle("embedded-chat", isEmbeddedClientSetup);
@@ -380,8 +303,8 @@ document.querySelector("#mobileButton").addEventListener("click", () => {
 });
 
 document.querySelector("#copySchemaButton").addEventListener("click", async () => {
-  if (!currentSchema) return;
-  await navigator.clipboard.writeText(JSON.stringify(currentSchema, null, 2));
+  if (!builderState.currentSchema) return;
+  await navigator.clipboard.writeText(JSON.stringify(builderState.currentSchema, null, 2));
   storageStatus.textContent = "JSON copied";
 });
 
@@ -425,7 +348,7 @@ guidedCloseButton.addEventListener("click", () => {
       closeDraftAdjustmentChat();
       return;
     }
-    if (currentSchema) {
+    if (builderState.currentSchema) {
       showGeneratedClientPreview();
       guidedStatusText.textContent = langText({
         en: "Your generated draft is still here.",
@@ -439,7 +362,7 @@ guidedCloseButton.addEventListener("click", () => {
       window.parent.postMessage({ type: "luma-close" }, "*");
       return;
     }
-    window.location.href = `/start/?lang=${selectedLanguage}`;
+    window.location.href = `/start/?lang=${builderState.selectedLanguage}`;
     return;
   }
   setIntakeMode("quick");
@@ -516,53 +439,42 @@ if (isLegacyBuilderPage) {
 
 function initLanguageControls() {
   const params = new URLSearchParams(window.location.search);
-  selectedLanguage = normalizeBrowserLanguage(
+  builderState.selectedLanguage = normalizeBrowserLanguage(
     params.get("lang") || (navigator.languages || [navigator.language || "en"])[0]
   );
-  guidedState.selectedLanguage = selectedLanguage;
-  languageSelector.value = selectedLanguage;
-  summaryLanguageSelector.value = selectedLanguage;
+  builderState.guidedState.selectedLanguage = builderState.selectedLanguage;
+  languageSelector.value = builderState.selectedLanguage;
+  summaryLanguageSelector.value = builderState.selectedLanguage;
   applyI18n();
 }
 
 function setSelectedLanguage(value) {
-  const previousLanguage = selectedLanguage;
-  selectedLanguage = normalizeBrowserLanguage(value);
-  guidedState.selectedLanguage = selectedLanguage;
-  languageSelector.value = selectedLanguage;
-  summaryLanguageSelector.value = selectedLanguage;
+  const previousLanguage = builderState.selectedLanguage;
+  builderState.selectedLanguage = normalizeBrowserLanguage(value);
+  builderState.guidedState.selectedLanguage = builderState.selectedLanguage;
+  languageSelector.value = builderState.selectedLanguage;
+  summaryLanguageSelector.value = builderState.selectedLanguage;
   applyI18n();
   updateBuilderAvatarLabels();
   renderGuidedSummary();
-  if (previousLanguage !== selectedLanguage) {
+  if (previousLanguage !== builderState.selectedLanguage) {
     resetAssistantConversation();
   }
 }
 
-function normalizeBrowserLanguage(input) {
-  const normalized = String(input || "en").trim().toLowerCase();
-  const base = normalized.split("-")[0];
-  return SUPPORTED_LANGUAGES.includes(base) ? base : "en";
-}
-
-function detectBrowserLanguage() {
-  const languages = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
-  return normalizeBrowserLanguage(languages.find(Boolean) || "en");
-}
-
 function t(key) {
-  return publicAssistantCopy(I18N[selectedLanguage]?.[key] || I18N.en[key] || key);
+  return publicAssistantCopy(I18N[builderState.selectedLanguage]?.[key] || I18N.en[key] || key);
 }
 
-function langText(map, language = selectedLanguage) {
+function langText(map, language = builderState.selectedLanguage) {
   return publicAssistantCopy(map[language] || map.en || "");
 }
 
 function guidedQuestion(step) {
-  return publicAssistantCopy(GUIDED_QUESTIONS[selectedLanguage]?.[step] || GUIDED_QUESTIONS.en[step] || GUIDED_QUESTIONS.en.review);
+  return publicAssistantCopy(GUIDED_QUESTIONS[builderState.selectedLanguage]?.[step] || GUIDED_QUESTIONS.en[step] || GUIDED_QUESTIONS.en.review);
 }
 
-function guidedStage(step = guidedStep) {
+function guidedStage(step = builderState.guidedStep) {
   if (step === "websiteIntent") {
     return {
       index: 1,
@@ -628,7 +540,7 @@ function guidedStage(step = guidedStep) {
       ],
     };
   }
-  const plan = guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan() : null);
+  const plan = builderState.guidedState.sitePlan || (builderState.forcedTemplateSelection?.templateId ? buildSitePlan() : null);
   return {
     index: 5,
     title: langText({ en: "Review and generate", es: "Revisar y generar", fr: "Vérifier et générer", pt: "Revisar e gerar" }),
@@ -646,31 +558,31 @@ function guidedStage(step = guidedStep) {
 }
 
 function ensureGuidedCoachCard() {
-  if (guidedCoachCard || !guidedChatCard || !guidedChat) return guidedCoachCard;
-  guidedCoachCard = document.createElement("section");
-  guidedCoachCard.className = "luma-coach-card";
-  guidedCoachCard.setAttribute("aria-live", "polite");
-  guidedChatCard.insertBefore(guidedCoachCard, guidedChat);
-  return guidedCoachCard;
+  if (builderState.guidedCoachCard || !guidedChatCard || !guidedChat) return builderState.guidedCoachCard;
+  builderState.guidedCoachCard = document.createElement("section");
+  builderState.guidedCoachCard.className = "luma-coach-card";
+  builderState.guidedCoachCard.setAttribute("aria-live", "polite");
+  guidedChatCard.insertBefore(builderState.guidedCoachCard, guidedChat);
+  return builderState.guidedCoachCard;
 }
 
 function renderGuidedCoachCard() {
   if (isPublicClientSetup) {
-    guidedCoachCard?.remove();
-    guidedCoachCard = null;
+    builderState.guidedCoachCard?.remove();
+    builderState.guidedCoachCard = null;
     return;
   }
   const card = ensureGuidedCoachCard();
   if (!card) return;
-  const stage = guidedStage(guidedStep);
+  const stage = guidedStage(builderState.guidedStep);
   const completion = guidedCompletionPercent();
-  const templateName = forcedTemplateSelection?.template?.clientSelectionCard?.title
-    || forcedTemplateSelection?.template?.name
-    || forcedTemplateSelection?.templateId
+  const templateName = builderState.forcedTemplateSelection?.template?.clientSelectionCard?.title
+    || builderState.forcedTemplateSelection?.template?.name
+    || builderState.forcedTemplateSelection?.templateId
     || "";
-  const nextAction = guidedStep === "review"
+  const nextAction = builderState.guidedStep === "review"
     ? langText({ en: "Ready for review", es: "Listo para revisar", fr: "Prêt à vérifier", pt: "Pronto para revisar" })
-    : guidedQuestion(guidedStep);
+    : guidedQuestion(builderState.guidedStep);
   card.innerHTML = `
     <div class="luma-coach-top">
       <span>${escapeHtml(langText({ en: `Phase ${stage.index}`, es: `Fase ${stage.index}`, fr: `Phase ${stage.index}`, pt: `Fase ${stage.index}` }))}</span>
@@ -697,17 +609,17 @@ function renderGuidedCoachCard() {
 }
 
 function ensureLiveSitePreviewCard() {
-  if (!liveSitePreviewCard) {
-    liveSitePreviewCard = document.createElement("section");
-    liveSitePreviewCard.className = "live-site-preview-card";
-    liveSitePreviewCard.setAttribute("aria-label", "Live website draft preview");
+  if (!builderState.liveSitePreviewCard) {
+    builderState.liveSitePreviewCard = document.createElement("section");
+    builderState.liveSitePreviewCard.className = "live-site-preview-card";
+    builderState.liveSitePreviewCard.setAttribute("aria-label", "Live website draft preview");
   }
-  if (liveSitePreviewMount && liveSitePreviewCard.parentElement !== liveSitePreviewMount) {
-    liveSitePreviewMount.appendChild(liveSitePreviewCard);
-  } else if (!liveSitePreviewMount && guidedChatCard && guidedChat && liveSitePreviewCard.parentElement !== guidedChatCard) {
-    guidedChatCard.insertBefore(liveSitePreviewCard, guidedChat);
+  if (liveSitePreviewMount && builderState.liveSitePreviewCard.parentElement !== liveSitePreviewMount) {
+    liveSitePreviewMount.appendChild(builderState.liveSitePreviewCard);
+  } else if (!liveSitePreviewMount && guidedChatCard && guidedChat && builderState.liveSitePreviewCard.parentElement !== guidedChatCard) {
+    guidedChatCard.insertBefore(builderState.liveSitePreviewCard, guidedChat);
   }
-  return liveSitePreviewCard;
+  return builderState.liveSitePreviewCard;
 }
 
 function renderLiveSitePreview() {
@@ -748,7 +660,7 @@ function renderLiveSitePreview() {
 
 function renderAiContractPreview(card) {
   const renderer = window.KreatonTemplateRenderer;
-  const plan = guidedState.sitePlan || {};
+  const plan = builderState.guidedState.sitePlan || {};
   const pages = Array.isArray(plan.pages) ? plan.pages : [];
   const homePage = pages.find((page) => /home|inicio/i.test(`${page.pageId || page.pageKey || page.title || ""}`)) || pages[0];
   const hasAiBlocks = Boolean(
@@ -776,40 +688,40 @@ function renderAiContractPreview(card) {
 }
 
 function shouldShowCanvasTemplateCarousel() {
-  if (!isPublicClientSetup || currentSchema) return false;
+  if (!isPublicClientSetup || builderState.currentSchema) return false;
   if (!hasEnoughContextForTemplatePreview()) return false;
-  const pages = Array.isArray(guidedState.sitePlan?.pages) ? guidedState.sitePlan.pages : [];
+  const pages = Array.isArray(builderState.guidedState.sitePlan?.pages) ? builderState.guidedState.sitePlan.pages : [];
   if (pages.some((page) => Array.isArray(page.sections) && page.sections.some((section) => section?.componentType))) return false;
-  if (forcedTemplateSelection?.intent === "client_visual_template_choice") return false;
+  if (builderState.forcedTemplateSelection?.intent === "client_visual_template_choice") return false;
   return true;
 }
 
 function templateBoardLoadingKey() {
   const selection = livePreviewTemplateSelection();
   return [
-    selectedLanguage,
-    guidedStep,
+    builderState.selectedLanguage,
+    builderState.guidedStep,
     selection?.templateId || "",
     selection?.catalogType || "",
-    guidedState.websiteIntent || "",
-    guidedState.businessDescription || "",
-    arrayValue(guidedState.servicesProducts).join("|"),
+    builderState.guidedState.websiteIntent || "",
+    builderState.guidedState.businessDescription || "",
+    arrayValue(builderState.guidedState.servicesProducts).join("|"),
   ].join("::");
 }
 
 function shouldRenderTemplateBoardSkeleton() {
   const key = templateBoardLoadingKey();
-  if (key !== templateBoardLoadingSignature) {
-    templateBoardLoadingSignature = key;
-    templateBoardLoading = true;
-    if (templateBoardLoadingTimer) clearTimeout(templateBoardLoadingTimer);
-    templateBoardLoadingTimer = setTimeout(() => {
-      templateBoardLoading = false;
+  if (key !== builderState.templateBoardLoadingSignature) {
+    builderState.templateBoardLoadingSignature = key;
+    builderState.templateBoardLoading = true;
+    if (builderState.templateBoardLoadingTimer) clearTimeout(builderState.templateBoardLoadingTimer);
+    builderState.templateBoardLoadingTimer = setTimeout(() => {
+      builderState.templateBoardLoading = false;
       if (shouldShowCanvasTemplateCarousel()) renderLiveSitePreview();
     }, 560);
     return true;
   }
-  return templateBoardLoading;
+  return builderState.templateBoardLoading;
 }
 
 function renderCanvasTemplateSkeleton(card) {
@@ -960,15 +872,15 @@ function canvasTemplateChoices(selectedTemplateId = "") {
 function shouldShowSelectedTemplatePreview() {
   return Boolean(
     isPublicClientSetup &&
-    !currentSchema &&
-    forcedTemplateSelection?.intent === "client_visual_template_choice" &&
-    templatePreviewMeta(forcedTemplateSelection.templateId)
+    !builderState.currentSchema &&
+    builderState.forcedTemplateSelection?.intent === "client_visual_template_choice" &&
+    templatePreviewMeta(builderState.forcedTemplateSelection.templateId)
   );
 }
 
 function renderSelectedTemplateCanvasPreview(card) {
   card.classList.add("selected-template-card-host");
-  const choice = templatePreviewMeta(forcedTemplateSelection.templateId);
+  const choice = templatePreviewMeta(builderState.forcedTemplateSelection.templateId);
   card.innerHTML = `
     <section class="selected-template-preview canvas-fade-in">
       <div class="selected-template-preview-copy">
@@ -991,8 +903,8 @@ function renderSelectedTemplateCanvasPreview(card) {
     </section>
   `;
   card.querySelector("[data-change-template]")?.addEventListener("click", () => {
-    forcedTemplateSelection = {
-      ...forcedTemplateSelection,
+    builderState.forcedTemplateSelection = {
+      ...builderState.forcedTemplateSelection,
       intent: "ai_studio_plan",
     };
     renderLiveSitePreview();
@@ -1001,9 +913,9 @@ function renderSelectedTemplateCanvasPreview(card) {
 }
 
 function hasEnoughContextForTemplatePreview() {
-  const intent = normalizeTemplateIntentText(guidedState.websiteIntent);
-  const description = normalizeTemplateIntentText(guidedState.businessDescription);
-  const offerItems = meaningfulOfferItems(guidedState.servicesProducts);
+  const intent = normalizeTemplateIntentText(builderState.guidedState.websiteIntent);
+  const description = normalizeTemplateIntentText(builderState.guidedState.businessDescription);
+  const offerItems = meaningfulOfferItems(builderState.guidedState.servicesProducts);
   const services = offerItems.join(" ");
   const commerceSignal = normalizeTemplateIntentText(`${intent} ${description} ${services}`);
   const hasIntent = /tienda|store|shop|marketplace|catalogo|servicio|service|reserva|booking|restaurante|restaurant|pagina|website|landing|amazon|ebay|abogado|abogados|legal|lawyer|bufet|firma|consultoria|consulting|clinica|clinic|empresa|company/.test(commerceSignal);
@@ -1031,19 +943,19 @@ function isWeakOfferItem(value) {
 }
 
 function renderNeutralLiveWorkspace() {
-  const offerItems = meaningfulOfferItems(guidedState.servicesProducts);
-  const hasInitialGoal = Boolean(guidedState.websiteIntent);
-  const hasOffer = offerItems.length > 0 || Boolean(guidedState.businessDescription);
+  const offerItems = meaningfulOfferItems(builderState.guidedState.servicesProducts);
+  const hasInitialGoal = Boolean(builderState.guidedState.websiteIntent);
+  const hasOffer = offerItems.length > 0 || Boolean(builderState.guidedState.businessDescription);
   const hasDirection = hasInitialGoal && hasOffer;
   const steps = [
     {
       title: langText({ en: "Business model", es: "Modelo del negocio", fr: "Modele business", pt: "Modelo do negocio" }),
-      text: guidedState.websiteIntent || langText({ en: "Website, store, marketplace, catalog, booking, leads or company site", es: "Web, tienda, marketplace, catalogo, reservas, captacion o empresa", fr: "Site, boutique, marketplace, catalogue, reservation, leads ou entreprise", pt: "Site, loja, marketplace, catalogo, reservas, leads ou empresa" }),
+      text: builderState.guidedState.websiteIntent || langText({ en: "Website, store, marketplace, catalog, booking, leads or company site", es: "Web, tienda, marketplace, catalogo, reservas, captacion o empresa", fr: "Site, boutique, marketplace, catalogue, reservation, leads ou entreprise", pt: "Site, loja, marketplace, catalogo, reservas, leads ou empresa" }),
       active: hasInitialGoal,
     },
     {
       title: langText({ en: "Offer intelligence", es: "Inteligencia de oferta", fr: "Intelligence de l'offre", pt: "Inteligencia da oferta" }),
-      text: offerItems.join(", ") || guidedState.businessDescription || langText({ en: "LYRA is waiting for product, service or catalog context", es: "LYRA espera contexto de productos, servicios o catalogo", fr: "LYRA attend le contexte des produits, services ou catalogue", pt: "LYRA aguarda contexto de produtos, servicos ou catalogo" }),
+      text: offerItems.join(", ") || builderState.guidedState.businessDescription || langText({ en: "LYRA is waiting for product, service or catalog context", es: "LYRA espera contexto de productos, servicios o catalogo", fr: "LYRA attend le contexte des produits, services ou catalogue", pt: "LYRA aguarda contexto de produtos, servicos ou catalogo" }),
       active: hasOffer,
     },
     {
@@ -1097,46 +1009,46 @@ function renderNeutralLiveWorkspace() {
 function livePreviewTemplateSelection() {
   const profile = livePreviewTemplateProfile();
   const meta = templatePreviewMeta(profile.templateId) || templatePreviewMeta("mega-retail-store");
-  const forcedMatchesProfile = forcedTemplateSelection?.templateId === profile.templateId;
+  const forcedMatchesProfile = builderState.forcedTemplateSelection?.templateId === profile.templateId;
   return {
     templateId: meta?.templateId || profile.templateId || "mega-retail-store",
-    template: forcedMatchesProfile && forcedTemplateSelection?.template
-      ? forcedTemplateSelection.template
+    template: forcedMatchesProfile && builderState.forcedTemplateSelection?.template
+      ? builderState.forcedTemplateSelection.template
       : { id: meta?.templateId || profile.templateId || "mega-retail-store", name: localizedTemplateName(meta), catalogModel: { catalogType: meta?.catalogType || profile.catalogType || "single_vendor_dense_catalog" } },
-    intent: forcedMatchesProfile ? forcedTemplateSelection?.intent || "live_preview_template" : "live_preview_template",
+    intent: forcedMatchesProfile ? builderState.forcedTemplateSelection?.intent || "live_preview_template" : "live_preview_template",
     catalogType: meta?.catalogType || profile.catalogType || "single_vendor_dense_catalog",
     reason: "Live preview selected from guided context",
   };
 }
 
 function livePreviewPayload() {
-  const offerItems = meaningfulOfferItems(guidedState.servicesProducts);
+  const offerItems = meaningfulOfferItems(builderState.guidedState.servicesProducts);
   return {
-    business_name: guidedState.businessName || langText({ en: "Your business", es: "Tu negocio", fr: "Votre entreprise", pt: "Seu negócio" }),
-    business_description: guidedState.businessDescription || guidedState.websiteIntent || "",
-    industry: guidedState.industry || inferCommerceIndustry(guidedState),
-    location: guidedState.location || "",
+    business_name: builderState.guidedState.businessName || langText({ en: "Your business", es: "Tu negocio", fr: "Votre entreprise", pt: "Seu negócio" }),
+    business_description: builderState.guidedState.businessDescription || builderState.guidedState.websiteIntent || "",
+    industry: builderState.guidedState.industry || inferCommerceIndustry(builderState.guidedState),
+    location: builderState.guidedState.location || "",
     services_products: offerItems.length ? offerItems : livePreviewFallbackItems(),
-    target_audience: guidedState.targetAudience || "",
-    preferred_tone: guidedState.preferredTone || "",
-    preferred_colors: arrayValue(guidedState.preferredColors),
-    contact_info: guidedState.contactInfo || {},
-    selectedLanguage,
-    salesMode: guidedState.salesMode || guidedState.websiteIntent || "",
-    logoPalette: guidedState.logoPalette || [],
+    target_audience: builderState.guidedState.targetAudience || "",
+    preferred_tone: builderState.guidedState.preferredTone || "",
+    preferred_colors: arrayValue(builderState.guidedState.preferredColors),
+    contact_info: builderState.guidedState.contactInfo || {},
+    selectedLanguage: builderState.selectedLanguage,
+    salesMode: builderState.guidedState.salesMode || builderState.guidedState.websiteIntent || "",
+    logoPalette: builderState.guidedState.logoPalette || [],
     assets: [
-      ...(guidedState.logoUrl ? [{ asset_type: "logo", url: guidedState.logoUrl }] : []),
-      ...arrayValue(guidedState.photoUrls).map((url) => ({ asset_type: "photo", url })),
+      ...(builderState.guidedState.logoUrl ? [{ asset_type: "logo", url: builderState.guidedState.logoUrl }] : []),
+      ...arrayValue(builderState.guidedState.photoUrls).map((url) => ({ asset_type: "photo", url })),
     ],
-    brand: guidedState.brand,
+    brand: builderState.guidedState.brand,
   };
 }
 
 function livePreviewTemplateProfile() {
   const templateId = inferLivePreviewTemplateId();
   const meta = templatePreviewMeta(templateId) || templatePreviewMeta("mega-retail-store");
-  const catalogType = forcedTemplateSelection?.templateId === templateId
-    ? forcedTemplateSelection?.catalogType || meta?.catalogType || ""
+  const catalogType = builderState.forcedTemplateSelection?.templateId === templateId
+    ? builderState.forcedTemplateSelection?.catalogType || meta?.catalogType || ""
     : meta?.catalogType || "";
   const common = {
     templateId,
@@ -1256,22 +1168,22 @@ function inferLivePreviewTemplateId() {
   if (inferred) return inferred;
   const aiSelectedTemplateId = resolvedAiTemplateId();
   if (aiSelectedTemplateId) return aiSelectedTemplateId;
-  if (forcedTemplateSelection?.templateId) return forcedTemplateSelection.templateId;
+  if (builderState.forcedTemplateSelection?.templateId) return builderState.forcedTemplateSelection.templateId;
   return "mega-retail-store";
 }
 
 function resolvedAiTemplateId() {
   if (
-    forcedTemplateSelection?.intent === "client_visual_template_choice"
-    && isConcreteTemplateId(forcedTemplateSelection.templateId)
+    builderState.forcedTemplateSelection?.intent === "client_visual_template_choice"
+    && isConcreteTemplateId(builderState.forcedTemplateSelection.templateId)
   ) {
-    return forcedTemplateSelection.templateId;
+    return builderState.forcedTemplateSelection.templateId;
   }
   const candidates = [
-    guidedState.designStrategy?.selectedTemplateId,
-    guidedState.designStrategy?.diagnosis?.recommendedTemplateId,
-    guidedState.sitePlan?.templateId,
-    forcedTemplateSelection?.templateId,
+    builderState.guidedState.designStrategy?.selectedTemplateId,
+    builderState.guidedState.designStrategy?.diagnosis?.recommendedTemplateId,
+    builderState.guidedState.sitePlan?.templateId,
+    builderState.forcedTemplateSelection?.templateId,
   ];
   return candidates.find((templateId) => isConcreteTemplateId(templateId)) || "";
 }
@@ -1283,15 +1195,15 @@ function isConcreteTemplateId(templateId) {
 
 function guidedTemplateContextText(extra = "") {
   return [
-    guidedState.websiteIntent,
-    guidedState.businessName,
-    guidedState.industry,
-    guidedState.businessDescription,
-    arrayValue(guidedState.servicesProducts).join(" "),
-    guidedState.targetAudience,
-    guidedState.preferredTone,
-    arrayValue(guidedState.preferredColors).join(" "),
-    guidedState.salesMode,
+    builderState.guidedState.websiteIntent,
+    builderState.guidedState.businessName,
+    builderState.guidedState.industry,
+    builderState.guidedState.businessDescription,
+    arrayValue(builderState.guidedState.servicesProducts).join(" "),
+    builderState.guidedState.targetAudience,
+    builderState.guidedState.preferredTone,
+    arrayValue(builderState.guidedState.preferredColors).join(" "),
+    builderState.guidedState.salesMode,
     extra,
   ].join(" ").toLowerCase();
 }
@@ -1389,7 +1301,7 @@ function templateIntentScorecard(value, payload = {}) {
     payload.target_audience,
     payload.preferred_tone,
     arrayValue(payload.preferred_colors).join(" "),
-    payload.salesMode || guidedState.salesMode,
+    payload.salesMode || builderState.guidedState.salesMode,
   ].join(" "));
   const products = meaningfulOfferItems(payload.services_products || []);
   if (!text) return [];
@@ -1470,35 +1382,35 @@ function inferTemplateIdFromText(value) {
 function syncTemplateSelectionFromGuidedContext(extra = "") {
   const text = guidedTemplateContextText(extra);
   const inferredTemplateId = inferTemplateIdFromText(text);
-  if (!inferredTemplateId || forcedTemplateSelection?.templateId === inferredTemplateId) return;
-  const shouldOverride = !forcedTemplateSelection?.templateId
+  if (!inferredTemplateId || builderState.forcedTemplateSelection?.templateId === inferredTemplateId) return;
+  const shouldOverride = !builderState.forcedTemplateSelection?.templateId
     || textSuggestsBroadMarketplace(text)
     || textSuggestsFocusedProductLine(text)
     || textSuggestsSingleProductShowcase(text)
-    || forcedTemplateSelection.intent === "default_minimal"
-    || forcedTemplateSelection.intent === "provisional_needs_catalog_context"
-    || forcedTemplateSelection.intent === "guided_context_template";
+    || builderState.forcedTemplateSelection.intent === "default_minimal"
+    || builderState.forcedTemplateSelection.intent === "provisional_needs_catalog_context"
+    || builderState.forcedTemplateSelection.intent === "guided_context_template";
   if (!shouldOverride) return;
   const meta = templatePreviewMeta(inferredTemplateId);
-  forcedTemplateSelection = {
+  builderState.forcedTemplateSelection = {
     templateId: inferredTemplateId,
-    template: forcedTemplateSelection?.templateId === inferredTemplateId ? forcedTemplateSelection.template : null,
+    template: builderState.forcedTemplateSelection?.templateId === inferredTemplateId ? builderState.forcedTemplateSelection.template : null,
     catalogType: meta?.catalogType || "",
     intent: "guided_context_template",
     reason: "Updated from the full guided intake context",
   };
-  guidedState.sitePlan = null;
-  guidedState.sitePlanApproved = false;
+  builderState.guidedState.sitePlan = null;
+  builderState.guidedState.sitePlanApproved = false;
 }
 
 function livePreviewPublicCopy(profile, items = []) {
-  const name = guidedState.businessName || langText({
+  const name = builderState.guidedState.businessName || langText({
     en: "Your business",
     es: "Tu negocio",
     fr: "Votre entreprise",
     pt: "Seu negocio",
   });
-  const productFocus = publicProductFocus(items, guidedState.industry);
+  const productFocus = publicProductFocus(items, builderState.guidedState.industry);
   const templates = {
     marketplace: {
       headline: langText({
@@ -1610,7 +1522,7 @@ function publicProductFocus(items = [], fallback = "") {
     .filter(Boolean)
     .slice(0, 2);
   if (cleanItems.length) {
-    const joiner = selectedLanguage === "en" ? " and " : selectedLanguage === "fr" ? " et " : " y ";
+    const joiner = builderState.selectedLanguage === "en" ? " and " : builderState.selectedLanguage === "fr" ? " et " : " y ";
     return cleanItems.join(joiner);
   }
   return fallback || langText({
@@ -1639,7 +1551,7 @@ function translatePreviewNav(item) {
     fr: { Shop: "Boutique", Categories: "Categories", Deals: "Offres", Cart: "Panier", Search: "Recherche", Listings: "Annonces", Sellers: "Vendeurs", Contact: "Contact", "New drop": "Nouveautes", Collections: "Collections", Lookbook: "Lookbook", Fit: "Tailles", Menu: "Menu", Specials: "Specials", Order: "Commander", Location: "Adresse", Services: "Services", Process: "Processus", Proof: "Preuves", Overview: "Accueil", Features: "Details", Story: "Histoire", Buy: "Acheter" },
     pt: { Shop: "Loja", Categories: "Categorias", Deals: "Ofertas", Cart: "Carrinho", Search: "Busca", Listings: "Anuncios", Sellers: "Vendedores", Contact: "Contato", "New drop": "Novo drop", Collections: "Colecoes", Lookbook: "Lookbook", Fit: "Tamanhos", Menu: "Menu", Specials: "Especiais", Order: "Pedir", Location: "Localizacao", Services: "Servicos", Process: "Processo", Proof: "Prova", Overview: "Inicio", Features: "Detalhes", Story: "Historia", Buy: "Comprar" },
   };
-  return dictionary[selectedLanguage]?.[item] || item;
+  return dictionary[builderState.selectedLanguage]?.[item] || item;
 }
 
 function livePreviewTemplateModules(profile, items) {
@@ -1702,7 +1614,7 @@ function livePreviewFallbackItems() {
 }
 
 function applyI18n() {
-  document.documentElement.lang = selectedLanguage;
+  document.documentElement.lang = builderState.selectedLanguage;
   document.title = t("pageTitle");
   document.querySelectorAll("[data-i18n]").forEach((item) => {
     item.textContent = t(item.dataset.i18n);
@@ -1720,8 +1632,8 @@ function applyI18n() {
 }
 
 function updateBuilderAvatarLabels() {
-  if (!builderAvatarAssistant) return;
-  builderAvatarAssistant.labels = {
+  if (!builderState.builderAvatarAssistant) return;
+  builderState.builderAvatarAssistant.labels = {
     idle: t("assistantSubtitle"),
     listening: langText({ en: "I'm listening to your idea.", es: "Estoy escuchando tu idea.", fr: "J'écoute votre idée.", pt: "Estou ouvindo sua ideia." }),
     thinking: t("thinking"),
@@ -1730,7 +1642,7 @@ function updateBuilderAvatarLabels() {
     confused: langText({ en: "I need a little more context.", es: "Necesito un poco mas de contexto.", fr: "J'ai besoin d'un peu plus de contexte.", pt: "Preciso de um pouco mais de contexto." }),
     success: langText({ en: "Your draft is ready.", es: "Tu borrador esta listo.", fr: "Votre brouillon est prêt.", pt: "Seu rascunho está pronto." }),
   };
-  builderAvatarAssistant.setState(builderAvatarManager?.getState() || "idle");
+  builderState.builderAvatarAssistant.setState(builderAvatarManager?.getState() || "idle");
 }
 
 function setLabelText(label, value) {
@@ -1750,7 +1662,7 @@ function setLabelText(label, value) {
 
 function initBuilderAvatarAssistant() {
   if (!builderAvatarRoot || !window.AvatarAssistant || !builderAvatarManager) return;
-  builderAvatarAssistant = new window.AvatarAssistant({
+  builderState.builderAvatarAssistant = new window.AvatarAssistant({
     root: builderAvatarRoot,
     manager: builderAvatarManager,
     name: "LYRA",
@@ -1795,12 +1707,12 @@ function avatarStateFromAssistantState(state) {
 }
 
 function setAssistantState(state) {
-  assistantState = normalizeAssistantState(state);
-  document.body.dataset.assistantState = assistantState;
-  builderAvatarManager?.setState(avatarStateFromAssistantState(assistantState), { source: "guided-assistant" });
+  builderState.assistantState = normalizeAssistantState(state);
+  document.body.dataset.assistantState = builderState.assistantState;
+  builderAvatarManager?.setState(avatarStateFromAssistantState(builderState.assistantState), { source: "guided-assistant" });
   document.querySelectorAll(".assistant-avatar").forEach((avatar) => {
-    avatar.dataset.state = assistantState;
-    avatar.src = ASSISTANT_AVATARS[assistantState] || ASSISTANT_AVATAR_FALLBACK;
+    avatar.dataset.state = builderState.assistantState;
+    avatar.src = ASSISTANT_AVATARS[builderState.assistantState] || ASSISTANT_AVATAR_FALLBACK;
     avatar.onerror = () => {
       avatar.onerror = null;
       avatar.src = ASSISTANT_AVATAR_FALLBACK;
@@ -1815,27 +1727,27 @@ function normalizeAssistantState(state) {
 }
 
 function toggleAssistantAudio() {
-  assistantVoiceEnabled = !assistantVoiceEnabled;
-  localStorage.setItem("gnuDevAssistantVoice", assistantVoiceEnabled ? "on" : "off");
+  builderState.assistantVoiceEnabled = !builderState.assistantVoiceEnabled;
+  localStorage.setItem("gnuDevAssistantVoice", builderState.assistantVoiceEnabled ? "on" : "off");
   updateAssistantAudioToggle();
 }
 
 function updateAssistantAudioToggle() {
-  assistantAudioToggle.textContent = assistantVoiceEnabled ? t("voiceOutputOn") : t("voiceOutputOff");
-  assistantAudioToggle.setAttribute("aria-label", assistantVoiceEnabled ? t("voiceOutputOn") : t("voiceOutputOff"));
-  assistantAudioToggle.dataset.enabled = assistantVoiceEnabled ? "true" : "false";
-  assistantAudioToggle.classList.toggle("active", assistantVoiceEnabled);
+  assistantAudioToggle.textContent = builderState.assistantVoiceEnabled ? t("voiceOutputOn") : t("voiceOutputOff");
+  assistantAudioToggle.setAttribute("aria-label", builderState.assistantVoiceEnabled ? t("voiceOutputOn") : t("voiceOutputOff"));
+  assistantAudioToggle.dataset.enabled = builderState.assistantVoiceEnabled ? "true" : "false";
+  assistantAudioToggle.classList.toggle("active", builderState.assistantVoiceEnabled);
 }
 
 function speakAssistantMessage(message) {
-  if (!assistantVoiceEnabled || !("speechSynthesis" in window) || !message) return;
+  if (!builderState.assistantVoiceEnabled || !("speechSynthesis" in window) || !message) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(message);
-  utterance.lang = languageToSpeechLocale(selectedLanguage);
+  utterance.lang = languageToSpeechLocale(builderState.selectedLanguage);
   utterance.rate = 0.96;
   utterance.pitch = 1.02;
   utterance.addEventListener("start", () => setAssistantState("speaking"));
-  utterance.addEventListener("end", () => setAssistantState(guidedStep === "review" ? "success" : "happy"));
+  utterance.addEventListener("end", () => setAssistantState(builderState.guidedStep === "review" ? "success" : "happy"));
   utterance.addEventListener("error", () => setAssistantState("alert"));
   window.speechSynthesis.speak(utterance);
 }
@@ -1855,7 +1767,7 @@ function startVoiceInput() {
     return;
   }
   const recognition = new SpeechRecognition();
-  recognition.lang = languageToSpeechLocale(selectedLanguage);
+  recognition.lang = languageToSpeechLocale(builderState.selectedLanguage);
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
   voiceStatusText.textContent = t("voiceListening");
@@ -1874,7 +1786,7 @@ function startVoiceInput() {
   });
   recognition.addEventListener("end", () => {
     guidedMicButton.classList.remove("listening");
-    if (assistantState === "listening") setAssistantState("neutral");
+    if (builderState.assistantState === "listening") setAssistantState("neutral");
   });
   recognition.start();
 }
@@ -1914,7 +1826,7 @@ function initClientIntakeSessionGate() {
     if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
     if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
     if (studioAuthEmail) {
-      studioAuthEmail.value = guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
+      studioAuthEmail.value = builderState.guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
       setTimeout(() => studioAuthEmail.focus(), 80);
     }
     if (guidedStatusText) {
@@ -1929,7 +1841,7 @@ function initClientIntakeSessionGate() {
   }
   const stored = readClientIntakeSession();
   if (stored?.clientEmail) {
-    clientIntakeSession = stored;
+    builderState.clientIntakeSession = stored;
     hydrateClientIntakeSession(stored, { silent: true });
     syncClientIntakeSession({ immediate: true, reason: "resume" });
     return;
@@ -1948,7 +1860,7 @@ function initClientIntakeSessionGate() {
   if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
   if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
   if (studioAuthEmail) {
-    studioAuthEmail.value = guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
+    studioAuthEmail.value = builderState.guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
     setTimeout(() => studioAuthEmail.focus(), 80);
   }
   if (guidedStatusText) {
@@ -1962,17 +1874,17 @@ function initClientIntakeSessionGate() {
 }
 
 function isClientWorkspaceUnlocked() {
-  return clientWorkspaceUnlocked;
+  return builderState.clientWorkspaceUnlocked;
 }
 
 function markClientWorkspaceUnlocked() {
-  clientWorkspaceUnlocked = true;
+  builderState.clientWorkspaceUnlocked = true;
   scheduleClientWorkspaceAutoLock();
 }
 
 function clearClientWorkspaceUnlock() {
-  clientWorkspaceUnlocked = false;
-  clearTimeout(clientWorkspaceIdleTimer);
+  builderState.clientWorkspaceUnlocked = false;
+  clearTimeout(builderState.clientWorkspaceIdleTimer);
 }
 
 function initClientWorkspaceSecurity() {
@@ -1988,9 +1900,9 @@ function initClientWorkspaceSecurity() {
 
 function scheduleClientWorkspaceAutoLock() {
   if (!isPublicClientSetup) return;
-  clearTimeout(clientWorkspaceIdleTimer);
+  clearTimeout(builderState.clientWorkspaceIdleTimer);
   if (!isClientWorkspaceUnlocked()) return;
-  clientWorkspaceIdleTimer = setTimeout(() => {
+  builderState.clientWorkspaceIdleTimer = setTimeout(() => {
     lockClientWorkspace("idle");
   }, CLIENT_WORKSPACE_IDLE_LOCK_MS);
 }
@@ -2043,13 +1955,13 @@ function writeClientIntakeSession(session) {
     ...(session || {}),
     draft: sanitizeClientSessionDraft(session?.draft || {}),
   };
-  clientIntakeSession = {
-    ...(clientIntakeSession || {}),
+  builderState.clientIntakeSession = {
+    ...(builderState.clientIntakeSession || {}),
     ...cleanSession,
     savedAt: new Date().toISOString(),
   };
   try {
-    localStorage.setItem(CLIENT_INTAKE_SESSION_STORAGE_KEY, JSON.stringify(clientIntakeSession));
+    localStorage.setItem(CLIENT_INTAKE_SESSION_STORAGE_KEY, JSON.stringify(builderState.clientIntakeSession));
   } catch {
     // Account state is helpful, not required for the live session.
   }
@@ -2058,25 +1970,25 @@ function writeClientIntakeSession(session) {
 
 function renderClientAccountControl() {
   if (!isPublicClientSetup || !guidedHeaderActions) return;
-  if (!clientAccountButton) {
-    clientAccountButton = document.createElement("button");
-    clientAccountButton.id = "clientAccountButton";
-    clientAccountButton.className = "secondary-action compact-action client-account-button";
-    clientAccountButton.type = "button";
-    clientAccountButton.addEventListener("click", switchClientAccount);
-    guidedHeaderActions.insertBefore(clientAccountButton, guidedHeaderActions.firstChild);
+  if (!builderState.clientAccountButton) {
+    builderState.clientAccountButton = document.createElement("button");
+    builderState.clientAccountButton.id = "clientAccountButton";
+    builderState.clientAccountButton.className = "secondary-action compact-action client-account-button";
+    builderState.clientAccountButton.type = "button";
+    builderState.clientAccountButton.addEventListener("click", switchClientAccount);
+    guidedHeaderActions.insertBefore(builderState.clientAccountButton, guidedHeaderActions.firstChild);
   }
-  if (!clientProjectsButton) {
-    clientProjectsButton = document.createElement("button");
-    clientProjectsButton.id = "clientProjectsButton";
-    clientProjectsButton.className = "secondary-action compact-action client-projects-button";
-    clientProjectsButton.type = "button";
-    clientProjectsButton.addEventListener("click", openClientProjectsPanel);
-    guidedHeaderActions.insertBefore(clientProjectsButton, clientAccountButton.nextSibling);
+  if (!builderState.clientProjectsButton) {
+    builderState.clientProjectsButton = document.createElement("button");
+    builderState.clientProjectsButton.id = "clientProjectsButton";
+    builderState.clientProjectsButton.className = "secondary-action compact-action client-projects-button";
+    builderState.clientProjectsButton.type = "button";
+    builderState.clientProjectsButton.addEventListener("click", openClientProjectsPanel);
+    guidedHeaderActions.insertBefore(builderState.clientProjectsButton, builderState.clientAccountButton.nextSibling);
   }
-  const session = clientIntakeSession || readClientIntakeSession();
+  const session = builderState.clientIntakeSession || readClientIntakeSession();
   const email = session?.clientEmail || localStorage.getItem("lumaPendingClientEmail") || "";
-  clientAccountButton.textContent = email
+  builderState.clientAccountButton.textContent = email
     ? langText({
         en: `Account: ${compactEmailLabel(email)}`,
         es: `Cuenta: ${compactEmailLabel(email)}`,
@@ -2084,8 +1996,8 @@ function renderClientAccountControl() {
         pt: `Conta: ${compactEmailLabel(email)}`,
       })
     : langText({ en: "Sign in", es: "Iniciar sesión", fr: "Connexion", pt: "Entrar" });
-  clientProjectsButton.textContent = t("myPages");
-  clientProjectsButton.hidden = !storedClientAccessToken();
+  builderState.clientProjectsButton.textContent = t("myPages");
+  builderState.clientProjectsButton.hidden = !storedClientAccessToken();
 }
 
 function compactEmailLabel(email) {
@@ -2097,7 +2009,7 @@ function compactEmailLabel(email) {
 }
 
 function switchClientAccount() {
-  const hasSession = Boolean(clientIntakeSession?.clientEmail || readClientIntakeSession()?.clientEmail || storedClientAccessToken());
+  const hasSession = Boolean(builderState.clientIntakeSession?.clientEmail || readClientIntakeSession()?.clientEmail || storedClientAccessToken());
   if (hasSession) {
     const ok = window.confirm(langText({
       en: "Switch account? This clears the current business draft from this browser -- the next workspace starts clean.",
@@ -2107,7 +2019,7 @@ function switchClientAccount() {
     }));
     if (!ok) return;
   }
-  clientIntakeSession = null;
+  builderState.clientIntakeSession = null;
   localStorage.removeItem(CLIENT_INTAKE_SESSION_STORAGE_KEY);
   localStorage.removeItem("lumaClientAccessToken");
   localStorage.removeItem("lumaClientRefreshToken");
@@ -2150,7 +2062,7 @@ function captureClientAuthResetIntent() {
     return value === "" || value === "1" || value === "true";
   });
   if (!shouldReset) return;
-  clientIntakeSession = null;
+  builderState.clientIntakeSession = null;
   clearClientWorkspaceUnlock();
   localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
   localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
@@ -2196,7 +2108,7 @@ function formatProjectUpdatedAt(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   try {
-    return new Intl.DateTimeFormat(selectedLanguage || "en", {
+    return new Intl.DateTimeFormat(builderState.selectedLanguage || "en", {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -2248,12 +2160,12 @@ async function fetchClientProjects() {
 }
 
 function ensureClientProjectsPanel() {
-  if (clientProjectsPanel) return clientProjectsPanel;
-  clientProjectsPanel = document.createElement("section");
-  clientProjectsPanel.className = "client-projects-panel";
-  clientProjectsPanel.hidden = true;
-  clientProjectsPanel.setAttribute("aria-label", "Mis páginas");
-  clientProjectsPanel.addEventListener("click", (event) => {
+  if (builderState.clientProjectsPanel) return builderState.clientProjectsPanel;
+  builderState.clientProjectsPanel = document.createElement("section");
+  builderState.clientProjectsPanel.className = "client-projects-panel";
+  builderState.clientProjectsPanel.hidden = true;
+  builderState.clientProjectsPanel.setAttribute("aria-label", "Mis páginas");
+  builderState.clientProjectsPanel.addEventListener("click", (event) => {
     if (event.target?.closest?.("[data-client-projects-close]")) {
       closeClientProjectsPanel();
       return;
@@ -2270,8 +2182,8 @@ function ensureClientProjectsPanel() {
       startNewClientProject({ skipConfirm: true });
     }
   });
-  document.body.appendChild(clientProjectsPanel);
-  return clientProjectsPanel;
+  document.body.appendChild(builderState.clientProjectsPanel);
+  return builderState.clientProjectsPanel;
 }
 
 function renderClientProjectsLoading() {
@@ -2331,7 +2243,7 @@ function renderClientProjectsPanel(projects = []) {
 }
 
 function closeClientProjectsPanel() {
-  if (clientProjectsPanel) clientProjectsPanel.hidden = true;
+  if (builderState.clientProjectsPanel) builderState.clientProjectsPanel.hidden = true;
   document.body.classList.remove("client-projects-open");
 }
 
@@ -2343,8 +2255,8 @@ async function openClientProjectsPanel() {
   }
   renderClientProjectsLoading();
   try {
-    clientProjects = await fetchClientProjects();
-    renderClientProjectsPanel(clientProjects);
+    builderState.clientProjects = await fetchClientProjects();
+    renderClientProjectsPanel(builderState.clientProjects);
   } catch (error) {
     console.warn("Could not load client projects", error);
     if (!storedClientAccessToken()) return;
@@ -2356,13 +2268,13 @@ async function openClientProjectsPanel() {
 async function handleClientProjectsAfterAuth(user, session) {
   if (!isPublicClientSetup || !storedClientAccessToken()) return;
   try {
-    clientProjects = await fetchClientProjects();
+    builderState.clientProjects = await fetchClientProjects();
   } catch (error) {
     console.warn("Could not load client projects", error);
     return;
   }
-  if (clientProjects.length > 1) {
-    renderClientProjectsPanel(clientProjects);
+  if (builderState.clientProjects.length > 1) {
+    renderClientProjectsPanel(builderState.clientProjects);
     guidedStatusText.textContent = langText({
       en: "Choose which page you want to continue, or start a new one.",
       es: "Elige qué página quieres continuar, o crea una nueva.",
@@ -2371,8 +2283,8 @@ async function handleClientProjectsAfterAuth(user, session) {
     });
     return;
   }
-  if (clientProjects.length === 1 && !currentSchema) {
-    await loadClientProject(clientProjects[0].id, { silent: true, session });
+  if (builderState.clientProjects.length === 1 && !builderState.currentSchema) {
+    await loadClientProject(builderState.clientProjects[0].id, { silent: true, session });
   }
 }
 
@@ -2396,39 +2308,39 @@ async function loadClientProject(projectId, options = {}) {
   }
   const data = await response.json();
   const schema = data.schema || {};
-  currentSchema = prepareWebsiteConfig(schema, { brand: schema.brand || guidedState.brand || {} }, null);
-  currentSiteId = data.generatedSiteId || data.site_id || projectId;
-  currentBusinessId = data.business_id || currentBusinessId;
-  currentGenerationId = null;
-  currentCatalogItems = catalogItemsFromSchema(currentSchema);
-  selectedPageKey = currentSchema.pages?.[0]?.page_key || "home";
-  selectedVariantId = currentSchema.design_variants?.[0]?.id || "";
-  guidedState.businessName = currentSchema.business?.name || guidedState.businessName;
-  guidedState.businessDescription = currentSchema.business?.description || guidedState.businessDescription;
-  guidedState.industry = currentSchema.business?.industry || guidedState.industry;
-  guidedState.preferredTone = currentSchema.business?.tone || guidedState.preferredTone;
-  guidedState.logoUrl = currentSchema.brand?.logoUrl || guidedState.logoUrl;
-  guidedState.logoPreference = currentSchema.brand?.logoPreference || guidedState.logoPreference;
-  guidedState.generatedSiteId = currentSiteId;
-  guidedState.projectId = currentSiteId;
-  clientIntakeSession = {
-    ...(clientIntakeSession || options.session || {}),
-    generatedSiteId: currentSiteId,
-    projectId: currentSiteId,
-    clientEmail: clientIntakeSession?.clientEmail || options.session?.clientEmail || localStorage.getItem("lumaPendingClientEmail") || "",
+  builderState.currentSchema = prepareWebsiteConfig(schema, { brand: schema.brand || builderState.guidedState.brand || {} }, null);
+  builderState.currentSiteId = data.generatedSiteId || data.site_id || projectId;
+  builderState.currentBusinessId = data.business_id || builderState.currentBusinessId;
+  builderState.currentGenerationId = null;
+  builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
+  builderState.selectedPageKey = builderState.currentSchema.pages?.[0]?.page_key || "home";
+  builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || "";
+  builderState.guidedState.businessName = builderState.currentSchema.business?.name || builderState.guidedState.businessName;
+  builderState.guidedState.businessDescription = builderState.currentSchema.business?.description || builderState.guidedState.businessDescription;
+  builderState.guidedState.industry = builderState.currentSchema.business?.industry || builderState.guidedState.industry;
+  builderState.guidedState.preferredTone = builderState.currentSchema.business?.tone || builderState.guidedState.preferredTone;
+  builderState.guidedState.logoUrl = builderState.currentSchema.brand?.logoUrl || builderState.guidedState.logoUrl;
+  builderState.guidedState.logoPreference = builderState.currentSchema.brand?.logoPreference || builderState.guidedState.logoPreference;
+  builderState.guidedState.generatedSiteId = builderState.currentSiteId;
+  builderState.guidedState.projectId = builderState.currentSiteId;
+  builderState.clientIntakeSession = {
+    ...(builderState.clientIntakeSession || options.session || {}),
+    generatedSiteId: builderState.currentSiteId,
+    projectId: builderState.currentSiteId,
+    clientEmail: builderState.clientIntakeSession?.clientEmail || options.session?.clientEmail || localStorage.getItem("lumaPendingClientEmail") || "",
     draft: guidedSessionDraftForApi(),
   };
-  writeClientIntakeSession(clientIntakeSession);
+  writeClientIntakeSession(builderState.clientIntakeSession);
   closeClientProjectsPanel();
   saveGeneratedSite({
-    schema: currentSchema,
-    business_id: currentBusinessId,
-    site_id: currentSiteId,
-    generatedSiteId: currentSiteId,
+    schema: builderState.currentSchema,
+    business_id: builderState.currentBusinessId,
+    site_id: builderState.currentSiteId,
+    generatedSiteId: builderState.currentSiteId,
     storage_status: data.storage_status || "stored",
     used_dev_mock: false,
   });
-  siteTitle.textContent = currentSchema.business?.name || "Generated site";
+  siteTitle.textContent = builderState.currentSchema.business?.name || "Generated site";
   storageStatus.textContent = storageLabel(data.storage_status || "stored", false);
   renderEditor();
   renderPreview();
@@ -2438,13 +2350,13 @@ async function loadClientProject(projectId, options = {}) {
 }
 
 async function resumeClientSessionFromAuthToken() {
-  if (clientAuthResumePromise) return clientAuthResumePromise;
-  clientAuthResumePromise = (async () => {
+  if (builderState.clientAuthResumePromise) return builderState.clientAuthResumePromise;
+  builderState.clientAuthResumePromise = (async () => {
   try {
     const user = await fetchClientAuthUser();
     const email = user?.email || "";
     if (!email) throw new Error("Authenticated user email missing.");
-    const name = user?.userMetadata?.full_name || user?.userMetadata?.name || guidedState.businessName || "";
+    const name = user?.userMetadata?.full_name || user?.userMetadata?.name || builderState.guidedState.businessName || "";
     const session = await createOrResumeClientIntakeSession({
       email,
       name,
@@ -2473,7 +2385,7 @@ async function resumeClientSessionFromAuthToken() {
     console.error("Could not resume client OAuth session", {
       message: error?.message || String(error),
       tokenPresent: Boolean(storedClientAccessToken()),
-      clientIntakeSessionPresent: Boolean(clientIntakeSession),
+      clientIntakeSessionPresent: Boolean(builderState.clientIntakeSession),
     }, error);
     openStudioAuthGate("start");
     if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
@@ -2487,18 +2399,18 @@ async function resumeClientSessionFromAuthToken() {
     }
     return null;
   } finally {
-    clientAuthResumePromise = null;
+    builderState.clientAuthResumePromise = null;
   }
   })();
-  return clientAuthResumePromise;
+  return builderState.clientAuthResumePromise;
 }
 
 function hydrateClientIntakeSession(session, options = {}) {
   if (!session) return;
-  currentRequestId = session.requestId || session.request_id || currentRequestId;
-  currentSiteId = session.generatedSiteId || session.projectId || session.siteId || currentSiteId;
+  builderState.currentRequestId = session.requestId || session.request_id || builderState.currentRequestId;
+  builderState.currentSiteId = session.generatedSiteId || session.projectId || session.siteId || builderState.currentSiteId;
   if (session.restored) {
-    restoredGuidedDraftInfo = restoredGuidedDraftInfo || {
+    builderState.restoredGuidedDraftInfo = builderState.restoredGuidedDraftInfo || {
       savedAt: "",
       completionPercent: guidedCompletionPercent(),
       missing: missingGuidedSteps(),
@@ -2533,31 +2445,31 @@ function hydrateClientIntakeSession(session, options = {}) {
 // Bug fix (2026-07-18): GUIDED_DRAFT_STORAGE_KEY ("lumaGuidedDraft") is a
 // single browser-wide key, not scoped per account/email. Before this guard,
 // createOrResumeClientIntakeSession() would happily send whatever stale
-// guidedState was already in memory (business name, colors, catalog,
-// selectedLanguage...) as the "draft" for a *different* email the moment
+// builderState.guidedState was already in memory (business name, colors, catalog,
+// builderState.selectedLanguage...) as the "draft" for a *different* email the moment
 // someone signed in with another account on the same browser -- so the new
 // account looked like it already "knew" the previous person's business, and
 // its saved language silently overrode the language of the live
 // conversation. See docs/AGENT_LOG.md for the full trace.
 function resetGuidedStateForNewAccount(options = {}) {
   const preserveAuth = Boolean(options.preserveAuth);
-  guidedState = createEmptyGuidedState(selectedLanguage);
-  currentSchema = null;
-  currentRequestId = null;
-  currentSiteId = null;
-  currentBusinessId = null;
-  currentGenerationId = null;
-  currentCatalogItems = [];
-  selectedPageKey = "home";
-  selectedVariantId = "";
-  forcedTemplateSelection = null;
-  clientIntakeSession = null;
-  restoredGuidedDraftInfo = null;
-  restoredDraftNoticeShown = false;
-  restoredDraftNoticeCard?.remove();
-  restoredDraftNoticeCard = null;
+  builderState.guidedState = createEmptyGuidedState(builderState.selectedLanguage);
+  builderState.currentSchema = null;
+  builderState.currentRequestId = null;
+  builderState.currentSiteId = null;
+  builderState.currentBusinessId = null;
+  builderState.currentGenerationId = null;
+  builderState.currentCatalogItems = [];
+  builderState.selectedPageKey = "home";
+  builderState.selectedVariantId = "";
+  builderState.forcedTemplateSelection = null;
+  builderState.clientIntakeSession = null;
+  builderState.restoredGuidedDraftInfo = null;
+  builderState.restoredDraftNoticeShown = false;
+  builderState.restoredDraftNoticeCard?.remove();
+  builderState.restoredDraftNoticeCard = null;
   removeGuidedBuildStatusCard();
-  guidedStep = "websiteIntent";
+  builderState.guidedStep = "websiteIntent";
   try {
     localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
     localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
@@ -2596,13 +2508,13 @@ function isNewProjectBriefMessage(message) {
 }
 
 function shouldResetRestoredWorkspaceForMessage(message) {
-  if (!isPublicClientSetup || currentSchema) return false;
-  const restored = Boolean(restoredGuidedDraftInfo || clientIntakeSession?.restored || readClientIntakeSession()?.restored);
+  if (!isPublicClientSetup || builderState.currentSchema) return false;
+  const restored = Boolean(builderState.restoredGuidedDraftInfo || builderState.clientIntakeSession?.restored || readClientIntakeSession()?.restored);
   if (!restored || !isNewProjectBriefMessage(message)) return false;
   const incomingName = extractBusinessName(message).toLowerCase();
-  const existingName = String(guidedState.businessName || "").trim().toLowerCase();
+  const existingName = String(builderState.guidedState.businessName || "").trim().toLowerCase();
   if (incomingName && existingName && incomingName !== existingName) return true;
-  return Boolean(guidedState.businessDescription || guidedState.websiteIntent || guidedState.selectedTemplateId || guidedState.catalogType);
+  return Boolean(builderState.guidedState.businessDescription || builderState.guidedState.websiteIntent || builderState.guidedState.selectedTemplateId || builderState.guidedState.catalogType);
 }
 
 async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false } = {}) {
@@ -2610,8 +2522,8 @@ async function createOrResumeClientIntakeSession({ email, name = "", reason = "s
   if (!cleanEmail) throw new Error("Email is required.");
   const storedSession = readClientIntakeSession();
   const lastKnownEmail = String(
-    clientIntakeSession?.clientEmail
-      || clientIntakeSession?.client_email
+    builderState.clientIntakeSession?.clientEmail
+      || builderState.clientIntakeSession?.client_email
       || storedSession?.clientEmail
       || storedSession?.client_email
       || localStorage.getItem("lumaPendingClientEmail")
@@ -2633,10 +2545,10 @@ async function createOrResumeClientIntakeSession({ email, name = "", reason = "s
     body: JSON.stringify({
       email: cleanEmail,
       name,
-      selectedLanguage,
-      requestId: forceNew ? null : currentRequestId,
-      generatedSiteId: forceNew ? "" : currentSiteId || clientIntakeSession?.generatedSiteId || clientIntakeSession?.projectId || "",
-      projectId: forceNew ? "" : currentSiteId || clientIntakeSession?.generatedSiteId || clientIntakeSession?.projectId || "",
+      selectedLanguage: builderState.selectedLanguage,
+      requestId: forceNew ? null : builderState.currentRequestId,
+      generatedSiteId: forceNew ? "" : builderState.currentSiteId || builderState.clientIntakeSession?.generatedSiteId || builderState.clientIntakeSession?.projectId || "",
+      projectId: forceNew ? "" : builderState.currentSiteId || builderState.clientIntakeSession?.generatedSiteId || builderState.clientIntakeSession?.projectId || "",
       forceNew,
       draft,
     }),
@@ -2650,18 +2562,18 @@ async function createOrResumeClientIntakeSession({ email, name = "", reason = "s
 }
 
 function syncClientIntakeSession({ immediate = false, reason = "autosave" } = {}) {
-  if (!isPublicClientSetup || !clientIntakeSession?.clientEmail) return;
-  clearTimeout(clientIntakeSyncTimer);
+  if (!isPublicClientSetup || !builderState.clientIntakeSession?.clientEmail) return;
+  clearTimeout(builderState.clientIntakeSyncTimer);
   const run = async () => {
-    if (clientIntakeSyncInFlight) return;
-    clientIntakeSyncInFlight = true;
+    if (builderState.clientIntakeSyncInFlight) return;
+    builderState.clientIntakeSyncInFlight = true;
     try {
       const session = await createOrResumeClientIntakeSession({
-        email: clientIntakeSession.clientEmail,
-        name: guidedState.contactInfo?.name || guidedState.businessName || "",
+        email: builderState.clientIntakeSession.clientEmail,
+        name: builderState.guidedState.contactInfo?.name || builderState.guidedState.businessName || "",
         reason,
       });
-      if (session.requestId) currentRequestId = session.requestId;
+      if (session.requestId) builderState.currentRequestId = session.requestId;
     } catch (error) {
       console.warn("Client intake autosave failed", error);
       if (guidedStatusText) {
@@ -2673,13 +2585,13 @@ function syncClientIntakeSession({ immediate = false, reason = "autosave" } = {}
         });
       }
     } finally {
-      clientIntakeSyncInFlight = false;
+      builderState.clientIntakeSyncInFlight = false;
     }
   };
   if (immediate) {
     run();
   } else {
-    clientIntakeSyncTimer = setTimeout(run, CLIENT_INTAKE_AUTOSAVE_DELAY_MS);
+    builderState.clientIntakeSyncTimer = setTimeout(run, CLIENT_INTAKE_AUTOSAVE_DELAY_MS);
   }
 }
 
@@ -2687,19 +2599,19 @@ function applyPromptFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const prompt = params.get("prompt") || params.get("description") || "";
   if (!prompt.trim()) return;
-  guidedState.websiteIntent = prompt.trim();
-  guidedState.businessDescription = prompt.trim();
-  guidedState.preferredTone = guidedState.preferredTone || extractStyleHint(prompt);
-  guidedState.industry = guidedState.industry || inferIndustryFromPrompt(prompt);
+  builderState.guidedState.websiteIntent = prompt.trim();
+  builderState.guidedState.businessDescription = prompt.trim();
+  builderState.guidedState.preferredTone = builderState.guidedState.preferredTone || extractStyleHint(prompt);
+  builderState.guidedState.industry = builderState.guidedState.industry || inferIndustryFromPrompt(prompt);
   if (params.get("templateId")) {
-    forcedTemplateSelection = {
+    builderState.forcedTemplateSelection = {
       templateId: params.get("templateId"),
       catalogType: params.get("catalogType") || "",
       intent: params.get("intent") || "manual_template",
       reason: "Template selected from customer template gallery",
     };
   }
-  guidedStep = "businessName";
+  builderState.guidedStep = "businessName";
   applyGuidedStateToForm();
 }
 
@@ -2722,17 +2634,17 @@ function inferIndustryFromPrompt(prompt) {
 
 function resetAssistantConversation() {
   guidedChat.innerHTML = "";
-  guidedHistory = [];
+  builderState.guidedHistory = [];
   setAssistantState("happy");
   renderGuidedCoachCard();
   let askedPrompt = false;
-  if (restoredGuidedDraftInfo) {
+  if (builderState.restoredGuidedDraftInfo) {
     renderRestoredDraftNotice({ force: true });
   }
-  if (guidedStep === "websiteIntent") {
+  if (builderState.guidedStep === "websiteIntent") {
     appendChatMessage(
       "assistant",
-      `${guidedQuestion(guidedStep)}\n\n${langText({
+      `${guidedQuestion(builderState.guidedStep)}\n\n${langText({
         en: "You can answer naturally, for example: a large catalog store, a restaurant menu, a booking site for a barbershop, or a cyberpunk online store.",
         es: "Puedes responder natural, por ejemplo: una tienda con catalogo grande, un menu de restaurante, una barberia con citas, o una tienda cyberpunk.",
         fr: "Vous pouvez répondre naturellement, par exemple : grand catalogue, menu de restaurant, site de reservation pour salon, ou boutique cyberpunk.",
@@ -2741,25 +2653,25 @@ function resetAssistantConversation() {
       "speaking",
     );
     askedPrompt = true;
-  } else if (forcedTemplateSelection?.templateId && guidedState.websiteIntent) {
+  } else if (builderState.forcedTemplateSelection?.templateId && builderState.guidedState.websiteIntent) {
     appendTemplateDetectionMessage({
-      templateId: forcedTemplateSelection.templateId,
-      template: forcedTemplateSelection.template || null,
-      intent: forcedTemplateSelection.intent || "manual_template",
-      catalogType: forcedTemplateSelection.catalogType || "",
-      reason: forcedTemplateSelection.reason || "Template selected from landing page",
+      templateId: builderState.forcedTemplateSelection.templateId,
+      template: builderState.forcedTemplateSelection.template || null,
+      intent: builderState.forcedTemplateSelection.intent || "manual_template",
+      catalogType: builderState.forcedTemplateSelection.catalogType || "",
+      reason: builderState.forcedTemplateSelection.reason || "Template selected from landing page",
     });
   }
-  if (!askedPrompt && guidedStep && guidedStep !== "review") {
-    appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
+  if (!askedPrompt && builderState.guidedStep && builderState.guidedStep !== "review") {
+    appendChatMessage("assistant", guidedQuestion(builderState.guidedStep), "speaking");
   }
 }
 
 function startNewClientProject(options = {}) {
   if (!isPublicClientSetup) return;
-  const hasExistingWork = Boolean(currentSchema || guidedState.businessName || guidedState.businessDescription || guidedState.websiteIntent);
+  const hasExistingWork = Boolean(builderState.currentSchema || builderState.guidedState.businessName || builderState.guidedState.businessDescription || builderState.guidedState.websiteIntent);
   if (hasExistingWork && !options.skipConfirm && !window.confirm(t("startNewProjectConfirm"))) return;
-  const existingEmail = clientIntakeSession?.clientEmail || readClientIntakeSession()?.clientEmail || "";
+  const existingEmail = builderState.clientIntakeSession?.clientEmail || readClientIntakeSession()?.clientEmail || "";
   closeClientProjectsPanel();
 
   localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
@@ -2767,22 +2679,22 @@ function startNewClientProject(options = {}) {
   localStorage.removeItem("lumaPendingGeneratedSite");
   localStorage.removeItem("lumaPendingAuthAction");
 
-  currentSchema = null;
-  selectedPageKey = "home";
-  selectedVariantId = "";
-  selectedStudioSectionId = "";
-  currentRequestId = null;
-  currentSiteId = "";
-  currentBusinessId = "";
-  currentGenerationId = null;
-  currentCatalogItems = [];
-  forcedTemplateSelection = null;
-  restoredGuidedDraftInfo = null;
-  guidedStep = "websiteIntent";
-  guidedState = createEmptyGuidedState(selectedLanguage);
-  if (existingEmail) guidedState.contactInfo.email = existingEmail;
+  builderState.currentSchema = null;
+  builderState.selectedPageKey = "home";
+  builderState.selectedVariantId = "";
+  builderState.selectedStudioSectionId = "";
+  builderState.currentRequestId = null;
+  builderState.currentSiteId = "";
+  builderState.currentBusinessId = "";
+  builderState.currentGenerationId = null;
+  builderState.currentCatalogItems = [];
+  builderState.forcedTemplateSelection = null;
+  builderState.restoredGuidedDraftInfo = null;
+  builderState.guidedStep = "websiteIntent";
+  builderState.guidedState = createEmptyGuidedState(builderState.selectedLanguage);
+  if (existingEmail) builderState.guidedState.contactInfo.email = existingEmail;
   guidedAskedSteps.clear();
-  lastAssistantPromptSignature = "";
+  builderState.lastAssistantPromptSignature = "";
 
   document.body.classList.remove(
     "generated-preview-open",
@@ -2863,8 +2775,8 @@ function saveGuidedDraft() {
       GUIDED_DRAFT_STORAGE_KEY,
       JSON.stringify({
         guidedState: guidedStateForApi(),
-        guidedStep,
-        selectedLanguage,
+        guidedStep: builderState.guidedStep,
+        selectedLanguage: builderState.selectedLanguage,
         completionPercent: guidedCompletionPercent(),
         missingSteps: missingGuidedSteps(),
         savedAt: new Date().toISOString(),
@@ -2884,8 +2796,8 @@ function restoreGuidedDraft() {
     const draft = JSON.parse(raw);
     if (draft.selectedLanguage) setSelectedLanguage(draft.selectedLanguage);
     if (draft.guidedState) {
-      guidedState = {
-        ...guidedState,
+      builderState.guidedState = {
+        ...builderState.guidedState,
         ...draft.guidedState,
         servicesProducts: arrayValue(draft.guidedState.servicesProducts),
         preferredColors: arrayValue(draft.guidedState.preferredColors),
@@ -2897,9 +2809,9 @@ function restoreGuidedDraft() {
       };
     }
     const missing = missingGuidedSteps();
-    const savedStep = draft.guidedStep || guidedStep;
-    guidedStep = savedStep === "review" && missing.length ? missing[0] : normalizeNextGuidedStep(savedStep);
-    restoredGuidedDraftInfo = {
+    const savedStep = draft.guidedStep || builderState.guidedStep;
+    builderState.guidedStep = savedStep === "review" && missing.length ? missing[0] : normalizeNextGuidedStep(savedStep);
+    builderState.restoredGuidedDraftInfo = {
       savedAt: draft.savedAt || "",
       completionPercent: guidedCompletionPercent(),
       missing,
@@ -2915,19 +2827,19 @@ function appendRestoredDraftMessage() {
 }
 
 function renderRestoredDraftNotice({ force = false } = {}) {
-  if (!restoredGuidedDraftInfo || !guidedChatCard || !guidedChat) return;
-  if (restoredDraftNoticeShown && !force) return;
-  restoredDraftNoticeShown = true;
-  const missingLabels = arrayValue(restoredGuidedDraftInfo.missing)
+  if (!builderState.restoredGuidedDraftInfo || !guidedChatCard || !guidedChat) return;
+  if (builderState.restoredDraftNoticeShown && !force) return;
+  builderState.restoredDraftNoticeShown = true;
+  const missingLabels = arrayValue(builderState.restoredGuidedDraftInfo.missing)
     .slice(0, 3)
     .map((step) => t(step))
     .join(", ");
-  const savedAt = formatDraftSavedAt(restoredGuidedDraftInfo.savedAt);
-  if (!restoredDraftNoticeCard) {
-    restoredDraftNoticeCard = document.createElement("section");
-    restoredDraftNoticeCard.className = "draft-restore-card";
+  const savedAt = formatDraftSavedAt(builderState.restoredGuidedDraftInfo.savedAt);
+  if (!builderState.restoredDraftNoticeCard) {
+    builderState.restoredDraftNoticeCard = document.createElement("section");
+    builderState.restoredDraftNoticeCard.className = "draft-restore-card";
   }
-  restoredDraftNoticeCard.innerHTML = `
+  builderState.restoredDraftNoticeCard.innerHTML = `
     <div>
       <strong>${escapeHtml(langText({
         en: "Saved draft found",
@@ -2936,10 +2848,10 @@ function renderRestoredDraftNotice({ force = false } = {}) {
         pt: "Rascunho salvo encontrado",
       }))}</strong>
       <span>${escapeHtml(langText({
-        en: `This workspace is ${restoredGuidedDraftInfo.completionPercent}% complete${savedAt ? ` from ${savedAt}` : ""}${missingLabels ? `. Missing: ${missingLabels}.` : "."}`,
-        es: `Este espacio va en ${restoredGuidedDraftInfo.completionPercent}%${savedAt ? ` desde ${savedAt}` : ""}${missingLabels ? `. Falta: ${missingLabels}.` : "."}`,
-        fr: `Cet espace est complete a ${restoredGuidedDraftInfo.completionPercent}%${savedAt ? ` depuis ${savedAt}` : ""}${missingLabels ? `. Il manque: ${missingLabels}.` : "."}`,
-        pt: `Este espaco esta ${restoredGuidedDraftInfo.completionPercent}% completo${savedAt ? ` desde ${savedAt}` : ""}${missingLabels ? `. Falta: ${missingLabels}.` : "."}`,
+        en: `This workspace is ${builderState.restoredGuidedDraftInfo.completionPercent}% complete${savedAt ? ` from ${savedAt}` : ""}${missingLabels ? `. Missing: ${missingLabels}.` : "."}`,
+        es: `Este espacio va en ${builderState.restoredGuidedDraftInfo.completionPercent}%${savedAt ? ` desde ${savedAt}` : ""}${missingLabels ? `. Falta: ${missingLabels}.` : "."}`,
+        fr: `Cet espace est complete a ${builderState.restoredGuidedDraftInfo.completionPercent}%${savedAt ? ` depuis ${savedAt}` : ""}${missingLabels ? `. Il manque: ${missingLabels}.` : "."}`,
+        pt: `Este espaco esta ${builderState.restoredGuidedDraftInfo.completionPercent}% completo${savedAt ? ` desde ${savedAt}` : ""}${missingLabels ? `. Falta: ${missingLabels}.` : "."}`,
       }))}</span>
     </div>
     <div class="draft-restore-actions">
@@ -2947,17 +2859,17 @@ function renderRestoredDraftNotice({ force = false } = {}) {
       <button type="button" data-draft-new>${escapeHtml(langText({ en: "Start new", es: "Nuevo", fr: "Nouveau", pt: "Novo" }))}</button>
     </div>
   `;
-  restoredDraftNoticeCard.querySelector("[data-draft-continue]")?.addEventListener("click", () => {
-    restoredDraftNoticeCard?.remove();
-    restoredDraftNoticeCard = null;
+  builderState.restoredDraftNoticeCard.querySelector("[data-draft-continue]")?.addEventListener("click", () => {
+    builderState.restoredDraftNoticeCard?.remove();
+    builderState.restoredDraftNoticeCard = null;
   });
-  restoredDraftNoticeCard.querySelector("[data-draft-new]")?.addEventListener("click", () => {
-    restoredDraftNoticeCard?.remove();
-    restoredDraftNoticeCard = null;
+  builderState.restoredDraftNoticeCard.querySelector("[data-draft-new]")?.addEventListener("click", () => {
+    builderState.restoredDraftNoticeCard?.remove();
+    builderState.restoredDraftNoticeCard = null;
     startNewClientProject();
   });
-  if (restoredDraftNoticeCard.parentElement !== guidedChatCard) {
-    guidedChatCard.insertBefore(restoredDraftNoticeCard, guidedChat);
+  if (builderState.restoredDraftNoticeCard.parentElement !== guidedChatCard) {
+    guidedChatCard.insertBefore(builderState.restoredDraftNoticeCard, guidedChat);
   }
 }
 
@@ -3008,15 +2920,15 @@ function guidedBuildPhases() {
 
 function ensureGuidedBuildStatusCard() {
   if (!guidedChatCard || !guidedChat) return null;
-  if (!guidedBuildStatusCard) {
-    guidedBuildStatusCard = document.createElement("section");
-    guidedBuildStatusCard.className = "guided-build-card";
-    guidedBuildStatusCard.setAttribute("aria-live", "polite");
+  if (!builderState.guidedBuildStatusCard) {
+    builderState.guidedBuildStatusCard = document.createElement("section");
+    builderState.guidedBuildStatusCard.className = "guided-build-card";
+    builderState.guidedBuildStatusCard.setAttribute("aria-live", "polite");
   }
-  if (guidedBuildStatusCard.parentElement !== guidedChatCard) {
-    guidedChatCard.appendChild(guidedBuildStatusCard);
+  if (builderState.guidedBuildStatusCard.parentElement !== guidedChatCard) {
+    guidedChatCard.appendChild(builderState.guidedBuildStatusCard);
   }
-  return guidedBuildStatusCard;
+  return builderState.guidedBuildStatusCard;
 }
 
 function setGuidedBuildPhase(phase, detail = "") {
@@ -3062,14 +2974,14 @@ function setGuidedBuildPhase(phase, detail = "") {
 
 function removeGuidedBuildStatusCard() {
   document.body.classList.remove("lyra-build-mode");
-  guidedBuildStatusCard?.remove();
-  guidedBuildStatusCard = null;
+  builderState.guidedBuildStatusCard?.remove();
+  builderState.guidedBuildStatusCard = null;
 }
 
 function formatDraftSavedAt(value) {
   if (!value) return "";
   try {
-    return new Intl.DateTimeFormat(selectedLanguage, {
+    return new Intl.DateTimeFormat(builderState.selectedLanguage, {
       dateStyle: "short",
       timeStyle: "short",
     }).format(new Date(value));
@@ -3085,8 +2997,8 @@ function saveGeneratedSite(result) {
       GENERATED_SITE_STORAGE_KEY,
       JSON.stringify({
         result,
-        selectedPageKey,
-        selectedVariantId,
+        selectedPageKey: builderState.selectedPageKey,
+        selectedVariantId: builderState.selectedVariantId,
         savedAt: new Date().toISOString(),
       }),
     );
@@ -3103,14 +3015,14 @@ function restoreGeneratedSite() {
     const saved = JSON.parse(raw);
     const result = saved.result || {};
     if (!result.schema) return;
-    currentSchema = prepareWebsiteConfig(result.schema, { brand: result.schema.brand || guidedState.brand || {} }, null);
-    currentSiteId = result.generatedSiteId || result.projectId || result.site_id || null;
-    currentBusinessId = result.business_id || null;
-    currentGenerationId = result.generation_id || null;
-    currentCatalogItems = catalogItemsFromSchema(currentSchema);
-    selectedPageKey = saved.selectedPageKey || currentSchema.pages?.[0]?.page_key || "home";
-    selectedVariantId = saved.selectedVariantId || currentSchema.design_variants?.[0]?.id || "";
-    siteTitle.textContent = currentSchema.business?.name || "Generated site";
+    builderState.currentSchema = prepareWebsiteConfig(result.schema, { brand: result.schema.brand || builderState.guidedState.brand || {} }, null);
+    builderState.currentSiteId = result.generatedSiteId || result.projectId || result.site_id || null;
+    builderState.currentBusinessId = result.business_id || null;
+    builderState.currentGenerationId = result.generation_id || null;
+    builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
+    builderState.selectedPageKey = saved.selectedPageKey || builderState.currentSchema.pages?.[0]?.page_key || "home";
+    builderState.selectedVariantId = saved.selectedVariantId || builderState.currentSchema.design_variants?.[0]?.id || "";
+    siteTitle.textContent = builderState.currentSchema.business?.name || "Generated site";
     storageStatus.textContent = storageLabel(result.storage_status, result.used_dev_mock);
   } catch {
     localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
@@ -3118,7 +3030,7 @@ function restoreGeneratedSite() {
 }
 
 function ensureStudioAuthRedirectCaptured() {
-  if (studioAuthRedirectCaptureComplete) return;
+  if (builderState.studioAuthRedirectCaptureComplete) return;
   captureStudioAuthRedirect();
 }
 
@@ -3134,7 +3046,7 @@ function establishServerSession(accessToken, refreshToken) {
 }
 
 function captureStudioAuthRedirect() {
-  if (studioAuthRedirectCaptureComplete) return;
+  if (builderState.studioAuthRedirectCaptureComplete) return;
   try {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const queryParams = new URLSearchParams(window.location.search);
@@ -3160,7 +3072,7 @@ function captureStudioAuthRedirect() {
     ["access_token", "refresh_token", "expires_in", "expires_at", "token_type", "type"].forEach((param) => cleanUrl.searchParams.delete(param));
     window.history.replaceState({}, "", cleanUrl);
   } finally {
-    studioAuthRedirectCaptureComplete = true;
+    builderState.studioAuthRedirectCaptureComplete = true;
   }
 }
 
@@ -3170,13 +3082,13 @@ function restorePendingStudioAfterAuth() {
     if (!raw) return;
     const saved = JSON.parse(raw);
     if (!saved.schema) return;
-    currentSchema = prepareWebsiteConfig(saved.schema, { brand: saved.schema.brand || guidedState.brand || {} }, null);
-    currentSiteId = saved.siteId || currentSiteId;
-    currentBusinessId = saved.businessId || currentBusinessId;
-    currentCatalogItems = catalogItemsFromSchema(currentSchema);
-    selectedPageKey = saved.selectedPageKey || currentSchema.pages?.[0]?.page_key || "home";
-    selectedVariantId = currentSchema.design_variants?.[0]?.id || selectedVariantId || "";
-    siteTitle.textContent = currentSchema.business?.name || "Generated site";
+    builderState.currentSchema = prepareWebsiteConfig(saved.schema, { brand: saved.schema.brand || builderState.guidedState.brand || {} }, null);
+    builderState.currentSiteId = saved.siteId || builderState.currentSiteId;
+    builderState.currentBusinessId = saved.businessId || builderState.currentBusinessId;
+    builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
+    builderState.selectedPageKey = saved.selectedPageKey || builderState.currentSchema.pages?.[0]?.page_key || "home";
+    builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || builderState.selectedVariantId || "";
+    siteTitle.textContent = builderState.currentSchema.business?.name || "Generated site";
     storageStatus.textContent = langText({
       en: "Account connected. Your draft was restored.",
       es: "Cuenta conectada. Tu borrador fue restaurado.",
@@ -3213,13 +3125,13 @@ async function handleGuidedSendAction(event) {
   event?.preventDefault?.();
   event?.stopPropagation?.();
   const now = Date.now();
-  if (guidedSendLocked || now - guidedLastSendAt < 350) return;
-  guidedLastSendAt = now;
-  guidedSendLocked = true;
+  if (builderState.guidedSendLocked || now - builderState.guidedLastSendAt < 350) return;
+  builderState.guidedLastSendAt = now;
+  builderState.guidedSendLocked = true;
   try {
     await sendGuidedReply();
   } finally {
-    guidedSendLocked = false;
+    builderState.guidedSendLocked = false;
   }
 }
 
@@ -3229,15 +3141,15 @@ async function sendGuidedReply() {
   appendChatMessage("user", message);
   guidedReply.value = "";
   if (shouldResetRestoredWorkspaceForMessage(message)) {
-    const email = clientIntakeSession?.clientEmail
-      || clientIntakeSession?.client_email
+    const email = builderState.clientIntakeSession?.clientEmail
+      || builderState.clientIntakeSession?.client_email
       || readClientIntakeSession()?.clientEmail
       || readClientIntakeSession()?.client_email
       || localStorage.getItem("lumaPendingClientEmail")
       || "";
     resetGuidedStateForNewAccount();
     if (email) {
-      guidedState.contactInfo.email = email;
+      builderState.guidedState.contactInfo.email = email;
       localStorage.setItem("lumaPendingClientEmail", email);
       try {
         await createOrResumeClientIntakeSession({
@@ -3259,33 +3171,33 @@ async function sendGuidedReply() {
     }), "success");
   }
   const broadLocalUpdates = inferGuidedUpdatesFromAnyMessage(message);
-  const stepUpdates = inferGuidedUpdates(guidedStep, message);
+  const stepUpdates = inferGuidedUpdates(builderState.guidedStep, message);
   const localContextUpdates = { ...broadLocalUpdates, ...stepUpdates };
-  if (guidedStep === "websiteIntent" && !localContextUpdates.websiteIntent) {
+  if (builderState.guidedStep === "websiteIntent" && !localContextUpdates.websiteIntent) {
     localContextUpdates.websiteIntent = extractWebsiteIntent(message) || message.slice(0, 180);
   }
-  if (!localContextUpdates.businessDescription && !guidedState.businessDescription && isRichIntakeMessage(message)) {
+  if (!localContextUpdates.businessDescription && !builderState.guidedState.businessDescription && isRichIntakeMessage(message)) {
     localContextUpdates.businessDescription = message;
   }
   Object.assign(localContextUpdates, completeGuidedBriefFromMessage(message, localContextUpdates));
   mergeGuidedUpdates(localContextUpdates);
   syncTemplateSelectionFromGuidedContext(message);
   const localStudioPlan = refreshAiStudioPlanFromContext(message);
-  if (guidedStep === "review") {
+  if (builderState.guidedStep === "review") {
     const adjustmentLabel = langText({
       en: "Client requested adjustments",
       es: "Ajustes pedidos por el cliente",
       fr: "Ajustements demandés par le client",
       pt: "Ajustes solicitados pelo cliente",
     });
-    if (currentSchema) {
-      guidedState.revisionMode = "targeted_edit";
+    if (builderState.currentSchema) {
+      builderState.guidedState.revisionMode = "targeted_edit";
     }
-    guidedState.requestedAdjustments = [
-      ...arrayValue(guidedState.requestedAdjustments),
+    builderState.guidedState.requestedAdjustments = [
+      ...arrayValue(builderState.guidedState.requestedAdjustments),
       `${adjustmentLabel}: ${message}`,
     ];
-    if (currentSchema) {
+    if (builderState.currentSchema) {
       await applyDraftAdjustmentFromChat(message, localContextUpdates);
     } else {
       appendChatMessage(
@@ -3300,10 +3212,10 @@ async function sendGuidedReply() {
       );
     }
     guidedStatusText.textContent = langText({
-      en: currentSchema ? "Draft updated." : "Extra details saved.",
-      es: currentSchema ? "Borrador actualizado." : "Detalles adicionales guardados.",
-      fr: currentSchema ? "Brouillon mis à jour." : "Détails supplémentaires enregistrés.",
-      pt: currentSchema ? "Rascunho atualizado." : "Detalhes adicionais salvos.",
+      en: builderState.currentSchema ? "Draft updated." : "Extra details saved.",
+      es: builderState.currentSchema ? "Borrador actualizado." : "Detalles adicionales guardados.",
+      fr: builderState.currentSchema ? "Brouillon mis à jour." : "Détails supplémentaires enregistrés.",
+      pt: builderState.currentSchema ? "Rascunho atualizado." : "Detalhes adicionais salvos.",
     });
     renderGuidedSummary();
     refreshQuickChips();
@@ -3320,12 +3232,12 @@ async function sendGuidedReply() {
       body: JSON.stringify({
         current: guidedStateForApi(),
         message,
-        currentStep: guidedStep,
-        current_step: guidedStep,
-        history: guidedHistory,
-        selectedTemplateId: forcedTemplateSelection?.templateId || "",
-        sitePlan: guidedState.sitePlan || null,
-        previousSchema: currentSchema || null,
+        currentStep: builderState.guidedStep,
+        current_step: builderState.guidedStep,
+        history: builderState.guidedHistory,
+        selectedTemplateId: builderState.forcedTemplateSelection?.templateId || "",
+        sitePlan: builderState.guidedState.sitePlan || null,
+        previousSchema: builderState.currentSchema || null,
       }),
     });
     if (!response.ok) {
@@ -3335,17 +3247,17 @@ async function sendGuidedReply() {
     const assistantMessage = result.assistantMessage || result.message;
     const emotion = result.emotion || (result.readyToGenerate ? "success" : "speaking");
     const updatedFields = result.updatedFields || result.updates || {};
-    guidedHistory.push({ role: "user", content: message });
-    guidedHistory.push({ role: "assistant", content: assistantMessage });
+    builderState.guidedHistory.push({ role: "user", content: message });
+    builderState.guidedHistory.push({ role: "assistant", content: assistantMessage });
     mergeGuidedUpdates(updatedFields);
     await applyLumaAgentDecision(result);
     const planAfterAgent = refreshAiStudioPlanFromContext(message);
     const serverMissingImportantFields = arrayValue(result.missingImportantFields || result.missing_important_fields || result.missing_fields);
     const locallyReadyToGenerate = !result.readyToGenerate && !serverMissingImportantFields.length && hasEnoughContextForFirstDraft();
     const serverNextStep = result.next_step || result.nextStep || "";
-    guidedStep = (result.readyToGenerate || locallyReadyToGenerate) ? "review" : normalizeNextGuidedStep(serverNextStep || guidedStep);
+    builderState.guidedStep = (result.readyToGenerate || locallyReadyToGenerate) ? "review" : normalizeNextGuidedStep(serverNextStep || builderState.guidedStep);
     const serverNextQuestion = result.nextQuestion || result.next_question;
-    const nextQuestion = (result.readyToGenerate || locallyReadyToGenerate) ? "" : chooseNextQuestionText(serverNextQuestion, guidedStep);
+    const nextQuestion = (result.readyToGenerate || locallyReadyToGenerate) ? "" : chooseNextQuestionText(serverNextQuestion, builderState.guidedStep);
     const usedDevFallback = Boolean(result.used_dev_fallback || result.usedDevFallback);
     const finalAssistantMessage = locallyReadyToGenerate
       ? langText({
@@ -3367,7 +3279,7 @@ async function sendGuidedReply() {
     syncTemplateSelectionFromGuidedContext(message);
     const fallbackPlan = refreshAiStudioPlanFromContext(message);
     const locallyReadyToGenerate = hasEnoughContextForFirstDraft();
-    guidedStep = locallyReadyToGenerate ? "review" : nextSmartGuidedStep(guidedStep);
+    builderState.guidedStep = locallyReadyToGenerate ? "review" : nextSmartGuidedStep(builderState.guidedStep);
     console.warn("LYRA intake assistant request failed; continuing locally.", error);
     appendUnderstandingCard({ updates, sourceMessage: message });
     appendChatMessage(
@@ -3381,7 +3293,7 @@ async function sendGuidedReply() {
               pt: `Ja tenho contexto suficiente para criar o primeiro rascunho. Vou usar ${fallbackPlan.recommendedTemplateName || "o template escolhido"} como base e reescrever o site profissionalmente.`,
             })
           : t("localFallbackMessage"),
-        locallyReadyToGenerate ? "" : guidedQuestion(guidedStep),
+        locallyReadyToGenerate ? "" : guidedQuestion(builderState.guidedStep),
         true,
       ),
       locallyReadyToGenerate ? "success" : "speaking",
@@ -3389,9 +3301,9 @@ async function sendGuidedReply() {
     guidedStatusText.textContent = t("localFallback");
   }
   setThinking(false);
-  if (guidedStep === "review") {
-    guidedState.sitePlan = buildSitePlan(forcedTemplateSelection);
-    guidedState.sitePlan.aiStudioPlan = guidedState.aiStudioPlan || localStudioPlan;
+  if (builderState.guidedStep === "review") {
+    builderState.guidedState.sitePlan = buildSitePlan(builderState.forcedTemplateSelection);
+    builderState.guidedState.sitePlan.aiStudioPlan = builderState.guidedState.aiStudioPlan || localStudioPlan;
   }
   renderGuidedSummary();
   refreshQuickChips();
@@ -3410,7 +3322,7 @@ async function applyLumaAgentDecision(result = {}) {
     } catch (error) {
       console.warn("LYRA selected template could not be loaded.", error);
     }
-    forcedTemplateSelection = {
+    builderState.forcedTemplateSelection = {
       templateId: effectiveTemplateId,
       template,
       intent: shouldPreferLocalStudioTemplate(selectedTemplateId, localPlan) ? "ai_studio_plan_override" : (result.intent || "luma_agent_template"),
@@ -3422,7 +3334,7 @@ async function applyLumaAgentDecision(result = {}) {
         : result.selectedTemplateReason || result.selected_template_reason || "Selected by LYRA from the conversation",
     };
   } else if (!selectedTemplateId && result.intent === "collect_info") {
-    forcedTemplateSelection = {
+    builderState.forcedTemplateSelection = {
       templateId: localPlan.recommendedTemplateId || "",
       template: null,
       intent: localPlan.recommendedTemplateId ? "ai_studio_plan" : "luma_agent_collecting_context",
@@ -3434,18 +3346,18 @@ async function applyLumaAgentDecision(result = {}) {
   }
 
   if (result.designStrategy) {
-    guidedState.designStrategy = result.designStrategy;
+    builderState.guidedState.designStrategy = result.designStrategy;
   }
   if (result.sitePlan) {
-    guidedState.sitePlan = {
+    builderState.guidedState.sitePlan = {
       ...result.sitePlan,
       aiStudioPlan: localPlan,
     };
-    guidedState.sitePlanApproved = false;
+    builderState.guidedState.sitePlanApproved = false;
   } else if (!selectedTemplateId) {
-    guidedState.sitePlan = localPlan.recommendedTemplateId ? buildSitePlan(forcedTemplateSelection) : null;
-    if (guidedState.sitePlan) guidedState.sitePlan.aiStudioPlan = localPlan;
-    guidedState.sitePlanApproved = false;
+    builderState.guidedState.sitePlan = localPlan.recommendedTemplateId ? buildSitePlan(builderState.forcedTemplateSelection) : null;
+    if (builderState.guidedState.sitePlan) builderState.guidedState.sitePlan.aiStudioPlan = localPlan;
+    builderState.guidedState.sitePlanApproved = false;
   }
 }
 
@@ -3477,21 +3389,21 @@ async function handleWebsiteIntentAnswer(message) {
     pt: "Detectando o melhor template...",
   });
   setThinking(true);
-  guidedState.websiteIntent = message;
-  if (!guidedState.industry) guidedState.industry = inferIndustryFromPrompt(message);
-  if (!guidedState.preferredTone) guidedState.preferredTone = extractStyleHint(message);
+  builderState.guidedState.websiteIntent = message;
+  if (!builderState.guidedState.industry) builderState.guidedState.industry = inferIndustryFromPrompt(message);
+  if (!builderState.guidedState.preferredTone) builderState.guidedState.preferredTone = extractStyleHint(message);
   const inferredUpdates = inferGuidedUpdatesFromAnyMessage(message);
   if (isGenericCommerceIntent(message)) {
-    forcedTemplateSelection = {
+    builderState.forcedTemplateSelection = {
       templateId: "",
       template: null,
       intent: "provisional_needs_catalog_context",
       catalogType: "",
       reason: "Commerce intent detected; waiting for product range before selecting the visual base",
     };
-    guidedStep = nextSmartGuidedStep("websiteIntent");
+    builderState.guidedStep = nextSmartGuidedStep("websiteIntent");
     appendUnderstandingCard({ updates: { websiteIntent: message }, sourceMessage: message });
-    appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
+    appendChatMessage("assistant", guidedQuestion(builderState.guidedStep), "speaking");
     guidedStatusText.textContent = langText({
       en: "Commerce intent noted. LYRA will choose the template after understanding the product range.",
       es: "Intencion de venta detectada. LYRA elegira el template al entender el tipo de productos.",
@@ -3505,7 +3417,7 @@ async function handleWebsiteIntentAnswer(message) {
     return;
   }
   mergeGuidedUpdates(inferredUpdates);
-  guidedState.websiteIntent = message;
+  builderState.guidedState.websiteIntent = message;
   let selection = {
     templateId: "",
     template: null,
@@ -3518,11 +3430,11 @@ async function handleWebsiteIntentAnswer(message) {
   } catch (error) {
     console.warn("LYRA template intent detection failed; continuing locally.", error);
   }
-  forcedTemplateSelection = selection;
+  builderState.forcedTemplateSelection = selection;
   appendTemplateDetectionMessage(selection);
-  guidedStep = nextSmartGuidedStep("websiteIntent");
+  builderState.guidedStep = nextSmartGuidedStep("websiteIntent");
   appendUnderstandingCard({ updates: inferGuidedUpdatesFromAnyMessage(message), sourceMessage: message });
-  appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
+  appendChatMessage("assistant", guidedQuestion(builderState.guidedStep), "speaking");
   guidedStatusText.textContent = selection?.templateId
     ? langText({
       en: "Template selected. Continue with the business details.",
@@ -3615,7 +3527,7 @@ async function getTemplatePreviewCandidates(selection, sourceMessage = "") {
   addCandidate(selection);
   if (window.TemplateRouter?.getTemplateCandidates) {
     try {
-      const ranked = await window.TemplateRouter.getTemplateCandidates(sourceMessage || guidedState.websiteIntent || "", 3);
+      const ranked = await window.TemplateRouter.getTemplateCandidates(sourceMessage || builderState.guidedState.websiteIntent || "", 3);
       ranked.forEach(addCandidate);
     } catch (error) {
       console.warn("Template candidate ranking failed", error);
@@ -3654,14 +3566,14 @@ function templatePreviewMeta(templateId) {
 }
 
 function localizedTemplateName(choice) {
-  return choice?.names?.[selectedLanguage] || choice?.name || choice?.template?.clientSelectionCard?.title || choice?.template?.name || choice?.templateId || "";
+  return choice?.names?.[builderState.selectedLanguage] || choice?.name || choice?.template?.clientSelectionCard?.title || choice?.template?.name || choice?.templateId || "";
 }
 
 function localizedTemplateDescription(choice) {
-  return choice?.descriptions?.[selectedLanguage] || choice?.description || choice?.template?.clientSelectionCard?.difference || choice?.template?.visualDifference || "";
+  return choice?.descriptions?.[builderState.selectedLanguage] || choice?.description || choice?.template?.clientSelectionCard?.difference || choice?.template?.visualDifference || "";
 }
 
-function localizedTemplateBadgeSet(map, language = selectedLanguage) {
+function localizedTemplateBadgeSet(map, language = builderState.selectedLanguage) {
   const value = map[language] || map.en || [];
   const badges = Array.isArray(value) ? value : [value];
   return badges.map((badge) => publicAssistantCopy(badge)).filter(Boolean);
@@ -3805,7 +3717,7 @@ function templateAccentPalette(catalogType, templateId = "") {
 // photo is shared.
 function templateLivePreviewMarkup(choice) {
   const palette = templateAccentPalette(choice?.catalogType, choice?.templateId);
-  const brand = escapeHtml((guidedState.businessName || "").slice(0, 18) || langText({
+  const brand = escapeHtml((builderState.guidedState.businessName || "").slice(0, 18) || langText({
     en: "YOUR BRAND", es: "TU MARCA", fr: "VOTRE MARQUE", pt: "SUA MARCA",
   }));
   return `
@@ -3823,9 +3735,9 @@ function templateLivePreviewMarkup(choice) {
 function buildAiStudioPlanFromGuidedState(extra = "") {
   const contextText = guidedTemplateContextText(extra);
   const payload = guidedStatePayloadForPlanning();
-  const templateId = inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(contextText) || forcedTemplateSelection?.templateId || "";
+  const templateId = inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(contextText) || builderState.forcedTemplateSelection?.templateId || "";
   const templateMeta = templatePreviewMeta(templateId);
-  const catalogType = templateMeta?.catalogType || forcedTemplateSelection?.catalogType || "";
+  const catalogType = templateMeta?.catalogType || builderState.forcedTemplateSelection?.catalogType || "";
   const websiteType = inferWebsiteTypeFromContext(contextText, catalogType);
   const salesFlow = inferSalesFlowForPlan(contextText, websiteType);
   const requiredFeatures = inferRequiredFeaturesForPlan(contextText, websiteType, catalogType);
@@ -3837,7 +3749,7 @@ function buildAiStudioPlanFromGuidedState(extra = "") {
     decisionState: missingImportantFields.length ? "enough_to_plan_with_optional_gaps" : "ready_to_generate",
     websiteType,
     recommendedTemplateId: templateId,
-    recommendedTemplateName: localizedTemplateName(templateMeta) || forcedTemplateSelection?.template?.name || templateId,
+    recommendedTemplateName: localizedTemplateName(templateMeta) || builderState.forcedTemplateSelection?.template?.name || templateId,
     recommendedCatalogType: catalogType,
     reasoningSummary,
     salesFlow,
@@ -3856,22 +3768,22 @@ function buildAiStudioPlanFromGuidedState(extra = "") {
 
 function guidedStatePayloadForPlanning() {
   return {
-    business_name: guidedState.businessName,
-    business_description: guidedState.businessDescription || guidedState.websiteIntent,
-    industry: guidedState.industry,
-    services_products: arrayValue(guidedState.servicesProducts),
-    target_audience: guidedState.targetAudience,
-    preferred_tone: guidedState.preferredTone,
-    preferred_colors: arrayValue(guidedState.preferredColors),
-    salesMode: guidedState.salesMode,
+    business_name: builderState.guidedState.businessName,
+    business_description: builderState.guidedState.businessDescription || builderState.guidedState.websiteIntent,
+    industry: builderState.guidedState.industry,
+    services_products: arrayValue(builderState.guidedState.servicesProducts),
+    target_audience: builderState.guidedState.targetAudience,
+    preferred_tone: builderState.guidedState.preferredTone,
+    preferred_colors: arrayValue(builderState.guidedState.preferredColors),
+    salesMode: builderState.guidedState.salesMode,
   };
 }
 
 function refreshAiStudioPlanFromContext(extra = "") {
   const plan = buildAiStudioPlanFromGuidedState(extra);
-  guidedState.aiStudioPlan = plan;
-  guidedState.designStrategy = {
-    ...(guidedState.designStrategy || {}),
+  builderState.guidedState.aiStudioPlan = plan;
+  builderState.guidedState.designStrategy = {
+    ...(builderState.guidedState.designStrategy || {}),
     diagnosis: plan,
     selectedTemplateId: plan.recommendedTemplateId,
     selectedTemplateReason: plan.reasoningSummary,
@@ -3879,21 +3791,21 @@ function refreshAiStudioPlanFromContext(extra = "") {
     designerRole: "senior ecommerce strategist, UX architect and brand designer",
     templateUsePolicy: "Choose the closest proven template as architecture, then adapt copy, colors, sections, catalog and CTAs to the client's business.",
   };
-  if (plan.recommendedTemplateId && forcedTemplateSelection?.templateId !== plan.recommendedTemplateId) {
-    forcedTemplateSelection = {
+  if (plan.recommendedTemplateId && builderState.forcedTemplateSelection?.templateId !== plan.recommendedTemplateId) {
+    builderState.forcedTemplateSelection = {
       templateId: plan.recommendedTemplateId,
       template: null,
       catalogType: plan.recommendedCatalogType,
       intent: "ai_studio_plan",
       reason: plan.reasoningSummary,
     };
-    guidedState.sitePlan = null;
-    guidedState.sitePlanApproved = false;
-  } else if (forcedTemplateSelection?.templateId) {
-    forcedTemplateSelection = {
-      ...forcedTemplateSelection,
-      catalogType: forcedTemplateSelection.catalogType || plan.recommendedCatalogType,
-      reason: forcedTemplateSelection.reason || plan.reasoningSummary,
+    builderState.guidedState.sitePlan = null;
+    builderState.guidedState.sitePlanApproved = false;
+  } else if (builderState.forcedTemplateSelection?.templateId) {
+    builderState.forcedTemplateSelection = {
+      ...builderState.forcedTemplateSelection,
+      catalogType: builderState.forcedTemplateSelection.catalogType || plan.recommendedCatalogType,
+      reason: builderState.forcedTemplateSelection.reason || plan.reasoningSummary,
     };
   }
   return plan;
@@ -3942,9 +3854,9 @@ function inferRequiredFeaturesForPlan(contextText, websiteType, catalogType = ""
 
 function missingImportantFieldsForPlan() {
   const missing = [];
-  if (!guidedState.businessName) missing.push("businessName");
-  if (!guidedState.businessDescription && !arrayValue(guidedState.servicesProducts).length) missing.push("businessDescription");
-  if (!guidedState.websiteIntent && !guidedState.salesMode) missing.push("websiteIntent");
+  if (!builderState.guidedState.businessName) missing.push("businessName");
+  if (!builderState.guidedState.businessDescription && !arrayValue(builderState.guidedState.servicesProducts).length) missing.push("businessDescription");
+  if (!builderState.guidedState.websiteIntent && !builderState.guidedState.salesMode) missing.push("websiteIntent");
   return missing;
 }
 
@@ -4014,10 +3926,10 @@ function buildPlanPagesForContext(templateId, websiteType, catalogType) {
       { key: "buy", title: "Buy / Contact", purpose: "Purchase, quote or lead action", sections: ["checkout_or_inquiry", "faq", "support"] },
     ];
   }
-  return buildSitePlan({ templateId, catalogType, template: forcedTemplateSelection?.template || {} }).pages;
+  return buildSitePlan({ templateId, catalogType, template: builderState.forcedTemplateSelection?.template || {} }).pages;
 }
 
-function buildSitePlan(selection = forcedTemplateSelection) {
+function buildSitePlan(selection = builderState.forcedTemplateSelection) {
   const template = selection?.template || {};
   const catalogType = selection?.catalogType || template.catalogModel?.catalogType || "";
   const isBooking = /booking|appointment/.test(catalogType);
@@ -4094,18 +4006,18 @@ function buildSitePlan(selection = forcedTemplateSelection) {
 }
 
 function ensureSitePlan() {
-  const currentTemplateId = forcedTemplateSelection?.templateId || guidedState.sitePlan?.templateId || "";
-  if (!guidedState.sitePlan || guidedState.sitePlan.templateId !== currentTemplateId) {
-    guidedState.sitePlan = buildSitePlan();
-    guidedState.sitePlanApproved = false;
+  const currentTemplateId = builderState.forcedTemplateSelection?.templateId || builderState.guidedState.sitePlan?.templateId || "";
+  if (!builderState.guidedState.sitePlan || builderState.guidedState.sitePlan.templateId !== currentTemplateId) {
+    builderState.guidedState.sitePlan = buildSitePlan();
+    builderState.guidedState.sitePlanApproved = false;
   }
-  return guidedState.sitePlan;
+  return builderState.guidedState.sitePlan;
 }
 
 function renderSitePlanCard() {
   const plan = ensureSitePlan();
   const card = document.createElement("section");
-  card.className = `site-plan-card ${guidedState.sitePlanApproved ? "approved" : ""}`;
+  card.className = `site-plan-card ${builderState.guidedState.sitePlanApproved ? "approved" : ""}`;
   card.innerHTML = `
     <div class="site-plan-head">
       <div>
@@ -4128,13 +4040,13 @@ function renderSitePlanCard() {
       `).join("")}
     </div>
     <div class="site-plan-actions">
-      <button type="button" data-site-plan-approve>${escapeHtml(guidedState.sitePlanApproved ? langText({ en: "Approved", es: "Aprobado", fr: "Approuvé", pt: "Aprovado" }) : langText({ en: "Approve this structure", es: "Aprobar estructura", fr: "Approuver la structure", pt: "Aprovar estrutura" }))}</button>
+      <button type="button" data-site-plan-approve>${escapeHtml(builderState.guidedState.sitePlanApproved ? langText({ en: "Approved", es: "Aprobado", fr: "Approuvé", pt: "Aprovado" }) : langText({ en: "Approve this structure", es: "Aprobar estructura", fr: "Approuver la structure", pt: "Aprovar estrutura" }))}</button>
       <button type="button" data-site-plan-adjust>${escapeHtml(langText({ en: "Ask LYRA to change it", es: "Pedir cambio a LYRA", fr: "Demander un changement", pt: "Pedir mudança à LYRA" }))}</button>
     </div>
   `;
   card.querySelector("[data-site-plan-approve]")?.addEventListener("click", () => {
-    guidedState.sitePlanApproved = true;
-    guidedState.sitePlan = { ...guidedState.sitePlan, approved: true };
+    builderState.guidedState.sitePlanApproved = true;
+    builderState.guidedState.sitePlan = { ...builderState.guidedState.sitePlan, approved: true };
     appendChatMessage("user", langText({ en: "I approve this site structure.", es: "Apruebo esta estructura del sitio.", fr: "J'approuve cette structure.", pt: "Aprovo esta estrutura do site." }));
     appendChatMessage("assistant", langText({
       en: "Good. I will use this plan as the structure for the draft and keep it editable.",
@@ -4145,7 +4057,7 @@ function renderSitePlanCard() {
     renderGuidedSummary();
   });
   card.querySelector("[data-site-plan-adjust]")?.addEventListener("click", () => {
-    guidedStep = "review";
+    builderState.guidedStep = "review";
     guidedReply.value = langText({
       en: "Change the site plan: ",
       es: "Cambia el plan del sitio: ",
@@ -4314,7 +4226,7 @@ async function chooseTemplatePreview(choice, options = {}) {
   const template = window.TemplateRouter?.getTemplateById
     ? await window.TemplateRouter.getTemplateById(choice.templateId)
     : null;
-  forcedTemplateSelection = {
+  builderState.forcedTemplateSelection = {
     templateId: choice.templateId,
     template,
     catalogType: choice.catalogType,
@@ -4322,7 +4234,7 @@ async function chooseTemplatePreview(choice, options = {}) {
     reason: "Client selected a visual template preview in guided setup",
     executionStatus: templateExecutionStatus(choice.templateId),
   };
-  guidedState.websiteIntent = guidedState.websiteIntent || localizedTemplateName(choice);
+  builderState.guidedState.websiteIntent = builderState.guidedState.websiteIntent || localizedTemplateName(choice);
   document.querySelectorAll(".template-choice-card.selected").forEach((card) => card.classList.remove("selected"));
   document.querySelector(`[data-template-choice="${cssEscape(choice.templateId)}"]`)?.classList.add("selected");
   if (options.hideCarousel) {
@@ -4345,7 +4257,7 @@ async function chooseTemplatePreview(choice, options = {}) {
       pt: `Usar ${localizedTemplateName(choice)}`,
     }),
   );
-  appendTemplateDetectionMessage(forcedTemplateSelection);
+  appendTemplateDetectionMessage(builderState.forcedTemplateSelection);
   renderGuidedCoachCard();
   renderGuidedSummary();
   saveGuidedDraft();
@@ -4357,54 +4269,54 @@ window.Lyra = {
     const choice = templatePreviewMeta(templateId);
     if (!choice) return null;
     await chooseTemplatePreview(choice, { hideCarousel: true, fadeCanvas: true });
-    return forcedTemplateSelection;
+    return builderState.forcedTemplateSelection;
   },
 };
 
 function skipGuidedQuestion() {
   appendChatMessage("user", t("skipMessage"));
-  guidedAskedSteps.set(guidedStep, 1);
-  guidedStep = nextSmartGuidedStep(guidedStep);
-  appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
+  guidedAskedSteps.set(builderState.guidedStep, 1);
+  builderState.guidedStep = nextSmartGuidedStep(builderState.guidedStep);
+  appendChatMessage("assistant", guidedQuestion(builderState.guidedStep), "speaking");
   renderGuidedSummary();
 }
 
 function letAiDecide(field) {
   const decision = t("letAiDecide");
   if (field === "preferredColors") {
-    guidedState.preferredColors = [decision];
+    builderState.guidedState.preferredColors = [decision];
   } else if (field === "sectionsPreference") {
-    guidedState.sectionsPreference = decision;
+    builderState.guidedState.sectionsPreference = decision;
   } else {
-    guidedState[field] = decision;
+    builderState.guidedState[field] = decision;
   }
-  guidedStep = field === "sectionsPreference" ? "review" : nextSmartGuidedStep(field);
+  builderState.guidedStep = field === "sectionsPreference" ? "review" : nextSmartGuidedStep(field);
   appendChatMessage("user", `${field}: ${decision}`);
-  appendChatMessage("assistant", guidedQuestion(guidedStep), guidedStep === "review" ? "success" : "speaking");
+  appendChatMessage("assistant", guidedQuestion(builderState.guidedStep), builderState.guidedStep === "review" ? "success" : "speaking");
   renderGuidedSummary();
 }
 
 function insertQuickChip(value) {
   const translated = translateChip(value);
-  if (guidedStep === "websiteIntent") {
+  if (builderState.guidedStep === "websiteIntent") {
     guidedReply.value = translated;
     updateAssetPromptVisibility();
     handleGuidedSendAction();
     return;
   }
   if (value === "Yes, correct") {
-    guidedStep = nextSmartGuidedStep(guidedStep);
+    builderState.guidedStep = nextSmartGuidedStep(builderState.guidedStep);
     appendChatMessage("user", translated);
-    appendChatMessage("assistant", guidedQuestion(guidedStep), guidedStep === "review" ? "success" : "speaking");
+    appendChatMessage("assistant", guidedQuestion(builderState.guidedStep), builderState.guidedStep === "review" ? "success" : "speaking");
     renderGuidedSummary();
     refreshQuickChips();
     return;
   }
   if (value === "Change style") {
-    guidedStep = "preferredTone";
+    builderState.guidedStep = "preferredTone";
     guidedReply.value = "";
     appendChatMessage("user", translated);
-    appendChatMessage("assistant", guidedQuestion(guidedStep), "speaking");
+    appendChatMessage("assistant", guidedQuestion(builderState.guidedStep), "speaking");
     renderGuidedSummary();
     refreshQuickChips();
     guidedReply.focus();
@@ -4419,7 +4331,7 @@ function insertQuickChip(value) {
     return;
   }
   if (value === "Generate now") {
-    guidedStep = "review";
+    builderState.guidedStep = "review";
     renderGuidedSummary();
     handleGuidedGenerateButton();
     return;
@@ -4445,7 +4357,7 @@ function refreshQuickChips() {
     targetAudience: ["Local customers", "Families", "Professionals", "Businesses", "Let AI decide"],
     review: ["Generate now", "Review details", "Change style", "Upload logo"],
   };
-  const chips = chipsByStep[guidedStep] || [];
+  const chips = chipsByStep[builderState.guidedStep] || [];
   quickChipRow.innerHTML = chips
     .map((chip) => `<button data-chip="${escapeAttribute(chip)}" type="button">${escapeHtml(translateChip(chip))}</button>`)
     .join("");
@@ -4457,12 +4369,12 @@ function refreshQuickChips() {
 
 function shouldShowAssetPrompt() {
   const typed = guidedReply?.value || "";
-  if (wantsAiGeneratedLogo(typed) || wantsAiGeneratedLogo(guidedState.hasLogoPhotos)) return false;
+  if (wantsAiGeneratedLogo(typed) || wantsAiGeneratedLogo(builderState.guidedState.hasLogoPhotos)) return false;
   return (
     document.body.classList.contains("review-details-open") ||
-    guidedStep === "hasLogoPhotos" ||
+    builderState.guidedStep === "hasLogoPhotos" ||
     wantsToUploadAssets(typed) ||
-    Boolean((guidedState.hasLogo || guidedState.hasPhotos) && !wantsAiGeneratedLogo(guidedState.hasLogoPhotos))
+    Boolean((builderState.guidedState.hasLogo || builderState.guidedState.hasPhotos) && !wantsAiGeneratedLogo(builderState.guidedState.hasLogoPhotos))
   );
 }
 
@@ -4492,7 +4404,7 @@ function appendUnderstandingCard({ updates = {}, sourceMessage = "" } = {}) {
   if (isPublicClientSetup) return;
   const filledItems = understandingItems().filter((item) => item.status === "detected");
   const missingItems = understandingItems().filter((item) => item.status === "missing");
-  const changedKeys = Object.keys(updates || {}).filter((key) => key in guidedState);
+  const changedKeys = Object.keys(updates || {}).filter((key) => key in builderState.guidedState);
   if (filledItems.length < 2 && changedKeys.length < 2 && !isRichIntakeMessage(sourceMessage)) return;
 
   const card = document.createElement("div");
@@ -4536,16 +4448,16 @@ function appendUnderstandingCard({ updates = {}, sourceMessage = "" } = {}) {
 
 function understandingItems() {
   return [
-    understandingItem("businessName", t("businessName"), guidedState.businessName, true),
-    understandingItem("websiteIntent", t("websiteIntent"), guidedState.websiteIntent || forcedTemplateSelection?.templateId, true),
-    understandingItem("industry", t("industry"), guidedState.industry, true),
-    understandingItem("location", t("location"), guidedState.location, false),
-    understandingItem("servicesProducts", t("servicesProducts"), arrayValue(guidedState.servicesProducts).slice(0, 3).join(", "), true),
-    understandingItem("preferredTone", t("preferredTone"), guidedState.preferredTone, false),
-    understandingItem("preferredColors", t("preferredColors"), arrayValue(guidedState.preferredColors).slice(0, 4).join(", "), false),
-    understandingItem("salesMode", t("salesMode"), guidedState.salesMode, false),
-    understandingItem("contactInfo", t("contactInfo"), contactInfoCompactLabel(guidedState.contactInfo), true),
-    understandingItem("hasLogoPhotos", t("hasLogoPhotos"), guidedState.hasLogoPhotos || (guidedState.hasLogo ? t("logoUrl") : ""), false),
+    understandingItem("businessName", t("businessName"), builderState.guidedState.businessName, true),
+    understandingItem("websiteIntent", t("websiteIntent"), builderState.guidedState.websiteIntent || builderState.forcedTemplateSelection?.templateId, true),
+    understandingItem("industry", t("industry"), builderState.guidedState.industry, true),
+    understandingItem("location", t("location"), builderState.guidedState.location, false),
+    understandingItem("servicesProducts", t("servicesProducts"), arrayValue(builderState.guidedState.servicesProducts).slice(0, 3).join(", "), true),
+    understandingItem("preferredTone", t("preferredTone"), builderState.guidedState.preferredTone, false),
+    understandingItem("preferredColors", t("preferredColors"), arrayValue(builderState.guidedState.preferredColors).slice(0, 4).join(", "), false),
+    understandingItem("salesMode", t("salesMode"), builderState.guidedState.salesMode, false),
+    understandingItem("contactInfo", t("contactInfo"), contactInfoCompactLabel(builderState.guidedState.contactInfo), true),
+    understandingItem("hasLogoPhotos", t("hasLogoPhotos"), builderState.guidedState.hasLogoPhotos || (builderState.guidedState.hasLogo ? t("logoUrl") : ""), false),
   ];
 }
 
@@ -4664,7 +4576,7 @@ function translateChip(value) {
       "Review details": "Revisar detalhes",
     },
   };
-  return dictionary[selectedLanguage]?.[value] || value;
+  return dictionary[builderState.selectedLanguage]?.[value] || value;
 }
 
 async function handleGuidedLogoUpload() {
@@ -4682,21 +4594,21 @@ async function processGuidedLogoFile(file) {
   } catch {
     storedLogoUrl = localLogoUrl;
   }
-  guidedState.logoUrl = storedLogoUrl || localLogoUrl;
-  guidedState.hasLogo = true;
+  builderState.guidedState.logoUrl = storedLogoUrl || localLogoUrl;
+  builderState.guidedState.hasLogo = true;
   const brand = await analyzeLogoBrand(localLogoUrl, {
-    logoUrl: guidedState.logoUrl,
-    businessName: guidedState.businessName,
-    industry: guidedState.industry,
-    tone: guidedState.preferredTone,
+    logoUrl: builderState.guidedState.logoUrl,
+    businessName: builderState.guidedState.businessName,
+    industry: builderState.guidedState.industry,
+    tone: builderState.guidedState.preferredTone,
   });
   const palette = brand.extractedColors || [];
-  guidedState.logoPalette = palette;
-  guidedState.brand = brand;
+  builderState.guidedState.logoPalette = palette;
+  builderState.guidedState.brand = brand;
   if (palette.length) {
-    guidedState.preferredColors = palette;
+    builderState.guidedState.preferredColors = palette;
   }
-  guidedState.hasLogoPhotos = guidedState.hasPhotos ? "Logo and photos uploaded" : "Logo uploaded";
+  builderState.guidedState.hasLogoPhotos = builderState.guidedState.hasPhotos ? "Logo and photos uploaded" : "Logo uploaded";
   applyBrandToCurrentSchema(brand);
   appendChatMessage(
     "assistant",
@@ -4734,9 +4646,9 @@ async function processGuidedPhotoFiles(files) {
   for (const file of files) {
     urls.push(await fileToDataUrl(file));
   }
-  guidedState.photoUrls = [...arrayValue(guidedState.photoUrls), ...urls];
-  guidedState.hasPhotos = true;
-  guidedState.hasLogoPhotos = guidedState.hasLogo ? "Logo and photos uploaded" : "Photos uploaded";
+  builderState.guidedState.photoUrls = [...arrayValue(builderState.guidedState.photoUrls), ...urls];
+  builderState.guidedState.hasPhotos = true;
+  builderState.guidedState.hasLogoPhotos = builderState.guidedState.hasLogo ? "Logo and photos uploaded" : "Photos uploaded";
   appendChatMessage(
     "assistant",
     langText({
@@ -4765,9 +4677,9 @@ async function processGuidedVideoFiles(files) {
       console.warn("Video upload failed; keeping it as a session-only reference.", error);
     }
   }
-  guidedState.videoUrls = [...arrayValue(guidedState.videoUrls), ...urls];
-  guidedState.hasPhotos = true;
-  guidedState.hasLogoPhotos = guidedState.hasLogo ? "Logo, photos and videos uploaded" : "Photos/videos uploaded";
+  builderState.guidedState.videoUrls = [...arrayValue(builderState.guidedState.videoUrls), ...urls];
+  builderState.guidedState.hasPhotos = true;
+  builderState.guidedState.hasLogoPhotos = builderState.guidedState.hasLogo ? "Logo, photos and videos uploaded" : "Photos/videos uploaded";
   appendChatMessage(
     "assistant",
     urls.length
@@ -4848,7 +4760,7 @@ async function receiveGuidedDroppedFiles(files) {
   const images = supported.filter((file) => file.type.startsWith("image/"));
   const videos = supported.filter((file) => file.type.startsWith("video/"));
   const logoFile = images.find((file) => /logo|brand|marca/i.test(file.name || ""))
-    || (!guidedState.logoUrl && guidedStep === "preferredColors" && images.length === 1 ? images[0] : null);
+    || (!builderState.guidedState.logoUrl && builderState.guidedStep === "preferredColors" && images.length === 1 ? images[0] : null);
   const photoFiles = images.filter((file) => file !== logoFile);
   if (logoFile) await processGuidedLogoFile(logoFile);
   if (photoFiles.length) await processGuidedPhotoFiles(photoFiles);
@@ -5124,19 +5036,19 @@ function colorDistance(a, b) {
 }
 
 function renderAssetPreviews() {
-  guidedLogoPreview.src = guidedState.logoUrl || "";
-  guidedLogoPreview.classList.toggle("active", Boolean(guidedState.logoUrl));
-  guidedPhotoPreview.innerHTML = arrayValue(guidedState.photoUrls)
+  guidedLogoPreview.src = builderState.guidedState.logoUrl || "";
+  guidedLogoPreview.classList.toggle("active", Boolean(builderState.guidedState.logoUrl));
+  guidedPhotoPreview.innerHTML = arrayValue(builderState.guidedState.photoUrls)
     .slice(0, 4)
     .map((url) => `<img src="${escapeAttribute(url)}" alt="">`)
     .join("");
   renderBrandKit();
 }
 
-function renderBrandKit(brand = guidedState.brand) {
+function renderBrandKit(brand = builderState.guidedState.brand) {
   if (!brandKitPanel) return;
-  const normalizedBrand = normalizeBrand(brand || (guidedState.logoUrl ? { logoUrl: guidedState.logoUrl } : null));
-  brandKitPanel.hidden = !normalizedBrand.logoUrl && !guidedState.logoPalette.length;
+  const normalizedBrand = normalizeBrand(brand || (builderState.guidedState.logoUrl ? { logoUrl: builderState.guidedState.logoUrl } : null));
+  brandKitPanel.hidden = !normalizedBrand.logoUrl && !builderState.guidedState.logoPalette.length;
   if (brandKitPanel.hidden) {
     brandKitPanel.innerHTML = "";
     return;
@@ -5162,9 +5074,9 @@ function renderBrandKit(brand = guidedState.brand) {
 }
 
 function applyBrandToCurrentSchema(brand) {
-  if (!currentSchema || !brand) return;
-  currentSchema = applyBrandSystemToSchema(currentSchema, brand);
-  currentCatalogItems = catalogItemsFromSchema(currentSchema);
+  if (!builderState.currentSchema || !brand) return;
+  builderState.currentSchema = applyBrandSystemToSchema(builderState.currentSchema, brand);
+  builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
   renderEditor();
   renderPreview();
 }
@@ -5185,7 +5097,7 @@ async function reviewAndGenerateFromGuided() {
 
   try {
     const saved = await saveGuidedClientRequest();
-    if (saved.request_id) currentRequestId = saved.request_id;
+    if (saved.request_id) builderState.currentRequestId = saved.request_id;
     guidedStatusText.textContent =
       saved.storage_status === "stored"
         ? `Client request saved: ${saved.request_number || saved.request_id}`
@@ -5198,7 +5110,7 @@ async function reviewAndGenerateFromGuided() {
   setGuidedBuildPhase("strategy");
   guidedStatusText.textContent = t("generatingLong");
   const generated = await generateWebsite(guidedGenerateButton);
-  if (generated && currentSchema) {
+  if (generated && builderState.currentSchema) {
     setGuidedBuildPhase("ready");
     const successMessage = langText({
       en: "Draft generated. You can review and edit it now.",
@@ -5251,7 +5163,7 @@ function setGuidedGenerateControlsBusy(isBusy, label = "") {
 async function handleGuidedGenerateButton(event) {
   event?.preventDefault?.();
   event?.stopPropagation?.();
-  if (isGeneratingWebsite) return;
+  if (builderState.isGeneratingWebsite) return;
   if (isPublicClientSetup && !hasStudioAccountSession()) {
     promptAccountBeforeGenerate();
     return;
@@ -5261,7 +5173,7 @@ async function handleGuidedGenerateButton(event) {
   const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
   if (requiredMissing.length) {
     const nextMissing = requiredMissing[0];
-    guidedStep = nextMissing;
+    builderState.guidedStep = nextMissing;
     document.body.classList.remove("review-details-open", "final-review-mode");
     appendChatMessage("assistant", langText({
       en: `I still need one key detail before generating:\n\n${guidedQuestion(nextMissing)}`,
@@ -5280,13 +5192,13 @@ async function handleGuidedGenerateButton(event) {
     guidedReply.focus();
     return;
   }
-  guidedStep = "review";
+  builderState.guidedStep = "review";
   document.body.classList.remove("review-details-open");
   renderGuidedSummary();
   setGuidedGenerateControlsBusy(true, t("generating"));
   setGuidedBuildPhase("save");
   guidedStatusText.textContent = t("generatingLong");
-  isGeneratingWebsite = true;
+  builderState.isGeneratingWebsite = true;
   try {
     await reviewAndGenerateFromGuided();
   } catch (error) {
@@ -5300,7 +5212,7 @@ async function handleGuidedGenerateButton(event) {
       pt: `${message}. Não consegui terminar o rascunho com este clique. Tente novamente ou adicione mais um detalhe e eu tento de novo.`,
     }), "alert");
   } finally {
-    isGeneratingWebsite = false;
+    builderState.isGeneratingWebsite = false;
     setGuidedGenerateControlsBusy(false);
     guidedGenerateButton.textContent = t("reviewGenerate");
   }
@@ -5312,7 +5224,7 @@ function promptAccountBeforeGenerate() {
   applyGuidedStateToForm();
   persistPendingStudioAccountAction("generate");
   openStudioAuthGate("generate");
-  const email = guidedState.contactInfo?.email || guidedState.contactInfo?.contact || "";
+  const email = builderState.guidedState.contactInfo?.email || builderState.guidedState.contactInfo?.contact || "";
   if (studioAuthEmail && email) studioAuthEmail.value = email;
   appendChatMessage("assistant", langText({
     en: "Before I generate it, connect an account so your draft is saved and you can come back later. You can use Google, Apple, or email.",
@@ -5329,11 +5241,11 @@ function promptAccountBeforeGenerate() {
 }
 
 function normalizeGuidedStateBeforeGenerate() {
-  const services = meaningfulOfferItems(guidedState.servicesProducts);
+  const services = meaningfulOfferItems(builderState.guidedState.servicesProducts);
   if (!services.length) {
     services.push(
-      guidedState.industry ||
-        guidedState.businessDescription ||
+      builderState.guidedState.industry ||
+        builderState.guidedState.businessDescription ||
         langText({
           en: "AI-defined offer",
           es: "oferta definida por IA",
@@ -5342,35 +5254,35 @@ function normalizeGuidedStateBeforeGenerate() {
         })
     );
   }
-  guidedState.businessName = guidedState.businessName || t("newClientWebsite");
-  guidedState.industry = guidedState.industry || t("generalBusiness");
-  guidedState.businessDescription =
-    guidedState.businessDescription ||
+  builderState.guidedState.businessName = builderState.guidedState.businessName || t("newClientWebsite");
+  builderState.guidedState.industry = builderState.guidedState.industry || t("generalBusiness");
+  builderState.guidedState.businessDescription =
+    builderState.guidedState.businessDescription ||
     langText({
-      en: `Professional website for ${guidedState.businessName} focused on ${services.join(", ") || guidedState.industry}.`,
-      es: `Pagina profesional para ${guidedState.businessName} enfocada en ${services.join(", ") || guidedState.industry}.`,
-      fr: `Site professionnel pour ${guidedState.businessName} axé sur ${services.join(", ") || guidedState.industry}.`,
-      pt: `Site profissional para ${guidedState.businessName} focado em ${services.join(", ") || guidedState.industry}.`,
+      en: `Professional website for ${builderState.guidedState.businessName} focused on ${services.join(", ") || builderState.guidedState.industry}.`,
+      es: `Pagina profesional para ${builderState.guidedState.businessName} enfocada en ${services.join(", ") || builderState.guidedState.industry}.`,
+      fr: `Site professionnel pour ${builderState.guidedState.businessName} axé sur ${services.join(", ") || builderState.guidedState.industry}.`,
+      pt: `Site profissional para ${builderState.guidedState.businessName} focado em ${services.join(", ") || builderState.guidedState.industry}.`,
     });
-  guidedState.servicesProducts = services;
-  guidedState.targetAudience = guidedState.targetAudience || t("letAiDecide");
-  guidedState.preferredTone = guidedState.preferredTone || t("letAiDecide");
-  guidedState.preferredColors = arrayValue(guidedState.preferredColors).length
-    ? arrayValue(guidedState.preferredColors)
-    : arrayValue(guidedState.logoPalette).length
-      ? arrayValue(guidedState.logoPalette)
+  builderState.guidedState.servicesProducts = services;
+  builderState.guidedState.targetAudience = builderState.guidedState.targetAudience || t("letAiDecide");
+  builderState.guidedState.preferredTone = builderState.guidedState.preferredTone || t("letAiDecide");
+  builderState.guidedState.preferredColors = arrayValue(builderState.guidedState.preferredColors).length
+    ? arrayValue(builderState.guidedState.preferredColors)
+    : arrayValue(builderState.guidedState.logoPalette).length
+      ? arrayValue(builderState.guidedState.logoPalette)
       : [t("letAiDecide")];
-  if (guidedState.aiGeneratedLogoRequested && !guidedState.logoPreference) {
-    guidedState.logoPreference = "generate_ai_logo";
+  if (builderState.guidedState.aiGeneratedLogoRequested && !builderState.guidedState.logoPreference) {
+    builderState.guidedState.logoPreference = "generate_ai_logo";
   }
-  guidedState.contactInfo = guidedState.contactInfo || {};
-  guidedState.salesMode = guidedState.salesMode || t("letAiDecide");
-  if (!guidedState.industry || guidedState.industry === t("generalBusiness")) {
-    guidedState.industry = inferCommerceIndustry(guidedState);
+  builderState.guidedState.contactInfo = builderState.guidedState.contactInfo || {};
+  builderState.guidedState.salesMode = builderState.guidedState.salesMode || t("letAiDecide");
+  if (!builderState.guidedState.industry || builderState.guidedState.industry === t("generalBusiness")) {
+    builderState.guidedState.industry = inferCommerceIndustry(builderState.guidedState);
   }
   const aiStudioPlan = refreshAiStudioPlanFromContext();
-  guidedState.sitePlan = guidedState.sitePlan || buildSitePlan(forcedTemplateSelection);
-  if (guidedState.sitePlan) guidedState.sitePlan.aiStudioPlan = aiStudioPlan;
+  builderState.guidedState.sitePlan = builderState.guidedState.sitePlan || buildSitePlan(builderState.forcedTemplateSelection);
+  if (builderState.guidedState.sitePlan) builderState.guidedState.sitePlan.aiStudioPlan = aiStudioPlan;
 }
 
 function inferCommerceIndustry(state) {
@@ -5393,10 +5305,10 @@ function inferCommerceIndustry(state) {
 }
 
 async function saveGuidedClientRequest() {
-  if (clientIntakeSession?.clientEmail) {
+  if (builderState.clientIntakeSession?.clientEmail) {
     const session = await createOrResumeClientIntakeSession({
-      email: clientIntakeSession.clientEmail,
-      name: guidedState.contactInfo?.name || guidedState.businessName || "",
+      email: builderState.clientIntakeSession.clientEmail,
+      name: builderState.guidedState.contactInfo?.name || builderState.guidedState.businessName || "",
       reason: "final-save",
     });
     return {
@@ -5418,59 +5330,59 @@ async function saveGuidedClientRequest() {
 
 function importQuickFormToGuidedState() {
   const data = new FormData(form);
-  guidedState = {
-    ...guidedState,
-    businessName: data.get("business_name")?.toString().trim() || guidedState.businessName,
-    businessDescription: data.get("business_description")?.toString().trim() || guidedState.businessDescription,
-    industry: data.get("industry")?.toString().trim() || guidedState.industry,
-    location: data.get("location")?.toString().trim() || guidedState.location,
+  builderState.guidedState = {
+    ...builderState.guidedState,
+    businessName: data.get("business_name")?.toString().trim() || builderState.guidedState.businessName,
+    businessDescription: data.get("business_description")?.toString().trim() || builderState.guidedState.businessDescription,
+    industry: data.get("industry")?.toString().trim() || builderState.guidedState.industry,
+    location: data.get("location")?.toString().trim() || builderState.guidedState.location,
     servicesProducts: splitCommaOrLines(data.get("services_products")?.toString() || "").length
       ? splitCommaOrLines(data.get("services_products")?.toString() || "")
-      : guidedState.servicesProducts,
-    targetAudience: data.get("target_audience")?.toString().trim() || guidedState.targetAudience,
-    preferredTone: data.get("preferred_tone")?.toString().trim() || guidedState.preferredTone,
+      : builderState.guidedState.servicesProducts,
+    targetAudience: data.get("target_audience")?.toString().trim() || builderState.guidedState.targetAudience,
+    preferredTone: data.get("preferred_tone")?.toString().trim() || builderState.guidedState.preferredTone,
     preferredColors: splitCommaOrLines(data.get("preferred_colors")?.toString() || "").length
       ? splitCommaOrLines(data.get("preferred_colors")?.toString() || "")
-      : guidedState.preferredColors,
+      : builderState.guidedState.preferredColors,
     contactInfo: Object.keys(parseKeyValueLines(data.get("contact_info")?.toString() || "")).length
       ? parseKeyValueLines(data.get("contact_info")?.toString() || "")
-      : guidedState.contactInfo,
-    logoUrl: data.get("logo_url")?.toString().trim() || guidedState.logoUrl,
+      : builderState.guidedState.contactInfo,
+    logoUrl: data.get("logo_url")?.toString().trim() || builderState.guidedState.logoUrl,
     photoUrls: splitLines(data.get("photo_urls")?.toString() || "").length
       ? splitLines(data.get("photo_urls")?.toString() || "")
-      : guidedState.photoUrls,
-    selectedLanguage,
-    hasLogo: Boolean((data.get("logo_url")?.toString().trim() || guidedState.logoUrl)),
-    hasPhotos: Boolean(splitLines(data.get("photo_urls")?.toString() || "").length || guidedState.photoUrls.length),
-    desiredDomain: data.get("desired_domain")?.toString().trim() || guidedState.desiredDomain,
+      : builderState.guidedState.photoUrls,
+    selectedLanguage: builderState.selectedLanguage,
+    hasLogo: Boolean((data.get("logo_url")?.toString().trim() || builderState.guidedState.logoUrl)),
+    hasPhotos: Boolean(splitLines(data.get("photo_urls")?.toString() || "").length || builderState.guidedState.photoUrls.length),
+    desiredDomain: data.get("desired_domain")?.toString().trim() || builderState.guidedState.desiredDomain,
   };
 }
 
 function applyGuidedStateToForm() {
-  setInputValue("business_name", guidedState.businessName);
-  setInputValue("business_description", guidedState.businessDescription);
-  setInputValue("industry", guidedState.industry);
-  setInputValue("location", guidedState.location);
-  setInputValue("services_products", arrayValue(guidedState.servicesProducts).join("\n"));
-  setInputValue("target_audience", guidedState.targetAudience);
-  setInputValue("preferred_tone", guidedState.preferredTone);
-  setInputValue("preferred_colors", arrayValue(guidedState.preferredColors).join(", "));
-  setInputValue("contact_info", contactInfoToLines(guidedState.contactInfo));
-  setInputValue("desired_domain", guidedState.desiredDomain);
-  setInputValue("logo_url", guidedState.logoUrl);
-  setInputValue("logo_preference", guidedState.logoPreference || (guidedState.aiGeneratedLogoRequested ? "generate_ai_logo" : ""));
-  setInputValue("photo_urls", arrayValue(guidedState.photoUrls).join("\n"));
+  setInputValue("business_name", builderState.guidedState.businessName);
+  setInputValue("business_description", builderState.guidedState.businessDescription);
+  setInputValue("industry", builderState.guidedState.industry);
+  setInputValue("location", builderState.guidedState.location);
+  setInputValue("services_products", arrayValue(builderState.guidedState.servicesProducts).join("\n"));
+  setInputValue("target_audience", builderState.guidedState.targetAudience);
+  setInputValue("preferred_tone", builderState.guidedState.preferredTone);
+  setInputValue("preferred_colors", arrayValue(builderState.guidedState.preferredColors).join(", "));
+  setInputValue("contact_info", contactInfoToLines(builderState.guidedState.contactInfo));
+  setInputValue("desired_domain", builderState.guidedState.desiredDomain);
+  setInputValue("logo_url", builderState.guidedState.logoUrl);
+  setInputValue("logo_preference", builderState.guidedState.logoPreference || (builderState.guidedState.aiGeneratedLogoRequested ? "generate_ai_logo" : ""));
+  setInputValue("photo_urls", arrayValue(builderState.guidedState.photoUrls).join("\n"));
 }
 
 function renderGuidedSummary() {
   syncTemplateSelectionFromGuidedContext();
-  guidedStep = normalizeGuidedStepForCurrentState(guidedStep);
+  builderState.guidedStep = normalizeGuidedStepForCurrentState(builderState.guidedStep);
   syncLyraExperienceMode();
   document.querySelectorAll("[data-summary-field]").forEach((field) => {
     const key = field.dataset.summaryField;
-    const value = guidedState[key];
+    const value = builderState.guidedState[key];
     if (key === "selectedLanguage") {
-      field.value = selectedLanguage;
+      field.value = builderState.selectedLanguage;
     } else if (Array.isArray(value)) {
       field.value = value.join("\n");
     } else if (key === "contactInfo") {
@@ -5479,9 +5391,9 @@ function renderGuidedSummary() {
       field.value = value || "";
     }
   });
-  const stepIndex = displayStepIndex(guidedStep);
-  const isFinalReview = guidedStep === "review";
-  if (isFinalReview && assistantState !== "success") setAssistantState("success");
+  const stepIndex = displayStepIndex(builderState.guidedStep);
+  const isFinalReview = builderState.guidedStep === "review";
+  if (isFinalReview && builderState.assistantState !== "success") setAssistantState("success");
   guidedStepLabel.textContent = isFinalReview ? t("reviewStep") : `${t("step")} ${stepIndex} ${t("of")} 7`;
   guidedProgressBar.style.width = `${Math.min(100, Math.round((stepIndex / 7) * 100))}%`;
   renderGuidedStepRail(stepIndex);
@@ -5503,7 +5415,7 @@ function renderGuidedSummary() {
 function syncLyraExperienceMode() {
   if (!isPublicClientSetup) return;
   const hasGeneratedResult = Boolean(
-    currentSchema ||
+    builderState.currentSchema ||
     document.body.classList.contains("generated-preview-open") ||
     document.body.classList.contains("client-preview-mode")
   );
@@ -5514,7 +5426,7 @@ function syncLyraExperienceMode() {
 function normalizeGuidedStepForCurrentState(step) {
   const normalized = normalizeNextGuidedStep(step);
   if (normalized !== "review") return normalized;
-  if (currentSchema) return "review";
+  if (builderState.currentSchema) return "review";
   const requiredMissing = REQUIRED_GUIDED_STEPS.filter((item) => !isGuidedStepAnswered(item));
   if (requiredMissing.length) return requiredMissing[0];
   if (!hasEnoughContextForTemplatePreview()) return nextSmartGuidedStep("websiteIntent");
@@ -5525,12 +5437,12 @@ function renderGuidedBriefReview() {
   if (!guidedBriefReview) return;
   syncTemplateSelectionFromGuidedContext();
   const aiStudioPlan = refreshAiStudioPlanFromContext();
-  const plan = forcedTemplateSelection?.templateId ? ensureSitePlan() : buildSitePlan({
+  const plan = builderState.forcedTemplateSelection?.templateId ? ensureSitePlan() : buildSitePlan({
     templateId: "",
     template: {},
     catalogType: "",
   });
-  const templateMeta = templatePreviewMeta(aiStudioPlan.recommendedTemplateId || plan.templateId) || templatePreviewMeta(forcedTemplateSelection?.templateId || "");
+  const templateMeta = templatePreviewMeta(aiStudioPlan.recommendedTemplateId || plan.templateId) || templatePreviewMeta(builderState.forcedTemplateSelection?.templateId || "");
   const templateName = aiStudioPlan.recommendedTemplateName || localizedTemplateName(templateMeta) || plan.templateName || langText({
     en: "Template pending",
     es: "Template pendiente",
@@ -5594,8 +5506,8 @@ function renderGuidedBriefReview() {
 }
 
 function aiBuildFocusLine() {
-  const name = guidedState.businessName || t("newClientWebsite");
-  const products = arrayValue(guidedState.servicesProducts).filter(Boolean).slice(0, 3);
+  const name = builderState.guidedState.businessName || t("newClientWebsite");
+  const products = arrayValue(builderState.guidedState.servicesProducts).filter(Boolean).slice(0, 3);
   if (products.length) {
     return langText({
       en: `${name}: LYRA is shaping the site around ${products.join(", ")}.`,
@@ -5613,7 +5525,7 @@ function aiBuildFocusLine() {
 }
 
 function aiCatalogStrategyLine(plan) {
-  const catalog = `${plan.catalogType || forcedTemplateSelection?.catalogType || ""}`.toLowerCase();
+  const catalog = `${plan.catalogType || builderState.forcedTemplateSelection?.catalogType || ""}`.toLowerCase();
   if (/single_vendor_dense|dense_retail|retail/.test(catalog)) {
     return langText({
       en: "The products look varied but owned by one business, so LYRA is using a search-first retail store structure instead of a multi-vendor marketplace.",
@@ -5655,26 +5567,26 @@ function aiCatalogStrategyLine(plan) {
 }
 
 function aiVisualStrategyLine(plan) {
-  const colorSource = arrayValue(guidedState.logoPalette).length
+  const colorSource = arrayValue(builderState.guidedState.logoPalette).length
     ? langText({ en: "logo palette", es: "paleta del logo", fr: "palette du logo", pt: "paleta do logo" })
-    : arrayValue(guidedState.preferredColors).length
-      ? arrayValue(guidedState.preferredColors).join(", ")
+    : arrayValue(builderState.guidedState.preferredColors).length
+      ? arrayValue(builderState.guidedState.preferredColors).join(", ")
       : t("letAiDecide");
   return langText({
-    en: `Design direction: ${guidedState.preferredTone || "AI-selected"} tone, ${colorSource} colors, customer-facing copy rewritten from the conversation.`,
-    es: `Direccion visual: tono ${guidedState.preferredTone || "elegido por IA"}, colores ${colorSource}, copy comercial reescrito desde la conversacion.`,
-    fr: `Direction visuelle : ton ${guidedState.preferredTone || "choisi par IA"}, couleurs ${colorSource}, copy reecrit depuis la conversation.`,
-    pt: `Direcao visual: tom ${guidedState.preferredTone || "escolhido por IA"}, cores ${colorSource}, copy comercial reescrito da conversa.`,
+    en: `Design direction: ${builderState.guidedState.preferredTone || "AI-selected"} tone, ${colorSource} colors, customer-facing copy rewritten from the conversation.`,
+    es: `Direccion visual: tono ${builderState.guidedState.preferredTone || "elegido por IA"}, colores ${colorSource}, copy comercial reescrito desde la conversacion.`,
+    fr: `Direction visuelle : ton ${builderState.guidedState.preferredTone || "choisi par IA"}, couleurs ${colorSource}, copy reecrit depuis la conversation.`,
+    pt: `Direcao visual: tom ${builderState.guidedState.preferredTone || "escolhido por IA"}, cores ${colorSource}, copy comercial reescrito da conversa.`,
   });
 }
 
 function aiSourceSignalList() {
   const signals = [];
-  if (guidedState.businessDescription) signals.push(langText({ en: "business description", es: "descripcion del negocio", fr: "description business", pt: "descricao do negocio" }));
-  if (arrayValue(guidedState.servicesProducts).length) signals.push(langText({ en: "products/services", es: "productos/servicios", fr: "produits/services", pt: "produtos/servicos" }));
-  if (guidedState.salesMode) signals.push(langText({ en: "sales flow", es: "flujo de venta", fr: "flux de vente", pt: "fluxo de venda" }));
-  if (guidedState.logoUrl || arrayValue(guidedState.logoPalette).length) signals.push(langText({ en: "logo and palette", es: "logo y paleta", fr: "logo et palette", pt: "logo e paleta" }));
-  if (guidedState.contactInfo && Object.keys(guidedState.contactInfo).length) signals.push(langText({ en: "contact routes", es: "vias de contacto", fr: "contacts", pt: "contatos" }));
+  if (builderState.guidedState.businessDescription) signals.push(langText({ en: "business description", es: "descripcion del negocio", fr: "description business", pt: "descricao do negocio" }));
+  if (arrayValue(builderState.guidedState.servicesProducts).length) signals.push(langText({ en: "products/services", es: "productos/servicios", fr: "produits/services", pt: "produtos/servicos" }));
+  if (builderState.guidedState.salesMode) signals.push(langText({ en: "sales flow", es: "flujo de venta", fr: "flux de vente", pt: "fluxo de venda" }));
+  if (builderState.guidedState.logoUrl || arrayValue(builderState.guidedState.logoPalette).length) signals.push(langText({ en: "logo and palette", es: "logo y paleta", fr: "logo et palette", pt: "logo e paleta" }));
+  if (builderState.guidedState.contactInfo && Object.keys(builderState.guidedState.contactInfo).length) signals.push(langText({ en: "contact routes", es: "vias de contacto", fr: "contacts", pt: "contatos" }));
   return signals.length ? signals : [langText({ en: "conversation context", es: "contexto de la conversacion", fr: "contexte conversation", pt: "contexto da conversa" })];
 }
 
@@ -5711,9 +5623,9 @@ function humanizePlanFeature(feature) {
 }
 
 function renderSitePlanInChatIfNeeded() {
-  if (guidedStep !== "review" || !guidedChat) return;
+  if (builderState.guidedStep !== "review" || !guidedChat) return;
   guidedChat.querySelectorAll(".site-plan-card, .luma-ready-card").forEach((card) => card.remove());
-  if (!isPublicClientSetup && (forcedTemplateSelection?.templateId || guidedState.sitePlan?.templateId)) {
+  if (!isPublicClientSetup && (builderState.forcedTemplateSelection?.templateId || builderState.guidedState.sitePlan?.templateId)) {
     guidedChat.appendChild(renderSitePlanCard());
   }
   guidedChat.appendChild(renderLumaReadyCard());
@@ -5722,17 +5634,17 @@ function renderSitePlanInChatIfNeeded() {
 
 function renderLumaReadyCard() {
   const diagnosis = refreshAiStudioPlanFromContext();
-  const plan = guidedState.sitePlan || null;
+  const plan = builderState.guidedState.sitePlan || null;
   const card = document.createElement("section");
   card.className = "luma-ready-card";
-  const templateMeta = templatePreviewMeta(plan?.templateId || forcedTemplateSelection?.templateId || "");
-  const templateName = localizedTemplateName(templateMeta) || plan?.templateName || forcedTemplateSelection?.templateId || langText({
+  const templateMeta = templatePreviewMeta(plan?.templateId || builderState.forcedTemplateSelection?.templateId || "");
+  const templateName = localizedTemplateName(templateMeta) || plan?.templateName || builderState.forcedTemplateSelection?.templateId || langText({
     en: "AI-selected structure",
     es: "Estructura elegida por IA",
     fr: "Structure choisie par IA",
     pt: "Estrutura escolhida por IA",
   });
-  const reason = assistantVisibleCopy(diagnosis.reasoningSummary || forcedTemplateSelection?.reason || langText({
+  const reason = assistantVisibleCopy(diagnosis.reasoningSummary || builderState.forcedTemplateSelection?.reason || langText({
     en: "LYRA will use the conversation as strategy and generate customer-facing copy.",
     es: "LYRA usara la conversacion como estrategia y generara textos para clientes.",
     fr: "LYRA utilisera la conversation comme strategie et generera le contenu client.",
@@ -5760,7 +5672,7 @@ function renderLumaReadyCard() {
 }
 
 function renderSelectedDomainState() {
-  if (!domainCheckStatus || !guidedState.desiredDomain || domainResults?.children.length) return;
+  if (!domainCheckStatus || !builderState.guidedState.desiredDomain || domainResults?.children.length) return;
   domainCheckStatus.textContent = langText({
     en: "You can check availability before generating.",
     es: "Puedes verificar disponibilidad antes de generar.",
@@ -5771,7 +5683,7 @@ function renderSelectedDomainState() {
 
 async function checkDesiredDomainOptions() {
   syncGuidedStateFromSummary();
-  const query = guidedState.desiredDomain || guidedState.businessName || "";
+  const query = builderState.guidedState.desiredDomain || builderState.guidedState.businessName || "";
   if (!query.trim()) {
     domainCheckStatus.textContent = t("domainCheckEmpty");
     domainResults.innerHTML = "";
@@ -5814,7 +5726,7 @@ function renderDomainResults(result) {
   }).join("");
   domainResults.querySelectorAll("[data-domain-choice]").forEach((button) => {
     button.addEventListener("click", () => {
-      guidedState.desiredDomain = button.dataset.domainChoice;
+      builderState.guidedState.desiredDomain = button.dataset.domainChoice;
       renderGuidedSummary();
       domainCheckStatus.textContent = langText({
         en: `Selected domain: ${button.dataset.domainChoice}`,
@@ -5845,8 +5757,8 @@ function openReviewDetails() {
 
 function keepChatting() {
   document.body.classList.remove("review-details-open", "final-review-mode", "ready-chat-mode");
-  const nextMissing = nextSmartGuidedStep(guidedStep, { allowReview: false });
-  guidedStep = nextMissing || "review";
+  const nextMissing = nextSmartGuidedStep(builderState.guidedStep, { allowReview: false });
+  builderState.guidedStep = nextMissing || "review";
   const message = nextMissing
     ? langText({
         en: `We can keep going. The most useful missing detail is this:\n\n${guidedQuestion(nextMissing)}`,
@@ -5879,7 +5791,7 @@ function displayStepIndex(step) {
 // Persistent step rail (2026-07-18, ai-builder.html only -- #guidedRailSteps
 // does not exist on client/setup/index.html, hence the null guard). Purely
 // presentational: reuses the stepIndex already computed by
-// renderGuidedSummary() from the real guidedStep/displayStepIndex() state,
+// renderGuidedSummary() from the real builderState.guidedStep/displayStepIndex() state,
 // no separate step-tracking logic.
 function renderGuidedStepRail(stepIndex) {
   const items = document.querySelectorAll("#guidedRailSteps .guided-rail-step");
@@ -5893,17 +5805,17 @@ function renderGuidedStepRail(stepIndex) {
 
 function completedFieldCount() {
   return [
-    guidedState.websiteIntent,
-    guidedState.businessName,
-    guidedState.businessDescription,
-    guidedState.industry,
-    guidedState.location,
-    arrayValue(guidedState.servicesProducts).length,
-    guidedState.targetAudience,
-    guidedState.preferredTone,
-    arrayValue(guidedState.preferredColors).length,
-    Object.keys(guidedState.contactInfo || {}).length,
-    guidedState.salesMode,
+    builderState.guidedState.websiteIntent,
+    builderState.guidedState.businessName,
+    builderState.guidedState.businessDescription,
+    builderState.guidedState.industry,
+    builderState.guidedState.location,
+    arrayValue(builderState.guidedState.servicesProducts).length,
+    builderState.guidedState.targetAudience,
+    builderState.guidedState.preferredTone,
+    arrayValue(builderState.guidedState.preferredColors).length,
+    Object.keys(builderState.guidedState.contactInfo || {}).length,
+    builderState.guidedState.salesMode,
   ].filter(Boolean).length;
 }
 
@@ -5929,12 +5841,12 @@ function guidedCompletionPercent() {
 
 function compactCollectedPreview() {
   if (isPublicClientSetup) {
-    const templateMeta = templatePreviewMeta(forcedTemplateSelection?.templateId || guidedState.sitePlan?.templateId || "");
+    const templateMeta = templatePreviewMeta(builderState.forcedTemplateSelection?.templateId || builderState.guidedState.sitePlan?.templateId || "");
     const humanTemplate = localizedTemplateName(templateMeta);
     const parts = [
-      guidedState.businessName,
+      builderState.guidedState.businessName,
       humanTemplate,
-      arrayValue(guidedState.servicesProducts).slice(0, 2).join(", "),
+      arrayValue(builderState.guidedState.servicesProducts).slice(0, 2).join(", "),
     ].filter(Boolean);
     return parts.length
       ? parts.join(" · ")
@@ -5946,11 +5858,11 @@ function compactCollectedPreview() {
         });
   }
   const parts = [
-    forcedTemplateSelection?.templateId,
-    guidedState.businessName,
-    guidedState.industry,
-    guidedState.location,
-    arrayValue(guidedState.servicesProducts).slice(0, 2).join(", "),
+    builderState.forcedTemplateSelection?.templateId,
+    builderState.guidedState.businessName,
+    builderState.guidedState.industry,
+    builderState.guidedState.location,
+    arrayValue(builderState.guidedState.servicesProducts).slice(0, 2).join(", "),
   ].filter(Boolean);
   return parts.length ? parts.join(" · ") : t("currentInfo");
 }
@@ -5979,32 +5891,32 @@ function syncGuidedStateFromSummary() {
     if (key === "selectedLanguage") {
       setSelectedLanguage(field.value);
     } else if (["servicesProducts", "preferredColors", "photoUrls", "videoUrls"].includes(key)) {
-      guidedState[key] = splitCommaOrLines(field.value);
+      builderState.guidedState[key] = splitCommaOrLines(field.value);
     } else if (key === "contactInfo") {
-      guidedState[key] = parseKeyValueLines(field.value);
+      builderState.guidedState[key] = parseKeyValueLines(field.value);
     } else {
-      guidedState[key] = field.value.trim();
+      builderState.guidedState[key] = field.value.trim();
     }
   });
 }
 
 function mergeGuidedUpdates(updates) {
   Object.entries(updates).forEach(([key, value]) => {
-    if (!(key in guidedState)) return;
+    if (!(key in builderState.guidedState)) return;
     if (key === "businessName" && isInvalidBusinessNameUpdate(value)) return;
     if (key === "fieldMeta") {
-      guidedState.fieldMeta = { ...(guidedState.fieldMeta || {}), ...(value || {}) };
+      builderState.guidedState.fieldMeta = { ...(builderState.guidedState.fieldMeta || {}), ...(value || {}) };
     } else if (key === "contactInfo") {
-      guidedState.contactInfo = { ...guidedState.contactInfo, ...(value || {}) };
+      builderState.guidedState.contactInfo = { ...builderState.guidedState.contactInfo, ...(value || {}) };
     } else if (key === "servicesProducts") {
       const incoming = meaningfulOfferItems(value);
-      const existing = meaningfulOfferItems(guidedState.servicesProducts);
+      const existing = meaningfulOfferItems(builderState.guidedState.servicesProducts);
       if (!incoming.length && existing.length) return;
-      guidedState.servicesProducts = [...new Set([...existing, ...incoming])];
+      builderState.guidedState.servicesProducts = [...new Set([...existing, ...incoming])];
     } else if (["servicesProducts", "preferredColors", "photoUrls", "videoUrls"].includes(key)) {
-      guidedState[key] = arrayValue(value);
+      builderState.guidedState[key] = arrayValue(value);
     } else {
-      guidedState[key] = value || guidedState[key];
+      builderState.guidedState[key] = value || builderState.guidedState[key];
     }
   });
 }
@@ -6019,70 +5931,70 @@ function isPlaceholderBusinessName(value) {
 }
 
 function guidedStateForApi() {
-  const logoUrl = isCloudSafeUrl(guidedState.logoUrl) ? guidedState.logoUrl : "";
-  const photoUrls = arrayValue(guidedState.photoUrls).filter(isCloudSafeUrl);
-  const videoUrls = arrayValue(guidedState.videoUrls).filter(isCloudSafeUrl);
+  const logoUrl = isCloudSafeUrl(builderState.guidedState.logoUrl) ? builderState.guidedState.logoUrl : "";
+  const photoUrls = arrayValue(builderState.guidedState.photoUrls).filter(isCloudSafeUrl);
+  const videoUrls = arrayValue(builderState.guidedState.videoUrls).filter(isCloudSafeUrl);
   const aiStudioPlan = refreshAiStudioPlanFromContext();
-  const sitePlan = guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan() : null);
+  const sitePlan = builderState.guidedState.sitePlan || (builderState.forcedTemplateSelection?.templateId ? buildSitePlan() : null);
   if (sitePlan && aiStudioPlan) sitePlan.aiStudioPlan = aiStudioPlan;
-  const logoPreference = guidedState.logoPreference || (guidedState.aiGeneratedLogoRequested ? "generate_ai_logo" : "");
-  const fieldMeta = { ...(guidedState.fieldMeta || {}) };
+  const logoPreference = builderState.guidedState.logoPreference || (builderState.guidedState.aiGeneratedLogoRequested ? "generate_ai_logo" : "");
+  const fieldMeta = { ...(builderState.guidedState.fieldMeta || {}) };
   if (logoPreference) {
     fieldMeta.logo = fieldMeta.logo || { source: "explicit", confidence: 1 };
     fieldMeta.logoPreference = fieldMeta.logoPreference || { source: "explicit", confidence: 1 };
   }
   const payload = {
-    generatedSiteId: currentSiteId || clientIntakeSession?.generatedSiteId || clientIntakeSession?.projectId || guidedState.generatedSiteId || "",
-    projectId: currentSiteId || clientIntakeSession?.projectId || clientIntakeSession?.generatedSiteId || guidedState.projectId || "",
-    websiteIntent: guidedState.websiteIntent,
-    businessName: guidedState.businessName,
-    businessDescription: guidedState.businessDescription,
-    industry: guidedState.industry,
-    location: guidedState.location,
-    servicesProducts: arrayValue(guidedState.servicesProducts),
-    targetAudience: guidedState.targetAudience,
-    preferredTone: guidedState.preferredTone,
-    preferredColors: arrayValue(guidedState.preferredColors),
-    contactInfo: guidedState.contactInfo || {},
-    desiredDomain: guidedState.desiredDomain,
+    generatedSiteId: builderState.currentSiteId || builderState.clientIntakeSession?.generatedSiteId || builderState.clientIntakeSession?.projectId || builderState.guidedState.generatedSiteId || "",
+    projectId: builderState.currentSiteId || builderState.clientIntakeSession?.projectId || builderState.clientIntakeSession?.generatedSiteId || builderState.guidedState.projectId || "",
+    websiteIntent: builderState.guidedState.websiteIntent,
+    businessName: builderState.guidedState.businessName,
+    businessDescription: builderState.guidedState.businessDescription,
+    industry: builderState.guidedState.industry,
+    location: builderState.guidedState.location,
+    servicesProducts: arrayValue(builderState.guidedState.servicesProducts),
+    targetAudience: builderState.guidedState.targetAudience,
+    preferredTone: builderState.guidedState.preferredTone,
+    preferredColors: arrayValue(builderState.guidedState.preferredColors),
+    contactInfo: builderState.guidedState.contactInfo || {},
+    desiredDomain: builderState.guidedState.desiredDomain,
     logoUrl,
     photoUrls,
     videoUrls,
-    logoPalette: arrayValue(guidedState.logoPalette),
+    logoPalette: arrayValue(builderState.guidedState.logoPalette),
     logoPreference,
-    salesFlow: guidedState.salesFlow || "",
+    salesFlow: builderState.guidedState.salesFlow || "",
     fieldMeta,
-    brand: normalizeBrand(guidedState.brand || { logoUrl, extractedColors: arrayValue(guidedState.logoPalette) }),
+    brand: normalizeBrand(builderState.guidedState.brand || { logoUrl, extractedColors: arrayValue(builderState.guidedState.logoPalette) }),
     designStrategy: {
       ...createDesignStrategy({
-        business_name: guidedState.businessName,
-        business_description: guidedState.businessDescription,
-        website_intent: guidedState.websiteIntent,
-        industry: guidedState.industry,
-        target_audience: guidedState.targetAudience,
-        preferred_tone: guidedState.preferredTone,
-        salesMode: guidedState.salesFlow || guidedState.salesMode,
+        business_name: builderState.guidedState.businessName,
+        business_description: builderState.guidedState.businessDescription,
+        website_intent: builderState.guidedState.websiteIntent,
+        industry: builderState.guidedState.industry,
+        target_audience: builderState.guidedState.targetAudience,
+        preferred_tone: builderState.guidedState.preferredTone,
+        salesMode: builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
       }),
-      ...(guidedState.designStrategy || {}),
+      ...(builderState.guidedState.designStrategy || {}),
       aiStudioPlan,
     },
     qualityRules: DESIGN_QUALITY_RULES,
-    selectedLanguage,
-    hasLogo: Boolean(guidedState.hasLogo || guidedState.logoUrl),
-    hasPhotos: Boolean(guidedState.hasPhotos || arrayValue(guidedState.photoUrls).length || arrayValue(guidedState.videoUrls).length),
-    salesMode: guidedState.salesFlow || guidedState.salesMode,
-    hasLogoPhotos: guidedState.hasLogoPhotos,
-    sectionsPreference: guidedState.sectionsPreference,
+    selectedLanguage: builderState.selectedLanguage,
+    hasLogo: Boolean(builderState.guidedState.hasLogo || builderState.guidedState.logoUrl),
+    hasPhotos: Boolean(builderState.guidedState.hasPhotos || arrayValue(builderState.guidedState.photoUrls).length || arrayValue(builderState.guidedState.videoUrls).length),
+    salesMode: builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
+    hasLogoPhotos: builderState.guidedState.hasLogoPhotos,
+    sectionsPreference: builderState.guidedState.sectionsPreference,
     aiStudioPlan,
     sitePlan,
-    sitePlanApproved: Boolean(guidedState.sitePlanApproved),
+    sitePlanApproved: Boolean(builderState.guidedState.sitePlanApproved),
     publicCopyPolicy: {
       mode: "designer_rewrite",
       visibleCopyMustBeOriginal: true,
       intakeIsStrategyOnly: true,
       forbiddenLiteralSources: ["businessDescription", "chat answers", "client notes", "internal requirements"],
       instruction:
-        "Treat all intake answers as private creative direction. Do not paste them into visible website copy. Rewrite them into concise, polished, customer-facing titles, slogans, paragraphs, CTAs, product descriptions, and section labels in selectedLanguage.",
+        "Treat all intake answers as private creative direction. Do not paste them into visible website copy. Rewrite them into concise, polished, customer-facing titles, slogans, paragraphs, CTAs, product descriptions, and section labels in builderState.selectedLanguage.",
     },
     source: "ai_guided_setup",
     status: "ready_to_generate",
@@ -6102,44 +6014,44 @@ function guidedStateForApi() {
 }
 
 function guidedSessionDraftForApi() {
-  const logoUrl = isCloudSafeUrl(guidedState.logoUrl) ? guidedState.logoUrl : "";
-  const logoPreference = guidedState.logoPreference || (guidedState.aiGeneratedLogoRequested ? "generate_ai_logo" : "");
-  const fieldMeta = { ...(guidedState.fieldMeta || {}) };
+  const logoUrl = isCloudSafeUrl(builderState.guidedState.logoUrl) ? builderState.guidedState.logoUrl : "";
+  const logoPreference = builderState.guidedState.logoPreference || (builderState.guidedState.aiGeneratedLogoRequested ? "generate_ai_logo" : "");
+  const fieldMeta = { ...(builderState.guidedState.fieldMeta || {}) };
   if (logoPreference) {
     fieldMeta.logo = fieldMeta.logo || { source: "explicit", confidence: 1 };
     fieldMeta.logoPreference = fieldMeta.logoPreference || { source: "explicit", confidence: 1 };
   }
   return sanitizeClientSessionDraft({
-    generatedSiteId: currentSiteId || clientIntakeSession?.generatedSiteId || clientIntakeSession?.projectId || guidedState.generatedSiteId || "",
-    projectId: currentSiteId || clientIntakeSession?.projectId || clientIntakeSession?.generatedSiteId || guidedState.projectId || "",
-    websiteIntent: guidedState.websiteIntent,
-    businessName: guidedState.businessName,
-    businessDescription: guidedState.businessDescription,
-    industry: guidedState.industry,
-    location: guidedState.location,
-    servicesProducts: arrayValue(guidedState.servicesProducts),
-    targetAudience: guidedState.targetAudience,
-    preferredTone: guidedState.preferredTone,
-    preferredColors: arrayValue(guidedState.preferredColors),
-    contactInfo: guidedState.contactInfo || {},
-    desiredDomain: guidedState.desiredDomain,
+    generatedSiteId: builderState.currentSiteId || builderState.clientIntakeSession?.generatedSiteId || builderState.clientIntakeSession?.projectId || builderState.guidedState.generatedSiteId || "",
+    projectId: builderState.currentSiteId || builderState.clientIntakeSession?.projectId || builderState.clientIntakeSession?.generatedSiteId || builderState.guidedState.projectId || "",
+    websiteIntent: builderState.guidedState.websiteIntent,
+    businessName: builderState.guidedState.businessName,
+    businessDescription: builderState.guidedState.businessDescription,
+    industry: builderState.guidedState.industry,
+    location: builderState.guidedState.location,
+    servicesProducts: arrayValue(builderState.guidedState.servicesProducts),
+    targetAudience: builderState.guidedState.targetAudience,
+    preferredTone: builderState.guidedState.preferredTone,
+    preferredColors: arrayValue(builderState.guidedState.preferredColors),
+    contactInfo: builderState.guidedState.contactInfo || {},
+    desiredDomain: builderState.guidedState.desiredDomain,
     logoUrl,
-    photoUrls: arrayValue(guidedState.photoUrls).filter(isCloudSafeUrl),
-    videoUrls: arrayValue(guidedState.videoUrls).filter(isCloudSafeUrl),
-    logoPalette: arrayValue(guidedState.logoPalette),
+    photoUrls: arrayValue(builderState.guidedState.photoUrls).filter(isCloudSafeUrl),
+    videoUrls: arrayValue(builderState.guidedState.videoUrls).filter(isCloudSafeUrl),
+    logoPalette: arrayValue(builderState.guidedState.logoPalette),
     logoPreference,
     fieldMeta,
-    selectedLanguage,
-    hasLogo: Boolean(guidedState.hasLogo || guidedState.logoUrl),
-    hasPhotos: Boolean(guidedState.hasPhotos || arrayValue(guidedState.photoUrls).length || arrayValue(guidedState.videoUrls).length),
-    salesMode: guidedState.salesMode,
-    hasLogoPhotos: guidedState.hasLogoPhotos,
-    sectionsPreference: guidedState.sectionsPreference,
-    selectedTemplateId: guidedState.selectedTemplateId || forcedTemplateSelection?.templateId || "",
-    selectedTemplateName: guidedState.selectedTemplateName || forcedTemplateSelection?.name || "",
-    catalogType: guidedState.catalogType || forcedTemplateSelection?.catalogType || "",
-    websiteType: guidedState.websiteType || "",
-    salesFlow: guidedState.salesFlow || "",
+    selectedLanguage: builderState.selectedLanguage,
+    hasLogo: Boolean(builderState.guidedState.hasLogo || builderState.guidedState.logoUrl),
+    hasPhotos: Boolean(builderState.guidedState.hasPhotos || arrayValue(builderState.guidedState.photoUrls).length || arrayValue(builderState.guidedState.videoUrls).length),
+    salesMode: builderState.guidedState.salesMode,
+    hasLogoPhotos: builderState.guidedState.hasLogoPhotos,
+    sectionsPreference: builderState.guidedState.sectionsPreference,
+    selectedTemplateId: builderState.guidedState.selectedTemplateId || builderState.forcedTemplateSelection?.templateId || "",
+    selectedTemplateName: builderState.guidedState.selectedTemplateName || builderState.forcedTemplateSelection?.name || "",
+    catalogType: builderState.guidedState.catalogType || builderState.forcedTemplateSelection?.catalogType || "",
+    websiteType: builderState.guidedState.websiteType || "",
+    salesFlow: builderState.guidedState.salesFlow || "",
   });
 }
 
@@ -6176,7 +6088,7 @@ function sanitizeClientSessionDraft(raw = {}) {
     videoUrls: cleanList(source.videoUrls).filter(isCloudSafeUrl),
     logoPalette: cleanList(source.logoPalette, 12),
     fieldMeta,
-    selectedLanguage: SUPPORTED_LANGUAGES.includes(source.selectedLanguage) ? source.selectedLanguage : selectedLanguage,
+    selectedLanguage: SUPPORTED_LANGUAGES.includes(source.selectedLanguage) ? source.selectedLanguage : builderState.selectedLanguage,
     hasLogo: Boolean(source.hasLogo || source.logoUrl),
     hasPhotos: Boolean(source.hasPhotos || cleanList(source.photoUrls).length || cleanList(source.videoUrls).length),
     salesMode: trimmed(source.salesMode, 160),
@@ -6270,11 +6182,11 @@ function shouldSuppressAssistantMessage(message) {
 
 function trackAssistantPrompt(message) {
   const signature = questionSignature(message);
-  if (signature && signature === lastAssistantPromptSignature) return;
-  lastAssistantPromptSignature = signature;
-  if (!guidedStep || guidedStep === "review") return;
-  if (message.includes(guidedQuestion(guidedStep)) || /[?¿]/.test(message)) {
-    guidedAskedSteps.set(guidedStep, (guidedAskedSteps.get(guidedStep) || 0) + 1);
+  if (signature && signature === builderState.lastAssistantPromptSignature) return;
+  builderState.lastAssistantPromptSignature = signature;
+  if (!builderState.guidedStep || builderState.guidedStep === "review") return;
+  if (message.includes(guidedQuestion(builderState.guidedStep)) || /[?¿]/.test(message)) {
+    guidedAskedSteps.set(builderState.guidedStep, (guidedAskedSteps.get(builderState.guidedStep) || 0) + 1);
   }
 }
 
@@ -6282,12 +6194,12 @@ function setThinking(active) {
   guidedThinking.classList.toggle("active", active);
   if (active) {
     setAssistantState("thinking");
-  } else if (assistantState === "thinking") {
-    setAssistantState(guidedStep === "review" ? "success" : "neutral");
+  } else if (builderState.assistantState === "thinking") {
+    setAssistantState(builderState.guidedStep === "review" ? "success" : "neutral");
   }
 }
 
-function nextSmartGuidedStep(referenceStep = guidedStep, options = {}) {
+function nextSmartGuidedStep(referenceStep = builderState.guidedStep, options = {}) {
   const { allowReview = true } = options;
   const requiredMissing = REQUIRED_GUIDED_STEPS.find((step) => !isGuidedStepAnswered(step));
   if (requiredMissing) return requiredMissing;
@@ -6381,36 +6293,36 @@ function nextGuidedStep(step) {
 }
 
 function normalizeNextGuidedStep(step) {
-  const candidate = GUIDED_STEPS.includes(step) ? step : nextGuidedStep(guidedStep);
+  const candidate = GUIDED_STEPS.includes(step) ? step : nextGuidedStep(builderState.guidedStep);
   if (candidate === "review") return "review";
   return isGuidedStepAnswered(candidate) ? nextGuidedStep(candidate) : candidate;
 }
 
 function isGuidedStepAnswered(step) {
-  if (step === "websiteIntent") return Boolean(guidedState.websiteIntent);
-  if (step === "businessName") return Boolean(guidedState.businessName);
-  if (step === "businessDescription") return Boolean(guidedState.businessDescription);
-  if (step === "industry") return Boolean(guidedState.industry);
-  if (step === "location") return Boolean(guidedState.location);
-  if (step === "servicesProducts") return arrayValue(guidedState.servicesProducts).length > 0;
-  if (step === "targetAudience") return Boolean(guidedState.targetAudience);
-  if (step === "preferredTone") return Boolean(guidedState.preferredTone);
+  if (step === "websiteIntent") return Boolean(builderState.guidedState.websiteIntent);
+  if (step === "businessName") return Boolean(builderState.guidedState.businessName);
+  if (step === "businessDescription") return Boolean(builderState.guidedState.businessDescription);
+  if (step === "industry") return Boolean(builderState.guidedState.industry);
+  if (step === "location") return Boolean(builderState.guidedState.location);
+  if (step === "servicesProducts") return arrayValue(builderState.guidedState.servicesProducts).length > 0;
+  if (step === "targetAudience") return Boolean(builderState.guidedState.targetAudience);
+  if (step === "preferredTone") return Boolean(builderState.guidedState.preferredTone);
   if (step === "preferredColors") {
-    return arrayValue(guidedState.preferredColors).length > 0 || arrayValue(guidedState.logoPalette).length > 0;
+    return arrayValue(builderState.guidedState.preferredColors).length > 0 || arrayValue(builderState.guidedState.logoPalette).length > 0;
   }
-  if (step === "contactInfo") return Object.keys(guidedState.contactInfo || {}).length > 0;
-  if (step === "salesMode") return Boolean(guidedState.salesMode);
+  if (step === "contactInfo") return Object.keys(builderState.guidedState.contactInfo || {}).length > 0;
+  if (step === "salesMode") return Boolean(builderState.guidedState.salesMode);
   if (step === "hasLogoPhotos") {
-    return Boolean(guidedState.hasLogoPhotos || guidedState.hasLogo || guidedState.hasPhotos || guidedState.aiGeneratedLogoRequested || guidedState.logoPreference);
+    return Boolean(builderState.guidedState.hasLogoPhotos || builderState.guidedState.hasLogo || builderState.guidedState.hasPhotos || builderState.guidedState.aiGeneratedLogoRequested || builderState.guidedState.logoPreference);
   }
-  if (step === "desiredDomain") return Boolean(guidedState.desiredDomain);
+  if (step === "desiredDomain") return Boolean(builderState.guidedState.desiredDomain);
   return false;
 }
 
 function hasEnoughContextForFirstDraft() {
-  const hasName = Boolean(guidedState.businessName);
-  const hasOffer = Boolean(guidedState.businessDescription) || arrayValue(guidedState.servicesProducts).length > 0;
-  const hasGoal = Boolean(guidedState.websiteIntent || guidedState.salesMode || forcedTemplateSelection?.templateId);
+  const hasName = Boolean(builderState.guidedState.businessName);
+  const hasOffer = Boolean(builderState.guidedState.businessDescription) || arrayValue(builderState.guidedState.servicesProducts).length > 0;
+  const hasGoal = Boolean(builderState.guidedState.websiteIntent || builderState.guidedState.salesMode || builderState.forcedTemplateSelection?.templateId);
   return hasName && hasOffer && hasGoal;
 }
 
@@ -6418,9 +6330,9 @@ function completeGuidedBriefFromMessage(message, pendingUpdates = {}) {
   const text = String(message || "").trim();
   const updates = {};
   const merged = {
-    ...guidedState,
+    ...builderState.guidedState,
     ...pendingUpdates,
-    contactInfo: { ...(guidedState.contactInfo || {}), ...(pendingUpdates.contactInfo || {}) },
+    contactInfo: { ...(builderState.guidedState.contactInfo || {}), ...(pendingUpdates.contactInfo || {}) },
   };
   const combinedText = normalizeTemplateIntentText([
     text,
@@ -6478,7 +6390,7 @@ function completeGuidedBriefFromMessage(message, pendingUpdates = {}) {
 }
 
 function shouldAdvanceToDesignerPlan(message) {
-  if (guidedStep === "review") return false;
+  if (builderState.guidedStep === "review") return false;
   if (!isRichIntakeMessage(message)) return false;
   return hasEnoughContextForFirstDraft();
 }
@@ -6517,41 +6429,41 @@ function inferGuidedUpdatesFromAnyMessage(message) {
   const lower = text.toLowerCase();
   const updates = {};
 
-  if (!guidedState.websiteIntent && isRichIntakeMessage(text)) {
+  if (!builderState.guidedState.websiteIntent && isRichIntakeMessage(text)) {
     updates.websiteIntent = extractWebsiteIntent(text);
   }
-  if (!guidedState.businessDescription && text.length > 45) {
+  if (!builderState.guidedState.businessDescription && text.length > 45) {
     updates.businessDescription = text;
   }
 
   const businessName = extractBusinessName(text);
-  if (businessName && (!guidedState.businessName || isPlaceholderBusinessName(guidedState.businessName))) {
+  if (businessName && (!builderState.guidedState.businessName || isPlaceholderBusinessName(builderState.guidedState.businessName))) {
     updates.businessName = businessName;
   }
 
   const industry = inferIndustryFromPrompt(text);
-  if (industry && !guidedState.industry) updates.industry = industry;
+  if (industry && !builderState.guidedState.industry) updates.industry = industry;
 
   const location = extractLocation(text);
-  if (location && !guidedState.location) updates.location = location;
+  if (location && !builderState.guidedState.location) updates.location = location;
 
   const services = extractServicesProducts(text);
-  if (services.length && !arrayValue(guidedState.servicesProducts).length) {
+  if (services.length && !arrayValue(builderState.guidedState.servicesProducts).length) {
     updates.servicesProducts = services;
   }
 
   const audience = extractTargetAudience(text);
-  if (audience && !guidedState.targetAudience) updates.targetAudience = audience;
+  if (audience && !builderState.guidedState.targetAudience) updates.targetAudience = audience;
 
   const tone = extractToneFromText(text);
-  if (tone && !guidedState.preferredTone) updates.preferredTone = tone;
+  if (tone && !builderState.guidedState.preferredTone) updates.preferredTone = tone;
 
   const colors = extractColorsFromText(text);
-  if (colors.length && !arrayValue(guidedState.preferredColors).length) {
+  if (colors.length && !arrayValue(builderState.guidedState.preferredColors).length) {
     updates.preferredColors = colors;
-  } else if (briefRequestsCyberpunk(text) && !arrayValue(guidedState.preferredColors).length) {
+  } else if (briefRequestsCyberpunk(text) && !arrayValue(builderState.guidedState.preferredColors).length) {
     updates.preferredColors = ["cyberpunk", "neon cyan", "magenta"];
-    if (!updates.preferredTone && !guidedState.preferredTone) updates.preferredTone = "Cyberpunk, neon, energetic, modern";
+    if (!updates.preferredTone && !builderState.guidedState.preferredTone) updates.preferredTone = "Cyberpunk, neon, energetic, modern";
   }
 
   const contactInfo = extractContactInfo(text);
@@ -6560,9 +6472,9 @@ function inferGuidedUpdatesFromAnyMessage(message) {
   }
 
   const salesMode = extractSalesMode(lower);
-  if (salesMode && !guidedState.salesMode) updates.salesMode = salesMode;
+  if (salesMode && !builderState.guidedState.salesMode) updates.salesMode = salesMode;
 
-  if (/logo|foto|fotos|imagen|imagenes|photo|photos|image|images/.test(lower) && !guidedState.hasLogoPhotos) {
+  if (/logo|foto|fotos|imagen|imagenes|photo|photos|image|images/.test(lower) && !builderState.guidedState.hasLogoPhotos) {
     const wantsGeneratedLogo = wantsAiGeneratedLogo(text, { assumeLogoContext: true });
     if (wantsGeneratedLogo) updates.aiGeneratedLogoRequested = true;
     if (wantsGeneratedLogo) updates.logoPreference = "generate_ai_logo";
@@ -6842,20 +6754,20 @@ function ensureServerIntakeGate() {
 }
 
 function handleServerNeedsMoreInfo(result = {}) {
-  pendingServerIntakeGate = {
+  builderState.pendingServerIntakeGate = {
     missing_fields: arrayValue(result.missing_fields),
     next_question: result.next_question || "",
   };
   const gate = ensureServerIntakeGate();
   const question = gate.querySelector(".server-intake-question");
   const field = gate.querySelector("[name='server_intake_reply']");
-  if (question) question.textContent = pendingServerIntakeGate.next_question;
+  if (question) question.textContent = builderState.pendingServerIntakeGate.next_question;
   gate.hidden = false;
   if (field) {
     field.value = "";
     field.focus();
   }
-  const message = pendingServerIntakeGate.next_question || t("reviewGenerate");
+  const message = builderState.pendingServerIntakeGate.next_question || t("reviewGenerate");
   statusText.textContent = message;
   if (isPublicClientSetup) {
     guidedStatusText.textContent = message;
@@ -6985,7 +6897,7 @@ async function createDomainOrderIfNeeded(payload, result) {
     const orderPayload = {
       businessId: result.business_id,
       siteId: result.site_id,
-      clientRequestId: currentRequestId,
+      clientRequestId: builderState.currentRequestId,
       requestedDomain,
       ownerEmail: payload.contact_info?.email || payload.contact_info?.contact || "",
       ownerName: payload.contact_info?.name || payload.business_name || "",
@@ -7028,12 +6940,12 @@ async function selectTemplateForPayload(payload) {
     payload.target_audience,
     payload.preferred_tone,
     arrayValue(payload.preferred_colors).join(" "),
-    payload.salesMode || guidedState.salesMode,
+    payload.salesMode || builderState.guidedState.salesMode,
   ].join(" ");
 
-  const explicitForcedTemplate = forcedTemplateSelection?.templateId
-    && forcedTemplateSelection?.intent === "client_visual_template_choice"
-    ? forcedTemplateSelection
+  const explicitForcedTemplate = builderState.forcedTemplateSelection?.templateId
+    && builderState.forcedTemplateSelection?.intent === "client_visual_template_choice"
+    ? builderState.forcedTemplateSelection
     : null;
   if (explicitForcedTemplate?.templateId && window.TemplateRouter.getTemplateById) {
     const template = await window.TemplateRouter.getTemplateById(explicitForcedTemplate.templateId);
@@ -7060,7 +6972,7 @@ async function selectTemplateForPayload(payload) {
     }
   }
 
-  const studioPlanTemplateId = guidedState.aiStudioPlan?.recommendedTemplateId || guidedState.designStrategy?.diagnosis?.recommendedTemplateId || "";
+  const studioPlanTemplateId = builderState.guidedState.aiStudioPlan?.recommendedTemplateId || builderState.guidedState.designStrategy?.diagnosis?.recommendedTemplateId || "";
   if (studioPlanTemplateId && window.TemplateRouter.getTemplateById) {
     const template = await window.TemplateRouter.getTemplateById(studioPlanTemplateId);
     if (template) {
@@ -7068,13 +6980,13 @@ async function selectTemplateForPayload(payload) {
         templateId: studioPlanTemplateId,
         template,
         intent: "ai_studio_plan",
-        catalogType: guidedState.aiStudioPlan?.recommendedCatalogType
-          || guidedState.designStrategy?.diagnosis?.recommendedCatalogType
+        catalogType: builderState.guidedState.aiStudioPlan?.recommendedCatalogType
+          || builderState.guidedState.designStrategy?.diagnosis?.recommendedCatalogType
           || template.catalogModel?.catalogType
           || templatePreviewMeta(studioPlanTemplateId)?.catalogType
           || "",
-        reason: guidedState.aiStudioPlan?.reasoningSummary
-          || guidedState.designStrategy?.diagnosis?.reasoningSummary
+        reason: builderState.guidedState.aiStudioPlan?.reasoningSummary
+          || builderState.guidedState.designStrategy?.diagnosis?.reasoningSummary
           || "Selected by LYRA's AI Studio plan",
       };
     }
@@ -7086,28 +6998,28 @@ async function selectTemplateForPayload(payload) {
       return {
         templateId: aiSelectedTemplateId,
         template,
-        intent: forcedTemplateSelection?.intent || guidedState.designStrategy?.diagnosis?.decisionState || "ai_selected_template",
-        catalogType: forcedTemplateSelection?.catalogType
-          || guidedState.sitePlan?.catalogType
-          || guidedState.designStrategy?.selectedCatalogType
-          || guidedState.designStrategy?.diagnosis?.recommendedCatalogType
+        intent: builderState.forcedTemplateSelection?.intent || builderState.guidedState.designStrategy?.diagnosis?.decisionState || "ai_selected_template",
+        catalogType: builderState.forcedTemplateSelection?.catalogType
+          || builderState.guidedState.sitePlan?.catalogType
+          || builderState.guidedState.designStrategy?.selectedCatalogType
+          || builderState.guidedState.designStrategy?.diagnosis?.recommendedCatalogType
           || template.catalogModel?.catalogType
           || templatePreviewMeta(aiSelectedTemplateId)?.catalogType
           || "",
-        reason: forcedTemplateSelection?.reason
-          || guidedState.designStrategy?.selectedTemplateReason
-          || guidedState.designStrategy?.diagnosis?.reasoningSummary
+        reason: builderState.forcedTemplateSelection?.reason
+          || builderState.guidedState.designStrategy?.selectedTemplateReason
+          || builderState.guidedState.designStrategy?.diagnosis?.reasoningSummary
           || "Selected by LYRA from the guided conversation",
       };
     }
   }
-  if (forcedTemplateSelection?.templateId && window.TemplateRouter.getTemplateById) {
-    const template = await window.TemplateRouter.getTemplateById(forcedTemplateSelection.templateId);
+  if (builderState.forcedTemplateSelection?.templateId && window.TemplateRouter.getTemplateById) {
+    const template = await window.TemplateRouter.getTemplateById(builderState.forcedTemplateSelection.templateId);
     if (template) {
       return {
-        ...forcedTemplateSelection,
+        ...builderState.forcedTemplateSelection,
         template,
-        catalogType: forcedTemplateSelection.catalogType || template.catalogModel?.catalogType || "",
+        catalogType: builderState.forcedTemplateSelection.catalogType || template.catalogModel?.catalogType || "",
       };
     }
   }
@@ -7141,7 +7053,7 @@ function inferDesignerTemplateIdFromPayload(payload = {}) {
     payload.target_audience,
     payload.preferred_tone,
     arrayValue(payload.preferred_colors).join(" "),
-    payload.salesMode || guidedState.salesMode,
+    payload.salesMode || builderState.guidedState.salesMode,
   ].join(" "));
   const products = meaningfulOfferItems(payload.services_products);
   if (textSuggestsProfessionalService(text)) return "legal-professional-services-pro";
@@ -7233,8 +7145,8 @@ function buildTemplateInstructions(selection) {
 }
 
 function buildRevisionInstructions() {
-  const requestedAdjustments = arrayValue(guidedState.requestedAdjustments);
-  if (guidedState.revisionMode !== "targeted_edit" || !currentSchema || !requestedAdjustments.length) return null;
+  const requestedAdjustments = arrayValue(builderState.guidedState.requestedAdjustments);
+  if (builderState.guidedState.revisionMode !== "targeted_edit" || !builderState.currentSchema || !requestedAdjustments.length) return null;
   return {
     mode: "targeted_edit",
     requestedAdjustments,
@@ -7244,8 +7156,8 @@ function buildRevisionInstructions() {
     preserveUnrequestedSections: true,
     preserveCatalogItems: true,
     preserveLanguage: true,
-    selectedLanguage,
-    previousSchema: currentSchema,
+    selectedLanguage: builderState.selectedLanguage,
+    previousSchema: builderState.currentSchema,
     instruction:
       "This is a revision of an already liked draft. Apply only the specific requested changes. Do not redesign, re-theme, reorder pages, replace unrelated copy, change catalog items, change business data, or switch templates unless the client explicitly asked for that exact change.",
   };
@@ -7274,24 +7186,24 @@ async function applyDraftAdjustmentFromChat(message, localContextUpdates = {}) {
     ].join(" "));
     const templateSelection = await selectTemplateForPayload(payload);
     const explicitTemplateSwitch = explicitlyRequestsTemplateSwitch(text);
-    const serverEdit = currentSchema && !explicitTemplateSwitch
+    const serverEdit = builderState.currentSchema && !explicitTemplateSwitch
       ? await requestLyraSchemaEdit(message, payload, localContextUpdates, templateSelection).catch((error) => {
           console.warn("Lyra server edit unavailable; falling back to local patch.", error);
           return null;
         })
       : null;
     if (serverEdit?.patchedSchema) {
-      currentSchema = prepareWebsiteConfig(serverEdit.patchedSchema, payload, templateSelection);
-      if (briefRequestsCyberpunk(text)) currentSchema = applyCyberpunkVisualDirection(currentSchema);
-      currentCatalogItems = catalogItemsFromSchema(currentSchema);
-      selectedPageKey = currentSchema.pages?.[0]?.page_key || "home";
-      selectedVariantId = currentSchema.design_variants?.[0]?.id || selectedVariantId || "";
+      builderState.currentSchema = prepareWebsiteConfig(serverEdit.patchedSchema, payload, templateSelection);
+      if (briefRequestsCyberpunk(text)) builderState.currentSchema = applyCyberpunkVisualDirection(builderState.currentSchema);
+      builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
+      builderState.selectedPageKey = builderState.currentSchema.pages?.[0]?.page_key || "home";
+      builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || builderState.selectedVariantId || "";
       saveGeneratedSite({
-        business_id: currentBusinessId,
-        site_id: currentSiteId,
-        generation_id: currentGenerationId,
-        storage_status: currentSiteId ? "ai_revision_preview" : "ai_revision_preview_unsaved",
-        schema: currentSchema,
+        business_id: builderState.currentBusinessId,
+        site_id: builderState.currentSiteId,
+        generation_id: builderState.currentGenerationId,
+        storage_status: builderState.currentSiteId ? "ai_revision_preview" : "ai_revision_preview_unsaved",
+        schema: builderState.currentSchema,
         used_dev_mock: false,
       });
       renderEditor();
@@ -7311,19 +7223,19 @@ async function applyDraftAdjustmentFromChat(message, localContextUpdates = {}) {
     const shouldRebuildFromTemplate = shouldRebuildDraftFromTemplate(message, payload, templateSelection);
     const nextSchema = shouldRebuildFromTemplate
       ? buildInstantTemplateSchema(payload, templateSelection)
-      : applyTargetedSchemaPatch(currentSchema, message, payload, localContextUpdates, templateSelection);
+      : applyTargetedSchemaPatch(builderState.currentSchema, message, payload, localContextUpdates, templateSelection);
     const mergedSchema = templateSelection ? mergeTemplateSelectionIntoSchema(nextSchema, templateSelection) : nextSchema;
-    currentSchema = prepareWebsiteConfig(mergedSchema, payload, templateSelection);
-    if (briefRequestsCyberpunk(text)) currentSchema = applyCyberpunkVisualDirection(currentSchema);
-    currentCatalogItems = catalogItemsFromSchema(currentSchema);
-    selectedPageKey = currentSchema.pages?.[0]?.page_key || "home";
-    selectedVariantId = currentSchema.design_variants?.[0]?.id || selectedVariantId || "";
+    builderState.currentSchema = prepareWebsiteConfig(mergedSchema, payload, templateSelection);
+    if (briefRequestsCyberpunk(text)) builderState.currentSchema = applyCyberpunkVisualDirection(builderState.currentSchema);
+    builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
+    builderState.selectedPageKey = builderState.currentSchema.pages?.[0]?.page_key || "home";
+    builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || builderState.selectedVariantId || "";
     saveGeneratedSite({
-      business_id: currentBusinessId,
-      site_id: currentSiteId,
-      generation_id: currentGenerationId,
-      storage_status: currentSiteId ? "local_revision_preview" : "local_revision_preview_unsaved",
-      schema: currentSchema,
+      business_id: builderState.currentBusinessId,
+      site_id: builderState.currentSiteId,
+      generation_id: builderState.currentGenerationId,
+      storage_status: builderState.currentSiteId ? "local_revision_preview" : "local_revision_preview_unsaved",
+      schema: builderState.currentSchema,
       used_dev_mock: false,
     });
     renderEditor();
@@ -7360,19 +7272,19 @@ async function requestLyraSchemaEdit(message, payload = {}, localContextUpdates 
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      currentSchema,
+      currentSchema: builderState.currentSchema,
       instruction: message,
-      selectedLanguage,
+      selectedLanguage: builderState.selectedLanguage,
       userContext: {
-        businessName: guidedState.businessName || payload.business_name,
-        businessDescription: guidedState.businessDescription || payload.business_description,
-        industry: guidedState.industry || payload.industry,
-        servicesProducts: guidedState.servicesProducts || payload.services_products,
-        preferredTone: guidedState.preferredTone || payload.preferred_tone,
-        preferredColors: guidedState.preferredColors || payload.preferred_colors,
-        selectedTemplateId: templateSelection?.templateId || guidedState.sitePlan?.templateId || currentSchema?.selected_template?.id,
-        catalogType: templateSelection?.catalogType || guidedState.sitePlan?.catalogType || currentSchema?.catalog_model?.catalogType,
-        salesFlow: guidedState.salesFlow || payload.sales_flow,
+        businessName: builderState.guidedState.businessName || payload.business_name,
+        businessDescription: builderState.guidedState.businessDescription || payload.business_description,
+        industry: builderState.guidedState.industry || payload.industry,
+        servicesProducts: builderState.guidedState.servicesProducts || payload.services_products,
+        preferredTone: builderState.guidedState.preferredTone || payload.preferred_tone,
+        preferredColors: builderState.guidedState.preferredColors || payload.preferred_colors,
+        selectedTemplateId: templateSelection?.templateId || builderState.guidedState.sitePlan?.templateId || builderState.currentSchema?.selected_template?.id,
+        catalogType: templateSelection?.catalogType || builderState.guidedState.sitePlan?.catalogType || builderState.currentSchema?.catalog_model?.catalogType,
+        salesFlow: builderState.guidedState.salesFlow || payload.sales_flow,
         ...localContextUpdates,
       },
     }),
@@ -7398,7 +7310,7 @@ function shouldRebuildDraftFromTemplate(message, payload = {}, templateSelection
     templateSelection?.templateId,
     templateSelection?.catalogType,
   ].join(" "));
-  const currentTemplateId = currentSchema?.selected_template?.id || currentSchema?.active_template?.id || currentSchema?.layout_mode?.template_id || "";
+  const currentTemplateId = builderState.currentSchema?.selected_template?.id || builderState.currentSchema?.active_template?.id || builderState.currentSchema?.layout_mode?.template_id || "";
   const nextTemplateId = templateSelection?.templateId || inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(text);
   return Boolean(
     /template|plantilla|estructura|layout|marketplace|catalogo|catálogo|tienda|store|shop|cyberpunk|neon|estilo|style|diseño|diseno/.test(text)
@@ -7516,8 +7428,8 @@ function isUnsafeHeroHeadline(headline, templateId = "", catalogType = "") {
 }
 
 function safeRevisionHeadline(schema, payload = {}, templateSelection = null) {
-  const language = payload.selectedLanguage || schema.business?.selectedLanguage || selectedLanguage || "en";
-  const name = payload.business_name || schema.business?.name || guidedState.businessName || "Kreaton";
+  const language = payload.selectedLanguage || schema.business?.selectedLanguage || builderState.selectedLanguage || "en";
+  const name = payload.business_name || schema.business?.name || builderState.guidedState.businessName || "Kreaton";
   const key = `${templateSelection?.templateId || schema.selected_template?.id || schema.active_template?.id || ""} ${templateSelection?.catalogType || schema.catalog_model?.catalogType || ""}`;
   if (/luxury|high-ticket/.test(key)) {
     return langTextFor(language, {
@@ -7552,7 +7464,7 @@ function safeRevisionHeadline(schema, payload = {}, templateSelection = null) {
 }
 
 function safeRevisionSubtitle(schema, payload = {}, templateSelection = null) {
-  const language = payload.selectedLanguage || schema.business?.selectedLanguage || selectedLanguage || "en";
+  const language = payload.selectedLanguage || schema.business?.selectedLanguage || builderState.selectedLanguage || "en";
   const description = payload.business_description || schema.business?.description || "";
   const key = `${templateSelection?.templateId || schema.selected_template?.id || schema.active_template?.id || ""} ${templateSelection?.catalogType || schema.catalog_model?.catalogType || ""}`;
   const context = cleanShortText(description, 130);
@@ -7578,7 +7490,7 @@ function langTextFor(language, options = {}) {
 }
 
 function mergeCatalogFromOfferItems(existingItems = [], offerItems = [], payload = {}) {
-  const labels = instantLocaleCopy(payload.selectedLanguage || selectedLanguage || "en");
+  const labels = instantLocaleCopy(payload.selectedLanguage || builderState.selectedLanguage || "en");
   const categoryContext = [
     payload.business_description,
     payload.industry,
@@ -7594,8 +7506,8 @@ function mergeCatalogFromOfferItems(existingItems = [], offerItems = [], payload
       id: `chat_item_${Date.now()}_${index}`,
       sku: `CHAT-${existing.length + index + 1}`,
       name,
-      description: labels.itemDescription(payload.business_name || guidedState.businessName || labels.newStore),
-      category: marketplaceCategoryForIndex(existing.length + index, labels, categoryContext, payload.selectedLanguage || selectedLanguage || "en"),
+      description: labels.itemDescription(payload.business_name || builderState.guidedState.businessName || labels.newStore),
+      category: marketplaceCategoryForIndex(existing.length + index, labels, categoryContext, payload.selectedLanguage || builderState.selectedLanguage || "en"),
       price_type: "fixed",
       price_amount: "",
       currency: "USD",
@@ -7689,7 +7601,7 @@ const SEMANTIC_SEED_PRODUCT_LIBRARY = {
 function ensureSemanticSeedContent(schema, payload = {}, templateSelection = null) {
   if (!schema) return schema;
   const nextSchema = structuredClone(schema);
-  const language = nextSchema.business?.selectedLanguage || payload.selectedLanguage || selectedLanguage || "en";
+  const language = nextSchema.business?.selectedLanguage || payload.selectedLanguage || builderState.selectedLanguage || "en";
   const contextText = semanticSeedContextText(nextSchema, payload, templateSelection);
   const templateText = `${templateSelection?.templateId || ""} ${templateSelection?.catalogType || ""} ${nextSchema.selected_template?.id || ""} ${nextSchema.layout_mode?.template_id || ""} ${nextSchema.catalog_model?.catalogType || ""}`;
   const templateCommerce = /marketplace|retail|online_store|product|fashion|luxury|restaurant|menu|digital|ecommerce|dense_marketplace|dense_retail|single_vendor/i.test(`${templateText} ${nextSchema.site_type || ""}`);
@@ -7700,7 +7612,7 @@ function ensureSemanticSeedContent(schema, payload = {}, templateSelection = nul
   if (!shouldSeedCatalog) return nextSchema;
 
   const profileKey = inferSemanticSeedProfile(contextText, templateText);
-  const copyKit = semanticSeedCopyKit(profileKey, nextSchema.business?.name || payload.business_name || guidedState.businessName || "Kreaton Store", language, templateText);
+  const copyKit = semanticSeedCopyKit(profileKey, nextSchema.business?.name || payload.business_name || builderState.guidedState.businessName || "Kreaton Store", language, templateText);
   // Bug fix (2026-07-19): inferSemanticSeedProfile() only recognizes ~9
   // hardcoded niches (jewelry, fashion, coffee, auto, tech, beauty, home,
   // restaurant, marketplace). Anything else the client actually describes
@@ -7773,7 +7685,7 @@ function inferSemanticSeedProfile(contextText = "", templateText = "") {
   return "default";
 }
 
-function buildSemanticSeedProducts(profileKey = "default", language = selectedLanguage) {
+function buildSemanticSeedProducts(profileKey = "default", language = builderState.selectedLanguage) {
   const products = profileKey === "marketplace"
     ? [
       SEMANTIC_SEED_PRODUCT_LIBRARY.tech[0],
@@ -7817,11 +7729,11 @@ function buildSemanticSeedProducts(profileKey = "default", language = selectedLa
   });
 }
 
-function buildContextDerivedSeedProducts(contextText = "", language = selectedLanguage) {
-  const offerItems = meaningfulOfferItems(guidedState.servicesProducts);
+function buildContextDerivedSeedProducts(contextText = "", language = builderState.selectedLanguage) {
+  const offerItems = meaningfulOfferItems(builderState.guidedState.servicesProducts);
   if (!offerItems.length) return null;
   const addLabel = language === "es" ? "Agregar al carrito" : language === "fr" ? "Ajouter" : language === "pt" ? "Adicionar" : "Add to cart";
-  const businessName = guidedState.businessName || "";
+  const businessName = builderState.guidedState.businessName || "";
   return offerItems.slice(0, 6).map((rawName, index) => {
     const name = cleanShortText(rawName, 90) || rawName;
     return {
@@ -7858,7 +7770,7 @@ function buildContextDerivedSeedProducts(contextText = "", language = selectedLa
   });
 }
 
-function localizedSeedValue(value, language = selectedLanguage) {
+function localizedSeedValue(value, language = builderState.selectedLanguage) {
   if (!value || typeof value !== "object") return String(value || "");
   return value[language] || value.es || value.en || Object.values(value).find(Boolean) || "";
 }
@@ -7873,7 +7785,7 @@ function unsplashSeedUrl(keyword = "") {
   return stableCatalogImageUrl(clean);
 }
 
-function mergeSemanticSeedCatalog(existingItems = [], seedItems = [], language = selectedLanguage, contextText = "", options = {}) {
+function mergeSemanticSeedCatalog(existingItems = [], seedItems = [], language = builderState.selectedLanguage, contextText = "", options = {}) {
   const existing = arrayValue(existingItems);
   const preserveAiGeneratedIdentity = options.catalogSource === "ai_generated";
   const genericCount = existing.filter((item) => isGenericSeedProduct(item, contextText)).length;
@@ -7965,7 +7877,7 @@ function isWeakSeedCopy(value, payload = {}) {
     || (raw && normalized.length > 60 && raw.includes(normalized.slice(0, 60)));
 }
 
-function semanticSeedCopyKit(profileKey = "default", businessName = "Kreaton Store", language = selectedLanguage, templateText = "") {
+function semanticSeedCopyKit(profileKey = "default", businessName = "Kreaton Store", language = builderState.selectedLanguage, templateText = "") {
   const name = cleanShortText(businessName, 48);
   const ecommerce = /marketplace|retail|store|shop|catalog|product|fashion|luxury/i.test(templateText);
   const kits = {
@@ -8019,7 +7931,7 @@ function fillSemanticSeedPageCopy(pages = [], copyKit = {}, payload = {}) {
 }
 
 function updatePrimaryHeroCopy(schema, message, payload = {}, templateSelection = null) {
-  const copy = instantLocaleCopy(payload.selectedLanguage || selectedLanguage || "en");
+  const copy = instantLocaleCopy(payload.selectedLanguage || builderState.selectedLanguage || "en");
   const description = professionalPublicDescription({
     payload,
     template: templateSelection?.template || schema.selected_template || {},
@@ -8027,7 +7939,7 @@ function updatePrimaryHeroCopy(schema, message, payload = {}, templateSelection 
     copy,
     name: payload.business_name || schema.business?.name || copy.newStore,
     products: payload.services_products,
-    language: payload.selectedLanguage || selectedLanguage || "en",
+    language: payload.selectedLanguage || builderState.selectedLanguage || "en",
   });
   const page = arrayValue(schema.pages).find((item) => item.page_key === "home") || schema.pages?.[0];
   const hero = page?.sections?.find((section) => /Hero/i.test(section.type));
@@ -8110,34 +8022,34 @@ function mergeTemplateSelectionIntoSchema(schema, selection) {
 function applyGenerationResult(result, payload = {}, templateSelection = null) {
   syncCatalogSourceMetadata(result);
   result.schema = prepareWebsiteConfig(result.schema, payload, templateSelection);
-  currentSchema = result.schema;
-  currentSiteId = result.generatedSiteId || result.projectId || result.site_id || null;
-  currentBusinessId = result.business_id || null;
-  currentGenerationId = result.generation_id || null;
-  currentCatalogItems = catalogItemsFromSchema(currentSchema);
-  selectedPageKey = currentSchema.pages[0]?.page_key || "home";
-  selectedVariantId = currentSchema.design_variants?.[0]?.id || "";
+  builderState.currentSchema = result.schema;
+  builderState.currentSiteId = result.generatedSiteId || result.projectId || result.site_id || null;
+  builderState.currentBusinessId = result.business_id || null;
+  builderState.currentGenerationId = result.generation_id || null;
+  builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
+  builderState.selectedPageKey = builderState.currentSchema.pages[0]?.page_key || "home";
+  builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || "";
   saveGeneratedSite(result);
-  if (currentSiteId) {
-    guidedState.generatedSiteId = currentSiteId;
-    guidedState.projectId = currentSiteId;
-    clientIntakeSession = {
-      ...(clientIntakeSession || {}),
-      generatedSiteId: currentSiteId,
-      projectId: currentSiteId,
-      clientEmail: clientIntakeSession?.clientEmail || guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "",
+  if (builderState.currentSiteId) {
+    builderState.guidedState.generatedSiteId = builderState.currentSiteId;
+    builderState.guidedState.projectId = builderState.currentSiteId;
+    builderState.clientIntakeSession = {
+      ...(builderState.clientIntakeSession || {}),
+      generatedSiteId: builderState.currentSiteId,
+      projectId: builderState.currentSiteId,
+      clientEmail: builderState.clientIntakeSession?.clientEmail || builderState.guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "",
       draft: guidedSessionDraftForApi(),
     };
-    writeClientIntakeSession(clientIntakeSession);
+    writeClientIntakeSession(builderState.clientIntakeSession);
   }
-  siteTitle.textContent = currentSchema.business?.name || "Generated site";
+  siteTitle.textContent = builderState.currentSchema.business?.name || "Generated site";
   storageStatus.textContent = storageLabel(result.storage_status, result.used_dev_mock);
   renderEditor();
   renderPreview();
   showGeneratedClientPreview();
   syncLyraExperienceMode();
-  guidedState.revisionMode = "";
-  guidedState.requestedAdjustments = [];
+  builderState.guidedState.revisionMode = "";
+  builderState.guidedState.requestedAdjustments = [];
   builderAvatarManager?.setState("success", { source: "preview-generated" });
 }
 
@@ -8162,7 +8074,7 @@ function catalogSourceFromSchema(schema = {}) {
 
 function prepareWebsiteConfig(schema, payload = {}, templateSelection = null) {
   if (!schema) return schema;
-  const brand = normalizeBrand(payload.brand || guidedState.brand || schema.brand || {
+  const brand = normalizeBrand(payload.brand || builderState.guidedState.brand || schema.brand || {
     logoUrl: payload.assets?.find((asset) => asset.asset_type === "logo")?.url || schema.global_components?.logo_url || "",
     preferredColors: payload.preferred_colors,
   });
@@ -8355,7 +8267,7 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
   ].join(" ");
   let nextSchema = lockSchemaToExecutableTemplate(schema, payload, templateSelection, { templateId, catalogType, brief });
   if (/mega-retail-store/i.test(templateId) || /single_vendor_dense_catalog|dense_retail_catalog/i.test(catalogType) || textSuggestsMegaRetailStore(brief)) {
-    const copy = instantLocaleCopy(payload.selectedLanguage || selectedLanguage || "en");
+    const copy = instantLocaleCopy(payload.selectedLanguage || builderState.selectedLanguage || "en");
     const name = payload.business_name || schema.business?.name || copy.newStore;
     const description = professionalPublicDescription({
       payload,
@@ -8364,7 +8276,7 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
       copy,
       name,
       products: arrayValue(payload.services_products).length ? arrayValue(payload.services_products) : arrayValue(schema.products_services).map((item) => item.name),
-      language: payload.selectedLanguage || selectedLanguage || "en",
+      language: payload.selectedLanguage || builderState.selectedLanguage || "en",
     });
     const retailPages = buildRetailInstantPages(copy, name, description, payload);
     const retailPageKeys = new Set(retailPages.map((page) => page.page_key));
@@ -8400,7 +8312,7 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
       pages: [...retailPages, ...existingPages],
     };
   } else if (/mega-marketplace/i.test(templateId) || /dense_marketplace_catalog/i.test(catalogType) || textSuggestsMultiVendorMarketplace(brief)) {
-    const copy = instantLocaleCopy(payload.selectedLanguage || selectedLanguage || "en");
+    const copy = instantLocaleCopy(payload.selectedLanguage || builderState.selectedLanguage || "en");
     const name = payload.business_name || schema.business?.name || copy.newStore;
     const description = professionalPublicDescription({
       payload,
@@ -8409,7 +8321,7 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
       copy,
       name,
       products: arrayValue(payload.services_products).length ? arrayValue(payload.services_products) : arrayValue(schema.products_services).map((item) => item.name),
-      language: payload.selectedLanguage || selectedLanguage || "en",
+      language: payload.selectedLanguage || builderState.selectedLanguage || "en",
     });
     const marketplacePages = buildMarketplaceInstantPages(copy, name, description, payload);
     const marketplacePageKeys = new Set(marketplacePages.map((page) => page.page_key));
@@ -8457,7 +8369,7 @@ function lockSchemaToExecutableTemplate(schema, payload = {}, templateSelection 
   const catalogType = context.catalogType || templateSelection?.catalogType || payload.catalogType || schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || template.catalogModel?.catalogType || "";
   if (!templateId && !catalogType) return schema;
 
-  const copy = instantLocaleCopy(payload.selectedLanguage || schema.business?.selectedLanguage || selectedLanguage || "en");
+  const copy = instantLocaleCopy(payload.selectedLanguage || schema.business?.selectedLanguage || builderState.selectedLanguage || "en");
   const name = payload.business_name || schema.business?.name || copy.newStore;
   const products = arrayValue(payload.services_products).length
     ? arrayValue(payload.services_products)
@@ -8475,7 +8387,7 @@ function lockSchemaToExecutableTemplate(schema, payload = {}, templateSelection 
     copy,
     name,
     products,
-    language: payload.selectedLanguage || schema.business?.selectedLanguage || selectedLanguage || "en",
+    language: payload.selectedLanguage || schema.business?.selectedLanguage || builderState.selectedLanguage || "en",
   });
   const lockedPages = executablePagesForTemplate(templateId, catalogType, copy, name, description, payload);
   if (!lockedPages.length) return schema;
@@ -9101,7 +9013,7 @@ function buildInstantTemplateResult(payload, error, templateSelection) {
 }
 
 function buildEmergencyEditableSchema(payload = {}, error = null) {
-  const language = payload.selectedLanguage || selectedLanguage || "en";
+  const language = payload.selectedLanguage || builderState.selectedLanguage || "en";
   const copy = instantLocaleCopy(language);
   const name = payload.business_name || copy.newStore || "New website";
   const products = sanitizePublicProductList(
@@ -9185,7 +9097,7 @@ function buildEmergencyEditableSchema(payload = {}, error = null) {
   };
 }
 
-function professionalPublicDescription({ payload = {}, template = {}, catalogType = "", copy = {}, name = "", products = [], language = selectedLanguage }) {
+function professionalPublicDescription({ payload = {}, template = {}, catalogType = "", copy = {}, name = "", products = [], language = builderState.selectedLanguage }) {
   const templateText = `${catalogType} ${template.id || ""} ${template.category || ""}`.toLowerCase();
   const focus = productFocusForLanguage(products, payload.industry, language);
   const descriptions = {
@@ -9232,7 +9144,7 @@ function professionalPublicDescription({ payload = {}, template = {}, catalogTyp
   return set.premium || copy.defaultDescription || name;
 }
 
-function productFocusForLanguage(products = [], fallback = "", language = selectedLanguage) {
+function productFocusForLanguage(products = [], fallback = "", language = builderState.selectedLanguage) {
   const clean = arrayValue(products)
     .map((item) => String(item || "").trim())
     .filter(Boolean)
@@ -9250,7 +9162,7 @@ function productFocusForLanguage(products = [], fallback = "", language = select
   return fallback || fallbacks[language] || fallbacks.en;
 }
 
-function sanitizePublicProductList(products = [], payload = {}, copy = {}, language = selectedLanguage, templateHint = "") {
+function sanitizePublicProductList(products = [], payload = {}, copy = {}, language = builderState.selectedLanguage, templateHint = "") {
   const sourceText = `${payload.business_description || ""} ${payload.industry || ""} ${arrayValue(products).join(" ")} ${templateHint || ""}`;
   const sourceSuggestsBroadMarketplace = textSuggestsBroadMarketplace(sourceText);
   const usesMarketplaceTemplate = /mega-marketplace|marketplace-style|dense_marketplace_catalog/i.test(templateHint);
@@ -9282,7 +9194,7 @@ function sanitizePublicProductList(products = [], payload = {}, copy = {}, langu
   return cleaned.length ? cleaned : arrayValue(copy.defaultProducts).slice(0, 4);
 }
 
-function marketplaceSeedCatalogLabels(text = "", language = selectedLanguage) {
+function marketplaceSeedCatalogLabels(text = "", language = builderState.selectedLanguage) {
   const lower = String(text || "").toLowerCase();
   const sets = {
     es: {
@@ -9334,7 +9246,7 @@ function cleanPublicItemLabel(value) {
   return text;
 }
 
-function inferredPublicCatalogLabels({ text = "", language = selectedLanguage } = {}) {
+function inferredPublicCatalogLabels({ text = "", language = builderState.selectedLanguage } = {}) {
   const lower = String(text || "").toLowerCase();
   const labels = {
     es: {
@@ -9380,7 +9292,7 @@ function inferredPublicCatalogLabels({ text = "", language = selectedLanguage } 
 }
 
 function buildInstantTemplateSchema(payload, templateSelection) {
-  const language = payload.selectedLanguage || selectedLanguage || "en";
+  const language = payload.selectedLanguage || builderState.selectedLanguage || "en";
   const template = templateSelection?.template || payload.selectedTemplate || {};
   const catalogType = templateSelection?.catalogType || template.catalogModel?.catalogType || payload.catalogType || "editorial_minimal_grid";
   const templateInstructions = templateSelection
@@ -10912,7 +10824,7 @@ function buildRealEstateListingsInstantPages(copy, name, description, payload = 
   ];
 }
 
-function normalizeHomeServiceInstantCopy(input = {}, language = selectedLanguage) {
+function normalizeHomeServiceInstantCopy(input = {}, language = builderState.selectedLanguage) {
   const base = instantLocaleCopy(language);
   const source = input && typeof input === "object" ? input : {};
   const merged = { ...base, ...source };
@@ -10961,7 +10873,7 @@ function normalizeHomeServiceInstantCopy(input = {}, language = selectedLanguage
 }
 
 function buildHomeServicesPremiumInstantPages(copy, name, description, payload = {}) {
-  copy = normalizeHomeServiceInstantCopy(copy, payload.selectedLanguage || selectedLanguage || "en");
+  copy = normalizeHomeServiceInstantCopy(copy, payload.selectedLanguage || builderState.selectedLanguage || "en");
   const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
   const homeHeadline = typeof copy.homeServiceHeadline === "function"
     ? copy.homeServiceHeadline(name)
@@ -11266,7 +11178,7 @@ function buildLeadFunnelInstantPages(copy, name, description, payload = {}) {
   ];
 }
 
-function retailCopyForInstant(copy, language = selectedLanguage) {
+function retailCopyForInstant(copy, language = builderState.selectedLanguage) {
   const localized = {
     en: {
       headline: (name) => `${name} store`,
@@ -11305,7 +11217,7 @@ function retailCopyForInstant(copy, language = selectedLanguage) {
 }
 
 function buildRetailInstantPages(copy, name, description, payload = {}) {
-  const language = payload.selectedLanguage || selectedLanguage || "en";
+  const language = payload.selectedLanguage || builderState.selectedLanguage || "en";
   return buildMarketplaceInstantPages(retailCopyForInstant(copy, language), name, description, payload)
     .map((page) => ({
       ...page,
@@ -11503,7 +11415,7 @@ function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
   ];
 }
 
-function marketplaceCategoryForIndex(index, copy, contextText = "", language = selectedLanguage) {
+function marketplaceCategoryForIndex(index, copy, contextText = "", language = builderState.selectedLanguage) {
   const normalized = normalizeTemplateIntentText(contextText);
   const localized = {
     en: {
@@ -11627,7 +11539,7 @@ function marketplaceCategories(schema) {
   const items = marketplaceItems(schema);
   const fromItems = [...new Set(items.map((item) => item.category).filter(Boolean))];
   if (fromItems.length > 0) return fromItems;
-  const copy = instantLocaleCopy(schema?.business?.selectedLanguage || selectedLanguage || "en");
+  const copy = instantLocaleCopy(schema?.business?.selectedLanguage || builderState.selectedLanguage || "en");
   return [...new Set([...fromItems, ...(copy.marketplaceCategories || [])])];
 }
 
@@ -13084,16 +12996,16 @@ function showGeneratedClientPreview() {
   document.body.classList.remove("review-details-open", "final-review-mode", "manual-form-open", "draft-adjust-open");
   syncLyraExperienceMode();
   guidedPanel.classList.remove("active");
-  storageStatus.textContent = currentSiteId ? t("generatedOpenAI") : t("generatedOpenAI");
+  storageStatus.textContent = builderState.currentSiteId ? t("generatedOpenAI") : t("generatedOpenAI");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function submitGeneratedDraftForReview() {
-  if (!currentSchema) {
+  if (!builderState.currentSchema) {
     storageStatus.textContent = langText({ en: "Generate a draft first.", es: "Primero genera un borrador.", fr: "Générez d'abord un brouillon.", pt: "Gere primeiro um rascunho." });
     return;
   }
-  if (!currentSiteId) {
+  if (!builderState.currentSiteId) {
     storageStatus.textContent = langText({
       en: "The fast draft is visible here, but it does not have a site_id for review yet.",
       es: "El borrador rapido se ve aqui, pero no tiene site_id para revisión todavía.",
@@ -13102,13 +13014,13 @@ async function submitGeneratedDraftForReview() {
     });
     return;
   }
-  const contact = guidedState.contactInfo || {};
-  const customerName = guidedState.businessName || currentSchema.business?.name || "Client";
+  const contact = builderState.guidedState.contactInfo || {};
+  const customerName = builderState.guidedState.businessName || builderState.currentSchema.business?.name || "Client";
   const message = langText({
-    en: `Client submitted draft for review.\nBusiness: ${customerName}\nIndustry: ${guidedState.industry || ""}\nDesired domain: ${guidedState.desiredDomain || ""}\nSite ID: ${currentSiteId}`,
-    es: `Cliente envió borrador para revisión.\nNegocio: ${customerName}\nIndustria: ${guidedState.industry || ""}\nDominio deseado: ${guidedState.desiredDomain || ""}\nSite ID: ${currentSiteId}`,
-    fr: `Client a envoyé le brouillon pour révision.\nEntreprise: ${customerName}\nSecteur: ${guidedState.industry || ""}\nDomaine souhaité: ${guidedState.desiredDomain || ""}\nSite ID: ${currentSiteId}`,
-    pt: `Cliente enviou o rascunho para revisão.\nNegócio: ${customerName}\nSetor: ${guidedState.industry || ""}\nDomínio desejado: ${guidedState.desiredDomain || ""}\nSite ID: ${currentSiteId}`,
+    en: `Client submitted draft for review.\nBusiness: ${customerName}\nIndustry: ${builderState.guidedState.industry || ""}\nDesired domain: ${builderState.guidedState.desiredDomain || ""}\nSite ID: ${builderState.currentSiteId}`,
+    es: `Cliente envió borrador para revisión.\nNegocio: ${customerName}\nIndustria: ${builderState.guidedState.industry || ""}\nDominio deseado: ${builderState.guidedState.desiredDomain || ""}\nSite ID: ${builderState.currentSiteId}`,
+    fr: `Client a envoyé le brouillon pour révision.\nEntreprise: ${customerName}\nSecteur: ${builderState.guidedState.industry || ""}\nDomaine souhaité: ${builderState.guidedState.desiredDomain || ""}\nSite ID: ${builderState.currentSiteId}`,
+    pt: `Cliente enviou o rascunho para revisão.\nNegócio: ${customerName}\nSetor: ${builderState.guidedState.industry || ""}\nDomínio desejado: ${builderState.guidedState.desiredDomain || ""}\nSite ID: ${builderState.currentSiteId}`,
   });
   submitDraftReviewButton.disabled = true;
   submitDraftReviewButton.textContent = langText({ en: "Sending...", es: "Enviando...", fr: "Envoi...", pt: "Enviando..." });
@@ -13117,8 +13029,8 @@ async function submitGeneratedDraftForReview() {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        siteId: currentSiteId,
-        businessId: currentBusinessId,
+        siteId: builderState.currentSiteId,
+        businessId: builderState.currentBusinessId,
         customerName,
         email: contact.email || contact.correo || "",
         phone: contact.phone || contact.whatsapp || "",
@@ -13134,7 +13046,7 @@ async function submitGeneratedDraftForReview() {
       pt: "Enviado para revisão. Sua solicitação já aparece no admin.",
     });
     if (isEmbeddedClientSetup) {
-      window.parent.postMessage({ type: "luma-draft-submitted", siteId: currentSiteId }, "*");
+      window.parent.postMessage({ type: "luma-draft-submitted", siteId: builderState.currentSiteId }, "*");
     }
   } catch (error) {
     storageStatus.textContent = `${langText({ en: "Could not send", es: "No se pudo enviar", fr: "Impossible d'envoyer", pt: "Não foi possível enviar" })}: ${shortError(error.message)}`;
@@ -13146,7 +13058,7 @@ async function submitGeneratedDraftForReview() {
 
 function requireStudioAccount(event, action, callback) {
   if (event?.preventDefault) event.preventDefault();
-  if (!currentSchema) {
+  if (!builderState.currentSchema) {
     callback?.();
     return;
   }
@@ -13162,7 +13074,7 @@ function hasStudioAccountSession() {
   return Boolean(
     localStorage.getItem("lumaClientAccessToken") ||
     sessionStorage.getItem("lumaClientAccessToken") ||
-    clientIntakeSession?.clientEmail ||
+    builderState.clientIntakeSession?.clientEmail ||
     localStorage.getItem("vm_portal_preview_token") ||
     sessionStorage.getItem("vm_portal_preview_token"),
   );
@@ -13224,12 +13136,12 @@ async function continueWithDemoSession() {
 function persistPendingStudioAccountAction(action) {
   try {
     localStorage.setItem("lumaPendingAuthAction", action);
-    if (currentSchema) {
+    if (builderState.currentSchema) {
       localStorage.setItem("lumaPendingGeneratedSite", JSON.stringify({
-        schema: currentSchema,
-        siteId: currentSiteId,
-        businessId: currentBusinessId,
-        selectedPageKey,
+        schema: builderState.currentSchema,
+        siteId: builderState.currentSiteId,
+        businessId: builderState.currentBusinessId,
+        selectedPageKey: builderState.selectedPageKey,
         savedAt: new Date().toISOString(),
       }));
     }
@@ -13274,7 +13186,7 @@ async function continueWithEmailAuth(event) {
   try {
     const session = await createOrResumeClientIntakeSession({
       email,
-      name: guidedState.contactInfo?.name || guidedState.businessName || "",
+      name: builderState.guidedState.contactInfo?.name || builderState.guidedState.businessName || "",
       reason: "start",
     });
     if (storageStatus) {
@@ -13326,7 +13238,7 @@ function adjustGeneratedDraftWithLuma() {
   syncLyraExperienceMode();
   guidedPanel.classList.add("active");
   document.body.classList.remove("guided-modal-open");
-  guidedStep = "review";
+  builderState.guidedStep = "review";
   const message = langText({
     en: "Of course. Tell me what you want to change in the draft: colors, sections, copy, products, style, or any detail. Then I can generate a new version with those adjustments.",
     es: "Claro. Dime qué quieres cambiar del borrador: colores, secciones, textos, productos, estilo o cualquier detalle. Luego genero una nueva versión con esos ajustes.",
@@ -13361,29 +13273,29 @@ function closeDraftAdjustmentChat() {
 
 async function collectPayload() {
   if (isPublicClientSetup) syncTemplateSelectionFromGuidedContext();
-  const aiStudioPlan = isPublicClientSetup ? refreshAiStudioPlanFromContext() : guidedState.aiStudioPlan;
+  const aiStudioPlan = isPublicClientSetup ? refreshAiStudioPlanFromContext() : builderState.guidedState.aiStudioPlan;
   const data = new FormData(form);
   const intakeFollowupAnswer = data.get("server_intake_reply")?.toString().trim() || "";
-  const intakeFollowupField = pendingServerIntakeGate?.missing_fields?.[0] || "";
+  const intakeFollowupField = builderState.pendingServerIntakeGate?.missing_fields?.[0] || "";
   const preferredToneValue = data.get("preferred_tone")?.toString().trim()
     || (intakeFollowupField === "brand_style" ? intakeFollowupAnswer : "");
   const preferredColorsValue = splitCommaOrLines(data.get("preferred_colors")?.toString() || "");
   const rawLogoPreferenceValue = data.get("logo_preference")?.toString().trim()
-    || guidedState.logoPreference
+    || builderState.guidedState.logoPreference
     || (intakeFollowupField === "logo" ? intakeFollowupAnswer : "");
   const logoPreferenceValue = logoPreferenceFromText(rawLogoPreferenceValue, { assumeLogoContext: true })
     || rawLogoPreferenceValue;
   if (logoPreferenceValue) {
-    guidedState.logoPreference = logoPreferenceValue;
-    if (logoPreferenceValue === "generate_ai_logo") guidedState.aiGeneratedLogoRequested = true;
+    builderState.guidedState.logoPreference = logoPreferenceValue;
+    if (logoPreferenceValue === "generate_ai_logo") builderState.guidedState.aiGeneratedLogoRequested = true;
   }
-  const fieldMeta = { ...(guidedState.fieldMeta || {}) };
+  const fieldMeta = { ...(builderState.guidedState.fieldMeta || {}) };
   if (logoPreferenceValue) {
     fieldMeta.logo = fieldMeta.logo || { source: "explicit", confidence: 1 };
     fieldMeta.logoPreference = fieldMeta.logoPreference || { source: "explicit", confidence: 1 };
-    guidedState.fieldMeta = fieldMeta;
+    builderState.guidedState.fieldMeta = fieldMeta;
   }
-  const resolvedSalesFlow = guidedState.salesFlow || guidedState.salesMode || data.get("sales_flow")?.toString().trim() || "";
+  const resolvedSalesFlow = builderState.guidedState.salesFlow || builderState.guidedState.salesMode || data.get("sales_flow")?.toString().trim() || "";
   const contactInfo = parseKeyValueLines(data.get("contact_info")?.toString() || "");
   const logoUrl = data.get("logo_url")?.toString().trim();
   const photoUrls = splitLines(data.get("photo_urls")?.toString() || "");
@@ -13395,7 +13307,7 @@ async function collectPayload() {
   photoUrls.forEach((url, index) => {
     assets.push({ asset_type: "photo", label: `Photo ${index + 1}`, url });
   });
-  arrayValue(guidedState.videoUrls).filter(isCloudSafeUrl).forEach((url, index) => {
+  arrayValue(builderState.guidedState.videoUrls).filter(isCloudSafeUrl).forEach((url, index) => {
     assets.push({ asset_type: "video", label: `Video ${index + 1}`, url });
   });
 
@@ -13410,12 +13322,12 @@ async function collectPayload() {
     assets.push({ asset_type: assetType, label: `Uploaded ${assetType} ${index + 1}`, url: await uploadAssetOrFallback(file, assetType, `Uploaded ${assetType} ${index + 1}`) });
   }
 
-  const sitePlan = guidedState.sitePlan || (forcedTemplateSelection?.templateId ? buildSitePlan(forcedTemplateSelection) : null);
+  const sitePlan = builderState.guidedState.sitePlan || (builderState.forcedTemplateSelection?.templateId ? buildSitePlan(builderState.forcedTemplateSelection) : null);
   if (sitePlan && aiStudioPlan) sitePlan.aiStudioPlan = aiStudioPlan;
 
   const payload = {
-    generatedSiteId: currentSiteId || clientIntakeSession?.generatedSiteId || clientIntakeSession?.projectId || guidedState.generatedSiteId || "",
-    projectId: currentSiteId || clientIntakeSession?.projectId || clientIntakeSession?.generatedSiteId || guidedState.projectId || "",
+    generatedSiteId: builderState.currentSiteId || builderState.clientIntakeSession?.generatedSiteId || builderState.clientIntakeSession?.projectId || builderState.guidedState.generatedSiteId || "",
+    projectId: builderState.currentSiteId || builderState.clientIntakeSession?.projectId || builderState.clientIntakeSession?.generatedSiteId || builderState.guidedState.projectId || "",
     business_name: data.get("business_name")?.toString().trim(),
     business_description: data.get("business_description")?.toString().trim(),
     industry: data.get("industry")?.toString().trim(),
@@ -13425,22 +13337,22 @@ async function collectPayload() {
     preferred_tone: preferredToneValue,
     preferred_colors: preferredColorsValue.length
       ? preferredColorsValue
-      : arrayValue(guidedState.logoPalette),
+      : arrayValue(builderState.guidedState.logoPalette),
     brandStyle: preferredToneValue,
     contact_info: contactInfo,
     logoPreference: logoPreferenceValue,
     fieldMeta,
     intakeFollowupAnswer,
     salesFlow: resolvedSalesFlow,
-    desiredDomain: data.get("desired_domain")?.toString().trim() || guidedState.desiredDomain || "",
-    selectedLanguage,
-    request_id: currentRequestId,
+    desiredDomain: data.get("desired_domain")?.toString().trim() || builderState.guidedState.desiredDomain || "",
+    selectedLanguage: builderState.selectedLanguage,
+    request_id: builderState.currentRequestId,
     catalog_items: catalogItemsFromForm(),
     assets,
-    logoPalette: arrayValue(guidedState.logoPalette),
-    brand: normalizeBrand(guidedState.brand || {
+    logoPalette: arrayValue(builderState.guidedState.logoPalette),
+    brand: normalizeBrand(builderState.guidedState.brand || {
       logoUrl: assets.find((asset) => asset.asset_type === "logo")?.url || "",
-      extractedColors: arrayValue(guidedState.logoPalette),
+      extractedColors: arrayValue(builderState.guidedState.logoPalette),
       preferredColors: preferredColorsValue,
       industry: data.get("industry")?.toString().trim(),
       tone: preferredToneValue,
@@ -13461,9 +13373,9 @@ async function collectPayload() {
     },
     aiStudioPlan,
     qualityRules: DESIGN_QUALITY_RULES,
-    requestedAdjustments: arrayValue(guidedState.requestedAdjustments),
+    requestedAdjustments: arrayValue(builderState.guidedState.requestedAdjustments),
     sitePlan,
-    sitePlanApproved: Boolean(guidedState.sitePlanApproved),
+    sitePlanApproved: Boolean(builderState.guidedState.sitePlanApproved),
     brandContextNote:
       "Intake answers are client intent and design strategy context. Use them to create polished website copy, but do not copy internal planning answers literally unless they are natural public-facing text.",
   };
@@ -13472,24 +13384,24 @@ async function collectPayload() {
     payload.revisionMode = revisionInstructions.mode;
     payload.requestedAdjustments = revisionInstructions.requestedAdjustments;
     payload.revisionInstructions = revisionInstructions;
-    payload.previousSchema = currentSchema;
+    payload.previousSchema = builderState.currentSchema;
   }
   return payload;
 }
 
 async function saveCurrentSchema() {
-  if (!currentSchema) {
+  if (!builderState.currentSchema) {
     storageStatus.textContent = "Generate a site before saving.";
     return;
   }
-  if (!currentSiteId) {
+  if (!builderState.currentSiteId) {
     storageStatus.textContent = "Cannot save: database did not return a site id.";
     return;
   }
-  const response = await fetch(`${API_BASE_URL}/sites/${currentSiteId}/schema`, {
+  const response = await fetch(`${API_BASE_URL}/sites/${builderState.currentSiteId}/schema`, {
     method: "PUT",
     headers: adminHeaders({ "content-type": "application/json" }),
-    body: JSON.stringify({ schema: currentSchema, catalog_items: catalogItemsForApi() }),
+    body: JSON.stringify({ schema: builderState.currentSchema, catalog_items: catalogItemsForApi() }),
   });
   if (response.status === 401) {
     storageStatus.textContent = "Admin token required to save.";
@@ -13500,18 +13412,18 @@ async function saveCurrentSchema() {
 }
 
 async function publishCurrentSite() {
-  if (!currentSchema) {
+  if (!builderState.currentSchema) {
     storageStatus.textContent = "Generate a site before publishing.";
     return;
   }
-  if (!currentSiteId) {
+  if (!builderState.currentSiteId) {
     storageStatus.textContent = "Cannot publish: database did not return a site id.";
     return;
   }
-  const response = await fetch(`${API_BASE_URL}/sites/${currentSiteId}/publish`, {
+  const response = await fetch(`${API_BASE_URL}/sites/${builderState.currentSiteId}/publish`, {
     method: "POST",
     headers: adminHeaders({ "content-type": "application/json" }),
-    body: JSON.stringify({ schema: currentSchema, catalog_items: catalogItemsForApi() }),
+    body: JSON.stringify({ schema: builderState.currentSchema, catalog_items: catalogItemsForApi() }),
   });
   if (response.status === 401) {
     storageStatus.textContent = "Admin token required to publish.";
@@ -13536,7 +13448,7 @@ function hydrateFromSelectedRequest() {
   if (!raw) return;
   try {
     const request = JSON.parse(raw);
-    currentRequestId = request.id;
+    builderState.currentRequestId = request.id;
     if (request.selectedLanguage || request.selected_language) {
       setSelectedLanguage(request.selectedLanguage || request.selected_language);
     }
@@ -13605,7 +13517,7 @@ function catalogItemsFromSchema(schema) {
 }
 
 function catalogItemsForApi() {
-  return currentCatalogItems.map((item, index) => ({
+  return builderState.currentCatalogItems.map((item, index) => ({
     ...item,
     price_value: item.price_value === "" || item.price_value === undefined ? null : Number(item.price_value),
     sort_order: item.sort_order || index + 1,
@@ -13615,12 +13527,12 @@ function catalogItemsForApi() {
 }
 
 function renderEditor() {
-  if (!currentSchema) return;
-  editorMount.classList.toggle("advanced-inspector-open", advancedInspectorOpen);
-  const pageOptions = currentSchema.pages
+  if (!builderState.currentSchema) return;
+  editorMount.classList.toggle("advanced-inspector-open", builderState.advancedInspectorOpen);
+  const pageOptions = builderState.currentSchema.pages
     .map(
       (page) =>
-        `<option value="${escapeAttribute(page.page_key)}" ${page.page_key === selectedPageKey ? "selected" : ""}>${escapeHtml(page.title)}</option>`,
+        `<option value="${escapeAttribute(page.page_key)}" ${page.page_key === builderState.selectedPageKey ? "selected" : ""}>${escapeHtml(page.title)}</option>`,
     )
     .join("");
 
@@ -13630,7 +13542,7 @@ function renderEditor() {
       <h3>Design options</h3>
       <div class="variant-grid">${designVariantCards()}</div>
     </div>
-    ${brandKitEditor(currentSchema.brand, currentSchema.design_score)}
+    ${brandKitEditor(builderState.currentSchema.brand, builderState.currentSchema.design_score)}
     <div class="editor-group">
       <label>Editing page<select id="pageSelector">${pageOptions}</select></label>
       <div class="row-actions">
@@ -13640,30 +13552,30 @@ function renderEditor() {
     </div>
     <div class="editor-group">
       <h3>Brand</h3>
-      ${inputField("Business name", "business.name", currentSchema.business.name)}
-      ${textareaField("Description", "business.description", currentSchema.business.description)}
-      ${inputField("Logo URL", "global_components.logo_url", currentSchema.global_components.logo_url || "")}
-      ${inputField("Brand primary", "brand.primaryColor", currentSchema.brand?.primaryColor || "")}
-      ${inputField("Brand accent", "brand.accentColor", currentSchema.brand?.accentColor || "")}
-      ${inputField("Button color", "brand.buttonColor", currentSchema.brand?.buttonColor || "")}
+      ${inputField("Business name", "business.name", builderState.currentSchema.business.name)}
+      ${textareaField("Description", "business.description", builderState.currentSchema.business.description)}
+      ${inputField("Logo URL", "global_components.logo_url", builderState.currentSchema.global_components.logo_url || "")}
+      ${inputField("Brand primary", "brand.primaryColor", builderState.currentSchema.brand?.primaryColor || "")}
+      ${inputField("Brand accent", "brand.accentColor", builderState.currentSchema.brand?.accentColor || "")}
+      ${inputField("Button color", "brand.buttonColor", builderState.currentSchema.brand?.buttonColor || "")}
     </div>
     <div class="editor-group">
       <h3>Colors</h3>
-      ${inputField("Background", "theme.colors.background", currentSchema.theme.colors.background)}
-      ${inputField("Primary", "theme.colors.primary", currentSchema.theme.colors.primary)}
-      ${inputField("Secondary", "theme.colors.secondary", currentSchema.theme.colors.secondary)}
-      ${inputField("Text", "theme.colors.text", currentSchema.theme.colors.text)}
+      ${inputField("Background", "theme.colors.background", builderState.currentSchema.theme.colors.background)}
+      ${inputField("Primary", "theme.colors.primary", builderState.currentSchema.theme.colors.primary)}
+      ${inputField("Secondary", "theme.colors.secondary", builderState.currentSchema.theme.colors.secondary)}
+      ${inputField("Text", "theme.colors.text", builderState.currentSchema.theme.colors.text)}
     </div>
     <div class="editor-group">
       <h3>Contact</h3>
-      ${Object.entries(currentSchema.contact || {})
+      ${Object.entries(builderState.currentSchema.contact || {})
         .map(([key, value]) => inputField(key, `contact.${key}`, value))
         .join("")}
     </div>
     <div class="editor-group">
       <h3>Catalog Manager</h3>
       <p class="mini-note">The public site renders products from catalog_items, not hardcoded page JSON.</p>
-      ${currentCatalogItems.map(catalogItemEditor).join("")}
+      ${builderState.currentCatalogItems.map(catalogItemEditor).join("")}
       <button class="small-button" id="addCatalogItemButton" type="button">Add catalog item</button>
     </div>
     <div class="editor-group">
@@ -13674,7 +13586,7 @@ function renderEditor() {
   `;
 
   editorMount.querySelector("#toggleAdvancedInspector")?.addEventListener("click", () => {
-    advancedInspectorOpen = !advancedInspectorOpen;
+    builderState.advancedInspectorOpen = !builderState.advancedInspectorOpen;
     renderEditor();
   });
   editorMount.querySelectorAll("[data-studio-add-product]").forEach((button) => {
@@ -13682,14 +13594,14 @@ function renderEditor() {
   });
 
   editorMount.querySelector("#pageSelector").addEventListener("change", (event) => {
-    selectedPageKey = event.target.value;
+    builderState.selectedPageKey = event.target.value;
     renderEditor();
     renderPreview();
   });
 
   editorMount.querySelectorAll("[data-variant-id]").forEach((button) => {
     button.addEventListener("click", () => {
-      selectedVariantId = button.dataset.variantId;
+      builderState.selectedVariantId = button.dataset.variantId;
       renderEditor();
       renderPreview();
     });
@@ -13697,13 +13609,13 @@ function renderEditor() {
 
   editorMount.querySelectorAll("[data-path]").forEach((input) => {
     input.addEventListener("input", () => {
-      setPath(currentSchema, input.dataset.path, normalizeEditedValue(input.dataset.path, input.value));
+      setPath(builderState.currentSchema, input.dataset.path, normalizeEditedValue(input.dataset.path, input.value));
       if (input.dataset.path.startsWith("brand.") || input.dataset.path === "global_components.logo_url") {
-        currentSchema.brand = normalizeBrand({
-          ...(currentSchema.brand || {}),
-          logoUrl: currentSchema.global_components?.logo_url || currentSchema.brand?.logoUrl || "",
+        builderState.currentSchema.brand = normalizeBrand({
+          ...(builderState.currentSchema.brand || {}),
+          logoUrl: builderState.currentSchema.global_components?.logo_url || builderState.currentSchema.brand?.logoUrl || "",
         });
-        currentSchema = applyBrandSystemToSchema(currentSchema, currentSchema.brand);
+        builderState.currentSchema = applyBrandSystemToSchema(builderState.currentSchema, builderState.currentSchema.brand);
       }
       renderPreview();
     });
@@ -13712,7 +13624,7 @@ function renderEditor() {
   editorMount.querySelectorAll("[data-catalog-path]").forEach((input) => {
     input.addEventListener("input", () => {
       const value = input.type === "checkbox" ? input.checked : input.value;
-      setPath({ catalog_items: currentCatalogItems }, input.dataset.catalogPath, value);
+      setPath({ catalog_items: builderState.currentCatalogItems }, input.dataset.catalogPath, value);
       renderPreview();
     });
   });
@@ -13722,7 +13634,7 @@ function renderEditor() {
       const file = input.files?.[0];
       if (!file) return;
       const imageUrl = await uploadAssetOrFallback(file, "catalog", "Catalog item image");
-      setPath({ catalog_items: currentCatalogItems }, input.dataset.catalogImageUpload, imageUrl);
+      setPath({ catalog_items: builderState.currentCatalogItems }, input.dataset.catalogImageUpload, imageUrl);
       renderEditor();
       renderPreview();
     });
@@ -13730,7 +13642,7 @@ function renderEditor() {
 
   editorMount.querySelectorAll("[data-remove-catalog-item]").forEach((button) => {
     button.addEventListener("click", () => {
-      currentCatalogItems = currentCatalogItems.filter((item) => item.id !== button.dataset.removeCatalogItem);
+      builderState.currentCatalogItems = builderState.currentCatalogItems.filter((item) => item.id !== button.dataset.removeCatalogItem);
       resequenceCatalog();
       renderEditor();
       renderPreview();
@@ -13747,7 +13659,7 @@ function renderEditor() {
 
   editorMount.querySelectorAll("[data-section-path]").forEach((input) => {
     input.addEventListener("input", () => {
-      setPath(currentSchema, input.dataset.sectionPath, normalizeEditedValue(input.dataset.sectionPath, input.value));
+      setPath(builderState.currentSchema, input.dataset.sectionPath, normalizeEditedValue(input.dataset.sectionPath, input.value));
       renderPreview();
     });
   });
@@ -13770,7 +13682,7 @@ function renderEditor() {
   });
 
   editorMount.querySelector("#addCatalogItemButton").addEventListener("click", () => {
-    currentCatalogItems.push({
+    builderState.currentCatalogItems.push({
       id: `catalog_${Date.now()}`,
       name: "New item",
       description: "Edit this product or service.",
@@ -13785,7 +13697,7 @@ function renderEditor() {
       track_inventory: true,
       is_active: true,
       is_featured: false,
-      sort_order: currentCatalogItems.length + 1,
+      sort_order: builderState.currentCatalogItems.length + 1,
     });
     renderEditor();
     renderPreview();
@@ -13801,14 +13713,14 @@ function renderEditor() {
 }
 
 function renderPreview() {
-  if (!currentSchema) return;
-  applyGeneratedFavicon(currentSchema);
-  previewFrame.innerHTML = renderWebsite(schemaForPreview(), selectedPageKey);
+  if (!builderState.currentSchema) return;
+  applyGeneratedFavicon(builderState.currentSchema);
+  previewFrame.innerHTML = renderWebsite(schemaForPreview(), builderState.selectedPageKey);
   renderStudioProgress();
   previewFrame.querySelectorAll("[data-page-link]").forEach((link) => {
     link.addEventListener("click", (event) => {
       event.preventDefault();
-      selectedPageKey = link.dataset.pageLink;
+      builderState.selectedPageKey = link.dataset.pageLink;
       renderEditor();
       renderPreview();
     });
@@ -13829,15 +13741,15 @@ function renderSchemaPreviewInto(schema, containerElement, payload = {}, templat
     || preparedSchema.pages?.[0]?.page_key
     || "home";
   const hadClientPreviewMode = document.body.classList.contains("client-preview-mode");
-  const previousSchema = currentSchema;
+  const previousSchema = builderState.currentSchema;
 
   const renderPage = (pageKey = defaultPageKey) => {
-    currentSchema = preparedSchema;
+    builderState.currentSchema = preparedSchema;
     document.body.classList.add("client-preview-mode");
     try {
       containerElement.innerHTML = renderWebsite(preparedSchema, pageKey);
     } finally {
-      currentSchema = previousSchema;
+      builderState.currentSchema = previousSchema;
       document.body.classList.toggle("client-preview-mode", hadClientPreviewMode);
     }
     containerElement.querySelectorAll("[data-page-link]").forEach((link) => {
@@ -13867,7 +13779,7 @@ function studioInspector() {
         <h3>${escapeHtml(title)}</h3>
         <p>${escapeHtml(selectedSection ? "Edit the selected section from the canvas." : "Select a section on the canvas to edit it directly.")}</p>
       </div>
-      <button id="toggleAdvancedInspector" class="small-button" type="button">${advancedInspectorOpen ? "Hide advanced" : "Advanced controls"}</button>
+      <button id="toggleAdvancedInspector" class="small-button" type="button">${builderState.advancedInspectorOpen ? "Hide advanced" : "Advanced controls"}</button>
     </div>
     ${selectedSection ? sectionQuickInspector(selectedSection) : pageQuickInspector()}
   </div>`;
@@ -13900,9 +13812,9 @@ function sectionQuickInspector(section) {
     return `<div class="studio-inspector-grid">
       ${inputField("Title", `${basePath}.editable.title`, editable.title || "", "data-section-path")}
       ${textareaField("Text", `${basePath}.editable.text`, editable.text || "", "data-section-path")}
-      ${inputField("Email", "contact.email", currentSchema.contact?.email || "")}
-      ${inputField("Phone", "contact.phone", currentSchema.contact?.phone || "")}
-      ${inputField("WhatsApp", "contact.whatsapp", currentSchema.contact?.whatsapp || "")}
+      ${inputField("Email", "contact.email", builderState.currentSchema.contact?.email || "")}
+      ${inputField("Phone", "contact.phone", builderState.currentSchema.contact?.phone || "")}
+      ${inputField("WhatsApp", "contact.whatsapp", builderState.currentSchema.contact?.whatsapp || "")}
     </div>`;
   }
   return `<div class="studio-inspector-grid">
@@ -13914,25 +13826,25 @@ function sectionQuickInspector(section) {
 
 function pageQuickInspector() {
   return `<div class="studio-inspector-grid">
-    ${inputField("Business name", "business.name", currentSchema.business?.name || "")}
-    ${inputField("Logo URL", "global_components.logo_url", currentSchema.global_components?.logo_url || "")}
-    ${inputField("Brand primary", "brand.primaryColor", currentSchema.brand?.primaryColor || "")}
-    ${inputField("Button color", "brand.buttonColor", currentSchema.brand?.buttonColor || "")}
+    ${inputField("Business name", "business.name", builderState.currentSchema.business?.name || "")}
+    ${inputField("Logo URL", "global_components.logo_url", builderState.currentSchema.global_components?.logo_url || "")}
+    ${inputField("Brand primary", "brand.primaryColor", builderState.currentSchema.brand?.primaryColor || "")}
+    ${inputField("Button color", "brand.buttonColor", builderState.currentSchema.brand?.buttonColor || "")}
   </div>`;
 }
 
 function selectedStudioSection() {
   const page = selectedPage();
-  return arrayValue(page?.sections).find((section) => (section.id || section.type) === selectedStudioSectionId) || null;
+  return arrayValue(page?.sections).find((section) => (section.id || section.type) === builderState.selectedStudioSectionId) || null;
 }
 
 function handleStudioSelectionAction(action) {
   const page = selectedPage();
-  const index = arrayValue(page.sections).findIndex((section) => (section.id || section.type) === selectedStudioSectionId);
+  const index = arrayValue(page.sections).findIndex((section) => (section.id || section.type) === builderState.selectedStudioSectionId);
   if (index < 0) return;
   if (action === "edit") {
     renderEditor();
-    selectStudioSection(selectedStudioSectionId);
+    selectStudioSection(builderState.selectedStudioSectionId);
     return;
   }
   if (action === "up" || action === "down") {
@@ -13946,11 +13858,11 @@ function handleStudioSelectionAction(action) {
     copy.id = `${slugify(copy.type)}_${Date.now()}`;
     copy.order = index + 2;
     page.sections.splice(index + 1, 0, copy);
-    selectedStudioSectionId = copy.id;
+    builderState.selectedStudioSectionId = copy.id;
     resequence(page.sections);
   } else if (action === "delete") {
     page.sections.splice(index, 1);
-    selectedStudioSectionId = "";
+    builderState.selectedStudioSectionId = "";
     studioSelectionToolbar.hidden = true;
     resequence(page.sections);
   } else if (action === "luma") {
@@ -13959,7 +13871,7 @@ function handleStudioSelectionAction(action) {
   }
   renderEditor();
   renderPreview();
-  if (selectedStudioSectionId) window.setTimeout(() => selectStudioSection(selectedStudioSectionId), 50);
+  if (builderState.selectedStudioSectionId) window.setTimeout(() => selectStudioSection(builderState.selectedStudioSectionId), 50);
 }
 
 function renderStudioProgress() {
@@ -13967,7 +13879,7 @@ function renderStudioProgress() {
     renderStudioLyraInsights();
     return;
   }
-  if (!currentSchema) {
+  if (!builderState.currentSchema) {
     studioProgressList.innerHTML = studioProgressItems([
       ["pending", "Home page"],
       ["pending", "Brand system"],
@@ -13977,14 +13889,14 @@ function renderStudioProgress() {
     renderStudioLyraInsights();
     return;
   }
-  const pages = arrayValue(currentSchema.pages);
+  const pages = arrayValue(builderState.currentSchema.pages);
   const sections = pages.flatMap((page) => arrayValue(page.sections));
-  const catalogItems = arrayValue(currentSchema.catalog_items || currentSchema.products_services);
+  const catalogItems = arrayValue(builderState.currentSchema.catalog_items || builderState.currentSchema.products_services);
   const items = [
     [pages.some((page) => page.page_key === "home") || sections.some((section) => section.type === "Hero") ? "done" : "active", "Home page"],
-    [currentSchema.brand?.primaryColor || currentSchema.theme?.colors?.primary ? "done" : "active", "Brand system"],
+    [builderState.currentSchema.brand?.primaryColor || builderState.currentSchema.theme?.colors?.primary ? "done" : "active", "Brand system"],
     [catalogItems.length || sections.some((section) => /ProductGrid|ServiceList/.test(section.type)) ? "done" : "active", "Online shop"],
-    [sections.some((section) => section.type === "Contact") || currentSchema.contact?.email || currentSchema.contact?.phone ? "done" : "pending", "Contact page"],
+    [sections.some((section) => section.type === "Contact") || builderState.currentSchema.contact?.email || builderState.currentSchema.contact?.phone ? "done" : "pending", "Contact page"],
   ];
   studioProgressList.innerHTML = studioProgressItems(items);
   renderStudioLyraInsights();
@@ -14028,22 +13940,22 @@ function studioInsightItems(items) {
 }
 
 function studioSuggestedImprovements() {
-  if (!currentSchema) {
+  if (!builderState.currentSchema) {
     return [
       "Elegir una plantilla base.",
       "Completar marca y productos.",
       "Generar el primer borrador.",
     ];
   }
-  const pages = arrayValue(currentSchema.pages);
+  const pages = arrayValue(builderState.currentSchema.pages);
   const sections = pages.flatMap((page) => arrayValue(page.sections));
-  const catalogItems = arrayValue(currentSchema.catalog_items || currentSchema.products_services);
+  const catalogItems = arrayValue(builderState.currentSchema.catalog_items || builderState.currentSchema.products_services);
   const suggestions = [];
-  if (!currentSchema.brand?.logoUrl && !currentSchema.brand?.logo_url) suggestions.push("Subir logo o confirmar identidad visual.");
+  if (!builderState.currentSchema.brand?.logoUrl && !builderState.currentSchema.brand?.logo_url) suggestions.push("Subir logo o confirmar identidad visual.");
   if (!catalogItems.length && !sections.some((section) => /ProductGrid|ServiceList/.test(section.type))) suggestions.push("Agregar productos o servicios editables.");
-  if (!sections.some((section) => section.type === "Contact") && !currentSchema.contact?.email && !currentSchema.contact?.phone) suggestions.push("Completar contacto visible para clientes.");
+  if (!sections.some((section) => section.type === "Contact") && !builderState.currentSchema.contact?.email && !builderState.currentSchema.contact?.phone) suggestions.push("Completar contacto visible para clientes.");
   if (!sections.some((section) => /Testimonials|Gallery|Proof|Trust/i.test(section.type))) suggestions.push("Agregar prueba visual o testimonios.");
-  if (selectedStudioSectionId) suggestions.unshift("Pulir la sección seleccionada con Lyra.");
+  if (builderState.selectedStudioSectionId) suggestions.unshift("Pulir la sección seleccionada con Lyra.");
   if (!suggestions.length) {
     suggestions.push("Revisar versión móvil antes de publicar.");
     suggestions.push("Guardar cambios y enviar a revisión.");
@@ -14053,43 +13965,43 @@ function studioSuggestedImprovements() {
 }
 
 function studioRecentChanges() {
-  if (!currentSchema) return ["Sin cambios recientes."];
+  if (!builderState.currentSchema) return ["Sin cambios recientes."];
   const changes = [];
-  arrayValue(currentSchema.revision_history).slice(-3).reverse().forEach((item) => {
+  arrayValue(builderState.currentSchema.revision_history).slice(-3).reverse().forEach((item) => {
     const request = cleanShortText(item.request || item.message || "", 88);
     if (request) changes.push(`Ajuste aplicado: ${request}`);
   });
-  arrayValue(currentSchema.design_review?.improvements).slice(-2).forEach((item) => {
+  arrayValue(builderState.currentSchema.design_review?.improvements).slice(-2).forEach((item) => {
     const mapped = {
       "Strengthened hero headline": "Titular principal reforzado.",
       "Clarified primary CTA": "CTA principal aclarado.",
     }[item] || item;
     if (mapped) changes.push(mapped);
   });
-  const templateName = currentSchema.selected_template?.name || currentSchema.active_template?.name || localizedTemplateName(templatePreviewMeta(currentSchema.layout_mode?.template_id || ""));
+  const templateName = builderState.currentSchema.selected_template?.name || builderState.currentSchema.active_template?.name || localizedTemplateName(templatePreviewMeta(builderState.currentSchema.layout_mode?.template_id || ""));
   if (templateName) changes.push(`Base activa: ${templateName}.`);
   if (!changes.length) changes.push("Borrador generado y listo para revisar.");
   return changes;
 }
 
 function addStudioSection(type = "FeatureBand") {
-  if (!currentSchema) return;
-  const page = currentSchema.pages.find((item) => item.page_key === selectedPageKey) || currentSchema.pages[0];
+  if (!builderState.currentSchema) return;
+  const page = builderState.currentSchema.pages.find((item) => item.page_key === builderState.selectedPageKey) || builderState.currentSchema.pages[0];
   if (!page) return;
   page.sections = arrayValue(page.sections);
   page.sections.push(createSectionByType(type, page.sections.length + 1));
-  currentSchema = prepareWebsiteConfig(currentSchema, { brand: currentSchema.brand || guidedState.brand || {} }, null);
-  currentCatalogItems = catalogItemsFromSchema(currentSchema);
+  builderState.currentSchema = prepareWebsiteConfig(builderState.currentSchema, { brand: builderState.currentSchema.brand || builderState.guidedState.brand || {} }, null);
+  builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
   renderEditor();
   renderPreview();
 }
 
 function addStudioCatalogItem() {
-  if (!currentSchema) return;
-  currentSchema.catalog_items = arrayValue(currentSchema.catalog_items);
-  currentSchema.catalog_items.push({
+  if (!builderState.currentSchema) return;
+  builderState.currentSchema.catalog_items = arrayValue(builderState.currentSchema.catalog_items);
+  builderState.currentSchema.catalog_items.push({
     id: `item_${Date.now()}`,
-    sku: `SKU-${currentSchema.catalog_items.length + 1}`,
+    sku: `SKU-${builderState.currentSchema.catalog_items.length + 1}`,
     name: "Nuevo producto",
     description: "Edita la descripción del producto.",
     category: "",
@@ -14104,11 +14016,11 @@ function addStudioCatalogItem() {
     track_inventory: true,
     image_url: "",
     is_active: true,
-    is_featured: currentSchema.catalog_items.length < 3,
-    sort_order: currentSchema.catalog_items.length,
+    is_featured: builderState.currentSchema.catalog_items.length < 3,
+    sort_order: builderState.currentSchema.catalog_items.length,
   });
-  currentSchema = prepareWebsiteConfig(currentSchema, { brand: currentSchema.brand || guidedState.brand || {} }, null);
-  currentCatalogItems = catalogItemsFromSchema(currentSchema);
+  builderState.currentSchema = prepareWebsiteConfig(builderState.currentSchema, { brand: builderState.currentSchema.brand || builderState.guidedState.brand || {} }, null);
+  builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
   renderEditor();
   renderPreview();
 }
@@ -14126,8 +14038,8 @@ function createSectionByType(type, order) {
     base.settings = { ...base.settings, layout: "featured", columns: 3 };
   } else if (type === "Hero") {
     base.editable = {
-      headline: currentSchema?.business?.name || "Nueva propuesta principal",
-      subtitle: currentSchema?.business?.description || "Explica en una frase clara por qué vale la pena seguir.",
+      headline: builderState.currentSchema?.business?.name || "Nueva propuesta principal",
+      subtitle: builderState.currentSchema?.business?.description || "Explica en una frase clara por qué vale la pena seguir.",
       primary_button: "Ver productos",
       secondary_button: "Contactar",
       image_url: "",
@@ -14147,7 +14059,7 @@ function createSectionByType(type, order) {
 }
 
 function selectStudioSection(sectionId) {
-  selectedStudioSectionId = sectionId || "";
+  builderState.selectedStudioSectionId = sectionId || "";
   previewFrame.querySelectorAll("[data-studio-section].is-selected").forEach((element) => element.classList.remove("is-selected"));
   const element = previewFrame.querySelector(`[data-studio-section="${cssEscape(sectionId)}"]`);
   element?.classList.add("is-selected");
@@ -14189,7 +14101,7 @@ function applyGeneratedFavicon(schema) {
 }
 
 function designVariantCards() {
-  const variants = currentSchema.design_variants || [];
+  const variants = builderState.currentSchema.design_variants || [];
   if (!variants.length) {
     return `<p class="empty">Generate again to receive 3 AI design options.</p>`;
   }
@@ -14197,7 +14109,7 @@ function designVariantCards() {
     .map(
       (variant, index) => {
         const preset = TEMPLATE_PRESETS[index % TEMPLATE_PRESETS.length];
-        return `<button class="variant-card ${variant.id === selectedVariantId ? "active" : ""}" data-variant-id="${escapeAttribute(variant.id)}" type="button">
+        return `<button class="variant-card ${variant.id === builderState.selectedVariantId ? "active" : ""}" data-variant-id="${escapeAttribute(variant.id)}" type="button">
         <span class="variant-swatch" style="background:${resolveColor(variant.theme?.colors?.primary, "#008060")}"></span>
         <strong>${escapeHtml(variant.name)}</strong>
         <small>${escapeHtml(preset.name)} · ${escapeHtml(variant.description)}</small>
@@ -14233,12 +14145,12 @@ function brandKitEditor(brandInput, score) {
 
 function schemaForPreview() {
   const variant = selectedVariant();
-  if (!variant) return ensureStorefrontExperience(structuredClone(currentSchema));
+  if (!variant) return ensureStorefrontExperience(structuredClone(builderState.currentSchema));
   const preset = selectedTemplatePreset();
-  const schema = structuredClone(currentSchema);
+  const schema = structuredClone(builderState.currentSchema);
   schema.theme = variant.theme || schema.theme;
-  if (Array.isArray(currentCatalogItems) && currentCatalogItems.length) {
-    schema.catalog_items = currentCatalogItems;
+  if (Array.isArray(builderState.currentCatalogItems) && builderState.currentCatalogItems.length) {
+    schema.catalog_items = builderState.currentCatalogItems;
   }
   schema.layout_mode = { ...schema.layout_mode, id: variant.layout_mode_id || schema.layout_mode?.id };
   schema.active_design_variant = variant;
@@ -14275,7 +14187,7 @@ function ensureStorefrontExperience(schema) {
   const catalogItems = schema.catalog_items.filter((item) => item.is_active !== false);
   if (!catalogItems.length) return schema;
 
-  const language = schema.business?.selectedLanguage || selectedLanguage || "en";
+  const language = schema.business?.selectedLanguage || builderState.selectedLanguage || "en";
   const labels = {
     en: { nav: "Shop", title: "Shop", slug: "/shop", featured: "Featured products", subtitle: "Explore the products and options available from this business." },
     es: { nav: "Tienda", title: "Tienda", slug: "/tienda", featured: "Productos destacados", subtitle: "Explora los productos y opciones disponibles para comprar o solicitar." },
@@ -14409,19 +14321,19 @@ function normalizePreviewCatalogItems(schema) {
 }
 
 function selectedVariant() {
-  const variants = currentSchema?.design_variants || [];
-  return variants.find((variant) => variant.id === selectedVariantId) || variants[0] || null;
+  const variants = builderState.currentSchema?.design_variants || [];
+  return variants.find((variant) => variant.id === builderState.selectedVariantId) || variants[0] || null;
 }
 
 function selectedTemplatePreset() {
-  const variants = currentSchema?.design_variants || [];
-  const index = Math.max(0, variants.findIndex((variant) => variant.id === selectedVariantId));
+  const variants = builderState.currentSchema?.design_variants || [];
+  const index = Math.max(0, variants.findIndex((variant) => variant.id === builderState.selectedVariantId));
   return TEMPLATE_PRESETS[index % TEMPLATE_PRESETS.length];
 }
 
 function renderWebsite(schema, pageKey) {
   return renderWebsiteMarkup(schema, pageKey, {
-    selectedLanguage,
+    selectedLanguage: builderState.selectedLanguage,
     isClientPreviewMode: Boolean(document.body?.classList?.contains("client-preview-mode")),
   });
 }
@@ -14518,18 +14430,18 @@ function checkboxField(label, path, checked, attr) {
 }
 
 function selectedPage() {
-  return currentSchema.pages.find((page) => page.page_key === selectedPageKey) || currentSchema.pages[0];
+  return builderState.currentSchema.pages.find((page) => page.page_key === builderState.selectedPageKey) || builderState.currentSchema.pages[0];
 }
 
 function pageIndex() {
-  return currentSchema.pages.findIndex((page) => page.page_key === selectedPageKey);
+  return builderState.currentSchema.pages.findIndex((page) => page.page_key === builderState.selectedPageKey);
 }
 
 function movePage(direction) {
   const index = pageIndex();
   const next = direction === "up" ? index - 1 : index + 1;
-  if (next < 0 || next >= currentSchema.pages.length) return;
-  const pages = currentSchema.pages;
+  if (next < 0 || next >= builderState.currentSchema.pages.length) return;
+  const pages = builderState.currentSchema.pages;
   [pages[index], pages[next]] = [pages[next], pages[index]];
   resequence(pages);
 }
@@ -14541,15 +14453,15 @@ function resequence(items) {
 }
 
 function moveCatalogItem(id, direction) {
-  const index = currentCatalogItems.findIndex((item) => item.id === id);
+  const index = builderState.currentCatalogItems.findIndex((item) => item.id === id);
   const next = direction === "up" ? index - 1 : index + 1;
-  if (index < 0 || next < 0 || next >= currentCatalogItems.length) return;
-  [currentCatalogItems[index], currentCatalogItems[next]] = [currentCatalogItems[next], currentCatalogItems[index]];
+  if (index < 0 || next < 0 || next >= builderState.currentCatalogItems.length) return;
+  [builderState.currentCatalogItems[index], builderState.currentCatalogItems[next]] = [builderState.currentCatalogItems[next], builderState.currentCatalogItems[index]];
   resequenceCatalog();
 }
 
 function resequenceCatalog() {
-  currentCatalogItems.forEach((item, index) => {
+  builderState.currentCatalogItems.forEach((item, index) => {
     item.sort_order = index + 1;
   });
 }
@@ -14613,8 +14525,8 @@ async function uploadAssetFile(file, assetType, label) {
     method: "POST",
     headers: adminHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({
-      businessId: currentBusinessId,
-      siteId: currentSiteId,
+      businessId: builderState.currentBusinessId,
+      siteId: builderState.currentSiteId,
       assetType,
       fileName: file.name || `${assetType}.png`,
       contentType: file.type || "image/png",

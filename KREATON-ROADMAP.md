@@ -1,0 +1,33 @@
+# KREATON / LYRA — Estado y hoja de ruta
+
+Última actualización: 2026-07-26
+
+Este documento existe para que siempre sepas qué está resuelto, qué sigue, y en qué orden — sin tener que recordar toda la conversación con Claude o Codex.
+
+## Completado
+
+- **Login con Google** — el loop que devolvía a la pantalla de login quedó resuelto (deduplicación de sesión, captura correcta del token de OAuth).
+- **Seguridad del backend** — cookies de sesión httpOnly (en vez de solo localStorage), CORS restringido a los dominios reales, límite de intentos en los endpoints de auth, políticas RLS habilitadas en Supabase.
+- **Bug de "Generate website now"** — ya no se trata `needs_more_info` como error. LYRA ahora hace la pregunta que falta de forma conversacional en vez de mostrar "Generation stopped" escondido fuera de vista. (En despliegue.)
+
+## Pendiente — en este orden
+
+1. ~~Riesgo de datos: SQLite local en Render.~~ **Resuelto (2026-07-26).** `DATABASE_URL` ahora apunta a Postgres en Supabase (conexión por Session Pooler, IPv4). Se agregó `psycopg2-binary` a `requirements.txt`. Verificado: el esquema ya coincidía exactamente con los modelos de `db_models.py`, las tablas estaban vacías (no había datos que perder), y el despliegue arrancó sin errores.
+2. ~~Consolidar los 4 portales de cliente duplicados.~~ **Resuelto (2026-07-26).** No eran 4 duplicados — eran 3 productos reales distintos (portal de soporte `client-portal.html`→`client-portal-preview.html`, el asistente LYRA `start/`→`client/setup/`, y el dashboard de tienda `client/portal/`) más 2 carpetas muertas sin ningún enlace en el repo (`client/setup-wizard/`, `client/start/`). Se borraron las 2 muertas, verificado en vivo (404 limpio) y los 3 flujos reales siguen en 200.
+3. **Dividir `ai-builder.js` (~1 MB en un solo archivo) en módulos.** En progreso con Codex. Fase 1 (build con esbuild, aislado en `dist/`) lista (`997586f`). Fase 2 (constantes, i18n, plantillas, utilidades puras) lista (`3c49a2e`). Fase 3 (diagnóstico 2026-07-27): separar auth/chat/generador/editor completos NO es viable todavía — `guidedState` tiene 500+ referencias cruzando las 4 áreas con llamadas bidireccionales (chat↔generación↔editor↔auth). Requeriría rediseñar el manejo de estado, un proyecto de arquitectura aparte. En su lugar, se extrajeron los renderers puros a `src/ai-builder/renderers.js` (~2,211 líneas, entrypoint bajó de 16,967 a 14,085) — listo, en `main` (`a34fba7`). Sin estado mutable movido; dependencias implícitas resueltas por contexto explícito. El núcleo interactivo (chat, generación, editor mutable, auth) queda como un solo bloque cohesivo por ahora — separarlo de verdad es un proyecto de arquitectura aparte.
+   - **Fase 4 (iniciada 2026-07-31): módulo de estado centralizado.** Prerrequisito real para poder separar auth/chat/generador/editor. `src/ai-builder/index.js` (14,689 líneas) tiene 123 bindings mutables a nivel de módulo (`let`/`const`) y 440 referencias a `guidedState` repartidas por todo el archivo, sin ningún punto de acceso único. Plan: extraer `src/ai-builder/dom.js` (refs de elementos DOM, mecánico, cero riesgo) y `src/ai-builder/state.js` (store único con getters/setters/subscribe para `guidedState` y el resto del estado mutable), migrar todos los accesos directos a pasar por esa API, sin cambiar ningún comportamiento. Solo después de esto la Fase 5 (separar auth/chat/generador/editor en archivos propios) queda segura. Nota aparte: el build modular (`dist/ai-builder.js`) sigue sin conectarse a producción — `ai-builder.html` y `client/setup/index.html` todavía cargan el `ai-builder.js` monolítico (`v=162`); el cutover es una decisión pendiente, separada de este trabajo de modularización de fuente.
+4. ~~Eliminar la rama `luma-api` huérfana.~~ **Resuelto (2026-07-26).** También se limpiaron `security-login-rate-limit` y `security-cookie-auth` (apuntaba a una ruta muerta de la rama `luma-api`). `security-supabase-rls` pendiente de borrar (su script ya se aplicó en vivo en Supabase, se está guardando como documentación en el repo primero).
+5. ~~Migrar `seller-portal.js` (dashboard de dueño de tienda, `client/portal/`) a cookies httpOnly.~~ **Resuelto (2026-07-26).** Migración completa (no solo respaldo como quedó en `ai-builder.js`): ya no guarda el token en `localStorage` en absoluto, todo pasa por la cookie httpOnly vía `/api/client/auth/session` y `/api/client/auth/logout`. Probado con Playwright contra endpoints mock. Pendiente: una verificación en vivo rápida tras el despliegue (con cuenta real o `?demo=1`) para cerrar el ciclo. Nota aparte: `ai-builder.js` sigue guardando el token en `localStorage` como respaldo de la cookie — no cierra el riesgo de XSS del todo ahí. Sería un follow-up pequeño si se quiere completar igual.
+6. ~~Agente Revisor/QA para LYRA.~~ **Resuelto (2026-07-26).** `ReviewerAgent` agregado en `agents.py`, corre después de `ValidationAgent` solo en la generación final (`/ai/website-builder`, NO en el chat conversacional). Evalúa copy, catálogo y plantilla contra lo que pidió el cliente; si encuentra algo crítico corrige una sola vez (copywriter/catalog, o si es la plantilla, aplica directamente el `template_id` que el Revisor sugiere del catálogo real — sin reintentar el clasificador de reglas, que es determinístico y no iba a cambiar de respuesta). Sin loops. Probado con caso real (Bath All Day). Commit `e2f95f0`.
+
+## Incidente resuelto (2026-07-27): exposición pública de backend/ en el sitio real
+
+Un correo de "build failed" de Render llevó a descubrir que el sitio real (`vmbusinesssystems.com`) no lo sirve Render — lo sirve GitHub Pages, publicando la rama `main` completa tal cual, sin filtro. Confirmado en vivo: `backend/app/main.py`, `supabase/enable_rls.sql` y `project-rebuild-kit/README.md` eran accesibles públicamente. Resuelto con `scripts/stage-public-site.mjs` (excluye backend/, supabase/, docs internos) + `.github/workflows/pages.yml`, cambiando el Source de GitHub Pages de "Deploy from a branch" a "GitHub Actions". Verificado en vivo: todo lo privado ahora da 404, los flujos reales siguen en 200.
+
+El servicio de Render (`vm-business-systems-website`, Docker, roto desde que se borró `luma-api`) nunca tuvo dominio propio ni sirvió tráfico real — confirmado (0 dominios en su configuración) y borrado. Render ahora solo tiene el backend real (`kreaton-lyra-api`).
+
+## Cómo vamos a trabajar esto
+
+- Uno a la vez, en el orden de arriba.
+- Para cada punto: diagnóstico primero, luego un prompt preciso para Codex (o lo hago yo directo si es más seguro/rápido), tú confirmas antes de publicar a producción.
+- Este documento se actualiza según avancemos.
