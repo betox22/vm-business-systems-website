@@ -3,6 +3,7 @@ import { escapeHtml, escapeAttribute } from './utils.js';
 import { builderState } from './state.js';
 import {
   createOrResumeClientIntakeSession,
+  guidedSessionDraftForApi,
   isClientWorkspaceUnlocked,
   readClientIntakeSession,
 } from './auth.js';
@@ -69,6 +70,7 @@ import {
   readErrorMessage,
   handleGuidedGenerateButton,
   refreshQuickChips,
+  resetGuidedStateForNewAccount,
   guidedCompletionPercent,
   guidedAskedSteps,
   missingGuidedSteps,
