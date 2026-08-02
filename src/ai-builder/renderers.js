@@ -1,5 +1,6 @@
 import { DEFAULT_BRAND } from './templates.js';
 import { escapeHtml, escapeAttribute } from './utils.js';
+import { listingLocationForIndex, marketplaceCategories } from './index.js';
 
 function arrayValue(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
