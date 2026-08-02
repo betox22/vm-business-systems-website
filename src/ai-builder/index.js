@@ -195,7 +195,7 @@ const GUIDED_QUESTIONS = {
   },
 };
 
-const CLIENT_INTAKE_AUTOSAVE_DELAY_MS = 3200;
+const CLIENT_INTAKE_AUTOSAVE_DELAY_MS = 15000;
 
 const GUIDED_STEPS = [
   "websiteIntent",
@@ -2563,6 +2563,8 @@ async function createOrResumeClientIntakeSession({ email, name = "", reason = "s
 
 function syncClientIntakeSession({ immediate = false, reason = "autosave" } = {}) {
   if (!isPublicClientSetup || !builderState.clientIntakeSession?.clientEmail) return;
+  const currentSnapshot = JSON.stringify(guidedStateForApi());
+  if (currentSnapshot === builderState.clientIntakeLastSyncedSnapshot) return;
   clearTimeout(builderState.clientIntakeSyncTimer);
   const run = async () => {
     if (builderState.clientIntakeSyncInFlight) return;
@@ -2574,6 +2576,7 @@ function syncClientIntakeSession({ immediate = false, reason = "autosave" } = {}
         reason,
       });
       if (session.requestId) builderState.currentRequestId = session.requestId;
+      builderState.clientIntakeLastSyncedSnapshot = currentSnapshot;
     } catch (error) {
       console.warn("Client intake autosave failed", error);
       if (guidedStatusText) {
@@ -3252,21 +3255,12 @@ async function sendGuidedReply() {
     mergeGuidedUpdates(updatedFields);
     await applyLumaAgentDecision(result);
     const planAfterAgent = refreshAiStudioPlanFromContext(message);
-    const serverMissingImportantFields = arrayValue(result.missingImportantFields || result.missing_important_fields || result.missing_fields);
-    const locallyReadyToGenerate = !result.readyToGenerate && !serverMissingImportantFields.length && hasEnoughContextForFirstDraft();
     const serverNextStep = result.next_step || result.nextStep || "";
-    builderState.guidedStep = (result.readyToGenerate || locallyReadyToGenerate) ? "review" : normalizeNextGuidedStep(serverNextStep || builderState.guidedStep);
+    builderState.guidedStep = result.readyToGenerate ? "review" : normalizeNextGuidedStep(serverNextStep || builderState.guidedStep);
     const serverNextQuestion = result.nextQuestion || result.next_question;
-    const nextQuestion = (result.readyToGenerate || locallyReadyToGenerate) ? "" : chooseNextQuestionText(serverNextQuestion, builderState.guidedStep);
+    const nextQuestion = result.readyToGenerate ? "" : chooseNextQuestionText(serverNextQuestion, builderState.guidedStep);
     const usedDevFallback = Boolean(result.used_dev_fallback || result.usedDevFallback);
-    const finalAssistantMessage = locallyReadyToGenerate
-      ? langText({
-          en: "I have enough context to build the first draft. I will use your notes as strategy, not as page copy.",
-          es: "Ya tengo suficiente contexto para crear el primer borrador. Voy a usar tus notas como estrategia, no como texto pegado en la pagina.",
-          fr: "J'ai assez de contexte pour créer le premier brouillon. J'utiliserai vos notes comme stratégie, pas comme texte brut.",
-          pt: "Ja tenho contexto suficiente para criar o primeiro rascunho. Vou usar suas notas como estrategia, nao como texto colado na pagina.",
-        })
-      : sanitizeAssistantTemplateClaim(assistantMessage, planAfterAgent);
+    const finalAssistantMessage = sanitizeAssistantTemplateClaim(assistantMessage, planAfterAgent);
     const publicAssistantMessage = composeAssistantReply(finalAssistantMessage, nextQuestion, usedDevFallback);
     appendUnderstandingCard({ updates: updatedFields, sourceMessage: message });
     appendChatMessage("assistant", publicAssistantMessage, usedDevFallback ? "alert" : emotion);
@@ -3277,26 +3271,18 @@ async function sendGuidedReply() {
     const updates = localContextUpdates;
     mergeGuidedUpdates(updates);
     syncTemplateSelectionFromGuidedContext(message);
-    const fallbackPlan = refreshAiStudioPlanFromContext(message);
-    const locallyReadyToGenerate = hasEnoughContextForFirstDraft();
-    builderState.guidedStep = locallyReadyToGenerate ? "review" : nextSmartGuidedStep(builderState.guidedStep);
+    refreshAiStudioPlanFromContext(message);
+    builderState.guidedStep = nextSmartGuidedStep(builderState.guidedStep);
     console.warn("LYRA intake assistant request failed; continuing locally.", error);
     appendUnderstandingCard({ updates, sourceMessage: message });
     appendChatMessage(
       "assistant",
       composeAssistantReply(
-        locallyReadyToGenerate
-          ? langText({
-              en: `I have enough context to build the first draft. I will use ${fallbackPlan.recommendedTemplateName || "the selected template"} as the base and rewrite the site professionally.`,
-              es: `Ya tengo suficiente contexto para crear el primer borrador. Usare ${fallbackPlan.recommendedTemplateName || "la plantilla seleccionada"} como base y reescribire la pagina profesionalmente.`,
-              fr: `J'ai assez de contexte pour créer le premier brouillon. J'utiliserai ${fallbackPlan.recommendedTemplateName || "le template choisi"} comme base et je réécrirai le site professionnellement.`,
-              pt: `Ja tenho contexto suficiente para criar o primeiro rascunho. Vou usar ${fallbackPlan.recommendedTemplateName || "o template escolhido"} como base e reescrever o site profissionalmente.`,
-            })
-          : t("localFallbackMessage"),
-        locallyReadyToGenerate ? "" : guidedQuestion(builderState.guidedStep),
+        t("localFallbackMessage"),
+        guidedQuestion(builderState.guidedStep),
         true,
       ),
-      locallyReadyToGenerate ? "success" : "speaking",
+      "speaking",
     );
     guidedStatusText.textContent = t("localFallback");
   }
@@ -4330,12 +4316,6 @@ function insertQuickChip(value) {
     openReviewDetails();
     return;
   }
-  if (value === "Generate now") {
-    builderState.guidedStep = "review";
-    renderGuidedSummary();
-    handleGuidedGenerateButton();
-    return;
-  }
   if (value === "Use my logo colors") {
     guidedReply.value = translated;
     updateAssetPromptVisibility();
@@ -4355,7 +4335,7 @@ function refreshQuickChips() {
     preferredColors: ["Let AI choose", "Use my logo colors", "I have specific colors"],
     salesMode: ["Sell online", "Request quotes", "Calls/messages", "All of the above", "Not sure"],
     targetAudience: ["Local customers", "Families", "Professionals", "Businesses", "Let AI decide"],
-    review: ["Generate now", "Review details", "Change style", "Upload logo"],
+    review: [],
   };
   const chips = chipsByStep[builderState.guidedStep] || [];
   quickChipRow.innerHTML = chips
@@ -4510,7 +4490,6 @@ function translateChip(value) {
       "Yes, correct": "Sí, correcto",
       "Change style": "Cambiar estilo",
       "Upload logo": "Subir logo",
-      "Generate now": "Generar ya",
       "Review details": "Revisar detalles",
     },
     fr: {
@@ -4541,7 +4520,6 @@ function translateChip(value) {
       "Yes, correct": "Oui, c'est correct",
       "Change style": "Changer le style",
       "Upload logo": "Importer un logo",
-      "Generate now": "Générer maintenant",
       "Review details": "Vérifier les détails",
     },
     pt: {
@@ -4572,7 +4550,6 @@ function translateChip(value) {
       "Yes, correct": "Sim, correto",
       "Change style": "Mudar estilo",
       "Upload logo": "Enviar logo",
-      "Generate now": "Gerar agora",
       "Review details": "Revisar detalhes",
     },
   };
@@ -5659,11 +5636,10 @@ function renderLumaReadyCard() {
     <div class="luma-ready-points">
       ${(diagnosis.requiredFeatures || []).slice(0, 3).map((feature) => `<span>${escapeHtml(humanizePlanFeature(feature))}</span>`).join("")}
       <span>${escapeHtml(langText({ en: "Editable draft", es: "Borrador editable", fr: "Brouillon modifiable", pt: "Rascunho editavel" }))}</span>
-      <span>${escapeHtml(langText({ en: "No raw notes pasted", es: "Sin pegar notas crudas", fr: "Sans notes brutes", pt: "Sem notas brutas coladas" }))}</span>
     </div>
     <div class="luma-ready-actions">
       <button type="button" data-chat-generate>${escapeHtml(langText({ en: "Generate website now", es: "Generar pagina ahora", fr: "Generer maintenant", pt: "Gerar site agora" }))}</button>
-      <button type="button" data-chat-review>${escapeHtml(t("reviewDetails"))}</button>
+      <button type="button" data-chat-review>${escapeHtml(langText({ en: "Modify", es: "Modificar", fr: "Modifier", pt: "Modificar" }))}</button>
     </div>
   `;
   card.querySelector("[data-chat-generate]")?.addEventListener("click", (event) => handleGuidedGenerateButton(event));
