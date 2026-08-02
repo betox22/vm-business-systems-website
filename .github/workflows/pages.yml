@@ -7,6 +7,15 @@ name: Deploy static site to GitHub Pages
 # Found + fixed 2026-07-27: backend/app/main.py, supabase/enable_rls.sql, and
 # project-rebuild-kit/README.md were all publicly fetchable on
 # vmbusinesssystems.com before this change.
+#
+# Cutover 2026-08-01: ai-builder.js is now built from src/ai-builder/ on
+# every deploy instead of being served as the committed root-level file.
+# The root ai-builder.js (~17.9k lines, single file) is kept in git as a
+# frozen reference during the Phase 5 module split, but it is NOT what
+# production serves anymore -- the `cp dist/ai-builder.js public-dist/` step
+# below overwrites the staged copy with the fresh modular build. This closes
+# the drift risk between the monolith and src/ai-builder/ that would have
+# gotten worse with every further refactor phase. See KREATON-ROADMAP.md.
 
 on:
   push:
@@ -31,7 +40,9 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
+      - run: node scripts/build-ai-builder.mjs
       - run: node scripts/stage-public-site.mjs
+      - run: cp dist/ai-builder.js public-dist/ai-builder.js
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public-dist
