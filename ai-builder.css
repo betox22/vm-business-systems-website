@@ -2663,6 +2663,36 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   text-align: center;
 }
 
+.studio-auth-loading {
+  min-height: 230px;
+  align-content: center;
+  justify-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+.studio-auth-loading[hidden] {
+  display: none;
+}
+
+.studio-auth-loading strong {
+  color: var(--ink);
+  font-size: 20px;
+}
+
+.studio-auth-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid rgba(37, 99, 235, 0.16);
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: studio-auth-spin 0.85s linear infinite;
+}
+
+@keyframes studio-auth-spin {
+  to { transform: rotate(360deg); }
+}
+
 .studio-auth-actions {
   display: grid;
   gap: 10px;

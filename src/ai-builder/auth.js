@@ -79,11 +79,64 @@ import {
 } from './index.js';
 
 const CLIENT_INTAKE_AUTOSAVE_DELAY_MS = 15000;
+const CLIENT_AUTH_SLOW_NOTICE_DELAY_MS = 9000;
+let clientAuthSlowNoticeTimer = null;
+
+function authLoadingElements() {
+  return {
+    content: studioAuthGate?.querySelector("[data-studio-auth-content]") || null,
+    loading: studioAuthGate?.querySelector("[data-studio-auth-loading]") || null,
+    title: studioAuthGate?.querySelector("[data-studio-auth-loading-title]") || null,
+    message: studioAuthGate?.querySelector("[data-studio-auth-loading-message]") || null,
+  };
+}
+
+function resetStudioAuthLoading() {
+  clearTimeout(clientAuthSlowNoticeTimer);
+  clientAuthSlowNoticeTimer = null;
+  const { content, loading } = authLoadingElements();
+  if (content) content.hidden = false;
+  if (loading) loading.hidden = true;
+  studioAuthGate?.removeAttribute("aria-busy");
+}
+
+function showStudioAuthLoading() {
+  if (!studioAuthGate) return;
+  const { content, loading, title, message } = authLoadingElements();
+  clearTimeout(clientAuthSlowNoticeTimer);
+  studioAuthGate.hidden = false;
+  studioAuthGate.setAttribute("aria-busy", "true");
+  document.body.classList.add("studio-auth-open", "client-auth-required");
+  if (content) content.hidden = true;
+  if (loading) loading.hidden = false;
+  if (title) title.textContent = langText({
+    en: "Connecting your session",
+    es: "Conectando tu sesión",
+    fr: "Connexion de votre session",
+    pt: "Conectando sua sessão",
+  });
+  if (message) message.textContent = langText({
+    en: "We are securely validating your access.",
+    es: "Estamos validando tu acceso seguro.",
+    fr: "Nous validons votre accès sécurisé.",
+    pt: "Estamos validando seu acesso seguro.",
+  });
+  clientAuthSlowNoticeTimer = setTimeout(() => {
+    if (studioAuthGate?.hidden || loading?.hidden) return;
+    if (message) message.textContent = langText({
+      en: "This is taking a little longer than usual. Your session is still being checked.",
+      es: "Esto está tardando un poco más de lo normal. Tu sesión se sigue verificando.",
+      fr: "Cela prend un peu plus de temps que prévu. Votre session est toujours en cours de vérification.",
+      pt: "Isso está demorando um pouco mais que o normal. Sua sessão continua sendo verificada.",
+    });
+  }, CLIENT_AUTH_SLOW_NOTICE_DELAY_MS);
+}
 
 export function initClientIntakeSessionGate() {
   if (!isPublicClientSetup) return;
   ensureStudioAuthRedirectCaptured();
   if (storedClientAccessToken()) {
+    showStudioAuthLoading();
     resumeClientSessionFromAuthToken();
     return;
   }
@@ -588,6 +641,7 @@ export async function loadClientProject(projectId, options = {}) {
 
 export async function resumeClientSessionFromAuthToken() {
   if (builderState.clientAuthResumePromise) return builderState.clientAuthResumePromise;
+  showStudioAuthLoading();
   builderState.clientAuthResumePromise = (async () => {
   try {
     const user = await fetchClientAuthUser();
@@ -1012,6 +1066,7 @@ export function revealStudioAuthProviderButtons() {
 
 export function openStudioAuthGate(action = "continue") {
   if (!studioAuthGate) return;
+  resetStudioAuthLoading();
   persistPendingStudioAccountAction(action);
   studioAuthGate.dataset.action = action;
   if (studioAuthCloseButton) studioAuthCloseButton.hidden = action === "start";
@@ -1035,6 +1090,7 @@ export function openStudioAuthGate(action = "continue") {
 
 export function closeStudioAuthGate() {
   if (!studioAuthGate) return;
+  resetStudioAuthLoading();
   studioAuthGate.hidden = true;
   document.body.classList.remove("studio-auth-open");
   document.body.classList.remove("client-auth-required");

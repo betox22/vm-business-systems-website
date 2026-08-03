@@ -320,23 +320,30 @@
 
       <section id="studioAuthGate" class="studio-auth-gate" hidden aria-modal="true" role="dialog">
         <div class="studio-auth-card">
-          <button id="studioAuthCloseButton" class="icon-button" type="button" aria-label="Cerrar">×</button>
-          <div class="studio-auth-avatar">
-            <img class="assistant-avatar large" src="/assets/nixie_success.png" alt="LYRA">
+          <div data-studio-auth-content>
+            <button id="studioAuthCloseButton" class="icon-button" type="button" aria-label="Cerrar">×</button>
+            <div class="studio-auth-avatar">
+              <img class="assistant-avatar large" src="/assets/nixie_success.png" alt="LYRA">
+            </div>
+            <span data-i18n="accountGateKicker">Workspace protegido</span>
+            <h2 data-i18n="accountGateTitle">Empieza guardando tu progreso</h2>
+            <p data-i18n="accountGateText">Entra con email para que LYRA guarde tus respuestas, recupere tus borradores y no tengas que repetir la información.</p>
+            <form id="studioEmailAuthForm" class="studio-email-auth" novalidate>
+              <label>Email<input id="studioAuthEmail" type="email" placeholder="tu@email.com"></label>
+              <button type="submit" data-i18n="saveEmailContinue">Guardar email</button>
+            </form>
+            <div class="studio-auth-actions secondary-auth-options" hidden>
+              <button id="studioGoogleAuthButton" type="button" data-i18n="continueGoogle" hidden>Continuar con Google</button>
+              <button id="studioAppleAuthButton" type="button" data-i18n="continueApple" hidden>Continuar con Apple</button>
+              <button id="studioEmailAuthButton" type="button" data-i18n="continueEmail" hidden>Continuar con email</button>
+            </div>
+            <button id="studioAuthDemoButton" class="studio-auth-demo" type="button" data-i18n="continueDemo">Seguir viendo demo</button>
           </div>
-          <span data-i18n="accountGateKicker">Workspace protegido</span>
-          <h2 data-i18n="accountGateTitle">Empieza guardando tu progreso</h2>
-          <p data-i18n="accountGateText">Entra con email para que LYRA guarde tus respuestas, recupere tus borradores y no tengas que repetir la información.</p>
-          <form id="studioEmailAuthForm" class="studio-email-auth" novalidate>
-            <label>Email<input id="studioAuthEmail" type="email" placeholder="tu@email.com"></label>
-            <button type="submit" data-i18n="saveEmailContinue">Guardar email</button>
-          </form>
-          <div class="studio-auth-actions secondary-auth-options" hidden>
-            <button id="studioGoogleAuthButton" type="button" data-i18n="continueGoogle" hidden>Continuar con Google</button>
-            <button id="studioAppleAuthButton" type="button" data-i18n="continueApple" hidden>Continuar con Apple</button>
-            <button id="studioEmailAuthButton" type="button" data-i18n="continueEmail" hidden>Continuar con email</button>
+          <div class="studio-auth-loading" data-studio-auth-loading hidden role="status" aria-live="polite">
+            <span class="studio-auth-spinner" aria-hidden="true"></span>
+            <strong data-studio-auth-loading-title>Conectando tu sesión</strong>
+            <p data-studio-auth-loading-message>Estamos validando tu acceso seguro.</p>
           </div>
-          <button id="studioAuthDemoButton" class="studio-auth-demo" type="button" data-i18n="continueDemo">Seguir viendo demo</button>
         </div>
       </section>
     </main>
