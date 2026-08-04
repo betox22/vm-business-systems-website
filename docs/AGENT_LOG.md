@@ -1050,3 +1050,29 @@ archivos al empezar.
 **Notas para el siguiente agente:** Antes de asumir que el working tree está limpio,
 correr `git status`. Este repo tiene trabajo de sesiones previas de Codex sin
 commitear.
+## 2026-08-04 — AI logo previews with paid clean delivery
+
+**Hecho:** se agregó el flujo de logos AI por proyecto. `GeneratedLogo` guarda
+las tres variaciones, sus previews públicos con marca de agua y las rutas de
+los PNG originales en el bucket privado. El navegador recibe solamente
+`previewUrl` hasta que Stripe confirma `checkout.session.completed` con
+`metadata.logo_id`; antes de eso `GET /ai/logo/{logo_id}/download` devuelve
+`402`. Al liberar, el backend promueve la variación elegida a `site-assets` y
+actualiza el schema del sitio con la URL pública final.
+
+**Configuración manual requerida antes de producción:**
+- Ejecutar `supabase/private_logo_assets.sql` en el SQL Editor para crear
+  `private-assets` como bucket no público. No agregar políticas de lectura
+  anon/authenticated a ese bucket.
+- En Render configurar `OPENAI_API_KEY`, `SUPABASE_URL`,
+  `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PRIVATE_BUCKET=private-assets`,
+  `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `LOGO_PRICE_CENTS` y,
+  opcionalmente, `OPENAI_LOGO_MODEL` / `LOGO_PURCHASE_RETURN_URL`.
+- Confirmar en Stripe que el webhook de producción apunta a
+  `/api/v1/payments/stripe/webhook` y que envía `checkout.session.completed`.
+
+**Pendiente / abierto:** la prueba con imágenes reales de OpenAI, Stripe test
+card y Supabase real requiere esas variables configuradas en Render; las
+pruebas automatizadas usan mocks para no generar costo ni exponer originales.
+
+---

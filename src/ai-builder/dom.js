@@ -46,6 +46,7 @@ export const guidedPhotoUpload = document.querySelector("#guidedPhotoUpload");
 export const guidedLogoPreview = document.querySelector("#guidedLogoPreview");
 export const guidedPhotoPreview = document.querySelector("#guidedPhotoPreview");
 export const brandKitPanel = document.querySelector("#brandKitPanel");
+export const generatedLogoChoices = document.querySelector("#generatedLogoChoices");
 export const guidedAssetPrompt = document.querySelector("#guidedAssetPrompt");
 export const chatLogoUploadButton = document.querySelector("#chatLogoUploadButton");
 export const chatPhotoUploadButton = document.querySelector("#chatPhotoUploadButton");

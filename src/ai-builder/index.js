@@ -95,6 +95,7 @@ import {
   guidedLogoPreview,
   guidedPhotoPreview,
   brandKitPanel,
+  generatedLogoChoices,
   guidedAssetPrompt,
   chatLogoUploadButton,
   chatPhotoUploadButton,
@@ -546,6 +547,7 @@ function bootLegacyBuilderPage() {
   safeBootStep("assistant-state", () => setAssistantState("happy"));
   safeBootStep("client-auth-reset", captureClientAuthResetIntent);
   safeBootStep("auth-redirect", captureStudioAuthRedirect);
+  safeBootStep("paid-logo", () => { window.setTimeout(() => void restorePaidLogoFromPurchase(), 1200); });
   safeBootStep("request-hydration", hydrateFromSelectedRequest);
   safeBootStep("guided-intake", initGuidedIntake);
   safeBootStep("guided-media-drop", initGuidedMediaDrop);
@@ -6211,6 +6213,159 @@ function applyGenerationResult(result, payload = {}, templateSelection = null) {
   builderState.guidedState.revisionMode = "";
   builderState.guidedState.requestedAdjustments = [];
   builderAvatarManager?.setState("success", { source: "preview-generated" });
+  if (builderState.guidedState.logoPreference === "generate_ai_logo" && !builderState.guidedState.logoUrl) {
+    void generateLogoChoicesForCurrentSite();
+  }
+}
+
+function logoPriceLabel(priceCents, currency = "USD") {
+  const amount = Number(priceCents || 0) / 100;
+  return new Intl.NumberFormat(builderState.selectedLanguage || "en", {
+    style: "currency",
+    currency: currency || "USD",
+  }).format(amount);
+}
+
+function renderLogoChoices(data = {}) {
+  if (!generatedLogoChoices) return;
+  if (Array.isArray(data.variants)) builderState.currentLogoVariants = data.variants;
+  const variants = arrayValue(builderState.currentLogoVariants);
+  const selectedIndex = Number.isInteger(data.selectedVariantIndex) ? data.selectedVariantIndex : null;
+  const priceLabel = logoPriceLabel(data.priceCents, data.currency);
+  generatedLogoChoices.hidden = false;
+  generatedLogoChoices.innerHTML = `
+    <div class="generated-logo-choices-head">
+      <div>
+        <strong>${escapeHtml(langText({ en: "Choose your logo direction", es: "Elige la dirección de tu logo", fr: "Choisissez votre direction de logo", pt: "Escolha a direção do seu logo" }))}</strong>
+        <span>${escapeHtml(langText({ en: "Watermarked preview. The clean PNG unlocks after payment.", es: "Vista previa con marca de agua. El PNG limpio se desbloquea después del pago.", fr: "Aperçu filigrané. Le PNG propre se débloque après paiement.", pt: "Prévia com marca d'água. O PNG limpo é liberado após o pagamento." }))}</span>
+      </div>
+    </div>
+    <div class="generated-logo-grid">
+      ${variants.map((variant) => `
+        <article class="generated-logo-option ${selectedIndex === variant.index ? "selected" : ""}">
+          <img src="${escapeAttribute(variant.previewUrl || "")}" alt="${escapeAttribute(`Logo option ${Number(variant.index) + 1}`)}">
+          <button type="button" class="secondary-action" data-logo-select="${escapeAttribute(String(variant.index))}">
+            ${escapeHtml(selectedIndex === variant.index ? langText({ en: "Selected", es: "Seleccionado", fr: "Sélectionné", pt: "Selecionado" }) : langText({ en: "Choose this", es: "Elegir este", fr: "Choisir", pt: "Escolher este" }))}
+          </button>
+        </article>`).join("")}
+    </div>
+    <div class="generated-logo-purchase">
+      <span>${selectedIndex === null
+        ? escapeHtml(langText({ en: "Choose one preview to continue.", es: "Elige una vista previa para continuar.", fr: "Choisissez un aperçu pour continuer.", pt: "Escolha uma prévia para continuar." }))
+        : escapeHtml(langText({ en: `Clean PNG: ${priceLabel}`, es: `PNG limpio: ${priceLabel}`, fr: `PNG propre : ${priceLabel}`, pt: `PNG limpo: ${priceLabel}` }))}</span>
+      <button type="button" class="primary-action" data-logo-purchase ${selectedIndex === null ? "disabled" : ""}>
+        ${escapeHtml(langText({ en: `Buy clean PNG for ${priceLabel}`, es: `Comprar PNG limpio por ${priceLabel}`, fr: `Acheter le PNG propre pour ${priceLabel}`, pt: `Comprar PNG limpo por ${priceLabel}` }))}
+      </button>
+    </div>`;
+  generatedLogoChoices.querySelectorAll("[data-logo-select]").forEach((button) => {
+    button.addEventListener("click", () => void selectGeneratedLogoVariant(Number(button.dataset.logoSelect)));
+  });
+  generatedLogoChoices.querySelector("[data-logo-purchase]")?.addEventListener("click", () => void purchaseSelectedLogo());
+}
+
+function showLogoChoiceMessage(message, isError = false) {
+  if (!generatedLogoChoices) return;
+  generatedLogoChoices.hidden = false;
+  generatedLogoChoices.innerHTML = `<p class="generated-logo-message ${isError ? "error" : ""}">${escapeHtml(message)}</p>`;
+}
+
+async function generateLogoChoicesForCurrentSite() {
+  if (!generatedLogoChoices || !builderState.currentSiteId || builderState.logoGenerationInFlight) return;
+  builderState.logoGenerationInFlight = true;
+  showLogoChoiceMessage(langText({ en: "Creating three logo previews…", es: "Creando tres vistas previas de logo…", fr: "Création de trois aperçus de logo…", pt: "Criando três prévias de logo…" }));
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/logo/generate`, {
+      method: "POST",
+      headers: clientAuthHeaders({ "content-type": "application/json" }),
+      credentials: "include",
+      body: JSON.stringify({ siteId: builderState.currentSiteId }),
+    });
+    if (response.status === 401) {
+      showLogoChoiceMessage(langText({ en: "Sign in to generate and save logo options.", es: "Inicia sesión para generar y guardar opciones de logo.", fr: "Connectez-vous pour générer et enregistrer les options de logo.", pt: "Entre para gerar e salvar opções de logo." }), true);
+      return;
+    }
+    if (!response.ok) throw new Error(await readErrorMessage(response));
+    const data = await response.json();
+    builderState.currentLogoGenerationId = data.logoId || null;
+    renderLogoChoices(data);
+  } catch (error) {
+    showLogoChoiceMessage(`${langText({ en: "Could not create logo previews", es: "No se pudieron crear las vistas previas", fr: "Impossible de créer les aperçus", pt: "Não foi possível criar as prévias" })}: ${shortError(error.message)}`, true);
+  } finally {
+    builderState.logoGenerationInFlight = false;
+  }
+}
+
+async function selectGeneratedLogoVariant(variantIndex) {
+  if (!builderState.currentLogoGenerationId) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/logo/${encodeURIComponent(builderState.currentLogoGenerationId)}/select`, {
+      method: "POST",
+      headers: clientAuthHeaders({ "content-type": "application/json" }),
+      credentials: "include",
+      body: JSON.stringify({ variantIndex }),
+    });
+    if (!response.ok) throw new Error(await readErrorMessage(response));
+    const selection = await response.json();
+    renderLogoChoices({ ...selection, variants: builderState.currentLogoVariants });
+  } catch (error) {
+    showLogoChoiceMessage(`${langText({ en: "Could not save your selection", es: "No se pudo guardar tu selección", fr: "Impossible d'enregistrer votre sélection", pt: "Não foi possível salvar sua seleção" })}: ${shortError(error.message)}`, true);
+  }
+}
+
+async function purchaseSelectedLogo() {
+  if (!builderState.currentLogoGenerationId) return;
+  const response = await fetch(`${API_BASE_URL}/ai/logo/${encodeURIComponent(builderState.currentLogoGenerationId)}/purchase`, {
+    method: "POST",
+    headers: clientAuthHeaders({ "content-type": "application/json" }),
+    credentials: "include",
+  });
+  if (!response.ok) {
+    showLogoChoiceMessage(`${langText({ en: "Could not start secure checkout", es: "No se pudo iniciar el pago seguro", fr: "Impossible de démarrer le paiement sécurisé", pt: "Não foi possível iniciar o checkout seguro" })}: ${shortError(await readErrorMessage(response))}`, true);
+    return;
+  }
+  const data = await response.json();
+  if (!data.checkoutUrl) {
+    showLogoChoiceMessage(langText({ en: "Logo checkout is not configured yet.", es: "El pago de logo todavía no está configurado.", fr: "Le paiement du logo n'est pas encore configuré.", pt: "O checkout do logo ainda não está configurado." }), true);
+    return;
+  }
+  window.location.assign(data.checkoutUrl);
+}
+
+async function restorePaidLogoFromPurchase() {
+  const params = new URLSearchParams(window.location.search);
+  const logoId = params.get("logoId");
+  if (!logoId || params.get("paid") !== "1") return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/logo/${encodeURIComponent(logoId)}/download`, {
+      headers: clientAuthHeaders(),
+      credentials: "include",
+    });
+    if (response.status === 402) {
+      showLogoChoiceMessage(langText({ en: "Payment is still being confirmed. This normally takes a few seconds; refresh this page shortly.", es: "El pago todavía se está confirmando. Normalmente tarda unos segundos; actualiza esta página enseguida.", fr: "Le paiement est encore en cours de confirmation. Cela prend normalement quelques secondes ; actualisez bientôt.", pt: "O pagamento ainda está sendo confirmado. Normalmente leva alguns segundos; atualize esta página em breve." }));
+      return;
+    }
+    if (!response.ok) throw new Error(await readErrorMessage(response));
+    const data = await response.json();
+    if (!data.logoUrl) throw new Error("The paid logo did not return a site asset URL.");
+    builderState.guidedState.logoUrl = data.logoUrl;
+    builderState.guidedState.hasLogo = true;
+    builderState.guidedState.logoPreference = "paid_ai_logo";
+    if (builderState.currentSchema) {
+      builderState.currentSchema.brand = { ...(builderState.currentSchema.brand || {}), logoUrl: data.logoUrl, logoStatus: "paid_ai_logo" };
+      builderState.currentSchema.global_components = { ...(builderState.currentSchema.global_components || {}), logo_url: data.logoUrl, favicon_url: data.logoUrl };
+      renderAssetPreviews();
+      renderEditor();
+      renderPreview();
+    }
+    generatedLogoChoices.hidden = true;
+    statusText.textContent = langText({ en: "Your paid logo is now applied to this site.", es: "Tu logo pagado ya está aplicado a este sitio.", fr: "Votre logo acheté est maintenant appliqué à ce site.", pt: "Seu logo pago agora está aplicado a este site." });
+    params.delete("logoId");
+    params.delete("paid");
+    const query = params.toString();
+    window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+  } catch (error) {
+    showLogoChoiceMessage(`${langText({ en: "Could not apply the paid logo", es: "No se pudo aplicar el logo pagado", fr: "Impossible d'appliquer le logo acheté", pt: "Não foi possível aplicar o logo pago" })}: ${shortError(error.message)}`, true);
+  }
 }
 
 function syncCatalogSourceMetadata(result = {}) {

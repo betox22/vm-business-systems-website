@@ -217,3 +217,12 @@ class AssetUploadResponse(BaseModel):
     provider: str = "supabase"
     assetType: str = ""
     fileName: str = ""
+
+
+class LogoGenerateRequest(BaseModel):
+    siteId: str = ""
+    projectId: str = ""
+
+
+class LogoSelectRequest(BaseModel):
+    variantIndex: int = Field(ge=0, le=2)

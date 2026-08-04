@@ -171,6 +171,35 @@ class GeneratedSite(Base):
     updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
 
 
+class GeneratedLogo(Base):
+    """A paid logo asset attached to one generated KREATON site.
+
+    Clean source paths stay private. `variants_json` only gains a public
+    `publishedUrl` after the Stripe webhook has marked this record paid.
+    """
+
+    __tablename__ = "generated_logos"
+    __table_args__ = (
+        Index("generated_logos_owner_user_id_idx", "owner_user_id"),
+        Index("generated_logos_store_id_idx", "store_id"),
+        Index("generated_logos_site_id_idx", "site_id"),
+    )
+
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: _id("logo"))
+    site_id: Mapped[str] = mapped_column(ForeignKey("generated_sites.id"), index=True)
+    store_id: Mapped[Optional[str]] = mapped_column(ForeignKey("stores.id"), nullable=True)
+    owner_user_id: Mapped[Optional[str]] = mapped_column(index=True, default=None)
+    owner_email: Mapped[str] = mapped_column(index=True)
+    business_name: Mapped[str]
+    generation_prompt: Mapped[str] = mapped_column(default="")
+    variants_json: Mapped[str] = mapped_column(default="[]")
+    selected_variant_index: Mapped[Optional[int]] = mapped_column(nullable=True)
+    status: Mapped[str] = mapped_column(default="pending_selection")
+    payment_json: Mapped[str] = mapped_column(default="{}")
+    created_at: Mapped[int] = mapped_column(default=_now)
+    updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
+
+
 class DomainReservation(Base):
     __tablename__ = "domain_reservations"
     __table_args__ = (

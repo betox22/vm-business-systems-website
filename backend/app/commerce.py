@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from .client_auth import fetch_supabase_user, supabase_auth_configured
 from .db import get_session
 from .db_models import Customer as DbCustomer
+from .db_models import GeneratedLogo as DbGeneratedLogo
 from .db_models import Order as DbOrder
 from .db_models import Product as DbProduct
 from .db_models import Store
@@ -668,6 +669,58 @@ def stripe_checkout_session(order: Dict[str, Any], success_url: str, cancel_url:
     }
 
 
+def stripe_logo_checkout_session(logo_id: str, business_name: str, success_url: str, cancel_url: str) -> Dict[str, Any]:
+    """Create a one-time Stripe Checkout session for one selected logo."""
+
+    secret_key = os.getenv("STRIPE_SECRET_KEY")
+    if not secret_key:
+        return {
+            "provider": "stripe",
+            "providerStatus": "not_configured",
+            "message": "STRIPE_SECRET_KEY is not configured. Logo checkout is unavailable.",
+        }
+    try:
+        price_cents = int(os.getenv("LOGO_PRICE_CENTS", "900"))
+    except ValueError:
+        price_cents = 900
+    if price_cents < 50:
+        raise HTTPException(status_code=500, detail="LOGO_PRICE_CENTS must be at least 50 cents.")
+
+    fields = {
+        "mode": "payment",
+        "success_url": success_url,
+        "cancel_url": cancel_url,
+        "metadata[logo_id]": logo_id,
+        "line_items[0][price_data][currency]": "usd",
+        "line_items[0][price_data][product_data][name]": f"KREATON AI logo for {business_name}",
+        "line_items[0][price_data][unit_amount]": str(price_cents),
+        "line_items[0][quantity]": "1",
+    }
+    req = urllib_request.Request(
+        "https://api.stripe.com/v1/checkout/sessions",
+        data=parse.urlencode(fields).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {secret_key}",
+            "Stripe-Version": "2026-02-25.clover",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        method="POST",
+    )
+    try:
+        with urllib_request.urlopen(req, timeout=12) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:  # pragma: no cover - depends on live provider/network
+        raise HTTPException(status_code=502, detail=f"Stripe logo checkout failed: {exc}") from exc
+    return {
+        "provider": "stripe",
+        "providerStatus": "session_created",
+        "sessionId": payload.get("id"),
+        "checkoutUrl": payload.get("url"),
+        "amountCents": price_cents,
+        "currency": "USD",
+    }
+
+
 def verify_stripe_signature(raw_body: bytes, signature_header: str, secret: str) -> bool:
     parts = dict(part.split("=", 1) for part in signature_header.split(",") if "=" in part)
     timestamp = parts.get("t")
@@ -891,7 +944,9 @@ async def stripe_webhook(
     event = json.loads(raw.decode("utf-8"))
     event_type = event.get("type")
     stripe_session = event.get("data", {}).get("object", {})
-    order_id = stripe_session.get("metadata", {}).get("order_id")
+    metadata = stripe_session.get("metadata", {})
+    order_id = metadata.get("order_id")
+    logo_id = metadata.get("logo_id")
     if order_id and event_type == "checkout.session.completed":
         order = session.get(DbOrder, order_id)
         if order:
@@ -901,6 +956,19 @@ async def stripe_webhook(
             order.payment_json = json.dumps(payment)
             session.commit()
             audit("stripe_webhook", "order_paid", order.store_id, {"orderId": order_id})
+    elif logo_id and event_type == "checkout.session.completed":
+        logo = session.get(DbGeneratedLogo, logo_id)
+        if logo:
+            logo.status = "paid"
+            payment = json_field(logo.payment_json, {})
+            payment.update({
+                "provider": "stripe",
+                "providerStatus": "paid",
+                "stripeSessionId": stripe_session.get("id"),
+            })
+            logo.payment_json = json.dumps(payment)
+            session.commit()
+            audit("stripe_webhook", "logo_paid", logo.store_id or "", {"logoId": logo_id})
     return {"received": True}
 
 

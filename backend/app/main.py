@@ -5,6 +5,7 @@ import re
 import os
 import json
 import time
+from urllib.parse import urlencode
 from collections import defaultdict, deque
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -19,9 +20,9 @@ from sqlalchemy.orm import Session
 
 from .agents import semantic_seed_catalog, split_items, state_is_commerce_seed_target
 from .client_auth import fetch_supabase_user, supabase_auth_configured
-from .commerce import router as commerce_router
+from .commerce import router as commerce_router, stripe_logo_checkout_session
 from .db import get_session, init_db
-from .db_models import GeneratedSite, Store
+from .db_models import GeneratedLogo, GeneratedSite, Store
 from .domains import router as domains_router
 from .models import (
     AssetUploadRequest,
@@ -31,6 +32,8 @@ from .models import (
     LyraEditRequest,
     LyraEditResponse,
     CatalogSource,
+    LogoGenerateRequest,
+    LogoSelectRequest,
     WebsiteGenerationRequest,
     WebsiteGenerationResponse,
 )
@@ -43,7 +46,16 @@ from .orchestrator import (
     normalize_state_payload,
     site_plan_from_state,
 )
-from .storage import StorageError, parse_data_url, supabase_storage_configured, upload_asset_to_supabase
+from .logo_generation import add_watermark, build_logo_prompts, generate_logo_images
+from .storage import (
+    StorageError,
+    create_signed_url,
+    download_private_asset_from_supabase,
+    parse_data_url,
+    supabase_storage_configured,
+    upload_asset_to_supabase,
+    upload_private_asset_to_supabase,
+)
 from .taxonomy import infer_seed_profile
 
 
@@ -1015,6 +1027,285 @@ async def website_builder(
         projectId=db_site.id if db_site else None,
         generation_id=f"gen_{uuid.uuid4().hex[:10]}",
     )
+
+
+def _logo_price_cents() -> int:
+    try:
+        return max(50, int(os.getenv("LOGO_PRICE_CENTS", "900")))
+    except ValueError:
+        return 900
+
+
+def _logo_owner_filter(user: Dict[str, Any]):
+    owner_user_id = str(user.get("id") or "").strip()
+    owner_email = str(user.get("email") or "").strip().lower()
+    if owner_user_id:
+        return or_(GeneratedLogo.owner_user_id == owner_user_id, GeneratedLogo.owner_email == owner_email)
+    return GeneratedLogo.owner_email == owner_email
+
+
+def _owned_logo(session: Session, logo_id: str, user: Dict[str, Any]) -> GeneratedLogo:
+    logo = session.execute(
+        select(GeneratedLogo).where(GeneratedLogo.id == logo_id, _logo_owner_filter(user))
+    ).scalar_one_or_none()
+    if not logo:
+        raise HTTPException(status_code=404, detail="Logo generation not found.")
+    return logo
+
+
+def _logo_variants(logo: GeneratedLogo) -> list[Dict[str, Any]]:
+    try:
+        variants = json.loads(logo.variants_json or "[]")
+    except json.JSONDecodeError:
+        variants = []
+    return variants if isinstance(variants, list) else []
+
+
+def _public_logo_variants(logo: GeneratedLogo) -> list[Dict[str, Any]]:
+    return [
+        {"index": item.get("index"), "previewUrl": item.get("previewUrl", "")}
+        for item in _logo_variants(logo)
+        if item.get("previewUrl")
+    ]
+
+
+def _site_schema(site: GeneratedSite) -> Dict[str, Any]:
+    try:
+        parsed = json.loads(site.generated_config or "{}")
+    except json.JSONDecodeError:
+        parsed = {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _append_logo_purchase_query(base_url: str, logo_id: str, *, paid: bool) -> str:
+    separator = "&" if "?" in base_url else "?"
+    return f"{base_url}{separator}{urlencode({'logoId': logo_id, 'paid': '1' if paid else '0'})}"
+
+
+def _publish_paid_logo_variant(session: Session, logo: GeneratedLogo, variant: Dict[str, Any]) -> Dict[str, Any]:
+    """Promote the chosen original only after payment and attach it to the site schema."""
+
+    existing_url = str(variant.get("publishedUrl") or "")
+    if existing_url:
+        return {"logoUrl": existing_url, "cleanAssetPath": variant.get("cleanAssetPath", "")}
+    clean_path = str(variant.get("cleanAssetPath") or "")
+    if not clean_path:
+        raise StorageError("Selected logo is missing its private source path.")
+    clean_bytes = download_private_asset_from_supabase(clean_path)
+    public_url = upload_asset_to_supabase(
+        business_id=logo.store_id or "no-business",
+        site_id=logo.site_id,
+        asset_type="logo",
+        file_name=f"{logo.id}-selected.png",
+        content_type="image/png",
+        data=clean_bytes,
+    )
+    variant["publishedUrl"] = public_url
+    variants = _logo_variants(logo)
+    for index, item in enumerate(variants):
+        if int(item.get("index", -1)) == int(variant.get("index", -2)):
+            variants[index] = variant
+            break
+    logo.variants_json = json.dumps(variants)
+
+    site = session.get(GeneratedSite, logo.site_id)
+    if site:
+        schema = _site_schema(site)
+        brand = schema.setdefault("brand", {})
+        global_components = schema.setdefault("global_components", {})
+        generation_metadata = schema.setdefault("generation_metadata", {})
+        brand["logoUrl"] = public_url
+        brand["logoStatus"] = "paid_ai_logo"
+        global_components["logo_url"] = public_url
+        global_components["favicon_url"] = public_url
+        generation_metadata["logo_status"] = "paid_ai_logo"
+        generation_metadata["logo_pending_generation"] = False
+        site.generated_config = _schema_json(schema)
+    session.commit()
+    return {"logoUrl": public_url, "cleanAssetPath": clean_path}
+
+
+@app.post("/ai/logo/generate")
+async def generate_logo(
+    request: LogoGenerateRequest,
+    authorization: str = Header(default=""),
+    luma_client_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    """Generate preview-only logo variants for the authenticated project's site."""
+
+    user = authenticated_client_user(authorization, luma_client_session)
+    site_id = (request.siteId or request.projectId).strip()
+    if not site_id:
+        raise HTTPException(status_code=400, detail="siteId is required before generating a paid logo.")
+    owner_user_id = str(user.get("id") or "").strip()
+    owner_email = str(user.get("email") or "").strip().lower()
+    site = session.execute(
+        select(GeneratedSite).where(GeneratedSite.id == site_id, _project_owner_filter(owner_user_id, owner_email))
+    ).scalar_one_or_none()
+    if not site:
+        raise HTTPException(status_code=404, detail="Project not found for this account.")
+    if not supabase_storage_configured():
+        raise HTTPException(status_code=503, detail="Logo storage is not configured.")
+
+    active_logo = session.execute(
+        select(GeneratedLogo)
+        .where(GeneratedLogo.site_id == site.id, GeneratedLogo.status != "paid")
+        .order_by(GeneratedLogo.updated_at.desc())
+    ).scalars().first()
+    if active_logo:
+        return {
+            "logoId": active_logo.id,
+            "variants": _public_logo_variants(active_logo),
+            "status": active_logo.status,
+            "selectedVariantIndex": active_logo.selected_variant_index,
+            "priceCents": _logo_price_cents(),
+            "currency": "USD",
+            "reusedActiveGeneration": True,
+        }
+
+    schema = _site_schema(site)
+    business = schema.get("business") if isinstance(schema.get("business"), dict) else {}
+    brand = schema.get("brand") if isinstance(schema.get("brand"), dict) else {}
+    theme = schema.get("theme") if isinstance(schema.get("theme"), dict) else {}
+    colors = theme.get("colors") if isinstance(theme.get("colors"), dict) else {}
+    business_name = str(business.get("name") or site.business_name or "Your business").strip()
+    niche = str(business.get("industry") or site.business_type or "general").strip()
+    palette_style = str(brand.get("palette_style") or brand.get("styleDirection") or brand.get("preferredColors") or "elegant").strip()
+    primary_color = str(brand.get("primaryColor") or colors.get("primary") or theme.get("primary") or "#111827").strip()
+    secondary_color = str(brand.get("accentColor") or colors.get("accent") or theme.get("accent") or "#FFFFFF").strip()
+    prompts = build_logo_prompts(business_name, niche, palette_style, primary_color, secondary_color)
+    images, warnings = await generate_logo_images(prompts)
+    if not images:
+        raise HTTPException(status_code=503, detail="Logo generation could not complete. Please try again later.")
+
+    logo = GeneratedLogo(
+        site_id=site.id,
+        store_id=site.store_id,
+        owner_user_id=owner_user_id or None,
+        owner_email=owner_email,
+        business_name=business_name,
+        generation_prompt=prompts[0],
+        status="pending_selection",
+    )
+    session.add(logo)
+    session.flush()
+    variants: list[Dict[str, Any]] = []
+    try:
+        for index, image in images:
+            clean_path = upload_private_asset_to_supabase(
+                business_id=site.store_id,
+                site_id=site.id,
+                asset_type="logo-original",
+                file_name=f"{logo.id}-{index}.png",
+                content_type="image/png",
+                data=image,
+            )
+            preview_url = upload_asset_to_supabase(
+                business_id=site.store_id,
+                site_id=site.id,
+                asset_type="logo-preview",
+                file_name=f"{logo.id}-{index}.jpg",
+                content_type="image/jpeg",
+                data=add_watermark(image),
+            )
+            variants.append({"index": index, "previewUrl": preview_url, "cleanAssetPath": clean_path, "prompt": prompts[index]})
+    except StorageError as error:
+        session.rollback()
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    logo.variants_json = json.dumps(variants)
+    session.commit()
+    return {
+        "logoId": logo.id,
+        "variants": _public_logo_variants(logo),
+        "status": logo.status,
+        "priceCents": _logo_price_cents(),
+        "currency": "USD",
+        "warnings": warnings,
+    }
+
+
+@app.post("/ai/logo/{logo_id}/select")
+async def select_logo_variant(
+    logo_id: str,
+    request: LogoSelectRequest,
+    authorization: str = Header(default=""),
+    luma_client_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    user = authenticated_client_user(authorization, luma_client_session)
+    logo = _owned_logo(session, logo_id, user)
+    if logo.status == "paid":
+        raise HTTPException(status_code=409, detail="This logo has already been purchased.")
+    indexes = {int(item.get("index", -1)) for item in _logo_variants(logo)}
+    if request.variantIndex not in indexes:
+        raise HTTPException(status_code=400, detail="That logo variant is unavailable.")
+    logo.selected_variant_index = request.variantIndex
+    logo.status = "pending_payment"
+    session.commit()
+    return {
+        "logoId": logo.id,
+        "selectedVariantIndex": logo.selected_variant_index,
+        "status": logo.status,
+        "priceCents": _logo_price_cents(),
+        "currency": "USD",
+    }
+
+
+@app.post("/ai/logo/{logo_id}/purchase")
+async def purchase_logo(
+    logo_id: str,
+    authorization: str = Header(default=""),
+    luma_client_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    user = authenticated_client_user(authorization, luma_client_session)
+    logo = _owned_logo(session, logo_id, user)
+    if logo.status == "paid":
+        raise HTTPException(status_code=409, detail="This logo has already been purchased.")
+    if logo.selected_variant_index is None:
+        raise HTTPException(status_code=400, detail="Select a logo variation before checkout.")
+    builder_url = os.getenv("LOGO_PURCHASE_RETURN_URL", "https://vmbusinesssystems.com/client/setup/").strip()
+    payment = stripe_logo_checkout_session(
+        logo.id,
+        logo.business_name,
+        _append_logo_purchase_query(builder_url, logo.id, paid=True),
+        _append_logo_purchase_query(builder_url, logo.id, paid=False),
+    )
+    if payment.get("providerStatus") == "not_configured":
+        raise HTTPException(status_code=503, detail="Logo checkout is not configured.")
+    logo.status = "pending_payment"
+    logo.payment_json = json.dumps(payment)
+    session.commit()
+    return {
+        "logoId": logo.id,
+        "status": logo.status,
+        "checkoutUrl": payment.get("checkoutUrl"),
+        "priceCents": payment.get("amountCents", _logo_price_cents()),
+        "currency": payment.get("currency", "USD"),
+    }
+
+
+@app.get("/ai/logo/{logo_id}/download")
+async def download_logo(
+    logo_id: str,
+    authorization: str = Header(default=""),
+    luma_client_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    user = authenticated_client_user(authorization, luma_client_session)
+    logo = _owned_logo(session, logo_id, user)
+    if logo.status != "paid":
+        raise HTTPException(status_code=402, detail="Complete payment before downloading the clean logo.")
+    selected = next((item for item in _logo_variants(logo) if int(item.get("index", -1)) == logo.selected_variant_index), None)
+    if not selected:
+        raise HTTPException(status_code=409, detail="The selected logo variant is unavailable.")
+    try:
+        published = _publish_paid_logo_variant(session, logo, selected)
+        signed_url = create_signed_url(os.getenv("SUPABASE_PRIVATE_BUCKET", "private-assets"), published["cleanAssetPath"], expires_in=300)
+    except StorageError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    return {"logoId": logo.id, "downloadUrl": signed_url, "logoUrl": published["logoUrl"], "expiresIn": 300}
 
 
 def resolve_catalog_items_and_source(state) -> tuple[list[Dict[str, Any]], CatalogSource]:
