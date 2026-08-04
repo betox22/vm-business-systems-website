@@ -55,6 +55,11 @@ phone: +1 555 0100
 instagram: @lunamarket</textarea></label>
           <label data-i18n-label="logoUrl">Logo URL optional<input name="logo_url" placeholder="https://..."></label>
           <label data-i18n-label="uploadLogo">Upload logo optional<input name="logo_file" type="file" accept="image/*"></label>
+          <label>Logo preference<select name="logo_preference">
+            <option value="Sin logo, usa solo texto" selected>Sin logo (usar solo texto)</option>
+            <option value="Que la IA decida el logo">Que la IA decida</option>
+            <option value="">Tengo logo (usar campo URL/archivo arriba)</option>
+          </select></label>
           <label data-i18n-label="photoUrls">Photo URLs optional<textarea name="photo_urls" rows="3" placeholder="One image URL per line" data-i18n-placeholder="photoUrlsPlaceholder"></textarea></label>
           <label data-i18n-label="uploadPhotos">Upload photos optional<input name="photo_files" type="file" accept="image/*" multiple></label>
           <button id="generateButton" type="submit" data-i18n="generateButton">Generate Website with AI</button>
