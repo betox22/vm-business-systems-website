@@ -34,6 +34,7 @@ import {
   DESIGN_QUALITY_RULES,
 } from './templates.js';
 import { escapeHtml, escapeAttribute } from './utils.js';
+import { pickVariantSeed } from './variants.js';
 import {
   renderWebsite as renderWebsiteMarkup,
   marketplaceItems,
@@ -4516,6 +4517,7 @@ export function guidedStateForApi() {
     aiStudioPlan,
     sitePlan,
     sitePlanApproved: Boolean(builderState.guidedState.sitePlanApproved),
+    designVariantOffset: Math.max(0, Number(builderState.guidedState.designVariantOffset) || 0),
     publicCopyPolicy: {
       mode: "designer_rewrite",
       visibleCopyMustBeOriginal: true,
@@ -6652,6 +6654,19 @@ function executablePagesForTemplate(templateId = "", catalogType = "", copy, nam
   return [];
 }
 
+function runtimeCompositionIndex(name, payload = {}, recipeCount = 3) {
+  return pickVariantSeed(
+    name || payload.business_name || payload.businessName || "",
+    payload.industry || payload.niche || payload.business?.industry || "",
+    payload.designVariantOffset ?? builderState.guidedState.designVariantOffset ?? 0,
+    recipeCount,
+  );
+}
+
+function resequenceSections(sections = []) {
+  return sections.map((section, index) => ({ ...section, order: index + 1 }));
+}
+
 function briefRequestsCyberpunk(value = "") {
   return /cyberpunk|neon|neón|futurista|future|gaming|gamer|super cool|sci.?fi|techno/i.test(String(value || ""));
 }
@@ -7781,7 +7796,14 @@ function buildDefaultInstantPages(copy, name, description, payload = {}) {
 
 function buildPremiumProductInstantPages(copy, name, description, payload = {}) {
   const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
-  return [
+  const composition = runtimeCompositionIndex(name, payload);
+  const recipes = [
+    { hero: "split_showcase", order: ["premium_hero", "premium_story", "premium_feature", "premium_gallery", "premium_specs"] },
+    { hero: "centered_bold", order: ["premium_hero", "premium_gallery", "premium_feature", "premium_story", "premium_specs"] },
+    { hero: "asymmetric_grid", order: ["premium_hero", "premium_specs", "premium_story", "premium_gallery", "premium_feature"] },
+  ];
+  const recipe = recipes[composition];
+  const pages = [
     {
       page_key: "home",
       title: copy.overview,
@@ -7800,7 +7822,8 @@ function buildPremiumProductInstantPages(copy, name, description, payload = {}) 
             image_url: heroImage,
             images: [],
           },
-          settings: { layout: "center_stage", spacing: "cinematic", container_width: "wide" },
+          variant: recipe.hero,
+          settings: { layout: recipe.hero, spacing: "cinematic", container_width: "wide" },
         },
         {
           id: "premium_story",
@@ -7812,6 +7835,7 @@ function buildPremiumProductInstantPages(copy, name, description, payload = {}) 
             image_url: heroImage,
             images: [],
           },
+          variant: composition === 2 ? "image_left" : "feature_band",
           settings: { layout: "editorial_split", spacing: "spacious", container_width: "wide" },
         },
         {
@@ -7823,6 +7847,7 @@ function buildPremiumProductInstantPages(copy, name, description, payload = {}) 
             text: copy.premiumFeatureText,
             images: [],
           },
+          variant: composition === 1 ? "card_grid" : "feature_band",
           settings: { layout: "feature_focus", spacing: "spacious", container_width: "wide" },
         },
         {
@@ -7879,6 +7904,10 @@ function buildPremiumProductInstantPages(copy, name, description, payload = {}) 
       sections: [{ id: "contact", type: "Contact", order: 1, editable: { title: copy.letsTalk, text: copy.contactText }, settings: { layout: "simple", container_width: "wide" } }],
     },
   ];
+  const home = pages.find((page) => page.page_key === "home");
+  const byId = new Map(home.sections.map((section) => [section.id, section]));
+  home.sections = resequenceSections(recipe.order.map((id) => byId.get(id)).filter(Boolean));
+  return pages;
 }
 
 function buildLuxuryHighTicketInstantPages(copy, name, description, payload = {}) {
@@ -9264,7 +9293,14 @@ function buildRetailInstantPages(copy, name, description, payload = {}) {
 
 function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
   const productGridSettings = { layout: "marketplace_grid", columns: 4, spacing: "balanced", container_width: "wide", card_density: "compact", card_gap: "tight" };
-  return [
+  const composition = runtimeCompositionIndex(name, payload);
+  const recipes = [
+    { hero: "split_showcase", homeOrder: ["marketplace_hero", "category_rail", "deal_row", "marketplace_catalog", "trust_strip"], feature: "image_right" },
+    { hero: "centered_bold", homeOrder: ["marketplace_hero", "deal_row", "marketplace_catalog", "category_rail", "trust_strip", "marketplace_testimonials"], feature: "card_grid" },
+    { hero: "asymmetric_grid", homeOrder: ["marketplace_hero", "category_rail", "marketplace_catalog", "marketplace_gallery", "deal_row", "trust_strip"], feature: "image_left" },
+  ];
+  const recipe = recipes[composition];
+  const pages = [
     {
       page_key: "home",
       title: copy.home,
@@ -9287,7 +9323,8 @@ function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
             image_url: payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "",
             images: [],
           },
-          settings: { layout: "marketplace_deals", spacing: "compact", container_width: "wide" },
+          variant: recipe.hero,
+          settings: { layout: recipe.hero, spacing: "compact", container_width: "wide" },
         },
         {
           id: "category_rail",
@@ -9317,6 +9354,20 @@ function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
           editable: { title: copy.whyBuyHere, text: copy.trustText },
           settings: { layout: "marketplace_trust", spacing: "compact", container_width: "wide" },
         },
+        ...(composition === 1 ? [{
+          id: "marketplace_testimonials",
+          type: "Testimonials",
+          editable: { title: copy.whyBuyHere, text: copy.trustText, images: [] },
+          variant: recipe.feature,
+          settings: { layout: "feature", spacing: "balanced", container_width: "wide" },
+        }] : []),
+        ...(composition === 2 ? [{
+          id: "marketplace_gallery",
+          type: "Gallery",
+          editable: { title: copy.bestSellers, text: copy.catalogText, images: [] },
+          variant: recipe.feature,
+          settings: { layout: "gallery", columns: 3, spacing: "balanced", container_width: "wide" },
+        }] : []),
       ],
     },
     {
@@ -9442,6 +9493,16 @@ function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
       ],
     },
   ];
+  const home = pages.find((page) => page.page_key === "home");
+  const byId = new Map(home.sections.map((section) => [section.id, section]));
+  home.sections = resequenceSections(recipe.homeOrder.map((id) => byId.get(id)).filter(Boolean));
+  for (const page of pages) {
+    for (const section of page.sections || []) {
+      if (section.type === "MarketplaceHero" && !section.variant) section.variant = recipe.hero;
+      if (["About", "Testimonials"].includes(section.type) && !section.variant) section.variant = recipe.feature;
+    }
+  }
+  return pages;
 }
 
 function marketplaceCategoryForIndex(index, copy, contextText = "", language = builderState.selectedLanguage) {
@@ -11255,6 +11316,7 @@ async function collectPayload() {
     requestedAdjustments: arrayValue(builderState.guidedState.requestedAdjustments),
     sitePlan,
     sitePlanApproved: Boolean(builderState.guidedState.sitePlanApproved),
+    designVariantOffset: Math.max(0, Number(builderState.guidedState.designVariantOffset) || 0),
     brandContextNote:
       "Intake answers are client intent and design strategy context. Use them to create polished website copy, but do not copy internal planning answers literally unless they are natural public-facing text.",
   };

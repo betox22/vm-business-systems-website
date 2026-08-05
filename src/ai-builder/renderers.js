@@ -288,9 +288,8 @@ function renderHero(section, schema) {
   const heroItem = (schema.catalog_items || schema.products_services || []).find((item) => item.is_featured && item.image_url) ||
     (schema.catalog_items || schema.products_services || []).find((item) => item.image_url);
   const image = editable.image_url || heroItem?.image_url || "";
-  const layout = section.settings?.layout || "split_showcase";
-  return `<section class="rendered-hero hero-${escapeAttribute(slugify(layout))} ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div>
+  const variant = section.variant || section.settings?.layout || "split_showcase";
+  const heroCopy = `<div class="rendered-hero-copy">
       ${schema.brand?.logoUrl ? `<span class="hero-brand-badge"><img src="${escapeAttribute(schema.brand.logoUrl)}" alt="">${escapeHtml(schema.business.name || "")}</span>` : ""}
       <span class="rendered-kicker">${escapeHtml(schema.business.industry || schema.business.location || "Featured")}</span>
       <h1>${escapeHtml(editable.headline || schema.business.name)}</h1>
@@ -299,11 +298,16 @@ function renderHero(section, schema) {
         <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || schema.theme.buttons.primary_label)}</a>
         ${(editable.secondary_button || schema.theme.buttons.secondary_label) ? `<a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || schema.theme.buttons.secondary_label)}</a>` : ""}
       </div>
-    </div>
-    <div class="rendered-visual">
+    </div>`;
+  const visual = `<div class="rendered-visual">
       ${image ? `<img src="${escapeAttribute(image)}" alt="">` : visualPlaceholder(schema)}
-    </div>
-  </section>`;
+    </div>`;
+  if (variant === "centered_bold") {
+    return `<section class="rendered-hero hero-centered-bold ${sectionClass(section)}" ${sectionAttrs(section)}>
+      <div class="rendered-hero-backdrop">${visual}</div>${heroCopy}
+    </section>`;
+  }
+  return `<section class="rendered-hero hero-${escapeAttribute(slugify(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>${heroCopy}${visual}</section>`;
 }
 
 function renderPremiumHero(section, schema) {
@@ -312,7 +316,8 @@ function renderPremiumHero(section, schema) {
   const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url);
   const image = editable.image_url || heroItem?.image_url || "";
   const firstItem = items[0];
-  return `<section class="premium-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+  const variant = section.variant || section.settings?.layout || "split_showcase";
+  return `<section class="premium-hero premium-hero-${escapeAttribute(slugify(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="premium-hero-copy">
       <span class="rendered-kicker">${escapeHtml(schema.business?.industry || schema.business?.tone || "")}</span>
       <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
@@ -1567,7 +1572,8 @@ function renderMarketplaceHero(section, schema) {
         <strong>${escapeHtml(item.name)}</strong>
         <span>${escapeHtml(productPriceLabel(item, schema))}</span>
       </article>`).join("");
-  return `<section class="marketplace-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
+  const variant = section.variant || section.settings?.layout || "split_showcase";
+  return `<section class="marketplace-hero marketplace-hero-${escapeAttribute(slugify(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="marketplace-search-panel">
       <div class="marketplace-logo-row">
         <strong>${escapeHtml(schema.business?.name || "Marketplace")}</strong>
@@ -2224,22 +2230,36 @@ export function catalogLocaleLabels(schema = {}) {
   return { ...labels.en, ...(labels[language] || {}), ...professionalLabels.en, ...(professionalLabels[language] || {}), ...enterpriseLabels.en, ...(enterpriseLabels[language] || {}), ...industrialLabels.en, ...(industrialLabels[language] || {}) };
 }
 
-function renderFeatureBand(section) {
+function renderFeatureBand(section, schema) {
   const editable = section.editable || {};
-  const layout = section.settings?.layout || "feature";
-  return `<section class="rendered-section feature-band feature-${escapeAttribute(slugify(layout))} ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div class="section-heading">
+  const variant = section.variant || section.settings?.layout || "feature_band";
+  const image = editable.image_url || marketplaceItems(schema).find((item) => item.image_url)?.image_url || "";
+  const heading = `<div class="section-heading">
       <span class="rendered-kicker">${escapeHtml(section.type)}</span>
       <h2>${escapeHtml(editable.title || editable.headline || section.type)}</h2>
       <p>${escapeHtml(editable.text || editable.subtitle || "")}</p>
-    </div>
+    </div>`;
+  if (variant === "card_grid") {
+    const items = Array.isArray(editable.items) && editable.items.length
+      ? editable.items
+      : marketplaceItems(schema).slice(0, 3).map((item) => item.name);
+    return `<section class="rendered-section feature-band feature-card-grid ${sectionClass(section)}" ${sectionAttrs(section)}>
+      ${heading}<div class="feature-band-cards">${items.slice(0, 3).map((item) => `<article><strong>${escapeHtml(item.name || item)}</strong><span>${escapeHtml(item.description || editable.text || "")}</span></article>`).join("")}</div>
+    </section>`;
+  }
+  const visual = image ? `<div class="feature-band-visual"><img src="${escapeAttribute(image)}" alt=""></div>` : "";
+  return `<section class="rendered-section feature-band feature-${escapeAttribute(slugify(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>
+    ${variant === "image_left" ? `${visual}${heading}` : `${heading}${visual}`}
   </section>`;
 }
 
-function renderGallery(section) {
-  const images = section.editable?.images || [];
+function renderGallery(section, schema) {
+  const editable = section.editable || {};
+  const images = Array.isArray(editable.images) && editable.images.length
+    ? editable.images
+    : marketplaceItems(schema).map((item) => item.image_url).filter(Boolean).slice(0, 3);
   return `<section class="rendered-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <h2>${escapeHtml(section.editable?.title || "Gallery")}</h2>
+    <h2>${escapeHtml(editable.title || "Gallery")}</h2>
     <div class="rendered-grid">${images
       .map((url) => `<article class="rendered-card"><img src="${escapeAttribute(url)}" alt=""></article>`)
       .join("")}</div>
@@ -2296,7 +2316,8 @@ function sectionClass(section) {
   const container = slugify(section.settings?.container_width || "standard");
   const density = slugify(section.settings?.card_density || "comfortable");
   const gap = slugify(section.settings?.card_gap || "comfortable");
-  return `heading-${headingSize} spacing-${spacing} container-${container} density-${density} gap-${gap}`;
+  const variant = slugify(section.variant || "default");
+  return `heading-${headingSize} spacing-${spacing} container-${container} density-${density} gap-${gap} variant-${variant}`;
 }
 
 function sectionVars(section) {
@@ -2314,6 +2335,7 @@ function sectionAttrs(section) {
   const attrs = [
     `data-studio-section="${escapeAttribute(section.id || section.type || "section")}"`,
     `data-studio-section-type="${escapeAttribute(section.type || "Section")}"`,
+    `data-studio-section-variant="${escapeAttribute(section.variant || "default")}"`,
   ];
   const vars = sectionVars(section);
   if (vars) attrs.push(vars);

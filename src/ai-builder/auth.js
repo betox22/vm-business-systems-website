@@ -995,6 +995,7 @@ export function guidedSessionDraftForApi() {
     catalogType: builderState.guidedState.catalogType || builderState.forcedTemplateSelection?.catalogType || "",
     websiteType: builderState.guidedState.websiteType || "",
     salesFlow: builderState.guidedState.salesFlow || "",
+    designVariantOffset: Math.max(0, Number(builderState.guidedState.designVariantOffset) || 0),
   });
 }
 
@@ -1043,6 +1044,7 @@ export function sanitizeClientSessionDraft(raw = {}) {
     catalogType: trimmed(source.catalogType, 180),
     websiteType: trimmed(source.websiteType, 180),
     salesFlow: trimmed(source.salesFlow, 180),
+    designVariantOffset: Math.max(0, Number(source.designVariantOffset) || 0),
   };
 }
 

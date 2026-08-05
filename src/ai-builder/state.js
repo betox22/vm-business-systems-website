@@ -39,6 +39,7 @@ export function createEmptyGuidedState(language = detectBrowserLanguage()) {
     sectionsPreference: "",
     desiredDomain: "",
     revisionMode: "",
+    designVariantOffset: 0,
     requestedAdjustments: [],
     sitePlan: null,
     sitePlanApproved: false,

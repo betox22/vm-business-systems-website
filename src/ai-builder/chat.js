@@ -82,6 +82,7 @@ import {
   OPTIONAL_GUIDED_STEPS,
   REQUIRED_GUIDED_STEPS,
 } from './index.js';
+import { isExplicitRedesignRequest } from './variants.js';
 
 export function guidedQuestion(step) {
   return publicAssistantCopy(GUIDED_QUESTIONS[builderState.selectedLanguage]?.[step] || GUIDED_QUESTIONS.en[step] || GUIDED_QUESTIONS.en.review);
@@ -754,6 +755,10 @@ export function ensureServerIntakeGate() {
 }
 
 export async function applyDraftAdjustmentFromChat(message, localContextUpdates = {}) {
+  const requestsDifferentDesign = isExplicitRedesignRequest(message);
+  if (requestsDifferentDesign) {
+    builderState.guidedState.designVariantOffset = Math.max(0, Number(builderState.guidedState.designVariantOffset) || 0) + 1;
+  }
   guidedStatusText.textContent = langText({
     en: "Applying that to the draft...",
     es: "Aplicando eso al borrador...",
@@ -835,7 +840,14 @@ export async function applyDraftAdjustmentFromChat(message, localContextUpdates 
     guidedPanel.classList.add("active");
     appendChatMessage(
       "assistant",
-      draftAdjustmentReply(shouldRebuildFromTemplate, templateSelection),
+      requestsDifferentDesign
+        ? langText({
+            en: "I kept your content and changed the visual composition: a different hero and section rhythm are now applied.",
+            es: "Mantuve tu contenido y cambié la composición visual: ya apliqué otro hero y otro ritmo de secciones.",
+            fr: "J'ai conservé votre contenu et modifié la composition visuelle : un autre hero et un autre rythme de sections sont appliqués.",
+            pt: "Mantive seu conteúdo e alterei a composição visual: outro hero e outro ritmo de seções já foram aplicados.",
+          })
+        : draftAdjustmentReply(shouldRebuildFromTemplate, templateSelection),
       "success",
     );
     builderAvatarManager?.setState("success", { source: "draft-adjustment" });
