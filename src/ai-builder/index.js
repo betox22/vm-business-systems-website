@@ -6271,6 +6271,12 @@ function applyGenerationResult(result, payload = {}, templateSelection = null) {
   storageStatus.textContent = storageLabel(result.storage_status, result.used_dev_mock);
   renderEditor();
   renderPreview();
+  if (!isPublicClientSetup) {
+    // The admin builder keeps the guided intake as a full-screen overlay.
+    // Once a schema exists, release the editor toolbar before rendering it.
+    document.body.classList.remove("guided-modal-open");
+    guidedPanel.classList.remove("active");
+  }
   showGeneratedClientPreview();
   syncLyraExperienceMode();
   builderState.guidedState.revisionMode = "";
