@@ -996,8 +996,12 @@
   }
 
   function suggestsFocusedProductLine(normalizedPrompt) {
-    return /\b(linea de|linea para|product line|same niche|mismo nicho|mismo tipo|una categoria|varios modelos|modelos para|parachoques|bumper|4x4|off road|pickup|camioneta|camionetas)\b/.test(normalizedPrompt)
-      && !suggestsBroadMarketplace(normalizedPrompt);
+    const vehicleProductLine = /\b(pickup|camioneta|camionetas)\b/.test(normalizedPrompt)
+      && /\b(truck|camioneta|camionetas|4x4|off road|automotriz|automotive|vehiculo|autos?|carros?)\b/.test(normalizedPrompt);
+    return (
+      /\b(linea de|linea para|product line|same niche|mismo nicho|mismo tipo|una categoria|varios modelos|modelos para|parachoques|bumper|4x4|off road)\b/.test(normalizedPrompt)
+      || vehicleProductLine
+    ) && !suggestsBroadMarketplace(normalizedPrompt);
   }
 
   function rulePriority(rule, normalizedPrompt) {
@@ -1005,6 +1009,7 @@
     if (/\b(restaurante|restaurant|food truck|cafeteria|catering|menu|comida|pizza|tacos|bakery|panaderia|bar|delivery|pickup|pedidos)\b/.test(normalizedPrompt) && rule.intent === "restaurant") return 130;
     if (/\b(barberia|barbershop|salon|spa|citas|reservas|appointments|booking|agenda|agendar)\b/.test(normalizedPrompt) && rule.intent === "appointments") return 125;
     if (/\b(clinica|clinic|med spa|dental|doctor|wellness|salud|therapy|terapia|skincare|dermatology|consulta medica)\b/.test(normalizedPrompt) && rule.intent === "medical_wellness") return 122;
+    if (/\b(real estate|bienes raices|inmuebles|propiedades|apartamentos|alquiler|renta|rentals|zillow|realtor|mls|autotrader|auto trader)\b/.test(normalizedPrompt) && rule.intent === "real_estate_listings") return 123;
     if (/\b(abogado|lawyer|legal|contador|accountant|tax|impuestos|consulting|consultoria|seguros|insurance|advisor|firma profesional)\b/.test(normalizedPrompt) && rule.intent === "legal_professional_services") return 120;
     if (/\b(saas|enterprise|software|automatizacion|platform|plataforma|dashboard|crm|erp|api|demo|workflow)\b/.test(normalizedPrompt) && rule.intent === "b2b_enterprise_saas") return 118;
     if (/\b(manufacturing|industrial|fabrica|fabricante|maquinaria|repuestos|tools supplier|rfq|proveedor industrial|suministros industriales)\b/.test(normalizedPrompt) && rule.intent === "manufacturing_industrial_supplier") return 118;
@@ -1159,6 +1164,19 @@
   }
 
   function selectBestIntentRule(normalizedPrompt) {
+    const scored = INTENT_RULES.map((rule) => {
+      const matches = rule.keywords.filter((keyword) => normalizedPrompt.includes(normalizeText(keyword)));
+      const exactWeight = matches.reduce((score, keyword) => score + Math.max(1, normalizeText(keyword).split(" ").length), 0)
+        + rulePriority(rule, normalizedPrompt);
+      return { rule, score: exactWeight, matches };
+    })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    // Specialist intents must win before broad-commerce shortcuts. Those shortcuts remain
+    // useful for clear product stores, but should never flatten a restaurant or clinic.
+    const priorityRule = scored.find((item) => item.score >= 116);
+    if (priorityRule) return priorityRule.rule;
     if (suggestsMultiVendorMarketplace(normalizedPrompt)) {
       return INTENT_RULES.find((rule) => rule.intent === "amazon_marketplace") || null;
     }
@@ -1171,14 +1189,6 @@
     if (suggestsFocusedCommerceStore(normalizedPrompt)) {
       return INTENT_RULES.find((rule) => rule.intent === "fashion") || null;
     }
-    const scored = INTENT_RULES.map((rule) => {
-      const matches = rule.keywords.filter((keyword) => normalizedPrompt.includes(normalizeText(keyword)));
-      const exactWeight = matches.reduce((score, keyword) => score + Math.max(1, normalizeText(keyword).split(" ").length), 0)
-        + rulePriority(rule, normalizedPrompt);
-      return { rule, score: exactWeight, matches };
-    })
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score);
     return scored[0]?.rule || null;
   }
 

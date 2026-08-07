@@ -1412,7 +1412,10 @@ function textSuggestsBeautyCommerceStore(value) {
 
 function textSuggestsFocusedProductLine(value) {
   const text = normalizeTemplateIntentText(value);
-  return /\b(linea de|linea para|product line|same niche|mismo nicho|mismo tipo|una categoria|una categoria|varios modelos|modelos para|parachoques|bumper|4x4|off road|pickup|camioneta|camionetas)\b/.test(text)
+  const vehicleProductLine = /\b(pickup|camioneta|camionetas)\b/.test(text)
+    && /\b(truck|camioneta|camionetas|4x4|off road|automotriz|automotive|vehiculo|autos?|carros?)\b/.test(text);
+  return (/\b(linea de|linea para|product line|same niche|mismo nicho|mismo tipo|una categoria|varios modelos|modelos para|parachoques|bumper|4x4|off road)\b/.test(text)
+    || vehicleProductLine)
     && !textSuggestsBroadMarketplace(text);
 }
 
@@ -1459,7 +1462,7 @@ function templateIntentScorecard(value, payload = {}) {
   }
 
   if (has(/\b(tipo ebay|como ebay|clasificados|classifieds|listados|listings|vendedores|seller|usado|used|segunda mano)\b/)) scores.push(scoreFor("listing-marketplace-pro", 120, "seller/listing marketplace"));
-  if (has(/\b(real estate|bienes raices|bienes raices|inmuebles|propiedades|casas|apartamentos|alquiler|renta|rentals|zillow|realtor|mls|autotrader|auto trader|vehiculos|vehiculos usados|carros usados)\b/)) scores.push(scoreFor("real-estate-listings-pro", 118, "searchable listing business"));
+  if (has(/\b(real estate|bienes raices|bienes raices|inmuebles|propiedades|casas|apartamentos|alquiler|renta|rentals|zillow|realtor|mls|autotrader|auto trader|vehiculos|vehiculos usados|carros usados)\b/)) scores.push(scoreFor("real-estate-listings-pro", 126, "searchable listing business"));
   if (has(/\b(restaurante|restaurant|food truck|cafeteria|cafeteria|catering|menu|menu|comida|pizza|tacos|bakery|panaderia|bar|delivery de comida|pickup de comida|ordenar comida|pedir comida|pedido de comida)\b/)) scores.push(scoreFor("restaurant-food-business", 125, "restaurant/menu flow"));
   if (has(/\b(barber|barberia|barberia|barbershop|salon|spa|citas|reservas|appointments|booking|agenda|agendar|calendar|calendario)\b/)) scores.push(scoreFor("booking-appointment-pro", 120, "appointment booking flow"));
   if (has(/\b(clinica|clinica|clinic|med spa|medical spa|spa medico|estetica|estetica|aesthetic|dental|dentist|doctor|wellness|salud|health|therapy|terapia|nutricion|laser|botox|facial|skincare|dermatology|fisio|physio|chiropractor|consulta medica)\b/)) scores.push(scoreFor("medical-wellness-clinic-pro", 118, "clinic/wellness trust flow"));
@@ -5119,13 +5122,14 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     }
     setStudioProgressPhase("shop");
     setGuidedBuildPhase("render");
-    if (templateSelection) {
-      result.schema = mergeTemplateSelectionIntoSchema(result.schema, templateSelection);
+    const finalTemplateSelection = await resolveGeneratedTemplateSelection(result.schema, templateSelection);
+    if (finalTemplateSelection) {
+      result.schema = mergeTemplateSelectionIntoSchema(result.schema, finalTemplateSelection);
     }
     statusText.textContent = result.used_dev_mock
       ? "Development mock used because OPENAI_API_KEY is missing on the server."
       : t("generatedOpenAI");
-    applyGenerationResult(result, payload, templateSelection);
+    applyGenerationResult(result, payload, finalTemplateSelection);
     setStudioProgressPhase("mobile");
     await createDomainOrderIfNeeded(payload, result);
     setStudioProgressPhase("ready");
@@ -6149,6 +6153,12 @@ function draftAdjustmentReply(rebuiltFromTemplate, templateSelection = null) {
 
 function mergeTemplateSelectionIntoSchema(schema, selection) {
   if (!schema || !selection) return schema;
+  const backendTemplateId = schemaTemplateId(schema);
+  const selectedTemplateId = normalizeTemplateId(selection.templateId);
+  const isExplicitClientChoice = selection.intent === "client_visual_template_choice";
+  if (backendTemplateId && backendTemplateId !== selectedTemplateId && !isExplicitClientChoice) {
+    return schema;
+  }
   const templateInstructions = buildTemplateInstructions(selection);
   const executionStatus = templateExecutionStatus(selection.templateId);
   schema.selected_template = {
@@ -6179,6 +6189,50 @@ function mergeTemplateSelectionIntoSchema(schema, selection) {
     runtime_enabled: executionStatus.runtimeEnabled,
   };
   return schema;
+}
+
+function schemaTemplateId(schema = {}) {
+  return normalizeTemplateId(
+    schema.selected_template?.id
+    || schema.active_template?.id
+    || schema.layout_mode?.template_id
+    || "",
+  );
+}
+
+async function resolveGeneratedTemplateSelection(schema = {}, clientSelection = null) {
+  if (clientSelection?.intent === "client_visual_template_choice") return clientSelection;
+
+  const backendTemplateId = schemaTemplateId(schema);
+  if (!isConcreteTemplateId(backendTemplateId)) return clientSelection;
+
+  let template = null;
+  if (window.TemplateRouter?.getTemplateById) {
+    try {
+      template = await window.TemplateRouter.getTemplateById(backendTemplateId);
+    } catch (error) {
+      console.warn("Could not load the backend-selected template", error);
+    }
+  }
+
+  const catalogType = schema.catalog_model?.catalogType
+    || schema.layout_mode?.catalog_type
+    || template?.catalogModel?.catalogType
+    || clientSelection?.catalogType
+    || "";
+  return {
+    ...(clientSelection || {}),
+    templateId: backendTemplateId,
+    template: template || {
+      id: backendTemplateId,
+      name: schema.selected_template?.name || schema.active_template?.name || backendTemplateId,
+      category: schema.selected_template?.category || "",
+      catalogModel: { catalogType },
+    },
+    catalogType,
+    intent: "backend_schema_template",
+    reason: schema.selected_template?.reason || "Selected by LYRA's backend plan",
+  };
 }
 
 function applyGenerationResult(result, payload = {}, templateSelection = null) {

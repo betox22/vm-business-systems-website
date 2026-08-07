@@ -285,6 +285,14 @@ export const TEMPLATE_REFERENCE_EXECUTION_STATUS = Object.freeze({
   runtimePath: "",
 });
 
+const RUNTIME_SCHEMA_EXECUTION_STATUS = Object.freeze({
+  status: "runtime_schema",
+  sourceType: "runtime_template",
+  runtimeEnabled: true,
+  runtimePath: "",
+  manifestPath: "",
+});
+
 export const TEMPLATE_EXECUTION_STATUS = Object.freeze({
   "premium-product-store": Object.freeze({
     status: "runtime_backend_prototype",
@@ -308,6 +316,21 @@ export const TEMPLATE_EXECUTION_STATUS = Object.freeze({
     runtimePath: "/templates/marketplace/mega-marketplace/phase-5/visual-prototype/preview.html",
     manifestPath: "/templates/marketplace/mega-marketplace/template.manifest.json",
   }),
+  "luxury-high-ticket-pro": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "education-course-academy-pro": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "medical-wellness-clinic-pro": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "legal-professional-services-pro": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "b2b-saas-enterprise-pro": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "manufacturing-industrial-supplier-pro": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "fashion-drop-pro": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "corporate-company-pro": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "lead-funnel-pro": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "restaurant-food-business": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "digital-products-store": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "real-estate-listings-pro": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "home-services-premium": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "local-services-pro-plus": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
+  "booking-appointment-pro": Object.freeze({ ...RUNTIME_SCHEMA_EXECUTION_STATUS }),
 });
 
 export function templateExecutionStatus(templateId) {
