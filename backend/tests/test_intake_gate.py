@@ -127,6 +127,29 @@ class IntakeGateTests(unittest.TestCase):
 
         self.assertEqual(missing, [])
 
+    def test_explicit_sales_flow_followup_resolves_unknown_industry(self) -> None:
+        engine = LyraIntakeEngine()
+        state = ProjectState(
+            businessName="Northstar Mobile Notary",
+            businessDescription="Mobile document signing appointments for local clients.",
+            industry="mobile notary. Take bookings",
+            salesFlow="booking",
+            selectedLanguage="en",
+            preferredTone="calm and professional",
+            logoPreference="explicit_skip",
+            fieldMeta={
+                "industry": {"source": "explicit_user_choice", "confidence": 1},
+                "niche": {"source": "explicit_user_choice", "confidence": 1},
+                "salesFlow": {"source": "explicit_user_choice", "confidence": 1},
+                "sales_flow": {"source": "explicit_user_choice", "confidence": 1},
+                "brand_style": {"source": "explicit", "confidence": 1},
+                "preferredTone": {"source": "explicit", "confidence": 1},
+                "logo": {"source": "explicit", "confidence": 1},
+            },
+        )
+
+        self.assertEqual(engine.missing_fields_from_state(state), [])
+
 
 if __name__ == "__main__":
     unittest.main()

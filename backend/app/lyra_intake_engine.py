@@ -572,7 +572,7 @@ class LyraIntakeEngine:
         sales_flow = str(merged.get("salesFlow") or "").strip()
         if sales_flow not in VALID_SALES_FLOWS:
             return False
-        sources = {"explicit", "explicit_delegation", "ai_recommended"}
+        sources = {"explicit", "explicit_delegation", "explicit_user_choice", "ai_recommended"}
         return (
             self._has_confident_meta(meta, "sales_flow", sources=sources, min_confidence=0.7)
             or self._has_confident_meta(meta, "salesFlow", sources=sources, min_confidence=0.7)

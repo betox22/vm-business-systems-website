@@ -176,6 +176,13 @@ def build_generation_field_meta(request: WebsiteGenerationRequest) -> Dict[str, 
     preferred_colors = request.preferredColors or request.preferred_colors
     logo_preference = request.logoPreference
 
+    # A structured industry field is direct client input. Keep the closed taxonomy
+    # for downstream classification, but do not block generation just because a
+    # newly described industry has not received a taxonomy alias yet.
+    if _has_form_value(request.industry):
+        meta["industry"] = _explicit_meta()
+        meta["niche"] = _explicit_meta()
+
     if _has_form_value(preferred_tone):
         meta["preferredTone"] = _explicit_meta()
         meta["brand_style"] = _explicit_meta()

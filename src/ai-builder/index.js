@@ -11265,12 +11265,30 @@ function adjustGeneratedDraftWithLuma() {
 
 
 
+function salesFlowFromIntakeFollowupAnswer(value = "") {
+  const text = normalizeTemplateIntentText(value);
+  if (!text) return "";
+  if (/\b(online_sales|online sales|vender online|venta online|sell online|ecommerce|e-commerce|tienda online|shop online)\b/.test(text)) return "online_sales";
+  if (/\b(booking|bookings|book appointment|appointment|appointments|reserva|reservas|cita|citas|agendar|agenda)\b/.test(text)) return "booking";
+  if (/\b(quote_request|quote|quotes|cotizacion|cotización|cotizaciones|presupuesto|presupuestos)\b/.test(text)) return "quote_request";
+  if (/\b(lead_capture|lead|leads|captar clientes|captar prospectos|contactos)\b/.test(text)) return "lead_capture";
+  if (/\b(informational|informativo|presentar informacion|presentar información|solo informacion|solo información)\b/.test(text)) return "informational";
+  return "";
+}
+
 async function collectPayload() {
   if (isPublicClientSetup) syncTemplateSelectionFromGuidedContext();
   const aiStudioPlan = isPublicClientSetup ? refreshAiStudioPlanFromContext() : builderState.guidedState.aiStudioPlan;
   const data = new FormData(form);
   const intakeFollowupAnswer = data.get("server_intake_reply")?.toString().trim() || "";
   const intakeFollowupField = builderState.pendingServerIntakeGate?.missing_fields?.[0] || "";
+  const baseIndustryValue = data.get("industry")?.toString().trim() || builderState.guidedState.industry || "";
+  const followupSalesFlowValue = (intakeFollowupField === "sales_flow" || intakeFollowupField === "niche")
+    ? salesFlowFromIntakeFollowupAnswer(intakeFollowupAnswer)
+    : "";
+  const industryValue = intakeFollowupField === "niche" && intakeFollowupAnswer
+    ? [baseIndustryValue, intakeFollowupAnswer].filter(Boolean).join(". ")
+    : baseIndustryValue;
   const preferredToneValue = data.get("preferred_tone")?.toString().trim()
     || (intakeFollowupField === "brand_style" ? intakeFollowupAnswer : "");
   const preferredColorsValue = splitCommaOrLines(data.get("preferred_colors")?.toString() || "");
@@ -11284,12 +11302,23 @@ async function collectPayload() {
     if (logoPreferenceValue === "generate_ai_logo") builderState.guidedState.aiGeneratedLogoRequested = true;
   }
   const fieldMeta = { ...(builderState.guidedState.fieldMeta || {}) };
+  if (intakeFollowupField === "niche" && intakeFollowupAnswer) {
+    builderState.guidedState.industry = industryValue;
+    fieldMeta.industry = { source: "explicit_user_choice", confidence: 1 };
+    fieldMeta.niche = { source: "explicit_user_choice", confidence: 1 };
+  }
+  if (followupSalesFlowValue) {
+    builderState.guidedState.salesFlow = followupSalesFlowValue;
+    builderState.guidedState.salesMode = followupSalesFlowValue;
+    fieldMeta.salesFlow = { source: "explicit_user_choice", confidence: 1 };
+    fieldMeta.sales_flow = { source: "explicit_user_choice", confidence: 1 };
+  }
   if (logoPreferenceValue) {
     fieldMeta.logo = fieldMeta.logo || { source: "explicit", confidence: 1 };
     fieldMeta.logoPreference = fieldMeta.logoPreference || { source: "explicit", confidence: 1 };
-    builderState.guidedState.fieldMeta = fieldMeta;
   }
-  const resolvedSalesFlow = builderState.guidedState.salesFlow || builderState.guidedState.salesMode || data.get("sales_flow")?.toString().trim() || "";
+  builderState.guidedState.fieldMeta = fieldMeta;
+  const resolvedSalesFlow = followupSalesFlowValue || builderState.guidedState.salesFlow || builderState.guidedState.salesMode || data.get("sales_flow")?.toString().trim() || "";
   const contactInfo = parseKeyValueLines(data.get("contact_info")?.toString() || "");
   const logoUrl = data.get("logo_url")?.toString().trim();
   const photoUrls = splitLines(data.get("photo_urls")?.toString() || "");
@@ -11324,7 +11353,7 @@ async function collectPayload() {
     projectId: builderState.currentSiteId || builderState.clientIntakeSession?.projectId || builderState.clientIntakeSession?.generatedSiteId || builderState.guidedState.projectId || "",
     business_name: data.get("business_name")?.toString().trim(),
     business_description: data.get("business_description")?.toString().trim(),
-    industry: data.get("industry")?.toString().trim(),
+    industry: industryValue,
     location: data.get("location")?.toString().trim(),
     services_products: splitCommaOrLines(data.get("services_products")?.toString() || ""),
     target_audience: data.get("target_audience")?.toString().trim(),
@@ -11348,14 +11377,14 @@ async function collectPayload() {
       logoUrl: assets.find((asset) => asset.asset_type === "logo")?.url || "",
       extractedColors: arrayValue(builderState.guidedState.logoPalette),
       preferredColors: preferredColorsValue,
-      industry: data.get("industry")?.toString().trim(),
+      industry: industryValue,
       tone: preferredToneValue,
     }),
     designStrategy: {
       ...createDesignStrategy({
         business_name: data.get("business_name")?.toString().trim(),
         business_description: data.get("business_description")?.toString().trim(),
-        industry: data.get("industry")?.toString().trim(),
+        industry: industryValue,
         target_audience: data.get("target_audience")?.toString().trim(),
         preferred_tone: preferredToneValue,
         salesMode: resolvedSalesFlow,
