@@ -6237,7 +6237,16 @@ async function resolveGeneratedTemplateSelection(schema = {}, clientSelection = 
 
 function applyGenerationResult(result, payload = {}, templateSelection = null) {
   syncCatalogSourceMetadata(result);
-  result.schema = prepareWebsiteConfig(result.schema, payload, templateSelection);
+  try {
+    result.schema = prepareWebsiteConfig(result.schema, payload, templateSelection);
+  } catch (renderError) {
+    // A template-specific presentation failure must not strand the client in a
+    // loading state after the backend has already produced a valid response.
+    console.error("Could not prepare the generated template; showing the emergency editable draft.", renderError);
+    result.schema = buildEmergencyEditableSchema(payload, renderError);
+    result.storage_status = "instant_template_fallback";
+    result.error = String(renderError?.message || renderError || "");
+  }
   builderState.currentSchema = result.schema;
   builderState.currentSiteId = result.generatedSiteId || result.projectId || result.site_id || null;
   builderState.currentBusinessId = result.business_id || null;
@@ -9082,6 +9091,7 @@ function buildHomeServicesPremiumInstantPages(copy, name, description, payload =
 }
 
 function buildBookingAppointmentInstantPages(copy, name, description, payload = {}) {
+  copy = normalizeBookingInstantCopy(copy, payload.selectedLanguage || builderState.selectedLanguage || "en");
   const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
   return [
     {
@@ -9161,6 +9171,44 @@ function buildBookingAppointmentInstantPages(copy, name, description, payload = 
       sections: [{ id: "booking_contact", type: "BookingContact", order: 1, editable: { title: copy.bookingContactTitle, text: copy.bookingContactText, images: [] }, settings: { layout: "booking_panel" } }],
     },
   ];
+}
+
+function normalizeBookingInstantCopy(input = {}, language = builderState.selectedLanguage) {
+  const source = input && typeof input === "object" ? input : {};
+  const locale = catalogLocaleLabels({ business: { selectedLanguage: language || "en" } });
+  const functionValue = (key, fallback) => typeof source[key] === "function"
+    ? source[key]
+    : typeof locale[key] === "function"
+      ? locale[key]
+      : fallback;
+  const textValue = (key, fallback = "") => typeof source[key] === "string" && source[key].trim()
+    ? source[key]
+    : typeof locale[key] === "string" && locale[key].trim()
+      ? locale[key]
+      : fallback;
+  const listValue = (key, fallback = []) => {
+    const values = arrayValue(source[key]).filter(Boolean);
+    if (values.length) return values;
+    const localized = arrayValue(locale[key]).filter(Boolean);
+    return localized.length ? localized : fallback;
+  };
+
+  return {
+    ...source,
+    fromQuote: textValue("fromQuote", source.askPrice || "Price on request"),
+    bookingHeadline: functionValue("bookingHeadline", (businessName) => `Book ${businessName} with a clear next step`),
+    bookingSubheadline: functionValue("bookingSubheadline", (value) => value || "Choose a service, preferred time, and contact method in one simple booking flow."),
+    bookingServicesTitle: textValue("bookingServicesTitle", "Choose the right appointment"),
+    bookingServicesText: textValue("bookingServicesText", "Show duration, service details, and what the client should expect before booking."),
+    availabilityTitle: textValue("availabilityTitle", "Availability that feels simple"),
+    availabilityText: textValue("availabilityText", "Make open windows, preparation notes, and confirmation expectations clear."),
+    availabilityItems: listValue("availabilityItems", ["Today / tomorrow windows", "Morning appointments", "Afternoon appointments"]),
+    bookingTeamTitle: textValue("bookingTeamTitle", "A smoother visit from start to finish"),
+    bookingTeamText: textValue("bookingTeamText", "Explain the staff, process, and preparation so clients know what happens next."),
+    bookingTeamItems: listValue("bookingTeamItems", ["Pick a service", "Choose a preferred time", "Receive confirmation"]),
+    bookingContactTitle: textValue("bookingContactTitle", "Reserve the next available time"),
+    bookingContactText: textValue("bookingContactText", "Send the preferred service, day, and contact method to request confirmation."),
+  };
 }
 
 function buildLeadFunnelInstantPages(copy, name, description, payload = {}) {
