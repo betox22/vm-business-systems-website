@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -368,7 +369,16 @@ class LyraIntakeEngine:
 
     @staticmethod
     def _raw_tracked_value_signature(value: Any) -> str:
-        """Normalize a TrackedField.value for verbatim-duplicate comparison."""
+        """Normalize a TrackedField.value for duplicate-leak comparison.
+
+        Strips everything but lowercase alphanumerics so the same reply
+        reported as an array (["Bar soaps", "bath bombs"]) and as a
+        comma-joined string ("Bar soaps, bath bombs") produce an identical
+        signature - the model has leaked the same underlying reply into two
+        slots either way, punctuation and structure aside. Short signatures
+        are ignored (return "") so common short words (e.g. a single yes/no
+        style answer) don't get flagged as a false-positive collision.
+        """
         if value is None:
             return ""
         if isinstance(value, (list, tuple)):
@@ -377,7 +387,8 @@ class LyraIntakeEngine:
             text = " ".join(str(item) for item in value.values())
         else:
             text = str(value)
-        return text.strip().lower()
+        normalized = re.sub(r"[^a-z0-9]+", "", text.lower())
+        return normalized if len(normalized) >= 8 else ""
 
     def _merge_tracked_field(
         self,
