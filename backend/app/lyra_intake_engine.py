@@ -225,7 +225,7 @@ class LyraIntakeEngine:
                 return self._local_error_decision(state, selected_language, "Lyra did not call update_intake.")
             arguments = tool_calls[0].function.arguments or "{}"
             parsed = json.loads(arguments)
-            decision = self._decision_from_tool_payload(parsed, state)
+            decision = self._decision_from_tool_payload(parsed, state, message)
             decision.usedAI = True
             return decision
         except Exception as error:
@@ -280,7 +280,9 @@ class LyraIntakeEngine:
     def _can_replace_ai_derived(self, state: ProjectState, key: str) -> bool:
         return self._meta_source(state, key) != "explicit_user_choice"
 
-    def _decision_from_tool_payload(self, payload: Dict[str, Any], state: ProjectState) -> LyraIntakeDecision:
+    def _decision_from_tool_payload(
+        self, payload: Dict[str, Any], state: ProjectState, message: str = ""
+    ) -> LyraIntakeDecision:
         tracked_fields = payload.get("updatedFields") if isinstance(payload.get("updatedFields"), dict) else {}
         updated_state: Dict[str, Any] = {}
         field_meta: Dict[str, FieldMeta] = {}
@@ -310,6 +312,28 @@ class LyraIntakeEngine:
             if key != "business_description"
         }
 
+        # Second, narrower guard for single-field misattribution (no
+        # duplication involved, so the check above can't see it): observed
+        # live where a reply that only answered the logo question ("we don't
+        # have a logo, let's continue without one") got reported as the
+        # *entire* servicesProducts value, silently overwriting real product
+        # data with an unrelated sentence. If a tracked field's value is
+        # essentially the raw message verbatim, that's only plausible for the
+        # ONE slot that was actually being asked about (or business_description,
+        # which legitimately IS the raw paragraph) - anything else claiming to
+        # equal the raw reply verbatim is almost certainly misattribution.
+        message_signature = self._raw_tracked_value_signature(message)
+        previously_missing = self._missing_fields_from_state(state, {}, state.fieldMeta)
+        awaited_field = previously_missing[0] if previously_missing else ""
+        misattributed_keys = set()
+        if message_signature:
+            for key, raw in tracked_fields.items():
+                if not isinstance(raw, dict) or key in {"business_description", awaited_field}:
+                    continue
+                signature = self._raw_tracked_value_signature(raw.get("value"))
+                if signature and signature == message_signature:
+                    misattributed_keys.add(key)
+
         for key, raw in tracked_fields.items():
             if key not in INTAKE_STATE_FIELDS or not isinstance(raw, dict):
                 continue
@@ -317,6 +341,13 @@ class LyraIntakeEngine:
                 logger.warning(
                     "LyraIntakeEngine dropped tracked field '%s': value matches another field verbatim (attribution leak guard)",
                     key,
+                )
+                continue
+            if key in misattributed_keys:
+                logger.warning(
+                    "LyraIntakeEngine dropped tracked field '%s': value matches the raw incoming message but this field wasn't what was being asked about (awaited: '%s')",
+                    key,
+                    awaited_field,
                 )
                 continue
             tracked = TrackedField.model_validate(raw)
