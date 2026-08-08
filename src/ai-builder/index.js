@@ -4800,8 +4800,26 @@ function hasExistingGuidedValue(key) {
 function inferGuidedUpdates(step, message) {
   if (step === "servicesProducts") {
     if (hasExistingGuidedValue("servicesProducts")) return {};
+    // Root cause of the recurring "logo reply leaks into product list" bug
+    // (2026-08-08): the backend's LYRA intake no longer gates on a discrete
+    // servicesProducts question at all (its critical-field list is
+    // business_name, business_description, niche, sales_flow, brand_style,
+    // logo - see BACKEND_SLOT_TO_GUIDED_FIELD, which has no entry that maps
+    // to "servicesProducts"). That means attributionStep can only resolve to
+    // "servicesProducts" via the local, fixed-sequence builderState.guidedStep
+    // guess, never via a real backend-confirmed signal - so by the time we
+    // get here we do NOT actually know the assistant's last question was
+    // about products. Blindly falling back to splitCommaOrLines(message)
+    // dumped whatever the client had just said (e.g. a logo answer) straight
+    // into servicesProducts, and because mergeGuidedUpdates() unions
+    // servicesProducts instead of replacing it, that bad entry then stuck
+    // permanently. Only trust extractServicesProducts's keyword-gated match;
+    // if it finds nothing, don't guess. Real product mentions are still
+    // caught on every turn by the keyword-gated inferGuidedUpdatesFromAnyMessage
+    // broad matcher, and the backend's own guarded state remains the
+    // authoritative source once its response merges in.
     const extracted = extractServicesProducts(message);
-    return { servicesProducts: extracted.length ? extracted : splitCommaOrLines(message) };
+    return extracted.length ? { servicesProducts: extracted } : {};
   }
   if (step === "preferredColors") {
     return hasExistingGuidedValue("preferredColors") ? {} : { preferredColors: splitCommaOrLines(message) };
