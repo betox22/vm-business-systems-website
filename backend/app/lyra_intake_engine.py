@@ -284,8 +284,39 @@ class LyraIntakeEngine:
         updated_state: Dict[str, Any] = {}
         field_meta: Dict[str, FieldMeta] = {}
 
+        # Guard against a tracked-field attribution leak: the intake LLM has
+        # occasionally echoed the same raw reply into two or more unrelated
+        # slots in one turn (observed: a logo answer duplicated verbatim into
+        # servicesProducts AND preferredColors, neither of which are even in
+        # its official slot list). A single reply cannot legitimately be the
+        # verbatim value of two different structured fields at once, so if the
+        # same normalized text shows up under multiple keys this turn, drop it
+        # everywhere except business_description, which is the one slot meant
+        # to hold the raw paragraph.
+        value_signatures: Dict[str, List[str]] = {}
+        for key, raw in tracked_fields.items():
+            if not isinstance(raw, dict):
+                continue
+            signature = self._raw_tracked_value_signature(raw.get("value"))
+            if not signature:
+                continue
+            value_signatures.setdefault(signature, []).append(key)
+        duplicated_keys = {
+            key
+            for keys in value_signatures.values()
+            if len(keys) > 1
+            for key in keys
+            if key != "business_description"
+        }
+
         for key, raw in tracked_fields.items():
             if key not in INTAKE_STATE_FIELDS or not isinstance(raw, dict):
+                continue
+            if key in duplicated_keys:
+                logger.warning(
+                    "LyraIntakeEngine dropped tracked field '%s': value matches another field verbatim (attribution leak guard)",
+                    key,
+                )
                 continue
             tracked = TrackedField.model_validate(raw)
             if tracked.value is None or tracked.value == "":
@@ -334,6 +365,19 @@ class LyraIntakeEngine:
             canGenerate=can_generate,
             templateRecommendation=recommendation,
         )
+
+    @staticmethod
+    def _raw_tracked_value_signature(value: Any) -> str:
+        """Normalize a TrackedField.value for verbatim-duplicate comparison."""
+        if value is None:
+            return ""
+        if isinstance(value, (list, tuple)):
+            text = " ".join(str(item) for item in value)
+        elif isinstance(value, dict):
+            text = " ".join(str(item) for item in value.values())
+        else:
+            text = str(value)
+        return text.strip().lower()
 
     def _merge_tracked_field(
         self,
@@ -678,7 +722,26 @@ class LyraIntakeEngine:
                     "properties": {
                         "updatedFields": {
                             "type": "object",
-                            "additionalProperties": tracked_field_schema,
+                            "description": (
+                                "Only include a key when this turn's message actually supports it. "
+                                "Valid keys are EXACTLY these 9 slots: business_name, business_description, "
+                                "niche, sales_flow, target_audience, brand_style, logo, location, contact_info. "
+                                "Never invent other keys (e.g. servicesProducts, preferredColors, colors, "
+                                "products) - those are not part of this form and are derived elsewhere. "
+                                "Never copy the same raw reply into more than one key."
+                            ),
+                            "properties": {
+                                "business_name": tracked_field_schema,
+                                "business_description": tracked_field_schema,
+                                "niche": tracked_field_schema,
+                                "sales_flow": tracked_field_schema,
+                                "target_audience": tracked_field_schema,
+                                "brand_style": tracked_field_schema,
+                                "logo": tracked_field_schema,
+                                "location": tracked_field_schema,
+                                "contact_info": tracked_field_schema,
+                            },
+                            "additionalProperties": False,
                         },
                         "detectedIntent": {
                             "type": "object",
