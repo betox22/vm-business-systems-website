@@ -2048,42 +2048,42 @@ function guidedBuildPhases() {
   return [
     {
       key: "save",
-      label: langText({ en: "Save brief", es: "Guardar brief", fr: "Sauver le brief", pt: "Salvar brief" }),
+      label: langText({ en: "Saving your details", es: "Guardando tus datos", fr: "Enregistrement de vos infos", pt: "Salvando seus dados" }),
       body: langText({
-        en: "Locking the intake data to the client workspace.",
-        es: "Guardando la informacion en el workspace del cliente.",
-        fr: "Enregistrement des informations dans l'espace client.",
-        pt: "Salvando as informacoes no workspace do cliente.",
+        en: "Keeping your answers safe in your workspace.",
+        es: "Guardamos tus respuestas de forma segura en tu espacio.",
+        fr: "Vos reponses sont enregistrees en toute securite.",
+        pt: "Guardamos suas respostas com seguranca no seu espaco.",
       }),
     },
     {
       key: "strategy",
-      label: langText({ en: "Choose structure", es: "Elegir estructura", fr: "Choisir la structure", pt: "Escolher estrutura" }),
+      label: langText({ en: "Choosing your style", es: "Eligiendo tu estilo", fr: "Choix de votre style", pt: "Escolhendo seu estilo" }),
       body: langText({
-        en: "Matching the business model with the best available template base.",
-        es: "Cruzando el modelo de negocio con la mejor plantilla disponible.",
-        fr: "Association du modele d'affaires avec le meilleur template disponible.",
-        pt: "Cruzando o modelo de negocio com o melhor template disponivel.",
+        en: "Matching your business with the look and layout that fit it best.",
+        es: "Buscando el diseno y la estructura que mejor le quedan a tu negocio.",
+        fr: "Recherche du design et de la structure qui vous conviennent le mieux.",
+        pt: "Buscando o design e a estrutura que mais combinam com seu negocio.",
       }),
     },
     {
       key: "generate",
-      label: langText({ en: "Generate site", es: "Generar sitio", fr: "Generer le site", pt: "Gerar site" }),
+      label: langText({ en: "Writing your content", es: "Escribiendo tu contenido", fr: "Redaction de votre contenu", pt: "Escrevendo seu conteudo" }),
       body: langText({
-        en: "Writing customer-facing copy, catalog items, CTAs and page sections.",
-        es: "Creando textos publicos, catalogo, CTAs y secciones.",
-        fr: "Creation des textes publics, du catalogue, des CTA et des sections.",
-        pt: "Criando textos publicos, catalogo, CTAs e secoes.",
+        en: "Writing your homepage, products and page text.",
+        es: "Escribiendo tu pagina de inicio, productos y textos.",
+        fr: "Redaction de votre page d'accueil, produits et textes.",
+        pt: "Escrevendo sua pagina inicial, produtos e textos.",
       }),
     },
     {
       key: "render",
-      label: langText({ en: "Render preview", es: "Renderizar preview", fr: "Rendre l'apercu", pt: "Renderizar preview" }),
+      label: langText({ en: "Building your preview", es: "Armando tu vista previa", fr: "Preparation de votre apercu", pt: "Montando sua previa" }),
       body: langText({
-        en: "Assembling the editable preview so it can be reviewed immediately.",
-        es: "Armando el preview editable para revisarlo de inmediato.",
-        fr: "Assemblage de l'apercu modifiable pour revision immediate.",
-        pt: "Montando o preview editavel para revisar imediatamente.",
+        en: "Putting together your editable preview so you can review it right away.",
+        es: "Armando tu vista previa editable para que la revises enseguida.",
+        fr: "Assemblage de votre apercu modifiable pour le revoir immediatement.",
+        pt: "Montando sua previa editavel para voce revisar na hora.",
       }),
     },
   ];
@@ -2118,7 +2118,7 @@ function setGuidedBuildPhase(phase, detail = "") {
   card.classList.toggle("is-ready", isReady);
   card.innerHTML = `
     <div class="guided-build-head">
-      <span>${escapeHtml(langText({ en: "LYRA build", es: "Construccion LYRA", fr: "Construction LYRA", pt: "Construcao LYRA" }))}</span>
+      <span>${escapeHtml(langText({ en: "Building your website", es: "Creando tu sitio", fr: "Creation de votre site", pt: "Criando seu site" }))}</span>
       <strong>${escapeHtml(isError
         ? langText({ en: "Generation stopped", es: "Generacion detenida", fr: "Generation arretee", pt: "Geracao interrompida" })
         : isReady
@@ -4761,10 +4761,32 @@ function shouldAdvanceToDesignerPlan(message) {
   return hasEnoughContextForFirstDraft();
 }
 
+// The public client-setup flow is driven by the backend's own LLM intake
+// engine, which decides what to ask next using its own field priority order.
+// The backend response for this endpoint does not include a next_step field,
+// so builderState.guidedStep just advances through the frontend's own fixed
+// local sequence (see normalizeNextGuidedStep) - it does NOT reliably reflect
+// which question is actually on screen. That mismatch means a reply can get
+// mapped to the wrong field here. To keep this safe until the two step
+// trackers are properly unified, we never let this local guess overwrite a
+// field that already holds a real value - it only fills in gaps.
+function hasExistingGuidedValue(key) {
+  const value = builderState.guidedState[key];
+  if (Array.isArray(value)) return value.length > 0;
+  if (value && typeof value === "object") return Object.keys(value).length > 0;
+  return Boolean(String(value || "").trim());
+}
+
 function inferGuidedUpdates(step, message) {
-  if (step === "servicesProducts") return { servicesProducts: splitCommaOrLines(message) };
-  if (step === "preferredColors") return { preferredColors: splitCommaOrLines(message) };
-  if (step === "contactInfo") return { contactInfo: parseKeyValueLines(message.includes(":") ? message : `notes: ${message}`) };
+  if (step === "servicesProducts") {
+    return hasExistingGuidedValue("servicesProducts") ? {} : { servicesProducts: splitCommaOrLines(message) };
+  }
+  if (step === "preferredColors") {
+    return hasExistingGuidedValue("preferredColors") ? {} : { preferredColors: splitCommaOrLines(message) };
+  }
+  if (step === "contactInfo") {
+    return hasExistingGuidedValue("contactInfo") ? {} : { contactInfo: parseKeyValueLines(message.includes(":") ? message : `notes: ${message}`) };
+  }
   if (step === "hasLogoPhotos" && wantsAiGeneratedLogo(message, { assumeLogoContext: true })) {
     return {
       hasLogoPhotos: message,
@@ -4787,7 +4809,9 @@ function inferGuidedUpdates(step, message) {
     hasLogoPhotos: "hasLogoPhotos",
     desiredDomain: "desiredDomain",
   };
-  return keyByStep[step] ? { [keyByStep[step]]: message } : {};
+  const key = keyByStep[step];
+  if (!key) return {};
+  return hasExistingGuidedValue(key) ? {} : { [key]: message };
 }
 
 function inferGuidedUpdatesFromAnyMessage(message) {
