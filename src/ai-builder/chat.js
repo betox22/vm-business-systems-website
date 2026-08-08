@@ -31,6 +31,7 @@ import {
   isDuplicateQuestion,
   languageToSpeechLocale,
   localizedTemplateName,
+  mapBackendSlotToGuidedField,
   mergeGuidedUpdates,
   mergeTemplateSelectionIntoSchema,
   normalizeTemplateIntentText,
@@ -295,7 +296,11 @@ export async function sendGuidedReply() {
     }), "success");
   }
   const broadLocalUpdates = inferGuidedUpdatesFromAnyMessage(message);
-  const stepUpdates = inferGuidedUpdates(builderState.guidedStep, message);
+  // Prefer the field the backend actually just asked about (captured from the
+  // previous turn's response) over the local progress-UI step tracker, which
+  // runs on its own fixed sequence and does not reflect the real conversation.
+  const attributionStep = builderState.lastAskedGuidedField || builderState.guidedStep;
+  const stepUpdates = inferGuidedUpdates(attributionStep, message);
   const localContextUpdates = { ...broadLocalUpdates, ...stepUpdates };
   if (builderState.guidedStep === "websiteIntent" && !localContextUpdates.websiteIntent) {
     localContextUpdates.websiteIntent = extractWebsiteIntent(message) || message.slice(0, 180);
@@ -378,6 +383,12 @@ export async function sendGuidedReply() {
     const planAfterAgent = refreshAiStudioPlanFromContext(message);
     const serverNextStep = result.next_step || result.nextStep || "";
     builderState.guidedStep = result.readyToGenerate ? "review" : normalizeNextGuidedStep(serverNextStep || builderState.guidedStep);
+    // missingImportantFields[0] is the backend's own highest-priority missing
+    // slot - i.e. what nextQuestion is actually about. Save it (mapped to the
+    // frontend field name) so the NEXT reply gets attributed correctly,
+    // regardless of what the local guidedStep sequence thinks is current.
+    const missingBackendFields = arrayValue(result.missingImportantFields);
+    builderState.lastAskedGuidedField = result.readyToGenerate ? "" : mapBackendSlotToGuidedField(missingBackendFields[0]);
     const serverNextQuestion = result.nextQuestion || result.next_question;
     const nextQuestion = result.readyToGenerate ? "" : chooseNextQuestionText(serverNextQuestion, builderState.guidedStep);
     const usedDevFallback = Boolean(result.used_dev_fallback || result.usedDevFallback);
@@ -394,6 +405,9 @@ export async function sendGuidedReply() {
     syncTemplateSelectionFromGuidedContext(message);
     refreshAiStudioPlanFromContext(message);
     builderState.guidedStep = nextSmartGuidedStep(builderState.guidedStep);
+    // No backend response this turn - no fresher signal to attribute the
+    // next reply with, fall back to the local sequence again next time.
+    builderState.lastAskedGuidedField = "";
     console.warn("LYRA intake assistant request failed; continuing locally.", error);
     appendUnderstandingCard({ updates, sourceMessage: message });
     appendChatMessage(

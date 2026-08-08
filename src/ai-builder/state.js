@@ -67,6 +67,11 @@ export const builderState = {
   currentCatalogItems: [],
   isGeneratingWebsite: false,
   guidedStep: 'websiteIntent',
+  // Backend-reported field (mapped) that the last assistant question was
+  // actually about - see mapBackendSlotToGuidedField in index.js. Preferred
+  // over guidedStep for attributing a reply to a field, since guidedStep is
+  // a separate local sequence used only for the progress UI.
+  lastAskedGuidedField: '',
   guidedHistory: [],
   assistantState: 'neutral',
   assistantVoiceEnabled: localStorage.getItem('gnuDevAssistantVoice') === 'on',

@@ -1800,6 +1800,7 @@ export function resetGuidedStateForNewAccount(options = {}) {
   builderState.restoredDraftNoticeCard = null;
   removeGuidedBuildStatusCard();
   builderState.guidedStep = "websiteIntent";
+  builderState.lastAskedGuidedField = "";
   try {
     localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
     localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
@@ -4762,14 +4763,33 @@ function shouldAdvanceToDesignerPlan(message) {
 }
 
 // The public client-setup flow is driven by the backend's own LLM intake
-// engine, which decides what to ask next using its own field priority order.
-// The backend response for this endpoint does not include a next_step field,
-// so builderState.guidedStep just advances through the frontend's own fixed
-// local sequence (see normalizeNextGuidedStep) - it does NOT reliably reflect
-// which question is actually on screen. That mismatch means a reply can get
-// mapped to the wrong field here. To keep this safe until the two step
-// trackers are properly unified, we never let this local guess overwrite a
-// field that already holds a real value - it only fills in gaps.
+// engine, which decides what to ask next using its own field priority order
+// (see backend/app/lyra_intake_engine.py: business_name, business_description,
+// niche, sales_flow, brand_style, logo, plus target_audience/location/
+// contact_info). builderState.guidedStep is a SEPARATE, purely local sequence
+// used for the progress UI (see GUIDED_STEPS/normalizeNextGuidedStep) - it
+// does not track which question the backend actually just asked, and the two
+// can disagree. Rather than rewire the progress tracker itself, chat.js
+// reads result.missingImportantFields[0] from each backend response, maps it
+// through this table, and stores it as builderState.lastAskedGuidedField -
+// the more trustworthy signal for "which field is this reply answering",
+// used in place of builderState.guidedStep when available.
+const BACKEND_SLOT_TO_GUIDED_FIELD = {
+  business_name: "businessName",
+  business_description: "businessDescription",
+  niche: "industry",
+  sales_flow: "salesMode",
+  brand_style: "preferredColors",
+  logo: "hasLogoPhotos",
+  target_audience: "targetAudience",
+  location: "location",
+  contact_info: "contactInfo",
+};
+
+export function mapBackendSlotToGuidedField(slot) {
+  return BACKEND_SLOT_TO_GUIDED_FIELD[String(slot || "").trim()] || "";
+}
+
 function hasExistingGuidedValue(key) {
   const value = builderState.guidedState[key];
   if (Array.isArray(value)) return value.length > 0;
