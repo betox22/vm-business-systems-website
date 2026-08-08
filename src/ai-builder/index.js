@@ -4779,7 +4779,9 @@ function hasExistingGuidedValue(key) {
 
 function inferGuidedUpdates(step, message) {
   if (step === "servicesProducts") {
-    return hasExistingGuidedValue("servicesProducts") ? {} : { servicesProducts: splitCommaOrLines(message) };
+    if (hasExistingGuidedValue("servicesProducts")) return {};
+    const extracted = extractServicesProducts(message);
+    return { servicesProducts: extracted.length ? extracted : splitCommaOrLines(message) };
   }
   if (step === "preferredColors") {
     return hasExistingGuidedValue("preferredColors") ? {} : { preferredColors: splitCommaOrLines(message) };
