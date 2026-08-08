@@ -98,45 +98,10 @@ export function ensureGuidedCoachCard() {
 }
 
 export function renderGuidedCoachCard() {
-  if (isPublicClientSetup) {
-    builderState.guidedCoachCard?.remove();
-    builderState.guidedCoachCard = null;
-    return;
-  }
-  const card = ensureGuidedCoachCard();
-  if (!card) return;
-  const stage = guidedStage(builderState.guidedStep);
-  const completion = guidedCompletionPercent();
-  const templateName = builderState.forcedTemplateSelection?.template?.clientSelectionCard?.title
-    || builderState.forcedTemplateSelection?.template?.name
-    || builderState.forcedTemplateSelection?.templateId
-    || "";
-  const nextAction = builderState.guidedStep === "review"
-    ? langText({ en: "Ready for review", es: "Listo para revisar", fr: "Prêt à vérifier", pt: "Pronto para revisar" })
-    : guidedQuestion(builderState.guidedStep);
-  card.innerHTML = `
-    <div class="luma-coach-top">
-      <span>${escapeHtml(langText({ en: `Phase ${stage.index}`, es: `Fase ${stage.index}`, fr: `Phase ${stage.index}`, pt: `Fase ${stage.index}` }))}</span>
-      <strong>${escapeHtml(stage.title)}</strong>
-      <em>${escapeHtml(`${completion}%`)}</em>
-    </div>
-    <p>${escapeHtml(stage.body)}</p>
-    ${templateName ? `<div class="luma-coach-template">${escapeHtml(langText({ en: "Selected base", es: "Base seleccionada", fr: "Base sélectionnée", pt: "Base selecionada" }))}: <strong>${escapeHtml(templateName)}</strong></div>` : ""}
-    <div class="luma-coach-next">
-      <small>${escapeHtml(langText({ en: "Next", es: "Siguiente", fr: "Suivant", pt: "Próximo" }))}</small>
-      <span>${escapeHtml(nextAction)}</span>
-    </div>
-    <div class="luma-coach-examples">
-      ${stage.examples.map((example) => `<button type="button" data-coach-example="${escapeAttribute(example)}">${escapeHtml(example)}</button>`).join("")}
-    </div>
-  `;
-  card.querySelectorAll("[data-coach-example]").forEach((button) => {
-    button.addEventListener("click", () => {
-      guidedReply.value = guidedReply.value ? `${guidedReply.value}, ${button.dataset.coachExample}` : button.dataset.coachExample;
-      updateAssetPromptVisibility();
-      guidedReply.focus();
-    });
-  });
+  // The coach repeated the active assistant question and exposed internal
+  // template state. The conversation is now the single client-facing guide.
+  builderState.guidedCoachCard?.remove();
+  builderState.guidedCoachCard = null;
 }
 
 export function initBuilderAvatarAssistant() {
@@ -555,9 +520,6 @@ export function normalizeGuidedStepForCurrentState(step) {
 export function renderSitePlanInChatIfNeeded() {
   if (builderState.guidedStep !== "review" || !guidedChat) return;
   guidedChat.querySelectorAll(".site-plan-card, .luma-ready-card").forEach((card) => card.remove());
-  if (!isPublicClientSetup && (builderState.forcedTemplateSelection?.templateId || builderState.guidedState.sitePlan?.templateId)) {
-    guidedChat.appendChild(renderSitePlanCard());
-  }
   guidedChat.appendChild(renderLumaReadyCard());
   guidedChat.scrollTop = guidedChat.scrollHeight;
 }

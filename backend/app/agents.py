@@ -166,17 +166,33 @@ def split_items(value: str | List[str] | None) -> List[str]:
 def suggests_jewelry_or_handmade_accessories(text: str) -> bool:
     if re.search(r"\b(accesorios? (para|de) (carros|autos|automotriz|automotrices|camionetas|motos|4x4))\b", text):
         return False
+    # NOTE: bare "artesanal"/"hecho a mano" (handmade, with no jewelry-specific
+    # word nearby) is intentionally excluded here — it is a generic craft
+    # signal shared by many product types (soap, candles, pottery, jewelry),
+    # not a jewelry indicator on its own. See suggests_handmade_beauty_or_home_goods
+    # and suggests_focused_commerce for the generic handmade/craft handling.
     return bool(re.search(
-        r"\b(bisuteria|bijouterie|joyeria|jewelry|jewellery|collar|collares|pulsera|pulseras|arete|aretes|zarcillo|zarcillos|anillo|anillos|cadena|cadenas|dije|dijes|charm|charms|hecho a mano|hechos a mano|artesanal|artesanales|handmade accessories|handmade jewelry)\b",
+        r"\b(bisuteria|bijouterie|joyeria|jewelry|jewellery|collar|collares|pulsera|pulseras|arete|aretes|zarcillo|zarcillos|anillo|anillos|cadena|cadenas|dije|dijes|charm|charms|handmade accessories|handmade jewelry)\b",
+        text,
+    ))
+
+
+def suggests_handmade_beauty_or_home_goods(text: str) -> bool:
+    return bool(re.search(
+        r"\b(jabon|jabones|soap|bar soap|bath bomb|bath bombs|bomba de bano|bombas de bano|sales de bano|body butter|body scrub|exfoliante|locion|lotion|fragancia artesanal|home fragrance|aromaterapia|skincare artesanal)\b",
         text,
     ))
 
 
 def suggests_focused_commerce(text: str) -> bool:
-    return suggests_jewelry_or_handmade_accessories(text) or bool(re.search(
-        r"\b(ropa|fashion|moda|boutique|streetwear|zapatos|sneaker|apparel|clothing|beauty|belleza|skincare|cosmeticos|velas|candles|decoracion|ceramica|manualidades|crafts|productos artesanales|coleccion propia)\b",
-        text,
-    ))
+    return (
+        suggests_jewelry_or_handmade_accessories(text)
+        or suggests_handmade_beauty_or_home_goods(text)
+        or bool(re.search(
+            r"\b(ropa|fashion|moda|boutique|streetwear|zapatos|sneaker|apparel|clothing|beauty|belleza|skincare|cosmeticos|velas|candles|decoracion|ceramica|manualidades|crafts|productos artesanales|coleccion propia)\b",
+            text,
+        ))
+    )
 
 
 def suggests_broad_marketplace(text: str, product_count: int = 0) -> bool:
@@ -190,7 +206,11 @@ def suggests_broad_marketplace(text: str, product_count: int = 0) -> bool:
         return True
     if suggests_focused_commerce(text):
         return False
-    return broad_words or product_count >= 5
+    # A small boutique can easily list 5-6 product lines (soap, candles, bath
+    # bombs, gift sets, lotions) without being a broad multi-category catalog.
+    # Only treat raw product count as a "mega catalog" signal once it is large
+    # enough that it stops looking like a focused product range.
+    return broad_words or product_count >= 10
 
 
 def suggests_multi_vendor_marketplace(text: str) -> bool:
@@ -660,6 +680,9 @@ class StrategyAgent(BaseAgent):
 
         if suggests_jewelry_or_handmade_accessories(text) and not broad_marketplace:
             add("fashion-drop-pro", 125, "focused jewelry and handmade accessory store")
+
+        if suggests_handmade_beauty_or_home_goods(text) and not broad_marketplace:
+            add("premium-product-store", 118, "handmade beauty/home-craft boutique (soap, candles, bath goods)")
 
         if re.search(r"\b(ropa|fashion|moda|boutique|streetwear|zapatos|sneaker|apparel|clothing|drop|lookbook)\b", text) and not broad_marketplace:
             add("fashion-drop-pro", 95, "fashion and collection browsing")

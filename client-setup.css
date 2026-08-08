@@ -5567,3 +5567,45 @@ body.public-client-setup.lyra-result-mode.draft-adjust-open .guided-chat-card {
     max-width: 88%;
   }
 }
+
+/* Customer setup shows one conversational block, not LYRA's internal plan. */
+.public-client-setup .guided-layout {
+  display: block !important;
+  overflow: auto;
+  padding: 0;
+  background: #ffffff;
+}
+
+.public-client-setup .guided-live-stage,
+.public-client-setup .lyra-agent-status,
+.public-client-setup .luma-coach-card,
+.public-client-setup .guided-layout .live-site-preview-card {
+  display: none !important;
+}
+
+.public-client-setup .guided-chat-card {
+  width: min(100%, 760px);
+  height: auto;
+  min-height: 0;
+  margin: 0 auto;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.public-client-setup .guided-chat { flex: 0 1 auto; min-height: 0; max-height: 420px; }
+.public-client-setup .guided-progress { padding: 8px 16px 12px; }
+.public-client-setup .guided-progress span,
+.public-client-setup .chat-status-card span { display: none; }
+.public-client-setup .guided-progress div { height: 4px; }
+.public-client-setup .chat-status-card { margin: 0 16px; border-width: 0 0 1px; border-radius: 0; background: transparent; padding: 12px 0; }
+.public-client-setup .quick-chip-row,
+.public-client-setup .chat-composer,
+.public-client-setup .guided-asset-prompt,
+.public-client-setup .guided-actions,
+.public-client-setup .mini-note { margin-inline: 16px; }
+
+@media (max-width: 720px) {
+  .public-client-setup .guided-chat { flex: 0 1 auto; min-height: 0; max-height: 48vh; }
+  .public-client-setup.review-details-open .summary-panel { position: fixed; inset: auto 0 0; z-index: 120; max-height: 76vh; border-radius: 18px 18px 0 0; }
+}

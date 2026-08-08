@@ -452,9 +452,9 @@ export const GUIDED_QUESTIONS = {
     preferredColors: "Any preferred colors, or do you want to upload a logo so I can extract a palette from it?",
     contactInfo: "What contact details should appear on the site, and what email should we use to save your draft/account? You can also continue with Google or Apple before generating.",
     salesMode: "Should the site support online sales, quote requests, in-person visits, or a mix?",
-    hasLogoPhotos: "Do you have a logo or photos ready to use?",
+    hasLogoPhotos: "Do you have a logo to upload? If not, we can continue with your business name in text for now.",
     desiredDomain: "What domain would you like? You can write a name like lunastore.com or skip it for now.",
-    review: "I have enough to create the first draft. If you asked me to create the logo or choose colors, I will include that in the design direction.",
+    review: "I have enough to create the first draft.",
   },
   es: {
     websiteIntent: "Descríbeme en un párrafo qué quieres construir: qué vende o hace el negocio, para quién, estilo/colores, ubicación y si debe vender online, reservar citas, captar clientes o sólo presentar la empresa. Yo elegiré la mejor estructura y sólo preguntaré lo que falte.",
@@ -468,9 +468,9 @@ export const GUIDED_QUESTIONS = {
     preferredColors: "¿Tienes colores preferidos o quieres subir un logo para sacar una paleta desde ahí?",
     contactInfo: "Que contacto quieres mostrar en la pagina y que email usamos para guardar tu borrador/cuenta? Tambien puedes continuar con Google o Apple antes de generar.",
     salesMode: "¿Quieres ventas online, solicitudes de cotización, visitas presenciales o una mezcla?",
-    hasLogoPhotos: "Tienes logo o fotos listas para usar?",
+    hasLogoPhotos: "¿Tienes un logo para subir? Si no, seguimos con el nombre de tu negocio en texto por ahora.",
     desiredDomain: "Que dominio te gustaria? Puedes escribir algo como lunastore.com o saltarlo por ahora.",
-    review: "Ya tengo suficiente para crear el primer borrador. Si me pediste crear el logo o elegir colores, lo incluiré en la dirección visual.",
+    review: "Ya tengo suficiente para crear el primer borrador.",
   },
   fr: {
     websiteIntent: "Décrivez en un paragraphe ce que vous voulez créer : ce que l'entreprise vend ou fait, pour qui, le style/couleurs, la localisation, et si le site doit vendre en ligne, réserver, capter des leads ou présenter l'entreprise. Je choisirai la meilleure structure et demanderai seulement ce qui manque.",
@@ -484,9 +484,9 @@ export const GUIDED_QUESTIONS = {
     preferredColors: "Avez-vous des couleurs préférées, ou voulez-vous importer un logo pour que j'en extraie une palette?",
     contactInfo: "Quelles coordonnées afficher sur le site, et quel email utiliser pour sauvegarder le brouillon/compte? Vous pouvez aussi continuer avec Google ou Apple avant de générer.",
     salesMode: "Le site doit-il proposer la vente en ligne, les demandes de devis, les visites en personne, ou un mélange?",
-    hasLogoPhotos: "Avez-vous un logo ou des photos prêts à utiliser?",
+    hasLogoPhotos: "Avez-vous un logo à importer ? Sinon, nous continuons avec le nom de votre entreprise en texte.",
     desiredDomain: "Quel domaine souhaitez-vous? Vous pouvez écrire lunastore.com ou ignorer pour l'instant.",
-    review: "J'ai assez d'informations pour créer le premier brouillon. Si vous m'avez demandé de créer le logo ou de choisir les couleurs, je l'inclurai dans la direction visuelle.",
+    review: "J'ai assez d'informations pour créer le premier brouillon.",
   },
   pt: {
     websiteIntent: "Descreva em um parágrafo o que você quer criar: o que o negócio vende ou faz, para quem, estilo/cores, localização, e se deve vender online, agendar, captar contatos ou apresentar a empresa. Eu escolho a melhor estrutura e pergunto apenas o que faltar.",
@@ -500,9 +500,9 @@ export const GUIDED_QUESTIONS = {
     preferredColors: "Tem cores preferidas, ou quer enviar um logo para eu extrair uma paleta dele?",
     contactInfo: "Quais contatos devem aparecer no site, e qual email usamos para salvar seu rascunho/conta? Você também pode continuar com Google ou Apple antes de gerar.",
     salesMode: "O site deve aceitar vendas online, pedidos de orçamento, visitas presenciais, ou uma mistura?",
-    hasLogoPhotos: "Você tem logo ou fotos prontas para usar?",
+    hasLogoPhotos: "Você tem um logo para enviar? Caso não, seguimos com o nome do negócio em texto por enquanto.",
     desiredDomain: "Qual domínio você gostaria? Pode escrever lunastore.com ou pular por enquanto.",
-    review: "Já tenho o suficiente para criar o primeiro rascunho. Se você pediu para criar o logo ou escolher cores, vou incluir isso na direção visual.",
+    review: "Já tenho o suficiente para criar o primeiro rascunho.",
   },
 };
 
@@ -1386,8 +1386,17 @@ function textSuggestsJewelryAccessoryStore(value) {
   const text = normalizeTemplateIntentText(value);
   const automotiveAccessory = /\b(accesorios? (para|de) (carros|autos|automotriz|automotrices|camionetas|motos|4x4)|auto accessories|car accessories)\b/.test(text);
   if (automotiveAccessory) return false;
-  return /\b(bisuteria|bijouterie|joyeria|jewelry|jewellery|accesorios hechos a mano|accesorios artesanales|collar|collares|necklace|necklaces|pulsera|pulseras|bracelet|bracelets|arete|aretes|zarcillo|zarcillos|earring|earrings|anillo|anillos|rings?|cadena|cadenas|dije|dijes|charm|charms|handmade accessories|handmade jewelry|artesanal|hecho a mano)\b/.test(text)
-    || (/\baccesorios?\b/.test(text) && /\b(moda|fashion|boutique|bisuteria|joyeria|collar|pulsera|arete|anillo|artesanal|hecho a mano|handmade)\b/.test(text));
+  // NOTE: bare "artesanal"/"hecho a mano" (handmade, with no jewelry-specific
+  // word nearby) is intentionally excluded — it's a generic craft signal shared
+  // by many product types (soap, candles, pottery, jewelry), not a jewelry
+  // indicator on its own. See textSuggestsHandmadeCraftGoods.
+  return /\b(bisuteria|bijouterie|joyeria|jewelry|jewellery|accesorios hechos a mano|accesorios artesanales|collar|collares|necklace|necklaces|pulsera|pulseras|bracelet|bracelets|arete|aretes|zarcillo|zarcillos|earring|earrings|anillo|anillos|rings?|cadena|cadenas|dije|dijes|charm|charms|handmade accessories|handmade jewelry)\b/.test(text)
+    || (/\baccesorios?\b/.test(text) && /\b(moda|fashion|boutique|bisuteria|joyeria|collar|pulsera|arete|anillo)\b/.test(text));
+}
+
+function textSuggestsHandmadeCraftGoods(value) {
+  const text = normalizeTemplateIntentText(value);
+  return /\b(artesanal|artesanales|artesania|artesanía|hecho a mano|hechos a mano|handmade|jabon|jabones|soap|bath bomb|bath bombs|bomba de bano|bombas de bano|velas|candles|manualidades|crafts)\b/.test(text);
 }
 
 function textSuggestsProfessionalService(value) {
@@ -1454,10 +1463,14 @@ function templateIntentScorecard(value, payload = {}) {
   if (textSuggestsMultiVendorMarketplace(text)) scores.push(scoreFor("mega-marketplace", 145, "explicit multi-vendor marketplace reference"));
   if (textSuggestsMegaRetailStore(text)) scores.push(scoreFor("mega-retail-store", 140, "large single-owner retail catalog"));
   if (textSuggestsProfessionalService(text)) scores.push(scoreFor("legal-professional-services-pro", 135, "professional services trust flow"));
-  if (textSuggestsBeautyCommerceStore(text)) scores.push(scoreFor("mega-retail-store", 122, "beauty and personal-care retail catalog"));
+  if (textSuggestsBeautyCommerceStore(text)) {
+    scores.push(textSuggestsHandmadeCraftGoods(text)
+      ? scoreFor("premium-product-store", 122, "handmade beauty/home-craft boutique (soap, candles, bath goods)")
+      : scoreFor("mega-retail-store", 122, "beauty and personal-care retail catalog"));
+  }
   if (textSuggestsBroadMarketplace(text) && !textSuggestsMultiVendorMarketplace(text)) scores.push(scoreFor("mega-retail-store", 105, "broad owned catalog"));
   if (textSuggestsBroadMarketplace(text) && textSuggestsMultiVendorMarketplace(text)) scores.push(scoreFor("mega-marketplace", 105, "broad multi-vendor catalog"));
-  if (products.length >= 5 && !textSuggestsFocusedCommerceStore(text) && !textSuggestsProfessionalService(text) && !has(/\b(restaurante|restaurant|menu|comida|food|cafe|cafeteria|barber|barberia|salon|spa|clinica|clinic|servicio|service|contractor|curso|course)\b/)) {
+  if (products.length >= 10 && !textSuggestsFocusedCommerceStore(text) && !textSuggestsProfessionalService(text) && !has(/\b(restaurante|restaurant|menu|comida|food|cafe|cafeteria|barber|barberia|salon|spa|clinica|clinic|servicio|service|contractor|curso|course)\b/)) {
     scores.push(scoreFor(textSuggestsMultiVendorMarketplace(text) ? "mega-marketplace" : "mega-retail-store", 55, "many independent product categories"));
   }
 
@@ -1501,7 +1514,7 @@ function inferTemplateIdFromText(value) {
   const scoredTemplateId = bestTemplateIdFromContext(text);
   if (scoredTemplateId) return scoredTemplateId;
   if (textSuggestsMultiVendorMarketplace(text)) return "mega-marketplace";
-  if (textSuggestsBeautyCommerceStore(text)) return "mega-retail-store";
+  if (textSuggestsBeautyCommerceStore(text)) return textSuggestsHandmadeCraftGoods(text) ? "premium-product-store" : "mega-retail-store";
   if (textSuggestsMegaRetailStore(text) || textSuggestsBroadMarketplace(text)) return "mega-retail-store";
   if (textSuggestsFocusedProductLine(text)) return "premium-product-store";
   if (/tipo ebay|como ebay|clasificados|listados|vendedores|usado|seller|listing/.test(text)) return "listing-marketplace-pro";
@@ -2114,17 +2127,22 @@ function setGuidedBuildPhase(phase, detail = "") {
       <em>${escapeHtml(isReady ? "100%" : `${Math.min(95, Math.round(((activeIndex + 1) / phases.length) * 100))}%`)}</em>
     </div>
     <p>${escapeHtml(detail || (isError
-      ? langText({ en: "The request did not complete. Keep the brief and retry.", es: "La solicitud no termino. Conserva el brief y reintenta.", fr: "La demande n'a pas abouti. Conservez le brief et reessayez.", pt: "A solicitacao nao terminou. Mantenha o brief e tente novamente." })
+      ? langText({ en: "Nothing was lost — your answers are saved. Let's try again.", es: "No se perdio nada, tus respuestas quedaron guardadas. Intentemos de nuevo.", fr: "Rien n'est perdu, vos reponses sont enregistrees. Reessayons.", pt: "Nada foi perdido, suas respostas ficaram salvas. Vamos tentar de novo." })
       : isReady
         ? langText({ en: "The editable draft is ready to review.", es: "El borrador editable esta listo para revisar.", fr: "Le brouillon modifiable est pret a etre revise.", pt: "O rascunho editavel esta pronto para revisar." })
         : activePhase.body))}</p>
-    <div class="guided-build-steps">
+    ${isError
+      ? `<div class="guided-build-actions"><button type="button" data-guided-build-retry>${escapeHtml(langText({ en: "Try again", es: "Reintentar", fr: "Reessayer", pt: "Tentar novamente" }))}</button></div>`
+      : `<div class="guided-build-steps">
       ${phases.map((item, index) => {
         const state = isReady || index < activeIndex ? "done" : index === activeIndex ? "active" : "pending";
         return `<span class="${state}">${escapeHtml(item.label)}</span>`;
       }).join("")}
-    </div>
+    </div>`}
   `;
+  card.querySelector("[data-guided-build-retry]")?.addEventListener("click", () => {
+    window.handleGuidedGenerateButton?.();
+  });
   requestAnimationFrame(() => {
     card.scrollIntoView({ block: "nearest", behavior: "smooth" });
   });
@@ -2979,6 +2997,7 @@ function renderSitePlanCard() {
 }
 
 function appendTemplateDetectionMessage(selection) {
+  if (!document.body.classList.contains("lyra-debug-mode")) return;
   if (!selection?.templateId) {
     appendChatMessage("assistant", langText({
       en: "I understand the general goal. I will choose the visual structure after I know what you sell or offer.",
@@ -3229,6 +3248,22 @@ function insertQuickChip(value) {
     guidedLogoUpload.click();
     return;
   }
+  if (value === "Continue without logo") {
+    builderState.guidedState.hasLogoPhotos = langText({
+      en: "Continue without a logo",
+      es: "Seguir sin logo",
+      fr: "Continuer sans logo",
+      pt: "Continuar sem logo",
+    });
+    builderState.guidedState.logoPreference = "text_only";
+    builderState.guidedState.aiGeneratedLogoRequested = false;
+    builderState.guidedStep = nextSmartGuidedStep("hasLogoPhotos");
+    appendChatMessage("user", translated);
+    appendChatMessage("assistant", guidedQuestion(builderState.guidedStep), builderState.guidedStep === "review" ? "success" : "speaking");
+    renderGuidedSummary();
+    refreshQuickChips();
+    return;
+  }
   if (value === "Review details") {
     openReviewDetails();
     return;
@@ -3247,14 +3282,15 @@ function insertQuickChip(value) {
 
 export function refreshQuickChips() {
   const chipsByStep = {
-    websiteIntent: ["Sell online", "Show catalog", "Business info site", "Booking", "Request quotes", "Marketplace"],
-    preferredTone: ["Elegant", "Modern", "Premium", "Warm", "Professional", "Let AI decide"],
+    websiteIntent: ["Sell online", "Show catalog", "Booking", "Request quotes"],
+    preferredTone: ["Elegant", "Modern", "Warm", "Let AI decide"],
     preferredColors: ["Let AI choose", "Use my logo colors", "I have specific colors"],
-    salesMode: ["Sell online", "Request quotes", "Calls/messages", "All of the above", "Not sure"],
-    targetAudience: ["Local customers", "Families", "Professionals", "Businesses", "Let AI decide"],
+    salesMode: ["Sell online", "Request quotes", "Calls/messages", "Not sure"],
+    targetAudience: ["Local customers", "Families", "Professionals", "Let AI decide"],
+    hasLogoPhotos: ["Upload logo", "Continue without logo"],
     review: [],
   };
-  const chips = chipsByStep[builderState.guidedStep] || [];
+  const chips = (chipsByStep[builderState.guidedStep] || []).slice(0, 4);
   quickChipRow.innerHTML = chips
     .map((chip) => `<button data-chip="${escapeAttribute(chip)}" type="button">${escapeHtml(translateChip(chip))}</button>`)
     .join("");
@@ -3327,6 +3363,7 @@ function translateChip(value) {
       "Yes, correct": "Sí, correcto",
       "Change style": "Cambiar estilo",
       "Upload logo": "Subir logo",
+      "Continue without logo": "Seguir sin logo",
       "Review details": "Revisar detalles",
     },
     fr: {
@@ -3357,6 +3394,7 @@ function translateChip(value) {
       "Yes, correct": "Oui, c'est correct",
       "Change style": "Changer le style",
       "Upload logo": "Importer un logo",
+      "Continue without logo": "Continuer sans logo",
       "Review details": "Vérifier les détails",
     },
     pt: {
@@ -3387,6 +3425,7 @@ function translateChip(value) {
       "Yes, correct": "Sim, correto",
       "Change style": "Mudar estilo",
       "Upload logo": "Enviar logo",
+      "Continue without logo": "Continuar sem logo",
       "Review details": "Revisar detalhes",
     },
   };
@@ -4339,6 +4378,9 @@ function humanizePlanFeature(feature) {
 function openReviewDetails() {
   syncGuidedStateFromSummary();
   document.body.classList.add("review-details-open");
+  document.querySelectorAll(".summary-panel .mobile-review-details").forEach((details) => {
+    details.open = true;
+  });
   renderGuidedSummary();
 }
 
@@ -5103,39 +5145,58 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
   if (isPublicClientSetup) guidedStatusText.textContent = t("generatingLong");
   builderAvatarManager?.setState("thinking", { source: "generate-website" });
 
+  const GENERATION_ATTEMPTS = 2;
+  let error = null;
   try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: clientAuthHeaders({ "content-type": "application/json" }),
-      credentials: "include",
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) {
-      const error = await readErrorMessage(response);
-      throw new Error(error || "Website generation failed.");
-    }
+  for (let attempt = 1; attempt <= GENERATION_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: clientAuthHeaders({ "content-type": "application/json" }),
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const responseError = await readErrorMessage(response);
+        throw new Error(responseError || "Website generation failed.");
+      }
 
-    const result = await response.json();
-    if (result.needs_more_info) {
-      handleServerNeedsMoreInfo(result);
-      return "needs_more_info";
+      const result = await response.json();
+      if (result.needs_more_info) {
+        handleServerNeedsMoreInfo(result);
+        return "needs_more_info";
+      }
+      setStudioProgressPhase("shop");
+      setGuidedBuildPhase("render");
+      const finalTemplateSelection = await resolveGeneratedTemplateSelection(result.schema, templateSelection);
+      if (finalTemplateSelection) {
+        result.schema = mergeTemplateSelectionIntoSchema(result.schema, finalTemplateSelection);
+      }
+      statusText.textContent = result.used_dev_mock
+        ? "Development mock used because OPENAI_API_KEY is missing on the server."
+        : t("generatedOpenAI");
+      applyGenerationResult(result, payload, finalTemplateSelection);
+      setStudioProgressPhase("mobile");
+      await createDomainOrderIfNeeded(payload, result);
+      setStudioProgressPhase("ready");
+      setGuidedBuildPhase("ready");
+      return true;
+    } catch (attemptError) {
+      error = attemptError;
+      if (attempt < GENERATION_ATTEMPTS) {
+        const retryMessage = langText({
+          en: "That took longer than expected. Trying once more automatically...",
+          es: "Eso tardó más de lo esperado. Reintentando automáticamente...",
+          fr: "Cela a pris plus de temps que prévu. Nouvelle tentative automatique...",
+          pt: "Isso demorou mais do que o esperado. Tentando novamente automaticamente...",
+        });
+        statusText.textContent = retryMessage;
+        if (isPublicClientSetup) guidedStatusText.textContent = retryMessage;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
     }
-    setStudioProgressPhase("shop");
-    setGuidedBuildPhase("render");
-    const finalTemplateSelection = await resolveGeneratedTemplateSelection(result.schema, templateSelection);
-    if (finalTemplateSelection) {
-      result.schema = mergeTemplateSelectionIntoSchema(result.schema, finalTemplateSelection);
-    }
-    statusText.textContent = result.used_dev_mock
-      ? "Development mock used because OPENAI_API_KEY is missing on the server."
-      : t("generatedOpenAI");
-    applyGenerationResult(result, payload, finalTemplateSelection);
-    setStudioProgressPhase("mobile");
-    await createDomainOrderIfNeeded(payload, result);
-    setStudioProgressPhase("ready");
-    setGuidedBuildPhase("ready");
-    return true;
-  } catch (error) {
+  }
+  {
     builderAvatarManager?.setState("confused", { source: "generate-error" });
     setStudioProgressPhase("homepage");
     setGuidedBuildPhase("error");
@@ -5167,6 +5228,7 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     statusText.textContent = message;
     guidedStatusText.textContent = message;
     return true;
+  }
   } finally {
     button.disabled = false;
     button.textContent = button.id === "guidedGenerateButton" ? t("reviewGenerate") : t("generateButton");
@@ -5191,7 +5253,7 @@ function enrichPayloadDesignStrategy(payload, templateSelection) {
 function inferCatalogComplexity(payload = {}) {
   const text = normalizeTemplateIntentText(`${payload.business_description || ""} ${arrayValue(payload.services_products).join(" ")} ${payload.industry || ""}`);
   const products = meaningfulOfferItems(payload.services_products);
-  if (textSuggestsBroadMarketplace(text) || (products.length >= 5 && !textSuggestsFocusedCommerceStore(text))) return "broad_multi_category_catalog";
+  if (textSuggestsBroadMarketplace(text) || (products.length >= 10 && !textSuggestsFocusedCommerceStore(text))) return "broad_multi_category_catalog";
   if (textSuggestsFocusedProductLine(text) || products.length <= 2) return "focused_product_line";
   return "standard_catalog";
 }
@@ -5329,9 +5391,9 @@ function inferDesignerTemplateIdFromPayload(payload = {}) {
     return "mega-marketplace";
   }
   if (textSuggestsBeautyCommerceStore(text)) {
-    return "mega-retail-store";
+    return textSuggestsHandmadeCraftGoods(text) ? "premium-product-store" : "mega-retail-store";
   }
-  if (textSuggestsMegaRetailStore(text) || textSuggestsBroadMarketplace(text) || (products.length >= 5 && !textSuggestsFocusedCommerceStore(text) && !textSuggestsProfessionalService(text))) {
+  if (textSuggestsMegaRetailStore(text) || textSuggestsBroadMarketplace(text) || (products.length >= 10 && !textSuggestsFocusedCommerceStore(text) && !textSuggestsProfessionalService(text))) {
     return "mega-retail-store";
   }
   if (textSuggestsFocusedProductLine(text)) return "premium-product-store";

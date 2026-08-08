@@ -450,106 +450,41 @@ export function renderBrandKit(brand = builderState.guidedState.brand) {
 export function renderGuidedBriefReview() {
   if (!guidedBriefReview) return;
   syncTemplateSelectionFromGuidedContext();
-  const aiStudioPlan = refreshAiStudioPlanFromContext();
-  const plan = builderState.forcedTemplateSelection?.templateId ? ensureSitePlan() : buildSitePlan({
-    templateId: "",
-    template: {},
-    catalogType: "",
-  });
-  const templateMeta = templatePreviewMeta(aiStudioPlan.recommendedTemplateId || plan.templateId) || templatePreviewMeta(builderState.forcedTemplateSelection?.templateId || "");
-  const templateName = aiStudioPlan.recommendedTemplateName || localizedTemplateName(templateMeta) || plan.templateName || langText({
-    en: "Template pending",
-    es: "Template pendiente",
-    fr: "Template a definir",
-    pt: "Template pendente",
-  });
-  const templateDescription = aiStudioPlan.reasoningSummary || localizedTemplateDescription(templateMeta) || plan.strategy || langText({
-    en: "LYRA will choose the final visual base from the full business context.",
-    es: "LYRA elegira la base visual final usando todo el contexto del negocio.",
-    fr: "LYRA choisira la base visuelle finale avec tout le contexte.",
-    pt: "A LYRA escolhera a base visual final usando todo o contexto.",
-  });
-  const businessFocus = aiBuildFocusLine();
-  const catalogStrategy = aiCatalogStrategyLine(plan);
-  const visualStrategy = aiVisualStrategyLine(plan);
-  const sourceSignals = aiSourceSignalList();
-  const editableItems = [
-    langText({ en: "headlines and sections", es: "titulos y secciones", fr: "titres et sections", pt: "titulos e secoes" }),
-    langText({ en: "catalog/products", es: "catalogo/productos", fr: "catalogue/produits", pt: "catalogo/produtos" }),
-    langText({ en: "colors, logo and images", es: "colores, logo e imagenes", fr: "couleurs, logo et images", pt: "cores, logo e imagens" }),
-    langText({ en: "buttons and contact flow", es: "botones y flujo de contacto", fr: "boutons et parcours contact", pt: "botoes e fluxo de contato" }),
-  ];
+  const offer = meaningfulOfferItems(builderState.guidedState.servicesProducts).slice(0, 3).join(", ");
+  const summary = [
+    builderState.guidedState.businessName,
+    builderState.guidedState.industry,
+    builderState.guidedState.location,
+    builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
+    offer,
+  ].filter(Boolean);
   guidedBriefReview.innerHTML = `
-    <div class="ai-build-card">
-      <div class="ai-build-card-head">
-        <span>${escapeHtml(langText({ en: "AI build decision", es: "Decision de construccion IA", fr: "Decision IA", pt: "Decisao IA" }))}</span>
-        <strong>${escapeHtml(templateName)}</strong>
-      </div>
-      <p>${escapeHtml(templateDescription)}</p>
-      <div class="ai-build-reason">
-        <b>${escapeHtml(langText({ en: "Why this base", es: "Por que esta base", fr: "Pourquoi cette base", pt: "Por que esta base" }))}</b>
-        <span>${escapeHtml(catalogStrategy)}</span>
-      </div>
-    </div>
-    <div class="ai-build-focus">
-      <strong>${escapeHtml(businessFocus)}</strong>
-      <span>${escapeHtml(visualStrategy)}</span>
-    </div>
-    <div class="ai-build-pages">
-      ${plan.pages.slice(0, 4).map((page, index) => `
-        <article>
-          <b>${index + 1}</b>
-          <div>
-            <strong>${escapeHtml(page.title)}</strong>
-            <span>${escapeHtml(page.purpose)}</span>
-          </div>
-        </article>
-      `).join("")}
-    </div>
-    <div class="ai-build-grid">
-      <section>
-        <span>${escapeHtml(langText({ en: "LYRA will use", es: "LYRA usara", fr: "LYRA utilisera", pt: "A LYRA usara" }))}</span>
-        ${sourceSignals.map((item) => `<strong>${escapeHtml(item)}</strong>`).join("")}
-      </section>
-      <section>
-        <span>${escapeHtml(langText({ en: "Editable after generation", es: "Editable despues de generar", fr: "Modifiable apres generation", pt: "Editavel apos gerar" }))}</span>
-        ${editableItems.map((item) => `<strong>${escapeHtml(item)}</strong>`).join("")}
-      </section>
-    </div>
+    <section class="business-review-summary">
+      <strong>${escapeHtml(langText({ en: "What we understand about your business", es: "Esto entendimos de tu negocio", fr: "Ce que nous avons compris de votre entreprise", pt: "O que entendemos sobre seu negócio" }))}</strong>
+      <p>${escapeHtml(summary.join(" · ") || langText({ en: "Add a few details and LYRA will prepare your draft.", es: "Agrega algunos detalles y LYRA preparará tu borrador.", fr: "Ajoutez quelques détails et LYRA préparera votre brouillon.", pt: "Adicione alguns detalhes e a LYRA preparará seu rascunho." }))}</p>
+    </section>
   `;
 }
 
 export function renderLumaReadyCard() {
-  const diagnosis = refreshAiStudioPlanFromContext();
-  const plan = builderState.guidedState.sitePlan || null;
+  const offer = meaningfulOfferItems(builderState.guidedState.servicesProducts).slice(0, 3).join(", ");
+  const summary = [
+    builderState.guidedState.businessName,
+    builderState.guidedState.industry,
+    builderState.guidedState.location,
+    builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
+    offer,
+  ].filter(Boolean);
   const card = document.createElement("section");
   card.className = "luma-ready-card";
-  const templateMeta = templatePreviewMeta(plan?.templateId || builderState.forcedTemplateSelection?.templateId || "");
-  const templateName = localizedTemplateName(templateMeta) || plan?.templateName || builderState.forcedTemplateSelection?.templateId || langText({
-    en: "AI-selected structure",
-    es: "Estructura elegida por IA",
-    fr: "Structure choisie par IA",
-    pt: "Estrutura escolhida por IA",
-  });
-  const reason = assistantVisibleCopy(diagnosis.reasoningSummary || builderState.forcedTemplateSelection?.reason || langText({
-    en: "LYRA will use the conversation as strategy and generate customer-facing copy.",
-    es: "LYRA usara la conversacion como estrategia y generara textos para clientes.",
-    fr: "LYRA utilisera la conversation comme strategie et generera le contenu client.",
-    pt: "A LYRA usara a conversa como estrategia e gerara textos para clientes.",
-  }));
   card.innerHTML = `
     <div class="luma-ready-head">
-      <span>${escapeHtml(langText({ en: "Site plan ready", es: "Plan listo", fr: "Plan pret", pt: "Plano pronto" }))}</span>
-      <strong>${escapeHtml(templateName)}</strong>
+      <strong>${escapeHtml(langText({ en: "This is what I understand about your business", es: "Esto entendimos de tu negocio", fr: "Voici ce que j'ai compris de votre entreprise", pt: "Isto é o que entendi sobre seu negócio" }))}</strong>
     </div>
-    <p>${escapeHtml(reason)}</p>
-    <div class="luma-ready-points">
-      ${(diagnosis.requiredFeatures || []).slice(0, 3).map((feature) => `<span>${escapeHtml(humanizePlanFeature(feature))}</span>`).join("")}
-      <span>${escapeHtml(langText({ en: "Editable draft", es: "Borrador editable", fr: "Brouillon modifiable", pt: "Rascunho editavel" }))}</span>
-    </div>
+    <p>${escapeHtml(summary.join(" · "))}</p>
     <div class="luma-ready-actions">
-      <button type="button" data-chat-generate>${escapeHtml(langText({ en: "Generate website now", es: "Generar pagina ahora", fr: "Generer maintenant", pt: "Gerar site agora" }))}</button>
-      <button type="button" data-chat-review>${escapeHtml(langText({ en: "Modify", es: "Modificar", fr: "Modifier", pt: "Modificar" }))}</button>
+      <button type="button" data-chat-generate>${escapeHtml(langText({ en: "Generate my website", es: "Generar mi web", fr: "Générer mon site", pt: "Gerar meu site" }))}</button>
+      <button type="button" data-chat-review>${escapeHtml(langText({ en: "Correct something", es: "Corregir algo", fr: "Corriger quelque chose", pt: "Corrigir algo" }))}</button>
     </div>
   `;
   card.querySelector("[data-chat-generate]")?.addEventListener("click", (event) => handleGuidedGenerateButton(event));
@@ -636,31 +571,23 @@ export function domainStatusLabel(item) {
 }
 
 export function compactCollectedPreview() {
-  if (isPublicClientSetup) {
-    const templateMeta = templatePreviewMeta(builderState.forcedTemplateSelection?.templateId || builderState.guidedState.sitePlan?.templateId || "");
-    const humanTemplate = localizedTemplateName(templateMeta);
-    const parts = [
-      builderState.guidedState.businessName,
-      humanTemplate,
-      arrayValue(builderState.guidedState.servicesProducts).slice(0, 2).join(", "),
-    ].filter(Boolean);
-    return parts.length
-      ? parts.join(" · ")
-      : langText({
-          en: "LYRA is collecting the essentials.",
-          es: "LYRA está reuniendo lo esencial.",
-          fr: "LYRA collecte l'essentiel.",
-          pt: "A LYRA está reunindo o essencial.",
-        });
-  }
+  const templateMeta = templatePreviewMeta(builderState.forcedTemplateSelection?.templateId || builderState.guidedState.sitePlan?.templateId || "");
+  const humanTemplate = localizedTemplateName(templateMeta);
   const parts = [
-    builderState.forcedTemplateSelection?.templateId,
     builderState.guidedState.businessName,
+    humanTemplate,
     builderState.guidedState.industry,
     builderState.guidedState.location,
     arrayValue(builderState.guidedState.servicesProducts).slice(0, 2).join(", "),
   ].filter(Boolean);
-  return parts.length ? parts.join(" · ") : t("currentInfo");
+  return parts.length
+    ? parts.join(" · ")
+    : langText({
+        en: "LYRA is collecting the essentials.",
+        es: "LYRA está reuniendo lo esencial.",
+        fr: "LYRA collecte l'essentiel.",
+        pt: "A LYRA está reunindo o essencial.",
+      });
 }
 
 export async function createDomainOrderIfNeeded(payload, result) {

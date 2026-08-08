@@ -633,7 +633,7 @@ class LyraIntakeEngine:
             if "brand_style" in missing:
                 return "¿Tienes colores, tono o estilo preferido? Si prefieres, dime “tú decides” y yo elijo una dirección visual que combine con el negocio."
             if "logo" in missing:
-                return "¿Tienes logo para subir, quieres que KREATON genere uno con IA, o lo dejamos para después?"
+                return "¿Tienes un logo para subir, o seguimos por ahora con el nombre de tu negocio en texto?"
             return "No pude procesar eso bien. Puedes reformularlo en una frase mas clara?"
         if "niche" in missing or "sales_flow" in missing:
             return "I need to classify the project correctly. Do you want to sell online, receive quotes, take bookings, capture leads, or present information?"
@@ -644,7 +644,7 @@ class LyraIntakeEngine:
         if "brand_style" in missing:
             return "Do you have preferred colors, tone, or style? If you prefer, say “you decide” and I will choose a visual direction that fits the business."
         if "logo" in missing:
-            return "Do you have a logo to upload, do you want KREATON to generate one with AI, or should we skip it for now?"
+            return "Do you have a logo to upload, or should we continue for now with your business name in text?"
         return "I could not process that clearly. Please rephrase it in one clearer sentence."
 
     @staticmethod
@@ -765,6 +765,12 @@ FORMULARIO A COMPLETAR (slots):
 - logo: uno de tres caminos válidos
     (a) has_logo (el cliente subirá/tiene uno), (b) wants_generated (pide que
     KREATON diseñe uno), (c) explicit_skip (no le importa por ahora)
+  IMPORTANTE al preguntar por este slot: en este flujo gratuito, tu pregunta debe
+  ofrecer SOLO dos caminos — "subir tu logo" o "seguir sin logo por ahora" —.
+  NUNCA propongas ni menciones que KREATON puede generar un logo con IA; esa opción
+  está reservada para el plan pago y no se ofrece de forma proactiva. El camino
+  wants_generated solo se marca si el cliente lo pide espontáneamente por su cuenta,
+  nunca porque tu pregunta se lo sugirió.
 - location (opcional, requerido solo si el negocio tiene presencia física)
 - contact_info (opcional en esta fase, se puede completar después)
 

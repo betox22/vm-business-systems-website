@@ -1,0 +1,492 @@
+{
+  "url": "http://127.0.0.1:8256/client/setup/?test-login=1&logout=1&codexCatFix=1",
+  "console": [],
+  "responses": [
+    {
+      "url": "https://kreaton-lyra-api.onrender.com/api/luma/chat",
+      "status": 200,
+      "body": {
+        "assistantMessage": "Got it. I updated what I could confirm.",
+        "emotion": "speaking",
+        "updatedFields": {
+          "businessName": "Bath All Day",
+          "businessDescription": "Quiero una tienda para vender jabones velas y bombas de bano, se llama Bath All Day. Quiero vender el catalogo completo, ofrecer ofertas y bundles online.",
+          "industry": "beauty",
+          "location": "",
+          "servicesProducts": [
+            "jabones velas",
+            "bombas de bano"
+          ],
+          "targetAudience": "vender jabones velas y bombas de bano, se llama Bath All Day",
+          "preferredTone": null,
+          "preferredColors": null,
+          "salesFlow": "online_sales",
+          "websiteIntent": "Quiero una tienda para vender jabones velas y bombas de bano, se llama Bath All Day. Quiero vender el catalogo completo, ofrecer ofertas y bundles online.",
+          "websiteType": "online_store",
+          "selectedTemplateId": "mega-retail-store",
+          "selectedTemplateName": null,
+          "catalogType": null,
+          "colors": {},
+          "typography": {},
+          "generatedCopy": {},
+          "catalogItems": [],
+          "fieldMeta": {
+            "businessName": {
+              "source": "explicit",
+              "confidence": 0
+            },
+            "business_name": {
+              "source": "explicit",
+              "confidence": 0
+            },
+            "businessDescription": {
+              "source": "explicit",
+              "confidence": 0
+            },
+            "business_description": {
+              "source": "explicit",
+              "confidence": 0
+            },
+            "niche": {
+              "source": "inferred",
+              "confidence": 0.9
+            },
+            "industry": {
+              "source": "inferred",
+              "confidence": 0.9
+            },
+            "salesFlow": {
+              "source": "ai_recommended",
+              "confidence": 0.9
+            },
+            "sales_flow": {
+              "source": "ai_recommended",
+              "confidence": 0.9
+            },
+            "websiteType": {
+              "source": "ai_recommended",
+              "confidence": 0.9
+            }
+          },
+          "detectedIntent": {
+            "businessModel": "online_store",
+            "commerceMode": "single_vendor",
+            "salesFlow": "online_sales",
+            "niche": "beauty",
+            "confidence": 0.9
+          },
+          "intakeCanGenerate": false,
+          "sitePlan": {}
+        },
+        "nextQuestion": "¡Genial! Ahora, ¿tienes algún estilo o colores en mente para tu marca Bath All Day, o prefieres que yo elija un estilo que combine con tu negocio? También, ¿tienes un logo o te gustaría que diseñáramos uno para ti?",
+        "readyToGenerate": false,
+        "missingImportantFields": [
+          "brand_style",
+          "logo"
+        ],
+        "confidence": 0,
+        "selectedTemplateId": "mega-retail-store",
+        "selected_template_id": "mega-retail-store",
+        "sitePlan": {},
+        "used_dev_fallback": false
+      }
+    },
+    {
+      "url": "https://kreaton-lyra-api.onrender.com/ai/website-builder",
+      "status": 200,
+      "body": {
+        "schema": {
+          "version": "1.0",
+          "generation_metadata": {
+            "catalog_source": "ai_generated",
+            "logo_status": "pending_ai_generation",
+            "logo_pending_generation": true
+          },
+          "business": {
+            "name": "Bath All Day",
+            "description": "Quiero una tienda para vender jabones velas y bombas de bano, se llama Bath All Day. Quiero vender el catalogo completo, ofrecer ofertas y bundles online.",
+            "industry": "beauty",
+            "location": "",
+            "selectedLanguage": "en",
+            "tone": "premium"
+          },
+          "brand": {
+            "logoUrl": "",
+            "logoPreference": "generate_ai_logo",
+            "logoStatus": "pending_ai_generation",
+            "logoPendingGeneration": true,
+            "preferredColors": "verdeblanco"
+          },
+          "theme": {
+            "background": "#FFFFFF",
+            "surface": "#F8F9FA",
+            "primary": "#2C3E50",
+            "secondary": "#E74C3C",
+            "accent": "#E74C3C",
+            "text": "#2C3E50",
+            "heading_font": "Playfair Display",
+            "body_font": "Inter",
+            "buttons": {
+              "primary_label": "Shop Now"
+            }
+          },
+          "selected_template": {
+            "id": "mega-retail-store",
+            "name": "Mega Retail Store",
+            "category": "online_store",
+            "intent": "single_vendor_dense_catalog",
+            "reason": "Selected by LYRA orchestrator from business intake."
+          },
+          "active_template": {
+            "id": "mega-retail-store",
+            "name": "Mega Retail Store"
+          },
+          "layout_mode": {
+            "template_id": "mega-retail-store",
+            "catalog_type": "single_vendor_dense_catalog",
+            "intent": "online_store",
+            "navigation": {
+              "sticky_header": true
+            }
+          },
+          "catalog_model": {
+            "catalogType": "single_vendor_dense_catalog"
+          },
+          "navigation": [
+            {
+              "label": "Home",
+              "page_key": "home"
+            },
+            {
+              "label": "Catalog",
+              "page_key": "catalog"
+            },
+            {
+              "label": "Contact",
+              "page_key": "contact"
+            }
+          ],
+          "pages": [
+            {
+              "page_key": "home",
+              "title": "Home",
+              "slug": "/",
+              "order": 1,
+              "sections": [
+                {
+                  "id": "hero",
+                  "type": "Hero",
+                  "order": 1,
+                  "editable": {
+                    "headline": "Indulge in Luxury Bathing",
+                    "subtitle": "Discover our exclusive range of handcrafted soaps, candles, and bath bombs.",
+                    "primary_button": "Shop Now",
+                    "secondary_button": "View categories"
+                  },
+                  "settings": {
+                    "layout": "commerce",
+                    "container_width": "wide"
+                  }
+                },
+                {
+                  "id": "catalog",
+                  "type": "ProductGrid",
+                  "order": 2,
+                  "editable": {
+                    "title": "Featured products",
+                    "text": "Editable products generated from the business strategy."
+                  },
+                  "settings": {
+                    "layout": "marketplace_grid",
+                    "columns": 4
+                  }
+                }
+              ]
+            },
+            {
+              "page_key": "catalog",
+              "title": "Catalog",
+              "slug": "/catalog",
+              "order": 2,
+              "sections": [
+                {
+                  "id": "catalog_grid",
+                  "type": "ProductGrid",
+                  "order": 1,
+                  "editable": {
+                    "title": "Catalog",
+                    "text": "Browse available products."
+                  },
+                  "settings": {
+                    "layout": "marketplace_grid",
+                    "columns": 4
+                  }
+                }
+              ]
+            },
+            {
+              "page_key": "contact",
+              "title": "Contact",
+              "slug": "/contact",
+              "order": 3,
+              "sections": [
+                {
+                  "id": "contact",
+                  "type": "Contact",
+                  "order": 1,
+                  "editable": {
+                    "title": "Contact us",
+                    "text": "Send a question or request."
+                  },
+                  "settings": {
+                    "layout": "simple"
+                  }
+                }
+              ]
+            }
+          ],
+          "catalog_items": [
+            {
+              "id": "prod_001",
+              "sku": "AI-001",
+              "name": "Lavender Bliss Soap",
+              "description": "Experience the calming scent of lavender with our handcrafted soap, perfect for a relaxing bath.",
+              "category": "Soaps",
+              "price_type": "fixed",
+              "price": 12.99,
+              "price_amount": 12.99,
+              "currency": "USD",
+              "price_label": "USD 12.99",
+              "rating": 4.7,
+              "badge": "Featured",
+              "imageSearchQuery": "lavender soap",
+              "image_url": "https://images.unsplash.com/photo-1582719478181-2f1d1f1a1f1a?auto=format&fit=crop&w=900&q=82",
+              "is_active": true,
+              "is_featured": true,
+              "sort_order": 0,
+              "image_asset": {
+                "source": "external_url",
+                "provider": "provided_url",
+                "category": "belleza",
+                "query": "lavender soap",
+                "url": "https://images.unsplash.com/photo-1582719478181-2f1d1f1a1f1a?auto=format&fit=crop&w=900&q=82",
+                "alt": "Lavender Bliss Soap",
+                "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+                "variants": {
+                  "thumb": "https://images.unsplash.com/photo-1582719478181-2f1d1f1a1f1a?auto=format&fit=crop&w=900&q=82",
+                  "card": "https://images.unsplash.com/photo-1582719478181-2f1d1f1a1f1a?auto=format&fit=crop&w=900&q=82",
+                  "full": "https://images.unsplash.com/photo-1582719478181-2f1d1f1a1f1a?auto=format&fit=crop&w=900&q=82"
+                },
+                "is_editable": true
+              }
+            },
+            {
+              "id": "prod_002",
+              "sku": "AI-002",
+              "name": "Vanilla Scented Candle",
+              "description": "Fill your space with the warm and inviting aroma of vanilla with our premium scented candle.",
+              "category": "Candles",
+              "price_type": "fixed",
+              "price": 19.99,
+              "price_amount": 19.99,
+              "currency": "USD",
+              "price_label": "USD 19.99",
+              "rating": 4.7,
+              "badge": "Featured",
+              "imageSearchQuery": "vanilla candle",
+              "image_url": "https://images.unsplash.com/photo-1600185365940-3c1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+              "is_active": true,
+              "is_featured": true,
+              "sort_order": 1,
+              "image_asset": {
+                "source": "external_url",
+                "provider": "provided_url",
+                "category": "belleza",
+                "query": "vanilla candle",
+                "url": "https://images.unsplash.com/photo-1600185365940-3c1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+                "alt": "Vanilla Scented Candle",
+                "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+                "variants": {
+                  "thumb": "https://images.unsplash.com/photo-1600185365940-3c1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+                  "card": "https://images.unsplash.com/photo-1600185365940-3c1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+                  "full": "https://images.unsplash.com/photo-1600185365940-3c1e1e1e1e1e?auto=format&fit=crop&w=900&q=82"
+                },
+                "is_editable": true
+              }
+            },
+            {
+              "id": "prod_003",
+              "sku": "AI-003",
+              "name": "Rose Petal Bath Bomb",
+              "description": "Transform your bath into a luxurious spa experience with our rose petal-infused bath bomb.",
+              "category": "Bath Bombs",
+              "price_type": "fixed",
+              "price": 9.99,
+              "price_amount": 9.99,
+              "currency": "USD",
+              "price_label": "USD 9.99",
+              "rating": 4.7,
+              "badge": "Featured",
+              "imageSearchQuery": "rose bath bomb",
+              "image_url": "https://images.unsplash.com/photo-1595433562696-1e1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+              "is_active": true,
+              "is_featured": true,
+              "sort_order": 2,
+              "image_asset": {
+                "source": "external_url",
+                "provider": "provided_url",
+                "category": "belleza",
+                "query": "rose bath bomb",
+                "url": "https://images.unsplash.com/photo-1595433562696-1e1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+                "alt": "Rose Petal Bath Bomb",
+                "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+                "variants": {
+                  "thumb": "https://images.unsplash.com/photo-1595433562696-1e1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+                  "card": "https://images.unsplash.com/photo-1595433562696-1e1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+                  "full": "https://images.unsplash.com/photo-1595433562696-1e1e1e1e1e1e?auto=format&fit=crop&w=900&q=82"
+                },
+                "is_editable": true
+              }
+            },
+            {
+              "id": "prod_004",
+              "sku": "AI-004",
+              "name": "Citrus Burst Soap",
+              "description": "Energize your senses with the refreshing scent of citrus in our handcrafted soap.",
+              "category": "Soaps",
+              "price_type": "fixed",
+              "price": 12.99,
+              "price_amount": 12.99,
+              "currency": "USD",
+              "price_label": "USD 12.99",
+              "rating": 4.7,
+              "badge": "Featured",
+              "imageSearchQuery": "citrus soap",
+              "image_url": "https://images.unsplash.com/photo-1582719478181-2f1d1f1a1f1a?auto=format&fit=crop&w=900&q=82",
+              "is_active": true,
+              "is_featured": true,
+              "sort_order": 3,
+              "image_asset": {
+                "source": "external_url",
+                "provider": "provided_url",
+                "category": "belleza",
+                "query": "citrus soap",
+                "url": "https://images.unsplash.com/photo-1582719478181-2f1d1f1a1f1a?auto=format&fit=crop&w=900&q=82",
+                "alt": "Citrus Burst Soap",
+                "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+                "variants": {
+                  "thumb": "https://images.unsplash.com/photo-1582719478181-2f1d1f1a1f1a?auto=format&fit=crop&w=900&q=82",
+                  "card": "https://images.unsplash.com/photo-1582719478181-2f1d1f1a1f1a?auto=format&fit=crop&w=900&q=82",
+                  "full": "https://images.unsplash.com/photo-1582719478181-2f1d1f1a1f1a?auto=format&fit=crop&w=900&q=82"
+                },
+                "is_editable": true
+              }
+            },
+            {
+              "id": "prod_005",
+              "sku": "AI-005",
+              "name": "Ocean Breeze Candle",
+              "description": "Bring the scent of the ocean into your home with our refreshing ocean breeze candle.",
+              "category": "Candles",
+              "price_type": "fixed",
+              "price": 19.99,
+              "price_amount": 19.99,
+              "currency": "USD",
+              "price_label": "USD 19.99",
+              "rating": 4.7,
+              "badge": "Featured",
+              "imageSearchQuery": "ocean breeze candle",
+              "image_url": "https://images.unsplash.com/photo-1600185365940-3c1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+              "is_active": true,
+              "is_featured": false,
+              "sort_order": 4,
+              "image_asset": {
+                "source": "external_url",
+                "provider": "provided_url",
+                "category": "anillos",
+                "query": "ocean breeze candle",
+                "url": "https://images.unsplash.com/photo-1600185365940-3c1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+                "alt": "Ocean Breeze Candle",
+                "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+                "variants": {
+                  "thumb": "https://images.unsplash.com/photo-1600185365940-3c1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+                  "card": "https://images.unsplash.com/photo-1600185365940-3c1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+                  "full": "https://images.unsplash.com/photo-1600185365940-3c1e1e1e1e1e?auto=format&fit=crop&w=900&q=82"
+                },
+                "is_editable": true
+              }
+            },
+            {
+              "id": "prod_006",
+              "sku": "AI-006",
+              "name": "Eucalyptus Mint Bath Bomb",
+              "description": "Revitalize your bath with the invigorating blend of eucalyptus and mint in our bath bomb.",
+              "category": "Bath Bombs",
+              "price_type": "fixed",
+              "price": 9.99,
+              "price_amount": 9.99,
+              "currency": "USD",
+              "price_label": "USD 9.99",
+              "rating": 4.7,
+              "badge": "Featured",
+              "imageSearchQuery": "eucalyptus mint bath bomb",
+              "image_url": "https://images.unsplash.com/photo-1595433562696-1e1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+              "is_active": true,
+              "is_featured": false,
+              "sort_order": 5,
+              "image_asset": {
+                "source": "external_url",
+                "provider": "provided_url",
+                "category": "belleza",
+                "query": "eucalyptus mint bath bomb",
+                "url": "https://images.unsplash.com/photo-1595433562696-1e1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+                "alt": "Eucalyptus Mint Bath Bomb",
+                "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+                "variants": {
+                  "thumb": "https://images.unsplash.com/photo-1595433562696-1e1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+                  "card": "https://images.unsplash.com/photo-1595433562696-1e1e1e1e1e1e?auto=format&fit=crop&w=900&q=82",
+                  "full": "https://images.unsplash.com/photo-1595433562696-1e1e1e1e1e1e?auto=format&fit=crop&w=900&q=82"
+                },
+                "is_editable": true
+              }
+            }
+          ],
+          "global_components": {
+            "logo_url": "",
+            "logo_status": "pending_ai_generation",
+            "logo_pending_generation": true,
+            "logo_preference": "generate_ai_logo"
+          },
+          "quality_rules": {
+            "intakeIsStrategyOnly": true,
+            "visibleCopyPolicy": "Never paste raw intake notes verbatim."
+          }
+        },
+        "catalog_source": "ai_generated",
+        "needs_more_info": false,
+        "missing_fields": [],
+        "next_question": null,
+        "storage_status": "generated",
+        "used_dev_mock": false,
+        "business_id": "biz_89ce491e2a",
+        "site_id": "site_bfdc0283fb",
+        "generatedSiteId": null,
+        "projectId": null,
+        "generation_id": "gen_bed932fc1c"
+      }
+    }
+  ],
+  "errors": [],
+  "final": {
+    "hasElectronics": false,
+    "hasHome": true,
+    "hasFashion": false,
+    "hasSoaps": true,
+    "hasCandles": true,
+    "hasBathBombs": true,
+    "selectedTemplateId": null,
+    "catalogCategories": [],
+    "visibleCategoriesSample": [],
+    "bodyStart": "Bath All Day\nGenerated with OpenAI through the backend.\nTu borrador está listo\nRevísalo completo. Puedes enviarlo al equipo o pedirle ajustes a LYRA.\nEnviar para revisión\nAjustar con LYRA\nNew page\nSeguir revisando\nBATH ALL DAY\nHome\nDeals\nCategories\nContact\nShop\nAbout\nSupport\nBA\nBath All Day\nBRAND MARK\nHomeDealsCategoriesCatalogSupport\nAccount\nCart 0\nBath All Day\nToday deal\nSearch\nSearch\nSoaps\nCandles\nBath Bombs\nTODAY DEAL\nBath All Day store\n\nA search-first shopping experience for jabones velas and bombas de bano, with clear categories, featured finds, and a fast path to buy or ask.\n\nSecure checkout\nFast ship\nSupport\nShop deals\nView categories\nTop picks ready to sell\nSort by: Featured\nDEAL\nLavender Bliss Soap\nUSD 12.99\nVA\nFAST SHIP\nVanilla Scented Candle\nUSD 19.99\nRO\nDEAL\nRose Petal Bath Bomb\nUSD 9.99\nFAST SHIP\nCitrus Burst Soap\nUSD 12.99\nPREMIUM\nShop by category\n\nQuick paths for customers to compare products faster.\n\nSO\nSoaps\nDEAL\nCA\nCandles\nFAST SHIP\nBA\nBath Bombs\nDEAL\nDEAL\nToday's deals\n\nA high-density retail draft with categories, offers, ratings and checkout-ready product cards.\n\nDEAL\nSOAPS\nLavender Bliss Soap\n\nExperience the calming scent of lavender with our handcrafted soap,"
+  }
+}
