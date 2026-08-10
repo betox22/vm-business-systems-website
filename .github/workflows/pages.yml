@@ -16,6 +16,15 @@ name: Deploy static site to GitHub Pages
 # below overwrites the staged copy with the fresh modular build. This closes
 # the drift risk between the monolith and src/ai-builder/ that would have
 # gotten worse with every further refactor phase. See KREATON-ROADMAP.md.
+#
+# Found + fixed 2026-08-10: the <script src="/ai-builder.js?v=162"> cache-
+# busting number was hand-maintained in ai-builder.html and never bumped on
+# most deploys, so Cloudflare's edge cache (and GitHub Pages' own Fastly
+# cache) kept serving the byte-for-byte previous ai-builder.js under that
+# same URL for a while after every push, even though the origin already had
+# the fix. The `inject-cache-bust.mjs` step rewrites that query string to the
+# current commit SHA on every build so each deploy always gets a URL no
+# cache layer has seen before. See scripts/inject-cache-bust.mjs.
 
 on:
   push:
@@ -43,6 +52,7 @@ jobs:
       - run: node scripts/build-ai-builder.mjs
       - run: node scripts/stage-public-site.mjs
       - run: cp dist/ai-builder.js public-dist/ai-builder.js
+      - run: node scripts/inject-cache-bust.mjs
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public-dist
