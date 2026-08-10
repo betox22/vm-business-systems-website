@@ -4854,7 +4854,7 @@ function inferGuidedUpdates(step, message) {
   return hasExistingGuidedValue(key) ? {} : { [key]: message };
 }
 
-function inferGuidedUpdatesFromAnyMessage(message) {
+function inferGuidedUpdatesFromAnyMessage(message, attributionStep = "") {
   const text = String(message || "").trim();
   const lower = text.toLowerCase();
   const updates = {};
@@ -4871,13 +4871,28 @@ function inferGuidedUpdatesFromAnyMessage(message) {
     updates.businessName = businessName;
   }
 
-  const industry = inferIndustryFromPrompt(text);
+  // When this message is specifically answering "how do you want to sell"
+  // (salesMode/sales_flow), skip the industry/servicesProducts guesses below.
+  // Root cause: people naturally answer that question with "quiero vender
+  // online" / "vendo por WhatsApp" / "venta online y cotizaciones" - and
+  // inferIndustryFromPrompt's ecommerce check and extractServicesProducts's
+  // patterns both key off "vend-/venta/vender", the same verb. So a reply
+  // that's purely about the sales channel was getting misread as a business
+  // description, overwriting industry with a generic "Online store /
+  // ecommerce" guess and dumping sales-channel words ("online", "cotizacion",
+  // "reservas") into servicesProducts as if they were real product names.
+  // inferGuidedUpdates already captures this message correctly under the
+  // salesMode key via its own step-specific branch - this only suppresses
+  // the unrelated broad-matcher guesses, not the real answer.
+  const isSalesModeAnswer = attributionStep === "salesMode";
+
+  const industry = isSalesModeAnswer ? "" : inferIndustryFromPrompt(text);
   if (industry && !builderState.guidedState.industry) updates.industry = industry;
 
   const location = extractLocation(text);
   if (location && !builderState.guidedState.location) updates.location = location;
 
-  const services = extractServicesProducts(text);
+  const services = isSalesModeAnswer ? [] : extractServicesProducts(text);
   if (services.length && !arrayValue(builderState.guidedState.servicesProducts).length) {
     updates.servicesProducts = services;
   }

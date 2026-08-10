@@ -295,11 +295,15 @@ export async function sendGuidedReply() {
       pt: "Comecei um espaço limpo para este novo projeto.",
     }), "success");
   }
-  const broadLocalUpdates = inferGuidedUpdatesFromAnyMessage(message);
   // Prefer the field the backend actually just asked about (captured from the
   // previous turn's response) over the local progress-UI step tracker, which
   // runs on its own fixed sequence and does not reflect the real conversation.
   const attributionStep = builderState.lastAskedGuidedField || builderState.guidedStep;
+  // Computed before the broad matcher (not after, as before) so it can tell
+  // the matcher when this message is specifically answering "how do you want
+  // to sell" - see the attributionStep === "salesMode" guard inside
+  // inferGuidedUpdatesFromAnyMessage for why that distinction matters.
+  const broadLocalUpdates = inferGuidedUpdatesFromAnyMessage(message, attributionStep);
   const stepUpdates = inferGuidedUpdates(attributionStep, message);
   const localContextUpdates = { ...broadLocalUpdates, ...stepUpdates };
   if (builderState.guidedStep === "websiteIntent" && !localContextUpdates.websiteIntent) {
@@ -382,13 +386,28 @@ export async function sendGuidedReply() {
     await applyLumaAgentDecision(result);
     const planAfterAgent = refreshAiStudioPlanFromContext(message);
     const serverNextStep = result.next_step || result.nextStep || "";
-    builderState.guidedStep = result.readyToGenerate ? "review" : normalizeNextGuidedStep(serverNextStep || builderState.guidedStep);
     // missingImportantFields[0] is the backend's own highest-priority missing
-    // slot - i.e. what nextQuestion is actually about. Save it (mapped to the
-    // frontend field name) so the NEXT reply gets attributed correctly,
-    // regardless of what the local guidedStep sequence thinks is current.
+    // slot for THIS turn - compute it before the step transition below so a
+    // failed/low-confidence turn (readyToGenerate false, e.g. the intake LLM
+    // warned or fell back) routes to that real missing field instead of
+    // falling through to whatever builderState.guidedStep already was. That
+    // fallback used to be the only option because the backend never sends a
+    // next_step/nextStep field, so serverNextStep is always "" - meaning any
+    // turn where guidedStep had already reached "review" (from an earlier
+    // turn, or a restored/stale draft) got stuck there forever: each new
+    // failed turn just re-confirmed "review" via normalizeNextGuidedStep's
+    // early-return for that step, silently showing a ready-to-generate card
+    // built from stale data even though the backend explicitly said this
+    // message could not be processed.
     const missingBackendFields = arrayValue(result.missingImportantFields);
-    builderState.lastAskedGuidedField = result.readyToGenerate ? "" : mapBackendSlotToGuidedField(missingBackendFields[0]);
+    const backendMissingStep = mapBackendSlotToGuidedField(missingBackendFields[0]);
+    builderState.guidedStep = result.readyToGenerate
+      ? "review"
+      : (backendMissingStep || normalizeNextGuidedStep(serverNextStep || builderState.guidedStep));
+    // Save it (mapped to the frontend field name) so the NEXT reply gets
+    // attributed correctly, regardless of what the local guidedStep sequence
+    // thinks is current.
+    builderState.lastAskedGuidedField = result.readyToGenerate ? "" : backendMissingStep;
     const serverNextQuestion = result.nextQuestion || result.next_question;
     const nextQuestion = result.readyToGenerate ? "" : chooseNextQuestionText(serverNextQuestion, builderState.guidedStep);
     const usedDevFallback = Boolean(result.used_dev_fallback || result.usedDevFallback);
