@@ -13,8 +13,52 @@ class StorageError(Exception):
     """Raised when an asset cannot be uploaded to the configured storage provider."""
 
 
+# This endpoint is called from the public guided-intake flow before a client
+# has a real account (same reasoning as /api/luma/chat), so it can't require
+# login without breaking that funnel. What it was missing -- and what
+# actually matters for an unauthenticated endpoint that writes to Supabase
+# Storage with the service-role key -- is a hard cap on what gets accepted:
+# no size limit and no MIME whitelist meant anyone could push arbitrarily
+# large or arbitrarily typed files into the bucket for free, unmetered.
+# SVG is intentionally excluded: it's not a normal photo/logo format here and
+# can carry embedded scripts that execute if the stored file is opened
+# directly rather than rendered inside an <img> tag.
+ALLOWED_IMAGE_MIME_TYPES = {"image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"}
+ALLOWED_VIDEO_MIME_TYPES = {"video/mp4", "video/webm", "video/quicktime"}
+MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10 MB
+MAX_VIDEO_BYTES = 20 * 1024 * 1024  # 20 MB, above the frontend's 12 MB client-side check
+
+
 def supabase_storage_configured() -> bool:
     return bool(os.getenv("SUPABASE_URL")) and bool(os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
+
+
+def validate_upload(*, asset_type: str, content_type: str, data: bytes) -> None:
+    """Reject uploads with a disallowed MIME type or an oversized payload.
+
+    Called after parse_data_url so it validates the real decoded byte length
+    and the actual declared MIME type, not just whatever the client claims
+    up front.
+    """
+
+    if not data:
+        raise StorageError("Uploaded file is empty.")
+
+    normalized_type = (content_type or "").split(";")[0].strip().lower()
+    is_video = str(asset_type or "").strip().lower() == "video"
+    allowed = ALLOWED_VIDEO_MIME_TYPES if is_video else ALLOWED_IMAGE_MIME_TYPES
+    if normalized_type not in allowed:
+        raise StorageError(
+            f"Unsupported file type '{normalized_type or 'unknown'}'. "
+            f"Allowed types: {', '.join(sorted(allowed))}."
+        )
+
+    max_bytes = MAX_VIDEO_BYTES if is_video else MAX_IMAGE_BYTES
+    if len(data) > max_bytes:
+        raise StorageError(
+            f"File is too large ({len(data) / (1024 * 1024):.1f} MB). "
+            f"Maximum is {max_bytes // (1024 * 1024)} MB."
+        )
 
 
 def _supabase_bucket() -> str:

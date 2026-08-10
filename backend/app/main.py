@@ -6,13 +6,11 @@ import os
 import json
 import time
 from collections import defaultdict, deque
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -43,11 +41,10 @@ from .orchestrator import (
     normalize_state_payload,
     site_plan_from_state,
 )
-from .storage import StorageError, parse_data_url, supabase_storage_configured, upload_asset_to_supabase
+from .storage import StorageError, parse_data_url, supabase_storage_configured, upload_asset_to_supabase, validate_upload
 from .taxonomy import infer_seed_profile
 
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
 orchestrator = LyraOrchestrator()
 intake_engine = LyraIntakeEngine()
 edit_engine = LyraEditEngine()
@@ -257,6 +254,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Baseline security headers on every response from this API.
+
+    This service is a pure JSON/API backend (no HTML it serves is meant to be
+    framed or to run inline scripts from third parties), so a strict,
+    API-appropriate policy is safe to apply globally rather than tuning it
+    per route. The equivalent headers for the static frontend
+    (vmbusinesssystems.com, served via GitHub Pages) can't be set here --
+    GitHub Pages doesn't support custom response headers -- those need to be
+    added at the Cloudflare edge in front of that domain instead.
+    """
+
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+    response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+    return response
+
+
 app.include_router(commerce_router)
 app.include_router(domains_router)
 
@@ -272,10 +291,9 @@ async def healthz() -> Dict[str, Any]:
 # Bug fix (2026-07-19): this route used to also answer GET "/", which meant the
 # bare domain (and Supabase's OAuth "Site URL" fallback, used whenever the
 # actual redirect_to isn't on the allow list) always showed this raw JSON
-# instead of the real site -- because an explicit route always wins over the
-# StaticFiles mount at "/" below, regardless of what's in ROOT_DIR. Render's
-# own health check already targets /healthz (see render.yaml), so "/" is now
-# free for the static mount to serve index.html like a normal homepage.
+# instead of the real site. Render's own health check already targets
+# /healthz (see render.yaml), so "/" is free for the redirect defined near
+# the bottom of this file (see the 2026-08-10 security fix comment there).
 
 
 def storage_is_configured() -> bool:
@@ -320,7 +338,7 @@ async def build_info() -> Dict[str, Any]:
 
 
 @app.post("/api/admin/assets/upload", response_model=AssetUploadResponse)
-async def upload_asset(request: AssetUploadRequest) -> AssetUploadResponse:
+async def upload_asset(request: AssetUploadRequest, http_request: Request) -> AssetUploadResponse:
     """Persist a client-uploaded photo/logo to real storage instead of embedding base64.
 
     The frontend (ai-builder.js uploadAssetFile) already calls this endpoint and
@@ -328,8 +346,17 @@ async def upload_asset(request: AssetUploadRequest) -> AssetUploadResponse:
     deployed without a frontend change. Today the only wired provider is Supabase
     Storage; if it is not configured, we fail clearly so the frontend fallback kicks in
     (rather than silently returning a broken URL).
+
+    Despite the "/api/admin/" path, this is called unauthenticated from the public
+    guided-intake flow (logo/photo upload happens before a prospect has a real
+    account) -- the path is legacy naming, not an enforced permission boundary.
+    Since login can't be required without breaking that flow, the guardrails here
+    are per-IP rate limiting plus a hard MIME/size check (validate_upload), so an
+    unauthenticated caller can't push unlimited or arbitrary files through the
+    service-role Supabase key.
     """
 
+    _enforce_rate_limit(http_request, "upload_asset", limit=20, window_seconds=60)
     if not supabase_storage_configured():
         raise HTTPException(
             status_code=503,
@@ -340,6 +367,15 @@ async def upload_asset(request: AssetUploadRequest) -> AssetUploadResponse:
 
     try:
         data, detected_content_type = parse_data_url(request.dataUrl)
+        validate_upload(
+            asset_type=request.assetType,
+            content_type=request.contentType or detected_content_type,
+            data=data,
+        )
+    except StorageError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    try:
         public_url = upload_asset_to_supabase(
             business_id=request.businessId,
             site_id=request.siteId,
@@ -738,7 +774,13 @@ async def client_project_detail(
 
 @app.post("/api/luma/chat", response_model=LumaChatResponse)
 @app.post("/api/ai/intake-assistant", response_model=LumaChatResponse)
-async def luma_chat(request: LumaChatRequest) -> LumaChatResponse:
+async def luma_chat(request: LumaChatRequest, http_request: Request) -> LumaChatResponse:
+    # This is the public guided-intake funnel -- prospects use it before
+    # creating any real account (see /api/client/intake-session, which is
+    # also unauthenticated by design), so it intentionally does not require
+    # login. Per-IP rate limiting is the guardrail against unmetered OpenAI
+    # cost from scripted abuse instead. See _enforce_rate_limit.
+    _enforce_rate_limit(http_request, "luma_chat", limit=40, window_seconds=60)
     state = normalize_state_payload(request.current)
     if request.selectedTemplateId and not state.selectedTemplateId:
         state.selectedTemplateId = request.selectedTemplateId
@@ -941,7 +983,8 @@ async def client_intake_session(
 
 
 @app.post("/api/luma/edit", response_model=LyraEditResponse)
-async def luma_edit(request: LyraEditRequest) -> LyraEditResponse:
+async def luma_edit(request: LyraEditRequest, http_request: Request) -> LyraEditResponse:
+    _enforce_rate_limit(http_request, "luma_edit", limit=20, window_seconds=60)
     try:
         result = await edit_engine.run(
             current_schema=request.currentSchema,
@@ -962,10 +1005,15 @@ async def luma_edit(request: LyraEditRequest) -> LyraEditResponse:
 @app.post("/ai/website-builder", response_model=WebsiteGenerationResponse)
 async def website_builder(
     request: WebsiteGenerationRequest,
+    http_request: Request,
     authorization: str = Header(default=""),
     luma_client_session: str = Cookie(default=""),
     session: Session = Depends(get_session),
 ) -> WebsiteGenerationResponse:
+    # Full site generation runs the entire multi-agent orchestrator (several
+    # OpenAI calls per request, see LyraOrchestrator.run), so this gets a
+    # much tighter limit than the chat/edit endpoints above.
+    _enforce_rate_limit(http_request, "website_builder", limit=6, window_seconds=300)
     payload = request.model_dump()
     field_meta = build_generation_field_meta(request)
     sales_flow, sales_flow_meta = infer_generation_sales_flow_with_meta(request)
@@ -1189,12 +1237,26 @@ def build_schema_from_state(
     }
 
 
-# Optional static hosting for a single Render service. It is harmless for API-only
-# deployment and useful if we later point Render at this FastAPI app.
-if ROOT_DIR.exists():
-    app.mount("/assets", StaticFiles(directory=ROOT_DIR / "assets"), name="assets")
-    app.mount("/css", StaticFiles(directory=ROOT_DIR / "css"), name="css")
-    app.mount("/js", StaticFiles(directory=ROOT_DIR / "js"), name="js")
-    app.mount("/client", StaticFiles(directory=ROOT_DIR / "client", html=True), name="client")
-    app.mount("/start", StaticFiles(directory=ROOT_DIR / "start", html=True), name="start")
-    app.mount("/", StaticFiles(directory=ROOT_DIR, html=True), name="static")
+# SECURITY FIX (2026-08-10): this used to mount StaticFiles(directory=ROOT_DIR)
+# on "/" (plus /assets, /css, /js, /client, /start against the same ROOT_DIR).
+# ROOT_DIR is the repo root, not a public-only directory -- on Render this
+# resolves to the real checkout, so that mount served the raw backend source,
+# supabase/enable_rls.sql, render.yaml, KREATON-ROADMAP.md, and everything
+# else in the repo directly over HTTP. Confirmed live and fixed the same day:
+# curl https://luma-api.vmbusinesssystems.com/backend/app/main.py was
+# returning 200 with the actual file. This is the same class of exposure as
+# the 2026-07-27 incident (see scripts/stage-public-site.mjs), just on the
+# API's own domain instead of the GitHub Pages one, and it was never closed
+# here. The real frontend is already served correctly from
+# vmbusinesssystems.com via GitHub Pages -- nothing depends on this API also
+# serving static files (API_BASE_URL is only ever used for JSON endpoint
+# calls, never for assets/css/js). "/" now just redirects to the real site
+# instead of mounting any directory, which also preserves the original intent
+# noted above /healthz: giving Supabase's OAuth "Site URL" fallback something
+# real to land on instead of a 404.
+from fastapi.responses import RedirectResponse
+
+
+@app.get("/")
+async def root_redirect() -> RedirectResponse:
+    return RedirectResponse(url="https://vmbusinesssystems.com/", status_code=302)
