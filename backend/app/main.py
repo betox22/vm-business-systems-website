@@ -506,6 +506,25 @@ _rate_limit_buckets: Dict[str, deque] = defaultdict(deque)
 
 
 def _client_ip(request: Request) -> str:
+    """Best-effort real client IP for rate-limit bucketing.
+
+    Found 2026-08-10, right after shipping rate limiting: this domain is
+    Cloudflare-proxied in front of Render (confirmed via `server: cloudflare`
+    / `cf-ray` response headers), and a 50-request burst against the live
+    /api/luma/chat endpoint never triggered its 40/min limit even though the
+    exact same logic reliably 429s locally under TestClient. The likely cause
+    is that whatever sits between Cloudflare and this uvicorn process
+    (Render's own edge) isn't reliably preserving the original client IP as
+    the first hop in X-Forwarded-For, so requests from one real caller were
+    landing in different rate-limit buckets. Cloudflare always sets
+    CF-Connecting-IP to the true end-client IP itself (not something a client
+    can spoof through Cloudflare, since Cloudflare overwrites it), so prefer
+    that when present -- it's the one signal in this chain guaranteed to be
+    both correct and stable per real visitor.
+    """
+    cf_ip = request.headers.get("cf-connecting-ip", "").strip()
+    if cf_ip:
+        return cf_ip
     forwarded = request.headers.get("x-forwarded-for", "")
     if forwarded:
         return forwarded.split(",")[0].strip()
