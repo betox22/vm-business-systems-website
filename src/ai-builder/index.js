@@ -6242,7 +6242,8 @@ function updatePrimaryHeroCopy(schema, message, payload = {}, templateSelection 
   const description = professionalPublicDescription({
     payload,
     template: templateSelection?.template || schema.selected_template || {},
-    catalogType: templateSelection?.catalogType || schema.catalog_model?.catalogType || "",
+    templateId: templateSelection?.templateId || schema.selected_template?.id || schema.layout_mode?.template_id || "",
+    catalogType: templateSelection?.catalogType || schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || "",
     copy,
     name: payload.business_name || schema.business?.name || copy.newStore,
     products: payload.services_products,
@@ -6644,6 +6645,7 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
     const description = professionalPublicDescription({
       payload,
       template: templateSelection?.template || schema.selected_template || { id: "mega-retail-store", category: "ecommerce" },
+      templateId: "mega-retail-store",
       catalogType: "single_vendor_dense_catalog",
       copy,
       name,
@@ -6689,6 +6691,7 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
     const description = professionalPublicDescription({
       payload,
       template: templateSelection?.template || schema.selected_template || { id: "mega-marketplace", category: "marketplace" },
+      templateId: "mega-marketplace",
       catalogType: "dense_marketplace_catalog",
       copy,
       name,
@@ -6755,6 +6758,7 @@ function lockSchemaToExecutableTemplate(schema, payload = {}, templateSelection 
       preferred_tone: payload.preferred_tone || schema.business?.tone || "",
     },
     template,
+    templateId,
     catalogType,
     copy,
     name,
@@ -7287,6 +7291,7 @@ function buildEmergencyEditableSchema(payload = {}, error = null) {
   const description = professionalPublicDescription({
     payload,
     template: { id: "emergency-editable", category: "business" },
+    templateId: "emergency-editable",
     catalogType: "editorial_minimal_grid",
     copy,
     name,
@@ -7351,8 +7356,11 @@ function buildEmergencyEditableSchema(payload = {}, error = null) {
   };
 }
 
-function professionalPublicDescription({ payload = {}, template = {}, catalogType = "", copy = {}, name = "", products = [], language = builderState.selectedLanguage }) {
-  const templateText = `${catalogType} ${template.id || ""} ${template.category || ""}`.toLowerCase();
+function professionalPublicDescription({ payload = {}, template = {}, templateId = "", catalogType = "", copy = {}, name = "", products = [], language = builderState.selectedLanguage }) {
+  const templateText = `${catalogType} ${templateId} ${template.id || ""} ${template.category || ""}`.toLowerCase();
+  if (window.__lyraDebugCopy) {
+    console.warn("[LYRA-DEBUG professionalPublicDescription]", { templateId, catalogType, templateObjId: template.id || "", templateText });
+  }
   const focus = productFocusForLanguage(products, payload.industry, language);
   const descriptions = {
     en: {
@@ -7558,6 +7566,7 @@ function inferredPublicCatalogLabels({ text = "", language = builderState.select
 function buildInstantTemplateSchema(payload, templateSelection) {
   const language = payload.selectedLanguage || builderState.selectedLanguage || "en";
   const template = templateSelection?.template || payload.selectedTemplate || {};
+  const templateId = templateSelection?.templateId || payload.templateId || template.id || "";
   const catalogType = templateSelection?.catalogType || template.catalogModel?.catalogType || payload.catalogType || "editorial_minimal_grid";
   const templateInstructions = templateSelection
     ? buildTemplateInstructions(templateSelection)
@@ -7571,7 +7580,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     language,
     `${catalogType} ${template.id || ""}`,
   );
-  const description = professionalPublicDescription({ payload, template, catalogType, copy, name, products, language });
+  const description = professionalPublicDescription({ payload, template, templateId, catalogType, copy, name, products, language });
   const salesText = `${payload.salesMode || ""} ${payload.sales_mode || ""} ${payload.templateIntent || ""} ${template.category || ""} ${template.id || ""}`.toLowerCase();
   const isMegaRetailTemplate = catalogType === "single_vendor_dense_catalog" || catalogType === "dense_retail_catalog" || /mega-retail-store/i.test(template.id || "");
   const isMarketplaceTemplate = catalogType === "dense_marketplace_catalog" || /mega-marketplace|marketplace-style/i.test(template.id || "");
