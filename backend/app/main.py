@@ -791,6 +791,79 @@ async def client_project_detail(
     }
 
 
+def _public_site_payload(site: GeneratedSite) -> Dict[str, Any]:
+    """Shape a GeneratedSite row for the unauthenticated public viewer.
+
+    Deliberately narrower than _project_item / client_project_detail's
+    response: no owner_email, no store id beyond what's needed to render the
+    page, nothing that identifies the account behind the site. Anyone with
+    the site's id or its public_url is meant to be able to view it (that's
+    the point of a public site viewer), but not learn who owns it.
+    """
+
+    try:
+        schema = json.loads(site.generated_config or "{}")
+    except json.JSONDecodeError:
+        schema = {}
+    return {
+        "site_id": site.id,
+        "business_name": site.business_name,
+        "template_name": site.template_name,
+        "public_url": site.public_url,
+        "schema": schema,
+        "catalog_items": (schema.get("catalog_items") if isinstance(schema, dict) else None) or [],
+    }
+
+
+@app.get("/public/sites/{site_id}")
+async def public_site_by_id(
+    site_id: str,
+    http_request: Request,
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    """Resolve a generated site for the public site-viewer page (site-viewer.js).
+
+    Unauthenticated by design -- this is what makes a generated site visible
+    to anyone with the link, which is the whole point of showing a finished
+    site to a prospect. Rate limited like the other public endpoints instead
+    of gated behind login.
+    """
+
+    _enforce_rate_limit(http_request, "public_site", limit=60, window_seconds=60)
+    site = session.execute(select(GeneratedSite).where(GeneratedSite.id == site_id)).scalar_one_or_none()
+    if not site:
+        raise HTTPException(status_code=404, detail="Site not found.")
+    return _public_site_payload(site)
+
+
+@app.get("/public/resolve-site")
+async def public_resolve_site(
+    host: str,
+    http_request: Request,
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    """Resolve a generated site by its stored domain (site-viewer.js's other lookup path).
+
+    GeneratedSite.public_url today is always a placeholder like
+    "{slug}-{id}.vmstores.com" (see persist_generated_site) rather than a
+    real connected domain -- real custom-domain connection is still open
+    work (see domains.py) -- but this endpoint matches whatever ends up in
+    that column either way, so it starts working for real once that's wired
+    up without needing another change here.
+    """
+
+    _enforce_rate_limit(http_request, "public_site", limit=60, window_seconds=60)
+    normalized_host = str(host or "").strip().lower()
+    if not normalized_host:
+        raise HTTPException(status_code=400, detail="host is required.")
+    site = session.execute(
+        select(GeneratedSite).where(GeneratedSite.public_url == normalized_host)
+    ).scalar_one_or_none()
+    if not site:
+        raise HTTPException(status_code=404, detail="No site found for this host.")
+    return _public_site_payload(site)
+
+
 @app.post("/api/luma/chat", response_model=LumaChatResponse)
 @app.post("/api/ai/intake-assistant", response_model=LumaChatResponse)
 async def luma_chat(request: LumaChatRequest, http_request: Request) -> LumaChatResponse:
