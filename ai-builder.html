@@ -35,12 +35,23 @@
         </label>
 
         <form id="intakeForm" class="intake-form mode-panel active">
-          <label data-i18n-label="businessName">Client/business name<input name="business_name" required value="Luna Market"></label>
-          <label data-i18n-label="businessDescription">Business description<textarea name="business_description" rows="4" required>Modern online boutique for curated accessories, gifts, and everyday style products.</textarea></label>
-          <label data-i18n-label="industry">Industry<input name="industry" required value="Fashion retail"></label>
-          <label data-i18n-label="location">Location<input name="location" value="Miami, FL"></label>
-          <label data-i18n-label="servicesProducts">Services/products<textarea name="services_products" rows="3">Handbags, Gift sets, Limited edition accessories</textarea></label>
-          <label data-i18n-label="targetAudience">Target audience<input name="target_audience" value="Women 25-45 looking for stylish gifts and accessories"></label>
+          <!-- These fields used to ship with hardcoded example values
+               (business_name="Luna Market", etc.) instead of placeholders.
+               Bug: builderState.guidedState gets seeded from this form on
+               load even when the admin uses the LYRA chat panel instead of
+               Quick Form, so that fake "Luna Market / Fashion retail /
+               Handbags, Gift sets" content silently survived into real
+               generated sites for unrelated businesses (confirmed live: a
+               coffee shop's hero copy and services list came out with the
+               boutique's leftover data). Using placeholder= instead of
+               value= keeps the example visible as a hint without it being
+               real, submittable, or guidedState-seedable content. -->
+          <label data-i18n-label="businessName">Client/business name<input name="business_name" required placeholder="e.g., Luna Market"></label>
+          <label data-i18n-label="businessDescription">Business description<textarea name="business_description" rows="4" required placeholder="e.g., Modern online boutique for curated accessories, gifts, and everyday style products."></textarea></label>
+          <label data-i18n-label="industry">Industry<input name="industry" required placeholder="e.g., Fashion retail"></label>
+          <label data-i18n-label="location">Location<input name="location" placeholder="e.g., Miami, FL"></label>
+          <label data-i18n-label="servicesProducts">Services/products<textarea name="services_products" rows="3" placeholder="e.g., Handbags, Gift sets, Limited edition accessories"></textarea></label>
+          <label data-i18n-label="targetAudience">Target audience<input name="target_audience" placeholder="e.g., Women 25-45 looking for stylish gifts and accessories"></label>
           <label>Sales flow<select name="sales_flow">
             <option value="online_sales" selected>Venta online</option>
             <option value="quote_request">Cotizaciones</option>
@@ -48,11 +59,11 @@
             <option value="lead_capture">Captura de leads</option>
             <option value="informational">Informativo</option>
           </select></label>
-          <label data-i18n-label="preferredTone">Preferred tone<input name="preferred_tone" value="Elegant, clear, warm"></label>
-          <label data-i18n-label="preferredColors">Preferred colors<input name="preferred_colors" value="elegante verde profundo y marfil"></label>
-          <label data-i18n-label="contactInfo">Contact info<textarea name="contact_info" rows="3">email: hello@lunamarket.com
+          <label data-i18n-label="preferredTone">Preferred tone<input name="preferred_tone" placeholder="e.g., Elegant, clear, warm"></label>
+          <label data-i18n-label="preferredColors">Preferred colors<input name="preferred_colors" placeholder="e.g., deep green and ivory"></label>
+          <label data-i18n-label="contactInfo">Contact info<textarea name="contact_info" rows="3" placeholder="email: hello@example.com
 phone: +1 555 0100
-instagram: @lunamarket</textarea></label>
+instagram: @example"></textarea></label>
           <label data-i18n-label="logoUrl">Logo URL optional<input name="logo_url" placeholder="https://..."></label>
           <label data-i18n-label="uploadLogo">Upload logo optional<input name="logo_file" type="file" accept="image/*"></label>
           <label>Logo preference<select name="logo_preference">

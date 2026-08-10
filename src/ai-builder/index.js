@@ -7390,11 +7390,21 @@ function professionalPublicDescription({ payload = {}, template = {}, catalogTyp
   };
   const lang = descriptions[language] ? language : "en";
   const set = descriptions[lang];
-  if (/marketplace|dense|listing|store|shop|catalog/.test(templateText)) return set.marketplace;
+  // Order matters: check the most specific categories first. catalogType
+  // names follow a "{something}_catalog" convention across nearly every
+  // template (e.g. "restaurant_menu_catalog", "service_catalog"), so the
+  // marketplace regex's bare "catalog" keyword used to match FIRST and mask
+  // every other category - a coffee shop with catalogType
+  // "restaurant_menu_catalog" got the generic "search-first shopping
+  // experience" marketplace copy instead of its correct restaurant
+  // description, purely because "catalog" is a substring of its own
+  // catalogType. "store"/"shop" have the same over-broad risk, so
+  // marketplace is now the last, most-generic check instead of the first.
   if (/fashion|lookbook|collection/.test(templateText)) return set.fashion;
   if (/restaurant|menu|food/.test(templateText)) return set.restaurant;
   if (/service|booking|clinic|legal|professional|home_services|quote/.test(templateText)) return set.service;
   if (/company|corporate|b2b|industrial|enterprise/.test(templateText)) return set.company;
+  if (/marketplace|dense|listing|store|shop|catalog/.test(templateText)) return set.marketplace;
   return set.premium || copy.defaultDescription || name;
 }
 
