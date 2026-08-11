@@ -16,6 +16,79 @@ Formato de entrada:
 
 ---
 
+## 2026-08-11 — Claude — Landing real en usekreaton.com + Google OAuth propio + botón Google arreglado
+
+**Hecho:** Tres cosas relacionadas, todas verificadas en vivo con curl:
+
+1. `landing.html` (nuevo, raíz del repo): página de marketing real para
+   KREATON -- antes de esto, `usekreaton.com` mandaba directo al gate de
+   login de `/client/setup/` sin ningún contexto de marca. El Worker
+   (`cloudflare/subdomain-proxy-worker.js`) ahora reescribe `/` del apex a
+   `/landing.html` en vez de `/client/setup/` (`APEX_HOME_PATH`). Registrado
+   en `scripts/stage-public-site.mjs` (allowlist estricta) para que
+   realmente se publique.
+2. Botón "Continuar con Google/Apple/email" en `client/setup/index.html`
+   arreglado: el CSS (`.studio-auth-provider` en `ai-builder.css`) ya tenía
+   un diseño completo tipo Wix con ícono a la izquierda, pero el HTML nunca
+   le puso esa clase a los botones reales -- se renderizaban sin estilo,
+   sin ícono de Google. El texto va en un `<span data-i18n="...">` interno,
+   no en el `<button>`, porque `applyI18n()` hace
+   `item.textContent = t(...)` sobre cualquier `[data-i18n]` y habría
+   borrado el ícono SVG en cada cambio de idioma.
+3. Google Cloud OAuth propio de KREATON: proyecto nuevo "Kreaton" en Google
+   Cloud (cuenta newappcreathor@gmail.com), pantalla de consentimiento
+   configurada con nombre "KREATON", cliente OAuth "KREATON web" creado con
+   redirect URI `https://rzdidqclbvnqqlcaueoh.supabase.co/auth/v1/callback`.
+   Client ID/Secret nuevos pegados en Supabase (proyecto `rzdidqclbvnqqlcaueoh`,
+   org `vmbusinesssystems`, reemplazando un cliente Google viejo/genérico sin
+   marca). Ver [[project_kreaton_google_oauth_setup]] en memoria -- incluye
+   la decisión explícita de NO migrar Supabase a una cuenta separada (es
+   infraestructura invisible, no "mezcla" como el incidente del dominio) y
+   de diferir el add-on de dominio personalizado de Supabase ($10/mes,
+   requiere plan Pro $25/mes).
+
+Bug encontrado en el camino: Supabase `Authentication → URL Configuration`
+tenía `Site URL = https://lyra.vmbusinesssystems.com` (subdominio viejo, ya
+no forma parte de la arquitectura actual) y `usekreaton.com` no estaba en
+`Redirect URLs` -- por eso, tras loguearse con Google, Supabase caía a su
+URL de respaldo y el visitante terminaba en la raíz de `vmbusinesssystems.com`
+con el `access_token` crudo pegado en el fragmento de la URL (esa página no
+tiene el JS de `captureStudioAuthRedirect()` que lo captura y limpia).
+Arreglado: `Site URL = https://usekreaton.com`, agregado
+`https://usekreaton.com/**` y `https://*.usekreaton.com/**` a Redirect
+URLs. Las entradas viejas (`lyra.vmbusinesssystems.com`,
+`kreaton-lyra-api.onrender.com`, `luma-api.vmbusinesssystems.com`,
+`vmbusinesssystems.com`, `www.vmbusinesssystems.com`) se dejaron intactas
+a propósito -- son inofensivas, y tocar cosas no pedidas fue justo lo que
+causó el incidente de la entrada de abajo.
+
+También: el primer intento de desplegar el Worker con `/landing.html` falló
+porque Beto pegó una versión vieja del código (con `/client/setup/`
+todavía) -- confirmado leyendo el código real desplegado vía
+`workers_get_worker_code` antes de asumir que era problema de cache.
+Lección: con tantas versiones del Worker pegadas en la misma conversación,
+verificar el código REALMENTE desplegado antes de diagnosticar nada más.
+
+**Pendiente / abierto:**
+- Task #31 (ya existía, sin tocar hoy): Beto no está conforme con que el
+  flujo post-landing sea "chat guiado" -- lo compara con el dashboard de
+  Wix. Es un rediseño de UX más grande, deliberadamente no abordado en esta
+  sesión.
+- Verificar en vivo con una cuenta real (no solo curl) que la pantalla de
+  consentimiento de Google efectivamente dice "KREATON" ahora.
+
+**Archivos tocados:** `landing.html` (nuevo), `client/setup/index.html`,
+`cloudflare/subdomain-proxy-worker.js`, `scripts/stage-public-site.mjs`.
+Cambios en Supabase (Auth Providers, URL Configuration) y Google Cloud
+Console -- ninguno versionado en el repo, ver memoria del agente.
+
+**Notas para el siguiente agente:** si Beto vuelve a preguntar por qué el
+login "se ve raro" o "manda a un lugar random", lo primero es mirar
+`Authentication → URL Configuration` en Supabase antes que nada en
+Cloudflare -- ese fue el bug real dos veces en esta sesión.
+
+---
+
 ## 2026-08-10 — Claude — KREATON servido en usekreaton.com apex vía Worker (no GitHub Pages)
 
 **Hecho:** Extendí `cloudflare/subdomain-proxy-worker.js` (el mismo Worker
