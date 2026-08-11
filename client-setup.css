@@ -5529,8 +5529,62 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
   min-height: 0;
 }
 
+/* Found live 2026-08-11 after the override above went out: the container
+   (.guided-live-stage) was visible, but its actual content card
+   (.live-site-preview-card -- the thing renderLiveSitePreview() fills
+   with the real template picker / draft HTML) was STILL display:none,
+   from a separate, unrelated rule (client-setup.css:5619,
+   ".public-client-setup .guided-layout .live-site-preview-card { display:
+   none !important; }"). Net effect on screen: an empty browser-chrome
+   box with real content sitting inside it at 0x0 -- looked broken/blank
+   even though the fix above was working. Same override strategy: higher
+   specificity, declared after. */
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .live-site-preview-card {
+  display: block !important;
+  /* min-height:100% (client-setup.css:5031) needs the ancestor chain
+     (#liveSitePreviewMount -> .guided-live-stage, both CSS Grid with no
+     explicit height) to have a "definite" height for percentage
+     resolution, which nested grid 1fr tracks don't reliably give it --
+     confirmed live: the mount reported a real ~700px box via
+     getBoundingClientRect(), but the card's percentage min-height still
+     resolved to 0. Sidestepping the percentage chain entirely with the
+     same absolute clamp() already used for the panel one level down
+     (client-setup.css:5039, .template-board-panel) instead of trying to
+     fix the percentage-height chain itself. */
+  min-height: min(760px, calc(100vh - 190px)) !important;
+}
+
+/* Third and last layer of the same bug: .template-board-panel /
+   .template-carousel-panel -- the actual template-picker cards inside
+   .live-site-preview-card -- were STILL in the original hide-list a few
+   rules above this one (the one starting "LYRA two-state experience").
+   That's the ACTUAL content (5 real template cards, confirmed live via
+   DOM inspection); everything visible before this fix was just the
+   surrounding card chrome with nothing inside it. Left the other four
+   items in that original hide-list alone (.summary-panel,
+   .lyra-agent-status, .site-plan-card, .brief-ready-card) since those
+   are genuinely secondary/contextual, not the main content. */
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .template-carousel-panel,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .template-board-panel {
+  display: block !important;
+}
+
+/* justify-content:stretch (still here, harmless) controls how THIS
+   element distributes its own tracks; it does nothing about the
+   element's own size in ITS parent. That turned out to be the real gap:
+   .guided-shell (ancestor) doesn't stretch grid items by default here,
+   so .guided-layout was shrinking to fit its content (~880px, i.e.
+   sum of the two column tracks) instead of filling the available
+   width -- confirmed live: adding width:100% took it from 880px to the
+   full 1920px viewport, with the live-stage column going from a
+   cramped 440px to ~1500px. That cropped width was *also* why the
+   template-picker heading text upstream was wrapping one word per
+   line -- its font-size (clamp() up to 2.4rem) was built for a wide
+   canvas, not an 880px-wide one. */
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-layout {
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 440px) !important;
+  width: 100% !important;
+  justify-self: stretch !important;
+  grid-template-columns: minmax(0, 2fr) minmax(340px, 420px) !important;
   justify-content: stretch !important;
 }
 
