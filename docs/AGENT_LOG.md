@@ -39,25 +39,37 @@ fácil de no notar si solo se prueba desde un dominio). `None` + `Secure`
 (ya estaba `secure=True`) lo arregla sin tocar el `domain` del cookie ni
 CORS (`CLIENT_ALLOWED_ORIGIN_REGEX` ya cubría `usekreaton.com`).
 
-Commit: `f34aae0`. 39/39 tests backend pasan.
+Commit: `f34aae0` (código) + `6b0c4ef` (docs). 39/39 tests backend pasan.
 
-**Pendiente / abierto:**
-- Falta pegar el código actualizado del Worker en el dashboard de
-  Cloudflare (Worker `kreaton-subdomain-proxy` → Edit code → Deploy) --
-  esto SIEMPRE es manual, no hay CI/CD para el código del Worker.
-- Falta agregar 2 Workers Routes nuevas en la zona `usekreaton.com`:
-  `usekreaton.com/*` y `www.usekreaton.com/*`, ambas apuntando al mismo
-  worker `kreaton-subdomain-proxy`.
-- Los 4 registros `A` del apex + el `CNAME` de `www` que quedaron de un
-  intento anterior (apuntan a las IPs de GitHub Pages) están en "DNS
-  only" -- hay que pasarlos a "Proxied" (nube naranja), porque una
-  Workers Route solo intercepta tráfico si el DNS está proxied.
-- Falta desplegar `backend/app/main.py` (Render) -- necesita push a
-  `main` primero (ver prompt de Codex de esta misma sesión).
-- Falta probar en vivo: login completo entrando por `usekreaton.com` (no
-  solo por `vmbusinesssystems.com`), confirmando que el cookie de sesión
-  efectivamente se guarda y se envía en la llamada a
-  `luma-api.vmbusinesssystems.com`.
+**Actualización misma sesión, más tarde el mismo día -- TODO desplegado y
+verificado en vivo:**
+- Push a `main` (bloqueado primero por credencial de Git corrupta en la
+  máquina de Beto -- `SEC_E_NO_CREDENTIALS`, resuelto con
+  `git credential-manager github logout` + relogin). `origin/main` en
+  `6b0c4ef`, `pages.yml` en success, Render redesplegado.
+- Worker `kreaton-subdomain-proxy`: código pegado y deployado a mano vía
+  dashboard (Edit code → Deploy).
+- Workers Routes en la zona `usekreaton.com`: agregadas `usekreaton.com/*`
+  y `www.usekreaton.com/*` (además de la `*.usekreaton.com/*` que ya
+  existía), las 3 apuntando al mismo worker.
+- Los 4 `A` del apex + el `CNAME` de `www` pasados de "DNS only" a
+  "Proxied". Nota para el siguiente agente: el toggle en el dashboard se
+  reflejó al instante, pero la propagación pública (1.1.1.1, 8.8.8.8) tardó
+  ~3-4 minutos en dejar de servir la respuesta vieja (IPs directas de
+  GitHub Pages) -- si algo similar pasa de nuevo, es caché de resolvers
+  públicos, no que el cambio no se haya guardado; confirmar en el dashboard
+  primero, y si ahí ya dice "Proxied", solo hace falta esperar.
+- Verificado en vivo con curl: `usekreaton.com/`, `www.usekreaton.com/` y
+  un subdominio de prueba devuelven 200 con el contenido correcto
+  (`x-proxied-by: kreaton-subdomain-worker` presente), y
+  `vmbusinesssystems.com/` + `/contact.html` siguen en 200 sin cambios --
+  confirmado que V&M Business Systems no se movió de su dominio.
+
+**Pendiente / abierto (quedó para después, no bloqueante):**
+- Falta probar en vivo el login completo entrando por `usekreaton.com`
+  (con una cuenta real, no solo curl) para confirmar que el cookie de
+  sesión con `SameSite=None` efectivamente se guarda y se envía en la
+  llamada a `luma-api.vmbusinesssystems.com` desde ese origen.
 - No decidido todavía: si `vmbusinesssystems.com/client/setup/` y
   `/ai-builder.html` deberían redirigir a sus equivalentes en
   `usekreaton.com` para evitar que existan dos "entradas" paralelas a la
