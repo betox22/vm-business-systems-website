@@ -169,18 +169,28 @@
       .mockup-grid .card .thumb.c2 { background: linear-gradient(135deg, #14b8a6, #2f4cdd); }
       .mockup-grid .card .thumb.c3 { background: linear-gradient(135deg, #f59e0b, #ef4444); }
       .mockup-grid .card .bar { height: 6px; border-radius: 4px; background: #cbd5e1; width: 70%; }
+      /* Deliberately NOT position:absolute. .hero has overflow:hidden (to
+         contain the background glow), and an absolutely-positioned badge
+         hanging off the bottom of .mockup-card doesn't count toward the
+         normal-flow height that .hero sizes itself to -- it was getting
+         silently clipped by that overflow:hidden, which is what made it
+         look "cut off / unreadable" in production. Keeping it in normal
+         flow (relative + negative margin for the visual overlap) makes it
+         actually contribute to the layout height, so .hero always grows
+         enough to show it in full. */
       .lyra-badge {
-        position: absolute; bottom: -22px; left: -22px;
+        position: relative; z-index: 2;
+        margin: -30px 0 0 28px;
         display: flex; align-items: center; gap: 12px;
-        background: rgba(15, 15, 40, 0.92);
+        background: rgba(15, 15, 40, 0.94);
         border: 1px solid rgba(255,255,255,0.14);
-        border-radius: 14px; padding: 12px 16px;
+        border-radius: 14px; padding: 14px 18px;
         box-shadow: 0 20px 50px rgba(0,0,0,0.4);
-        max-width: 250px;
+        max-width: 300px;
       }
-      .lyra-badge img { width: 40px; height: 40px; flex-shrink: 0; animation: lyra-float 3.2s ease-in-out infinite; }
-      .lyra-badge strong { display: block; color: #67e8f9; font-size: 11px; letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 2px; }
-      .lyra-badge span { font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.35; }
+      .lyra-badge img { width: 42px; height: 42px; flex-shrink: 0; animation: lyra-float 3.2s ease-in-out infinite; }
+      .lyra-badge strong { display: block; color: #67e8f9; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }
+      .lyra-badge span { font-size: 13.5px; color: rgba(255,255,255,0.88); line-height: 1.45; }
       @keyframes lyra-float {
         0%, 100% { transform: translateY(0); filter: drop-shadow(0 0 0 rgba(103,232,249,0)); }
         50% { transform: translateY(-5px); filter: drop-shadow(0 6px 14px rgba(103,232,249,0.35)); }
@@ -205,12 +215,12 @@
         transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
       }
       .example-card:hover { transform: translateY(-4px); border-color: rgba(20,184,166,0.4); box-shadow: 0 16px 32px rgba(15,23,42,0.1); }
-      .example-preview { aspect-ratio: 4 / 3; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
-      .example-preview .row { border-radius: 6px; background: rgba(15,23,42,0.55); }
-      .example-preview .row.h1 { height: 26%; }
-      .example-preview .row.h2 { height: 12%; width: 55%; }
-      .example-preview .strip { display: flex; gap: 8px; flex: 1; }
-      .example-preview .strip .cell { flex: 1; border-radius: 6px; }
+      .example-preview { aspect-ratio: 4 / 3; overflow: hidden; background: #e2e8f0; }
+      .example-preview img {
+        width: 100%; height: 100%; object-fit: cover; object-position: top;
+        display: block; transition: transform 0.35s ease;
+      }
+      .example-card:hover .example-preview img { transform: scale(1.04); }
       .example-body { padding: 16px 18px 20px; border-top: 1px solid var(--line); position: relative; }
       .example-body strong { display: block; font-size: 15px; margin-bottom: 4px; }
       .example-body span { font-size: 13px; color: var(--muted); }
@@ -281,7 +291,7 @@
         .hero-inner { grid-template-columns: 1fr; padding: 48px 20px 80px; min-height: 0; }
         .hero-visual { order: -1; margin-bottom: 40px; }
         .mockup-card { transform: none; }
-        .lyra-badge { position: static; margin-top: 16px; max-width: none; }
+        .lyra-badge { margin: 16px 0 0; max-width: none; }
         .nav-signin, .nav-links { display: none; }
         .steps, .feature-grid, .example-grid { grid-template-columns: 1fr; }
       }
@@ -386,14 +396,8 @@
         </div>
         <div class="example-grid">
           <a class="example-card" href="/templates/retail/mega-retail-store/phase-5/visual-prototype/preview.html" target="_blank" rel="noopener">
-            <div class="example-preview" style="background: linear-gradient(135deg, rgba(124,58,237,0.5), rgba(34,211,238,0.35));">
-              <div class="row h1"></div>
-              <div class="row h2"></div>
-              <div class="strip">
-                <div class="cell" style="background: rgba(124,58,237,0.55);"></div>
-                <div class="cell" style="background: rgba(34,211,238,0.55);"></div>
-                <div class="cell" style="background: rgba(20,184,166,0.55);"></div>
-              </div>
+            <div class="example-preview">
+              <img src="/images/example-large-store.jpg" alt="Large store site generated by KREATON" loading="lazy">
             </div>
             <div class="example-body">
               <em data-i18n="viewExample">View example →</em>
@@ -402,13 +406,8 @@
             </div>
           </a>
           <a class="example-card" href="/templates/retail/premium-product-store/phase-5/visual-prototype/preview.html" target="_blank" rel="noopener">
-            <div class="example-preview" style="background: linear-gradient(135deg, rgba(20,184,166,0.5), rgba(47,76,221,0.4));">
-              <div class="row h1"></div>
-              <div class="row h2"></div>
-              <div class="strip">
-                <div class="cell" style="background: rgba(20,184,166,0.6);"></div>
-                <div class="cell" style="background: rgba(47,76,221,0.5);"></div>
-              </div>
+            <div class="example-preview">
+              <img src="/images/example-boutique-store.jpg" alt="Boutique store site generated by KREATON" loading="lazy">
             </div>
             <div class="example-body">
               <em data-i18n="viewExample">View example →</em>
@@ -417,14 +416,8 @@
             </div>
           </a>
           <a class="example-card" href="/templates/marketplace/mega-marketplace/phase-5/visual-prototype/preview.html" target="_blank" rel="noopener">
-            <div class="example-preview" style="background: linear-gradient(135deg, rgba(245,158,11,0.45), rgba(239,68,68,0.3));">
-              <div class="row h1"></div>
-              <div class="row h2"></div>
-              <div class="strip">
-                <div class="cell" style="background: rgba(245,158,11,0.6);"></div>
-                <div class="cell" style="background: rgba(239,68,68,0.5);"></div>
-                <div class="cell" style="background: rgba(167,139,250,0.5);"></div>
-              </div>
+            <div class="example-preview">
+              <img src="/images/example-marketplace.jpg" alt="Marketplace site generated by KREATON" loading="lazy">
             </div>
             <div class="example-body">
               <em data-i18n="viewExample">View example →</em>
