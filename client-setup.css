@@ -5552,6 +5552,38 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
      (client-setup.css:5039, .template-board-panel) instead of trying to
      fix the percentage-height chain itself. */
   min-height: min(760px, calc(100vh - 190px)) !important;
+  /* Found live 2026-08-11, second round: once a real draft/site renders
+     inside this card (.live-render-card-host > .live-template-preview-shell
+     > .rendered-site, from renderLiveSitePreview() in
+     src/ai-builder/index.js), the rendered page is a full site (nav +
+     hero + sections + footer -- often 2000px+ tall) with NO dedicated CSS
+     of its own (.live-render-card-host / .live-template-preview-shell had
+     zero rules anywhere in this file). It was inheriting the base card
+     rule's `overflow: hidden` (client-setup.css:1552), and because this
+     card is a CSS Grid item of .guided-live-stage
+     (grid-template-rows: auto minmax(0, 1fr), client-setup.css:1362),
+     overflow:hidden disables the browser's content-based automatic
+     minimum size for grid items -- so the row just sized to the
+     min-height above (~760px) and silently clipped everything past that,
+     with no way to reach the rest of the page. Switching to overflow-y:
+     auto keeps the same visual box/rounded corners but adds a real
+     scrollbar so the full generated page is reachable. */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* The generated page itself (renderWebsite() output) should scroll as a
+   normal full-height document inside the card above, not get squashed --
+   confirmed live no prior rule constrained these, so this only adds the
+   missing baseline. */
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .live-template-preview-shell {
+  display: block;
+  width: 100%;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .live-template-preview-shell .rendered-site {
+  min-height: 0;
 }
 
 /* Third and last layer of the same bug: .template-board-panel /
