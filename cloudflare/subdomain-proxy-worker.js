@@ -1,53 +1,65 @@
-// Cloudflare Worker: reverse-proxies every *.usekreaton.com subdomain to the
-// real site-viewer page hosted on GitHub Pages (vmbusinesssystems.com).
+// Cloudflare Worker: makes usekreaton.com the real home of the KREATON app,
+// AND reverse-proxies every *.usekreaton.com subdomain to the site-viewer
+// page for that generated site -- both by proxying content from GitHub
+// Pages (vmbusinesssystems.com) without ever touching GitHub Pages' own
+// custom-domain setting.
 //
-// Why this exists: every generated site gets a public_url like
-// "bathallday-a1b2c3.usekreaton.com" (see backend/app/main.py's
-// persist_generated_site). GitHub Pages' "custom domain" feature only
-// supports ONE fixed domain per repo -- it cannot serve an unbounded number
-// of client subdomains (bathallday.usekreaton.com, joescafe.usekreaton.com,
-// ...) directly. This Worker is the piece that makes that actually work: it
-// sits in front of the *.usekreaton.com wildcard DNS record, and for any
-// request to any subdomain, fetches the matching path from the ORIGIN
-// (vmbusinesssystems.com) and returns it unchanged -- except the root path
-// "/" resolves to "/site.html" (the generated-site viewer page), matching
-// what a normal visitor typing the subdomain expects to see.
+// Two things this Worker does, both via the same proxy mechanism:
 //
-// 2026-08-10 note: ORIGIN_HOST briefly pointed at usekreaton.com itself
-// during a same-day full-domain-cutover experiment (GitHub Pages custom
-// domain moved from vmbusinesssystems.com to usekreaton.com), then reverted
-// a few hours later -- vmbusinesssystems.com also serves general V&M
-// Business Systems pages that aren't part of the KREATON/LYRA product, so
-// moving the whole GitHub Pages deployment took those with it. See
-// docs/AGENT_LOG.md same-day entries for both the cutover and the revert.
-// usekreaton.com stays scoped to generated-client-site subdomains only, via
-// this Worker, exactly as originally designed.
+// 1. Generated client sites: every generated site gets a public_url like
+//    "bathallday-a1b2c3.usekreaton.com" (see backend/app/main.py's
+//    persist_generated_site). Requests to any *.usekreaton.com subdomain
+//    get "/" rewritten to "/site.html" (the generated-site viewer page).
 //
-// Critically, this is a proxy, not a redirect: the browser's address bar and
-// window.location.hostname stay as the real subdomain (e.g.
-// "bathallday.usekreaton.com"). That matters because site-viewer.js reads
-// window.location.hostname to know which generated site to load via
-// GET /public/resolve-site?host=<hostname> against the LYRA API
-// (luma-api.vmbusinesssystems.com, see luma-config.js). If this were a
-// redirect instead, the browser would end up on vmbusinesssystems.com and
-// resolve-site would receive the wrong host.
+// 2. The KREATON app itself: requests to the bare apex (usekreaton.com) or
+//    www get "/" rewritten to "/client/setup/" (KREATON AI Studio, the
+//    real client-facing product) instead.
+//
+// Why a Worker instead of just pointing GitHub Pages' custom domain at
+// usekreaton.com: GitHub Pages only supports ONE custom domain per repo,
+// and this repo ALSO serves vmbusinesssystems.com's general company pages
+// (contact.html etc.) from the very same deployment. Changing GitHub
+// Pages' custom domain moves EVERYTHING, not just the app -- that's
+// exactly what happened and got reverted earlier the same day (see
+// docs/AGENT_LOG.md). This Worker gets the same visible result (KREATON
+// genuinely lives at usekreaton.com, real subdomains work) without ever
+// touching GitHub Pages' settings, so vmbusinesssystems.com keeps serving
+// its own pages under its own domain the whole time, completely
+// unaffected by anything this Worker does.
+//
+// Critically, this is a proxy, not a redirect: the browser's address bar
+// and window.location.hostname stay as the real usekreaton.com host (apex
+// or subdomain). For generated sites that matters because site-viewer.js
+// reads window.location.hostname to know which site to load via
+// GET /public/resolve-site?host=<hostname>. For the app itself it matters
+// because backend/app/main.py's session cookie is scoped to
+// ".usekreaton.com" -- login only works if the page really is served from
+// that origin, not redirected away from it.
 //
 // Deploy: Cloudflare dashboard -> the usekreaton.com account -> Workers &
-// Pages -> Create Worker -> paste this file -> deploy -> bind it to the
-// route "*.usekreaton.com/*" on the usekreaton.com zone (Workers Routes,
-// not Pages). Requires a proxied (orange-cloud) wildcard DNS record for
-// "*" in that zone -- see the DNS step in the setup instructions Beto has
-// alongside this file. No environment variables or secrets needed.
+// Pages -> the existing "kreaton-subdomain-proxy" worker -> Edit code ->
+// paste this file -> Deploy -> make sure it's bound to BOTH routes:
+// "*.usekreaton.com/*" (subdomains, generated sites) AND "usekreaton.com/*"
+// + "www.usekreaton.com/*" (the apex, the app itself) on the usekreaton.com
+// zone (Workers Routes, not Pages). All three need a proxied (orange-cloud)
+// DNS record in that zone -- see the setup instructions Beto has alongside
+// this file. No environment variables or secrets needed.
 
 const ORIGIN_HOST = "vmbusinesssystems.com";
+const APEX_HOSTS = new Set(["usekreaton.com", "www.usekreaton.com"]);
+const APEX_HOME_PATH = "/client/setup/";
+const SUBDOMAIN_HOME_PATH = "/site.html";
 
 export default {
   async fetch(request) {
+    const incomingHostname = new URL(request.url).hostname;
+    const isApexRequest = APEX_HOSTS.has(incomingHostname);
+
     const originUrl = new URL(request.url);
     originUrl.hostname = ORIGIN_HOST;
     originUrl.port = "";
     if (originUrl.pathname === "/" || originUrl.pathname === "") {
-      originUrl.pathname = "/site.html";
+      originUrl.pathname = isApexRequest ? APEX_HOME_PATH : SUBDOMAIN_HOME_PATH;
     }
 
     // Only forward the headers a public static origin actually needs to do

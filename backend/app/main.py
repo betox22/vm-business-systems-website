@@ -482,6 +482,23 @@ async def client_auth_session(
     client sites (see persist_generated_site's public_url below), not the
     main app's own domain. See docs/AGENT_LOG.md same-day entries for both
     the cutover and the revert.
+
+    2026-08-10 (later same day) note: the KREATON app itself is now ALSO
+    served, unchanged, from usekreaton.com and www.usekreaton.com via
+    cloudflare/subdomain-proxy-worker.js (a proxy in front of GitHub Pages,
+    not a new GitHub Pages custom domain -- see that file's header comment).
+    That means a visitor can load the app from usekreaton.com while this API
+    still lives at luma-api.vmbusinesssystems.com -- two different
+    registrable domains, so from the browser's point of view that XHR is
+    CROSS-SITE, not just cross-origin. A SameSite=Lax cookie is dropped on
+    cross-site fetches, which would silently break login for anyone using
+    the usekreaton.com entry point while leaving vmbusinesssystems.com
+    logins looking fine -- exactly the kind of bug that's easy to miss
+    testing from just one domain. samesite="none" (below) fixes that; it
+    still requires Secure (already true) and still requires the requesting
+    origin to be on the CORS allowlist (CLIENT_ALLOWED_ORIGIN_REGEX already
+    covers usekreaton.com), so this doesn't open the cookie up to arbitrary
+    third-party sites.
     """
 
     _enforce_rate_limit(request, "client_auth_session", limit=10)
@@ -496,7 +513,7 @@ async def client_auth_session(
         max_age=SESSION_COOKIE_MAX_AGE,
         httponly=True,
         secure=True,
-        samesite="lax",
+        samesite="none",
         path="/",
         domain=".vmbusinesssystems.com",
     )
@@ -509,7 +526,13 @@ async def client_auth_session(
 
 @app.post("/api/client/auth/logout")
 async def client_auth_logout(response: Response) -> Dict[str, str]:
-    response.delete_cookie(key=SESSION_COOKIE_NAME, path="/", domain=".vmbusinesssystems.com")
+    response.delete_cookie(
+        key=SESSION_COOKIE_NAME,
+        path="/",
+        domain=".vmbusinesssystems.com",
+        secure=True,
+        samesite="none",
+    )
     return {"status": "logged_out"}
 
 
