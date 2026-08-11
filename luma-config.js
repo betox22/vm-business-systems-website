@@ -1,1 +1,1 @@
-window.LUMA_API_BASE_URL = "https://api.usekreaton.com";
+window.LUMA_API_BASE_URL = "https://luma-api.vmbusinesssystems.com";

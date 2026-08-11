@@ -16,6 +16,80 @@ Formato de entrada:
 
 ---
 
+## 2026-08-10 — Claude — REVERTIDO: el cutover completo de dominio fue un error de alcance
+
+**Hecho:** La entrada de abajo ("Cutover completo de dominio") se revirtió
+por completo unas horas después de hacerse, a pedido explícito de Beto:
+"vm business es una pagina y kreaton es otra ahora q carajo hacemos para
+arreglarlo". Causa raíz del error: le pregunté (vía pregunta estructurada)
+si la app completa debía pasar a la raíz de usekreaton.com y confirmó que
+sí, pero no dejé claro en ese momento que `vmbusinesssystems.com` no es
+solo "la app" -- este MISMO repo también sirve `contact.html` y otras
+páginas generales de V&M Business Systems desde el mismo despliegue de
+GitHub Pages. Como GitHub Pages solo permite UN dominio custom por repo,
+mover "la app" a usekreaton.com movió TODO el sitio, incluyendo páginas que
+Beto nunca quiso tocar. Confirmado en vivo: `vmbusinesssystems.com` devolvía
+404 ("Site not found · GitHub Pages") mientras el cutover estuvo activo.
+
+Revertido:
+- GitHub → Settings → Pages → Custom domain: `usekreaton.com` →
+  `vmbusinesssystems.com` (hecho a mano en el dashboard, no por push).
+- `CNAME` (raíz del repo): vuelto a `vmbusinesssystems.com` -- esto era
+  crítico revertir en el repo también, porque `pages.yml` copia este
+  archivo en cada deploy y habría vuelto a cambiar el dominio en GitHub en
+  el próximo push si se dejaba en `usekreaton.com`.
+- `luma-config.js`: `LUMA_API_BASE_URL` vuelto a
+  `https://luma-api.vmbusinesssystems.com`. **Este era el rompimiento más
+  grave**: quedó apuntando a `https://api.usekreaton.com`, que nunca se
+  llegó a configurar en Render (el paso 3 del plan original, "Render
+  custom domain", no se había hecho todavía) -- o sea que durante toda la
+  ventana del cutover, el login y la generación de sitios reales estaban
+  rotos en producción aunque el sitio cargara.
+- `backend/app/main.py`: cookie de sesión httpOnly vuelta a
+  `domain=".vmbusinesssystems.com"`, `root_redirect()` (`GET /`) vuelto a
+  `https://vmbusinesssystems.com/`.
+- `cloudflare/subdomain-proxy-worker.js`: `ORIGIN_HOST` vuelto a
+  `vmbusinesssystems.com`, ya que ese Worker vuelve a servir sitios
+  generados desde el origin real de siempre.
+- Tests: 39/39 pasan tras el revert.
+
+**Lo que SÍ se queda como estaba (no es parte de lo revertido):**
+usekreaton.com sigue siendo el dominio real para sitios generados de
+clientes (`bathallday-abc123.usekreaton.com`, vía `persist_generated_site`
++ el Worker de subdominios) -- esa era la tarea original (#64-68) antes de
+que la conversación escalara a "movamos todo el sitio", y sigue siendo
+correcta y deseada. `CLIENT_ALLOWED_ORIGIN_REGEX` en `main.py` tampoco se
+tocó, sigue cubriendo `*.usekreaton.com` para eso.
+
+**Pendiente / abierto:**
+- El DNS de usekreaton.com en Cloudflare quedó con los 4 registros `A` de
+  apex + `www` CNAME apuntando a GitHub Pages (del cutover revertido) --
+  ya no sirven para nada útil (GitHub ya no reconoce ese dominio como
+  custom domain), pero tampoco rompen nada dejándolos ahí. Candidato a
+  limpieza, no urgente.
+- El Worker `kreaton-subdomain-proxy` y el registro wildcard `A * →
+  192.0.2.1` (proxied) en usekreaton.com SÍ son parte del plan original y
+  quedaron bien configurados -- pendiente confirmar en vivo que un sitio
+  generado real resuelve correctamente en su subdominio.
+- Antes de volver a proponer separar KREATON de V&M Business Systems en
+  dominios distintos, la forma correcta es dividir el DESPLIEGUE (repo o
+  pipeline de Pages separado para cada uno), no solo cambiar el custom
+  domain de un repo que sirve a ambos. Es una decisión de arquitectura más
+  grande, para otra conversación con calma, no algo para asumir a partir
+  de una confirmación ambigua.
+
+**Archivos tocados:** `CNAME`, `luma-config.js`, `backend/app/main.py`,
+`cloudflare/subdomain-proxy-worker.js`, más el cambio manual (no versionado
+en git) en GitHub → Settings → Pages.
+
+**Notas para el siguiente agente:** si Beto vuelve a pedir "mover todo a
+usekreaton.com" en el futuro, primero preguntar explícitamente qué pasa con
+`contact.html` y las demás páginas generales de V&M Business Systems --
+NO asumir que "la app" y "el repo completo" son lo mismo. Este incidente
+pasó exactamente por esa ambigüedad.
+
+---
+
 ## 2026-08-10 — Claude — Cutover completo de dominio: vmbusinesssystems.com → usekreaton.com
 
 **Hecho:** Beto pidió sacar el servicio COMPLETO de vmbusinesssystems.com a
