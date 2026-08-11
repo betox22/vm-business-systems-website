@@ -901,10 +901,65 @@ export function renderLiveSitePreview() {
   schema = prepareWebsiteConfig(schema, payload, selection);
   card.classList.add("live-render-card-host");
   card.innerHTML = `
-    <div class="live-template-preview-shell">
-      ${renderWebsite(schema, schema.pages?.[0]?.page_key || "home")}
+    <div class="live-template-preview-viewport">
+      <div class="live-template-preview-shell">
+        ${renderWebsite(schema, schema.pages?.[0]?.page_key || "home")}
+      </div>
     </div>
   `;
+  fitLiveTemplatePreviewToCard(card);
+}
+
+const LIVE_PREVIEW_DESIGN_WIDTH = 1280;
+const LIVE_PREVIEW_MIN_SCALE = 0.18;
+
+/* Beto's follow-up (2026-08-11) after the scroll fix: seeing only a scrolled
+   fragment of the generated page isn't the goal -- the left panel needs to
+   show the WHOLE page (header to footer) at once while LYRA builds it. A
+   real generated site has no natural max height, so instead of scroll we
+   render it at a fixed desktop width (1280px, matching how these templates
+   are actually designed/laid out) inside .live-template-preview-shell,
+   measure its real rendered height, then shrink it with a computed
+   transform:scale() so the complete page fits inside
+   .live-template-preview-viewport with nothing cropped -- the same "fit to
+   frame" approach page-builder tools (Wix/Webflow canvas zoom) use for a
+   live overview. Recomputed on every re-render and on window resize. */
+function fitLiveTemplatePreviewToCard(card) {
+  const viewport = card.querySelector(".live-template-preview-viewport");
+  const shell = card.querySelector(".live-template-preview-shell");
+  if (!viewport || !shell) return;
+  shell.style.transform = "none";
+  shell.style.width = `${LIVE_PREVIEW_DESIGN_WIDTH}px`;
+  const naturalHeight = shell.scrollHeight || shell.offsetHeight || 1;
+  /* Measure against .live-site-preview-card (the card), not
+     .live-template-preview-viewport -- the viewport's own height is what
+     this function is about to SET, and before that it has no definite
+     height of its own (its only child is position:absolute, so it doesn't
+     contribute to normal-flow height, and a CSS percentage height on it
+     would hit the same "definite height" chain problem already root-caused
+     earlier in this file: client-setup.css:5031/5548). The card has a real
+     min-height in px, so its rect is trustworthy for both dimensions. */
+  const cardRect = card.getBoundingClientRect();
+  const availableWidth = cardRect.width || card.clientWidth || LIVE_PREVIEW_DESIGN_WIDTH;
+  const availableHeight = cardRect.height || card.clientHeight || naturalHeight;
+  const scale = Math.max(
+    LIVE_PREVIEW_MIN_SCALE,
+    Math.min(availableWidth / LIVE_PREVIEW_DESIGN_WIDTH, availableHeight / naturalHeight, 1)
+  );
+  shell.style.transformOrigin = "top left";
+  shell.style.transform = `scale(${scale})`;
+  viewport.style.height = `${Math.round(naturalHeight * scale)}px`;
+}
+
+let __livePreviewResizeTimer = null;
+if (typeof window !== "undefined") {
+  window.addEventListener("resize", () => {
+    if (__livePreviewResizeTimer) clearTimeout(__livePreviewResizeTimer);
+    __livePreviewResizeTimer = setTimeout(() => {
+      const card = document.querySelector(".live-site-preview-card.live-render-card-host");
+      if (card) fitLiveTemplatePreviewToCard(card);
+    }, 150);
+  });
 }
 
 

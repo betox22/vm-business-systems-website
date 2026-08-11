@@ -5565,25 +5565,43 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
      overflow:hidden disables the browser's content-based automatic
      minimum size for grid items -- so the row just sized to the
      min-height above (~760px) and silently clipped everything past that,
-     with no way to reach the rest of the page. Switching to overflow-y:
-     auto keeps the same visual box/rounded corners but adds a real
-     scrollbar so the full generated page is reachable. */
+     with no way to reach the rest of the page. First fix (v54) added
+     overflow-y:auto here so it could at least be scrolled to -- Beto
+     rejected that: seeing a fragment via scrollbar isn't "ver la pagina
+     completa". Kept overflow-y:auto as a harmless last-resort safety net
+     (only engages if the JS scale below hits its floor on an extremely
+     tall page); the real fix is the scale-to-fit block underneath. */
   overflow-y: auto !important;
   overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch;
 }
 
-/* The generated page itself (renderWebsite() output) should scroll as a
-   normal full-height document inside the card above, not get squashed --
-   confirmed live no prior rule constrained these, so this only adds the
-   missing baseline. */
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .live-template-preview-shell {
-  display: block;
+/* v55: "fit to frame" preview -- fitLiveTemplatePreviewToCard() in
+   src/ai-builder/index.js renders the real generated site at a fixed
+   1280px desktop width inside .live-template-preview-shell, measures its
+   true rendered height, then sets a transform:scale() on the shell so the
+   ENTIRE page (nav to footer) fits inside .live-template-preview-viewport
+   with nothing cropped -- same idea as the canvas zoom in Wix/Webflow.
+   The shell is positioned absolute inside the viewport because a scaled
+   element keeps its pre-scale footprint in normal flow, which would leave
+   a huge blank gap below it; JS sets the viewport's own height in px
+   (naturalHeight * scale) once the scale is known, so the surrounding
+   card sizes correctly around the shrunk page. pointer-events:none because
+   this is a live overview only, not an interactive canvas -- clicks
+   through a scaled transform don't land on the right coordinates anyway. */
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .live-template-preview-viewport {
+  position: relative;
   width: 100%;
+  overflow: hidden;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .live-template-preview-shell .rendered-site {
-  min-height: 0;
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .live-template-preview-shell {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  pointer-events: none;
+  background: #ffffff;
 }
 
 /* Third and last layer of the same bug: .template-board-panel /
