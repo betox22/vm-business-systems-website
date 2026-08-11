@@ -185,8 +185,8 @@ class DomainReservation(Base):
     owner_email: Mapped[str]
     requested_domain: Mapped[str]
     assigned_domain: Mapped[str]
-    source: Mapped[str] = mapped_column(default="vmstores")
-    registrar: Mapped[str] = mapped_column(default="vmstores")
+    source: Mapped[str] = mapped_column(default="kreaton")
+    registrar: Mapped[str] = mapped_column(default="kreaton")
     availability_status: Mapped[str]
     purchase_status: Mapped[str] = mapped_column(default="pending")
     price_cents: Mapped[int]

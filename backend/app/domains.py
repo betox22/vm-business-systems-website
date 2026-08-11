@@ -25,6 +25,13 @@ placeholder set) but persists reservations via the SQLAlchemy layer in
 `db.py`/`db_models.py` instead of D1, so it works on the existing Render
 Python service.
 
+2026-08-10: the free/included tier used to be a fake "vmstores.com" domain
+that nobody owned and that didn't resolve anywhere. It's now usekreaton.com,
+a domain Beto actually owns, wired up end-to-end via a Cloudflare Worker
+that reverse-proxies *.usekreaton.com to the GitHub Pages origin (see
+cloudflare/subdomain-proxy-worker.js) plus a CORS allow_origin_regex in
+main.py so the browser can call this API from any generated subdomain.
+
 See docs/AGENT_LOG.md (2026-07-18 entry) for context on why this exists and
 what commerce.py still needs before these tables are the single source of
 truth for orders/products.
@@ -33,7 +40,11 @@ truth for orders/products.
 router = APIRouter(prefix="/api/v1/domains", tags=["domains"])
 
 DomainStatus = Literal["available", "included", "premium", "taken"]
-DomainSource = Literal["custom", "vmstores"]
+# 2026-08-10: the free/included tier is now a real subdomain of usekreaton.com
+# (Beto's own domain, wired to the API via a Cloudflare Worker -- see
+# cloudflare/subdomain-proxy-worker.js), not the placeholder "vmstores.com"
+# that was never a real, resolvable domain.
+DomainSource = Literal["custom", "kreaton"]
 
 KNOWN_TAKEN_DOMAINS = {
     "amazon.com",
@@ -119,9 +130,9 @@ def normalize_domain_input(value: str, fallback_base: str) -> str:
         clean = fallback
     if "." not in clean:
         clean = f"{slugify(clean)}.com"
-    if clean.endswith(".vmstores.com"):
-        base = slugify(clean[: -len(".vmstores.com")])
-        return f"{base}.vmstores.com"
+    if clean.endswith(".usekreaton.com"):
+        base = slugify(clean[: -len(".usekreaton.com")])
+        return f"{base}.usekreaton.com"
     labels = [slugify(label)[:63] for label in clean.split(".") if label]
     if len(labels) < 2:
         return fallback
@@ -130,8 +141,8 @@ def normalize_domain_input(value: str, fallback_base: str) -> str:
 
 def domain_base(domain: str) -> str:
     normalized = normalize_domain_input(domain, "nueva-web")
-    if normalized.endswith(".vmstores.com"):
-        return slugify(normalized[: -len(".vmstores.com")])
+    if normalized.endswith(".usekreaton.com"):
+        return slugify(normalized[: -len(".usekreaton.com")])
     parts = normalized.split(".")
     return slugify("-".join(parts[:-1]) or parts[0] or "nueva-web")
 
@@ -145,7 +156,7 @@ def build_domain_candidates(requested_domain: str) -> List[str]:
         f"get{base}.com",
         f"{base}.store",
         f"{base}.us",
-        f"{base}.vmstores.com",
+        f"{base}.usekreaton.com",
     ]
     seen: List[str] = []
     for candidate in raw_candidates:
@@ -156,7 +167,7 @@ def build_domain_candidates(requested_domain: str) -> List[str]:
 
 
 def domain_price_for(domain: str) -> Dict[str, int]:
-    if domain.endswith(".vmstores.com"):
+    if domain.endswith(".usekreaton.com"):
         return {
             "priceCents": 0,
             "retailPriceCents": 0,
@@ -190,8 +201,8 @@ def check_domain_availability(
     current_site_id: Optional[str] = None,
 ) -> DomainOption:
     domain = normalize_domain_input(raw_domain, "nueva-web")
-    source: DomainSource = "vmstores" if domain.endswith(".vmstores.com") else "custom"
-    registrar = "V&M subdominios" if source == "vmstores" else "Registrar API"
+    source: DomainSource = "kreaton" if domain.endswith(".usekreaton.com") else "custom"
+    registrar = "KREATON" if source == "kreaton" else "Registrar API"
     price = domain_price_for(domain)
 
     generated_owner = session.execute(
@@ -217,7 +228,7 @@ def check_domain_availability(
     )
     taken = domain in KNOWN_TAKEN_DOMAINS or generated_conflict or store_conflict or reservation_conflict
     premium = (not taken) and source == "custom" and is_premium_domain(domain)
-    status: DomainStatus = "taken" if taken else "included" if source == "vmstores" else "premium" if premium else "available"
+    status: DomainStatus = "taken" if taken else "included" if source == "kreaton" else "premium" if premium else "available"
 
     price_cents = price["premiumPriceCents"] if premium else price["priceCents"]
     retail_price_cents = price["premiumRetailPriceCents"] if premium else price["retailPriceCents"]
@@ -225,7 +236,7 @@ def check_domain_availability(
         "Ya esta registrado o reservado."
         if taken
         else "Incluido con la plataforma."
-        if source == "vmstores"
+        if source == "kreaton"
         else "Disponible con precio premium."
         if premium
         else "Disponible para registro."
@@ -239,7 +250,7 @@ def check_domain_availability(
         priceCents=price_cents,
         reason=reason,
         registrar=registrar,
-        renewalLabel="Incluido" if source == "vmstores" else "Renovacion anual",
+        renewalLabel="Incluido" if source == "kreaton" else "Renovacion anual",
         retailPriceCents=retail_price_cents,
         source=source,
         status=status,
@@ -297,7 +308,7 @@ async def reserve_domain(
         select(DomainReservation).where(DomainReservation.assigned_domain == option.domain)
     ).scalar_one_or_none()
 
-    renewal_at = None if option.source == "vmstores" else "in 1 year"
+    renewal_at = None if option.source == "kreaton" else "in 1 year"
     if existing:
         if existing.store_id and existing.store_id != payload.storeId:
             raise HTTPException(status_code=409, detail="domain_unavailable")

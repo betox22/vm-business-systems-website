@@ -35,7 +35,7 @@ class StoreOwnerProductTests(unittest.TestCase):
                 owner_email="owner@example.com",
                 name="Owner Store",
                 business_type="retail",
-                public_url="owner.vmstores.com",
+                public_url="owner.usekreaton.com",
             )
         )
         self.session.add(
@@ -45,7 +45,7 @@ class StoreOwnerProductTests(unittest.TestCase):
                 owner_email="other@example.com",
                 name="Other Store",
                 business_type="retail",
-                public_url="other.vmstores.com",
+                public_url="other.usekreaton.com",
             )
         )
         self.session.add(

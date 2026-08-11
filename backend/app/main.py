@@ -246,9 +246,19 @@ CLIENT_ALLOWED_ORIGINS = [
     "http://localhost:5177",
 ]
 
+# 2026-08-10: every generated site now gets a real, resolvable subdomain of
+# usekreaton.com (see persist_generated_site's public_url + the Cloudflare
+# Worker in cloudflare/subdomain-proxy-worker.js that serves site.html on
+# *.usekreaton.com). There's one of these per generated site, so a fixed
+# allow_origins entry doesn't work -- allow_origin_regex is the documented
+# way to allow a whole subdomain pattern with allow_credentials=True still
+# on. Scoped strictly to usekreaton.com subdomains/apex, not a bare ".*".
+CLIENT_ALLOWED_ORIGIN_REGEX = r"^https://([a-z0-9-]+\.)*usekreaton\.com$"
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CLIENT_ALLOWED_ORIGINS,
+    allow_origin_regex=CLIENT_ALLOWED_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -638,7 +648,7 @@ def _get_or_create_store(
         owner_email=owner_email,
         name=business_name or "Client workspace",
         business_type=business_type or "website",
-        public_url=f"{_slugify(business_name or store_id)}.vmstores.com",
+        public_url=f"{_slugify(business_name or store_id)}.usekreaton.com",
         status="draft",
     )
     session.add(store)
@@ -698,7 +708,7 @@ def persist_generated_site(
             template_name=summary["template_name"],
             template_mode=summary["template_mode"],
             domain_slug=_slugify(summary["business_name"]),
-            public_url=f"{_slugify(summary['business_name'])}-{site_id[-6:]}.vmstores.com",
+            public_url=f"{_slugify(summary['business_name'])}-{site_id[-6:]}.usekreaton.com",
             status="draft",
             generated_config="{}",
         )
@@ -718,7 +728,7 @@ def persist_generated_site(
     site.announcement = summary["announcement"]
     site.accent_color = summary["accent_color"]
     site.domain_slug = site.domain_slug or _slugify(summary["business_name"])
-    site.public_url = site.public_url or f"{site.domain_slug}-{site.id[-6:]}.vmstores.com"
+    site.public_url = site.public_url or f"{site.domain_slug}-{site.id[-6:]}.usekreaton.com"
     site.status = "draft"
     site.generated_config = _schema_json(schema)
     session.commit()
@@ -844,12 +854,14 @@ async def public_resolve_site(
 ) -> Dict[str, Any]:
     """Resolve a generated site by its stored domain (site-viewer.js's other lookup path).
 
-    GeneratedSite.public_url today is always a placeholder like
-    "{slug}-{id}.vmstores.com" (see persist_generated_site) rather than a
-    real connected domain -- real custom-domain connection is still open
-    work (see domains.py) -- but this endpoint matches whatever ends up in
-    that column either way, so it starts working for real once that's wired
-    up without needing another change here.
+    GeneratedSite.public_url is "{slug}-{id}.usekreaton.com" by default (see
+    persist_generated_site) -- a real, owned domain as of 2026-08-10, wired
+    to this API via a Cloudflare Worker that reverse-proxies
+    *.usekreaton.com to the GitHub Pages origin (see
+    cloudflare/subdomain-proxy-worker.js). A site's public_url can also be
+    overwritten with a real custom domain once that flow is wired up (see
+    domains.py) -- this endpoint matches whatever ends up in that column
+    either way, so custom domains start working here with no further change.
     """
 
     _enforce_rate_limit(http_request, "public_site", limit=60, window_seconds=60)

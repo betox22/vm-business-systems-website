@@ -25,7 +25,7 @@ class PublicSitePayloadTests(unittest.TestCase):
                 owner_email="owner@example.com",
                 name="Copper Kettle Coffee Roasters",
                 business_type="restaurant",
-                public_url="copper-kettle.vmstores.com",
+                public_url="copper-kettle.usekreaton.com",
             )
         )
         self.session.add(
@@ -40,7 +40,7 @@ class PublicSitePayloadTests(unittest.TestCase):
                 template_name="Restaurant & Food Business",
                 template_mode="visual_prototype",
                 domain_slug="copper-kettle",
-                public_url="copper-kettle-abc123.vmstores.com",
+                public_url="copper-kettle-abc123.usekreaton.com",
                 status="draft",
                 generated_config=json.dumps({
                     "pages": [{"pageId": "home"}],
@@ -60,7 +60,7 @@ class PublicSitePayloadTests(unittest.TestCase):
 
         self.assertEqual(payload["site_id"], "site_1")
         self.assertEqual(payload["business_name"], "Copper Kettle Coffee Roasters")
-        self.assertEqual(payload["public_url"], "copper-kettle-abc123.vmstores.com")
+        self.assertEqual(payload["public_url"], "copper-kettle-abc123.usekreaton.com")
         self.assertEqual(payload["schema"]["pages"][0]["pageId"], "home")
         self.assertEqual(payload["catalog_items"][0]["name"], "House Blend")
         # Nothing that identifies the owning account should leak into the
@@ -71,7 +71,7 @@ class PublicSitePayloadTests(unittest.TestCase):
 
     def test_resolve_by_host_matches_public_url(self) -> None:
         site = self.session.execute(
-            select(GeneratedSite).where(GeneratedSite.public_url == "copper-kettle-abc123.vmstores.com")
+            select(GeneratedSite).where(GeneratedSite.public_url == "copper-kettle-abc123.usekreaton.com")
         ).scalar_one_or_none()
         self.assertIsNotNone(site)
         self.assertEqual(site.id, "site_1")
@@ -81,7 +81,7 @@ class PublicSitePayloadTests(unittest.TestCase):
             select(GeneratedSite).where(GeneratedSite.id == "does_not_exist")
         ).scalar_one_or_none()
         by_host = self.session.execute(
-            select(GeneratedSite).where(GeneratedSite.public_url == "nope.vmstores.com")
+            select(GeneratedSite).where(GeneratedSite.public_url == "nope.usekreaton.com")
         ).scalar_one_or_none()
         self.assertIsNone(by_id)
         self.assertIsNone(by_host)
@@ -99,7 +99,7 @@ class PublicSitePayloadTests(unittest.TestCase):
                 template_name="Restaurant & Food Business",
                 template_mode="visual_prototype",
                 domain_slug="broken-config",
-                public_url="broken-config.vmstores.com",
+                public_url="broken-config.usekreaton.com",
                 status="draft",
                 generated_config="not valid json",
             )

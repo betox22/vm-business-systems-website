@@ -16,6 +16,63 @@ Formato de entrada:
 
 ---
 
+## 2026-08-10 — Claude — usekreaton.com como dominio real de sitios generados
+
+**Hecho:** Beto compró `usekreaton.com` (Cloudflare Registrar). Reemplacé el
+placeholder `vmstores.com` (nunca existió, no resolvía a nada) por ese dominio
+real en todo el backend:
+- `backend/app/main.py`: las 3 rutas que generan `public_url`
+  (`_get_or_create_store`, `persist_generated_site` x2) ahora usan
+  `.usekreaton.com`. Agregué `CLIENT_ALLOWED_ORIGIN_REGEX` a `CORSMiddleware`
+  (`^https://([a-z0-9-]+\.)*usekreaton\.com$`) porque cada sitio generado tiene
+  su propio subdominio — una lista fija de `allow_origins` no alcanza, y
+  `allow_credentials=True` + `allow_origins=["*"]` sigue prohibido por los
+  navegadores, así que `allow_origin_regex` es la única forma correcta.
+- `backend/app/domains.py`: `DomainSource` pasó de `"vmstores"` a `"kreaton"`,
+  todos los chequeos de sufijo `.vmstores.com` → `.usekreaton.com`, y el string
+  de cara al usuario `"V&M subdominios"` → `"KREATON"`.
+- `backend/app/db_models.py`: defaults de `DomainReservation.source`/
+  `.registrar` `"vmstores"` → `"kreaton"` (no lo lee nada crítico, es fallback).
+- Tests actualizados (`test_domains.py`, `test_public_site.py`,
+  `test_commerce_products.py`) — 19/19 pasan.
+- Nuevo `cloudflare/subdomain-proxy-worker.js`: Worker que resuelve el
+  problema real de fondo — GitHub Pages solo permite UN dominio custom por
+  repo, no puede servir `*.usekreaton.com` directo. El Worker intercepta
+  `*.usekreaton.com/*`, reenvía cada request al origin de GitHub Pages
+  (`vmbusinesssystems.com`) preservando el hostname real en el browser
+  (`window.location.hostname`), y `/` resuelve a `/site.html`. Así
+  `site-viewer.js` sigue funcionando sin cambios: lee el hostname real y
+  llama `GET /public/resolve-site?host=<subdominio>` contra
+  `luma-api.vmbusinesssystems.com`.
+
+**Pendiente / abierto:**
+- El Worker está en el repo pero **no desplegado todavía** — requiere acceso
+  al dashboard de Cloudflare de Beto (crear el Worker, bindear la ruta
+  `*.usekreaton.com/*`, y agregar el registro DNS comodín `*` proxied). Son
+  pasos manuales que le quedan pendientes a Beto; instrucciones dadas aparte
+  en el chat.
+- `domains.py` (búsqueda/reserva de dominio custom) sigue sin integración real
+  de registrador (`Registrar API` es un placeholder) y sin frontend que lo
+  consuma — solo el dominio incluido (`usekreaton.com`) es real ahora mismo.
+- Sin pago real: `reserve_domain()` marca `purchase_status="active"` sin
+  cobrar nada — deliberadamente diferido, no es parte de este cambio.
+
+**Archivos tocados:** `backend/app/main.py`, `backend/app/domains.py`,
+`backend/app/db_models.py`, `backend/tests/test_domains.py`,
+`backend/tests/test_public_site.py`, `backend/tests/test_commerce_products.py`,
+`cloudflare/subdomain-proxy-worker.js` (nuevo).
+
+**Notas para el siguiente agente:** si `usekreaton.com` alguna vez deja de ser
+el dominio incluido (por ejemplo si Beto compra `kreaton.com` más adelante y
+quiere migrar), el único lugar donde el sufijo está hardcodeado es
+`domains.py` (`normalize_domain_input`, `domain_base`,
+`build_domain_candidates`, `domain_price_for`, `check_domain_availability`) +
+`main.py` (`persist_generated_site`, `_get_or_create_store`,
+`CLIENT_ALLOWED_ORIGIN_REGEX`) — no hay una constante única todavía, así que
+hay que tocar los dos archivos a mano.
+
+---
+
 ## 2026-07-20 — Codex — Carrusel 3D para selector de plantillas
 
 **Hecho:** Mejoré el selector visual de plantillas en `ai-builder` con un

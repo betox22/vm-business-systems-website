@@ -40,8 +40,8 @@ class DomainHelperTests(unittest.TestCase):
         unknown_price = domain_price_for("crazybox.xyz")
         self.assertEqual(unknown_price["priceCents"], 1600)
 
-    def test_vmstores_subdomain_is_free(self) -> None:
-        price = domain_price_for("crazybox.vmstores.com")
+    def test_usekreaton_subdomain_is_free(self) -> None:
+        price = domain_price_for("crazybox.usekreaton.com")
         self.assertEqual(price["priceCents"], 0)
 
     def test_is_premium_domain_short_or_keyword(self) -> None:
@@ -49,9 +49,9 @@ class DomainHelperTests(unittest.TestCase):
         self.assertTrue(is_premium_domain("primeshop.com"))
         self.assertFalse(is_premium_domain("a-normal-length-shop.com"))
 
-    def test_build_domain_candidates_includes_vmstores_option(self) -> None:
+    def test_build_domain_candidates_includes_usekreaton_option(self) -> None:
         candidates = build_domain_candidates("crazybox.com")
-        self.assertIn("crazybox.vmstores.com", candidates)
+        self.assertIn("crazybox.usekreaton.com", candidates)
         self.assertIn("crazybox.com", candidates)
 
 
@@ -67,8 +67,8 @@ class DomainAvailabilityTests(unittest.TestCase):
         self.assertFalse(option.available)
         self.assertEqual(option.status, "taken")
 
-    def test_vmstores_subdomain_is_included_and_available(self) -> None:
-        option = check_domain_availability(self.session, "crazybox.vmstores.com", "owner@example.com", None)
+    def test_usekreaton_subdomain_is_included_and_available(self) -> None:
+        option = check_domain_availability(self.session, "crazybox.usekreaton.com", "owner@example.com", None)
         self.assertTrue(option.available)
         self.assertEqual(option.status, "included")
         self.assertEqual(option.priceCents, 0)
