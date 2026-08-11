@@ -16,6 +16,86 @@ Formato de entrada:
 
 ---
 
+## 2026-08-10 — Claude — Cutover completo de dominio: vmbusinesssystems.com → usekreaton.com
+
+**Hecho:** Beto pidió sacar el servicio COMPLETO de vmbusinesssystems.com a
+usekreaton.com ("no quiero errores ni mezclas"), no solo los subdominios de
+sitios generados (ver la entrada de abajo, que fue el paso previo). Decisión
+confirmada con Beto: apex `usekreaton.com` = la app real (reemplaza
+vmbusinesssystems.com), `api.usekreaton.com` = backend (reemplaza
+luma-api.vmbusinesssystems.com), vmbusinesssystems.com queda como redirect
+(no se apaga del todo, por si hay links/marcadores viejos).
+
+Cambios:
+- `CNAME` (raíz del repo, lo que GitHub Pages lee para el custom domain):
+  `vmbusinesssystems.com` → `usekreaton.com`.
+- `luma-config.js`: `LUMA_API_BASE_URL` → `https://api.usekreaton.com`.
+- `backend/app/main.py`:
+  - `CLIENT_ALLOWED_ORIGINS`: se queda temporalmente con las entradas de
+    vmbusinesssystems.com como red de seguridad durante la transición
+    (sacarlas una vez Beto confirme que el redirect está 100% andando y
+    nada llama a la API desde ese origin). `CLIENT_ALLOWED_ORIGIN_REGEX` ya
+    cubre usekreaton.com apex + cualquier subdominio, no hizo falta tocarlo.
+  - **Hallazgo importante que casi se pasa por alto:** la cookie de sesión
+    httpOnly (`/api/client/auth/session`, `/api/client/auth/logout`) estaba
+    con `domain=".vmbusinesssystems.com"` hardcodeado. Si el frontend se
+    muda de dominio y esto no se actualiza, el login real de clientes se
+    rompe en silencio (el browser nunca manda la cookie de vuelta, sin
+    ningún error visible). Actualizado a `.usekreaton.com`.
+  - `root_redirect()` (`GET /`, el fallback para el "Site URL" de Supabase
+    OAuth) apuntaba a `https://vmbusinesssystems.com/` → actualizado a
+    `https://usekreaton.com/`.
+- `cloudflare/subdomain-proxy-worker.js`: `ORIGIN_HOST` → `usekreaton.com`
+  (antes apuntaba a vmbusinesssystems.com como origin). Se eliminó el
+  branch especial que devolvía un placeholder "coming soon" para el apex —
+  ya no aplica: el apex ahora es la app real servida directo por GitHub
+  Pages, este Worker solo intercepta `*.usekreaton.com/*` (subdominios),
+  nunca el apex, así que no hay riesgo de loop.
+- `admin.js`: placeholder de texto del input de dominio actualizado.
+- `project-rebuild-kit/04-services-and-urls.md`,
+  `scripts/playwright-live-smoke.js`: referencias de dominio actualizadas.
+- Tests: 39/39 pasan (`backend/tests/`).
+
+**Pendiente / abierto (decisiones de Beto, no tocado a propósito):**
+- `contact.html` tiene ~13 direcciones de correo reales en
+  `@vmbusinesssystems.com` (info@, ventas@, soporte@, etc.). NO se tocaron
+  — cambiarlas requiere que Beto tenga esas casillas creadas en
+  `@usekreaton.com` primero (es un paso de proveedor de correo, no de
+  código). Si no existen todavía, cambiar el texto rompería el contacto
+  real.
+- `js/client-portal.js` y `js/client-portal-access.js` apuntan a
+  `api.vmbusinesssystems.com` y `app.vmbusinesssystems.com` — investigado
+  con DNS: esos hosts resuelven a una IP de DigitalOcean
+  (`134.209.34.148`) y a una IP de Firebase Hosting (`199.36.158.100`)
+  respectivamente, ninguna de las dos es parte del stack actual (Render +
+  GitHub Pages). Son casi seguro remanentes de un prototipo anterior a
+  LYRA/ai-builder que nunca se limpiaron del todo (`client-portal.html` /
+  `client-portal-preview.html` siguen en el allowlist de
+  `stage-public-site.mjs`, o sea que SÍ se sirven en producción aunque
+  apunten a infraestructura muerta). No se tocó para no mezclar esta
+  migración de dominio con una limpieza de código muerto — queda como
+  candidato a tarea aparte.
+- Infraestructura todavía sin ejecutar (requiere dashboard/API de
+  Cloudflare + Render, no se puede hacer solo con código): DNS de
+  usekreaton.com (CNAME apex + www a GitHub Pages, wildcard `*` para el
+  Worker), Worker desplegado, dominio custom `api.usekreaton.com` agregado
+  en Render, y el redirect de vmbusinesssystems.com → usekreaton.com en
+  Cloudflare.
+
+**Archivos tocados:** `CNAME`, `luma-config.js`, `backend/app/main.py`,
+`cloudflare/subdomain-proxy-worker.js`, `admin.js`,
+`project-rebuild-kit/04-services-and-urls.md`,
+`scripts/playwright-live-smoke.js`.
+
+**Notas para el siguiente agente:** si `contact.html` o `client-portal.js`
+se tocan en el futuro, no asumas que es parte de "terminar" esta migración
+de dominio — son decisiones de negocio/limpieza separadas, anotadas arriba
+a propósito. Antes de dar por completo el cutover, confirmar que Beto
+efectivamente configuró el DNS + Render + redirect (esto es infraestructura
+externa, `git log` no lo va a mostrar).
+
+---
+
 ## 2026-08-10 — Claude — usekreaton.com como dominio real de sitios generados
 
 **Hecho:** Beto compró `usekreaton.com` (Cloudflare Registrar). Reemplacé el

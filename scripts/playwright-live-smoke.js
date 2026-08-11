@@ -4,7 +4,7 @@ const path = require("path");
 const { chromium } = require("playwright");
 
 let targetUrl =
-  process.argv[2] || "https://vmbusinesssystems.com/client/setup/";
+  process.argv[2] || "https://usekreaton.com/client/setup/";
 const outputDir = path.join(process.cwd(), "output", "playwright");
 
 const mimeTypes = {

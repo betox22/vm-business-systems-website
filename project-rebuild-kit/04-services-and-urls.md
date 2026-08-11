@@ -5,10 +5,20 @@
 Primary domain:
 
 ```text
-vmbusinesssystems.com
+usekreaton.com
 ```
 
+(2026-08-10: full cutover from vmbusinesssystems.com to usekreaton.com --
+see docs/AGENT_LOG.md same-day entry. vmbusinesssystems.com now redirects
+to usekreaton.com instead of serving the app.)
+
 ## Current AI API
+
+Custom domain (CNAME to the Render service below):
+
+```text
+https://api.usekreaton.com
+```
 
 Render service URL:
 
@@ -19,7 +29,7 @@ https://kreaton-lyra-api.onrender.com
 Health check:
 
 ```text
-https://kreaton-lyra-api.onrender.com/healthz
+https://api.usekreaton.com/healthz
 ```
 
 Frontend config file:
@@ -30,15 +40,11 @@ luma-config.js
 
 ## Previous/Legacy API Route Notes
 
-Older references to `luma-api.vmbusinesssystems.com` may exist in browser
-history or DNS work. The current checked frontend config points to Render:
-
-```text
-https://kreaton-lyra-api.onrender.com
-```
-
-Before production, choose one stable API domain and update DNS plus frontend
-config.
+Older references to `luma-api.vmbusinesssystems.com` (and, before that,
+`api.usekreaton.com`'s predecessor) may exist in browser history or DNS
+work. The current frontend config (`luma-config.js`) points to
+`https://api.usekreaton.com`, a custom domain CNAME'd to the Render service
+above.
 
 ## Cloudflare
 

@@ -1,7 +1,8 @@
 // Cloudflare Worker: reverse-proxies every *.usekreaton.com subdomain to the
-// real site-viewer page hosted on GitHub Pages (vmbusinesssystems.com).
+// real site-viewer page hosted on GitHub Pages (usekreaton.com itself, as of
+// the 2026-08-10 full domain cutover -- see docs/AGENT_LOG.md).
 //
-// Why this exists (2026-08-10): every generated site gets a public_url like
+// Why this exists: every generated site gets a public_url like
 // "bathallday-a1b2c3.usekreaton.com" (see backend/app/main.py's
 // persist_generated_site). GitHub Pages' "custom domain" feature only
 // supports ONE fixed domain per repo -- it cannot serve an unbounded number
@@ -9,18 +10,25 @@
 // ...) directly. This Worker is the piece that makes that actually work: it
 // sits in front of the *.usekreaton.com wildcard DNS record, and for any
 // request to any subdomain, fetches the matching path from the ORIGIN
-// (vmbusinesssystems.com) and returns it unchanged -- except the root path
-// "/" resolves to "/site.html" (the generated-site viewer page), matching
-// what a normal visitor typing the subdomain expects to see.
+// (usekreaton.com apex, GitHub Pages) and returns it unchanged -- except the
+// root path "/" resolves to "/site.html" (the generated-site viewer page),
+// matching what a normal visitor typing the subdomain expects to see.
+//
+// Note this Worker is only bound to the route "*.usekreaton.com/*" (see
+// deploy notes below), which requires at least one subdomain label -- it
+// does NOT match the bare apex "usekreaton.com". The apex is the real
+// KREATON app itself, served directly by GitHub Pages with no Worker in
+// front of it at all, so there's no risk of this Worker's fetch() to the
+// apex looping back into itself.
 //
 // Critically, this is a proxy, not a redirect: the browser's address bar and
 // window.location.hostname stay as the real subdomain (e.g.
 // "bathallday.usekreaton.com"). That matters because site-viewer.js reads
 // window.location.hostname to know which generated site to load via
 // GET /public/resolve-site?host=<hostname> against the LYRA API
-// (luma-api.vmbusinesssystems.com, see luma-config.js). If this were a
-// redirect instead, the browser would end up on vmbusinesssystems.com and
-// resolve-site would receive the wrong host.
+// (api.usekreaton.com, see luma-config.js). If this were a redirect
+// instead, the browser would end up on the apex and resolve-site would
+// receive the wrong host.
 //
 // Deploy: Cloudflare dashboard -> the usekreaton.com account -> Workers &
 // Pages -> Create Worker -> paste this file -> deploy -> bind it to the
@@ -29,22 +37,10 @@
 // "*" in that zone -- see the DNS step in the setup instructions Beto has
 // alongside this file. No environment variables or secrets needed.
 
-const ORIGIN_HOST = "vmbusinesssystems.com";
+const ORIGIN_HOST = "usekreaton.com";
 
 export default {
   async fetch(request) {
-    const url = new URL(request.url);
-
-    // Never proxy the bare apex (usekreaton.com with no subdomain) into the
-    // generated-site viewer -- that's reserved for a future KREATON
-    // marketing/landing page, not a random tenant's site.
-    if (url.hostname === "usekreaton.com" || url.hostname === "www.usekreaton.com") {
-      return new Response("KREATON — coming soon.", {
-        status: 200,
-        headers: { "content-type": "text/plain; charset=utf-8" },
-      });
-    }
-
     const originUrl = new URL(request.url);
     originUrl.hostname = ORIGIN_HOST;
     originUrl.port = "";
@@ -56,8 +52,8 @@ export default {
     // caching/negotiation correctly. The origin (GitHub Pages, unauthenticated
     // static files) has no use for the visitor's cookies, Authorization, or
     // Cloudflare's own cf-* edge metadata -- the real API calls (auth, site
-    // data) go straight from the browser to luma-api.vmbusinesssystems.com,
-    // never through this proxy, so there's nothing here that needs those.
+    // data) go straight from the browser to api.usekreaton.com, never
+    // through this proxy, so there's nothing here that needs those.
     const forwardHeaders = new Headers();
     for (const name of ["accept", "accept-language", "accept-encoding", "if-none-match", "if-modified-since", "user-agent"]) {
       const value = request.headers.get(name);

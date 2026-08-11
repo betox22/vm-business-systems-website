@@ -985,7 +985,7 @@ function renderSettings() {
             <select name="siteId">${siteOptions}</select>
           </label>
           <label>Dominio
-            <input id="domainInput" name="domain" placeholder="cliente.vmbusinesssystems.com" required>
+            <input id="domainInput" name="domain" placeholder="cliente.usekreaton.com" required>
           </label>
           <label>Tipo
             <select name="domainType">

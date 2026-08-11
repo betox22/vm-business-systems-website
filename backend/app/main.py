@@ -237,7 +237,15 @@ app = FastAPI(title="KREATON LYRA API", version="0.1.0")
 # credentials (browsers reject that combination outright), which is exactly
 # what blocked moving client sessions from localStorage to an httpOnly
 # cookie. Pin this to the real frontend origins instead so cookies can flow
-# between vmbusinesssystems.com and this API's custom domain.
+# between the frontend and this API's custom domain.
+#
+# 2026-08-10: full domain cutover from vmbusinesssystems.com to usekreaton.com
+# (the real, owned KREATON domain -- see docs/AGENT_LOG.md same-day entry).
+# usekreaton.com itself is covered by CLIENT_ALLOWED_ORIGIN_REGEX below, not
+# this list. The vmbusinesssystems.com entries stay here ONLY as a transition
+# safety net while the DNS/GitHub Pages/Render cutover is in flight -- remove
+# them once Beto confirms vmbusinesssystems.com is fully redirecting and
+# nothing is still calling this API from that origin.
 CLIENT_ALLOWED_ORIGINS = [
     "https://vmbusinesssystems.com",
     "https://www.vmbusinesssystems.com",
@@ -246,13 +254,16 @@ CLIENT_ALLOWED_ORIGINS = [
     "http://localhost:5177",
 ]
 
-# 2026-08-10: every generated site now gets a real, resolvable subdomain of
-# usekreaton.com (see persist_generated_site's public_url + the Cloudflare
-# Worker in cloudflare/subdomain-proxy-worker.js that serves site.html on
-# *.usekreaton.com). There's one of these per generated site, so a fixed
-# allow_origins entry doesn't work -- allow_origin_regex is the documented
-# way to allow a whole subdomain pattern with allow_credentials=True still
-# on. Scoped strictly to usekreaton.com subdomains/apex, not a bare ".*".
+# 2026-08-10: usekreaton.com apex is now the real app itself (GitHub Pages,
+# replacing vmbusinesssystems.com), and every generated site also gets a
+# real, resolvable subdomain of usekreaton.com (see persist_generated_site's
+# public_url + the Cloudflare Worker in cloudflare/subdomain-proxy-worker.js
+# that serves site.html on *.usekreaton.com). One regex covers both: the
+# `([a-z0-9-]+\.)*` group matches zero subdomain labels (bare apex, the app)
+# or one (any generated site's subdomain). A fixed allow_origins entry can't
+# express "one of unlimited generated subdomains" -- allow_origin_regex is
+# the documented way to allow a whole pattern with allow_credentials=True
+# still on. Scoped strictly to usekreaton.com, not a bare ".*".
 CLIENT_ALLOWED_ORIGIN_REGEX = r"^https://([a-z0-9-]+\.)*usekreaton\.com$"
 
 app.add_middleware(
@@ -457,8 +468,11 @@ async def client_auth_session(
     there's no way around capturing it client-side first) -- but instead of
     only keeping it in localStorage, it now also POSTs it here once, and this
     sets it as an httpOnly cookie that JavaScript can no longer read. Scoped
-    to the shared parent domain so the cookie is sent to both
-    vmbusinesssystems.com and this API's luma-api.vmbusinesssystems.com.
+    to the shared parent domain so the cookie is sent to both usekreaton.com
+    and this API's api.usekreaton.com (2026-08-10: updated for the full
+    domain cutover -- this MUST match the frontend's real domain or the
+    browser silently never sends the cookie back, breaking login with no
+    visible error. See docs/AGENT_LOG.md same-day entry).
     """
 
     _enforce_rate_limit(request, "client_auth_session", limit=10)
@@ -475,7 +489,7 @@ async def client_auth_session(
         secure=True,
         samesite="lax",
         path="/",
-        domain=".vmbusinesssystems.com",
+        domain=".usekreaton.com",
     )
     return {
         "id": user.get("id"),
@@ -486,7 +500,7 @@ async def client_auth_session(
 
 @app.post("/api/client/auth/logout")
 async def client_auth_logout(response: Response) -> Dict[str, str]:
-    response.delete_cookie(key=SESSION_COOKIE_NAME, path="/", domain=".vmbusinesssystems.com")
+    response.delete_cookie(key=SESSION_COOKIE_NAME, path="/", domain=".usekreaton.com")
     return {"status": "logged_out"}
 
 
@@ -1363,4 +1377,4 @@ from fastapi.responses import RedirectResponse
 
 @app.get("/")
 async def root_redirect() -> RedirectResponse:
-    return RedirectResponse(url="https://vmbusinesssystems.com/", status_code=302)
+    return RedirectResponse(url="https://usekreaton.com/", status_code=302)
