@@ -5643,6 +5643,49 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
   min-width: 0;
 }
 
+/* Beto (2026-08-11, same day, follow-up): "el chat de LYRA aun esta muy
+   feo desorganizado" after seeing it live with real messages. Two
+   concrete, confirmed-live issues (checked via getComputedStyle, not
+   guesswork):
+   1. Assistant bubbles (.chat-message.assistant span /
+      .chat-message.system span, client-setup.css:2716) render on a
+      near-white background with only a 6%-opacity border
+      (rgba(15,23,42,0.06)) against this panel's own near-white
+      background -- so every LYRA reply after the first reads as
+      borderless floating text instead of a distinct message card, which
+      is the single biggest reason the thread looks unstructured.
+   2. .chat-status-card (holds the "Review details" button) had its
+      background/border explicitly stripped to transparent in THIS mode
+      (client-setup.css:5498-5504, from the earlier 3-panel-layout pass)
+      -- so that button sits with no visual grouping, disconnected from
+      the quick-reply chips right below it. Everything else in the
+      action stack (.quick-chip-row buttons) already has a proper pill
+      style, so this was the one piece left ungrouped.
+   Fix: give assistant bubbles a tinted background + real border + soft
+   shadow so they read as cards, and put a light, rounded container back
+   under the review-details area so it groups visually with the chips
+   below it instead of floating alone. */
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message.assistant span,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message.system span {
+  background: linear-gradient(180deg, #ffffff, #f7fbfa) !important;
+  border: 1px solid rgba(15, 23, 42, 0.1) !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05) !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-status-card {
+  justify-content: flex-end !important;
+  background: rgba(240, 253, 250, 0.6) !important;
+  border: 1px solid rgba(15, 118, 110, 0.14) !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+  padding: 8px 10px !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) #reviewDetailsButton {
+  background: #ffffff;
+  border: 1px solid rgba(15, 118, 110, 0.22);
+}
+
 body.public-client-setup.lyra-result-mode.draft-adjust-open .guided-progress,
 body.public-client-setup.lyra-result-mode.draft-adjust-open .summary-panel,
 body.public-client-setup.lyra-result-mode.draft-adjust-open .lyra-agent-status,
