@@ -11,9 +11,14 @@
 //    persist_generated_site). Requests to any *.usekreaton.com subdomain
 //    get "/" rewritten to "/site.html" (the generated-site viewer page).
 //
-// 2. The KREATON app itself: requests to the bare apex (usekreaton.com) or
-//    www get "/" rewritten to "/client/setup/" (KREATON AI Studio, the
-//    real client-facing product) instead.
+// 2. The KREATON marketing landing: requests to the bare apex
+//    (usekreaton.com) or www get "/" rewritten to "/landing.html" -- a real
+//    marketing page explaining what KREATON does, with a CTA into
+//    "/client/setup/" (KREATON AI Studio, the actual product tool). Before
+//    2026-08-11 this rewrote straight to "/client/setup/", which throws an
+//    unexplained Google/Apple sign-in gate at a visitor who has no idea
+//    what KREATON is yet -- landing.html fixes that without touching
+//    GitHub Pages' custom domain.
 //
 // Why a Worker instead of just pointing GitHub Pages' custom domain at
 // usekreaton.com: GitHub Pages only supports ONE custom domain per repo,
@@ -47,7 +52,7 @@
 
 const ORIGIN_HOST = "vmbusinesssystems.com";
 const APEX_HOSTS = new Set(["usekreaton.com", "www.usekreaton.com"]);
-const APEX_HOME_PATH = "/client/setup/";
+const APEX_HOME_PATH = "/landing.html";
 const SUBDOMAIN_HOME_PATH = "/site.html";
 
 export default {

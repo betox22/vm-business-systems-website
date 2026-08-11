@@ -51,6 +51,7 @@ const PUBLIC_TOP_LEVEL_FILES = [
   "client.css",
   "contact.html",
   "index.html",
+  "landing.html",
   "luma-config.js",
   "plans.html",
   "seller-portal.css",

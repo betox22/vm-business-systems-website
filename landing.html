@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KREATON — Crea el sitio web de tu negocio con IA</title>
+    <meta name="description" content="Cuéntale a LYRA sobre tu negocio y KREATON genera tu sitio web profesional, con tienda o reservas incluidas, listo para publicar en minutos.">
+    <link rel="icon" href="data:,">
+    <style>
+      :root {
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: #e2e8f0;
+        --indigo: #1e1b4b;
+        --cobalt: #2f4cdd;
+        --violet: #7c3aed;
+        --cyan: #22d3ee;
+        --teal: #14b8a6;
+        --bg: #f8fafc;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: inherit; }
+      .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+      /* Nav */
+      header.nav {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: rgba(248, 250, 252, 0.85);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--line);
+      }
+      .nav-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 68px;
+      }
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; text-decoration: none; letter-spacing: -0.01em; }
+      .brand-mark {
+        width: 34px; height: 34px; border-radius: 9px;
+        background: linear-gradient(135deg, var(--violet), var(--cyan));
+        display: grid; place-items: center;
+        color: #fff; font-weight: 900; font-size: 14px;
+      }
+      .nav-cta {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: var(--ink); color: #fff; text-decoration: none;
+        padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 14.5px;
+      }
+
+      /* Hero */
+      .hero {
+        position: relative;
+        overflow: hidden;
+        background: radial-gradient(circle at 15% -10%, rgba(124, 58, 237, 0.55), transparent 55%),
+          radial-gradient(circle at 85% 0%, rgba(34, 211, 238, 0.35), transparent 50%),
+          linear-gradient(180deg, var(--indigo), #0b0a24 65%);
+        color: #fff;
+      }
+      .hero-inner {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 40px;
+        align-items: center;
+        padding: 84px 24px 96px;
+      }
+      .eyebrow {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16);
+        color: #c4b5fd; font-size: 13px; font-weight: 700;
+        padding: 7px 14px; border-radius: 999px; margin-bottom: 22px;
+      }
+      .eyebrow span.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+      .hero h1 {
+        font-size: clamp(34px, 5vw, 54px);
+        line-height: 1.06;
+        margin: 0 0 20px;
+        letter-spacing: -0.02em;
+        font-weight: 850;
+      }
+      .hero h1 em { font-style: normal; background: linear-gradient(90deg, var(--cyan), #a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      .hero p.lead {
+        font-size: 18px; line-height: 1.6; color: rgba(255,255,255,0.78);
+        max-width: 520px; margin: 0 0 34px;
+      }
+      .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+      .btn-primary {
+        display: inline-flex; align-items: center; gap: 10px;
+        background: var(--teal); color: #052e2b; text-decoration: none;
+        font-weight: 800; font-size: 16px;
+        padding: 15px 26px; border-radius: 12px;
+        box-shadow: 0 18px 40px rgba(20, 184, 166, 0.35);
+      }
+      .btn-ghost {
+        display: inline-flex; align-items: center; gap: 8px;
+        color: #fff; text-decoration: none; font-weight: 700; font-size: 15px;
+        padding: 15px 6px; border-bottom: 1px solid rgba(255,255,255,0.3);
+      }
+      .hero-note { margin-top: 22px; font-size: 13.5px; color: rgba(255,255,255,0.5); }
+
+      .hero-visual {
+        position: relative;
+        display: grid;
+        place-items: center;
+      }
+      .hero-visual .glow {
+        position: absolute;
+        width: 340px; height: 340px;
+        background: radial-gradient(circle, rgba(34,211,238,0.35), rgba(124,58,237,0.18), transparent 70%);
+        filter: blur(6px);
+      }
+      .hero-visual img { position: relative; width: 240px; max-width: 60vw; filter: drop-shadow(0 30px 60px rgba(0,0,0,0.45)); }
+      .hero-chat {
+        position: relative;
+        margin-top: 18px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.14);
+        border-radius: 14px;
+        padding: 14px 16px;
+        font-size: 14px;
+        color: rgba(255,255,255,0.86);
+        max-width: 280px;
+      }
+      .hero-chat strong { color: #67e8f9; display: block; margin-bottom: 4px; font-size: 12.5px; letter-spacing: 0.02em; text-transform: uppercase; }
+
+      /* Sections */
+      section { padding: 80px 0; }
+      .section-head { max-width: 620px; margin: 0 auto 48px; text-align: center; }
+      .kicker { color: var(--teal); font-weight: 800; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+      .section-head h2 { font-size: clamp(26px, 3.4vw, 36px); margin: 0 0 12px; letter-spacing: -0.01em; }
+      .section-head p { color: var(--muted); font-size: 16.5px; line-height: 1.6; margin: 0; }
+
+      /* Steps */
+      .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+      .step {
+        background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 28px 24px;
+        position: relative;
+      }
+      .step .num {
+        width: 38px; height: 38px; border-radius: 10px;
+        background: linear-gradient(135deg, var(--violet), var(--cobalt));
+        color: #fff; font-weight: 800; display: grid; place-items: center; margin-bottom: 16px;
+      }
+      .step h3 { margin: 0 0 8px; font-size: 18px; }
+      .step p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
+
+      /* Features */
+      .features { background: #ffffff; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+      .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+      .feature {
+        border: 1px solid var(--line); border-radius: 16px; padding: 26px 22px;
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
+      }
+      .feature .icon {
+        width: 40px; height: 40px; border-radius: 10px;
+        background: rgba(20, 184, 166, 0.12); color: #0f766e;
+        display: grid; place-items: center; margin-bottom: 14px; font-size: 18px;
+      }
+      .feature h3 { margin: 0 0 8px; font-size: 16.5px; }
+      .feature p { margin: 0; color: var(--muted); font-size: 14.5px; line-height: 1.55; }
+
+      /* Final CTA */
+      .cta-band {
+        background: linear-gradient(135deg, var(--indigo), #191653 60%, #0b0a24);
+        color: #fff; border-radius: 24px; padding: 56px 40px;
+        text-align: center; position: relative; overflow: hidden;
+      }
+      .cta-band::before {
+        content: ""; position: absolute; inset: 0;
+        background: radial-gradient(circle at 80% 0%, rgba(34,211,238,0.28), transparent 55%);
+      }
+      .cta-band h2 { position: relative; margin: 0 0 12px; font-size: clamp(24px, 3.4vw, 32px); }
+      .cta-band p { position: relative; margin: 0 0 28px; color: rgba(255,255,255,0.72); font-size: 16px; }
+      .cta-band .btn-primary { position: relative; }
+
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 34px 0; color: var(--muted); font-size: 13.5px;
+      }
+      .footer-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+      footer a { text-decoration: none; color: var(--muted); }
+      footer a:hover { color: var(--ink); }
+
+      @media (max-width: 860px) {
+        .hero-inner { grid-template-columns: 1fr; padding-top: 56px; }
+        .hero-visual { order: -1; }
+        .steps, .feature-grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <div class="wrap nav-row">
+        <a class="brand" href="/">
+          <span class="brand-mark">K</span>
+          KREATON
+        </a>
+        <a class="nav-cta" href="/client/setup/">Crear mi sitio</a>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="wrap hero-inner">
+        <div>
+          <span class="eyebrow"><span class="dot"></span> Impulsado por LYRA, tu asistente de IA</span>
+          <h1>El sitio web de tu negocio, <em>listo en minutos</em>, no en semanas</h1>
+          <p class="lead">Cuéntale a LYRA de qué trata tu negocio — por chat o por voz — y KREATON genera un sitio profesional y editable, con tienda online o reservas si las necesitas, listo para publicar con tu propio dominio.</p>
+          <div class="hero-actions">
+            <a class="btn-primary" href="/client/setup/">Crear mi sitio gratis →</a>
+            <a class="btn-ghost" href="#como-funciona">Ver cómo funciona</a>
+          </div>
+          <p class="hero-note">Sin tarjeta de crédito para empezar. Tu borrador se genera al instante.</p>
+        </div>
+        <div class="hero-visual">
+          <div class="glow"></div>
+          <div>
+            <img src="/assets/nixie_idle.png" alt="LYRA, la asistente de IA de KREATON" width="240" height="240">
+            <div class="hero-chat">
+              <strong>LYRA</strong>
+              "Cuéntame sobre tu negocio y en unos minutos tendrás tu sitio listo para revisar."
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="como-funciona">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="kicker">Cómo funciona</div>
+          <h2>Tres pasos, sin código y sin diseñador</h2>
+          <p>LYRA te guía con preguntas simples y arma tu sitio mientras conversan.</p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="num">1</div>
+            <h3>Cuéntale a LYRA sobre tu negocio</h3>
+            <p>Nombre, rubro, productos o servicios, estilo y colores que prefieras. LYRA pregunta solo lo necesario.</p>
+          </div>
+          <div class="step">
+            <div class="num">2</div>
+            <h3>Revisa tu borrador generado</h3>
+            <p>KREATON arma un sitio completo con tus textos e imágenes. Ajusta secciones, productos o estilo directamente en el editor.</p>
+          </div>
+          <div class="step">
+            <div class="num">3</div>
+            <h3>Publica con tu propio dominio</h3>
+            <p>Conecta tu dominio o usa uno de KREATON, y tu sitio queda en línea listo para recibir clientes.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="kicker">Qué incluye</div>
+          <h2>Todo lo que un negocio necesita para vender en línea</h2>
+        </div>
+        <div class="feature-grid">
+          <div class="feature">
+            <div class="icon">✦</div>
+            <h3>Diseño profesional automático</h3>
+            <p>Cada sitio se genera a la medida de tu rubro, con estructura y textos coherentes desde el primer borrador.</p>
+          </div>
+          <div class="feature">
+            <div class="icon">🛒</div>
+            <h3>Tienda o reservas integradas</h3>
+            <p>Vende productos, gestiona citas o reservas desde el mismo sitio, sin conectar herramientas externas.</p>
+          </div>
+          <div class="feature">
+            <div class="icon">✎</div>
+            <h3>Editor visual con LYRA</h3>
+            <p>Ajusta secciones, fotos y textos tú mismo, o pídele a LYRA que lo haga por ti en la conversación.</p>
+          </div>
+          <div class="feature">
+            <div class="icon">🌐</div>
+            <h3>Dominio propio</h3>
+            <p>Publica con tu dominio o con un subdominio de KREATON listo para usar de inmediato.</p>
+          </div>
+          <div class="feature">
+            <div class="icon">🖼️</div>
+            <h3>Tus fotos y tu marca</h3>
+            <p>Sube tu logo y fotos del negocio para que el sitio se vea como tuyo desde el primer momento.</p>
+          </div>
+          <div class="feature">
+            <div class="icon">🔒</div>
+            <h3>Tu progreso, guardado</h3>
+            <p>Inicia sesión con Google o tu correo y LYRA guarda tus respuestas y borradores para retomar cuando quieras.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="cta-band">
+          <h2>Tu negocio merece un sitio a la altura</h2>
+          <p>Empieza la conversación con LYRA y ten tu primer borrador en minutos.</p>
+          <a class="btn-primary" href="/client/setup/">Crear mi sitio gratis →</a>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap footer-row">
+        <span>© <span id="year"></span> KREATON. Un producto de V&amp;M Business Systems.</span>
+        <a href="/client/setup/">Crear mi sitio</a>
+      </div>
+    </footer>
+
+    <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+  </body>
+</html>
