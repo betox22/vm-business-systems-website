@@ -16,6 +16,65 @@ Formato de entrada:
 
 ---
 
+## 2026-08-10 — Claude — KREATON servido en usekreaton.com apex vía Worker (no GitHub Pages)
+
+**Hecho:** Extendí `cloudflare/subdomain-proxy-worker.js` (el mismo Worker
+que ya proxea `*.usekreaton.com` para sitios generados, ver entrada de más
+abajo) para que TAMBIÉN detecte el apex y `www` (`usekreaton.com`,
+`www.usekreaton.com`) y reescriba `/` a `/client/setup/` (KREATON AI
+Studio) en vez de `/site.html`. Sigue siendo un proxy puro sobre
+`vmbusinesssystems.com` -- en ningún momento se tocó el custom domain de
+GitHub Pages, así que `contact.html` y el resto de V&M Business Systems no
+se movieron de ahí. Esto es la forma correcta de resolver lo que el
+cutover completo (entrada de abajo) intentó resolver de forma equivocada.
+
+También cambié `samesite="lax"` → `samesite="none"` en el cookie de sesión
+(`backend/app/main.py`, `client_auth_session` y `client_auth_logout`). Con
+la app ahora accesible desde `usekreaton.com` pero la API en
+`luma-api.vmbusinesssystems.com`, esa llamada pasa a ser cross-site
+(dominios registrables distintos), y `Lax` bloquea el envío del cookie ahí
+-- habría roto el login silenciosamente solo para quien entra por
+`usekreaton.com`, dejando `vmbusinesssystems.com` funcionando normal (bug
+fácil de no notar si solo se prueba desde un dominio). `None` + `Secure`
+(ya estaba `secure=True`) lo arregla sin tocar el `domain` del cookie ni
+CORS (`CLIENT_ALLOWED_ORIGIN_REGEX` ya cubría `usekreaton.com`).
+
+Commit: `f34aae0`. 39/39 tests backend pasan.
+
+**Pendiente / abierto:**
+- Falta pegar el código actualizado del Worker en el dashboard de
+  Cloudflare (Worker `kreaton-subdomain-proxy` → Edit code → Deploy) --
+  esto SIEMPRE es manual, no hay CI/CD para el código del Worker.
+- Falta agregar 2 Workers Routes nuevas en la zona `usekreaton.com`:
+  `usekreaton.com/*` y `www.usekreaton.com/*`, ambas apuntando al mismo
+  worker `kreaton-subdomain-proxy`.
+- Los 4 registros `A` del apex + el `CNAME` de `www` que quedaron de un
+  intento anterior (apuntan a las IPs de GitHub Pages) están en "DNS
+  only" -- hay que pasarlos a "Proxied" (nube naranja), porque una
+  Workers Route solo intercepta tráfico si el DNS está proxied.
+- Falta desplegar `backend/app/main.py` (Render) -- necesita push a
+  `main` primero (ver prompt de Codex de esta misma sesión).
+- Falta probar en vivo: login completo entrando por `usekreaton.com` (no
+  solo por `vmbusinesssystems.com`), confirmando que el cookie de sesión
+  efectivamente se guarda y se envía en la llamada a
+  `luma-api.vmbusinesssystems.com`.
+- No decidido todavía: si `vmbusinesssystems.com/client/setup/` y
+  `/ai-builder.html` deberían redirigir a sus equivalentes en
+  `usekreaton.com` para evitar que existan dos "entradas" paralelas a la
+  misma app con sesiones potencialmente confusas.
+
+**Archivos tocados:** `cloudflare/subdomain-proxy-worker.js`,
+`backend/app/main.py`.
+
+**Notas para el siguiente agente:** Este es el patrón correcto para
+"mover" cosas a usekreaton.com sin repetir el incidente de la entrada de
+abajo: SIEMPRE vía este Worker (proxy), NUNCA vía el custom domain de
+GitHub Pages. Si Beto pide mover algo más a usekreaton.com, es un cambio
+de 3 líneas en este Worker (agregar el hostname/path al mapeo), no un
+cambio de infraestructura.
+
+---
+
 ## 2026-08-10 — Claude — REVERTIDO: el cutover completo de dominio fue un error de alcance
 
 **Hecho:** La entrada de abajo ("Cutover completo de dominio") se revirtió
