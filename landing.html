@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>KREATON — Crea el sitio web de tu negocio con IA</title>
-    <meta name="description" content="Cuéntale a LYRA sobre tu negocio y KREATON genera tu sitio web profesional, con tienda o reservas incluidas, listo para publicar en minutos.">
+    <title data-i18n="metaTitle">KREATON — Create your business website with AI</title>
+    <meta name="description" data-i18n-attr="content" data-i18n="metaDescription" content="Tell LYRA about your business and KREATON generates your professional website, with a store or bookings included, ready to publish in minutes.">
     <link rel="icon" href="data:,">
     <style>
       :root {
@@ -55,7 +55,14 @@
       .nav-links { display: flex; align-items: center; gap: 28px; margin-right: 8px; }
       .nav-links a { font-weight: 600; font-size: 14.5px; text-decoration: none; color: var(--muted); }
       .nav-links a:hover { color: var(--ink); }
-      .nav-actions { display: flex; align-items: center; gap: 22px; }
+      .nav-actions { display: flex; align-items: center; gap: 18px; }
+      .lang-switch { display: flex; align-items: center; gap: 2px; background: rgba(15,23,42,0.06); border-radius: 999px; padding: 3px; }
+      .lang-switch button {
+        border: 0; background: transparent; cursor: pointer;
+        padding: 5px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 800;
+        color: var(--muted); letter-spacing: 0.02em;
+      }
+      .lang-switch button.active { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(15,23,42,0.12); }
       .nav-signin { font-weight: 700; font-size: 14.5px; text-decoration: none; color: var(--ink); }
       .nav-signin:hover { color: var(--cobalt); }
       .nav-cta {
@@ -182,30 +189,32 @@
         .lyra-badge img { animation: none; }
       }
 
-      /* Examples */
-      .examples { background: #0b0a24; color: #fff; }
-      .examples .section-head h2, .examples .kicker { color: #fff; }
-      .examples .kicker { color: #5eead4; }
-      .examples .section-head p { color: rgba(255,255,255,0.65); }
+      /* Examples -- deliberately light, not dark: this is the "proof" section,
+         and proof reads as more credible/approachable on a light background
+         than inside another dark tech-gradient panel. Keeps the dark treatment
+         exclusive to the hero (first-impression "this is real AI tech") and
+         the closing CTA band, per the hybrid direction Beto confirmed. */
+      .examples { background: #f8fafc; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
       .example-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
       .example-card {
         display: block; text-decoration: none; color: inherit;
         border-radius: 16px; overflow: hidden;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.1);
-        transition: transform 0.2s ease, border-color 0.2s ease;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
       }
-      .example-card:hover { transform: translateY(-4px); border-color: rgba(94, 234, 212, 0.5); }
+      .example-card:hover { transform: translateY(-4px); border-color: rgba(20,184,166,0.4); box-shadow: 0 16px 32px rgba(15,23,42,0.1); }
       .example-preview { aspect-ratio: 4 / 3; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
-      .example-preview .row { border-radius: 6px; background: rgba(255,255,255,0.14); }
+      .example-preview .row { border-radius: 6px; background: rgba(15,23,42,0.55); }
       .example-preview .row.h1 { height: 26%; }
       .example-preview .row.h2 { height: 12%; width: 55%; }
       .example-preview .strip { display: flex; gap: 8px; flex: 1; }
       .example-preview .strip .cell { flex: 1; border-radius: 6px; }
-      .example-body { padding: 16px 18px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+      .example-body { padding: 16px 18px 20px; border-top: 1px solid var(--line); position: relative; }
       .example-body strong { display: block; font-size: 15px; margin-bottom: 4px; }
-      .example-body span { font-size: 13px; color: rgba(255,255,255,0.6); }
-      .example-body em { font-style: normal; float: right; color: #5eead4; font-size: 13px; font-weight: 700; }
+      .example-body span { font-size: 13px; color: var(--muted); }
+      .example-body em { font-style: normal; float: right; color: #0f766e; font-size: 13px; font-weight: 700; }
 
       /* Sections */
       section { padding: 80px 0; }
@@ -254,8 +263,10 @@
         background: radial-gradient(circle at 80% 0%, rgba(34,211,238,0.28), transparent 55%);
       }
       .cta-band h2 { position: relative; margin: 0 0 12px; font-size: clamp(24px, 3.4vw, 32px); }
-      .cta-band p { position: relative; margin: 0 0 28px; color: rgba(255,255,255,0.72); font-size: 16px; }
+      .cta-band p.lead2 { position: relative; margin: 0 0 28px; color: rgba(255,255,255,0.72); font-size: 16px; }
       .cta-band .btn-primary { position: relative; }
+      .cta-band .signin-note { position: relative; margin: 20px 0 0; font-size: 14px; color: rgba(255,255,255,0.6); }
+      .cta-band .signin-note a { color: #67e8f9; font-weight: 700; text-decoration: none; }
 
       footer {
         border-top: 1px solid var(--line);
@@ -284,12 +295,16 @@
           KREATON
         </a>
         <nav class="nav-links">
-          <a href="#como-funciona">Cómo funciona</a>
-          <a href="#ejemplos">Ejemplos</a>
+          <a href="#como-funciona" data-i18n="navHow">How it works</a>
+          <a href="#ejemplos" data-i18n="navExamples">Examples</a>
         </nav>
         <div class="nav-actions">
-          <a class="nav-signin" href="/client/setup/">Iniciar sesión</a>
-          <a class="nav-cta" href="/client/setup/">Crear mi sitio gratis</a>
+          <div class="lang-switch" role="group" aria-label="Language">
+            <button type="button" data-lang-btn="en">EN</button>
+            <button type="button" data-lang-btn="es">ES</button>
+          </div>
+          <a class="nav-signin" href="/client/setup/" data-i18n="navSignin">Log in</a>
+          <a class="nav-cta" href="/client/setup/" data-i18n="navCta">Create my site free</a>
         </div>
       </div>
     </header>
@@ -297,17 +312,17 @@
     <section class="hero">
       <div class="wrap hero-inner">
         <div>
-          <span class="eyebrow"><span class="dot"></span> Impulsado por LYRA, tu asistente de IA</span>
-          <h1>El sitio web de tu negocio, <em>listo en minutos</em>, no en semanas</h1>
-          <p class="lead">Cuéntale a LYRA de qué trata tu negocio — por chat o por voz — y KREATON genera un sitio profesional y editable, con tienda online o reservas si las necesitas, listo para publicar con tu propio dominio.</p>
+          <span class="eyebrow"><span class="dot"></span> <span data-i18n="eyebrow">Powered by LYRA, your AI assistant</span></span>
+          <h1 data-i18n-html="heroTitle">Your business website, <em>ready in minutes</em>, not weeks</h1>
+          <p class="lead" data-i18n="heroLead">Tell LYRA about your business — by chat or by voice — and KREATON generates a professional, editable site, with an online store or bookings if you need them, ready to publish with your own domain.</p>
           <div class="hero-actions">
-            <a class="btn-primary" href="/client/setup/">Crear mi sitio gratis →</a>
-            <a class="btn-ghost" href="#como-funciona">Ver cómo funciona</a>
+            <a class="btn-primary" href="/client/setup/" data-i18n="heroCta">Create my site free →</a>
+            <a class="btn-ghost" href="#como-funciona" data-i18n="heroSecondary">See how it works</a>
           </div>
           <ul class="hero-chips">
-            <li>Sin tarjeta de crédito</li>
-            <li>Tienda o reservas incluidas</li>
-            <li>Tu propio dominio</li>
+            <li data-i18n="chip1">No credit card required</li>
+            <li data-i18n="chip2">Store or bookings included</li>
+            <li data-i18n="chip3">Your own domain</li>
           </ul>
         </div>
         <div class="hero-visual">
@@ -318,7 +333,7 @@
               <div class="mockup-hero">
                 <div class="bar w60"></div>
                 <div class="bar w40"></div>
-                <span class="pill">Reservar ahora</span>
+                <span class="pill" data-i18n="mockupPill">Book now</span>
               </div>
               <div class="mockup-grid">
                 <div class="card"><div class="thumb c1"></div><div class="bar"></div></div>
@@ -328,7 +343,7 @@
             </div>
             <div class="lyra-badge">
               <img src="/assets/nixie_idle.png" alt="LYRA">
-              <span><strong>LYRA</strong>"Cuéntame sobre tu negocio y en minutos tendrás tu sitio listo."</span>
+              <span><strong>LYRA</strong><span data-i18n="lyraQuote">"Tell me about your business and in minutes you'll have your site ready."</span></span>
             </div>
           </div>
         </div>
@@ -338,25 +353,25 @@
     <section id="como-funciona">
       <div class="wrap">
         <div class="section-head">
-          <div class="kicker">Cómo funciona</div>
-          <h2>Tres pasos, sin código y sin diseñador</h2>
-          <p>LYRA te guía con preguntas simples y arma tu sitio mientras conversan.</p>
+          <div class="kicker" data-i18n="howKicker">How it works</div>
+          <h2 data-i18n="howTitle">Three steps, no code, no designer</h2>
+          <p data-i18n="howLead">LYRA guides you with simple questions and builds your site as you chat.</p>
         </div>
         <div class="steps">
           <div class="step">
             <div class="num">1</div>
-            <h3>Cuéntale a LYRA sobre tu negocio</h3>
-            <p>Nombre, rubro, productos o servicios, estilo y colores que prefieras. LYRA pregunta solo lo necesario.</p>
+            <h3 data-i18n="step1Title">Tell LYRA about your business</h3>
+            <p data-i18n="step1Text">Name, industry, products or services, style and colors you prefer. LYRA only asks what's needed.</p>
           </div>
           <div class="step">
             <div class="num">2</div>
-            <h3>Revisa tu borrador generado</h3>
-            <p>KREATON arma un sitio completo con tus textos e imágenes. Ajusta secciones, productos o estilo directamente en el editor.</p>
+            <h3 data-i18n="step2Title">Review your generated draft</h3>
+            <p data-i18n="step2Text">KREATON builds a complete site with your text and images. Adjust sections, products, or style right in the editor.</p>
           </div>
           <div class="step">
             <div class="num">3</div>
-            <h3>Publica con tu propio dominio</h3>
-            <p>Conecta tu dominio o usa uno de KREATON, y tu sitio queda en línea listo para recibir clientes.</p>
+            <h3 data-i18n="step3Title">Publish with your own domain</h3>
+            <p data-i18n="step3Text">Connect your domain or use one from KREATON, and your site goes live, ready for customers.</p>
           </div>
         </div>
       </div>
@@ -365,56 +380,56 @@
     <section id="ejemplos" class="examples">
       <div class="wrap">
         <div class="section-head">
-          <div class="kicker">Ejemplos reales</div>
-          <h2>Así se ven los sitios que genera KREATON</h2>
-          <p>Plantillas base ya construidas por rubro — tu sitio parte de aquí y LYRA lo ajusta a tu negocio, tus fotos y tu marca.</p>
+          <div class="kicker" data-i18n="examplesKicker">Real examples</div>
+          <h2 data-i18n="examplesTitle">This is what KREATON-generated sites look like</h2>
+          <p data-i18n="examplesLead">Base templates already built by industry — your site starts here and LYRA adapts it to your business, your photos, and your brand.</p>
         </div>
         <div class="example-grid">
           <a class="example-card" href="/templates/retail/mega-retail-store/phase-5/visual-prototype/preview.html" target="_blank" rel="noopener">
-            <div class="example-preview" style="background: linear-gradient(135deg, rgba(124,58,237,0.35), rgba(34,211,238,0.2));">
+            <div class="example-preview" style="background: linear-gradient(135deg, rgba(124,58,237,0.5), rgba(34,211,238,0.35));">
               <div class="row h1"></div>
               <div class="row h2"></div>
               <div class="strip">
-                <div class="cell" style="background: rgba(167,139,250,0.5);"></div>
-                <div class="cell" style="background: rgba(34,211,238,0.4);"></div>
-                <div class="cell" style="background: rgba(94,234,212,0.4);"></div>
+                <div class="cell" style="background: rgba(124,58,237,0.55);"></div>
+                <div class="cell" style="background: rgba(34,211,238,0.55);"></div>
+                <div class="cell" style="background: rgba(20,184,166,0.55);"></div>
               </div>
             </div>
             <div class="example-body">
-              <em>Ver ejemplo →</em>
-              <strong>Tienda grande</strong>
-              <span>Catálogo amplio, categorías, inventario propio</span>
+              <em data-i18n="viewExample">View example →</em>
+              <strong data-i18n="example1Title">Large store</strong>
+              <span data-i18n="example1Text">Large catalog, categories, own inventory</span>
             </div>
           </a>
           <a class="example-card" href="/templates/retail/premium-product-store/phase-5/visual-prototype/preview.html" target="_blank" rel="noopener">
-            <div class="example-preview" style="background: linear-gradient(135deg, rgba(20,184,166,0.35), rgba(47,76,221,0.25));">
+            <div class="example-preview" style="background: linear-gradient(135deg, rgba(20,184,166,0.5), rgba(47,76,221,0.4));">
               <div class="row h1"></div>
               <div class="row h2"></div>
               <div class="strip">
-                <div class="cell" style="background: rgba(20,184,166,0.5);"></div>
-                <div class="cell" style="background: rgba(94,234,212,0.4);"></div>
+                <div class="cell" style="background: rgba(20,184,166,0.6);"></div>
+                <div class="cell" style="background: rgba(47,76,221,0.5);"></div>
               </div>
             </div>
             <div class="example-body">
-              <em>Ver ejemplo →</em>
-              <strong>Tienda boutique</strong>
-              <span>Pocos productos, alto diseño, marca premium</span>
+              <em data-i18n="viewExample">View example →</em>
+              <strong data-i18n="example2Title">Boutique store</strong>
+              <span data-i18n="example2Text">Few products, high design, premium brand</span>
             </div>
           </a>
           <a class="example-card" href="/templates/marketplace/mega-marketplace/phase-5/visual-prototype/preview.html" target="_blank" rel="noopener">
-            <div class="example-preview" style="background: linear-gradient(135deg, rgba(245,158,11,0.3), rgba(239,68,68,0.2));">
+            <div class="example-preview" style="background: linear-gradient(135deg, rgba(245,158,11,0.45), rgba(239,68,68,0.3));">
               <div class="row h1"></div>
               <div class="row h2"></div>
               <div class="strip">
-                <div class="cell" style="background: rgba(245,158,11,0.5);"></div>
-                <div class="cell" style="background: rgba(239,68,68,0.35);"></div>
-                <div class="cell" style="background: rgba(167,139,250,0.4);"></div>
+                <div class="cell" style="background: rgba(245,158,11,0.6);"></div>
+                <div class="cell" style="background: rgba(239,68,68,0.5);"></div>
+                <div class="cell" style="background: rgba(167,139,250,0.5);"></div>
               </div>
             </div>
             <div class="example-body">
-              <em>Ver ejemplo →</em>
-              <strong>Marketplace</strong>
-              <span>Múltiples vendedores, pedidos y comisiones</span>
+              <em data-i18n="viewExample">View example →</em>
+              <strong data-i18n="example3Title">Marketplace</strong>
+              <span data-i18n="example3Text">Multiple vendors, orders, and commissions</span>
             </div>
           </a>
         </div>
@@ -424,39 +439,39 @@
     <section class="features">
       <div class="wrap">
         <div class="section-head">
-          <div class="kicker">Qué incluye</div>
-          <h2>Todo lo que un negocio necesita para vender en línea</h2>
+          <div class="kicker" data-i18n="featuresKicker">What's included</div>
+          <h2 data-i18n="featuresTitle">Everything a business needs to sell online</h2>
         </div>
         <div class="feature-grid">
           <div class="feature">
             <div class="icon">✦</div>
-            <h3>Diseño profesional automático</h3>
-            <p>Cada sitio se genera a la medida de tu rubro, con estructura y textos coherentes desde el primer borrador.</p>
+            <h3 data-i18n="feat1Title">Automatic professional design</h3>
+            <p data-i18n="feat1Text">Every site is generated to fit your industry, with coherent structure and copy from the first draft.</p>
           </div>
           <div class="feature">
             <div class="icon">🛒</div>
-            <h3>Tienda o reservas integradas</h3>
-            <p>Vende productos, gestiona citas o reservas desde el mismo sitio, sin conectar herramientas externas.</p>
+            <h3 data-i18n="feat2Title">Store or bookings built in</h3>
+            <p data-i18n="feat2Text">Sell products, manage appointments or bookings from the same site, no external tools needed.</p>
           </div>
           <div class="feature">
             <div class="icon">✎</div>
-            <h3>Editor visual con LYRA</h3>
-            <p>Ajusta secciones, fotos y textos tú mismo, o pídele a LYRA que lo haga por ti en la conversación.</p>
+            <h3 data-i18n="feat3Title">Visual editor with LYRA</h3>
+            <p data-i18n="feat3Text">Adjust sections, photos, and text yourself, or ask LYRA to do it for you in the conversation.</p>
           </div>
           <div class="feature">
             <div class="icon">🌐</div>
-            <h3>Dominio propio</h3>
-            <p>Publica con tu dominio o con un subdominio de KREATON listo para usar de inmediato.</p>
+            <h3 data-i18n="feat4Title">Your own domain</h3>
+            <p data-i18n="feat4Text">Publish with your own domain or a KREATON subdomain, ready to use right away.</p>
           </div>
           <div class="feature">
             <div class="icon">🖼️</div>
-            <h3>Tus fotos y tu marca</h3>
-            <p>Sube tu logo y fotos del negocio para que el sitio se vea como tuyo desde el primer momento.</p>
+            <h3 data-i18n="feat5Title">Your photos, your brand</h3>
+            <p data-i18n="feat5Text">Upload your logo and business photos so the site feels like yours from the very start.</p>
           </div>
           <div class="feature">
             <div class="icon">🔒</div>
-            <h3>Tu progreso, guardado</h3>
-            <p>Inicia sesión con Google o tu correo y LYRA guarda tus respuestas y borradores para retomar cuando quieras.</p>
+            <h3 data-i18n="feat6Title">Your progress, saved</h3>
+            <p data-i18n="feat6Text">Sign in with Google or email and LYRA saves your answers and drafts so you can pick up anytime.</p>
           </div>
         </div>
       </div>
@@ -465,21 +480,188 @@
     <section>
       <div class="wrap">
         <div class="cta-band">
-          <h2>Tu negocio merece un sitio a la altura</h2>
-          <p>Empieza la conversación con LYRA y ten tu primer borrador en minutos.</p>
-          <a class="btn-primary" href="/client/setup/">Crear mi sitio gratis →</a>
-          <p style="position: relative; margin: 20px 0 0; font-size: 14px; color: rgba(255,255,255,0.6);">¿Ya tienes una cuenta? <a href="/client/setup/" style="color: #67e8f9; font-weight: 700; text-decoration: none;">Iniciar sesión</a></p>
+          <h2 data-i18n="ctaTitle">Your business deserves a site that matches it</h2>
+          <p class="lead2" data-i18n="ctaLead">Start the conversation with LYRA and get your first draft in minutes.</p>
+          <a class="btn-primary" href="/client/setup/" data-i18n="heroCta">Create my site free →</a>
+          <p class="signin-note"><span data-i18n="ctaSigninPrefix">Already have an account?</span> <a href="/client/setup/" data-i18n="navSignin">Log in</a></p>
         </div>
       </div>
     </section>
 
     <footer>
       <div class="wrap footer-row">
-        <span>© <span id="year"></span> KREATON. Un producto de V&amp;M Business Systems.</span>
-        <a href="/client/setup/">Crear mi sitio</a>
+        <span><span data-i18n="footerCopy">© <span id="year"></span> KREATON. A V&amp;M Business Systems product.</span></span>
+        <a href="/client/setup/" data-i18n="footerCta">Create my site</a>
       </div>
     </footer>
 
-    <script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+    <script>
+      var YEAR = new Date().getFullYear();
+
+      var translations = {
+        en: {
+          metaTitle: "KREATON — Create your business website with AI",
+          metaDescription: "Tell LYRA about your business and KREATON generates your professional website, with a store or bookings included, ready to publish in minutes.",
+          navHow: "How it works",
+          navExamples: "Examples",
+          navSignin: "Log in",
+          navCta: "Create my site free",
+          eyebrow: "Powered by LYRA, your AI assistant",
+          heroTitle: "Your business website, <em>ready in minutes</em>, not weeks",
+          heroLead: "Tell LYRA about your business — by chat or by voice — and KREATON generates a professional, editable site, with an online store or bookings if you need them, ready to publish with your own domain.",
+          heroCta: "Create my site free →",
+          heroSecondary: "See how it works",
+          chip1: "No credit card required",
+          chip2: "Store or bookings included",
+          chip3: "Your own domain",
+          mockupPill: "Book now",
+          lyraQuote: "“Tell me about your business and in minutes you'll have your site ready.”",
+          howKicker: "How it works",
+          howTitle: "Three steps, no code, no designer",
+          howLead: "LYRA guides you with simple questions and builds your site as you chat.",
+          step1Title: "Tell LYRA about your business",
+          step1Text: "Name, industry, products or services, style and colors you prefer. LYRA only asks what's needed.",
+          step2Title: "Review your generated draft",
+          step2Text: "KREATON builds a complete site with your text and images. Adjust sections, products, or style right in the editor.",
+          step3Title: "Publish with your own domain",
+          step3Text: "Connect your domain or use one from KREATON, and your site goes live, ready for customers.",
+          examplesKicker: "Real examples",
+          examplesTitle: "This is what KREATON-generated sites look like",
+          examplesLead: "Base templates already built by industry — your site starts here and LYRA adapts it to your business, your photos, and your brand.",
+          viewExample: "View example →",
+          example1Title: "Large store",
+          example1Text: "Large catalog, categories, own inventory",
+          example2Title: "Boutique store",
+          example2Text: "Few products, high design, premium brand",
+          example3Title: "Marketplace",
+          example3Text: "Multiple vendors, orders, and commissions",
+          featuresKicker: "What's included",
+          featuresTitle: "Everything a business needs to sell online",
+          feat1Title: "Automatic professional design",
+          feat1Text: "Every site is generated to fit your industry, with coherent structure and copy from the first draft.",
+          feat2Title: "Store or bookings built in",
+          feat2Text: "Sell products, manage appointments or bookings from the same site, no external tools needed.",
+          feat3Title: "Visual editor with LYRA",
+          feat3Text: "Adjust sections, photos, and text yourself, or ask LYRA to do it for you in the conversation.",
+          feat4Title: "Your own domain",
+          feat4Text: "Publish with your own domain or a KREATON subdomain, ready to use right away.",
+          feat5Title: "Your photos, your brand",
+          feat5Text: "Upload your logo and business photos so the site feels like yours from the very start.",
+          feat6Title: "Your progress, saved",
+          feat6Text: "Sign in with Google or email and LYRA saves your answers and drafts so you can pick up anytime.",
+          ctaTitle: "Your business deserves a site that matches it",
+          ctaLead: "Start the conversation with LYRA and get your first draft in minutes.",
+          ctaSigninPrefix: "Already have an account?",
+          footerCopy: "© " + YEAR + " KREATON. A V&M Business Systems product.",
+          footerCta: "Create my site",
+        },
+        es: {
+          metaTitle: "KREATON — Crea el sitio web de tu negocio con IA",
+          metaDescription: "Cuéntale a LYRA sobre tu negocio y KREATON genera tu sitio web profesional, con tienda o reservas incluidas, listo para publicar en minutos.",
+          navHow: "Cómo funciona",
+          navExamples: "Ejemplos",
+          navSignin: "Iniciar sesión",
+          navCta: "Crear mi sitio gratis",
+          eyebrow: "Impulsado por LYRA, tu asistente de IA",
+          heroTitle: "El sitio web de tu negocio, <em>listo en minutos</em>, no en semanas",
+          heroLead: "Cuéntale a LYRA de qué trata tu negocio — por chat o por voz — y KREATON genera un sitio profesional y editable, con tienda online o reservas si las necesitas, listo para publicar con tu propio dominio.",
+          heroCta: "Crear mi sitio gratis →",
+          heroSecondary: "Ver cómo funciona",
+          chip1: "Sin tarjeta de crédito",
+          chip2: "Tienda o reservas incluidas",
+          chip3: "Tu propio dominio",
+          mockupPill: "Reservar ahora",
+          lyraQuote: "“Cuéntame sobre tu negocio y en minutos tendrás tu sitio listo.”",
+          howKicker: "Cómo funciona",
+          howTitle: "Tres pasos, sin código y sin diseñador",
+          howLead: "LYRA te guía con preguntas simples y arma tu sitio mientras conversan.",
+          step1Title: "Cuéntale a LYRA sobre tu negocio",
+          step1Text: "Nombre, rubro, productos o servicios, estilo y colores que prefieras. LYRA pregunta solo lo necesario.",
+          step2Title: "Revisa tu borrador generado",
+          step2Text: "KREATON arma un sitio completo con tus textos e imágenes. Ajusta secciones, productos o estilo directamente en el editor.",
+          step3Title: "Publica con tu propio dominio",
+          step3Text: "Conecta tu dominio o usa uno de KREATON, y tu sitio queda en línea listo para recibir clientes.",
+          examplesKicker: "Ejemplos reales",
+          examplesTitle: "Así se ven los sitios que genera KREATON",
+          examplesLead: "Plantillas base ya construidas por rubro — tu sitio parte de aquí y LYRA lo ajusta a tu negocio, tus fotos y tu marca.",
+          viewExample: "Ver ejemplo →",
+          example1Title: "Tienda grande",
+          example1Text: "Catálogo amplio, categorías, inventario propio",
+          example2Title: "Tienda boutique",
+          example2Text: "Pocos productos, alto diseño, marca premium",
+          example3Title: "Marketplace",
+          example3Text: "Múltiples vendedores, pedidos y comisiones",
+          featuresKicker: "Qué incluye",
+          featuresTitle: "Todo lo que un negocio necesita para vender en línea",
+          feat1Title: "Diseño profesional automático",
+          feat1Text: "Cada sitio se genera a la medida de tu rubro, con estructura y textos coherentes desde el primer borrador.",
+          feat2Title: "Tienda o reservas integradas",
+          feat2Text: "Vende productos, gestiona citas o reservas desde el mismo sitio, sin conectar herramientas externas.",
+          feat3Title: "Editor visual con LYRA",
+          feat3Text: "Ajusta secciones, fotos y textos tú mismo, o pídele a LYRA que lo haga por ti en la conversación.",
+          feat4Title: "Dominio propio",
+          feat4Text: "Publica con tu dominio o con un subdominio de KREATON, listo para usar de inmediato.",
+          feat5Title: "Tus fotos y tu marca",
+          feat5Text: "Sube tu logo y fotos del negocio para que el sitio se vea como tuyo desde el primer momento.",
+          feat6Title: "Tu progreso, guardado",
+          feat6Text: "Inicia sesión con Google o tu correo y LYRA guarda tus respuestas y borradores para retomar cuando quieras.",
+          ctaTitle: "Tu negocio merece un sitio a la altura",
+          ctaLead: "Empieza la conversación con LYRA y ten tu primer borrador en minutos.",
+          ctaSigninPrefix: "¿Ya tienes una cuenta?",
+          footerCopy: "© " + YEAR + " KREATON. Un producto de V&M Business Systems.",
+          footerCta: "Crear mi sitio",
+        },
+      };
+
+      // Language resolution order: 1) a language the visitor picked before on
+      // this site (localStorage, wins always) 2) the browser/device's own
+      // language setting (navigator.language -- the standard, permission-free
+      // signal for this, NOT geolocation, which needs a prompt and is a worse
+      // proxy for "what language does this person read" than their own OS/
+      // browser setting) 3) English as the default for everyone else. This
+      // mirrors the same en/es (+fr/pt in the product itself) pattern already
+      // used in client/setup/ -- see ai-builder.js's applyI18n().
+      function detectLang() {
+        var stored = localStorage.getItem("kreatonLandingLang");
+        if (stored && translations[stored]) return stored;
+        var nav = (navigator.language || navigator.userLanguage || "en").slice(0, 2).toLowerCase();
+        return translations[nav] ? nav : "en";
+      }
+
+      function applyLang(lang) {
+        if (!translations[lang]) lang = "en";
+        var dict = translations[lang];
+        document.documentElement.lang = lang;
+
+        document.querySelectorAll("[data-i18n]").forEach(function (el) {
+          var key = el.getAttribute("data-i18n");
+          if (dict[key] != null) el.textContent = dict[key];
+        });
+        document.querySelectorAll("[data-i18n-html]").forEach(function (el) {
+          var key = el.getAttribute("data-i18n-html");
+          if (dict[key] != null) el.innerHTML = dict[key];
+        });
+        document.title = dict.metaTitle;
+        var metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) metaDesc.setAttribute("content", dict.metaDescription);
+
+        document.querySelectorAll("[data-lang-btn]").forEach(function (btn) {
+          btn.classList.toggle("active", btn.getAttribute("data-lang-btn") === lang);
+        });
+
+        var yearEl = document.getElementById("year");
+        if (yearEl) yearEl.textContent = YEAR;
+      }
+
+      document.querySelectorAll("[data-lang-btn]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var lang = btn.getAttribute("data-lang-btn");
+          localStorage.setItem("kreatonLandingLang", lang);
+          applyLang(lang);
+        });
+      });
+
+      applyLang(detectLang());
+    </script>
   </body>
 </html>
