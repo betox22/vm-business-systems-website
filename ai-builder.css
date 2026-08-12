@@ -3787,8 +3787,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   max-width: 760px;
   margin: 0 0 14px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(42px, 6vw, 82px);
-  line-height: 0.95;
+  font-size: var(--type-h1-size, clamp(42px, 6vw, 82px));
+  line-height: var(--type-h1-line-height, 0.95);
+  letter-spacing: var(--type-h1-tracking, 0em);
+  font-weight: var(--type-h1-weight, 700);
 }
 
 .marketplace-deal-hero p {
@@ -4225,9 +4227,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   margin: 0;
   max-width: 980px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(54px, 9vw, 124px);
-  line-height: 0.94;
-  letter-spacing: 0;
+  font-size: var(--type-h1-size, clamp(54px, 9vw, 124px));
+  line-height: var(--type-h1-line-height, 0.94);
+  letter-spacing: var(--type-h1-tracking, 0em);
+  font-weight: var(--type-h1-weight, 700);
   color: var(--site-text);
 }
 

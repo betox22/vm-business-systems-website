@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .color_theory import build_palette
+from .typography_theory import build_typography_scale
 from .image_assets import attach_image_asset, stable_seed_image_url
 from .models import AgentResult, ProjectState, WebsiteType
 from .taxonomy import infer_seed_profile
@@ -785,10 +786,11 @@ class ArtDirectorAgent(BaseAgent):
             palette_style,
             niche_hint,
         )
+        typography_scale = build_typography_scale(palette_style)
 
         return AgentResult(
             agentName=self.name,
-            updates={"colors": colors, "typography": typography},
+            updates={"colors": colors, "typography": typography, "typographyScale": typography_scale},
             reasoningSummary=direction,
             confidence=0.8,
         )

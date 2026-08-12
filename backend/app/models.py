@@ -93,6 +93,7 @@ class ProjectState(BaseModel):
 
     colors: Dict[str, str] = Field(default_factory=dict)
     typography: Dict[str, str] = Field(default_factory=dict)
+    typographyScale: Dict[str, str] = Field(default_factory=dict)
     generatedCopy: Dict[str, Any] = Field(default_factory=dict)
     catalogItems: List[Dict[str, Any]] = Field(default_factory=list)
     catalogSource: Optional[CatalogSource] = None

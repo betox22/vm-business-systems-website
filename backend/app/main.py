@@ -1390,6 +1390,7 @@ def build_schema_from_state(
             "fonts": {
                 "heading": state.typography.get("heading", "Inter"),
                 "body": state.typography.get("body", "Inter"),
+                "scale": state.typographyScale or {},
             },
             "buttons": {"primary_label": primary_cta},
         },

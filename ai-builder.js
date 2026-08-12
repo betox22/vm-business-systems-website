@@ -1148,6 +1148,7 @@
   function renderWebsite(schema, pageKey, context = {}) {
     const page = schema.pages.find((item) => item.page_key === pageKey) || schema.pages[0];
     const theme = schema.theme || {};
+    ensureGoogleFontsLoaded(theme);
     schema.business = schema.business || {};
     if (!schema.business.selectedLanguage && !schema.business.selected_language && context.selectedLanguage) {
       schema.business.selectedLanguage = context.selectedLanguage;
@@ -4216,11 +4217,104 @@
     if (vars) attrs.push(vars);
     return attrs.join(" ");
   }
+  var FALLBACK_TYPE_SCALE = {
+    "--type-caption-size": "clamp(0.5501rem, 0.5314rem + 0.0832vw, 0.5980rem)",
+    "--type-small-size": "clamp(0.7492rem, 0.7305rem + 0.0832vw, 0.7971rem)",
+    "--type-label-size": "clamp(0.8466rem, 0.8178rem + 0.1280vw, 0.9203rem)",
+    "--type-body-size": "clamp(1.0094rem, 0.9886rem + 0.0924vw, 1.0625rem)",
+    "--type-button-size": "clamp(1.0732rem, 1.0464rem + 0.1191vw, 1.1417rem)",
+    "--type-h6-size": "clamp(1.2464rem, 1.1798rem + 0.2956vw, 1.4163rem)",
+    "--type-h5-size": "clamp(1.4616rem, 1.3361rem + 0.5580vw, 1.7825rem)",
+    "--type-h4-size": "clamp(1.7049rem, 1.4942rem + 0.9363vw, 2.2433rem)",
+    "--type-h3-size": "clamp(2.0334rem, 1.6590rem + 1.6642vw, 2.9903rem)",
+    "--type-h2-size": "clamp(2.6176rem, 1.9898rem + 2.7902vw, 4.2220rem)",
+    "--type-h1-size": "clamp(3.7448rem, 2.5935rem + 5.1171vw, 6.6872rem)",
+    "--type-h1-line-height": "1.05",
+    "--type-h1-tracking": "-0.02em",
+    "--type-h1-weight": "700",
+    "--type-h2-line-height": "1.1",
+    "--type-h2-tracking": "-0.02em",
+    "--type-h2-weight": "700",
+    "--type-h3-line-height": "1.15",
+    "--type-h3-tracking": "-0.01em",
+    "--type-h3-weight": "600",
+    "--type-h4-line-height": "1.2",
+    "--type-h4-tracking": "0em",
+    "--type-h4-weight": "600",
+    "--type-h5-line-height": "1.25",
+    "--type-h5-tracking": "0em",
+    "--type-h5-weight": "600",
+    "--type-h6-line-height": "1.3",
+    "--type-h6-tracking": "0em",
+    "--type-h6-weight": "600",
+    "--type-body-line-height": "1.65",
+    "--type-body-weight": "400",
+    "--type-small-line-height": "1.55",
+    "--type-small-weight": "400",
+    "--type-caption-line-height": "1.45",
+    "--type-caption-weight": "400",
+    "--type-label-line-height": "1.2",
+    "--type-label-weight": "600",
+    "--type-label-tracking": "0.08em",
+    "--type-label-transform": "uppercase",
+    "--type-button-line-height": "1.2",
+    "--type-button-weight": "600",
+    "--type-button-tracking": "0.01em"
+  };
+  var GOOGLE_FONT_WEIGHTS = { heading: "400;500;600;700;800", body: "400;500;600" };
+  var lastLoadedFontPairKey = "";
+  function googleFontFamilyParam(fontName, weights) {
+    const family = String(fontName || "").trim();
+    if (!family) return "";
+    return `family=${encodeURIComponent(family).replace(/%20/g, "+")}:wght@${weights}`;
+  }
+  function ensureGoogleFontsLoaded(theme = {}) {
+    if (typeof document === "undefined") return;
+    const heading = theme.fonts?.heading || "Inter";
+    const body = theme.fonts?.body || "Inter";
+    const pairKey = `${heading}|${body}`;
+    if (pairKey === lastLoadedFontPairKey) return;
+    lastLoadedFontPairKey = pairKey;
+    if (!document.querySelector('link[data-lyra-font-preconnect="googleapis"]')) {
+      const preconnect1 = document.createElement("link");
+      preconnect1.rel = "preconnect";
+      preconnect1.href = "https://fonts.googleapis.com";
+      preconnect1.dataset.lyraFontPreconnect = "googleapis";
+      document.head.appendChild(preconnect1);
+      const preconnect2 = document.createElement("link");
+      preconnect2.rel = "preconnect";
+      preconnect2.href = "https://fonts.gstatic.com";
+      preconnect2.crossOrigin = "anonymous";
+      preconnect2.dataset.lyraFontPreconnect = "gstatic";
+      document.head.appendChild(preconnect2);
+    }
+    const seen = /* @__PURE__ */ new Set();
+    const families = [];
+    [[heading, GOOGLE_FONT_WEIGHTS.heading], [body, GOOGLE_FONT_WEIGHTS.body]].forEach(([name, weights]) => {
+      const key = name.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      const param = googleFontFamilyParam(name, weights);
+      if (param) families.push(param);
+    });
+    if (!families.length) return;
+    const href = `https://fonts.googleapis.com/css2?${families.join("&")}&display=swap`;
+    let link = document.querySelector("link[data-lyra-fonts]");
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.dataset.lyraFonts = "true";
+      document.head.appendChild(link);
+    }
+    link.href = href;
+  }
   function themeVars(theme = {}, brandInput = null) {
     theme.colors = theme.colors || {};
     theme.fonts = theme.fonts || {};
     const brand = normalizeBrandForTheme(brandInput || { colors: theme.colors, fontPairing: theme.fonts, borderRadius: `${theme.radius || 10}px`, shadowStyle: theme.shadow });
     const colors = brandToThemeColorsForTheme(brand);
+    const typeScale = Object.keys(theme.fonts.scale || {}).length ? theme.fonts.scale : FALLBACK_TYPE_SCALE;
+    const typeVars = Object.entries(typeScale).map(([key, value]) => `${key}:${value}`);
     return [
       `--brand-primary:${colors.primary}`,
       `--brand-secondary:${colors.secondary}`,
@@ -4249,7 +4343,8 @@
       `--site-button:${colors.button}`,
       `--site-button-text:${colors.buttonText}`,
       `--site-heading:${JSON.stringify(brand.fontPairing.heading || "Inter")}`,
-      `--site-body:${JSON.stringify(brand.fontPairing.body || "Inter")}`
+      `--site-body:${JSON.stringify(brand.fontPairing.body || "Inter")}`,
+      ...typeVars
     ].join(";");
   }
   function resolveColor(value, fallback) {

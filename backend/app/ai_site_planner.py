@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from .agents import TEMPLATE_CATALOG, normalize_template_id, semantic_seed_catalog, state_is_commerce_seed_target, unsplash_seed_url
 from .color_theory import build_palette
+from .typography_theory import build_typography_scale
 from .image_assets import attach_image_asset
 from .models import AgentResult, ProjectState, WebsiteType
 
@@ -380,6 +381,7 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
         plan.targetAudience,
     ]))
     palette = build_palette(anchor_color, plan.brand_identity.palette_style, niche_hint)
+    typography_scale = build_typography_scale(plan.brand_identity.palette_style)
     brand_identity = {
         **plan.brand_identity.model_dump(),
         "primary_color": palette["primary"],
@@ -399,6 +401,7 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             "heading": plan.brand_identity.font_family_headings,
             "body": plan.brand_identity.font_family_body,
         },
+        "typographyScale": typography_scale,
         "generatedCopy": {
             "hero": {
                 "headline": hero_copy.get("headline", ""),
