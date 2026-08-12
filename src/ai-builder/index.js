@@ -3997,11 +3997,13 @@ export async function reviewAndGenerateFromGuided() {
     appendChatMessage("assistant", successMessage, "success");
     showGeneratedClientPreview();
   } else if (generated === "needs_more_info") {
-    guidedStatusText.textContent = langText({
-      en: "LYRA needs one more detail before generating. Answer the question above and try again.",
-      es: "LYRA necesita un dato más antes de generar. Responde la pregunta de arriba e intenta otra vez.",
-      fr: "LYRA a besoin d'un détail de plus avant de générer. Répondez à la question ci-dessus puis réessayez.",
-      pt: "A LYRA precisa de mais um detalhe antes de gerar. Responda à pergunta acima e tente novamente.",
+    const missingQuestion = builderState.pendingServerIntakeGate?.next_question || "";
+    const missingNames = arrayValue(builderState.pendingServerIntakeGate?.missing_fields).join(", ");
+    guidedStatusText.textContent = missingQuestion || langText({
+      en: `Before generating, LYRA still needs: ${missingNames || "one required detail"}.`,
+      es: `Antes de generar, LYRA todavía necesita: ${missingNames || "un dato obligatorio"}.`,
+      fr: `Avant de générer, LYRA a encore besoin de : ${missingNames || "une information obligatoire"}.`,
+      pt: `Antes de gerar, a LYRA ainda precisa de: ${missingNames || "um dado obrigatório"}.`,
     });
   } else {
     setGuidedBuildPhase("error");
@@ -11560,7 +11562,7 @@ async function collectPayload() {
     : baseIndustryValue;
   const preferredToneValue = data.get("preferred_tone")?.toString().trim()
     || (intakeFollowupField === "brand_style" ? intakeFollowupAnswer : "");
-  const preferredColorsValue = splitCommaOrLines(data.get("preferred_colors")?.toString() || "");
+  const formPreferredColorsValue = splitCommaOrLines(data.get("preferred_colors")?.toString() || "");
   const rawLogoPreferenceValue = data.get("logo_preference")?.toString().trim()
     || builderState.guidedState.logoPreference
     || (intakeFollowupField === "logo" ? intakeFollowupAnswer : "");
@@ -11582,15 +11584,44 @@ async function collectPayload() {
     fieldMeta.salesFlow = { source: "explicit_user_choice", confidence: 1 };
     fieldMeta.sales_flow = { source: "explicit_user_choice", confidence: 1 };
   }
+  if (intakeFollowupField === "brand_style" && preferredToneValue) {
+    builderState.guidedState.preferredTone = preferredToneValue;
+    fieldMeta.preferredTone = { source: "explicit_user_choice", confidence: 1 };
+    fieldMeta.brand_style = { source: "explicit_user_choice", confidence: 1 };
+  }
   if (logoPreferenceValue) {
     fieldMeta.logo = fieldMeta.logo || { source: "explicit", confidence: 1 };
     fieldMeta.logoPreference = fieldMeta.logoPreference || { source: "explicit", confidence: 1 };
   }
   builderState.guidedState.fieldMeta = fieldMeta;
-  const resolvedSalesFlow = followupSalesFlowValue || builderState.guidedState.salesFlow || builderState.guidedState.salesMode || data.get("sales_flow")?.toString().trim() || "";
-  const contactInfo = parseKeyValueLines(data.get("contact_info")?.toString() || "");
-  const logoUrl = data.get("logo_url")?.toString().trim();
-  const photoUrls = splitLines(data.get("photo_urls")?.toString() || "");
+  // The public chat already validated this exact state. Use it as the
+  // generation source instead of rebuilding values from a hidden DOM form
+  // that can lag behind the conversation. The admin builder keeps its form.
+  const validatedGuidedPayload = isPublicClientSetup ? guidedStateForApi() : null;
+  const generationBusinessName = validatedGuidedPayload?.businessName || data.get("business_name")?.toString().trim();
+  const generationBusinessDescription = validatedGuidedPayload?.businessDescription || data.get("business_description")?.toString().trim();
+  const generationIndustry = validatedGuidedPayload?.industry || industryValue;
+  const generationLocation = validatedGuidedPayload?.location || data.get("location")?.toString().trim();
+  const generationServicesProducts = validatedGuidedPayload
+    ? arrayValue(validatedGuidedPayload.servicesProducts)
+    : splitCommaOrLines(data.get("services_products")?.toString() || "");
+  const generationTargetAudience = validatedGuidedPayload?.targetAudience || data.get("target_audience")?.toString().trim();
+  const generationPreferredTone = validatedGuidedPayload?.preferredTone || preferredToneValue;
+  const resolvedSalesFlow = validatedGuidedPayload
+    ? validatedGuidedPayload.salesFlow || validatedGuidedPayload.salesMode || ""
+    : followupSalesFlowValue || builderState.guidedState.salesFlow || builderState.guidedState.salesMode || data.get("sales_flow")?.toString().trim() || "";
+  const preferredColorsValue = validatedGuidedPayload
+    ? arrayValue(validatedGuidedPayload.preferredColors)
+    : formPreferredColorsValue;
+  const contactInfo = validatedGuidedPayload
+    ? validatedGuidedPayload.contactInfo || {}
+    : parseKeyValueLines(data.get("contact_info")?.toString() || "");
+  const logoUrl = validatedGuidedPayload
+    ? validatedGuidedPayload.logoUrl || ""
+    : data.get("logo_url")?.toString().trim();
+  const photoUrls = validatedGuidedPayload
+    ? arrayValue(validatedGuidedPayload.photoUrls)
+    : splitLines(data.get("photo_urls")?.toString() || "");
   const assets = [];
 
   if (logoUrl) {
@@ -11620,20 +11651,20 @@ async function collectPayload() {
   const payload = {
     generatedSiteId: builderState.currentSiteId || builderState.clientIntakeSession?.generatedSiteId || builderState.clientIntakeSession?.projectId || builderState.guidedState.generatedSiteId || "",
     projectId: builderState.currentSiteId || builderState.clientIntakeSession?.projectId || builderState.clientIntakeSession?.generatedSiteId || builderState.guidedState.projectId || "",
-    business_name: data.get("business_name")?.toString().trim(),
-    business_description: data.get("business_description")?.toString().trim(),
-    industry: industryValue,
-    location: data.get("location")?.toString().trim(),
-    services_products: splitCommaOrLines(data.get("services_products")?.toString() || ""),
-    target_audience: data.get("target_audience")?.toString().trim(),
-    preferred_tone: preferredToneValue,
+    business_name: generationBusinessName,
+    business_description: generationBusinessDescription,
+    industry: generationIndustry,
+    location: generationLocation,
+    services_products: generationServicesProducts,
+    target_audience: generationTargetAudience,
+    preferred_tone: generationPreferredTone,
     preferred_colors: preferredColorsValue.length
       ? preferredColorsValue
       : arrayValue(builderState.guidedState.logoPalette),
-    brandStyle: preferredToneValue,
+    brandStyle: generationPreferredTone,
     contact_info: contactInfo,
     logoPreference: logoPreferenceValue,
-    fieldMeta,
+    fieldMeta: validatedGuidedPayload?.fieldMeta || fieldMeta,
     intakeFollowupAnswer,
     salesFlow: resolvedSalesFlow,
     desiredDomain: data.get("desired_domain")?.toString().trim() || builderState.guidedState.desiredDomain || "",
@@ -11646,16 +11677,16 @@ async function collectPayload() {
       logoUrl: assets.find((asset) => asset.asset_type === "logo")?.url || "",
       extractedColors: arrayValue(builderState.guidedState.logoPalette),
       preferredColors: preferredColorsValue,
-      industry: industryValue,
-      tone: preferredToneValue,
+      industry: generationIndustry,
+      tone: generationPreferredTone,
     }),
     designStrategy: {
       ...createDesignStrategy({
-        business_name: data.get("business_name")?.toString().trim(),
-        business_description: data.get("business_description")?.toString().trim(),
-        industry: industryValue,
-        target_audience: data.get("target_audience")?.toString().trim(),
-        preferred_tone: preferredToneValue,
+        business_name: generationBusinessName,
+        business_description: generationBusinessDescription,
+        industry: generationIndustry,
+        target_audience: generationTargetAudience,
+        preferred_tone: generationPreferredTone,
         salesMode: resolvedSalesFlow,
       }),
       aiStudioPlan,

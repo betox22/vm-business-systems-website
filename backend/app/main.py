@@ -230,6 +230,53 @@ def infer_generation_sales_flow(request: WebsiteGenerationRequest) -> str:
     sales_flow, _meta = infer_generation_sales_flow_with_meta(request)
     return sales_flow
 
+
+def generation_missing_info_message(missing_fields: list[str], language: str) -> str:
+    labels = {
+        "en": {
+            "business_name": "business name",
+            "business_description": "what the business sells or does",
+            "niche": "business category",
+            "sales_flow": "how customers should buy or contact you",
+            "brand_style": "brand style or permission for LYRA to choose it",
+            "logo": "whether to use, skip, or provide a logo",
+        },
+        "es": {
+            "business_name": "nombre del negocio",
+            "business_description": "qué vende o hace el negocio",
+            "niche": "categoría del negocio",
+            "sales_flow": "cómo deben comprar o contactarte los clientes",
+            "brand_style": "estilo de marca o permiso para que LYRA lo elija",
+            "logo": "si usaremos, omitiremos o subirás un logo",
+        },
+        "fr": {
+            "business_name": "nom de l'entreprise",
+            "business_description": "ce que l'entreprise vend ou fait",
+            "niche": "catégorie de l'entreprise",
+            "sales_flow": "comment les clients doivent acheter ou vous contacter",
+            "brand_style": "style de marque ou autorisation pour LYRA de le choisir",
+            "logo": "utiliser, ignorer ou fournir un logo",
+        },
+        "pt": {
+            "business_name": "nome do negócio",
+            "business_description": "o que o negócio vende ou faz",
+            "niche": "categoria do negócio",
+            "sales_flow": "como os clientes devem comprar ou entrar em contato",
+            "brand_style": "estilo da marca ou permissão para a LYRA escolher",
+            "logo": "usar, pular ou enviar um logo",
+        },
+    }
+    language_labels = labels.get(language, labels["en"])
+    readable = [language_labels.get(field, field.replace("_", " ")) for field in missing_fields]
+    joined = ", ".join(readable)
+    prefix = {
+        "es": f"Antes de generar el sitio todavía necesito confirmar: {joined}.",
+        "fr": f"Avant de générer le site, je dois encore confirmer : {joined}.",
+        "pt": f"Antes de gerar o site, ainda preciso confirmar: {joined}.",
+    }.get(language, f"Before generating the site, I still need to confirm: {joined}.")
+    question = intake_engine.fallback_question_for_missing(missing_fields, language)
+    return f"{prefix} {question}".strip()
+
 app = FastAPI(title="KREATON LYRA API", version="0.1.0")
 
 # 2026-07-25 security hardening: this used to be allow_origins=["*"] with
@@ -1202,7 +1249,7 @@ async def website_builder(
             catalog_source="seed_fallback",
             needs_more_info=True,
             missing_fields=missing_fields,
-            next_question=intake_engine.fallback_question_for_missing(missing_fields, state.selectedLanguage),
+            next_question=generation_missing_info_message(missing_fields, state.selectedLanguage),
             storage_status="needs_more_info",
             used_dev_mock=False,
         )

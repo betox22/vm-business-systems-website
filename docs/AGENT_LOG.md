@@ -16,6 +16,32 @@ Formato de entrada:
 
 ---
 
+## 2026-08-12 — Codex — Unificar el estado validado del chat con la generación final
+
+**Hecho:** el flujo público de `collectPayload()` ahora usa
+`guidedStateForApi()` como fuente canónica para los valores y el `fieldMeta`
+que `/api/luma/chat` ya validó, en lugar de reconstruirlos desde el formulario
+oculto. El builder admin conserva su contrato anterior basado en su formulario.
+También se persiste en el estado la respuesta explícita a un follow-up de
+estilo antes de generar. Si el gate final detecta un dato realmente ausente,
+la respuesta de `/ai/website-builder` enumera los slots concretos y conserva
+esa explicación visible en LYRA.
+
+**Pendiente / abierto:** la sesión guardada todavía no enlaza formalmente el
+`request_id` con el sitio generado; este cambio alinea el snapshot enviado,
+pero no agrega trazabilidad nueva entre esos registros.
+
+**Archivos tocados:** `src/ai-builder/index.js`, `backend/app/main.py`,
+`backend/tests/test_website_builder_intake.py`, `docs/AGENT_LOG.md`.
+
+**Notas para el siguiente agente:** no se agregó un bypass
+`readyToGenerate=true` en backend. El gate final sigue activo como defensa;
+la corrección elimina la doble fuente de datos en el frontend público. No se
+modificaron el orchestrator, la selección de templates ni la generación de
+catálogo.
+
+---
+
 ## 2026-08-12 — Codex — Barrera estructural contra contaminación cruzada del intake
 
 **Hecho:** se agregó una validación determinística inmediatamente después de
