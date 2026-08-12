@@ -4863,6 +4863,7 @@ function shouldAdvanceToDesignerPlan(message) {
 const BACKEND_SLOT_TO_GUIDED_FIELD = {
   business_name: "businessName",
   business_description: "businessDescription",
+  services_products: "servicesProducts",
   niche: "industry",
   sales_flow: "salesMode",
   brand_style: "preferredColors",

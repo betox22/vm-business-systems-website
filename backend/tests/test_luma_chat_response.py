@@ -83,6 +83,7 @@ def _current_state(*, include_style: bool = False):
         "businessName": "Bath All Day",
         "businessDescription": "Handmade soaps, candles, and bath bombs sold online.",
         "industry": "beauty",
+        "servicesProducts": ["Lavender soap", "Vanilla candle", "Bath bomb"],
         "salesFlow": "online_sales",
         "selectedLanguage": "en",
         "fieldMeta": field_meta,

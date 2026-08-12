@@ -118,7 +118,8 @@ class WebsiteBuilderIntakeTests(unittest.TestCase):
         ))
 
         self.assertTrue(response.needs_more_info)
-        self.assertEqual(response.missing_fields, ["brand_style", "logo"])
+        self.assertEqual(response.missing_fields, ["services_products", "brand_style", "logo"])
+        self.assertIn("products or services", response.next_question or "")
         self.assertIn("brand style", response.next_question or "")
         self.assertIn("logo", response.next_question or "")
 

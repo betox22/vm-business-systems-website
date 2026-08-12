@@ -29,6 +29,7 @@ class IntakeGateTests(unittest.TestCase):
             businessName="Bath All Day",
             businessDescription="Online store for bath and body care products.",
             industry="beauty",
+            servicesProducts=["Lavender soap", "Vanilla candle"],
             salesFlow="online_sales",
             selectedLanguage="es",
             fieldMeta={
@@ -49,6 +50,7 @@ class IntakeGateTests(unittest.TestCase):
             businessName="Bath All Day",
             businessDescription="Online store for bath and body care products.",
             industry="beauty",
+            servicesProducts=["Lavender soap", "Vanilla candle"],
             salesFlow="online_sales",
             selectedLanguage="es",
             fieldMeta={
@@ -81,6 +83,7 @@ class IntakeGateTests(unittest.TestCase):
             businessName="Bath All Day",
             businessDescription="Vendo catalogo de jabones y velas.",
             industry="beauty",
+            servicesProducts=["Jabón de lavanda", "Vela de vainilla"],
             salesFlow="online_sales",
             selectedLanguage="es",
             preferredTone="verde y blanco, minimalista",
@@ -105,6 +108,7 @@ class IntakeGateTests(unittest.TestCase):
             businessName="Bath All Day",
             businessDescription="Vendo catalogo de jabones y velas.",
             industry="beauty",
+            servicesProducts=["Jabón de lavanda", "Vela de vainilla"],
             salesFlow="online_sales",
             selectedLanguage="es",
             preferredTone="verde y blanco, minimalista y natural",
@@ -133,6 +137,7 @@ class IntakeGateTests(unittest.TestCase):
             businessName="Northstar Mobile Notary",
             businessDescription="Mobile document signing appointments for local clients.",
             industry="mobile notary. Take bookings",
+            servicesProducts=["Mobile notarization", "Document signing appointment"],
             salesFlow="booking",
             selectedLanguage="en",
             preferredTone="calm and professional",
@@ -149,6 +154,61 @@ class IntakeGateTests(unittest.TestCase):
         )
 
         self.assertEqual(engine.missing_fields_from_state(state), [])
+
+    def test_informational_business_does_not_require_catalog_depth(self) -> None:
+        engine = LyraIntakeEngine()
+        state = ProjectState(
+            businessName="Northstar Foundation",
+            businessDescription="An informational site presenting our community mission.",
+            industry="nonprofit",
+            salesFlow="informational",
+            preferredTone="clear and trustworthy",
+            logoPreference="explicit_skip",
+            fieldMeta={
+                "niche": {"source": "explicit_user_choice", "confidence": 1},
+                "sales_flow": {"source": "explicit", "confidence": 1},
+                "salesFlow": {"source": "explicit", "confidence": 1},
+                "brand_style": {"source": "explicit", "confidence": 1},
+                "logo": {"source": "explicit", "confidence": 1},
+            },
+        )
+
+        self.assertNotIn("services_products", engine.missing_fields_from_state(state))
+
+    def test_services_products_slot_resolves_catalog_depth_gate(self) -> None:
+        engine = LyraIntakeEngine()
+        state = ProjectState(
+            businessName="Bath All Day",
+            businessDescription="Handmade bath products sold online.",
+            industry="beauty",
+            servicesProducts=["Lavender soap"],
+            salesFlow="online_sales",
+            preferredTone="organic and warm",
+            logoPreference="explicit_skip",
+            fieldMeta={
+                "niche": {"source": "explicit", "confidence": 0.95},
+                "sales_flow": {"source": "explicit", "confidence": 0.95},
+                "salesFlow": {"source": "explicit", "confidence": 0.95},
+                "brand_style": {"source": "explicit", "confidence": 0.95},
+                "logo": {"source": "explicit", "confidence": 0.95},
+            },
+        )
+        self.assertIn("services_products", engine.missing_fields_from_state(state))
+
+        payload = _base_payload()
+        payload["updatedFields"] = {
+            "services_products": {
+                "value": ["Lavender soap", "Vanilla candle"],
+                "source": "explicit",
+                "confidence": 0.95,
+            }
+        }
+
+        decision = engine._decision_from_tool_payload(payload, state, "Lavender soap and vanilla candle")
+
+        self.assertTrue(decision.canGenerate)
+        self.assertEqual(decision.updatedState["servicesProducts"], ["Lavender soap", "Vanilla candle"])
+        self.assertEqual(decision.missingCriticalFields, [])
 
     def test_cross_field_validator_reverts_sales_flow_leaks_from_industry_and_products(self) -> None:
         engine = LyraIntakeEngine()

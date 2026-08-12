@@ -54,6 +54,7 @@ BUSINESS_INTAKE_REQUIRED_SLOTS = (
 SLOT_FIELD_ALIASES = {
     "business_name": "businessName",
     "business_description": "businessDescription",
+    "services_products": "servicesProducts",
     "sales_flow": "salesFlow",
     "target_audience": "targetAudience",
 }
@@ -61,6 +62,35 @@ SLOT_FIELD_ALIASES = {
 VALID_BRAND_STYLE_PATHS = {"explicit_preference", "explicit_delegation"}
 VALID_LOGO_PATHS = {"has_logo", "wants_generated", "explicit_skip"}
 VALID_SALES_FLOWS = {"online_sales", "quote_request", "booking", "lead_capture", "informational"}
+CATALOG_DEPTH_SALES_FLOWS = {"online_sales", "quote_request", "booking"}
+MIN_CONCRETE_OFFERINGS = 2
+
+GENERIC_OFFERING_VALUES = {
+    "catalog",
+    "catalogo",
+    "catálogo",
+    "products",
+    "product",
+    "productos",
+    "producto",
+    "services",
+    "service",
+    "servicios",
+    "servicio",
+    "various products",
+    "varios productos",
+    "different services",
+    "diferentes servicios",
+    "sell online",
+    "selling online",
+    "vender online",
+    "venta online",
+    "receive quotes",
+    "recibir cotizaciones",
+    "take bookings",
+    "accept bookings",
+    "aceptar reservas",
+}
 
 
 class FieldMeta(BaseModel):
@@ -144,6 +174,7 @@ INTAKE_STATE_FIELDS = {
     "salesFlow",
     "business_name",
     "business_description",
+    "services_products",
     "niche",
     "sales_flow",
     "target_audience",
@@ -627,6 +658,8 @@ class LyraIntakeEngine:
             field_meta["business_name"] = FieldMeta(source=tracked.source, confidence=tracked.confidence)
         elif canonical_key == "businessDescription":
             field_meta["business_description"] = FieldMeta(source=tracked.source, confidence=tracked.confidence)
+        elif canonical_key == "servicesProducts":
+            field_meta["services_products"] = FieldMeta(source=tracked.source, confidence=tracked.confidence)
 
     @staticmethod
     def _extract_choice_path(value: Any) -> str:
@@ -709,6 +742,10 @@ class LyraIntakeEngine:
                 state.businessDescription,
                 meta.get("business_description") or meta.get("businessDescription"),
             ),
+            "services_products": self._slot_snapshot(
+                state.servicesProducts,
+                meta.get("services_products") or meta.get("servicesProducts"),
+            ),
             "niche": self._slot_snapshot(normalize_niche(state.industry), meta.get("niche") or meta.get("industry")),
             "sales_flow": self._slot_snapshot(state.salesFlow, meta.get("sales_flow") or meta.get("salesFlow")),
             "target_audience": self._slot_snapshot(
@@ -764,12 +801,6 @@ class LyraIntakeEngine:
         meta = merged_meta if merged_meta is not None else (state.fieldMeta or {})
         missing: List[str] = []
 
-        if not str(merged.get("businessName") or "").strip():
-            missing.append("business_name")
-
-        if not str(merged.get("businessDescription") or "").strip():
-            missing.append("business_description")
-
         niche = normalize_niche(merged.get("industry"))
         if niche == "general" and not self._has_confident_meta(meta, "niche", min_confidence=0.7):
             missing.append("niche")
@@ -777,12 +808,37 @@ class LyraIntakeEngine:
         if not self._sales_flow_resolved(merged, meta):
             missing.append("sales_flow")
 
+        if not str(merged.get("businessName") or "").strip():
+            missing.append("business_name")
+
+        if not str(merged.get("businessDescription") or "").strip():
+            missing.append("business_description")
+
+        sales_flow = str(merged.get("salesFlow") or "").strip()
+        if sales_flow in CATALOG_DEPTH_SALES_FLOWS and len(self._concrete_offerings(merged.get("servicesProducts"))) < MIN_CONCRETE_OFFERINGS:
+            missing.append("services_products")
+
         if not self._brand_style_resolved(merged, meta):
             missing.append("brand_style")
 
         if not self._logo_resolved(merged, meta):
             missing.append("logo")
         return missing
+
+    @staticmethod
+    def _concrete_offerings(value: Any) -> List[str]:
+        concrete: List[str] = []
+        seen: set[str] = set()
+        for item in split_items(value):
+            text = str(item or "").strip()
+            normalized = re.sub(r"\s+", " ", text.lower()).strip(" .,:;!?")
+            if not normalized or normalized in GENERIC_OFFERING_VALUES:
+                continue
+            if len(normalized) < 3 or normalized in seen:
+                continue
+            seen.add(normalized)
+            concrete.append(text)
+        return concrete
 
     def missing_fields_from_state(
         self,
@@ -869,6 +925,8 @@ class LyraIntakeEngine:
                 return "No pude identificar el nombre del negocio. Como se llama?"
             if "business_description" in missing:
                 return "No pude identificar claramente que vende o hace. Escribelo en un parrafo con productos o servicios principales."
+            if "services_products" in missing:
+                return "Para preparar un catálogo real, dime al menos dos productos o servicios concretos por su nombre."
             if "brand_style" in missing:
                 return "¿Tienes colores, tono o estilo preferido? Si prefieres, dime “tú decides” y yo elijo una dirección visual que combine con el negocio."
             if "logo" in missing:
@@ -880,6 +938,8 @@ class LyraIntakeEngine:
             return "I could not identify the business name. What is it called?"
         if "business_description" in missing:
             return "I could not clearly identify what it sells or does. Write one paragraph with the main products or services."
+        if "services_products" in missing:
+            return "To prepare a real catalog, name at least two specific products or services you offer."
         if "brand_style" in missing:
             return "Do you have preferred colors, tone, or style? If you prefer, say “you decide” and I will choose a visual direction that fits the business."
         if "logo" in missing:
@@ -919,8 +979,8 @@ class LyraIntakeEngine:
                             "type": "object",
                             "description": (
                                 "Only include a key when this turn's message actually supports it. "
-                                "Valid keys are EXACTLY these 9 slots: business_name, business_description, "
-                                "niche, sales_flow, target_audience, brand_style, logo, location, contact_info. "
+                                "Valid keys are EXACTLY these 10 slots: business_name, business_description, "
+                                "services_products, niche, sales_flow, target_audience, brand_style, logo, location, contact_info. "
                                 "Never invent other keys (e.g. servicesProducts, preferredColors, colors, "
                                 "products) - those are not part of this form and are derived elsewhere. "
                                 "Never copy the same raw reply into more than one key."
@@ -928,6 +988,7 @@ class LyraIntakeEngine:
                             "properties": {
                                 "business_name": tracked_field_schema,
                                 "business_description": tracked_field_schema,
+                                "services_products": tracked_field_schema,
                                 "niche": tracked_field_schema,
                                 "sales_flow": tracked_field_schema,
                                 "target_audience": tracked_field_schema,
@@ -1017,6 +1078,8 @@ a partir de la conversación con el cliente — no generas copy público ni HTML
 FORMULARIO A COMPLETAR (slots):
 - business_name (string)
 - business_description (string: qué vende/hace, en sus propias palabras)
+- services_products (array: nombres concretos de productos o servicios que el cliente
+  dijo que ofrece; nunca inventes entradas para completar este slot)
 - niche (debe ser EXACTAMENTE uno de: {niche_list} — nunca inventes uno nuevo;
   si no calza claramente con ninguno, usa "general" y baja tu confidence)
 - sales_flow (uno de: online_sales, quote_request, booking, lead_capture, informational)
@@ -1042,6 +1105,9 @@ FORMULARIO A COMPLETAR (slots):
 
 REGLA DE ORO: canGenerate=true SOLO si business_name, business_description, niche,
 sales_flow, brand_style Y logo están resueltos (con cualquiera de sus caminos válidos).
+Además, cuando sales_flow sea online_sales, quote_request o booking, services_products
+debe contener al menos DOS productos o servicios concretos nombrados por el cliente.
+No bloquees por profundidad de catálogo cuando sales_flow sea informational o lead_capture.
 Ningún otro slot bloquea. No hay excepciones "porque el mensaje fue largo y detallado":
 un párrafo largo puede llenar 4 slots a la vez, pero si brand_style o logo no aparecieron
 en ese párrafo, siguen vacíos.
@@ -1053,7 +1119,8 @@ PROCESO EN CADA TURNO:
    confianza de contexto no ambiguo) o explicit_delegation (el cliente delegó la
    decisión a Lyra explícitamente). brand_style y logo NUNCA usan source=inferred.
 3. Si dos o más slots quedaron vacíos, prioriza preguntar por el de mayor peso en este
-   orden: niche/sales_flow > business_name > business_description > brand_style > logo
+   orden: niche/sales_flow > business_name > business_description > services_products
+   > brand_style > logo
    > location > contact_info.
 4. Redacta nextQuestion como UNA sola pregunta conversacional y cálida, en el idioma del
    cliente, que:

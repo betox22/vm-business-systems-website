@@ -431,6 +431,127 @@ def ensure_plan_seed_catalog(catalog_items: List[Dict[str, Any]], state: Project
     return catalog
 
 
+def _normalized_offering_name(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", str(value or "").lower()).strip()
+
+
+def _client_offering_names(state: ProjectState) -> List[str]:
+    names: List[str] = []
+    seen: set[str] = set()
+    for value in state.servicesProducts:
+        name = str(value or "").strip()
+        normalized = _normalized_offering_name(name)
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        names.append(name[:80])
+        if len(names) == 6:
+            break
+    return names
+
+
+def _matching_catalog_item(
+    client_name: str,
+    catalog_items: List[Dict[str, Any]],
+    used_indexes: set[int],
+) -> tuple[Optional[Dict[str, Any]], Optional[int]]:
+    client_normalized = _normalized_offering_name(client_name)
+    client_tokens = set(client_normalized.split())
+    best_index: Optional[int] = None
+    best_score = 0.0
+    for index, item in enumerate(catalog_items):
+        if index in used_indexes:
+            continue
+        item_normalized = _normalized_offering_name(item.get("name"))
+        if not item_normalized:
+            continue
+        if item_normalized == client_normalized:
+            return item, index
+        item_tokens = set(item_normalized.split())
+        score = len(client_tokens & item_tokens) / max(1, len(client_tokens))
+        if (client_normalized in item_normalized or item_normalized in client_normalized) and score >= 0.5:
+            score = max(score, 0.9)
+        if score > best_score:
+            best_score = score
+            best_index = index
+    if best_index is not None and best_score >= 0.6:
+        return catalog_items[best_index], best_index
+    return None, None
+
+
+def _reconcile_client_catalog(
+    catalog_items: List[Dict[str, Any]],
+    seed: List[Dict[str, Any]],
+    client_names: List[str],
+    context: str,
+) -> tuple[List[Dict[str, Any]], bool]:
+    reconciled: List[Dict[str, Any]] = []
+    used_model_indexes: set[int] = set()
+    used_names = {_normalized_offering_name(name) for name in client_names}
+    used_seed_fallback = False
+
+    for index, client_name in enumerate(client_names):
+        matched, matched_index = _matching_catalog_item(client_name, catalog_items, used_model_indexes)
+        if matched_index is not None:
+            used_model_indexes.add(matched_index)
+        fallback = seed[index % len(seed)] if seed else {
+            "id": f"client_item_{index + 1}",
+            "sku": f"CLIENT-{index + 1:03d}",
+            "name": client_name,
+            "description": f"{client_name} presented with clear details and a professional customer experience.",
+            "category": "Services",
+            "price_amount": 99.0,
+            "rating": 4.7,
+            "badge": "Featured",
+            "imageSearchQuery": client_name,
+        }
+        source = matched or fallback
+        if matched is None:
+            used_seed_fallback = True
+        price = parse_price_amount(source.get("price_amount") or source.get("price"), float(fallback["price_amount"]))
+        image_query = str(
+            source.get("imageSearchQuery") or source.get("image_search_query") or client_name
+        ) if matched else client_name
+        item = {
+            **source,
+            "id": str(source.get("id") or f"client_item_{index + 1}") if matched else f"client_item_{index + 1}",
+            "sku": str(source.get("sku") or f"CLIENT-{index + 1:03d}") if matched else f"CLIENT-{index + 1:03d}",
+            "name": client_name,
+            "description": str(source.get("description") or fallback["description"]),
+            "category": str(source.get("category") or fallback["category"]),
+            "price_type": str(source.get("price_type") or "fixed"),
+            "price": price,
+            "price_amount": price,
+            "currency": str(source.get("currency") or "USD"),
+            "price_label": str(source.get("price_label") or f"USD {float(price):.2f}"),
+            "rating": source.get("rating") or fallback["rating"],
+            "badge": str(source.get("badge") or fallback["badge"]),
+            "imageSearchQuery": image_query,
+            "image_url": unsplash_seed_url(image_query),
+            "is_active": source.get("is_active", True),
+            "is_featured": source.get("is_featured", index < 4),
+            "sort_order": index,
+        }
+        reconciled.append(attach_image_asset(item, context=context))
+
+    target_count = min(6, max(4, len(client_names)))
+    extra_candidates = seed or [
+        item for index, item in enumerate(catalog_items) if index not in used_model_indexes
+    ]
+    for fallback in extra_candidates:
+        if len(reconciled) >= target_count:
+            break
+        fallback_name = _normalized_offering_name(fallback.get("name"))
+        if not fallback_name or fallback_name in used_names:
+            continue
+        used_names.add(fallback_name)
+        extra = {**fallback, "sort_order": len(reconciled)}
+        reconciled.append(attach_image_asset(extra, context=context))
+        used_seed_fallback = True
+
+    return reconciled, used_seed_fallback
+
+
 def ensure_plan_seed_catalog_with_source(
     catalog_items: List[Dict[str, Any]],
     state: ProjectState,
@@ -468,9 +589,6 @@ def ensure_plan_seed_catalog_with_source(
         "online",
         "tienda",
     ])
-    if not is_commerce:
-        return catalog_items, "ai_generated"
-
     generic = 0
     generic_name_pattern = re.compile(
         r"^(item|product|producto|featured item|new arrival|signature starter pack|pack inicial signature|customer favorite bundle|bundle favorito del cliente|premium upgrade|upgrade premium|limited edition drop|drop de edicion limitada|everyday essential|esencial de uso diario|gift ready selection|seleccion lista para regalo)$",
@@ -491,7 +609,20 @@ def ensure_plan_seed_catalog_with_source(
         ):
             generic += 1
 
-    seed = semantic_seed_catalog(state, seed_context, count=6)
+    client_names = _client_offering_names(state)
+    seed = semantic_seed_catalog(state, seed_context, count=6) if is_commerce else []
+    if client_names:
+        reconciled, used_seed_fallback = _reconcile_client_catalog(
+            catalog_items,
+            seed,
+            client_names,
+            seed_context,
+        )
+        return reconciled, "seed_fallback" if used_seed_fallback else "ai_generated"
+
+    if not is_commerce:
+        return catalog_items, "ai_generated"
+
     if len(catalog_items) < 4 or generic >= max(1, len(catalog_items) // 2):
         return seed, "seed_fallback"
 
@@ -702,6 +833,9 @@ Hard rules:
 - brand_identity.logo_config.requires_ai_generation MUST be true when the client asks for an AI logo, says they do not have a logo but wants one created, or asks Lyra/KREATON to create the brand identity. Otherwise it must be false.
 - brand_identity.logo_config.generation_prompt MUST always be present and must follow this exact structure with real niche/name/style substitutions: "Minimalist flat vector logo for a [niche] brand named [Name], [palette_style] style, geometric clean shapes, solid colors, no gradients, high detail, white background, trending on Dribbble --vector"
 - For commerce templates, catalogItems must contain exactly 4 to 6 real, niche-specific products. Do not use "Product 1", "Featured item", "Price editable", Lorem Ipsum, or empty fields.
+- If clientSummary.servicesProducts or clientSummary.businessDescription names concrete products or services, catalogItems MUST preserve those real names as the catalog foundation. Polish only their public description, category, price, price label, and imageSearchQuery. Never replace a client-named offering with a different invented offering.
+- This does not conflict with the private-notes rule: do not paste the client's raw sentences as public copy, but always preserve the identity and name of each concrete product or service they actually offer.
+- Only when the client supplied fewer than 4 concrete offerings may you add niche-plausible offerings to reach the minimum of 4. Client-named offerings always come first and are never discarded.
 - Each catalogItems object must include id, name, description, category, numeric price, price_amount, price_label, and imageSearchQuery.
 - Do not generate image_url, imageUrl, stock image URLs, Unsplash URLs, CDN URLs, or any other image URL in catalogItems. KREATON resolves product imagery server-side from imageSearchQuery.
 - If a client sells a focused product family such as jewelry, handmade accessories, fashion, candles, beauty, or crafts, choose a focused store/showroom template, not a broad marketplace.

@@ -2,9 +2,87 @@ import unittest
 
 from app.ai_site_planner import AIWebGenerationResponse, site_plan_to_updates
 from app.image_assets import resolve_product_category, resolve_product_image_url
+from app.models import ProjectState
+
+
+def _catalog_plan(items: list[dict]) -> AIWebGenerationResponse:
+    return AIWebGenerationResponse.model_validate({
+        "reasoningSummary": "Bath product store",
+        "templateId": "mega-retail-store",
+        "websiteType": "online_store",
+        "catalogStrategy": "single_vendor_dense_catalog",
+        "salesFlow": "online_sales",
+        "targetAudience": "Bath and self-care shoppers",
+        "brand_identity": {
+            "palette_style": "organico",
+            "font_family_headings": "Fraunces",
+            "font_family_body": "Inter",
+            "logo_config": {
+                "requires_ai_generation": False,
+                "generation_prompt": "Minimalist flat vector logo for a beauty brand named Bath All Day, organico style, geometric clean shapes, solid colors, no gradients, high detail, white background, trending on Dribbble --vector",
+            },
+        },
+        "pages": [],
+        "catalogCategories": ["Bath"],
+        "catalogItems": items,
+        "confidence": 0.9,
+    })
+
+
+def _catalog_item(name: str, index: int) -> dict:
+    return {
+        "id": f"prod_{index:03d}",
+        "name": name,
+        "description": f"Professional public description for {name}.",
+        "category": "Bath",
+        "price": 10 + index,
+        "price_amount": 10 + index,
+        "price_label": f"USD {10 + index:.2f}",
+        "imageSearchQuery": name.lower(),
+    }
 
 
 class ImageAssetTests(unittest.TestCase):
+    def test_client_named_products_are_preserved_over_invented_llm_catalog(self) -> None:
+        state = ProjectState(
+            businessName="Bath All Day",
+            businessDescription="Handmade soaps, candles and bath bombs.",
+            industry="beauty",
+            servicesProducts=["Lavender Bar Soap", "Vanilla Bean Candle", "Eucalyptus Bath Bomb"],
+            salesFlow="online_sales",
+        )
+        plan = _catalog_plan([
+            _catalog_item("Ocean Mist Body Wash", 1),
+            _catalog_item("Rose Clay Mask", 2),
+            _catalog_item("Citrus Body Scrub", 3),
+            _catalog_item("Herbal Gift Set", 4),
+        ])
+
+        catalog = site_plan_to_updates(plan, state)["catalogItems"]
+
+        self.assertEqual(
+            [item["name"] for item in catalog[:3]],
+            state.servicesProducts,
+        )
+        self.assertEqual(len(catalog), 4)
+
+    def test_single_client_product_is_preserved_and_seed_catalog_fills_to_four(self) -> None:
+        state = ProjectState(
+            businessName="Bath All Day",
+            businessDescription="Handmade bath and body products.",
+            industry="beauty",
+            servicesProducts=["Lavender Bar Soap"],
+            salesFlow="online_sales",
+        )
+        plan = _catalog_plan([_catalog_item("Invented Generic Set", 1)])
+
+        updates = site_plan_to_updates(plan, state)
+        catalog = updates["catalogItems"]
+
+        self.assertEqual(catalog[0]["name"], "Lavender Bar Soap")
+        self.assertGreaterEqual(len(catalog), 4)
+        self.assertEqual(updates["catalogSource"], "seed_fallback")
+
     def test_vanilla_candle_prefers_product_identity_over_home_description(self) -> None:
         product = {
             "name": "Vanilla Bean Candle",
