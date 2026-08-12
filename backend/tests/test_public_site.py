@@ -1,12 +1,14 @@
 import json
 import unittest
+from pathlib import Path
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from app.db import Base
 from app.db_models import GeneratedSite, Store
-from app.main import _public_site_payload
+from app.main import _public_site_payload, _schema_summary, build_schema_from_state
+from app.models import ProjectState
 
 
 def _memory_session():
@@ -113,6 +115,60 @@ class PublicSitePayloadTests(unittest.TestCase):
 
         self.assertEqual(payload["schema"], {})
         self.assertEqual(payload["catalog_items"], [])
+
+    def test_generated_theme_uses_renderer_contract_and_survives_public_payload(self) -> None:
+        state = ProjectState(
+            businessName="Chromatic Studio",
+            businessDescription="A design studio with a custom visual identity.",
+            colors={
+                "background": "#FFF7ED",
+                "surface": "#FFFFFF",
+                "primary": "#7C2D12",
+                "secondary": "#FDBA74",
+                "accent": "#0F766E",
+                "text": "#1C1917",
+            },
+            typography={"heading": "Playfair Display", "body": "Source Sans 3"},
+        )
+
+        schema = build_schema_from_state(
+            state,
+            catalog_items=[],
+            catalog_source="seed_fallback",
+        )
+        theme = schema["theme"]
+
+        self.assertEqual(theme["colors"]["primary"], "#7C2D12")
+        self.assertEqual(theme["colors"]["accent"], "#0F766E")
+        self.assertEqual(theme["fonts"]["heading"], "Playfair Display")
+        self.assertEqual(theme["fonts"]["body"], "Source Sans 3")
+        self.assertNotIn("primary", theme)
+        self.assertNotIn("heading_font", theme)
+
+        site = self.session.execute(
+            select(GeneratedSite).where(GeneratedSite.id == "site_1")
+        ).scalar_one()
+        site.generated_config = json.dumps(schema)
+        self.session.commit()
+
+        public_schema = _public_site_payload(site)["schema"]
+        self.assertEqual(public_schema["theme"]["colors"], theme["colors"])
+        self.assertEqual(public_schema["theme"]["fonts"], theme["fonts"])
+        self.assertEqual(_schema_summary(public_schema)["accent_color"], "#0F766E")
+        self.assertEqual(_schema_summary({"theme": {"accent": "#AABBCC"}})["accent_color"], "#AABBCC")
+
+    def test_frontend_theme_consumers_use_nested_colors_and_fonts(self) -> None:
+        repo_root = Path(__file__).resolve().parents[2]
+        renderer_source = (repo_root / "src" / "ai-builder" / "renderers.js").read_text(encoding="utf-8")
+        viewer_source = (repo_root / "site-viewer.js").read_text(encoding="utf-8")
+        editor_source = (repo_root / "src" / "ai-builder" / "index.js").read_text(encoding="utf-8")
+
+        self.assertIn("theme.colors = theme.colors || {}", renderer_source)
+        self.assertIn("theme.fonts = theme.fonts || {}", renderer_source)
+        self.assertIn("const colors = theme.colors || {}", viewer_source)
+        self.assertIn("const fonts = theme.fonts || {}", viewer_source)
+        self.assertIn('"theme.colors.primary"', editor_source)
+        self.assertIn('"theme.colors.background"', editor_source)
 
 
 if __name__ == "__main__":

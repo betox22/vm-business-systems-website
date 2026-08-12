@@ -214,7 +214,7 @@ Rules:
 7. If the user asks to remove or rename products, patch only matching catalog_items.
 8. If the instruction is ambiguous, make the smallest safe patch and mention it in patchSummary.
 9. patchSummary must be in selectedLanguage.
-10. Use JSON Pointer paths such as /theme/accent, /pages/0/sections/0/editable/headline, /catalog_items/0/name.
+10. Use JSON Pointer paths such as /theme/colors/accent, /pages/0/sections/0/editable/headline, /catalog_items/0/name.
 """.strip()
 
 

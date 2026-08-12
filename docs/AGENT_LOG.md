@@ -16,6 +16,32 @@ Formato de entrada:
 
 ---
 
+## 2026-08-12 — Codex — Alinear el contrato de tema entre backend y renderers
+
+**Hecho:** `build_schema_from_state()` ahora emite la paleta en
+`theme.colors` y la tipografía en `theme.fonts`, que es la forma que consumen
+el renderer del builder, el editor y `site-viewer.js`. El resumen interno del
+schema lee primero la forma anidada y conserva fallback para sitios antiguos
+guardados con claves planas. También se actualizó el JSON Pointer de edición
+de color de LYRA para escribir en la ruta canónica.
+
+**Pendiente / abierto:** los sitios ya persistidos con el contrato plano no se
+migran automáticamente; continuarán usando sus valores anteriores hasta que
+se regeneren o se agregue una migración explícita. Este hallazgo es
+probablemente parte de la causa raíz de la tarea **#26** (sitios generados que
+se ven parecidos), pero esa tarea no se cierra con este cambio por sí sola.
+
+**Archivos tocados:** `backend/app/main.py`,
+`backend/app/lyra_edit_engine.py`, `backend/tests/test_public_site.py`,
+`docs/AGENT_LOG.md`.
+
+**Notas para el siguiente agente:** no se duplicaron colores ni fuentes en
+forma plana y anidada porque ambas copias podrían divergir durante una edición.
+Los únicos consumidores planos encontrados se migraron o recibieron fallback
+de lectura para compatibilidad histórica; el frontend no requirió cambios.
+
+---
+
 ## 2026-08-12 — Codex — Responder preguntas del cliente durante el intake
 
 **Hecho:** `update_intake` ahora puede devolver `userQuestionResponse`, una

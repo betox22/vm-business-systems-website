@@ -684,6 +684,7 @@ def _schema_summary(schema: Dict[str, Any]) -> Dict[str, str]:
     selected_template = schema.get("selected_template") if isinstance(schema.get("selected_template"), dict) else {}
     active_template = schema.get("active_template") if isinstance(schema.get("active_template"), dict) else {}
     theme = schema.get("theme") if isinstance(schema.get("theme"), dict) else {}
+    theme_colors = theme.get("colors") if isinstance(theme.get("colors"), dict) else {}
     navigation = schema.get("navigation") if isinstance(schema.get("navigation"), list) else []
     first_page = (schema.get("pages") or [{}])[0] if isinstance(schema.get("pages"), list) and schema.get("pages") else {}
     first_section = (first_page.get("sections") or [{}])[0] if isinstance(first_page.get("sections"), list) and first_page.get("sections") else {}
@@ -700,7 +701,13 @@ def _schema_summary(schema: Dict[str, Any]) -> Dict[str, str]:
         "hero_title": str(editable.get("headline") or first_page.get("title") or business.get("name") or "").strip()[:260],
         "hero_body": str(editable.get("subtitle") or editable.get("text") or "").strip()[:1200],
         "announcement": str((navigation[0] or {}).get("label") if navigation else "").strip()[:180],
-        "accent_color": str(theme.get("accent") or theme.get("primary") or "").strip()[:80],
+        "accent_color": str(
+            theme_colors.get("accent")
+            or theme_colors.get("primary")
+            or theme.get("accent")
+            or theme.get("primary")
+            or ""
+        ).strip()[:80],
     }
 
 
@@ -1338,14 +1345,18 @@ def build_schema_from_state(
             "preferredColors": state.preferredColors or "",
         },
         "theme": {
-            "background": colors.get("background", "#F8FAFC"),
-            "surface": colors.get("surface", "#FFFFFF"),
-            "primary": colors.get("primary", "#0F172A"),
-            "secondary": colors.get("secondary", "#E2E8F0"),
-            "accent": colors.get("accent", "#14B8A6"),
-            "text": colors.get("text", "#111827"),
-            "heading_font": state.typography.get("heading", "Inter"),
-            "body_font": state.typography.get("body", "Inter"),
+            "colors": {
+                "background": colors.get("background", "#F8FAFC"),
+                "surface": colors.get("surface", "#FFFFFF"),
+                "primary": colors.get("primary", "#0F172A"),
+                "secondary": colors.get("secondary", "#E2E8F0"),
+                "accent": colors.get("accent", "#14B8A6"),
+                "text": colors.get("text", "#111827"),
+            },
+            "fonts": {
+                "heading": state.typography.get("heading", "Inter"),
+                "body": state.typography.get("body", "Inter"),
+            },
             "buttons": {"primary_label": primary_cta},
         },
         "selected_template": {
