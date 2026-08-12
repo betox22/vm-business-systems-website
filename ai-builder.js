@@ -1033,6 +1033,33 @@
     };
   }
 
+  // src/ai-builder/auth-session-policy.js
+  function decodeJwtPayload(token = "") {
+    const segments = String(token || "").split(".");
+    if (segments.length !== 3 || !segments[1]) return null;
+    try {
+      const base64 = segments[1].replace(/-/g, "+").replace(/_/g, "/");
+      const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+      return JSON.parse(atob(padded));
+    } catch {
+      return null;
+    }
+  }
+  function isUnexpiredAccessToken(token, nowSeconds = Date.now() / 1e3) {
+    const payload = decodeJwtPayload(token);
+    const expiresAt = Number(payload?.exp);
+    return Number.isFinite(expiresAt) && expiresAt > nowSeconds;
+  }
+  function hasValidPersistedCredential({ accessTokens = [], previewTokens = [], clientEmails = [] } = {}, nowSeconds = Date.now() / 1e3) {
+    if (clientEmails.some((email) => Boolean(String(email || "").trim()))) return true;
+    if (previewTokens.some((token) => Boolean(String(token || "").trim()))) return true;
+    return accessTokens.some((token) => isUnexpiredAccessToken(token, nowSeconds));
+  }
+  function generationAuthAction({ hasCredential, workspaceUnlocked }) {
+    if (!hasCredential) return "prompt_auth";
+    return workspaceUnlocked ? "continue" : "unlock_and_continue";
+  }
+
   // src/ai-builder/renderers.js
   function arrayValue(value) {
     if (Array.isArray(value)) return value.filter(Boolean);
@@ -5333,10 +5360,17 @@
     };
   }
   function hasStudioAccountSession() {
-    if (isPublicClientSetup && !isClientWorkspaceUnlocked()) return false;
-    return Boolean(
-      localStorage.getItem("lumaClientAccessToken") || sessionStorage.getItem("lumaClientAccessToken") || builderState.clientIntakeSession?.clientEmail || localStorage.getItem("vm_portal_preview_token") || sessionStorage.getItem("vm_portal_preview_token")
-    );
+    return hasValidPersistedCredential({
+      clientEmails: [builderState.clientIntakeSession?.clientEmail],
+      accessTokens: [
+        localStorage.getItem("lumaClientAccessToken"),
+        sessionStorage.getItem("lumaClientAccessToken")
+      ],
+      previewTokens: [
+        localStorage.getItem("vm_portal_preview_token"),
+        sessionStorage.getItem("vm_portal_preview_token")
+      ]
+    });
   }
   function revealStudioAuthProviderButtons() {
     const providerActions = studioGoogleAuthButton?.closest(".studio-auth-actions");
@@ -10099,9 +10133,19 @@ ${langText({
     event?.preventDefault?.();
     event?.stopPropagation?.();
     if (builderState.isGeneratingWebsite) return;
-    if (isPublicClientSetup && !hasStudioAccountSession()) {
-      promptAccountBeforeGenerate();
-      return;
+    if (isPublicClientSetup) {
+      const authAction = generationAuthAction({
+        hasCredential: hasStudioAccountSession(),
+        workspaceUnlocked: isClientWorkspaceUnlocked()
+      });
+      if (authAction === "prompt_auth") {
+        promptAccountBeforeGenerate();
+        return;
+      }
+      if (authAction === "unlock_and_continue") {
+        markClientWorkspaceUnlocked();
+        closeStudioAuthGate();
+      }
     }
     syncGuidedStateFromSummary();
     normalizeGuidedStateBeforeGenerate();

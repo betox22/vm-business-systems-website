@@ -37,6 +37,7 @@ import { escapeHtml, escapeAttribute } from './utils.js';
 import { pickVariantSeed } from './variants.js';
 import { buildColorProvenance } from './color-provenance.js';
 import { applyAuthoritativeThemeToBrand } from './theme-policy.js';
+import { generationAuthAction } from './auth-session-policy.js';
 import {
   renderWebsite as renderWebsiteMarkup,
   marketplaceItems,
@@ -4047,9 +4048,19 @@ export async function handleGuidedGenerateButton(event) {
   event?.preventDefault?.();
   event?.stopPropagation?.();
   if (builderState.isGeneratingWebsite) return;
-  if (isPublicClientSetup && !hasStudioAccountSession()) {
-    promptAccountBeforeGenerate();
-    return;
+  if (isPublicClientSetup) {
+    const authAction = generationAuthAction({
+      hasCredential: hasStudioAccountSession(),
+      workspaceUnlocked: isClientWorkspaceUnlocked(),
+    });
+    if (authAction === "prompt_auth") {
+      promptAccountBeforeGenerate();
+      return;
+    }
+    if (authAction === "unlock_and_continue") {
+      markClientWorkspaceUnlocked();
+      closeStudioAuthGate();
+    }
   }
   syncGuidedStateFromSummary();
   normalizeGuidedStateBeforeGenerate();

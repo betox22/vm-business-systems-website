@@ -12,6 +12,7 @@ import {
   CLIENT_WORKSPACE_IDLE_LOCK_MS,
 } from './config.js';
 import { escapeHtml, escapeAttribute } from './utils.js';
+import { hasValidPersistedCredential } from './auth-session-policy.js';
 import {
   builderState,
   createEmptyGuidedState,
@@ -1062,14 +1063,17 @@ export function sanitizeClientSessionDraft(raw = {}) {
 }
 
 export function hasStudioAccountSession() {
-  if (isPublicClientSetup && !isClientWorkspaceUnlocked()) return false;
-  return Boolean(
-    localStorage.getItem("lumaClientAccessToken") ||
-    sessionStorage.getItem("lumaClientAccessToken") ||
-    builderState.clientIntakeSession?.clientEmail ||
-    localStorage.getItem("vm_portal_preview_token") ||
-    sessionStorage.getItem("vm_portal_preview_token"),
-  );
+  return hasValidPersistedCredential({
+    clientEmails: [builderState.clientIntakeSession?.clientEmail],
+    accessTokens: [
+      localStorage.getItem("lumaClientAccessToken"),
+      sessionStorage.getItem("lumaClientAccessToken"),
+    ],
+    previewTokens: [
+      localStorage.getItem("vm_portal_preview_token"),
+      sessionStorage.getItem("vm_portal_preview_token"),
+    ],
+  });
 }
 
 export function revealStudioAuthProviderButtons() {
