@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from .agents import TEMPLATE_CATALOG, normalize_template_id, semantic_seed_catalog, state_is_commerce_seed_target, unsplash_seed_url
+from .color_theory import build_palette
 from .image_assets import attach_image_asset
 from .models import AgentResult, ProjectState, WebsiteType
 
@@ -95,19 +96,6 @@ CatalogStrategy = Literal[
 ]
 
 
-class DesignTokens(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    background: str = "#ffffff"
-    surface: str = "#f8fafc"
-    primary: str = "#111827"
-    secondary: str = "#475569"
-    accent: str = "#14b8a6"
-    text: str = "#0f172a"
-    headingFont: str = "Inter"
-    bodyFont: str = "Inter"
-
-
 class LogoConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -119,8 +107,6 @@ class BrandIdentity(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     palette_style: PaletteStyle
-    primary_color: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
-    secondary_color: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
     font_family_headings: str = Field(min_length=2, max_length=80)
     font_family_body: str = Field(min_length=2, max_length=80)
     logo_config: LogoConfig
@@ -253,7 +239,6 @@ class AIWebGenerationResponse(BaseModel):
     salesFlow: SalesFlow
     targetAudience: str
     brand_identity: BrandIdentity
-    designTokens: DesignTokens = Field(default_factory=DesignTokens)
     pages: List[PageSchema] = Field(default_factory=list)
     catalogCategories: List[str] = Field(default_factory=list)
     catalogItems: List[Dict[str, Any]] = Field(default_factory=list)
@@ -386,6 +371,21 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             "sections": sections,
         })
 
+    anchor_color = state.colorProvenance.anchorColor if state else None
+    niche_hint = " ".join(filter(None, [
+        state.industry if state else "",
+        state.businessDescription if state else "",
+        " ".join(state.servicesProducts) if state else "",
+        plan.templateId,
+        plan.targetAudience,
+    ]))
+    palette = build_palette(anchor_color, plan.brand_identity.palette_style, niche_hint)
+    brand_identity = {
+        **plan.brand_identity.model_dump(),
+        "primary_color": palette["primary"],
+        "secondary_color": palette["accent"],
+    }
+
     return {
         "websiteType": plan.websiteType,
         "selectedTemplateId": plan.templateId,
@@ -393,15 +393,8 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
         "catalogType": plan.catalogStrategy,
         "salesFlow": plan.salesFlow,
         "targetAudience": plan.targetAudience,
-        "brand_identity": plan.brand_identity.model_dump(),
-        "colors": {
-            "background": plan.designTokens.background,
-            "surface": plan.designTokens.surface,
-            "primary": plan.brand_identity.primary_color,
-            "secondary": plan.designTokens.secondary,
-            "accent": plan.brand_identity.secondary_color,
-            "text": plan.designTokens.text,
-        },
+        "brand_identity": brand_identity,
+        "colors": palette,
         "typography": {
             "heading": plan.brand_identity.font_family_headings,
             "body": plan.brand_identity.font_family_body,
@@ -416,7 +409,7 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             "pages": pages,
             "templateUse": template["name"],
             "catalogCategories": plan.catalogCategories,
-            "brandIdentity": plan.brand_identity.model_dump(),
+            "brandIdentity": brand_identity,
         },
         "catalogItems": catalog_items,
         "catalogSource": catalog_source,
@@ -577,24 +570,12 @@ class OpenAISitePlanAgent:
                 "salesFlow": "online_sales | quote_request | booking | lead_capture | informational",
                 "brand_identity": {
                     "palette_style": "elegante | organico | tecnologico | calido",
-                    "primary_color": "#hex matched to the selected palette_style and niche",
-                    "secondary_color": "#hex complementary accent",
                     "font_family_headings": "Google Font for headings",
                     "font_family_body": "Google Font for body text",
                     "logo_config": {
                         "requires_ai_generation": "true if user asks for an AI logo or has no logo and wants Lyra/KREATON to create one; otherwise false",
                         "generation_prompt": "Minimalist flat vector logo for a [niche] brand named [Name], [palette_style] style, geometric clean shapes, solid colors, no gradients, high detail, white background, trending on Dribbble --vector",
                     },
-                },
-                "designTokens": {
-                    "background": "#hex",
-                    "surface": "#hex",
-                    "primary": "#hex",
-                    "secondary": "#hex",
-                    "accent": "#hex",
-                    "text": "#hex",
-                    "headingFont": "font name",
-                    "bodyFont": "font name",
                 },
                 "pages": [{
                     "pageId": "home",
@@ -715,11 +696,7 @@ Hard rules:
 - The root JSON MUST include brand_identity.
 - brand_identity.palette_style MUST be exactly one of: elegante, organico, tecnologico, calido.
 - Infer palette_style from the client request. If unclear, choose the style that best fits the niche and target audience.
-- brand_identity.primary_color and brand_identity.secondary_color MUST be valid HEX colors and must match the selected palette_style:
-  - elegante: refined, high-contrast, premium tones such as deep charcoal, ivory, burgundy, champagne, navy, or gold accents.
-  - organico: natural, soft, grounded tones such as sage, olive, clay, cream, moss, or warm beige.
-  - tecnologico: clean futuristic tones such as electric cyan, deep indigo, graphite, violet, blue, or neon accents.
-  - calido: welcoming, human tones such as terracotta, amber, coral, honey, warm brown, or soft rose.
+- Do not choose or return HEX colors or designTokens. KREATON calculates the complete palette deterministically from palette_style, niche, and verified client/logo color evidence.
 - brand_identity.font_family_headings MUST be a real Google Font that fits the style. Examples: Playfair Display or Cinzel for elegante; Fraunces or Lora for organico; Space Grotesk or Sora for tecnologico; Manrope or Plus Jakarta Sans for calido.
 - brand_identity.font_family_body MUST be a clean real Google Font such as Inter, Plus Jakarta Sans, Roboto, Manrope, or Source Sans 3.
 - brand_identity.logo_config.requires_ai_generation MUST be true when the client asks for an AI logo, says they do not have a logo but wants one created, or asks Lyra/KREATON to create the brand identity. Otherwise it must be false.

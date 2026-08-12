@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from .color_theory import build_palette
 from .image_assets import attach_image_asset, stable_seed_image_url
 from .models import AgentResult, ProjectState, WebsiteType
 from .taxonomy import infer_seed_profile
@@ -754,38 +755,36 @@ class ArtDirectorAgent(BaseAgent):
         text = normalize_text(" ".join([user_input, state.preferredColors or "", state.preferredTone or ""]))
 
         if any(term in text for term in ["cyberpunk", "neon", "futurista"]):
-            colors = {
-                "background": "#050513",
-                "surface": "#101124",
-                "primary": "#00E7FF",
-                "secondary": "#FF2BD6",
-                "accent": "#B9FF00",
-                "text": "#F8FAFC",
-            }
+            palette_style = "tecnologico"
             typography = {"heading": "Orbitron", "body": "Inter"}
             direction = "Cyberpunk neon marketplace with high-contrast commerce UI."
         elif any(term in text for term in ["luxury", "lujo", "premium", "elegante"]):
-            colors = {
-                "background": "#F7F4EE",
-                "surface": "#FFFFFF",
-                "primary": "#111827",
-                "secondary": "#C7A46A",
-                "accent": "#0F766E",
-                "text": "#111827",
-            }
+            palette_style = "elegante"
             typography = {"heading": "Playfair Display", "body": "Inter"}
             direction = "Premium editorial visual system."
+        elif any(term in text for term in ["organic", "organico", "natural", "earth", "tierra"]):
+            palette_style = "organico"
+            typography = {"heading": "Fraunces", "body": "Inter"}
+            direction = "Organic visual system with grounded, natural harmony."
+        elif any(term in text for term in ["warm", "calido", "welcoming", "acogedor", "terracotta"]):
+            palette_style = "calido"
+            typography = {"heading": "Manrope", "body": "Inter"}
+            direction = "Warm visual system with an approachable split-complementary harmony."
         else:
-            colors = {
-                "background": "#F8FAFC",
-                "surface": "#FFFFFF",
-                "primary": "#0F172A",
-                "secondary": "#E2E8F0",
-                "accent": "#14B8A6",
-                "text": "#111827",
-            }
+            palette_style = "elegante"
             typography = {"heading": "Inter", "body": "Inter"}
-            direction = "Clean commercial UI with strong readability."
+            direction = "Clean commercial UI with a niche-aware, accessible palette."
+
+        niche_hint = " ".join(filter(None, [
+            state.industry or "",
+            state.businessDescription or "",
+            " ".join(state.servicesProducts),
+        ]))
+        colors = build_palette(
+            state.colorProvenance.anchorColor,
+            palette_style,
+            niche_hint,
+        )
 
         return AgentResult(
             agentName=self.name,

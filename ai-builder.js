@@ -1017,6 +1017,10 @@
       backgroundColor: colors.background || brand.backgroundColor,
       surfaceColor: colors.surface || brand.surfaceColor,
       textColor: colors.text || brand.textColor,
+      successColor: colors.success || brand.successColor,
+      warningColor: colors.warning || brand.warningColor,
+      errorColor: colors.error || brand.errorColor,
+      infoColor: colors.info || brand.infoColor,
       mutedTextColor: colors.muted || brand.mutedTextColor,
       borderColor: colors.border || brand.borderColor,
       buttonColor: colors.button || colors.primary || brand.buttonColor,
@@ -1049,6 +1053,10 @@
     brand.backgroundColor = resolveColor(brand.backgroundColor || colors.background, DEFAULT_BRAND.backgroundColor);
     brand.surfaceColor = resolveColor(brand.surfaceColor || colors.surface, DEFAULT_BRAND.surfaceColor);
     brand.textColor = resolveColor(brand.textColor || colors.text, DEFAULT_BRAND.textColor);
+    brand.successColor = resolveColor(brand.successColor || colors.success, "#15803D");
+    brand.warningColor = resolveColor(brand.warningColor || colors.warning, "#B45309");
+    brand.errorColor = resolveColor(brand.errorColor || colors.error, "#B91C1C");
+    brand.infoColor = resolveColor(brand.infoColor || colors.info, "#1D4ED8");
     brand.mutedTextColor = resolveColor(brand.mutedTextColor || colors.muted, DEFAULT_BRAND.mutedTextColor);
     brand.borderColor = resolveColor(brand.borderColor || colors.border, mixColorsForTheme(brand.textColor, brand.backgroundColor, 0.14));
     brand.buttonColor = resolveColor(brand.buttonColor || colors.button || brand.primaryColor, brand.primaryColor);
@@ -1066,6 +1074,10 @@
       secondary: brand.secondaryColor,
       accent: brand.accentColor,
       text: brand.textColor,
+      success: brand.successColor,
+      warning: brand.warningColor,
+      error: brand.errorColor,
+      info: brand.infoColor,
       muted: brand.mutedTextColor,
       border: brand.borderColor,
       button: brand.buttonColor,
@@ -4201,6 +4213,10 @@
       `--site-secondary:${colors.secondary}`,
       `--site-accent:${colors.accent}`,
       `--site-text:${colors.text}`,
+      `--site-success:${colors.success}`,
+      `--site-warning:${colors.warning}`,
+      `--site-error:${colors.error}`,
+      `--site-info:${colors.info}`,
       `--site-muted:${colors.muted}`,
       `--site-border:${colors.border}`,
       `--site-button:${colors.button}`,
@@ -12277,6 +12293,10 @@ ${guidedQuestion(nextMissing)}`
     brand.backgroundColor = resolveColor(brand.backgroundColor || colors.background, DEFAULT_BRAND.backgroundColor);
     brand.surfaceColor = resolveColor(brand.surfaceColor || colors.surface, DEFAULT_BRAND.surfaceColor);
     brand.textColor = resolveColor(brand.textColor || colors.text, DEFAULT_BRAND.textColor);
+    brand.successColor = resolveColor(brand.successColor || colors.success, "#15803D");
+    brand.warningColor = resolveColor(brand.warningColor || colors.warning, "#B45309");
+    brand.errorColor = resolveColor(brand.errorColor || colors.error, "#B91C1C");
+    brand.infoColor = resolveColor(brand.infoColor || colors.info, "#1D4ED8");
     brand.mutedTextColor = resolveColor(brand.mutedTextColor || colors.muted, DEFAULT_BRAND.mutedTextColor);
     brand.borderColor = resolveColor(brand.borderColor || colors.border, mixColors(brand.textColor, brand.backgroundColor, 0.14));
     brand.buttonColor = resolveColor(brand.buttonColor || colors.button || brand.primaryColor, brand.primaryColor);
@@ -12294,6 +12314,10 @@ ${guidedQuestion(nextMissing)}`
       secondary: brand.secondaryColor,
       accent: brand.accentColor,
       text: brand.textColor,
+      success: brand.successColor,
+      warning: brand.warningColor,
+      error: brand.errorColor,
+      info: brand.infoColor,
       muted: brand.mutedTextColor,
       border: brand.borderColor,
       button: brand.buttonColor,

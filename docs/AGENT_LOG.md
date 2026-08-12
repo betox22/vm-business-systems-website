@@ -16,6 +16,37 @@ Formato de entrada:
 
 ---
 
+## 2026-08-12 — Codex — Paletas determinísticas con teoría del color
+
+**Hecho:** se agregó `color_theory.py` como única fuente matemática para las
+paletas del planner de OpenAI y del `ArtDirectorAgent` de fallback. El LLM ya
+no elige hex ni `designTokens`: solo decide `palette_style` y tipografías. Las
+armonías complementary/analogous/triadic/split-complementary, el ancla de
+`colorProvenance`, el contraste WCAG AA y los colores semánticos se calculan
+de forma determinística. El schema y la política de tema del frontend ahora
+conservan las diez claves de color, incluidas success/warning/error/info.
+
+**Pendiente / abierto:** validar visualmente las nuevas paletas con una muestra
+amplia de sitios reales antes de retirar cualquier función de color local del
+frontend. Esas funciones siguen siendo necesarias para previews y borradores
+locales y no se tocaron en esta tarea.
+
+**Archivos tocados:** `backend/app/color_theory.py`,
+`backend/app/ai_site_planner.py`, `backend/app/agents.py`,
+`backend/app/main.py`, `backend/tests/test_color_theory.py`,
+`backend/tests/test_image_assets.py`, `src/ai-builder/index.js`,
+`src/ai-builder/renderers.js`, `src/ai-builder/theme-policy.js`,
+`tests/ai-builder-color-semantics.test.mjs`,
+`docs/AGENT_LOG.md`.
+
+**Notas para el siguiente agente:** `colorProvenance.anchorColor` ya llega
+priorizado por procedencia; ambos productores lo usan directamente como
+`primary`. `brandIdentity.primary_color/secondary_color` se mantienen como
+salida derivada para compatibilidad, pero ya no forman parte del schema que
+rellena el LLM.
+
+---
+
 ## 2026-08-12 — Codex — Preservar el tema calculado por backend en el builder
 
 **Hecho:** los schemas generados por backend ahora se marcan con

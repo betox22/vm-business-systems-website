@@ -53,8 +53,6 @@ class ImageAssetTests(unittest.TestCase):
             "targetAudience": "Bath and self-care shoppers",
             "brand_identity": {
                 "palette_style": "organico",
-                "primary_color": "#9CAF88",
-                "secondary_color": "#FFFFFF",
                 "font_family_headings": "Fraunces",
                 "font_family_body": "Inter",
                 "logo_config": {

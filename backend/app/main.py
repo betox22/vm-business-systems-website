@@ -1369,6 +1369,10 @@ def build_schema_from_state(
                 "secondary": colors.get("secondary", "#E2E8F0"),
                 "accent": colors.get("accent", "#14B8A6"),
                 "text": colors.get("text", "#111827"),
+                "success": colors.get("success", "#15803D"),
+                "warning": colors.get("warning", "#B45309"),
+                "error": colors.get("error", "#B91C1C"),
+                "info": colors.get("info", "#1D4ED8"),
             },
             "fonts": {
                 "heading": state.typography.get("heading", "Inter"),
