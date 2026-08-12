@@ -29,6 +29,7 @@ from .models import (
     LyraEditRequest,
     LyraEditResponse,
     CatalogSource,
+    ColorProvenance,
     WebsiteGenerationRequest,
     WebsiteGenerationResponse,
 )
@@ -67,6 +68,7 @@ CLIENT_DRAFT_KEYS = {
     "logoPreference",
     "photoUrls",
     "logoPalette",
+    "colorProvenance",
     "selectedLanguage",
     "hasLogo",
     "hasPhotos",
@@ -118,6 +120,11 @@ def sanitize_client_draft(raw: Any) -> Dict[str, Any]:
         value = raw.get(key)
         if key in {"servicesProducts", "preferredColors", "photoUrls", "videoUrls", "logoPalette"}:
             draft[key] = _safe_list(value)
+        elif key == "colorProvenance":
+            try:
+                draft[key] = ColorProvenance.model_validate(value or {}).model_dump()
+            except (TypeError, ValueError):
+                draft[key] = ColorProvenance().model_dump()
         elif key == "contactInfo":
             info = value if isinstance(value, dict) else {}
             draft[key] = {
@@ -1251,6 +1258,8 @@ async def website_builder(
         "contactInfo": request.contactInfo or request.contact_info,
         "logoUrl": request.logoUrl,
         "logoPreference": request.logoPreference,
+        "logoPalette": request.logoPalette,
+        "colorProvenance": request.colorProvenance.model_dump(),
         "photoUrls": request.photoUrls,
         "selectedLanguage": request.selectedLanguage,
         "selectedTemplateId": request.selected_template_id or request.designStrategy.get("selectedTemplateId"),
@@ -1321,11 +1330,17 @@ def build_schema_from_state(
     logo_preference = state.logoPreference or ""
     logo_pending_generation = bool(logo_preference and not state.logoUrl)
     logo_status = "provided" if state.logoUrl else "pending_ai_generation" if logo_pending_generation else "not_provided"
+    color_provenance = (
+        state.colorProvenance.model_dump()
+        if hasattr(state.colorProvenance, "model_dump")
+        else ColorProvenance.model_validate(state.colorProvenance or {}).model_dump()
+    )
 
     return {
         "version": "1.0",
         "generation_metadata": {
             "catalog_source": catalog_source,
+            "theme_source": "backend_generated",
             "logo_status": logo_status,
             "logo_pending_generation": logo_pending_generation,
         },
@@ -1343,6 +1358,8 @@ def build_schema_from_state(
             "logoStatus": logo_status,
             "logoPendingGeneration": logo_pending_generation,
             "preferredColors": state.preferredColors or "",
+            "logoPalette": state.logoPalette,
+            "colorProvenance": color_provenance,
         },
         "theme": {
             "colors": {

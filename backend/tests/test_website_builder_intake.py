@@ -43,6 +43,15 @@ class WebsiteBuilderIntakeTests(unittest.TestCase):
             industry="beauty",
             services_products=["Lavender soap", "Vanilla candle", "Bath bomb"],
             preferred_tone="organic and warm",
+            logoPalette=["#5B7F55", "#F4E7D3"],
+            colorProvenance={
+                "anchorColor": "#5B7F55",
+                "anchorSource": "logo_extracted",
+                "colors": [
+                    {"color": "#5B7F55", "source": "logo_extracted"},
+                    {"color": "#F4E7D3", "source": "logo_extracted"},
+                ],
+            },
             logoPreference="explicit_skip",
             salesFlow="online_sales",
             selectedLanguage="en",
@@ -59,7 +68,10 @@ class WebsiteBuilderIntakeTests(unittest.TestCase):
             },
         )
 
+        captured_state = {}
+
         async def keep_validated_state(_prompt, state, **_kwargs):
+            captured_state["state"] = state
             return state
 
         with patch.object(main.orchestrator, "run", side_effect=keep_validated_state):
@@ -75,6 +87,14 @@ class WebsiteBuilderIntakeTests(unittest.TestCase):
         self.assertEqual(response.missing_fields, [])
         self.assertTrue(response.website_schema)
         self.assertEqual(response.website_schema["business"]["name"], "Bath All Day")
+        self.assertEqual(captured_state["state"].logoPalette, ["#5B7F55", "#F4E7D3"])
+        self.assertEqual(captured_state["state"].colorProvenance.anchorSource, "logo_extracted")
+        self.assertEqual(response.website_schema["generation_metadata"]["theme_source"], "backend_generated")
+        self.assertEqual(response.website_schema["brand"]["logoPalette"], ["#5B7F55", "#F4E7D3"])
+        self.assertEqual(
+            response.website_schema["brand"]["colorProvenance"]["anchorColor"],
+            "#5B7F55",
+        )
 
     def test_real_missing_fields_are_named_in_generation_response(self) -> None:
         request = WebsiteGenerationRequest(

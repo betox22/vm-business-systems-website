@@ -983,6 +983,7 @@ export function guidedSessionDraftForApi() {
     photoUrls: arrayValue(builderState.guidedState.photoUrls).filter(isCloudSafeUrl),
     videoUrls: arrayValue(builderState.guidedState.videoUrls).filter(isCloudSafeUrl),
     logoPalette: arrayValue(builderState.guidedState.logoPalette),
+    colorProvenance: builderState.guidedState.colorProvenance,
     logoPreference,
     fieldMeta,
     selectedLanguage: builderState.selectedLanguage,
@@ -1006,6 +1007,9 @@ export function sanitizeClientSessionDraft(raw = {}) {
   const cleanList = (value, limit = 20) => arrayValue(value).map((item) => String(item || "").trim()).filter(Boolean).slice(0, limit);
   const contactInfo = source.contactInfo && typeof source.contactInfo === "object" ? source.contactInfo : {};
   const fieldMeta = source.fieldMeta && typeof source.fieldMeta === "object" ? source.fieldMeta : {};
+  const colorProvenance = source.colorProvenance && typeof source.colorProvenance === "object"
+    ? source.colorProvenance
+    : null;
   return {
     generatedSiteId: trimmed(source.generatedSiteId || source.siteId || source.projectId, 180),
     projectId: trimmed(source.projectId || source.generatedSiteId || source.siteId, 180),
@@ -1032,6 +1036,14 @@ export function sanitizeClientSessionDraft(raw = {}) {
     photoUrls: cleanList(source.photoUrls).filter(isCloudSafeUrl),
     videoUrls: cleanList(source.videoUrls).filter(isCloudSafeUrl),
     logoPalette: cleanList(source.logoPalette, 12),
+    colorProvenance: colorProvenance ? {
+      anchorColor: trimmed(colorProvenance.anchorColor, 80) || null,
+      anchorSource: trimmed(colorProvenance.anchorSource, 40) || "unknown",
+      colors: arrayValue(colorProvenance.colors).slice(0, 20).map((item) => ({
+        color: trimmed(item?.color, 80),
+        source: trimmed(item?.source, 40) || "unknown",
+      })).filter((item) => item.color),
+    } : null,
     fieldMeta,
     selectedLanguage: SUPPORTED_LANGUAGES.includes(source.selectedLanguage) ? source.selectedLanguage : builderState.selectedLanguage,
     hasLogo: Boolean(source.hasLogo || source.logoUrl),

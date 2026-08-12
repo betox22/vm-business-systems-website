@@ -16,6 +16,35 @@ Formato de entrada:
 
 ---
 
+## 2026-08-12 — Codex — Preservar el tema calculado por backend en el builder
+
+**Hecho:** los schemas generados por backend ahora se marcan con
+`generation_metadata.theme_source=backend_generated`. El builder conserva sus
+colores y fuentes durante `prepareWebsiteConfig()` y sincroniza `schema.brand`
+con ese tema para que los renderers no lo reemplacen indirectamente. Los
+borradores locales sin esa marca siguen usando el sistema de marca frontend.
+También se agregó transporte tipado de `logoPalette` y `colorProvenance` desde
+el formulario/chat hasta `ProjectState`, dejando explícita la prioridad futura
+entre color del cliente, color extraído del logo y sugerencia local.
+
+**Pendiente / abierto:** integrar `colorProvenance` con el futuro
+`color_theory.py`. Las funciones de contraste, hue y extracción de paleta del
+frontend no se modificaron en esta tarea.
+
+**Archivos tocados:** `backend/app/models.py`, `backend/app/orchestrator.py`,
+`backend/app/main.py`, `backend/tests/test_website_builder_intake.py`,
+`src/ai-builder/index.js`, `src/ai-builder/state.js`,
+`src/ai-builder/theme-policy.js`, `src/ai-builder/color-provenance.js`,
+`tests/ai-builder-theme-policy.test.mjs`, `docs/AGENT_LOG.md`.
+
+**Notas para el siguiente agente:** `catalog_source` no identifica el origen
+del tema y `storage_status`/`used_dev_mock` no sobreviven dentro de un schema
+restaurado. Por eso la decisión se persiste en `generation_metadata`. Una
+edición manual de marca cambia la fuente a `explicit_user_override` para no
+bloquear cambios posteriores del cliente.
+
+---
+
 ## 2026-08-12 — Codex — Alinear el contrato de tema entre backend y renderers
 
 **Hecho:** `build_schema_from_state()` ahora emite la paleta en

@@ -27,6 +27,7 @@ export function createEmptyGuidedState(language = detectBrowserLanguage()) {
     photoUrls: [],
     videoUrls: [],
     logoPalette: [],
+    colorProvenance: null,
     brand: null,
     selectedLanguage: language,
     hasLogo: false,

@@ -959,6 +959,76 @@
     return /\b(otro\s+diseno|otro\s+diseño|redisen[oa]|rediseñ[oa]|cambia\s+el\s+diseno|cambia\s+el\s+diseño|different\s+design|another\s+design|redesign)\b/i.test(String(value || ""));
   }
 
+  // src/ai-builder/color-provenance.js
+  var EXPLICIT_META_SOURCES = /* @__PURE__ */ new Set(["explicit", "explicit_user_choice"]);
+  function normalizedColorValues(values) {
+    const source = Array.isArray(values) ? values : values ? [values] : [];
+    return source.map((value) => String(value || "").trim()).filter(Boolean);
+  }
+  function buildColorProvenance({
+    preferredColors = [],
+    logoPalette = [],
+    localBrand = {},
+    preferredColorMeta = {},
+    structuredFormInput = false
+  } = {}) {
+    const explicitPreferred = structuredFormInput || EXPLICIT_META_SOURCES.has(preferredColorMeta?.source) ? normalizedColorValues(preferredColors) : [];
+    const logoColors = normalizedColorValues(logoPalette);
+    const localColors = normalizedColorValues([
+      localBrand?.primaryColor,
+      localBrand?.secondaryColor,
+      localBrand?.accentColor
+    ]);
+    const entries = [];
+    const seen = /* @__PURE__ */ new Set();
+    const append = (colors, source) => {
+      colors.forEach((color) => {
+        const key = color.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        entries.push({ color, source });
+      });
+    };
+    append(explicitPreferred, "explicit_client");
+    append(logoColors, "logo_extracted");
+    append(localColors, "local_suggestion");
+    const anchor = entries[0] || null;
+    return {
+      anchorColor: anchor?.color || null,
+      anchorSource: anchor?.source || "unknown",
+      colors: entries
+    };
+  }
+
+  // src/ai-builder/theme-policy.js
+  var BACKEND_THEME_SOURCE = "backend_generated";
+  function shouldPreserveBackendTheme(schema = {}) {
+    return schema?.generation_metadata?.theme_source === BACKEND_THEME_SOURCE;
+  }
+  function applyAuthoritativeThemeToBrand(schema = {}, brand = {}) {
+    if (!shouldPreserveBackendTheme(schema)) return brand;
+    const colors = schema?.theme?.colors || {};
+    const fonts = schema?.theme?.fonts || {};
+    return {
+      ...brand,
+      primaryColor: colors.primary || brand.primaryColor,
+      secondaryColor: colors.secondary || brand.secondaryColor,
+      accentColor: colors.accent || brand.accentColor,
+      backgroundColor: colors.background || brand.backgroundColor,
+      surfaceColor: colors.surface || brand.surfaceColor,
+      textColor: colors.text || brand.textColor,
+      mutedTextColor: colors.muted || brand.mutedTextColor,
+      borderColor: colors.border || brand.borderColor,
+      buttonColor: colors.button || colors.primary || brand.buttonColor,
+      buttonTextColor: colors.buttonText || brand.buttonTextColor,
+      fontPairing: {
+        ...brand.fontPairing || {},
+        ...fonts
+      },
+      paletteSource: BACKEND_THEME_SOURCE
+    };
+  }
+
   // src/ai-builder/renderers.js
   function arrayValue(value) {
     if (Array.isArray(value)) return value.filter(Boolean);
@@ -4193,6 +4263,7 @@
       photoUrls: [],
       videoUrls: [],
       logoPalette: [],
+      colorProvenance: null,
       brand: null,
       selectedLanguage: language,
       hasLogo: false,
@@ -5171,6 +5242,7 @@
       photoUrls: arrayValue2(builderState.guidedState.photoUrls).filter(isCloudSafeUrl),
       videoUrls: arrayValue2(builderState.guidedState.videoUrls).filter(isCloudSafeUrl),
       logoPalette: arrayValue2(builderState.guidedState.logoPalette),
+      colorProvenance: builderState.guidedState.colorProvenance,
       logoPreference,
       fieldMeta,
       selectedLanguage: builderState.selectedLanguage,
@@ -5193,6 +5265,7 @@
     const cleanList = (value, limit = 20) => arrayValue2(value).map((item) => String(item || "").trim()).filter(Boolean).slice(0, limit);
     const contactInfo = source.contactInfo && typeof source.contactInfo === "object" ? source.contactInfo : {};
     const fieldMeta = source.fieldMeta && typeof source.fieldMeta === "object" ? source.fieldMeta : {};
+    const colorProvenance = source.colorProvenance && typeof source.colorProvenance === "object" ? source.colorProvenance : null;
     return {
       generatedSiteId: trimmed(source.generatedSiteId || source.siteId || source.projectId, 180),
       projectId: trimmed(source.projectId || source.generatedSiteId || source.siteId, 180),
@@ -5219,6 +5292,14 @@
       photoUrls: cleanList(source.photoUrls).filter(isCloudSafeUrl),
       videoUrls: cleanList(source.videoUrls).filter(isCloudSafeUrl),
       logoPalette: cleanList(source.logoPalette, 12),
+      colorProvenance: colorProvenance ? {
+        anchorColor: trimmed(colorProvenance.anchorColor, 80) || null,
+        anchorSource: trimmed(colorProvenance.anchorSource, 40) || "unknown",
+        colors: arrayValue2(colorProvenance.colors).slice(0, 20).map((item) => ({
+          color: trimmed(item?.color, 80),
+          source: trimmed(item?.source, 40) || "unknown"
+        })).filter((item) => item.color)
+      } : null,
       fieldMeta,
       selectedLanguage: SUPPORTED_LANGUAGES.includes(source.selectedLanguage) ? source.selectedLanguage : builderState.selectedLanguage,
       hasLogo: Boolean(source.hasLogo || source.logoUrl),
@@ -9912,7 +9993,11 @@ ${langText({
   }
   function applyBrandToCurrentSchema(brand) {
     if (!builderState.currentSchema || !brand) return;
-    builderState.currentSchema = applyBrandSystemToSchema(builderState.currentSchema, brand);
+    builderState.currentSchema = applyBrandSystemToSchema(
+      builderState.currentSchema,
+      brand,
+      { forceBrandOverride: true }
+    );
     builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
     renderEditor();
     renderPreview();
@@ -10447,6 +10532,17 @@ ${guidedQuestion(nextMissing)}`
       fieldMeta.logo = fieldMeta.logo || { source: "explicit", confidence: 1 };
       fieldMeta.logoPreference = fieldMeta.logoPreference || { source: "explicit", confidence: 1 };
     }
+    const brand = normalizeBrand(builderState.guidedState.brand || {
+      logoUrl,
+      extractedColors: arrayValue2(builderState.guidedState.logoPalette)
+    });
+    const colorProvenance = buildColorProvenance({
+      preferredColors: builderState.guidedState.preferredColors,
+      logoPalette: builderState.guidedState.logoPalette,
+      localBrand: brand,
+      preferredColorMeta: fieldMeta.preferredColors || {}
+    });
+    builderState.guidedState.colorProvenance = colorProvenance;
     const payload = {
       generatedSiteId: builderState.currentSiteId || builderState.clientIntakeSession?.generatedSiteId || builderState.clientIntakeSession?.projectId || builderState.guidedState.generatedSiteId || "",
       projectId: builderState.currentSiteId || builderState.clientIntakeSession?.projectId || builderState.clientIntakeSession?.generatedSiteId || builderState.guidedState.projectId || "",
@@ -10465,10 +10561,11 @@ ${guidedQuestion(nextMissing)}`
       photoUrls,
       videoUrls,
       logoPalette: arrayValue2(builderState.guidedState.logoPalette),
+      colorProvenance,
       logoPreference,
       salesFlow: builderState.guidedState.salesFlow || "",
       fieldMeta,
-      brand: normalizeBrand(builderState.guidedState.brand || { logoUrl, extractedColors: arrayValue2(builderState.guidedState.logoPalette) }),
+      brand,
       designStrategy: {
         ...createDesignStrategy({
           business_name: builderState.guidedState.businessName,
@@ -12112,8 +12209,17 @@ ${guidedQuestion(nextMissing)}`
     }
     return nextSchema;
   }
-  function applyBrandSystemToSchema(schema, brandInput) {
-    const brand = normalizeBrand(brandInput);
+  function applyBrandSystemToSchema(schema, brandInput, options = {}) {
+    const localBrand = normalizeBrand(brandInput);
+    const brand = normalizeBrand(
+      options.forceBrandOverride ? localBrand : applyAuthoritativeThemeToBrand(schema, localBrand)
+    );
+    if (options.forceBrandOverride && schema.generation_metadata?.theme_source === "backend_generated") {
+      schema.generation_metadata = {
+        ...schema.generation_metadata,
+        theme_source: "explicit_user_override"
+      };
+    }
     schema.brand = brand;
     schema.global_components = {
       ...schema.global_components || {},
@@ -16992,6 +17098,20 @@ Site ID: ${builderState.currentSiteId}`
     }
     const sitePlan = builderState.guidedState.sitePlan || (builderState.forcedTemplateSelection?.templateId ? buildSitePlan(builderState.forcedTemplateSelection) : null);
     if (sitePlan && aiStudioPlan) sitePlan.aiStudioPlan = aiStudioPlan;
+    const payloadBrand = normalizeBrand(builderState.guidedState.brand || {
+      logoUrl: assets.find((asset) => asset.asset_type === "logo")?.url || "",
+      extractedColors: arrayValue2(builderState.guidedState.logoPalette),
+      preferredColors: preferredColorsValue,
+      industry: generationIndustry,
+      tone: generationPreferredTone
+    });
+    const colorProvenance = validatedGuidedPayload?.colorProvenance || buildColorProvenance({
+      preferredColors: preferredColorsValue,
+      logoPalette: builderState.guidedState.logoPalette,
+      localBrand: payloadBrand,
+      preferredColorMeta: fieldMeta.preferredColors || {},
+      structuredFormInput: !validatedGuidedPayload && preferredColorsValue.length > 0
+    });
     const payload = {
       generatedSiteId: builderState.currentSiteId || builderState.clientIntakeSession?.generatedSiteId || builderState.clientIntakeSession?.projectId || builderState.guidedState.generatedSiteId || "",
       projectId: builderState.currentSiteId || builderState.clientIntakeSession?.projectId || builderState.clientIntakeSession?.generatedSiteId || builderState.guidedState.projectId || "",
@@ -17015,13 +17135,8 @@ Site ID: ${builderState.currentSiteId}`
       catalog_items: catalogItemsFromForm(),
       assets,
       logoPalette: arrayValue2(builderState.guidedState.logoPalette),
-      brand: normalizeBrand(builderState.guidedState.brand || {
-        logoUrl: assets.find((asset) => asset.asset_type === "logo")?.url || "",
-        extractedColors: arrayValue2(builderState.guidedState.logoPalette),
-        preferredColors: preferredColorsValue,
-        industry: generationIndustry,
-        tone: generationPreferredTone
-      }),
+      colorProvenance,
+      brand: payloadBrand,
       designStrategy: {
         ...createDesignStrategy({
           business_name: generationBusinessName,
@@ -17259,7 +17374,11 @@ Site ID: ${builderState.currentSiteId}`
             ...builderState.currentSchema.brand || {},
             logoUrl: builderState.currentSchema.global_components?.logo_url || builderState.currentSchema.brand?.logoUrl || ""
           });
-          builderState.currentSchema = applyBrandSystemToSchema(builderState.currentSchema, builderState.currentSchema.brand);
+          builderState.currentSchema = applyBrandSystemToSchema(
+            builderState.currentSchema,
+            builderState.currentSchema.brand,
+            { forceBrandOverride: true }
+          );
         }
         renderPreview();
       });

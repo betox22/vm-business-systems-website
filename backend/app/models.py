@@ -41,6 +41,22 @@ AssistantEmotion = Literal[
     "confused",
 ]
 CatalogSource = Literal["ai_generated", "seed_fallback"]
+ColorSource = Literal["explicit_client", "logo_extracted", "local_suggestion", "unknown"]
+
+
+class ColorEvidence(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    color: str
+    source: ColorSource
+
+
+class ColorProvenance(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    anchorColor: Optional[str] = None
+    anchorSource: ColorSource = "unknown"
+    colors: List[ColorEvidence] = Field(default_factory=list)
 
 
 class ProjectState(BaseModel):
@@ -63,6 +79,8 @@ class ProjectState(BaseModel):
     contactInfo: Dict[str, Any] = Field(default_factory=dict)
     logoUrl: Optional[str] = None
     logoPreference: Optional[str] = None
+    logoPalette: List[str] = Field(default_factory=list)
+    colorProvenance: ColorProvenance = Field(default_factory=ColorProvenance)
     photoUrls: List[str] = Field(default_factory=list)
     selectedLanguage: SupportedLanguage = "en"
 
@@ -149,6 +167,8 @@ class WebsiteGenerationRequest(BaseModel):
     contactInfo: Dict[str, Any] | str | None = None
     logoUrl: Optional[str] = None
     logoPreference: Optional[str] = None
+    logoPalette: List[str] = Field(default_factory=list)
+    colorProvenance: ColorProvenance = Field(default_factory=ColorProvenance)
     brandStyle: Optional[str] = None
     intakeFollowupAnswer: Optional[str] = None
     photoUrls: List[str] = Field(default_factory=list)

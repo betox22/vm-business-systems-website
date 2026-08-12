@@ -55,6 +55,9 @@ def normalize_state_payload(payload: Dict[str, Any] | None) -> ProjectState:
     preferred_colors = payload.get("preferredColors") or payload.get("preferred_colors")
     if isinstance(preferred_colors, list):
         preferred_colors = ", ".join(str(item).strip() for item in preferred_colors if str(item).strip())
+    color_provenance = payload.get("colorProvenance") or payload.get("color_provenance") or {}
+    if hasattr(color_provenance, "model_dump"):
+        color_provenance = color_provenance.model_dump()
     return ProjectState(**_sanitize_project_state_payload({
         "businessName": payload.get("businessName") or payload.get("business_name"),
         "businessDescription": payload.get("businessDescription") or payload.get("business_description"),
@@ -67,6 +70,8 @@ def normalize_state_payload(payload: Dict[str, Any] | None) -> ProjectState:
         "contactInfo": payload.get("contactInfo") if isinstance(payload.get("contactInfo"), dict) else {},
         "logoUrl": payload.get("logoUrl"),
         "logoPreference": payload.get("logoPreference") or payload.get("logo_preference"),
+        "logoPalette": payload.get("logoPalette") or payload.get("logo_palette") or [],
+        "colorProvenance": color_provenance if isinstance(color_provenance, dict) else {},
         "photoUrls": payload.get("photoUrls") or [],
         "selectedLanguage": payload.get("selectedLanguage"),
         "websiteIntent": payload.get("websiteIntent") or payload.get("website_intent"),

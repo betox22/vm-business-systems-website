@@ -35,6 +35,8 @@ import {
 } from './templates.js';
 import { escapeHtml, escapeAttribute } from './utils.js';
 import { pickVariantSeed } from './variants.js';
+import { buildColorProvenance } from './color-provenance.js';
+import { applyAuthoritativeThemeToBrand } from './theme-policy.js';
 import {
   renderWebsite as renderWebsiteMarkup,
   marketplaceItems,
@@ -3950,7 +3952,11 @@ function colorDistance(a, b) {
 
 function applyBrandToCurrentSchema(brand) {
   if (!builderState.currentSchema || !brand) return;
-  builderState.currentSchema = applyBrandSystemToSchema(builderState.currentSchema, brand);
+  builderState.currentSchema = applyBrandSystemToSchema(
+    builderState.currentSchema,
+    brand,
+    { forceBrandOverride: true },
+  );
   builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
   renderEditor();
   renderPreview();
@@ -4575,6 +4581,17 @@ export function guidedStateForApi() {
     fieldMeta.logo = fieldMeta.logo || { source: "explicit", confidence: 1 };
     fieldMeta.logoPreference = fieldMeta.logoPreference || { source: "explicit", confidence: 1 };
   }
+  const brand = normalizeBrand(builderState.guidedState.brand || {
+    logoUrl,
+    extractedColors: arrayValue(builderState.guidedState.logoPalette),
+  });
+  const colorProvenance = buildColorProvenance({
+    preferredColors: builderState.guidedState.preferredColors,
+    logoPalette: builderState.guidedState.logoPalette,
+    localBrand: brand,
+    preferredColorMeta: fieldMeta.preferredColors || {},
+  });
+  builderState.guidedState.colorProvenance = colorProvenance;
   const payload = {
     generatedSiteId: builderState.currentSiteId || builderState.clientIntakeSession?.generatedSiteId || builderState.clientIntakeSession?.projectId || builderState.guidedState.generatedSiteId || "",
     projectId: builderState.currentSiteId || builderState.clientIntakeSession?.projectId || builderState.clientIntakeSession?.generatedSiteId || builderState.guidedState.projectId || "",
@@ -4593,10 +4610,11 @@ export function guidedStateForApi() {
     photoUrls,
     videoUrls,
     logoPalette: arrayValue(builderState.guidedState.logoPalette),
+    colorProvenance,
     logoPreference,
     salesFlow: builderState.guidedState.salesFlow || "",
     fieldMeta,
-    brand: normalizeBrand(builderState.guidedState.brand || { logoUrl, extractedColors: arrayValue(builderState.guidedState.logoPalette) }),
+    brand,
     designStrategy: {
       ...createDesignStrategy({
         business_name: builderState.guidedState.businessName,
@@ -6524,8 +6542,19 @@ export function prepareWebsiteConfig(schema, payload = {}, templateSelection = n
   return nextSchema;
 }
 
-function applyBrandSystemToSchema(schema, brandInput) {
-  const brand = normalizeBrand(brandInput);
+function applyBrandSystemToSchema(schema, brandInput, options = {}) {
+  const localBrand = normalizeBrand(brandInput);
+  const brand = normalizeBrand(
+    options.forceBrandOverride
+      ? localBrand
+      : applyAuthoritativeThemeToBrand(schema, localBrand),
+  );
+  if (options.forceBrandOverride && schema.generation_metadata?.theme_source === "backend_generated") {
+    schema.generation_metadata = {
+      ...schema.generation_metadata,
+      theme_source: "explicit_user_override",
+    };
+  }
   schema.brand = brand;
   schema.global_components = {
     ...(schema.global_components || {}),
@@ -11647,6 +11676,20 @@ async function collectPayload() {
 
   const sitePlan = builderState.guidedState.sitePlan || (builderState.forcedTemplateSelection?.templateId ? buildSitePlan(builderState.forcedTemplateSelection) : null);
   if (sitePlan && aiStudioPlan) sitePlan.aiStudioPlan = aiStudioPlan;
+  const payloadBrand = normalizeBrand(builderState.guidedState.brand || {
+    logoUrl: assets.find((asset) => asset.asset_type === "logo")?.url || "",
+    extractedColors: arrayValue(builderState.guidedState.logoPalette),
+    preferredColors: preferredColorsValue,
+    industry: generationIndustry,
+    tone: generationPreferredTone,
+  });
+  const colorProvenance = validatedGuidedPayload?.colorProvenance || buildColorProvenance({
+    preferredColors: preferredColorsValue,
+    logoPalette: builderState.guidedState.logoPalette,
+    localBrand: payloadBrand,
+    preferredColorMeta: fieldMeta.preferredColors || {},
+    structuredFormInput: !validatedGuidedPayload && preferredColorsValue.length > 0,
+  });
 
   const payload = {
     generatedSiteId: builderState.currentSiteId || builderState.clientIntakeSession?.generatedSiteId || builderState.clientIntakeSession?.projectId || builderState.guidedState.generatedSiteId || "",
@@ -11673,13 +11716,8 @@ async function collectPayload() {
     catalog_items: catalogItemsFromForm(),
     assets,
     logoPalette: arrayValue(builderState.guidedState.logoPalette),
-    brand: normalizeBrand(builderState.guidedState.brand || {
-      logoUrl: assets.find((asset) => asset.asset_type === "logo")?.url || "",
-      extractedColors: arrayValue(builderState.guidedState.logoPalette),
-      preferredColors: preferredColorsValue,
-      industry: generationIndustry,
-      tone: generationPreferredTone,
-    }),
+    colorProvenance,
+    brand: payloadBrand,
     designStrategy: {
       ...createDesignStrategy({
         business_name: generationBusinessName,
@@ -11939,7 +11977,11 @@ export function renderEditor() {
           ...(builderState.currentSchema.brand || {}),
           logoUrl: builderState.currentSchema.global_components?.logo_url || builderState.currentSchema.brand?.logoUrl || "",
         });
-        builderState.currentSchema = applyBrandSystemToSchema(builderState.currentSchema, builderState.currentSchema.brand);
+        builderState.currentSchema = applyBrandSystemToSchema(
+          builderState.currentSchema,
+          builderState.currentSchema.brand,
+          { forceBrandOverride: true },
+        );
       }
       renderPreview();
     });
