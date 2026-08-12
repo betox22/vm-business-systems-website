@@ -4065,7 +4065,8 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .marketplace-trust-strip h2 {
   margin: 0 0 8px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(25px, 3vw, 38px);
+  font-size: var(--type-h2-size, clamp(25px, 3vw, 38px));
+  font-weight: var(--type-h2-weight, 700);
 }
 
 .marketplace-trust-strip p {
@@ -4131,8 +4132,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .marketplace-subscribe h2 {
   margin: 6px 0 8px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(25px, 3vw, 42px);
-  line-height: 1.02;
+  font-size: var(--type-h2-size, clamp(25px, 3vw, 42px));
+  line-height: var(--type-h2-line-height, 1.02);
+  letter-spacing: var(--type-h2-tracking, 0em);
+  font-weight: var(--type-h2-weight, 700);
 }
 
 .marketplace-subscribe p {
@@ -4322,9 +4325,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .premium-gallery-section h2,
 .premium-spec-strip h2 {
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(38px, 5vw, 74px);
-  line-height: 1;
-  letter-spacing: 0;
+  font-size: var(--type-h2-size, clamp(38px, 5vw, 74px));
+  line-height: var(--type-h2-line-height, 1);
+  letter-spacing: var(--type-h2-tracking, 0em);
+  font-weight: var(--type-h2-weight, 700);
   color: var(--site-text);
 }
 
@@ -4418,8 +4422,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .catalog-premium-editorial h3 {
   margin: 0;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(24px, 3vw, 42px);
-  line-height: 1.05;
+  font-size: var(--type-h3-size, clamp(24px, 3vw, 42px));
+  line-height: var(--type-h3-line-height, 1.05);
+  letter-spacing: var(--type-h3-tracking, 0em);
+  font-weight: var(--type-h3-weight, 600);
 }
 
 .catalog-premium-editorial p {
@@ -4638,9 +4644,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   margin: 0;
   max-width: 820px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(54px, 8.4vw, 116px);
-  line-height: 0.92;
-  letter-spacing: 0;
+  font-size: var(--type-h1-size, clamp(54px, 8.4vw, 116px));
+  line-height: var(--type-h1-line-height, 0.92);
+  letter-spacing: var(--type-h1-tracking, 0em);
+  font-weight: var(--type-h1-weight, 700);
   text-wrap: balance;
 }
 
@@ -4745,9 +4752,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .fashion-fit-guide h2 {
   margin: 0 0 18px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(40px, 6vw, 86px);
-  line-height: 0.96;
-  letter-spacing: 0;
+  font-size: var(--type-h2-size, clamp(40px, 6vw, 86px));
+  line-height: var(--type-h2-line-height, 0.96);
+  letter-spacing: var(--type-h2-tracking, 0em);
+  font-weight: var(--type-h2-weight, 700);
 }
 
 .fashion-drop-story p,
@@ -4873,9 +4881,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   max-width: 860px;
   margin: 0;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(50px, 7.5vw, 108px);
-  line-height: 0.96;
-  letter-spacing: 0;
+  font-size: var(--type-h1-size, clamp(50px, 7.5vw, 108px));
+  line-height: var(--type-h1-line-height, 0.96);
+  letter-spacing: var(--type-h1-tracking, 0em);
+  font-weight: var(--type-h1-weight, 700);
   text-wrap: balance;
 }
 
@@ -4935,9 +4944,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .corporate-proof-section h2 {
   margin: 0 0 18px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(40px, 6vw, 86px);
-  line-height: 0.98;
-  letter-spacing: 0;
+  font-size: var(--type-h2-size, clamp(40px, 6vw, 86px));
+  line-height: var(--type-h2-line-height, 0.98);
+  letter-spacing: var(--type-h2-tracking, 0em);
+  font-weight: var(--type-h2-weight, 700);
 }
 
 .corporate-services-section p,
@@ -4980,8 +4990,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .catalog-corporate-services h3 {
   margin: 0;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(24px, 2.5vw, 38px);
-  line-height: 1;
+  font-size: var(--type-h3-size, clamp(24px, 2.5vw, 38px));
+  line-height: var(--type-h3-line-height, 1);
+  letter-spacing: var(--type-h3-tracking, 0em);
+  font-weight: var(--type-h3-weight, 600);
 }
 
 .catalog-corporate-services p {
@@ -5097,9 +5109,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   margin: 0;
   max-width: 920px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(50px, 7.2vw, 108px);
-  line-height: 0.95;
-  letter-spacing: 0;
+  font-size: var(--type-h1-size, clamp(50px, 7.2vw, 108px));
+  line-height: var(--type-h1-line-height, 0.95);
+  letter-spacing: var(--type-h1-tracking, 0em);
+  font-weight: var(--type-h1-weight, 700);
   text-wrap: balance;
 }
 
@@ -5206,8 +5219,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .catalog-home-services h3 {
   margin: 0;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(24px, 2.5vw, 38px);
-  line-height: 1;
+  font-size: var(--type-h3-size, clamp(24px, 2.5vw, 38px));
+  line-height: var(--type-h3-line-height, 1);
+  letter-spacing: var(--type-h3-tracking, 0em);
+  font-weight: var(--type-h3-weight, 600);
 }
 
 .catalog-home-services p {
@@ -5245,9 +5260,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .home-service-quote h2 {
   margin: 0 0 18px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(40px, 6vw, 86px);
-  line-height: 0.98;
-  letter-spacing: 0;
+  font-size: var(--type-h2-size, clamp(40px, 6vw, 86px));
+  line-height: var(--type-h2-line-height, 0.98);
+  letter-spacing: var(--type-h2-tracking, 0em);
+  font-weight: var(--type-h2-weight, 700);
 }
 
 .home-service-areas p,
@@ -5430,9 +5446,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   max-width: 900px;
   margin: 0;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(50px, 7.4vw, 110px);
-  line-height: 0.94;
-  letter-spacing: 0;
+  font-size: var(--type-h1-size, clamp(50px, 7.4vw, 110px));
+  line-height: var(--type-h1-line-height, 0.94);
+  letter-spacing: var(--type-h1-tracking, 0em);
+  font-weight: var(--type-h1-weight, 700);
   text-wrap: balance;
 }
 
@@ -5549,8 +5566,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .catalog-booking-pro h3 {
   margin: 0;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(24px, 2.5vw, 38px);
-  line-height: 1;
+  font-size: var(--type-h3-size, clamp(24px, 2.5vw, 38px));
+  line-height: var(--type-h3-line-height, 1);
+  letter-spacing: var(--type-h3-tracking, 0em);
+  font-weight: var(--type-h3-weight, 600);
 }
 
 .catalog-booking-pro p {
@@ -5586,9 +5605,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .booking-contact-section h2 {
   margin: 0 0 18px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(40px, 6vw, 86px);
-  line-height: 0.98;
-  letter-spacing: 0;
+  font-size: var(--type-h2-size, clamp(40px, 6vw, 86px));
+  line-height: var(--type-h2-line-height, 0.98);
+  letter-spacing: var(--type-h2-tracking, 0em);
+  font-weight: var(--type-h2-weight, 700);
 }
 
 .booking-availability-section p,
@@ -5721,9 +5741,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   margin: 0;
   max-width: 900px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(52px, 8vw, 116px);
-  line-height: 0.92;
-  letter-spacing: 0;
+  font-size: var(--type-h1-size, clamp(52px, 8vw, 116px));
+  line-height: var(--type-h1-line-height, 0.92);
+  letter-spacing: var(--type-h1-tracking, 0em);
+  font-weight: var(--type-h1-weight, 700);
   text-wrap: balance;
 }
 
@@ -5843,9 +5864,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .funnel-faq-section h2 {
   margin: 0 0 18px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(40px, 6vw, 88px);
-  line-height: 0.96;
-  letter-spacing: 0;
+  font-size: var(--type-h2-size, clamp(40px, 6vw, 88px));
+  line-height: var(--type-h2-line-height, 0.96);
+  letter-spacing: var(--type-h2-tracking, 0em);
+  font-weight: var(--type-h2-weight, 700);
 }
 
 .funnel-offer-section p,
@@ -5895,8 +5917,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .catalog-lead-offers h3 {
   margin: 0;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(24px, 2.5vw, 38px);
-  line-height: 1;
+  font-size: var(--type-h3-size, clamp(24px, 2.5vw, 38px));
+  line-height: var(--type-h3-line-height, 1);
+  letter-spacing: var(--type-h3-tracking, 0em);
+  font-weight: var(--type-h3-weight, 600);
 }
 
 .catalog-lead-offers p {
@@ -6006,9 +6030,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .restaurant-hero h1 {
   margin: 0 0 18px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(48px, 7vw, 96px);
-  line-height: 0.94;
-  letter-spacing: 0;
+  font-size: var(--type-h1-size, clamp(48px, 7vw, 96px));
+  line-height: var(--type-h1-line-height, 0.94);
+  letter-spacing: var(--type-h1-tracking, 0em);
+  font-weight: var(--type-h1-weight, 700);
   color: var(--site-text);
 }
 
@@ -6172,8 +6197,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .catalog-restaurant-menu h3 {
   margin: 0;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(23px, 2.4vw, 34px);
-  line-height: 1.02;
+  font-size: var(--type-h3-size, clamp(23px, 2.4vw, 34px));
+  line-height: var(--type-h3-line-height, 1.02);
+  letter-spacing: var(--type-h3-tracking, 0em);
+  font-weight: var(--type-h3-weight, 600);
 }
 
 .catalog-restaurant-menu p {
@@ -6195,8 +6222,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .restaurant-order-card h2 {
   margin: 0 0 14px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(36px, 5vw, 74px);
-  line-height: 0.98;
+  font-size: var(--type-h2-size, clamp(36px, 5vw, 74px));
+  line-height: var(--type-h2-line-height, 0.98);
+  letter-spacing: var(--type-h2-tracking, 0em);
+  font-weight: var(--type-h2-weight, 700);
 }
 
 .restaurant-specials-section p,
@@ -6302,9 +6331,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .listing-pro-hero h1 {
   margin: 0 0 18px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(48px, 7vw, 94px);
-  line-height: 0.96;
-  letter-spacing: 0;
+  font-size: var(--type-h1-size, clamp(48px, 7vw, 94px));
+  line-height: var(--type-h1-line-height, 0.96);
+  letter-spacing: var(--type-h1-tracking, 0em);
+  font-weight: var(--type-h1-weight, 700);
   color: var(--site-text);
 }
 
@@ -6456,8 +6486,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .listing-contact-card h2 {
   margin: 0 0 14px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(36px, 5vw, 74px);
-  line-height: 0.98;
+  font-size: var(--type-h2-size, clamp(36px, 5vw, 74px));
+  line-height: var(--type-h2-line-height, 0.98);
+  letter-spacing: var(--type-h2-tracking, 0em);
+  font-weight: var(--type-h2-weight, 700);
 }
 
 .listing-filter-section p,
@@ -6541,8 +6573,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .catalog-real-estate-listings h3 {
   margin: 0;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(23px, 2.2vw, 32px);
-  line-height: 1.02;
+  font-size: var(--type-h3-size, clamp(23px, 2.2vw, 32px));
+  line-height: var(--type-h3-line-height, 1.02);
+  letter-spacing: var(--type-h3-tracking, 0em);
+  font-weight: var(--type-h3-weight, 600);
 }
 
 .catalog-real-estate-listings p {
@@ -6661,9 +6695,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .digital-hero h1 {
   margin: 0 0 18px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(48px, 7vw, 96px);
-  line-height: 0.94;
-  letter-spacing: 0;
+  font-size: var(--type-h1-size, clamp(48px, 7vw, 96px));
+  line-height: var(--type-h1-line-height, 0.94);
+  letter-spacing: var(--type-h1-tracking, 0em);
+  font-weight: var(--type-h1-weight, 700);
   color: var(--site-text);
 }
 
@@ -6820,8 +6855,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .catalog-digital-pro h3 {
   margin: 0;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(22px, 2.2vw, 31px);
-  line-height: 1.02;
+  font-size: var(--type-h3-size, clamp(22px, 2.2vw, 31px));
+  line-height: var(--type-h3-line-height, 1.02);
+  letter-spacing: var(--type-h3-tracking, 0em);
+  font-weight: var(--type-h3-weight, 600);
 }
 
 .catalog-digital-pro p,
@@ -6850,8 +6887,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .digital-access-panel h2 {
   margin: 0 0 14px;
   font-family: var(--site-heading), Inter, sans-serif;
-  font-size: clamp(36px, 5vw, 74px);
-  line-height: 0.98;
+  font-size: var(--type-h2-size, clamp(36px, 5vw, 74px));
+  line-height: var(--type-h2-line-height, 0.98);
+  letter-spacing: var(--type-h2-tracking, 0em);
+  font-weight: var(--type-h2-weight, 700);
 }
 
 .digital-modules-section p,
@@ -7332,8 +7371,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 
 .rendered-hero h1 {
   margin: 0 0 14px;
-  font-size: clamp(40px, 6vw, 76px);
-  line-height: 0.98;
+  font-size: var(--type-h1-size, clamp(40px, 6vw, 76px));
+  line-height: var(--type-h1-line-height, 0.98);
+  letter-spacing: var(--type-h1-tracking, 0em);
+  font-weight: var(--type-h1-weight, 700);
   max-width: 880px;
 }
 
