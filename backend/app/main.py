@@ -942,6 +942,11 @@ async def luma_chat(request: LumaChatRequest, http_request: Request) -> LumaChat
         conversation_history=request.history,
         selected_language=state.selectedLanguage,
     )
+    intake_decision = intake_engine.validate_and_repair_decision(
+        state=state,
+        decision=intake_decision,
+        message=request.message,
+    )
     state = intake_engine.apply_decision(state, intake_decision)
 
     if intake_decision.canGenerate:

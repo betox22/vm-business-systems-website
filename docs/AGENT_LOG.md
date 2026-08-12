@@ -16,6 +16,36 @@ Formato de entrada:
 
 ---
 
+## 2026-08-12 — Codex — Barrera estructural contra contaminación cruzada del intake
+
+**Hecho:** se agregó una validación determinística inmediatamente después de
+`LyraIntakeEngine.run()` y antes de `apply_decision()` en `/api/luma/chat`.
+La validación revisa `servicesProducts`, `industry`, `salesFlow`,
+`businessDescription` y `generatedCopy`; elimina o limpia valores que
+pertenecen a otro slot, baja su confianza y deja `fieldMeta.source` como
+`needs_review`. Después recalcula el gate real de campos faltantes, sin una
+segunda llamada al LLM. También se agregaron regresiones para los dos casos
+históricos: sales-flow filtrado a rubro/productos y respuesta de logo filtrada
+a productos/copy. La tarea de backlog **#48 queda resuelta por este cambio**;
+era duplicado del incidente **#60**, ya cerrado de forma puntual.
+
+**Pendiente / abierto:** observar los warnings
+`Lyra intake cross-field validator repaired fields` en producción para ampliar
+los patrones únicamente con evidencia real; no convertir esta barrera en un
+segundo clasificador heurístico.
+
+**Archivos tocados:** `backend/app/lyra_intake_engine.py`,
+`backend/app/main.py`, `backend/tests/test_intake_gate.py`,
+`docs/AGENT_LOG.md`.
+
+**Notas para el siguiente agente:** esta barrera pertenece solo al intake
+conversacional. No se modificaron el orchestrator, la generación, el frontend
+ni el clasificador de plantillas. `generatedCopy` nunca es propiedad del
+agente de intake: si aparece en su decisión, se descarta para que lo produzca
+el pipeline normal de copy/site planning.
+
+---
+
 ## 2026-08-11 — Claude — Landing real en usekreaton.com + Google OAuth propio + botón Google arreglado
 
 **Hecho:** Tres cosas relacionadas, todas verificadas en vivo con curl:

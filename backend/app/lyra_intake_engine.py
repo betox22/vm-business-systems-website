@@ -27,6 +27,7 @@ FieldSource = Literal[
     "explicit_delegation",
     "ai_recommended",
     "explicit_user_choice",
+    "needs_review",
 ]
 BusinessModel = Literal[
     "online_store",
@@ -254,7 +255,11 @@ class LyraIntakeEngine:
                     decision.fieldMeta["websiteType"] = FieldMeta(source="ai_recommended", confidence=ai_confidence)
 
         intent = decision.detectedIntent
-        if self._can_replace_ai_derived(state, "salesFlow"):
+        sales_flow_needs_review = any(
+            decision.fieldMeta.get(key) and decision.fieldMeta[key].source == "needs_review"
+            for key in ("salesFlow", "sales_flow")
+        )
+        if not sales_flow_needs_review and self._can_replace_ai_derived(state, "salesFlow"):
             updates["salesFlow"] = intent.salesFlow
             decision.fieldMeta["salesFlow"] = FieldMeta(source="ai_recommended", confidence=ai_confidence)
             decision.fieldMeta["sales_flow"] = FieldMeta(source="ai_recommended", confidence=ai_confidence)
@@ -269,6 +274,152 @@ class LyraIntakeEngine:
             existing_meta[key] = meta.model_dump()
         state.fieldMeta = existing_meta
         return state
+
+    def validate_and_repair_decision(
+        self,
+        *,
+        state: ProjectState,
+        decision: LyraIntakeDecision,
+        message: str,
+    ) -> LyraIntakeDecision:
+        """Reject cross-slot contamination before an intake decision mutates state."""
+
+        def normalized_text(value: Any) -> str:
+            if isinstance(value, dict):
+                value = " ".join(str(item) for item in value.values())
+            elif isinstance(value, (list, tuple, set)):
+                value = " ".join(str(item) for item in value)
+            text = str(value or "").lower().strip()
+            text = (
+                text.replace("á", "a")
+                .replace("é", "e")
+                .replace("í", "i")
+                .replace("ó", "o")
+                .replace("ú", "u")
+                .replace("ñ", "n")
+            )
+            return re.sub(r"[^a-z0-9_]+", " ", text).strip()
+
+        flow_only_values = {
+            "online_sales",
+            "online sales",
+            "sell online",
+            "selling online",
+            "vender online",
+            "venta online",
+            "online store",
+            "ecommerce",
+            "quote_request",
+            "quote request",
+            "quotes",
+            "receive quotes",
+            "request quotes",
+            "cotizacion",
+            "cotizaciones",
+            "recibir cotizaciones",
+            "booking",
+            "bookings",
+            "take bookings",
+            "appointments",
+            "citas",
+            "reservas",
+            "aceptar reservas",
+            "lead_capture",
+            "lead capture",
+            "capture leads",
+            "captar clientes",
+            "informational",
+            "present information",
+            "presentar informacion",
+        }
+
+        def is_flow_only(value: Any) -> bool:
+            return normalized_text(value) in flow_only_values
+
+        message_text = normalized_text(message)
+        logo_signal = bool(re.search(r"\b(logo|logotipo|brand mark)\b", message_text))
+        logo_action = bool(
+            re.search(
+                r"\b(no tengo|no tenemos|do not have|don t have|without|skip|saltar|subir|upload|generar|generate|crear|create|disenar|design)\b",
+                message_text,
+            )
+        )
+        offering_signal = bool(
+            re.search(
+                r"\b(vendo|vendemos|ofrezco|ofrecemos|sell|selling|offer|tienda|store|servicio|service|producto|product)\b",
+                message_text,
+            )
+        )
+        logo_only_reply = logo_signal and logo_action and not offering_signal
+        changed_fields: List[str] = []
+
+        def mark_needs_review(field: str, *aliases: str) -> None:
+            for key in (field, *aliases):
+                decision.fieldMeta[key] = FieldMeta(source="needs_review", confidence=0.2)
+            if field not in changed_fields:
+                changed_fields.append(field)
+
+        updates = dict(decision.updatedState)
+
+        if "servicesProducts" in updates:
+            items = split_items(updates.get("servicesProducts"))
+            clean_items = [item for item in items if not is_flow_only(item)]
+            contaminated = len(clean_items) != len(items)
+            if logo_only_reply:
+                contaminated = True
+                clean_items = []
+            if contaminated:
+                if clean_items:
+                    updates["servicesProducts"] = clean_items
+                else:
+                    updates.pop("servicesProducts", None)
+                mark_needs_review("servicesProducts")
+
+        if "industry" in updates and (is_flow_only(updates.get("industry")) or logo_only_reply):
+            updates.pop("industry", None)
+            mark_needs_review("industry", "niche")
+
+        if "salesFlow" in updates and str(updates.get("salesFlow") or "").strip() not in VALID_SALES_FLOWS:
+            updates.pop("salesFlow", None)
+            mark_needs_review("salesFlow", "sales_flow")
+
+        if "businessDescription" in updates:
+            description = updates.get("businessDescription")
+            if is_flow_only(description) or logo_only_reply:
+                updates.pop("businessDescription", None)
+                mark_needs_review("businessDescription", "business_description")
+
+        # The intake agent never owns public copy. Any generatedCopy update at
+        # this boundary is cross-agent contamination and must be regenerated by
+        # the normal copywriter/site-planner pipeline instead of being trusted.
+        if "generatedCopy" in updates:
+            updates.pop("generatedCopy", None)
+            mark_needs_review("generatedCopy")
+
+        if logo_only_reply and state.salesFlow in VALID_SALES_FLOWS:
+            decision.detectedIntent.salesFlow = state.salesFlow
+
+        decision.updatedState = updates
+        merged_meta = {
+            **(state.fieldMeta or {}),
+            **{key: value.model_dump() for key, value in decision.fieldMeta.items()},
+        }
+        missing = self._missing_fields_from_state(state, updates, merged_meta)
+        decision.missingCriticalFields = missing
+        decision.canGenerate = not missing
+        if missing:
+            decision.nextQuestion = self._fallback_question(missing, state.selectedLanguage)
+        else:
+            decision.nextQuestion = None
+
+        if changed_fields:
+            logger.warning(
+                "Lyra intake cross-field validator repaired fields: %s",
+                ", ".join(changed_fields),
+            )
+            repair_note = "Cross-field validator repaired: " + ", ".join(changed_fields)
+            decision.reasoning = f"{decision.reasoning} | {repair_note}".strip(" |")
+        return decision
 
     @staticmethod
     def _meta_source(state: ProjectState, key: str) -> str:

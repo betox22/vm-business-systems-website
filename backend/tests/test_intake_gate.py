@@ -1,6 +1,6 @@
 import unittest
 
-from app.lyra_intake_engine import LyraIntakeEngine
+from app.lyra_intake_engine import DetectedIntent, FieldMeta, LyraIntakeDecision, LyraIntakeEngine
 from app.models import ProjectState
 
 
@@ -149,6 +149,113 @@ class IntakeGateTests(unittest.TestCase):
         )
 
         self.assertEqual(engine.missing_fields_from_state(state), [])
+
+    def test_cross_field_validator_reverts_sales_flow_leaks_from_industry_and_products(self) -> None:
+        engine = LyraIntakeEngine()
+        state = ProjectState(
+            businessName="Bath All Day",
+            businessDescription="Handmade soaps, candles, and bath bombs.",
+            industry="beauty",
+            servicesProducts=["Lavender soap", "Vanilla candle"],
+            preferredTone="organic and warm",
+            logoPreference="explicit_skip",
+            fieldMeta={
+                "niche": {"source": "explicit", "confidence": 0.95},
+                "industry": {"source": "explicit", "confidence": 0.95},
+                "brand_style": {"source": "explicit", "confidence": 0.95},
+                "logo": {"source": "explicit", "confidence": 0.95},
+            },
+        )
+        decision = LyraIntakeDecision(
+            updatedState={
+                "industry": "online store",
+                "servicesProducts": ["sell online", "receive quotes"],
+                "salesFlow": "online_sales",
+            },
+            fieldMeta={
+                "industry": FieldMeta(source="inferred", confidence=0.9),
+                "servicesProducts": FieldMeta(source="inferred", confidence=0.9),
+                "salesFlow": FieldMeta(source="explicit", confidence=0.95),
+            },
+            detectedIntent=DetectedIntent(
+                businessModel="online_store",
+                commerceMode="single_vendor",
+                salesFlow="online_sales",
+                niche="beauty",
+                confidence=0.95,
+            ),
+            canGenerate=True,
+        )
+
+        repaired = engine.validate_and_repair_decision(
+            state=state,
+            decision=decision,
+            message="I want to sell online",
+        )
+        applied = engine.apply_decision(state, repaired)
+
+        self.assertNotIn("industry", repaired.updatedState)
+        self.assertNotIn("servicesProducts", repaired.updatedState)
+        self.assertEqual(repaired.fieldMeta["industry"].source, "needs_review")
+        self.assertEqual(repaired.fieldMeta["servicesProducts"].source, "needs_review")
+        self.assertEqual(applied.industry, "beauty")
+        self.assertEqual(applied.servicesProducts, ["Lavender soap", "Vanilla candle"])
+        self.assertEqual(applied.salesFlow, "online_sales")
+
+    def test_cross_field_validator_reverts_logo_reply_from_products_and_copy(self) -> None:
+        engine = LyraIntakeEngine()
+        original_copy = {"catalog": {"headline": "Small-batch bath essentials"}}
+        state = ProjectState(
+            businessName="Bath All Day",
+            businessDescription="Handmade soaps, candles, and bath bombs.",
+            industry="beauty",
+            servicesProducts=["Lavender soap", "Bath bomb"],
+            salesFlow="online_sales",
+            preferredTone="organic and warm",
+            generatedCopy=original_copy,
+            fieldMeta={
+                "niche": {"source": "explicit", "confidence": 0.95},
+                "sales_flow": {"source": "explicit", "confidence": 0.95},
+                "brand_style": {"source": "explicit", "confidence": 0.95},
+            },
+        )
+        logo_reply = "I do not have a logo, continue without one"
+        decision = LyraIntakeDecision(
+            updatedState={
+                "servicesProducts": [logo_reply],
+                "businessDescription": logo_reply,
+                "generatedCopy": {"catalog": {"headline": logo_reply}},
+            },
+            fieldMeta={
+                "servicesProducts": FieldMeta(source="inferred", confidence=0.88),
+                "businessDescription": FieldMeta(source="inferred", confidence=0.88),
+                "generatedCopy": FieldMeta(source="inferred", confidence=0.88),
+                "logo": FieldMeta(source="explicit", confidence=0.95),
+            },
+            detectedIntent=DetectedIntent(
+                businessModel="informational",
+                commerceMode="no_commerce",
+                salesFlow="informational",
+                niche="general",
+                confidence=0.8,
+            ),
+        )
+
+        repaired = engine.validate_and_repair_decision(
+            state=state,
+            decision=decision,
+            message=logo_reply,
+        )
+        applied = engine.apply_decision(state, repaired)
+
+        self.assertNotIn("servicesProducts", repaired.updatedState)
+        self.assertNotIn("businessDescription", repaired.updatedState)
+        self.assertNotIn("generatedCopy", repaired.updatedState)
+        self.assertEqual(repaired.fieldMeta["generatedCopy"].source, "needs_review")
+        self.assertEqual(applied.servicesProducts, ["Lavender soap", "Bath bomb"])
+        self.assertEqual(applied.businessDescription, "Handmade soaps, candles, and bath bombs.")
+        self.assertEqual(applied.generatedCopy, original_copy)
+        self.assertEqual(applied.salesFlow, "online_sales")
 
 
 if __name__ == "__main__":
