@@ -1005,7 +1005,7 @@ async def luma_chat(request: LumaChatRequest, http_request: Request) -> LumaChat
         )
         ready = not generation_missing_fields
         plan = site_plan_from_state(final_state)
-        assistant_message = assistant_message_for_state(final_state) if ready else intake_message_for_decision(intake_decision, final_state)
+        assistant_message = assistant_message_for_state(final_state) if ready else assistant_message_for_intake_turn(intake_decision, final_state)
         next_question = "" if ready else intake_engine.fallback_question_for_missing(
             generation_missing_fields,
             final_state.selectedLanguage,
@@ -1015,7 +1015,7 @@ async def luma_chat(request: LumaChatRequest, http_request: Request) -> LumaChat
         ready = False
         generation_missing_fields = intake_decision.missingCriticalFields
         plan = {}
-        assistant_message = intake_message_for_decision(intake_decision, final_state)
+        assistant_message = assistant_message_for_intake_turn(intake_decision, final_state)
         next_question = intake_decision.nextQuestion or next_question_for_state(final_state)
 
     return LumaChatResponse(
@@ -1068,6 +1068,14 @@ def intake_message_for_decision(decision: LyraIntakeDecision, state: Any) -> str
         "fr": "Compris. J'ai mis a jour ce que je peux confirmer.",
         "pt": "Entendido. Atualizei o que pude confirmar.",
     }.get(state.selectedLanguage, "Got it. I updated what I could confirm.")
+
+
+def assistant_message_for_intake_turn(decision: LyraIntakeDecision, state: Any) -> str:
+    if decision.usedAI and not decision.warning:
+        direct_response = str(decision.userQuestionResponse or "").strip()
+        if direct_response:
+            return direct_response
+    return intake_message_for_decision(decision, state)
 
 
 def apply_current_step_hint(state: Any, request: LumaChatRequest) -> None:

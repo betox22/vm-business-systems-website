@@ -116,6 +116,7 @@ class LyraIntakeDecision(BaseModel):
     detectedIntent: DetectedIntent = Field(default_factory=DetectedIntent)
     missingCriticalFields: List[str] = Field(default_factory=list)
     reasoning: str = ""
+    userQuestionResponse: Optional[str] = None
     nextQuestion: Optional[str] = None
     canGenerate: bool = False
     templateRecommendation: Optional[TemplateRecommendation] = None
@@ -544,6 +545,7 @@ class LyraIntakeEngine:
             detectedIntent=detected_intent,
             missingCriticalFields=missing,
             reasoning=str(payload.get("reasoning") or ""),
+            userQuestionResponse=str(payload.get("userQuestionResponse") or "").strip() or None,
             nextQuestion=next_question,
             canGenerate=can_generate,
             templateRecommendation=recommendation,
@@ -970,6 +972,14 @@ class LyraIntakeEngine:
                             "items": {"type": "string"},
                         },
                         "reasoning": {"type": "string"},
+                        "userQuestionResponse": {
+                            "type": ["string", "null"],
+                            "description": (
+                                "A brief, warm, direct response in the client's language to any question, "
+                                "request for help, or comment in this turn that is not merely a slot answer. "
+                                "Use null when there is nothing else to answer. Do not duplicate nextQuestion."
+                            ),
+                        },
                         "nextQuestion": {"type": ["string", "null"]},
                         "canGenerate": {"type": "boolean"},
                         "templateRecommendation": {
@@ -1051,11 +1061,17 @@ PROCESO EN CADA TURNO:
    - ofrezca al cliente la opción de delegar cuando aplique ("si prefieres, dime que tú
      decides y yo elijo un estilo que combine con tu negocio")
    - nunca sea una lista de 3 preguntas en una
-5. Cuando canGenerate=true, recomienda UNA plantilla de {template_ids}, eligiendo
+5. Nunca dejes sin responder una pregunta, pedido de ayuda o comentario del cliente
+   solo porque también actualiza un slot. Si el turno contiene algo que requiere una
+   respuesta humana adicional, escribe userQuestionResponse en el idioma del cliente:
+   breve, cálida y directa (1-2 frases). Usa null o texto vacío cuando el mensaje sea
+   únicamente una respuesta directa al slot. userQuestionResponse NO debe repetir ni
+   reformular nextQuestion; ambos cumplen funciones distintas.
+6. Cuando canGenerate=true, recomienda UNA plantilla de {template_ids}, eligiendo
    por semántica de negocio, no por conteo de palabras clave.
-6. Nunca escribas copy público aquí. Nunca generes HTML. Nunca inventes un nicho fuera
+7. Nunca escribas copy público aquí. Nunca generes HTML. Nunca inventes un nicho fuera
    de la taxonomía cerrada.
-7. Devuelve tu respuesta únicamente llamando a la función update_intake — nunca en
+8. Devuelve tu respuesta únicamente llamando a la función update_intake — nunca en
    prosa libre.
 
 Recuerda: tu métrica de éxito no es generar rápido, es generar bien a la primera.

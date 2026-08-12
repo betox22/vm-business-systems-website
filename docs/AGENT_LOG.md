@@ -16,6 +16,30 @@ Formato de entrada:
 
 ---
 
+## 2026-08-12 — Codex — Responder preguntas del cliente durante el intake
+
+**Hecho:** `update_intake` ahora puede devolver `userQuestionResponse`, una
+respuesta breve y directa para preguntas, pedidos de ayuda o comentarios que
+acompañan una respuesta de formulario. `/api/luma/chat` la conserva como
+`assistantMessage` cuando la decisión proviene de IA y no tiene warning, tanto
+en el intake todavía incompleto como en la verificación posterior que aún no
+queda lista. Los textos fijos anteriores permanecen como fallback real.
+
+**Pendiente / abierto:** observar en producción la calidad y brevedad de las
+respuestas del modelo; el contrato limita la respuesta a 1-2 frases y evita
+duplicar `nextQuestion`, pero no agrega un segundo llamado de moderación.
+
+**Archivos tocados:** `backend/app/lyra_intake_engine.py`,
+`backend/app/main.py`, `backend/tests/test_luma_chat_response.py`,
+`docs/AGENT_LOG.md`.
+
+**Notas para el siguiente agente:** `chat.js` no se modificó porque
+`composeAssistantReply()` ya concatena correctamente `assistantMessage` y
+`nextQuestion`. La pérdida ocurría en el backend antes de construir la
+respuesta HTTP.
+
+---
+
 ## 2026-08-12 — Codex — Unificar el estado validado del chat con la generación final
 
 **Hecho:** el flujo público de `collectPayload()` ahora usa
