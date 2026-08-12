@@ -5619,6 +5619,20 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
   display: block !important;
 }
 
+/* Beto (2026-08-12), third round: "esa franja negra no tiene sentido, debe
+   aprovecharse el espacio". Root cause, confirmed live: the "card-host"
+   variant of .template-board-panel (client-setup.css:5358, used whenever
+   it's hosted inside .live-site-preview-card) has `min-height: 0` and no
+   explicit height, so it only ever sizes to its own content (~634px) and
+   never stretches to match .live-site-preview-card's real height (now
+   ~665-755px after the .live-stage-header removal above freed up extra
+   room) -- the leftover gap exposes whatever dark background sits behind
+   it. Stretching the panel to fill its card removes the gap outright
+   instead of chasing the exact px math on every possible content height. */
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .template-board-panel {
+  min-height: 100% !important;
+}
+
 /* justify-content:stretch (still here, harmless) controls how THIS
    element distributes its own tracks; it does nothing about the
    element's own size in ITS parent. That turned out to be the real gap:
@@ -5684,6 +5698,136 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) #reviewDetailsButton {
   background: #ffffff;
   border: 1px solid rgba(15, 118, 110, 0.22);
+}
+
+/* 2026-08-12: Codex proposed a separate opt-in "v2" chat redesign
+   (client-setup-v2.css, ?ui=v2) that read as noticeably more "pro" --
+   bigger type, more breathing room, consistent bubble/button system --
+   but it did that by hiding .guided-live-stage entirely and going back
+   to a single centered chat column, which is the exact layout Beto
+   rejected earlier the same day (wants progress + live preview + chat
+   together, not chat alone). Decision: keep the 3-column layout, but
+   bring the parts of v2 that were genuinely better -- larger/more
+   readable type, more generous bubble padding, a real focus state on
+   the composer -- into it, and go further by using KREATON's actual
+   brand gradient (violet/cyan, same stops as the landing-page hero
+   badge: landing.html --violet:#7c3aed / --cyan:#22d3ee) instead of
+   v2's generic slate-gray SaaS palette, since flat gray was part of why
+   it still read as "not pro enough" per Beto. */
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message.assistant span,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message.system span,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message.user {
+  padding: 15px 17px !important;
+  font-size: 15px !important;
+  line-height: 1.55 !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message {
+  gap: 10px;
+}
+
+/* Beto (2026-08-12): "los botones arriba a la derecha estan desorganizados
+   no estan alineados". Root cause, confirmed live via getBoundingClientRect:
+   .compact-language (the "Eng" language <label>) computes to display:grid
+   with align-items:normal, so its hidden "Website language" text (sr-only
+   via font-size:0) still reserves its own grid row above the <select> --
+   the label's box ends up 66px tall inside a 95px header while every
+   sibling button is 34-36px tall, pushing the visible dropdown ~15px lower
+   than "New page" / the account button / the icon buttons next to it even
+   though the whole row is align-items:center. Forcing it back to a single-
+   row inline-flex fixes the box height to match its siblings so centering
+   actually lines them all up. */
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .compact-language {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: auto !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-chat {
+  gap: 16px;
+  /* Beto (2026-08-12): "la burbuja no usa todo el espacio hasta abajo, se
+     ve todo incompleto". Root cause, confirmed live via
+     getBoundingClientRect(): an old, unscoped rule further down this file
+     (`.public-client-setup .guided-chat { flex: 0 1 auto; max-height:
+     420px; }`, originally written for a different/older compact state)
+     applies to every state including this one and hard-caps the chat log
+     at 420px regardless of how tall .guided-chat-card actually is (828px
+     here) -- leaving a ~250px dead gap between the composer and the
+     bottom of the card. Overriding flex-grow and removing the cap so it
+     fills the real available height down to the composer. */
+  flex: 1 1 auto !important;
+  max-height: none !important;
+}
+
+/* Beto (2026-08-12): "la parte izquierda debe verse completo, no se q
+   hace ese texto enorme arriba si es inutil". .live-stage-header (Build
+   workspace badge + big "Business model and site architecture" heading +
+   paragraph, client-setup.css:1372) sits above .live-site-preview-card
+   inside .guided-live-stage's auto/1fr row grid, confirmed live at 221px
+   tall -- that's 221px stolen from the live preview, duplicating
+   information .guided-progress already shows ("Step 1 of 7"). The left
+   panel's job is to show the page being built, not a page-level title,
+   so this header adds no value here even though it's legitimately used
+   in other states (generated-preview-open, etc.) -- only hiding it in
+   this specific mode. With it gone the grid's "auto" row collapses to 0
+   and .live-site-preview-card's 1fr row claims the space instead. */
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .live-stage-header {
+  display: none !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message .assistant-avatar.tiny {
+  filter: drop-shadow(0 6px 14px rgba(124, 58, 237, 0.22)) drop-shadow(0 2px 8px rgba(34, 211, 238, 0.16));
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-progress i {
+  background: linear-gradient(90deg, #7c3aed, #22d3ee) !important;
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.3);
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-input-label input {
+  min-height: 48px !important;
+  padding: 0 18px !important;
+  font-size: 15px !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-input-label input:focus {
+  border-color: rgba(124, 58, 237, 0.4) !important;
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1) !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-actions .send-toggle {
+  background: linear-gradient(135deg, #7c3aed, #22d3ee) !important;
+  border: 0 !important;
+  box-shadow: 0 8px 18px rgba(124, 58, 237, 0.28) !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .quick-chip-row button:hover,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .quick-chip-row button:focus-visible {
+  border-color: rgba(124, 58, 237, 0.35) !important;
+  background: rgba(124, 58, 237, 0.06) !important;
+  color: #5b21b6 !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message {
+  animation: lyraMessageIn 0.28s ease both;
+}
+
+@keyframes lyraMessageIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message {
+    animation: none;
+  }
 }
 
 body.public-client-setup.lyra-result-mode.draft-adjust-open .guided-progress,
