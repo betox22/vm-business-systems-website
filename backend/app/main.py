@@ -1019,7 +1019,7 @@ async def luma_chat(request: LumaChatRequest, http_request: Request) -> LumaChat
         )
         ready = not generation_missing_fields
         plan = site_plan_from_state(final_state)
-        assistant_message = assistant_message_for_state(final_state) if ready else assistant_message_for_intake_turn(intake_decision, final_state)
+        assistant_message = assistant_message_for_ready_state(intake_decision, final_state) if ready else assistant_message_for_intake_turn(intake_decision, final_state)
         next_question = "" if ready else intake_engine.fallback_question_for_missing(
             generation_missing_fields,
             final_state.selectedLanguage,
@@ -1085,11 +1085,24 @@ def intake_message_for_decision(decision: LyraIntakeDecision, state: Any) -> str
 
 
 def assistant_message_for_intake_turn(decision: LyraIntakeDecision, state: Any) -> str:
-    if decision.usedAI and not decision.warning:
-        direct_response = str(decision.userQuestionResponse or "").strip()
-        if direct_response:
-            return direct_response
+    direct_response = direct_user_question_response(decision)
+    if direct_response:
+        return direct_response
     return intake_message_for_decision(decision, state)
+
+
+def assistant_message_for_ready_state(decision: LyraIntakeDecision, state: Any) -> str:
+    ready_message = assistant_message_for_state(state)
+    direct_response = direct_user_question_response(decision)
+    if not direct_response:
+        return ready_message
+    return f"{direct_response}\n\n{ready_message}"
+
+
+def direct_user_question_response(decision: LyraIntakeDecision) -> str:
+    if decision.usedAI and not decision.warning:
+        return str(decision.userQuestionResponse or "").strip()
+    return ""
 
 
 def apply_current_step_hint(state: Any, request: LumaChatRequest) -> None:

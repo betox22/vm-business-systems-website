@@ -35,6 +35,13 @@ def _tool_payload(user_question_response):
     }
 
 
+def _ready_tool_payload(user_question_response):
+    payload = _tool_payload(user_question_response)
+    payload["missingCriticalFields"] = []
+    payload["canGenerate"] = True
+    return payload
+
+
 class _FakeCompletions:
     def __init__(self, payload):
         self.payload = payload
@@ -88,6 +95,44 @@ def _current_state(*, include_style: bool = False):
 
 
 class LumaChatResponseTests(unittest.TestCase):
+    def test_ready_response_answers_user_question_before_generation_summary(self):
+        direct_response = "Yes. I can help you add a stronger logo after the first draft is ready."
+        request = LumaChatRequest(
+            current=_current_state(include_style=True),
+            message="Can you help improve the logo later?",
+        )
+
+        async def keep_ready_state(_message, state, **_kwargs):
+            return state
+
+        with (
+            patch.object(main.intake_engine, "client", _FakeOpenAIClient(_ready_tool_payload(direct_response))),
+            patch.object(main.orchestrator, "run", side_effect=keep_ready_state),
+        ):
+            response = asyncio.run(main.luma_chat(request, _request(49200)))
+
+        self.assertTrue(response.readyToGenerate)
+        self.assertTrue(response.assistantMessage.startswith(direct_response))
+        self.assertIn("Ready. For Bath All Day", response.assistantMessage)
+
+    def test_ready_response_without_user_question_keeps_generation_summary(self):
+        request = LumaChatRequest(
+            current=_current_state(include_style=True),
+            message="Continue without a logo.",
+        )
+
+        async def keep_ready_state(_message, state, **_kwargs):
+            return state
+
+        with (
+            patch.object(main.intake_engine, "client", _FakeOpenAIClient(_ready_tool_payload(None))),
+            patch.object(main.orchestrator, "run", side_effect=keep_ready_state),
+        ):
+            response = asyncio.run(main.luma_chat(request, _request(49199)))
+
+        self.assertTrue(response.readyToGenerate)
+        self.assertTrue(response.assistantMessage.startswith("Ready. For Bath All Day"))
+
     def test_ai_user_question_response_reaches_endpoint_assistant_message(self):
         direct_response = "Yes. We can keep the name in text now and help you add a logo later."
         request = LumaChatRequest(

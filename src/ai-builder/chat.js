@@ -316,6 +316,7 @@ export async function sendGuidedReply() {
   mergeGuidedUpdates(localContextUpdates);
   syncTemplateSelectionFromGuidedContext(message);
   const localStudioPlan = refreshAiStudioPlanFromContext(message);
+  const isPreGenerationReview = builderState.guidedStep === "review" && !builderState.currentSchema;
   if (builderState.guidedStep === "review") {
     const adjustmentLabel = langText({
       en: "Client requested adjustments",
@@ -332,28 +333,17 @@ export async function sendGuidedReply() {
     ];
     if (builderState.currentSchema) {
       await applyDraftAdjustmentFromChat(message, localContextUpdates);
-    } else {
-      appendChatMessage(
-        "assistant",
-        langText({
-          en: "Perfect, I added that to the plan. Anything else you want to change or add before I generate?",
-          es: "Perfecto, agregué eso al plan. ¿Quieres modificar algo más o agregar otro detalle antes de generar?",
-          fr: "Parfait, j'ai ajouté cela au plan. Voulez-vous modifier ou ajouter autre chose avant de générer?",
-          pt: "Perfeito, adicionei isso ao plano. Quer mudar ou adicionar mais alguma coisa antes de gerar?",
-        }),
-        "success",
-      );
+      guidedStatusText.textContent = langText({
+        en: "Draft updated.",
+        es: "Borrador actualizado.",
+        fr: "Brouillon mis à jour.",
+        pt: "Rascunho atualizado.",
+      });
+      renderGuidedSummary();
+      refreshQuickChips();
+      saveGuidedDraft();
+      return;
     }
-    guidedStatusText.textContent = langText({
-      en: builderState.currentSchema ? "Draft updated." : "Extra details saved.",
-      es: builderState.currentSchema ? "Borrador actualizado." : "Detalles adicionales guardados.",
-      fr: builderState.currentSchema ? "Brouillon mis à jour." : "Détails supplémentaires enregistrés.",
-      pt: builderState.currentSchema ? "Rascunho atualizado." : "Detalhes adicionais salvos.",
-    });
-    renderGuidedSummary();
-    refreshQuickChips();
-    saveGuidedDraft();
-    return;
   }
   guidedStatusText.textContent = t("sendingAssistant");
   setThinking(true);
@@ -423,21 +413,36 @@ export async function sendGuidedReply() {
     mergeGuidedUpdates(updates);
     syncTemplateSelectionFromGuidedContext(message);
     refreshAiStudioPlanFromContext(message);
-    builderState.guidedStep = nextSmartGuidedStep(builderState.guidedStep);
+    builderState.guidedStep = isPreGenerationReview
+      ? "review"
+      : nextSmartGuidedStep(builderState.guidedStep);
     // No backend response this turn - no fresher signal to attribute the
     // next reply with, fall back to the local sequence again next time.
     builderState.lastAskedGuidedField = "";
     console.warn("LYRA intake assistant request failed; continuing locally.", error);
     appendUnderstandingCard({ updates, sourceMessage: message });
-    appendChatMessage(
-      "assistant",
-      composeAssistantReply(
-        t("localFallbackMessage"),
-        guidedQuestion(builderState.guidedStep),
-        true,
-      ),
-      "speaking",
-    );
+    if (isPreGenerationReview) {
+      appendChatMessage(
+        "assistant",
+        langText({
+          en: "I could not reach LYRA, but I saved that detail in the plan. You can retry or add another change before generating.",
+          es: "No pude comunicarme con LYRA, pero guardé ese detalle en el plan. Puedes reintentar o agregar otro cambio antes de generar.",
+          fr: "Je n'ai pas pu joindre LYRA, mais j'ai enregistré ce détail dans le plan. Vous pouvez réessayer ou ajouter une autre modification avant de générer.",
+          pt: "Não consegui acessar a LYRA, mas salvei esse detalhe no plano. Você pode tentar novamente ou adicionar outra mudança antes de gerar.",
+        }),
+        "alert",
+      );
+    } else {
+      appendChatMessage(
+        "assistant",
+        composeAssistantReply(
+          t("localFallbackMessage"),
+          guidedQuestion(builderState.guidedStep),
+          true,
+        ),
+        "speaking",
+      );
+    }
     guidedStatusText.textContent = t("localFallback");
   }
   setThinking(false);
