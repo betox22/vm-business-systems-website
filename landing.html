@@ -6,6 +6,9 @@
     <title data-i18n="metaTitle">KREATON — Create your business website with AI</title>
     <meta name="description" data-i18n-attr="content" data-i18n="metaDescription" content="Tell LYRA about your business and KREATON generates your professional website, with a store or bookings included, ready to publish in minutes.">
     <link rel="icon" href="data:,">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
       :root {
         --ink: #0f172a;
@@ -28,6 +31,7 @@
         -webkit-font-smoothing: antialiased;
       }
       a { color: inherit; }
+      h1, h2, .brand, .eyebrow { font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
       .wrap { max-width: 1360px; margin: 0 auto; padding: 0 40px; }
 
       /* Nav */
@@ -80,7 +84,17 @@
           linear-gradient(180deg, var(--indigo), #0b0a24 65%);
         color: #fff;
       }
+      .hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Ccircle cx='1.5' cy='1.5' r='1' fill='%23ffffff' fill-opacity='.045'/%3E%3C/svg%3E");
+        background-repeat: repeat;
+        pointer-events: none;
+      }
       .hero-inner {
+        position: relative;
+        z-index: 1;
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 64px;
@@ -152,23 +166,8 @@
         padding: 10px 14px; background: #eef1f6; border-bottom: 1px solid #e2e8f0;
       }
       .mockup-chrome span { width: 9px; height: 9px; border-radius: 50%; background: #cbd5e1; }
-      .mockup-body { padding: 18px 20px 22px; }
-      .mockup-hero {
-        border-radius: 10px; padding: 22px;
-        background: linear-gradient(135deg, rgba(124,58,237,0.14), rgba(34,211,238,0.12));
-        margin-bottom: 14px;
-      }
-      .mockup-hero .bar { height: 11px; border-radius: 6px; background: var(--ink); opacity: 0.85; }
-      .mockup-hero .bar.w60 { width: 60%; margin-bottom: 8px; }
-      .mockup-hero .bar.w40 { width: 40%; opacity: 0.35; height: 8px; }
-      .mockup-hero .pill { display: inline-block; margin-top: 14px; padding: 7px 16px; border-radius: 999px; background: var(--teal); font-size: 11px; font-weight: 800; color: #052e2b; }
-      .mockup-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-      .mockup-grid .card { border-radius: 8px; background: #f1f5f9; padding: 10px; }
-      .mockup-grid .card .thumb { height: 36px; border-radius: 6px; margin-bottom: 8px; }
-      .mockup-grid .card .thumb.c1 { background: linear-gradient(135deg, #a78bfa, #22d3ee); }
-      .mockup-grid .card .thumb.c2 { background: linear-gradient(135deg, #14b8a6, #2f4cdd); }
-      .mockup-grid .card .thumb.c3 { background: linear-gradient(135deg, #f59e0b, #ef4444); }
-      .mockup-grid .card .bar { height: 6px; border-radius: 4px; background: #cbd5e1; width: 70%; }
+      .mockup-body { height: 350px; background: #e2e8f0; overflow: hidden; }
+      .mockup-body img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: top center; }
       /* Deliberately NOT position:absolute. .hero has overflow:hidden (to
          contain the background glow), and an absolutely-positioned badge
          hanging off the bottom of .mockup-card doesn't count toward the
@@ -231,6 +230,32 @@
       .example-body span { font-size: 13px; color: var(--muted); }
       .example-body em { font-style: normal; float: right; color: #0f766e; font-size: 13px; font-weight: 700; }
 
+      /* Supported business categories */
+      .use-cases {
+        padding: 0;
+        background: #ffffff;
+        border-bottom: 1px solid var(--line);
+      }
+      .use-case-row {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        min-height: 78px;
+      }
+      .use-case {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        min-width: 0;
+        padding: 18px 12px;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 700;
+        text-align: center;
+      }
+      .use-case + .use-case { border-left: 1px solid #edf1f5; }
+      .use-case svg { width: 17px; height: 17px; flex: 0 0 17px; color: #0f766e; }
+
       /* Sections */
       section { padding: 80px 0; }
       .section-head { max-width: 620px; margin: 0 auto 48px; text-align: center; }
@@ -264,6 +289,7 @@
         background: rgba(20, 184, 166, 0.12); color: #0f766e;
         display: grid; place-items: center; margin-bottom: 14px; font-size: 18px;
       }
+      .feature .icon svg { width: 20px; height: 20px; }
       .feature h3 { margin: 0 0 8px; font-size: 16.5px; }
       .feature p { margin: 0; color: var(--muted); font-size: 14.5px; line-height: 1.55; }
 
@@ -299,6 +325,11 @@
         .lyra-badge { margin: 16px 0 0; max-width: none; }
         .nav-signin, .nav-links { display: none; }
         .steps, .feature-grid, .example-grid { grid-template-columns: 1fr; }
+        .use-case-row { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px 0; }
+        .use-case { justify-content: flex-start; padding: 12px 10px; text-align: left; }
+        .use-case + .use-case { border-left: 0; }
+        .use-case:nth-child(even) { border-left: 1px solid #edf1f5; }
+        .mockup-body { height: 260px; }
       }
     </style>
   </head>
@@ -345,22 +376,42 @@
           <div class="mockup-card">
             <div class="mockup-chrome"><span></span><span></span><span></span></div>
             <div class="mockup-body">
-              <div class="mockup-hero">
-                <div class="bar w60"></div>
-                <div class="bar w40"></div>
-                <span class="pill" data-i18n="mockupPill">Book now</span>
-              </div>
-              <div class="mockup-grid">
-                <div class="card"><div class="thumb c1"></div><div class="bar"></div></div>
-                <div class="card"><div class="thumb c2"></div><div class="bar"></div></div>
-                <div class="card"><div class="thumb c3"></div><div class="bar"></div></div>
-              </div>
+              <img src="/images/example-large-store.jpg" alt="KREATON-generated online store preview">
             </div>
             <div class="lyra-badge">
               <img src="/assets/nixie_idle.png" alt="LYRA">
               <span><strong>LYRA</strong><span data-i18n="lyraQuote">"Tell me about your business and in minutes you'll have your site ready."</span></span>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="use-cases" aria-label="Supported business categories">
+      <div class="wrap use-case-row">
+        <div class="use-case">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v2a3 3 0 0 0 6 0V6L6 2Z"/><path d="M14 2h4l3 4v2a3 3 0 0 1-6 0V6l-1-4Z"/><path d="M9 6V2h6v4"/><path d="M5 11v9h14v-9"/></svg>
+          <span data-i18n="useCase1">Online stores</span>
+        </div>
+        <div class="use-case">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="17" rx="2"/><path d="m9 16 2 2 4-4"/></svg>
+          <span data-i18n="useCase2">Services &amp; bookings</span>
+        </div>
+        <div class="use-case">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v8M10 2v8M8 2v20M18 2v20M14 7c0-3 1.5-5 4-5v8h-4V7Z"/></svg>
+          <span data-i18n="useCase3">Restaurants</span>
+        </div>
+        <div class="use-case">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10"/><path d="M9 21v-6h6v6"/></svg>
+          <span data-i18n="useCase4">Real estate</span>
+        </div>
+        <div class="use-case">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-5 9 5-9 5-9-5Z"/><path d="M7 12v5c3 2 7 2 10 0v-5"/><path d="M21 10v6"/></svg>
+          <span data-i18n="useCase5">Courses &amp; academies</span>
+        </div>
+        <div class="use-case">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          <span data-i18n="useCase6">Portfolios</span>
         </div>
       </div>
     </section>
@@ -432,32 +483,32 @@
         </div>
         <div class="feature-grid">
           <div class="feature">
-            <div class="icon">✦</div>
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.1L5 10l5.1 1.9L12 17l1.9-5.1L19 10l-5.1-1.9L12 3Z"/><path d="M5 3v4M3 5h4M19 17v4M17 19h4"/></svg></div>
             <h3 data-i18n="feat1Title">Automatic professional design</h3>
             <p data-i18n="feat1Text">Every site is generated to fit your industry, with coherent structure and copy from the first draft.</p>
           </div>
           <div class="feature">
-            <div class="icon">🛒</div>
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg></div>
             <h3 data-i18n="feat2Title">Store or bookings built in</h3>
             <p data-i18n="feat2Text">Sell products, manage appointments or bookings from the same site, no external tools needed.</p>
           </div>
           <div class="feature">
-            <div class="icon">✎</div>
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg></div>
             <h3 data-i18n="feat3Title">Visual editor with LYRA</h3>
             <p data-i18n="feat3Text">Adjust sections, photos, and text yourself, or ask LYRA to do it for you in the conversation.</p>
           </div>
           <div class="feature">
-            <div class="icon">🌐</div>
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></div>
             <h3 data-i18n="feat4Title">Your own domain</h3>
             <p data-i18n="feat4Text">Publish with your own domain or a KREATON subdomain, ready to use right away.</p>
           </div>
           <div class="feature">
-            <div class="icon">🖼️</div>
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>
             <h3 data-i18n="feat5Title">Your photos, your brand</h3>
             <p data-i18n="feat5Text">Upload your logo and business photos so the site feels like yours from the very start.</p>
           </div>
           <div class="feature">
-            <div class="icon">🔒</div>
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
             <h3 data-i18n="feat6Title">Your progress, saved</h3>
             <p data-i18n="feat6Text">Sign in with Google or email and LYRA saves your answers and drafts so you can pick up anytime.</p>
           </div>
@@ -502,6 +553,12 @@
           chip1: "No credit card required",
           chip2: "Store or bookings included",
           chip3: "Your own domain",
+          useCase1: "Online stores",
+          useCase2: "Services & bookings",
+          useCase3: "Restaurants",
+          useCase4: "Real estate",
+          useCase5: "Courses & academies",
+          useCase6: "Portfolios",
           mockupPill: "Book now",
           lyraQuote: "“Tell me about your business and in minutes you'll have your site ready.”",
           howKicker: "How it works",
@@ -556,6 +613,12 @@
           chip1: "Sin tarjeta de crédito",
           chip2: "Tienda o reservas incluidas",
           chip3: "Tu propio dominio",
+          useCase1: "Tiendas",
+          useCase2: "Servicios y citas",
+          useCase3: "Restaurantes",
+          useCase4: "Bienes raíces",
+          useCase5: "Cursos y academias",
+          useCase6: "Portafolios",
           mockupPill: "Reservar ahora",
           lyraQuote: "“Cuéntame sobre tu negocio y en minutos tendrás tu sitio listo.”",
           howKicker: "Cómo funciona",
