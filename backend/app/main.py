@@ -759,6 +759,7 @@ def _get_or_create_store(
         status="draft",
     )
     session.add(store)
+    session.flush()
     return store
 
 
@@ -838,7 +839,11 @@ def persist_generated_site(
     site.public_url = site.public_url or f"{site.domain_slug}-{site.id[-6:]}.usekreaton.com"
     site.status = "draft"
     site.generated_config = _schema_json(schema)
-    session.commit()
+    try:
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
     session.refresh(site)
     return site
 
