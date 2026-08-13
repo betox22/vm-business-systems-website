@@ -42,6 +42,7 @@ ALLOWED_RENDERER_COMPONENTS = {
     "CapabilitiesEquipment",
     "PortfolioGallery",
     "VideoShowcase",
+    "CourseOffering",
 }
 
 
@@ -71,6 +72,8 @@ ALLOWED_SECTION_COMPONENT_TYPES = {
     "CapabilitiesEquipment": "CapabilitiesEquipment",
     "PortfolioGallery": "PortfolioGallery",
     "VideoShowcase": "VideoShowcase",
+    "course_offering": "CourseOffering",
+    "CourseOffering": "CourseOffering",
 }
 
 
@@ -227,6 +230,27 @@ class VideoShowcaseBinding(BaseModel):
         raise ValueError("Video URL must point to a valid YouTube or Vimeo video")
 
 
+class CourseOfferingBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(min_length=2, max_length=120)
+    description: str = Field(min_length=8, max_length=500)
+    audience: str = Field(default="", max_length=180)
+    includes: List[str] = Field(default_factory=list, max_length=8)
+    videoUrl: Optional[str] = None
+    ctaLabel: str = Field(min_length=2, max_length=60)
+    ctaMode: Literal["purchase", "inquiry"] = "inquiry"
+    priceLabel: Optional[str] = Field(default=None, max_length=40)
+    itemId: Optional[str] = Field(default=None, max_length=120)
+
+    @field_validator("videoUrl")
+    @classmethod
+    def optional_video_url_must_be_supported(cls, value: Optional[str]) -> Optional[str]:
+        if not value:
+            return None
+        return VideoShowcaseBinding(videoUrl=value).videoUrl
+
+
 DATA_BINDING_SCHEMAS = {
     "product_grid_4x": MarketplaceGridBinding,
     "featured_products": MarketplaceGridBinding,
@@ -234,6 +258,8 @@ DATA_BINDING_SCHEMAS = {
     "feature_spotlight": SpecsShowcaseBinding,
     "video_showcase": VideoShowcaseBinding,
     "VideoShowcase": VideoShowcaseBinding,
+    "course_offering": CourseOfferingBinding,
+    "CourseOffering": CourseOfferingBinding,
 }
 
 
@@ -277,6 +303,8 @@ class AIWebGenerationResponse(BaseModel):
 
     reasoningSummary: str
     templateId: str
+    primaryOfferingCategory: Optional[str] = None
+    secondaryOfferingCategories: List[str] = Field(default_factory=list)
     websiteType: WebsiteType
     catalogStrategy: CatalogStrategy
     salesFlow: SalesFlow
@@ -287,16 +315,38 @@ class AIWebGenerationResponse(BaseModel):
     catalogItems: List[Dict[str, Any]] = Field(default_factory=list)
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
-    @field_validator("templateId", mode="before")
+    @field_validator("templateId", "primaryOfferingCategory", mode="before")
     @classmethod
-    def template_must_exist(cls, value: str) -> str:
+    def template_must_exist(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
         value = normalize_template_id(str(value or ""))
         if value not in TEMPLATE_CATALOG:
             raise ValueError(f"Unsupported template id: {value}")
         return value
 
+    @field_validator("secondaryOfferingCategories", mode="before")
+    @classmethod
+    def secondary_templates_must_exist(cls, value: Any) -> List[str]:
+        normalized: List[str] = []
+        for item in value or []:
+            template_id = normalize_template_id(str(item or ""))
+            if template_id not in TEMPLATE_CATALOG:
+                raise ValueError(f"Unsupported secondary offering category: {template_id}")
+            if template_id not in normalized:
+                normalized.append(template_id)
+        return normalized
+
     @model_validator(mode="after")
     def catalog_strategy_must_match_template(self) -> "AIWebGenerationResponse":
+        if self.primaryOfferingCategory and self.primaryOfferingCategory != self.templateId:
+            raise ValueError("primaryOfferingCategory must match templateId")
+        self.primaryOfferingCategory = self.primaryOfferingCategory or self.templateId
+        self.secondaryOfferingCategories = [
+            template_id
+            for template_id in self.secondaryOfferingCategories
+            if template_id != self.primaryOfferingCategory
+        ]
         expected = TEMPLATE_CATALOG[self.templateId]["catalogType"]
         if self.catalogStrategy != expected:
             raise ValueError(
@@ -337,7 +387,153 @@ def state_to_client_summary(state: ProjectState, user_input: str) -> Dict[str, A
         "selectedLanguage": state.selectedLanguage,
         "salesFlow": state.salesFlow,
         "selectedTemplateId": normalize_template_id(state.selectedTemplateId),
+        "primaryOfferingCategory": normalize_template_id(state.primaryOfferingCategory),
+        "secondaryOfferingCategories": state.secondaryOfferingCategories,
     }
+
+
+COURSE_SIGNAL_RE = re.compile(
+    r"\b(cursos?|courses?|academy|academia|clases?|training|formacion|taller(?:es)?|workshops?)\b",
+    re.IGNORECASE,
+)
+
+
+def _course_page_labels(language: str) -> Dict[str, Any]:
+    labels = {
+        "en": {
+            "page": "Courses",
+            "description": "Practical instruction built around the products, tools, and methods of this business.",
+            "audience": "For customers who want guided, hands-on learning.",
+            "includes": ["Step-by-step instruction", "Materials and tools", "Practical project"],
+            "purchase": "Enroll now",
+            "inquiry": "Request course information",
+        },
+        "es": {
+            "page": "Cursos",
+            "description": "Formacion practica basada en los productos, herramientas y metodos de este negocio.",
+            "audience": "Para clientes que buscan aprendizaje guiado y practico.",
+            "includes": ["Instruccion paso a paso", "Materiales y herramientas", "Proyecto practico"],
+            "purchase": "Inscribirme",
+            "inquiry": "Solicitar informacion",
+        },
+        "fr": {
+            "page": "Cours",
+            "description": "Formation pratique autour des produits, outils et methodes de cette entreprise.",
+            "audience": "Pour les clients qui souhaitent un apprentissage guide et pratique.",
+            "includes": ["Instructions pas a pas", "Materiels et outils", "Projet pratique"],
+            "purchase": "S'inscrire",
+            "inquiry": "Demander des informations",
+        },
+        "pt": {
+            "page": "Cursos",
+            "description": "Formacao pratica baseada nos produtos, ferramentas e metodos deste negocio.",
+            "audience": "Para clientes que desejam aprendizagem guiada e pratica.",
+            "includes": ["Instrucao passo a passo", "Materiais e ferramentas", "Projeto pratico"],
+            "purchase": "Inscrever-se",
+            "inquiry": "Solicitar informacoes",
+        },
+    }
+    return labels.get(language, labels["en"])
+
+
+def _mark_course_catalog_items(
+    catalog_items: List[Dict[str, Any]],
+    state: Optional[ProjectState],
+) -> None:
+    if not state:
+        return
+    course_names = [
+        _normalized_offering_name(item)
+        for item in state.servicesProducts
+        if COURSE_SIGNAL_RE.search(str(item or ""))
+    ]
+    for item in catalog_items:
+        item_name = _normalized_offering_name(item.get("name"))
+        if item_name and any(name == item_name or name in item_name or item_name in name for name in course_names):
+            item["offer_type"] = "course"
+            item["display_in_catalog"] = False
+
+
+def _ensure_course_page(
+    pages: List[Dict[str, Any]],
+    state: Optional[ProjectState],
+    catalog_items: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    if not state:
+        return pages
+    context = " ".join(filter(None, [
+        state.businessDescription,
+        state.industry,
+        " ".join(state.servicesProducts),
+    ]))
+    if not COURSE_SIGNAL_RE.search(context):
+        return pages
+
+    labels = _course_page_labels(state.selectedLanguage or "en")
+    named_courses = [str(item).strip() for item in state.servicesProducts if COURSE_SIGNAL_RE.search(str(item or ""))]
+    if not named_courses:
+        named_courses = [f"{labels['page']} - {state.businessName or 'Business'}"]
+
+    video_urls: List[str] = []
+    for page in pages:
+        for section in page.get("sections", []):
+            if section.get("type") != "VideoShowcase":
+                continue
+            editable = section.get("editable") or {}
+            video_url = str(editable.get("videoUrl") or editable.get("video_url") or "").strip()
+            if video_url:
+                video_urls.append(video_url)
+
+    purchase_mode = state.salesFlow == "online_sales"
+    sections = []
+    for index, course_name in enumerate(named_courses[:6]):
+        matching_item = next(
+            (item for item in catalog_items if _normalized_offering_name(course_name) in _normalized_offering_name(item.get("name"))),
+            {},
+        )
+        binding = {
+            "title": course_name[:120],
+            "description": labels["description"],
+            "audience": labels["audience"],
+            "includes": labels["includes"],
+            "videoUrl": video_urls[index] if index < len(video_urls) else None,
+            "ctaLabel": labels["purchase"] if purchase_mode else labels["inquiry"],
+            "ctaMode": "purchase" if purchase_mode else "inquiry",
+            "priceLabel": str(matching_item.get("price_label") or "") or None,
+            "itemId": str(matching_item.get("id") or f"course-{index + 1}"),
+        }
+        sections.append({
+            "id": f"course-offering-{index + 1}",
+            "sectionId": f"course-offering-{index + 1}",
+            "type": "CourseOffering",
+            "component": "CourseOffering",
+            "componentType": "course_offering",
+            "order": index + 1,
+            "editable": {**binding, "dataBinding": binding},
+            "dataBinding": binding,
+            "settings": {"layout": "course_media_detail", "container_width": "wide"},
+        })
+
+    course_page = next((page for page in pages if page.get("page_key") in {"courses", "academy"}), None)
+    if course_page:
+        existing_types = {section.get("type") for section in course_page.get("sections", [])}
+        if "CourseOffering" not in existing_types:
+            course_page.setdefault("sections", []).extend(sections)
+        return pages
+
+    insert_at = next((index for index, page in enumerate(pages) if page.get("page_key") == "contact"), len(pages))
+    pages.insert(insert_at, {
+        "page_key": "courses",
+        "pageKey": "courses",
+        "pageId": "courses",
+        "title": labels["page"],
+        "slug": "/courses",
+        "order": insert_at + 1,
+        "sections": sections,
+    })
+    for index, page in enumerate(pages):
+        page["order"] = index + 1
+    return pages
 
 
 def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None) -> Dict[str, Any]:
@@ -383,6 +579,7 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
     catalog_source = "ai_generated"
     if state:
         catalog_items, catalog_source = ensure_plan_seed_catalog_with_source(catalog_items, state, plan)
+    _mark_course_catalog_items(catalog_items, state)
 
     pages = []
     hero_copy: Dict[str, str] = {}
@@ -422,6 +619,8 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             "sections": sections,
         })
 
+    pages = _ensure_course_page(pages, state, catalog_items)
+
     anchor_color = state.colorProvenance.anchorColor if state else None
     niche_hint = " ".join(filter(None, [
         state.industry if state else "",
@@ -442,6 +641,8 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
         "websiteType": plan.websiteType,
         "selectedTemplateId": plan.templateId,
         "selectedTemplateName": template["name"],
+        "primaryOfferingCategory": plan.primaryOfferingCategory,
+        "secondaryOfferingCategories": plan.secondaryOfferingCategories,
         "catalogType": plan.catalogStrategy,
         "salesFlow": plan.salesFlow,
         "targetAudience": plan.targetAudience,
@@ -749,6 +950,8 @@ class OpenAISitePlanAgent:
             "requiredOutput": {
                 "websiteType": "one allowed WebsiteType",
                 "templateId": "one id from allowedTemplates",
+                "primaryOfferingCategory": "the one allowed template id that matches the business's primary revenue offer; must equal templateId",
+                "secondaryOfferingCategories": "zero or more other allowed template ids for meaningful secondary offers",
                 "catalogStrategy": "matching catalog model",
                 "targetAudience": "specific buyer profile",
                 "salesFlow": "online_sales | quote_request | booking | lead_capture | informational",
@@ -820,6 +1023,16 @@ class OpenAISitePlanAgent:
                 "video_showcase": {
                     "videoUrl": "A verified YouTube or Vimeo URL."
                 },
+                "course_offering": {
+                    "title": "Course name",
+                    "description": "What the course includes",
+                    "audience": "Who the course is for",
+                    "includes": "Up to 8 concrete learning inclusions",
+                    "videoUrl": "Optional verified YouTube or Vimeo URL",
+                    "ctaLabel": "Enrollment or information CTA",
+                    "ctaMode": "purchase or inquiry",
+                    "priceLabel": "Optional displayed price",
+                },
             },
         }
 
@@ -882,11 +1095,15 @@ Hard rules:
 - Return ONLY valid JSON. No markdown.
 - Never return HTML, CSS, class names, JavaScript, or invented renderer components.
 - templateId must be exactly one id from allowedTemplates.
+- primaryOfferingCategory must identify the business's main revenue offer and MUST equal templateId. Decide the primary offer from the complete business model, not from isolated words.
+- secondaryOfferingCategories may contain other allowed template ids only when those offers are genuinely secondary. Secondary signals must never override the primary business architecture.
+- A pure course or academy remains education-course-academy-pro when downloadable materials support the teaching offer. A product retailer remains a commerce template when classes support product sales. A fashion boutique with styling classes remains fashion-first; a physical equipment retailer with training remains product-first.
 - sections[].componentType must be exactly one allowed component type.
 - For product_grid_4x and featured_products, dataBinding.items is required with 12 to 16 realistic complete products.
 - For restaurant_menu, dataBinding.categories is required with complete menu categories and dishes.
 - For feature_spotlight, dataBinding.specs is required with complete product/service specifications.
 - Use quote_request_form for configurable quote capture, capabilities_equipment for reusable capability or equipment cards, portfolio_gallery for editorial/project/before-after work, and video_showcase only for verified YouTube or Vimeo URLs.
+- When courses or training are a secondary offer beside physical products, keep the physical-commerce template and create a separate Courses page using one course_offering block per real course. Never turn physical products into course modules.
 - Treat the client's intake as private strategy, not public copy.
 - Do not paste raw client notes into visible website text.
 - Identify the exact niche from the business name, industry, products/services and description before writing catalog or copy.

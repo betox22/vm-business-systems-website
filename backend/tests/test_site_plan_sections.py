@@ -3,9 +3,93 @@ import unittest
 from pydantic import ValidationError
 
 from app.ai_site_planner import AIWebGenerationResponse, site_plan_to_updates
+from app.models import ProjectState
 
 
 class SitePlanSectionTests(unittest.TestCase):
+    @staticmethod
+    def _base_plan() -> AIWebGenerationResponse:
+        return AIWebGenerationResponse.model_validate({
+            "reasoningSummary": "Physical store with secondary training",
+            "templateId": "premium-product-store",
+            "primaryOfferingCategory": "premium-product-store",
+            "secondaryOfferingCategories": ["education-course-academy-pro"],
+            "websiteType": "premium_product",
+            "catalogStrategy": "premium_editorial_catalog",
+            "salesFlow": "online_sales",
+            "targetAudience": "3D printing customers",
+            "brand_identity": {
+                "palette_style": "tecnologico",
+                "font_family_headings": "Space Grotesk",
+                "font_family_body": "Inter",
+                "logo_config": {
+                    "requires_ai_generation": False,
+                    "generation_prompt": "Minimalist flat vector logo for a 3D printing brand named Mi Mundo 3D, tecnologico style, geometric clean shapes, solid colors, no gradients, high detail, white background, trending on Dribbble --vector",
+                },
+            },
+            "pages": [{
+                "pageId": "home",
+                "title": "Home",
+                "slug": "/",
+                "sections": [{
+                    "sectionId": "hero",
+                    "componentType": "hero_editorial_product",
+                    "copy": {"headline": "Mi Mundo 3D"},
+                }],
+            }],
+            "catalogCategories": ["Printers", "Training"],
+            "catalogItems": [{
+                "id": "printer",
+                "name": "Impresoras 3D",
+                "description": "Reliable printers for practical fabrication projects.",
+                "category": "Printers",
+                "price": 499,
+                "price_amount": 499,
+                "price_label": "USD 499",
+                "imageSearchQuery": "professional 3D printer",
+            }],
+            "confidence": 0.9,
+        })
+
+    def test_ai_offering_intent_is_preserved_in_project_updates(self) -> None:
+        updates = site_plan_to_updates(self._base_plan(), ProjectState())
+
+        self.assertEqual(updates["primaryOfferingCategory"], "premium-product-store")
+        self.assertEqual(updates["secondaryOfferingCategories"], ["education-course-academy-pro"])
+
+    def test_secondary_courses_create_a_dedicated_repeatable_course_page(self) -> None:
+        state = ProjectState(
+            businessName="Mi Mundo 3D",
+            businessDescription="Venta de impresoras, materiales y cursos practicos.",
+            servicesProducts=["Impresoras 3D", "Materiales y equipos", "Curso de fabricacion 3D"],
+            salesFlow="online_sales",
+            selectedLanguage="es",
+        )
+
+        updates = site_plan_to_updates(self._base_plan(), state)
+        pages = updates["generatedCopy"]["pages"]
+        course_page = next(page for page in pages if page["page_key"] == "courses")
+        course_item = next(item for item in updates["catalogItems"] if item["name"] == "Curso de fabricacion 3D")
+
+        self.assertEqual(course_page["title"], "Cursos")
+        self.assertEqual(course_page["sections"][0]["type"], "CourseOffering")
+        self.assertEqual(course_page["sections"][0]["editable"]["title"], "Curso de fabricacion 3D")
+        self.assertEqual(course_page["sections"][0]["editable"]["ctaMode"], "purchase")
+        self.assertEqual(course_item["offer_type"], "course")
+        self.assertFalse(course_item["display_in_catalog"])
+
+    def test_business_without_training_does_not_get_a_course_page(self) -> None:
+        state = ProjectState(
+            businessName="Mi Mundo 3D",
+            businessDescription="Venta de impresoras y materiales.",
+            servicesProducts=["Impresoras 3D", "Materiales y equipos"],
+            salesFlow="online_sales",
+        )
+
+        pages = site_plan_to_updates(self._base_plan(), state)["generatedCopy"]["pages"]
+
+        self.assertNotIn("courses", [page["page_key"] for page in pages])
+
     def test_reusable_section_types_are_accepted_and_mapped_to_renderers(self) -> None:
         component_types = [
             ("quote_request_form", "QuoteRequestForm", {"fields": ["Service", "Email"]}),

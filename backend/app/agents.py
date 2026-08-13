@@ -629,7 +629,12 @@ class StrategyAgent(BaseAgent):
             state.salesFlow or "",
         ]))
 
-        template_id, reason = self._select_template_id(text, len(state.servicesProducts), state.selectedTemplateId)
+        ai_template_id = normalize_template_id(state.primaryOfferingCategory)
+        if ai_template_id in TEMPLATE_CATALOG:
+            template_id = ai_template_id
+            reason = "AI planner primary offering category"
+        else:
+            template_id, reason = self._select_template_id(text, len(state.servicesProducts), state.selectedTemplateId)
         template = TEMPLATE_CATALOG[template_id]
         website_type = template["websiteType"]
         template_name = template["name"]

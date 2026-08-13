@@ -1,6 +1,8 @@
 const API_BASE_URL = resolveApiBaseUrl();
 const publicSite = document.querySelector("#publicSite");
 let currentPublicSite = null;
+let currentPublicSchema = null;
+let currentPublicPageKey = "home";
 let publicCart = loadPublicCart();
 
 loadPublicSite();
@@ -20,12 +22,19 @@ async function loadPublicSite() {
     }
     const site = await response.json();
     currentPublicSite = site;
+    currentPublicSchema = { ...site.schema, catalog_items: site.catalog_items || [] };
+    currentPublicPageKey = window.location.hash.replace(/^#/, "") || currentPublicSchema.pages?.[0]?.page_key || "home";
     applyGeneratedFavicon(site.schema);
-    publicSite.innerHTML = renderWebsite({ ...site.schema, catalog_items: site.catalog_items || [] });
-    bindPublicSiteActions();
+    renderCurrentPublicPage();
   } catch (error) {
     publicSite.innerHTML = `<div class="public-empty">Could not load published site.</div>`;
   }
+}
+
+function renderCurrentPublicPage() {
+  if (!currentPublicSchema) return;
+  publicSite.innerHTML = renderWebsite(currentPublicSchema, currentPublicPageKey);
+  bindPublicSiteActions();
 }
 
 function applyGeneratedFavicon(schema) {
@@ -48,8 +57,8 @@ function resolveApiBaseUrl() {
   return "http://127.0.0.1:8010";
 }
 
-function renderWebsite(schema) {
-  const page = schema.pages?.[0];
+function renderWebsite(schema, pageKey = "home") {
+  const page = schema.pages?.find((item) => item.page_key === pageKey) || schema.pages?.[0];
   const theme = schema.theme || {};
   const logo = schema.brand?.logoUrl || schema.global_components?.logo_url;
   const layoutId = schema.layout_mode?.id || "standard";
@@ -59,7 +68,7 @@ function renderWebsite(schema) {
     <header class="rendered-nav sticky">
       <div class="rendered-nav-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business?.name)}">` : renderLogoMark(schema)}</div>
       <nav>${(schema.navigation || [])
-        .map((item) => `<a href="#${escapeAttribute(item.page_key)}">${escapeHtml(item.label)}</a>`)
+        .map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#${escapeAttribute(item.page_key)}" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.label)}</a>`)
         .join("")}</nav>
       ${commerceActions}
     </header>
@@ -106,6 +115,7 @@ function renderSection(section, schema) {
   if (section.type === "FeatureShowcase") return renderFeatureShowcase(section, schema);
   if (section.type === "EditorialGallery" || section.type === "PortfolioGallery") return renderPortfolioGallery(section, schema);
   if (section.type === "VideoShowcase") return renderVideoShowcase(section, schema);
+  if (section.type === "CourseOffering") return renderCourseOffering(section, schema);
   if (section.type === "SpecStrip") return renderSpecStrip(section, schema);
   if (section.type === "FashionHero") return renderFashionHero(section, schema);
   if (section.type === "FashionCollectionRail") return renderFashionCollectionRail(section, schema);
@@ -199,7 +209,7 @@ function renderSection(section, schema) {
 
 function publicCatalogItems(schema) {
   return (schema.catalog_items || schema.products_services || [])
-    .filter((item) => item.is_active !== false)
+    .filter((item) => item.is_active !== false && item.display_in_catalog !== false)
     .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
 }
 
@@ -727,11 +737,11 @@ function renderMarketplaceHero(section, schema) {
   return `<section class="marketplace-hero ${sectionClass(section)}">
     <div class="marketplace-search-panel">
       <div class="marketplace-logo-row"><strong>${escapeHtml(schema.business?.name || "Marketplace")}</strong><span>${escapeHtml(editable.deal_badge || labels.deal)}</span></div>
-      <label class="marketplace-search-box"><span>${escapeHtml(labels.search)}</span><input placeholder="${escapeAttribute(editable.search_placeholder || labels.searchPlaceholder)}" readonly><button type="button">${escapeHtml(labels.searchButton)}</button></label>
-      <div class="marketplace-chip-row">${marketplaceCategories(schema).slice(0, 6).map((category) => `<span>${escapeHtml(category)}</span>`).join("")}</div>
+      <form class="marketplace-search-box" data-catalog-search-form><input type="search" name="catalog-search" aria-label="${escapeAttribute(labels.search)}" placeholder="${escapeAttribute(editable.search_placeholder || labels.searchPlaceholder)}"><button type="submit">${escapeHtml(labels.searchButton)}</button></form>
+      <div class="marketplace-chip-row">${marketplaceCategories(schema).slice(0, 6).map((category) => `<button type="button" data-catalog-category="${escapeAttribute(category)}">${escapeHtml(category)}</button>`).join("")}</div>
     </div>
     <div class="marketplace-deal-hero">
-      <div><small>${escapeHtml(editable.deal_badge || labels.deal)}</small><h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1><p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p><div class="rendered-actions"><button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.shopNow)}</button></div></div>
+      <div><small>${escapeHtml(editable.deal_badge || labels.deal)}</small><h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1><p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p><div class="rendered-actions"><a class="rendered-button" href="#catalog" data-page-link="catalog">${escapeHtml(editable.primary_button || labels.shopNow)}</a></div></div>
       <aside><b>${escapeHtml(editable.deal_title || labels.dealTitle)}</b><p>${escapeHtml(editable.deal_text || labels.dealText)}</p><div>${items.map((item) => `<span>${escapeHtml(item.name)}</span>`).join("")}</div></aside>
     </div>
   </section>`;
@@ -751,7 +761,7 @@ function renderDealRow(section, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<section class="marketplace-deal-section ${sectionClass(section)}">
     <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.deal)}</span><h2>${escapeHtml(editable.title || labels.dealTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
-    <div class="marketplace-deal-row">${publicCatalogItems(schema).slice(0, 6).map((item, index) => renderCatalogCard(item, "market-card deal-card", index % 2 ? labels.fastShip : labels.deal, schema)).join("")}</div>
+    <div class="marketplace-deal-row catalog-count-${Math.min(publicCatalogItems(schema).length, 6)}">${publicCatalogItems(schema).slice(0, 6).map((item, index) => renderCatalogCard(item, "market-card deal-card", index % 2 ? labels.fastShip : labels.deal, schema)).join("")}</div>
   </section>`;
 }
 
@@ -833,7 +843,7 @@ function renderMarketplaceCatalog(items, schema) {
   const groups = groupCatalogItemsByCategory(items, labels);
   return `<div class="catalog-shell catalog-marketplace">
     <aside><strong>${escapeHtml(labels.searchFilters)}</strong>${groups.map(([category]) => `<a href="#catalog-category-${escapeAttribute(slugify(category))}">${escapeHtml(category)}</a>`).join("")}<span>${escapeHtml(labels.price)}</span><span>${escapeHtml(labels.rating)}</span><span>${escapeHtml(labels.delivery)}</span></aside>
-    <div class="marketplace-catalog-main"><div class="marketplace-sort-bar"><b>${escapeHtml(labels.results)}</b><span>${escapeHtml(labels.sortBy)}: ${escapeHtml(labels.featured)}</span></div><div class="marketplace-category-groups">${groups.map(([category, categoryItems]) => `<section id="catalog-category-${escapeAttribute(slugify(category))}" class="marketplace-category-group"><div class="marketplace-category-heading"><h3>${escapeHtml(category)}</h3><span>${categoryItems.length}</span></div><div class="catalog-results">${categoryItems.map((item, index) => renderCatalogCard(item, "market-card", index % 3 === 0 ? labels.deal : labels.fastShip, schema)).join("")}</div></section>`).join("")}</div></div>
+    <div class="marketplace-catalog-main"><div class="marketplace-sort-bar"><b>${escapeHtml(labels.results)}</b><span>${escapeHtml(labels.sortBy)}: ${escapeHtml(labels.featured)}</span></div><div class="marketplace-category-groups">${groups.map(([category, categoryItems]) => `<section id="catalog-category-${escapeAttribute(slugify(category))}" class="marketplace-category-group" data-catalog-group><div class="marketplace-category-heading"><h3>${escapeHtml(category)}</h3><span>${categoryItems.length}</span></div><div class="catalog-results">${categoryItems.map((item, index) => renderCatalogCard(item, "market-card", index % 3 === 0 ? labels.deal : labels.fastShip, schema)).join("")}</div></section>`).join("")}</div></div>
   </div>${renderMarketplaceSubscribe(schema)}`;
 }
 
@@ -965,8 +975,8 @@ function renderDigitalHero(section, schema) {
       <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
       <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
       <div class="rendered-actions">
-        <button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.getAccess)}</button>
-        <button class="rendered-button secondary" data-open-lead type="button">${escapeHtml(editable.secondary_button || labels.viewProducts)}</button>
+        <a class="rendered-button" href="#catalog" data-page-link="catalog">${escapeHtml(editable.primary_button || labels.getAccess)}</a>
+        <a class="rendered-button secondary" href="#contact" data-page-link="contact">${escapeHtml(editable.secondary_button || labels.viewProducts)}</a>
       </div>
       <div class="digital-proof-strip">${labels.digitalProofItems.slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
     </div>
@@ -1023,8 +1033,8 @@ function renderDigitalAccessPanel(section, schema) {
       <h2>${escapeHtml(editable.title || labels.digitalAccessTitle)}</h2>
       <p>${escapeHtml(editable.text || labels.digitalAccessText)}</p>
       <div class="rendered-actions">
-        <button class="rendered-button" data-open-lead type="button">${escapeHtml(labels.getAccess)}</button>
-        <button class="rendered-button secondary" data-open-lead type="button">${escapeHtml(labels.contact)}</button>
+        <a class="rendered-button" href="#catalog" data-page-link="catalog">${escapeHtml(labels.getAccess)}</a>
+        <a class="rendered-button secondary" href="#contact" data-page-link="contact">${escapeHtml(labels.contact)}</a>
       </div>
     </div>
   </section>`;
@@ -1032,7 +1042,8 @@ function renderDigitalAccessPanel(section, schema) {
 
 function renderDigitalOfferCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
-  return `<div class="catalog-digital-pro">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+  const commerce = isCommerceSite(schema);
+  return `<div class="catalog-digital-pro catalog-count-${Math.min(items.length, 9)}">${items.map((item) => `<article ${catalogSearchAttributes(item)}>
     <div class="digital-card-top"><small>${escapeHtml(item.category || labels.digitalProducts)}</small><span>${escapeHtml(labels.instantAccess)}</span></div>
     ${renderCatalogImage(item)}
     <h3>${escapeHtml(item.name)}</h3>
@@ -1040,7 +1051,7 @@ function renderDigitalOfferCatalog(items, schema) {
     <ul><li>${escapeHtml(labels.downloadable)}</li><li>${escapeHtml(labels.bonus)}</li><li>${escapeHtml(labels.lifetime)}</li></ul>
     <div class="digital-card-bottom">
       <strong>${escapeHtml(item.price_label || labels.request)}</strong>
-      <button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.getAccess)}</button>
+      <button class="rendered-button" ${commerce ? `data-cart-add data-item-price="${escapeAttribute(item.price_label || labels.request)}"` : "data-open-lead"} data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || (commerce ? commerceLabels(schema).addToCart : labels.getAccess))}</button>
     </div>
   </article>`).join("")}</div>`;
 }
@@ -1664,7 +1675,7 @@ function renderCatalogCard(item, className, badge, schema) {
     ? `data-cart-add data-item-id="${escapeAttribute(item.id || item.name || "")}" data-item-name="${escapeAttribute(item.name)}" data-item-price="${escapeAttribute(priceLabel)}"`
     : `data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}"`;
   const actionLabel = isMarket ? commerce.addToCart : (item.button_label || labels.view);
-  return `<article class="${className}">
+  return `<article class="${className}" ${catalogSearchAttributes(item)}>
     ${renderCatalogImage(item)}
     ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
     ${item.category ? `<small>${escapeHtml(item.category)}</small>` : ""}
@@ -1674,6 +1685,11 @@ function renderCatalogCard(item, className, badge, schema) {
     <b>${escapeHtml(priceLabel)}</b>
     <button class="rendered-button" ${actionAttributes} type="button">${escapeHtml(actionLabel)}</button>
   </article>`;
+}
+
+function catalogSearchAttributes(item = {}) {
+  const searchText = [item.name, item.category, item.description, item.sku].filter(Boolean).join(" ").toLowerCase();
+  return `data-catalog-item data-catalog-search="${escapeAttribute(searchText)}" data-catalog-item-category="${escapeAttribute(String(item.category || "").toLowerCase())}"`;
 }
 
 function renderCatalogImage(item = {}) {
@@ -1703,6 +1719,30 @@ function renderVideoShowcase(section) {
   return `<section class="video-showcase ${sectionClass(section)}"><div class="section-heading"><h2>${escapeHtml(editable.title || "Video")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div><div class="video-embed"><iframe src="${escapeAttribute(embedUrl)}" title="${escapeAttribute(editable.title || "Video")}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></section>`;
 }
 
+function renderCourseOffering(section, schema) {
+  const editable = section.editable || {};
+  const embedUrl = safeVideoEmbedUrl(editable.videoUrl || editable.video_url || "");
+  const includes = Array.isArray(editable.includes) ? editable.includes.slice(0, 8) : [];
+  const commerce = editable.ctaMode === "purchase" && isCommerceSite(schema);
+  const actionAttributes = commerce
+    ? `data-cart-add data-item-id="${escapeAttribute(editable.itemId || section.id || editable.title || "course")}" data-item-name="${escapeAttribute(editable.title || "Course")}" data-item-price="${escapeAttribute(editable.priceLabel || "")}"`
+    : `data-open-lead data-item-id="${escapeAttribute(editable.itemId || section.id || "course")}" data-item-name="${escapeAttribute(editable.title || "Course")}"`;
+  return `<section class="course-offering ${sectionClass(section)}">
+    <div class="course-offering-media">
+      ${embedUrl
+        ? `<div class="video-embed"><iframe src="${escapeAttribute(embedUrl)}" title="${escapeAttribute(editable.title || "Course")}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`
+        : `<div class="course-video-placeholder"><span>${escapeHtml(schema.business?.name || "LYRA")}</span><strong>${escapeHtml(editable.title || "Course")}</strong></div>`}
+    </div>
+    <div class="course-offering-copy">
+      <span class="rendered-kicker">${escapeHtml(editable.audience || "Course")}</span>
+      <h2>${escapeHtml(editable.title || "Course")}</h2>
+      <p>${escapeHtml(editable.description || editable.text || "")}</p>
+      ${includes.length ? `<ul>${includes.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+      <div class="course-offering-action">${editable.priceLabel ? `<strong>${escapeHtml(editable.priceLabel)}</strong>` : ""}<button class="rendered-button" ${actionAttributes} type="button">${escapeHtml(editable.ctaLabel || "Learn more")}</button></div>
+    </div>
+  </section>`;
+}
+
 function safeVideoEmbedUrl(value) {
   try {
     const url = new URL(String(value || ""));
@@ -1717,7 +1757,7 @@ function safeVideoEmbedUrl(value) {
 function marketplaceCategories(schema) {
   const fromItems = [...new Set(publicCatalogItems(schema).map((item) => item.category).filter(Boolean))];
   const fallback = catalogLocaleLabels(schema).fallbackCategories;
-  return [...new Set([...fromItems, ...fallback])];
+  return fromItems.length ? fromItems : fallback;
 }
 
 function catalogLocaleLabels(schema) {
@@ -1887,6 +1927,35 @@ function sectionClass(section) {
 }
 
 function bindPublicSiteActions() {
+  publicSite.querySelectorAll("[data-page-link]").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      currentPublicPageKey = link.dataset.pageLink || "home";
+      window.history.replaceState(null, "", `#${currentPublicPageKey}`);
+      renderCurrentPublicPage();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+  const applyCatalogFilter = (value = "") => {
+    const query = String(value || "").trim().toLowerCase();
+    publicSite.querySelectorAll("[data-catalog-item]").forEach((item) => {
+      const searchable = String(item.dataset.catalogSearch || "").toLowerCase();
+      const category = String(item.dataset.catalogItemCategory || "").toLowerCase();
+      item.hidden = Boolean(query) && !searchable.includes(query) && category !== query;
+    });
+    publicSite.querySelectorAll("[data-catalog-group]").forEach((group) => {
+      group.hidden = Boolean(query) && !group.querySelector("[data-catalog-item]:not([hidden])");
+    });
+  };
+  publicSite.querySelectorAll("[data-catalog-search-form]").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      applyCatalogFilter(new FormData(form).get("catalog-search") || "");
+    });
+  });
+  publicSite.querySelectorAll("[data-catalog-category]").forEach((button) => {
+    button.addEventListener("click", () => applyCatalogFilter(button.dataset.catalogCategory || ""));
+  });
   publicSite.querySelectorAll("[data-open-lead]").forEach((button) => {
     button.addEventListener("click", () => openLeadModal({
       catalogItemId: button.dataset.itemId || "",

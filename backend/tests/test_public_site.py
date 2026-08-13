@@ -196,13 +196,37 @@ class PublicSitePayloadTests(unittest.TestCase):
         self.assertEqual(schema["pages"], planned_pages)
         self.assertEqual(schema["pages"][0]["sections"][0]["type"], "PortfolioGallery")
 
+    def test_navigation_is_derived_from_generated_pages(self) -> None:
+        state = ProjectState(
+            businessName="Mi Mundo 3D",
+            businessDescription="Physical products and practical courses.",
+            generatedCopy={"pages": [
+                {"page_key": "home", "title": "Home", "order": 1, "sections": []},
+                {"page_key": "catalog", "title": "Catalog", "order": 2, "sections": []},
+                {"page_key": "courses", "title": "Cursos", "order": 3, "sections": []},
+                {"page_key": "contact", "title": "Contact", "order": 4, "sections": []},
+            ]},
+        )
+
+        schema = build_schema_from_state(state, catalog_items=[], catalog_source="seed_fallback")
+
+        self.assertEqual(
+            schema["navigation"],
+            [
+                {"label": "Home", "page_key": "home"},
+                {"label": "Catalog", "page_key": "catalog"},
+                {"label": "Cursos", "page_key": "courses"},
+                {"label": "Contact", "page_key": "contact"},
+            ],
+        )
+
     def test_frontend_keeps_and_renders_optional_planner_sections(self) -> None:
         repo_root = Path(__file__).resolve().parents[2]
         renderer_source = (repo_root / "src" / "ai-builder" / "renderers.js").read_text(encoding="utf-8")
         editor_source = (repo_root / "src" / "ai-builder" / "index.js").read_text(encoding="utf-8")
         viewer_source = (repo_root / "site-viewer.js").read_text(encoding="utf-8")
 
-        for component in ("QuoteRequestForm", "CapabilitiesEquipment", "PortfolioGallery", "VideoShowcase"):
+        for component in ("QuoteRequestForm", "CapabilitiesEquipment", "PortfolioGallery", "VideoShowcase", "CourseOffering"):
             self.assertIn(component, renderer_source)
             self.assertIn(component, viewer_source)
             self.assertIn(component, editor_source)

@@ -41,3 +41,21 @@ test('Contact never replaces a reusable planner section at full capacity', () =>
   assert.equal(types.includes('Contact'), true);
   assert.equal(selected.length, 6);
 });
+
+
+test('keeps a generated CourseOffering page block at the section limit', () => {
+  const sections = [
+    { type: 'Hero' },
+    { type: 'ProductGrid' },
+    { type: 'ServiceList' },
+    { type: 'FeatureBand' },
+    { type: 'About' },
+    { type: 'CourseOffering' },
+    { type: 'Contact' },
+  ];
+
+  const types = keepEssentialSections(sections, 6).map((section) => section.type);
+
+  assert.equal(types.includes('CourseOffering'), true);
+  assert.equal(types.includes('Contact'), true);
+});

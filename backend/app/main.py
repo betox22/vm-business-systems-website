@@ -1354,7 +1354,7 @@ def build_schema_from_state(
         else ColorProvenance.model_validate(state.colorProvenance or {}).model_dump()
     )
 
-    return {
+    schema = {
         "version": "1.0",
         "generation_metadata": {
             "catalog_source": catalog_source,
@@ -1496,6 +1496,14 @@ def build_schema_from_state(
             "visibleCopyPolicy": "Never paste raw intake notes verbatim.",
         },
     }
+    schema["navigation"] = [
+        {
+            "label": str(page.get("title") or page.get("page_key") or "Page"),
+            "page_key": str(page.get("page_key") or page.get("pageKey") or page.get("pageId") or "home"),
+        }
+        for page in sorted(schema["pages"], key=lambda page: int(page.get("order") or 0))
+    ]
+    return schema
 
 
 # SECURITY FIX (2026-08-10): this used to mount StaticFiles(directory=ROOT_DIR)

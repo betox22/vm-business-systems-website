@@ -137,7 +137,11 @@ class LyraOrchestrator:
         # 4. Let the server-side AI director choose the final editable plan when configured.
         # If OPENAI_API_KEY is missing or validation fails, this returns no updates and
         # the deterministic workers above remain the fallback.
-        await self._run_and_merge(manager, self.ai_site_planner, user_input)
+        planner_result = await self._run_and_merge(manager, self.ai_site_planner, user_input)
+        if planner_result.updates.get("primaryOfferingCategory"):
+            # Reconcile the final winner through the same selector without another
+            # LLM call. The initial regex selection remains the offline fallback.
+            await self._run_and_merge(manager, self.strategist, user_input)
 
         # 5. Validate final state strictly before returning to the frontend.
         await self._run_and_merge(manager, self.validator, user_input)

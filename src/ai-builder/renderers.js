@@ -190,6 +190,7 @@ function renderSection(section, schema) {
     EditorialGallery: renderPortfolioGallery,
     PortfolioGallery: renderPortfolioGallery,
     VideoShowcase: renderVideoShowcase,
+    CourseOffering: renderCourseOffering,
     SpecStrip: renderSpecStrip,
     FashionHero: renderFashionHero,
     FashionCollectionRail: renderFashionCollectionRail,
@@ -292,7 +293,7 @@ function renderSection(section, schema) {
 
 export function marketplaceItems(schema) {
   return (schema.catalog_items || schema.products_services || [])
-    .filter((item) => item.is_active !== false)
+    .filter((item) => item.is_active !== false && item.display_in_catalog !== false)
     .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
 }
 
@@ -649,8 +650,8 @@ function renderDigitalHero(section, schema) {
       <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
       <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.getAccess)}</a>
-        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewProducts)}</a>
+        <a class="rendered-button" href="#" data-page-link="catalog">${escapeHtml(editable.primary_button || labels.getAccess)}</a>
+        <a class="rendered-button secondary" href="#" data-page-link="contact">${escapeHtml(editable.secondary_button || labels.viewProducts)}</a>
       </div>
       <div class="digital-proof-strip">${labels.digitalProofItems.slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
     </div>
@@ -707,8 +708,8 @@ function renderDigitalAccessPanel(section, schema) {
       <h2>${escapeHtml(editable.title || labels.digitalAccessTitle)}</h2>
       <p>${escapeHtml(editable.text || labels.digitalAccessText)}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#">${escapeHtml(labels.getAccess)}</a>
-        <a class="rendered-button secondary" href="#">${escapeHtml(labels.contact)}</a>
+        <a class="rendered-button" href="#" data-page-link="catalog">${escapeHtml(labels.getAccess)}</a>
+        <a class="rendered-button secondary" href="#" data-page-link="contact">${escapeHtml(labels.contact)}</a>
       </div>
     </div>
   </section>`;
@@ -1630,7 +1631,7 @@ function renderMarketplaceHero(section, schema) {
   const labels = catalogLocaleLabels(schema);
   const topItems = items.slice(0, 4);
   const categories = marketplaceCategories(schema);
-  const heroProducts = topItems.map((item, index) => `<article class="marketplace-hero-product-card">
+  const heroProducts = topItems.map((item, index) => `<article class="marketplace-hero-product-card" ${catalogSearchAttributes(item)}>
         ${renderCatalogImage(item)}
         <small>${escapeHtml(index % 2 ? labels.fastShip : labels.deal)}</small>
         <strong>${escapeHtml(item.name)}</strong>
@@ -1643,12 +1644,11 @@ function renderMarketplaceHero(section, schema) {
         <strong>${escapeHtml(schema.business?.name || "Marketplace")}</strong>
         <span>${escapeHtml(editable.deal_badge || labels.deal)}</span>
       </div>
-      <label class="marketplace-search-box">
-        <span>${escapeHtml(labels.search)}</span>
-        <input value="" placeholder="${escapeAttribute(editable.search_placeholder || labels.searchPlaceholder)}" readonly>
-        <button type="button">${escapeHtml(labels.searchButton)}</button>
-      </label>
-      <div class="marketplace-chip-row">${categories.slice(0, 6).map((category) => `<span>${escapeHtml(category)}</span>`).join("")}</div>
+      <form class="marketplace-search-box" data-catalog-search-form>
+        <input type="search" name="catalog-search" aria-label="${escapeAttribute(labels.search)}" placeholder="${escapeAttribute(editable.search_placeholder || labels.searchPlaceholder)}">
+        <button type="submit">${escapeHtml(labels.searchButton)}</button>
+      </form>
+      <div class="marketplace-chip-row">${categories.slice(0, 6).map((category) => `<button type="button" data-catalog-category="${escapeAttribute(category)}">${escapeHtml(category)}</button>`).join("")}</div>
     </div>
     <div class="marketplace-deal-hero marketplace-commerce-home">
       <div class="marketplace-hero-copy">
@@ -1661,8 +1661,8 @@ function renderMarketplaceHero(section, schema) {
           <span>${escapeHtml(labels.support)}</span>
         </div>
         <div class="rendered-actions">
-          <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || labels.shopNow)}</a>
-          <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.categories)}</a>
+          <a class="rendered-button" href="#" data-page-link="catalog">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || labels.shopNow)}</a>
+          <a class="rendered-button secondary" href="#" data-page-link="catalog">${escapeHtml(editable.secondary_button || labels.categories)}</a>
         </div>
       </div>
       <aside class="marketplace-hero-products-panel">
@@ -1703,7 +1703,7 @@ function renderDealRow(section, schema) {
       <h2>${escapeHtml(editable.title || labels.dealTitle)}</h2>
       ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
     </div>
-    <div class="marketplace-deal-row">${items.map((item, index) => renderCatalogCard(item, "market-card deal-card", index % 2 ? labels.fastShip : labels.deal, schema)).join("")}</div>
+    <div class="marketplace-deal-row catalog-count-${Math.min(items.length, 9)}">${items.map((item, index) => renderCatalogCard(item, "market-card deal-card", index % 2 ? labels.fastShip : labels.deal, schema)).join("")}</div>
   </section>`;
 }
 
@@ -1724,7 +1724,7 @@ function renderProductGrid(section, schema) {
   const editable = section.editable || {};
   const columns = Math.max(2, Math.min(Number(section.settings?.columns || 3), 4));
   const catalogItems = (schema.catalog_items || schema.products_services || [])
-    .filter((item) => item.is_active !== false)
+    .filter((item) => item.is_active !== false && item.display_in_catalog !== false)
     .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
   const catalogType = schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || "editorial_minimal_grid";
   const customCatalog = renderCatalogByType(catalogType, catalogItems, schema);
@@ -1799,7 +1799,7 @@ function renderMarketplaceCatalog(items, schema) {
     </aside>
     <div class="marketplace-catalog-main">
       <div class="marketplace-sort-bar"><b>${escapeHtml(labels.results)}</b><span>${escapeHtml(labels.sortBy)}: ${escapeHtml(labels.featured)}</span></div>
-      <div class="marketplace-category-groups">${groups.map(([category, categoryItems]) => `<section id="catalog-category-${escapeAttribute(slugify(category))}" class="marketplace-category-group"><div class="marketplace-category-heading"><h3>${escapeHtml(category)}</h3><span>${categoryItems.length}</span></div><div class="catalog-results">${categoryItems.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? labels.deal : labels.fastShip}`, schema)).join("")}</div></section>`).join("")}</div>
+      <div class="marketplace-category-groups">${groups.map(([category, categoryItems]) => `<section id="catalog-category-${escapeAttribute(slugify(category))}" class="marketplace-category-group" data-catalog-group><div class="marketplace-category-heading"><h3>${escapeHtml(category)}</h3><span>${categoryItems.length}</span></div><div class="catalog-results">${categoryItems.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? labels.deal : labels.fastShip}`, schema)).join("")}</div></section>`).join("")}</div>
     </div>
   </div>${renderMarketplaceSubscribe(schema)}`;
 }
@@ -2053,7 +2053,7 @@ function renderIndustrialSupplierCatalog(items, schema) {
 
 function renderDigitalOfferCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
-  return `<div class="catalog-digital-pro">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+  return `<div class="catalog-digital-pro catalog-count-${Math.min(items.length, 9)}">${items.map((item) => `<article ${catalogSearchAttributes(item)}>
     <div class="digital-card-top">
       <small>${escapeHtml(item.category || labels.digitalProducts)}</small>
       <span>${escapeHtml(labels.instantAccess)}</span>
@@ -2064,7 +2064,7 @@ function renderDigitalOfferCatalog(items, schema) {
     <ul><li>${escapeHtml(labels.downloadable)}</li><li>${escapeHtml(labels.bonus)}</li><li>${escapeHtml(labels.lifetime)}</li></ul>
     <div class="digital-card-bottom">
       <strong>${escapeHtml(productPriceLabel(item, schema))}</strong>
-      <a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.getAccess)}</a>
+      <a class="rendered-button" href="#" data-page-link="contact">${escapeHtml(item.button_label || labels.getAccess)}</a>
     </div>
   </article>`).join("")}</div>`;
 }
@@ -2131,7 +2131,7 @@ function renderCatalogCard(item, className, badge, schema) {
   const labels = catalogLocaleLabels(schema);
   const commerce = commerceLabels(schema);
   const isMarket = String(className || "").includes("market-card");
-  return `<article class="${className}">
+  return `<article class="${className}" ${catalogSearchAttributes(item)}>
     ${renderCatalogImage(item)}
     ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
     ${item.category ? `<small>${escapeHtml(item.category)}</small>` : ""}
@@ -2462,6 +2462,35 @@ function googleFontFamilyParam(fontName, weights) {
   const family = String(fontName || "").trim();
   if (!family) return "";
   return `family=${encodeURIComponent(family).replace(/%20/g, "+")}:wght@${weights}`;
+}
+
+function renderCourseOffering(section, schema) {
+  const editable = section.editable || {};
+  const embedUrl = safeVideoEmbedUrl(editable.videoUrl || editable.video_url || "");
+  const includes = arrayValue(editable.includes).slice(0, 8);
+  const actionPage = editable.ctaMode === "purchase" ? "catalog" : "contact";
+  return `<section class="course-offering ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="course-offering-media">
+      ${embedUrl
+        ? `<div class="video-embed"><iframe src="${escapeAttribute(embedUrl)}" title="${escapeAttribute(editable.title || "Course")}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`
+        : `<div class="course-video-placeholder"><span>${escapeHtml(schema.business?.name || "LYRA")}</span><strong>${escapeHtml(editable.title || "Course")}</strong></div>`}
+    </div>
+    <div class="course-offering-copy">
+      <span class="rendered-kicker">${escapeHtml(editable.audience || "Course")}</span>
+      <h2>${escapeHtml(editable.title || "Course")}</h2>
+      <p>${escapeHtml(editable.description || editable.text || "")}</p>
+      ${includes.length ? `<ul>${includes.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+      <div class="course-offering-action">
+        ${editable.priceLabel ? `<strong>${escapeHtml(editable.priceLabel)}</strong>` : ""}
+        <a class="rendered-button" href="#" data-page-link="${actionPage}">${escapeHtml(editable.ctaLabel || "Learn more")}</a>
+      </div>
+    </div>
+  </section>`;
+}
+
+function catalogSearchAttributes(item = {}) {
+  const searchText = [item.name, item.category, item.description, item.sku].filter(Boolean).join(" ").toLowerCase();
+  return `data-catalog-item data-catalog-search="${escapeAttribute(searchText)}" data-catalog-item-category="${escapeAttribute(String(item.category || "").toLowerCase())}"`;
 }
 
 export function ensureGoogleFontsLoaded(theme = {}) {

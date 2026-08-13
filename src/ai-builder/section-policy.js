@@ -3,6 +3,7 @@ const REUSABLE_PLANNER_TYPES = new Set([
   "CapabilitiesEquipment",
   "PortfolioGallery",
   "VideoShowcase",
+  "CourseOffering",
 ]);
 
 export function keepEssentialSections(sections, maxSections) {

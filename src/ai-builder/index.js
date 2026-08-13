@@ -1565,7 +1565,9 @@ function templateIntentScorecard(value, payload = {}) {
   if (has(/\b(abogado|lawyer|legal|law firm|contador|accountant|tax|taxes|impuestos|consulting|consultoria|seguros|insurance|asesor|advisor|financiero|compliance|firma profesional)\b/)) scores.push(scoreFor("legal-professional-services-pro", 115, "professional services trust flow"));
   if (has(/\b(b2b saas|saas|enterprise|software empresarial|automatizacion|automation|platform|plataforma|dashboard|crm|erp|integraciones|api|managed services|it services|business systems|request demo|demo|workflow)\b/)) scores.push(scoreFor("b2b-saas-enterprise-pro", 115, "B2B software/enterprise flow"));
   if (has(/\b(manufacturing|manufacturer|industrial|industrial supplier|fabrica|fabricante|manufactura|maquinaria|machinery|repuestos industriales|parts supplier|tools supplier|herramientas industriales|safety equipment|bulk order|b2b procurement|rfq|proveedor industrial|suministros industriales)\b/)) scores.push(scoreFor("manufacturing-industrial-supplier-pro", 114, "industrial supplier flow"));
-  if (has(/\b(curso|cursos|course|courses|academy|academia|escuela online|bootcamp|training|formacion|clases|classes|lessons|masterclass|workshop|taller|coaching program|certificacion)\b/)) scores.push(scoreFor("education-course-academy-pro", 112, "course/academy flow"));
+  if (has(/\b(curso|cursos|course|courses|academy|academia|escuela online|bootcamp|training|formacion|clases|classes|lessons|masterclass|workshop|taller|coaching program|certificacion)\b/)) {
+    scores.push(scoreFor("education-course-academy-pro", 112, "course/academy flow"));
+  }
   if (has(/\b(digital|ebook|e-book|templates|plantillas|descarga|download|pdf|pack|membresia|membership|digital products|productos digitales)\b/)) scores.push(scoreFor("digital-products-store", 105, "digital product flow"));
   if (has(/\b(contratista|contractor|construccion|construction|limpieza|cleaning|plomeria|plumbing|electricista|electrician|hvac|aire acondicionado|mechanic|mecanico|landscaping|seguridad|security|servicio local|local service|reparacion|repair|presupuesto|cotizacion|quote|emergencia)\b/)) scores.push(scoreFor("home-services-premium", 108, "local service quote flow"));
   if (textSuggestsJewelryAccessoryStore(text) && !textSuggestsBroadMarketplace(text)) scores.push(scoreFor("fashion-drop-pro", 118, "focused jewelry/accessory boutique"));
@@ -1607,7 +1609,9 @@ function inferTemplateIdFromText(value) {
   if (/clinica|clinic|med spa|wellness|dental|doctor|estetica|salud|therapy|skincare/.test(text)) return "medical-wellness-clinic-pro";
   if (/saas|software|enterprise|automatizacion|platform|plataforma|dashboard|crm|erp|integraciones|api/.test(text)) return "b2b-saas-enterprise-pro";
   if (/industrial|manufactur|fabrica|maquinaria|repuestos|proveedor industrial|suministros/.test(text)) return "manufacturing-industrial-supplier-pro";
-  if (/curso|course|academy|academia|bootcamp|training|clases|masterclass|workshop/.test(text)) return "education-course-academy-pro";
+  if (/curso|course|academy|academia|bootcamp|training|clases|masterclass|workshop/.test(text)) {
+    return "education-course-academy-pro";
+  }
   if (/digital|ebook|templates|plantillas|descarga|download|membresia|membership/.test(text)) return "digital-products-store";
   if (/servicio|service|contractor|limpieza|roofing|repair|reparacion|cotizacion|quote/.test(text)) return "local-services-pro-plus";
   if (textSuggestsJewelryAccessoryStore(text) || /ropa|fashion|moda|boutique|streetwear|zapato|sneaker|accesorio/.test(text)) return "fashion-drop-pro";
@@ -5631,7 +5635,9 @@ function inferDesignerTemplateIdFromPayload(payload = {}) {
   if (/clinic|clinica|wellness|dental|doctor|estetica|salud|therapy|skincare/.test(text)) return "medical-wellness-clinic-pro";
   if (/saas|software|enterprise|automatizacion|plataforma|dashboard|crm|erp|api/.test(text)) return "b2b-saas-enterprise-pro";
   if (/industrial|manufactur|fabrica|maquinaria|repuestos|herramientas|suministros/.test(text)) return "manufacturing-industrial-supplier-pro";
-  if (/curso|course|academy|academia|bootcamp|training|clases|masterclass/.test(text)) return "education-course-academy-pro";
+  if (/curso|course|academy|academia|bootcamp|training|clases|masterclass/.test(text)) {
+    return "education-course-academy-pro";
+  }
   if (/digital|ebook|templates|plantillas|descarga|download|membresia|membership/.test(text)) return "digital-products-store";
   if (textSuggestsJewelryAccessoryStore(text) || /ropa|fashion|moda|boutique|streetwear|zapato|sneaker|accesorio/.test(text)) return "fashion-drop-pro";
   if (textSuggestsSingleProductShowcase(text) || textSuggestsPremiumProductPreference(text)) {
@@ -6844,13 +6850,13 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
         navigation: { ...(nextSchema.layout_mode?.navigation || {}), show_cart: true, show_header: true, sticky_header: true },
         checkout: { ...(nextSchema.layout_mode?.checkout || {}), mode: "single_store_checkout", primary_action: copy.shopNow },
       },
-      navigation: [
+      navigation: navigationWithCustomPages([
         { label: copy.home, page_key: "home" },
         { label: copy.deals, page_key: "deals" },
         { label: copy.categories, page_key: "categories" },
         { label: copy.catalog, page_key: "catalog" },
         { label: copy.support, page_key: "support" },
-      ],
+      ], existingPages, schema.navigation),
       pages: [...retailPages, ...existingPages],
     };
   } else if (/mega-marketplace/i.test(templateId) || /dense_marketplace_catalog/i.test(catalogType) || textSuggestsMultiVendorMarketplace(brief)) {
@@ -6892,13 +6898,13 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
         navigation: { ...(nextSchema.layout_mode?.navigation || {}), show_cart: true, show_header: true, sticky_header: true },
         checkout: { ...(nextSchema.layout_mode?.checkout || {}), mode: "cart_setup_required", primary_action: copy.shopNow },
       },
-      navigation: [
+      navigation: navigationWithCustomPages([
         { label: copy.home, page_key: "home" },
         { label: copy.deals, page_key: "deals" },
         { label: copy.categories, page_key: "categories" },
         { label: copy.catalog, page_key: "catalog" },
         { label: copy.support, page_key: "support" },
-      ],
+      ], existingPages, schema.navigation),
       pages: [...marketplacePages, ...existingPages],
     };
   }
@@ -6906,6 +6912,22 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
     nextSchema = applyCyberpunkVisualDirection(nextSchema);
   }
   return nextSchema;
+}
+
+function navigationWithCustomPages(baseNavigation = [], customPages = [], sourceNavigation = []) {
+  const baseKeys = new Set(baseNavigation.map((item) => item.page_key));
+  const sourceByKey = new Map(arrayValue(sourceNavigation).map((item) => [item.page_key, item]));
+  const customNavigation = arrayValue(customPages)
+    .filter((page) => page.page_key && !baseKeys.has(page.page_key))
+    .map((page) => sourceByKey.get(page.page_key) || {
+      label: page.title || page.page_key,
+      page_key: page.page_key,
+    });
+  if (!customNavigation.length) return baseNavigation;
+  const supportIndex = baseNavigation.findIndex((item) => /support|contact/i.test(item.page_key || ""));
+  const nextNavigation = [...baseNavigation];
+  nextNavigation.splice(supportIndex >= 0 ? supportIndex : nextNavigation.length, 0, ...customNavigation);
+  return nextNavigation;
 }
 
 function lockSchemaToExecutableTemplate(schema, payload = {}, templateSelection = null, context = {}) {
@@ -6992,7 +7014,7 @@ function normalizeTemplatePresetId(templateId = "", catalogType = "") {
 
 function mergeLockedTemplatePage(lockedPage, existingPage = null) {
   if (!existingPage) return lockedPage;
-  const optionalBackendTypes = new Set(["QuoteRequestForm", "CapabilitiesEquipment", "PortfolioGallery", "VideoShowcase"]);
+  const optionalBackendTypes = new Set(["QuoteRequestForm", "CapabilitiesEquipment", "PortfolioGallery", "VideoShowcase", "CourseOffering"]);
   const normalizedExistingSections = arrayValue(existingPage.sections).map((section, index) => {
     const type = section.type || section.component || "";
     const nestedEditable = section.editable || {};
@@ -7754,6 +7776,57 @@ function inferredPublicCatalogLabels({ text = "", language = builderState.select
   return set.default;
 }
 
+function textSuggestsCourseOffering(value = "") {
+  return /\b(curso|cursos|course|courses|academy|academia|training|formaci[oó]n|taller|workshop|clase|classes)\b/i.test(String(value || ""));
+}
+
+function instantCoursePageForPayload(payload = {}, language = builderState.selectedLanguage, catalogItems = []) {
+  const sourceText = [
+    payload.business_description,
+    payload.industry,
+    arrayValue(payload.services_products).join(" "),
+  ].filter(Boolean).join(" ");
+  if (!textSuggestsCourseOffering(sourceText)) return null;
+
+  const labels = {
+    es: { page: "Cursos", fallback: "Curso practico", audience: "Para personas que quieren aprender con una guia clara", includes: ["Contenido paso a paso", "Ejemplos practicos", "Orientacion para aplicar lo aprendido"], cta: "Inscribirme" },
+    en: { page: "Courses", fallback: "Practical course", audience: "For people who want to learn with clear guidance", includes: ["Step-by-step content", "Practical examples", "Guidance to apply what you learn"], cta: "Enroll" },
+    fr: { page: "Cours", fallback: "Cours pratique", audience: "Pour apprendre avec un accompagnement clair", includes: ["Contenu pas a pas", "Exemples pratiques", "Conseils d'application"], cta: "M'inscrire" },
+    pt: { page: "Cursos", fallback: "Curso pratico", audience: "Para quem quer aprender com orientacao clara", includes: ["Conteudo passo a passo", "Exemplos praticos", "Orientacao para aplicar o aprendizado"], cta: "Inscrever-me" },
+  };
+  const copy = labels[language] || labels.en;
+  const namedCourses = arrayValue(payload.services_products)
+    .map((item) => String(item || "").trim())
+    .filter((item) => textSuggestsCourseOffering(item))
+    .slice(0, 4);
+  const courses = namedCourses.length ? namedCourses : [copy.fallback];
+  const directPurchase = /online_sales|sell online|venta online|ecommerce/i.test(`${payload.sales_flow || ""} ${payload.salesMode || ""}`);
+
+  return {
+    page_key: "courses",
+    title: copy.page,
+    slug: "/courses",
+    order: 90,
+    sections: courses.map((title, index) => ({
+      id: `course-offering-${index + 1}`,
+      type: "CourseOffering",
+      order: index + 1,
+      editable: {
+        itemId: catalogItems.find((item) => String(item.name || "").trim() === title)?.id || `course-${index + 1}`,
+        title,
+        description: sourceText,
+        audience: copy.audience,
+        includes: copy.includes,
+        videoUrl: "",
+        ctaLabel: copy.cta,
+        ctaMode: directPurchase ? "purchase" : "inquiry",
+        priceLabel: "",
+      },
+      settings: { container_width: "wide" },
+    })),
+  };
+}
+
 function buildInstantTemplateSchema(payload, templateSelection) {
   const language = payload.selectedLanguage || builderState.selectedLanguage || "en";
   const template = templateSelection?.template || payload.selectedTemplate || {};
@@ -7814,6 +7887,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     image_url: "",
     is_active: true,
     is_featured: index < 3,
+    offer_type: textSuggestsCourseOffering(item) ? "course" : "product",
+    display_in_catalog: !textSuggestsCourseOffering(item),
     sort_order: index,
   }));
   const isPremiumTemplate = catalogType === "premium_editorial_catalog" || /premium-product-store|apple-premium-product/i.test(template.id || "");
@@ -7982,7 +8057,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
               : isLeadFunnelTemplate
                 ? buildLeadFunnelInstantPages(copy, name, description, payload)
             : buildDefaultInstantPages(copy, name, description, payload);
-  return {
+  const schema = {
     schema_version: "1.0",
     site_type: isBusinessWebsite ? "business_website" : "online_store",
     business: {
@@ -8141,6 +8216,17 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     contact: payload.contact_info || {},
     editable_fields: ["headline", "subtitle", "title", "text", "primary_button", "secondary_button", "image_url", "images"],
   };
+  const coursePage = instantCoursePageForPayload(payload, language, catalogItems);
+  if (coursePage && !schema.pages.some((page) => page.page_key === "courses")) {
+    const contactIndex = schema.pages.findIndex((page) => page.page_key === "contact");
+    schema.pages.splice(contactIndex >= 0 ? contactIndex : schema.pages.length, 0, coursePage);
+    const contactNavIndex = schema.navigation.findIndex((item) => item.page_key === "contact");
+    schema.navigation.splice(contactNavIndex >= 0 ? contactNavIndex : schema.navigation.length, 0, {
+      label: coursePage.title,
+      page_key: coursePage.page_key,
+    });
+  }
+  return schema;
 }
 
 function buildDefaultInstantPages(copy, name, description, payload = {}) {
@@ -9149,23 +9235,9 @@ function buildDigitalProductsInstantPages(copy, name, description, payload = {})
           settings: { layout: "bundle_cards", columns: 3, spacing: "spacious", container_width: "wide" },
         },
         {
-          id: "digital_modules",
-          type: "DigitalModules",
-          order: 3,
-          editable: { title: copy.digitalModulesTitle, text: copy.digitalModulesText, items: copy.digitalModuleItems },
-          settings: { layout: "module_grid", spacing: "balanced", container_width: "wide" },
-        },
-        {
-          id: "digital_proof",
-          type: "DigitalProof",
-          order: 4,
-          editable: { title: copy.digitalProofTitle, text: copy.digitalProofText, items: copy.digitalProofItems },
-          settings: { layout: "proof_panel", spacing: "balanced", container_width: "wide" },
-        },
-        {
           id: "digital_access",
           type: "DigitalAccessPanel",
-          order: 5,
+          order: 3,
           editable: { title: copy.digitalAccessTitle, text: copy.digitalAccessText },
           settings: { layout: "access_panel", spacing: "balanced", container_width: "wide" },
         },
@@ -12198,10 +12270,36 @@ export function renderPreview() {
   });
   previewFrame.querySelectorAll("[data-studio-section]").forEach((sectionElement) => {
     sectionElement.addEventListener("click", (event) => {
+      if (event.target.closest("a, button, input, select, textarea, form")) return;
       event.preventDefault();
       event.stopPropagation();
       selectStudioSection(sectionElement.dataset.studioSection);
     });
+  });
+  bindCatalogSearchInteractions(previewFrame);
+}
+
+function bindCatalogSearchInteractions(root) {
+  const applyFilter = (value = "") => {
+    const query = normalizeTemplateIntentText(value);
+    const items = [...root.querySelectorAll("[data-catalog-item]")];
+    items.forEach((item) => {
+      const searchable = normalizeTemplateIntentText(item.dataset.catalogSearch || "");
+      const category = normalizeTemplateIntentText(item.dataset.catalogItemCategory || "");
+      item.hidden = Boolean(query) && !searchable.includes(query) && category !== query;
+    });
+    root.querySelectorAll("[data-catalog-group]").forEach((group) => {
+      group.hidden = Boolean(query) && !group.querySelector("[data-catalog-item]:not([hidden])");
+    });
+  };
+  root.querySelectorAll("[data-catalog-search-form]").forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      applyFilter(new FormData(form).get("catalog-search") || "");
+    });
+  });
+  root.querySelectorAll("[data-catalog-category]").forEach((button) => {
+    button.addEventListener("click", () => applyFilter(button.dataset.catalogCategory || ""));
   });
 }
 
@@ -12229,6 +12327,7 @@ function renderSchemaPreviewInto(schema, containerElement, payload = {}, templat
         renderPage(link.dataset.pageLink || defaultPageKey);
       });
     });
+    bindCatalogSearchInteractions(containerElement);
   };
 
   renderPage(defaultPageKey);

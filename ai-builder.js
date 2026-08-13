@@ -1237,6 +1237,7 @@
       EditorialGallery: renderPortfolioGallery,
       PortfolioGallery: renderPortfolioGallery,
       VideoShowcase: renderVideoShowcase,
+      CourseOffering: renderCourseOffering,
       SpecStrip: renderSpecStrip,
       FashionHero: renderFashionHero,
       FashionCollectionRail: renderFashionCollectionRail,
@@ -1337,7 +1338,7 @@
     return (renderers[section.type] || renderFeatureBand)(section, schema);
   }
   function marketplaceItems(schema) {
-    return (schema.catalog_items || schema.products_services || []).filter((item) => item.is_active !== false).sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+    return (schema.catalog_items || schema.products_services || []).filter((item) => item.is_active !== false && item.display_in_catalog !== false).sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
   }
   function renderHero(section, schema) {
     const editable = section.editable || {};
@@ -1661,8 +1662,8 @@
       <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
       <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.getAccess)}</a>
-        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewProducts)}</a>
+        <a class="rendered-button" href="#" data-page-link="catalog">${escapeHtml(editable.primary_button || labels.getAccess)}</a>
+        <a class="rendered-button secondary" href="#" data-page-link="contact">${escapeHtml(editable.secondary_button || labels.viewProducts)}</a>
       </div>
       <div class="digital-proof-strip">${labels.digitalProofItems.slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
     </div>
@@ -1715,8 +1716,8 @@
       <h2>${escapeHtml(editable.title || labels.digitalAccessTitle)}</h2>
       <p>${escapeHtml(editable.text || labels.digitalAccessText)}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#">${escapeHtml(labels.getAccess)}</a>
-        <a class="rendered-button secondary" href="#">${escapeHtml(labels.contact)}</a>
+        <a class="rendered-button" href="#" data-page-link="catalog">${escapeHtml(labels.getAccess)}</a>
+        <a class="rendered-button secondary" href="#" data-page-link="contact">${escapeHtml(labels.contact)}</a>
       </div>
     </div>
   </section>`;
@@ -2540,7 +2541,7 @@
     const labels = catalogLocaleLabels(schema);
     const topItems = items.slice(0, 4);
     const categories = marketplaceCategories(schema);
-    const heroProducts = topItems.map((item, index) => `<article class="marketplace-hero-product-card">
+    const heroProducts = topItems.map((item, index) => `<article class="marketplace-hero-product-card" ${catalogSearchAttributes(item)}>
         ${renderCatalogImage(item)}
         <small>${escapeHtml(index % 2 ? labels.fastShip : labels.deal)}</small>
         <strong>${escapeHtml(item.name)}</strong>
@@ -2553,12 +2554,11 @@
         <strong>${escapeHtml(schema.business?.name || "Marketplace")}</strong>
         <span>${escapeHtml(editable.deal_badge || labels.deal)}</span>
       </div>
-      <label class="marketplace-search-box">
-        <span>${escapeHtml(labels.search)}</span>
-        <input value="" placeholder="${escapeAttribute(editable.search_placeholder || labels.searchPlaceholder)}" readonly>
-        <button type="button">${escapeHtml(labels.searchButton)}</button>
-      </label>
-      <div class="marketplace-chip-row">${categories.slice(0, 6).map((category) => `<span>${escapeHtml(category)}</span>`).join("")}</div>
+      <form class="marketplace-search-box" data-catalog-search-form>
+        <input type="search" name="catalog-search" aria-label="${escapeAttribute(labels.search)}" placeholder="${escapeAttribute(editable.search_placeholder || labels.searchPlaceholder)}">
+        <button type="submit">${escapeHtml(labels.searchButton)}</button>
+      </form>
+      <div class="marketplace-chip-row">${categories.slice(0, 6).map((category) => `<button type="button" data-catalog-category="${escapeAttribute(category)}">${escapeHtml(category)}</button>`).join("")}</div>
     </div>
     <div class="marketplace-deal-hero marketplace-commerce-home">
       <div class="marketplace-hero-copy">
@@ -2571,8 +2571,8 @@
           <span>${escapeHtml(labels.support)}</span>
         </div>
         <div class="rendered-actions">
-          <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || labels.shopNow)}</a>
-          <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.categories)}</a>
+          <a class="rendered-button" href="#" data-page-link="catalog">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || labels.shopNow)}</a>
+          <a class="rendered-button secondary" href="#" data-page-link="catalog">${escapeHtml(editable.secondary_button || labels.categories)}</a>
         </div>
       </div>
       <aside class="marketplace-hero-products-panel">
@@ -2611,7 +2611,7 @@
       <h2>${escapeHtml(editable.title || labels.dealTitle)}</h2>
       ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
     </div>
-    <div class="marketplace-deal-row">${items.map((item, index) => renderCatalogCard(item, "market-card deal-card", index % 2 ? labels.fastShip : labels.deal, schema)).join("")}</div>
+    <div class="marketplace-deal-row catalog-count-${Math.min(items.length, 9)}">${items.map((item, index) => renderCatalogCard(item, "market-card deal-card", index % 2 ? labels.fastShip : labels.deal, schema)).join("")}</div>
   </section>`;
   }
   function renderTrustStrip(section, schema) {
@@ -2629,7 +2629,7 @@
   function renderProductGrid(section, schema) {
     const editable = section.editable || {};
     const columns = Math.max(2, Math.min(Number(section.settings?.columns || 3), 4));
-    const catalogItems = (schema.catalog_items || schema.products_services || []).filter((item) => item.is_active !== false).sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+    const catalogItems = (schema.catalog_items || schema.products_services || []).filter((item) => item.is_active !== false && item.display_in_catalog !== false).sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
     const catalogType = schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || "editorial_minimal_grid";
     const customCatalog = renderCatalogByType(catalogType, catalogItems, schema);
     return `<section class="rendered-section section-${escapeAttribute(slugify(section.settings?.layout || "grid"))} ${sectionClass(section)}" ${sectionAttrs(section)}>
@@ -2699,7 +2699,7 @@
     </aside>
     <div class="marketplace-catalog-main">
       <div class="marketplace-sort-bar"><b>${escapeHtml(labels.results)}</b><span>${escapeHtml(labels.sortBy)}: ${escapeHtml(labels.featured)}</span></div>
-      <div class="marketplace-category-groups">${groups.map(([category, categoryItems]) => `<section id="catalog-category-${escapeAttribute(slugify(category))}" class="marketplace-category-group"><div class="marketplace-category-heading"><h3>${escapeHtml(category)}</h3><span>${categoryItems.length}</span></div><div class="catalog-results">${categoryItems.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? labels.deal : labels.fastShip}`, schema)).join("")}</div></section>`).join("")}</div>
+      <div class="marketplace-category-groups">${groups.map(([category, categoryItems]) => `<section id="catalog-category-${escapeAttribute(slugify(category))}" class="marketplace-category-group" data-catalog-group><div class="marketplace-category-heading"><h3>${escapeHtml(category)}</h3><span>${categoryItems.length}</span></div><div class="catalog-results">${categoryItems.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? labels.deal : labels.fastShip}`, schema)).join("")}</div></section>`).join("")}</div>
     </div>
   </div>${renderMarketplaceSubscribe(schema)}`;
   }
@@ -2935,7 +2935,7 @@
   }
   function renderDigitalOfferCatalog(items, schema) {
     const labels = catalogLocaleLabels(schema);
-    return `<div class="catalog-digital-pro">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
+    return `<div class="catalog-digital-pro catalog-count-${Math.min(items.length, 9)}">${items.map((item) => `<article ${catalogSearchAttributes(item)}>
     <div class="digital-card-top">
       <small>${escapeHtml(item.category || labels.digitalProducts)}</small>
       <span>${escapeHtml(labels.instantAccess)}</span>
@@ -2946,7 +2946,7 @@
     <ul><li>${escapeHtml(labels.downloadable)}</li><li>${escapeHtml(labels.bonus)}</li><li>${escapeHtml(labels.lifetime)}</li></ul>
     <div class="digital-card-bottom">
       <strong>${escapeHtml(productPriceLabel(item, schema))}</strong>
-      <a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.getAccess)}</a>
+      <a class="rendered-button" href="#" data-page-link="contact">${escapeHtml(item.button_label || labels.getAccess)}</a>
     </div>
   </article>`).join("")}</div>`;
   }
@@ -3004,7 +3004,7 @@
     const labels = catalogLocaleLabels(schema);
     const commerce = commerceLabels(schema);
     const isMarket = String(className || "").includes("market-card");
-    return `<article class="${className}">
+    return `<article class="${className}" ${catalogSearchAttributes(item)}>
     ${renderCatalogImage(item)}
     ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
     ${item.category ? `<small>${escapeHtml(item.category)}</small>` : ""}
@@ -4335,6 +4335,31 @@
     const family = String(fontName || "").trim();
     if (!family) return "";
     return `family=${encodeURIComponent(family).replace(/%20/g, "+")}:wght@${weights}`;
+  }
+  function renderCourseOffering(section, schema) {
+    const editable = section.editable || {};
+    const embedUrl = safeVideoEmbedUrl(editable.videoUrl || editable.video_url || "");
+    const includes = arrayValue(editable.includes).slice(0, 8);
+    const actionPage = editable.ctaMode === "purchase" ? "catalog" : "contact";
+    return `<section class="course-offering ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="course-offering-media">
+      ${embedUrl ? `<div class="video-embed"><iframe src="${escapeAttribute(embedUrl)}" title="${escapeAttribute(editable.title || "Course")}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>` : `<div class="course-video-placeholder"><span>${escapeHtml(schema.business?.name || "LYRA")}</span><strong>${escapeHtml(editable.title || "Course")}</strong></div>`}
+    </div>
+    <div class="course-offering-copy">
+      <span class="rendered-kicker">${escapeHtml(editable.audience || "Course")}</span>
+      <h2>${escapeHtml(editable.title || "Course")}</h2>
+      <p>${escapeHtml(editable.description || editable.text || "")}</p>
+      ${includes.length ? `<ul>${includes.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+      <div class="course-offering-action">
+        ${editable.priceLabel ? `<strong>${escapeHtml(editable.priceLabel)}</strong>` : ""}
+        <a class="rendered-button" href="#" data-page-link="${actionPage}">${escapeHtml(editable.ctaLabel || "Learn more")}</a>
+      </div>
+    </div>
+  </section>`;
+  }
+  function catalogSearchAttributes(item = {}) {
+    const searchText = [item.name, item.category, item.description, item.sku].filter(Boolean).join(" ").toLowerCase();
+    return `data-catalog-item data-catalog-search="${escapeAttribute(searchText)}" data-catalog-item-category="${escapeAttribute(String(item.category || "").toLowerCase())}"`;
   }
   function ensureGoogleFontsLoaded(theme = {}) {
     if (typeof document === "undefined") return;
@@ -6531,7 +6556,8 @@ ${cleanQuestion}`;
     "QuoteRequestForm",
     "CapabilitiesEquipment",
     "PortfolioGallery",
-    "VideoShowcase"
+    "VideoShowcase",
+    "CourseOffering"
   ]);
   function keepEssentialSections(sections, maxSections) {
     const priority = { Hero: 0, ProductGrid: 1, ServiceList: 2, FeatureBand: 3, Testimonials: 4, About: 5, Gallery: 6, Contact: 7, Footer: 8 };
@@ -8577,7 +8603,9 @@ ${cleanQuestion}`;
     if (has(/\b(abogado|lawyer|legal|law firm|contador|accountant|tax|taxes|impuestos|consulting|consultoria|seguros|insurance|asesor|advisor|financiero|compliance|firma profesional)\b/)) scores.push(scoreFor("legal-professional-services-pro", 115, "professional services trust flow"));
     if (has(/\b(b2b saas|saas|enterprise|software empresarial|automatizacion|automation|platform|plataforma|dashboard|crm|erp|integraciones|api|managed services|it services|business systems|request demo|demo|workflow)\b/)) scores.push(scoreFor("b2b-saas-enterprise-pro", 115, "B2B software/enterprise flow"));
     if (has(/\b(manufacturing|manufacturer|industrial|industrial supplier|fabrica|fabricante|manufactura|maquinaria|machinery|repuestos industriales|parts supplier|tools supplier|herramientas industriales|safety equipment|bulk order|b2b procurement|rfq|proveedor industrial|suministros industriales)\b/)) scores.push(scoreFor("manufacturing-industrial-supplier-pro", 114, "industrial supplier flow"));
-    if (has(/\b(curso|cursos|course|courses|academy|academia|escuela online|bootcamp|training|formacion|clases|classes|lessons|masterclass|workshop|taller|coaching program|certificacion)\b/)) scores.push(scoreFor("education-course-academy-pro", 112, "course/academy flow"));
+    if (has(/\b(curso|cursos|course|courses|academy|academia|escuela online|bootcamp|training|formacion|clases|classes|lessons|masterclass|workshop|taller|coaching program|certificacion)\b/)) {
+      scores.push(scoreFor("education-course-academy-pro", 112, "course/academy flow"));
+    }
     if (has(/\b(digital|ebook|e-book|templates|plantillas|descarga|download|pdf|pack|membresia|membership|digital products|productos digitales)\b/)) scores.push(scoreFor("digital-products-store", 105, "digital product flow"));
     if (has(/\b(contratista|contractor|construccion|construction|limpieza|cleaning|plomeria|plumbing|electricista|electrician|hvac|aire acondicionado|mechanic|mecanico|landscaping|seguridad|security|servicio local|local service|reparacion|repair|presupuesto|cotizacion|quote|emergencia)\b/)) scores.push(scoreFor("home-services-premium", 108, "local service quote flow"));
     if (textSuggestsJewelryAccessoryStore(text) && !textSuggestsBroadMarketplace(text)) scores.push(scoreFor("fashion-drop-pro", 118, "focused jewelry/accessory boutique"));
@@ -8613,7 +8641,9 @@ ${cleanQuestion}`;
     if (/clinica|clinic|med spa|wellness|dental|doctor|estetica|salud|therapy|skincare/.test(text)) return "medical-wellness-clinic-pro";
     if (/saas|software|enterprise|automatizacion|platform|plataforma|dashboard|crm|erp|integraciones|api/.test(text)) return "b2b-saas-enterprise-pro";
     if (/industrial|manufactur|fabrica|maquinaria|repuestos|proveedor industrial|suministros/.test(text)) return "manufacturing-industrial-supplier-pro";
-    if (/curso|course|academy|academia|bootcamp|training|clases|masterclass|workshop/.test(text)) return "education-course-academy-pro";
+    if (/curso|course|academy|academia|bootcamp|training|clases|masterclass|workshop/.test(text)) {
+      return "education-course-academy-pro";
+    }
     if (/digital|ebook|templates|plantillas|descarga|download|membresia|membership/.test(text)) return "digital-products-store";
     if (/servicio|service|contractor|limpieza|roofing|repair|reparacion|cotizacion|quote/.test(text)) return "local-services-pro-plus";
     if (textSuggestsJewelryAccessoryStore(text) || /ropa|fashion|moda|boutique|streetwear|zapato|sneaker|accesorio/.test(text)) return "fashion-drop-pro";
@@ -11801,7 +11831,9 @@ ${guidedQuestion(nextMissing)}`
     if (/clinic|clinica|wellness|dental|doctor|estetica|salud|therapy|skincare/.test(text)) return "medical-wellness-clinic-pro";
     if (/saas|software|enterprise|automatizacion|plataforma|dashboard|crm|erp|api/.test(text)) return "b2b-saas-enterprise-pro";
     if (/industrial|manufactur|fabrica|maquinaria|repuestos|herramientas|suministros/.test(text)) return "manufacturing-industrial-supplier-pro";
-    if (/curso|course|academy|academia|bootcamp|training|clases|masterclass/.test(text)) return "education-course-academy-pro";
+    if (/curso|course|academy|academia|bootcamp|training|clases|masterclass/.test(text)) {
+      return "education-course-academy-pro";
+    }
     if (/digital|ebook|templates|plantillas|descarga|download|membresia|membership/.test(text)) return "digital-products-store";
     if (textSuggestsJewelryAccessoryStore(text) || /ropa|fashion|moda|boutique|streetwear|zapato|sneaker|accesorio/.test(text)) return "fashion-drop-pro";
     if (textSuggestsSingleProductShowcase(text) || textSuggestsPremiumProductPreference(text)) {
@@ -12893,13 +12925,13 @@ ${guidedQuestion(nextMissing)}`
           navigation: { ...nextSchema.layout_mode?.navigation || {}, show_cart: true, show_header: true, sticky_header: true },
           checkout: { ...nextSchema.layout_mode?.checkout || {}, mode: "single_store_checkout", primary_action: copy.shopNow }
         },
-        navigation: [
+        navigation: navigationWithCustomPages([
           { label: copy.home, page_key: "home" },
           { label: copy.deals, page_key: "deals" },
           { label: copy.categories, page_key: "categories" },
           { label: copy.catalog, page_key: "catalog" },
           { label: copy.support, page_key: "support" }
-        ],
+        ], existingPages, schema.navigation),
         pages: [...retailPages, ...existingPages]
       };
     } else if (/mega-marketplace/i.test(templateId) || /dense_marketplace_catalog/i.test(catalogType) || textSuggestsMultiVendorMarketplace(brief)) {
@@ -12940,13 +12972,13 @@ ${guidedQuestion(nextMissing)}`
           navigation: { ...nextSchema.layout_mode?.navigation || {}, show_cart: true, show_header: true, sticky_header: true },
           checkout: { ...nextSchema.layout_mode?.checkout || {}, mode: "cart_setup_required", primary_action: copy.shopNow }
         },
-        navigation: [
+        navigation: navigationWithCustomPages([
           { label: copy.home, page_key: "home" },
           { label: copy.deals, page_key: "deals" },
           { label: copy.categories, page_key: "categories" },
           { label: copy.catalog, page_key: "catalog" },
           { label: copy.support, page_key: "support" }
-        ],
+        ], existingPages, schema.navigation),
         pages: [...marketplacePages, ...existingPages]
       };
     }
@@ -12954,6 +12986,19 @@ ${guidedQuestion(nextMissing)}`
       nextSchema = applyCyberpunkVisualDirection(nextSchema);
     }
     return nextSchema;
+  }
+  function navigationWithCustomPages(baseNavigation = [], customPages = [], sourceNavigation = []) {
+    const baseKeys = new Set(baseNavigation.map((item) => item.page_key));
+    const sourceByKey = new Map(arrayValue2(sourceNavigation).map((item) => [item.page_key, item]));
+    const customNavigation = arrayValue2(customPages).filter((page) => page.page_key && !baseKeys.has(page.page_key)).map((page) => sourceByKey.get(page.page_key) || {
+      label: page.title || page.page_key,
+      page_key: page.page_key
+    });
+    if (!customNavigation.length) return baseNavigation;
+    const supportIndex = baseNavigation.findIndex((item) => /support|contact/i.test(item.page_key || ""));
+    const nextNavigation = [...baseNavigation];
+    nextNavigation.splice(supportIndex >= 0 ? supportIndex : nextNavigation.length, 0, ...customNavigation);
+    return nextNavigation;
   }
   function lockSchemaToExecutableTemplate(schema, payload = {}, templateSelection = null, context = {}) {
     const template = templateSelection?.template || payload.selectedTemplate || schema.selected_template || {};
@@ -13033,7 +13078,7 @@ ${guidedQuestion(nextMissing)}`
   }
   function mergeLockedTemplatePage(lockedPage, existingPage = null) {
     if (!existingPage) return lockedPage;
-    const optionalBackendTypes = /* @__PURE__ */ new Set(["QuoteRequestForm", "CapabilitiesEquipment", "PortfolioGallery", "VideoShowcase"]);
+    const optionalBackendTypes = /* @__PURE__ */ new Set(["QuoteRequestForm", "CapabilitiesEquipment", "PortfolioGallery", "VideoShowcase", "CourseOffering"]);
     const normalizedExistingSections = arrayValue2(existingPage.sections).map((section, index) => {
       const type = section.type || section.component || "";
       const nestedEditable = section.editable || {};
@@ -13719,6 +13764,50 @@ ${guidedQuestion(nextMissing)}`
     if (/carro|anime|gadget|juguete|curioso|raro|marketplace|store|shop|tienda|producto/.test(lower)) return set.marketplace;
     return set.default;
   }
+  function textSuggestsCourseOffering(value = "") {
+    return /\b(curso|cursos|course|courses|academy|academia|training|formaci[oó]n|taller|workshop|clase|classes)\b/i.test(String(value || ""));
+  }
+  function instantCoursePageForPayload(payload = {}, language = builderState.selectedLanguage, catalogItems = []) {
+    const sourceText = [
+      payload.business_description,
+      payload.industry,
+      arrayValue2(payload.services_products).join(" ")
+    ].filter(Boolean).join(" ");
+    if (!textSuggestsCourseOffering(sourceText)) return null;
+    const labels = {
+      es: { page: "Cursos", fallback: "Curso practico", audience: "Para personas que quieren aprender con una guia clara", includes: ["Contenido paso a paso", "Ejemplos practicos", "Orientacion para aplicar lo aprendido"], cta: "Inscribirme" },
+      en: { page: "Courses", fallback: "Practical course", audience: "For people who want to learn with clear guidance", includes: ["Step-by-step content", "Practical examples", "Guidance to apply what you learn"], cta: "Enroll" },
+      fr: { page: "Cours", fallback: "Cours pratique", audience: "Pour apprendre avec un accompagnement clair", includes: ["Contenu pas a pas", "Exemples pratiques", "Conseils d'application"], cta: "M'inscrire" },
+      pt: { page: "Cursos", fallback: "Curso pratico", audience: "Para quem quer aprender com orientacao clara", includes: ["Conteudo passo a passo", "Exemplos praticos", "Orientacao para aplicar o aprendizado"], cta: "Inscrever-me" }
+    };
+    const copy = labels[language] || labels.en;
+    const namedCourses = arrayValue2(payload.services_products).map((item) => String(item || "").trim()).filter((item) => textSuggestsCourseOffering(item)).slice(0, 4);
+    const courses = namedCourses.length ? namedCourses : [copy.fallback];
+    const directPurchase = /online_sales|sell online|venta online|ecommerce/i.test(`${payload.sales_flow || ""} ${payload.salesMode || ""}`);
+    return {
+      page_key: "courses",
+      title: copy.page,
+      slug: "/courses",
+      order: 90,
+      sections: courses.map((title, index) => ({
+        id: `course-offering-${index + 1}`,
+        type: "CourseOffering",
+        order: index + 1,
+        editable: {
+          itemId: catalogItems.find((item) => String(item.name || "").trim() === title)?.id || `course-${index + 1}`,
+          title,
+          description: sourceText,
+          audience: copy.audience,
+          includes: copy.includes,
+          videoUrl: "",
+          ctaLabel: copy.cta,
+          ctaMode: directPurchase ? "purchase" : "inquiry",
+          priceLabel: ""
+        },
+        settings: { container_width: "wide" }
+      }))
+    };
+  }
   function buildInstantTemplateSchema(payload, templateSelection) {
     const language = payload.selectedLanguage || builderState.selectedLanguage || "en";
     const template = templateSelection?.template || payload.selectedTemplate || {};
@@ -13777,6 +13866,8 @@ ${guidedQuestion(nextMissing)}`
       image_url: "",
       is_active: true,
       is_featured: index < 3,
+      offer_type: textSuggestsCourseOffering(item) ? "course" : "product",
+      display_in_catalog: !textSuggestsCourseOffering(item),
       sort_order: index
     }));
     const isPremiumTemplate = catalogType === "premium_editorial_catalog" || /premium-product-store|apple-premium-product/i.test(template.id || "");
@@ -13911,7 +14002,7 @@ ${guidedQuestion(nextMissing)}`
       });
     }
     const instantPages = isMegaRetailTemplate ? buildRetailInstantPages(copy, name, description, payload) : isMarketplaceTemplate ? buildMarketplaceInstantPages(copy, name, description, payload) : isPremiumTemplate ? buildPremiumProductInstantPages(copy, name, description, payload) : isLuxuryHighTicketTemplate ? buildLuxuryHighTicketInstantPages(copy, name, description, payload) : isEducationTemplate ? buildEducationAcademyInstantPages(copy, name, description, payload) : isClinicTemplate ? buildMedicalWellnessInstantPages(copy, name, description, payload) : isProfessionalTemplate ? buildLegalProfessionalInstantPages(copy, name, description, payload) : isB2BTemplate ? buildB2BEnterpriseInstantPages(copy, name, description, payload) : isManufacturingTemplate ? buildManufacturingIndustrialInstantPages(copy, name, description, payload) : isFashionTemplate ? buildFashionDropInstantPages(copy, name, description, payload) : isCorporateTemplate ? buildCorporateCompanyInstantPages(copy, name, description, payload) : isHomeServicesTemplate ? buildHomeServicesPremiumInstantPages(copy, name, description, payload) : isBookingTemplate ? buildBookingAppointmentInstantPages(copy, name, description, payload) : isRestaurantTemplate ? buildRestaurantMenuInstantPages(copy, name, description, payload) : isDigitalTemplate ? buildDigitalProductsInstantPages(copy, name, description, payload) : isRealEstateListingTemplate ? buildRealEstateListingsInstantPages(copy, name, description, payload) : isLeadFunnelTemplate ? buildLeadFunnelInstantPages(copy, name, description, payload) : buildDefaultInstantPages(copy, name, description, payload);
-    return {
+    const schema = {
       schema_version: "1.0",
       site_type: isBusinessWebsite ? "business_website" : "online_store",
       business: {
@@ -14070,6 +14161,17 @@ ${guidedQuestion(nextMissing)}`
       contact: payload.contact_info || {},
       editable_fields: ["headline", "subtitle", "title", "text", "primary_button", "secondary_button", "image_url", "images"]
     };
+    const coursePage = instantCoursePageForPayload(payload, language, catalogItems);
+    if (coursePage && !schema.pages.some((page) => page.page_key === "courses")) {
+      const contactIndex = schema.pages.findIndex((page) => page.page_key === "contact");
+      schema.pages.splice(contactIndex >= 0 ? contactIndex : schema.pages.length, 0, coursePage);
+      const contactNavIndex = schema.navigation.findIndex((item) => item.page_key === "contact");
+      schema.navigation.splice(contactNavIndex >= 0 ? contactNavIndex : schema.navigation.length, 0, {
+        label: coursePage.title,
+        page_key: coursePage.page_key
+      });
+    }
+    return schema;
   }
   function buildDefaultInstantPages(copy, name, description, payload = {}) {
     return [
@@ -15066,23 +15168,9 @@ ${guidedQuestion(nextMissing)}`
             settings: { layout: "bundle_cards", columns: 3, spacing: "spacious", container_width: "wide" }
           },
           {
-            id: "digital_modules",
-            type: "DigitalModules",
-            order: 3,
-            editable: { title: copy.digitalModulesTitle, text: copy.digitalModulesText, items: copy.digitalModuleItems },
-            settings: { layout: "module_grid", spacing: "balanced", container_width: "wide" }
-          },
-          {
-            id: "digital_proof",
-            type: "DigitalProof",
-            order: 4,
-            editable: { title: copy.digitalProofTitle, text: copy.digitalProofText, items: copy.digitalProofItems },
-            settings: { layout: "proof_panel", spacing: "balanced", container_width: "wide" }
-          },
-          {
             id: "digital_access",
             type: "DigitalAccessPanel",
-            order: 5,
+            order: 3,
             editable: { title: copy.digitalAccessTitle, text: copy.digitalAccessText },
             settings: { layout: "access_panel", spacing: "balanced", container_width: "wide" }
           }
@@ -17973,10 +18061,35 @@ Site ID: ${builderState.currentSiteId}`
     });
     previewFrame2.querySelectorAll("[data-studio-section]").forEach((sectionElement) => {
       sectionElement.addEventListener("click", (event) => {
+        if (event.target.closest("a, button, input, select, textarea, form")) return;
         event.preventDefault();
         event.stopPropagation();
         selectStudioSection(sectionElement.dataset.studioSection);
       });
+    });
+    bindCatalogSearchInteractions(previewFrame2);
+  }
+  function bindCatalogSearchInteractions(root) {
+    const applyFilter = (value = "") => {
+      const query = normalizeTemplateIntentText(value);
+      const items = [...root.querySelectorAll("[data-catalog-item]")];
+      items.forEach((item) => {
+        const searchable = normalizeTemplateIntentText(item.dataset.catalogSearch || "");
+        const category = normalizeTemplateIntentText(item.dataset.catalogItemCategory || "");
+        item.hidden = Boolean(query) && !searchable.includes(query) && category !== query;
+      });
+      root.querySelectorAll("[data-catalog-group]").forEach((group) => {
+        group.hidden = Boolean(query) && !group.querySelector("[data-catalog-item]:not([hidden])");
+      });
+    };
+    root.querySelectorAll("[data-catalog-search-form]").forEach((form3) => {
+      form3.addEventListener("submit", (event) => {
+        event.preventDefault();
+        applyFilter(new FormData(form3).get("catalog-search") || "");
+      });
+    });
+    root.querySelectorAll("[data-catalog-category]").forEach((button) => {
+      button.addEventListener("click", () => applyFilter(button.dataset.catalogCategory || ""));
     });
   }
   function renderSchemaPreviewInto(schema, containerElement, payload = {}, templateSelection = null) {
@@ -18000,6 +18113,7 @@ Site ID: ${builderState.currentSiteId}`
           renderPage(link.dataset.pageLink || defaultPageKey);
         });
       });
+      bindCatalogSearchInteractions(containerElement);
     };
     renderPage(defaultPageKey);
     return preparedSchema;

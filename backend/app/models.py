@@ -88,6 +88,8 @@ class ProjectState(BaseModel):
     websiteType: Optional[WebsiteType] = None
     selectedTemplateId: Optional[str] = None
     selectedTemplateName: Optional[str] = None
+    primaryOfferingCategory: Optional[str] = None
+    secondaryOfferingCategories: List[str] = Field(default_factory=list)
     catalogType: Optional[str] = None
     salesFlow: Optional[str] = None
 
