@@ -878,6 +878,30 @@ export function renderLiveSitePreview() {
   const card = ensureLiveSitePreviewCard();
   if (!card) return;
   card.classList.remove("template-board-card-host", "template-board-loading-host", "selected-template-card-host", "live-render-card-host");
+  if (builderState.isGeneratingWebsite) {
+    card.classList.add("live-generation-card-host");
+    card.innerHTML = `
+      <div class="live-generation-state" role="status" aria-live="polite">
+        <span class="live-generation-spinner" aria-hidden="true"></span>
+        <div>
+          <strong>${escapeHtml(langText({
+            en: "LYRA is building your website...",
+            es: "LYRA está construyendo tu sitio...",
+            fr: "LYRA construit votre site...",
+            pt: "A LYRA está criando seu site...",
+          }))}</strong>
+          <p>${escapeHtml(langText({
+            en: "Your structure, content, catalog and visual system are being prepared.",
+            es: "Estamos preparando la estructura, el contenido, el catálogo y el sistema visual.",
+            fr: "La structure, le contenu, le catalogue et le système visuel sont en préparation.",
+            pt: "A estrutura, o conteúdo, o catálogo e o sistema visual estão sendo preparados.",
+          }))}</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  card.classList.remove("live-generation-card-host");
   syncTemplateSelectionFromGuidedContext();
   if (shouldShowCanvasTemplateCarousel()) {
     if (shouldRenderTemplateBoardSkeleton()) {
@@ -968,6 +992,7 @@ if (typeof window !== "undefined") {
 
 
 function shouldShowCanvasTemplateCarousel() {
+  if (builderState.isGeneratingWebsite) return false;
   if (!isPublicClientSetup || builderState.currentSchema) return false;
   if (!hasEnoughContextForTemplatePreview()) return false;
   const pages = Array.isArray(builderState.guidedState.sitePlan?.pages) ? builderState.guidedState.sitePlan.pages : [];
@@ -1859,6 +1884,9 @@ export function resetGuidedStateForNewAccount(options = {}) {
   removeGuidedBuildStatusCard();
   builderState.guidedStep = "websiteIntent";
   builderState.lastAskedGuidedField = "";
+  builderState.hasBackendIntakeSignal = false;
+  builderState.backendReadyToGenerate = false;
+  builderState.backendMissingFields = [];
   try {
     localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
     localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
@@ -2040,7 +2068,9 @@ function restoreGuidedDraft() {
     }
     const missing = missingGuidedSteps();
     const savedStep = draft.guidedStep || builderState.guidedStep;
-    builderState.guidedStep = savedStep === "review" && missing.length ? missing[0] : normalizeNextGuidedStep(savedStep);
+    builderState.guidedStep = savedStep === "review" && !builderState.hasBackendIntakeSignal && missing.length
+      ? missing[0]
+      : normalizeNextGuidedStep(savedStep);
     builderState.restoredGuidedDraftInfo = {
       savedAt: draft.savedAt || "",
       completionPercent: guidedCompletionPercent(),
@@ -3964,6 +3994,9 @@ function applyBrandToCurrentSchema(brand) {
 }
 
 export async function reviewAndGenerateFromGuided() {
+  const ownsGenerationState = !builderState.isGeneratingWebsite;
+  if (ownsGenerationState) builderState.isGeneratingWebsite = true;
+  renderLiveSitePreview();
   syncGuidedStateFromSummary();
   normalizeGuidedStateBeforeGenerate();
   applyGuidedStateToForm();
@@ -4002,6 +4035,7 @@ export async function reviewAndGenerateFromGuided() {
     });
     guidedStatusText.textContent = successMessage;
     appendChatMessage("assistant", successMessage, "success");
+    renderLiveSitePreview();
     showGeneratedClientPreview();
   } else if (generated === "needs_more_info") {
     const missingQuestion = builderState.pendingServerIntakeGate?.next_question || "";
@@ -4023,6 +4057,10 @@ export async function reviewAndGenerateFromGuided() {
   }
   guidedGenerateButton.textContent = previousText || t("reviewGenerate");
   setGuidedGenerateControlsBusy(false);
+  if (ownsGenerationState) {
+    builderState.isGeneratingWebsite = false;
+    renderLiveSitePreview();
+  }
 }
 
 function setGuidedGenerateControlsBusy(isBusy, label = "") {
@@ -4064,7 +4102,7 @@ export async function handleGuidedGenerateButton(event) {
   }
   syncGuidedStateFromSummary();
   normalizeGuidedStateBeforeGenerate();
-  const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
+  const requiredMissing = missingGuidedSteps();
   if (requiredMissing.length) {
     const nextMissing = requiredMissing[0];
     builderState.guidedStep = nextMissing;
@@ -4093,6 +4131,7 @@ export async function handleGuidedGenerateButton(event) {
   setGuidedBuildPhase("save");
   guidedStatusText.textContent = t("generatingLong");
   builderState.isGeneratingWebsite = true;
+  renderLiveSitePreview();
   try {
     await reviewAndGenerateFromGuided();
   } catch (error) {
@@ -4107,6 +4146,7 @@ export async function handleGuidedGenerateButton(event) {
     }), "alert");
   } finally {
     builderState.isGeneratingWebsite = false;
+    renderLiveSitePreview();
     setGuidedGenerateControlsBusy(false);
     guidedGenerateButton.textContent = t("reviewGenerate");
   }
@@ -4271,6 +4311,11 @@ export function applyGuidedStateToForm() {
 export function renderGuidedSummary() {
   syncTemplateSelectionFromGuidedContext();
   builderState.guidedStep = normalizeGuidedStepForCurrentState(builderState.guidedStep);
+  if (builderState.restoredGuidedDraftInfo && builderState.hasBackendIntakeSignal) {
+    builderState.restoredGuidedDraftInfo.completionPercent = guidedCompletionPercent();
+    builderState.restoredGuidedDraftInfo.missing = missingGuidedSteps();
+    if (builderState.restoredDraftNoticeCard) renderRestoredDraftNotice({ force: true });
+  }
   syncLyraExperienceMode();
   document.querySelectorAll("[data-summary-field]").forEach((field) => {
     const key = field.dataset.summaryField;
@@ -4495,6 +4540,16 @@ function completedFieldCount() {
 }
 
 export function missingGuidedSteps() {
+  if (builderState.hasBackendIntakeSignal) {
+    if (builderState.backendReadyToGenerate) return [];
+    const backendMissing = arrayValue(builderState.backendMissingFields)
+      .map((slot) => mapBackendSlotToGuidedField(slot))
+      .filter(Boolean);
+    if (backendMissing.length) return [...new Set(backendMissing)];
+    const fallbackStep = builderState.lastAskedGuidedField
+      || (builderState.guidedStep !== "review" ? builderState.guidedStep : "websiteIntent");
+    return [fallbackStep];
+  }
   const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
   if (requiredMissing.length) return requiredMissing;
   return SMART_GUIDED_STEP_PRIORITY.filter((step) => {
@@ -4506,6 +4561,11 @@ export function missingGuidedSteps() {
 }
 
 export function guidedCompletionPercent() {
+  if (builderState.hasBackendIntakeSignal) {
+    if (builderState.backendReadyToGenerate) return 100;
+    const missingCount = Math.max(1, arrayValue(builderState.backendMissingFields).length);
+    return Math.max(10, Math.min(95, Math.round(((7 - Math.min(6, missingCount)) / 7) * 100)));
+  }
   const requiredCompleted = REQUIRED_GUIDED_STEPS.filter((step) => isGuidedStepAnswered(step)).length;
   const optionalSteps = SMART_GUIDED_STEP_PRIORITY.filter((step) => OPTIONAL_GUIDED_STEPS.has(step) && step !== "desiredDomain");
   const optionalCompleted = optionalSteps.filter((step) => isGuidedStepAnswered(step) || (guidedAskedSteps.get(step) || 0) > 0).length;

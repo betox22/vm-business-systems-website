@@ -840,6 +840,9 @@ export function startNewClientProject(options = {}) {
   builderState.restoredGuidedDraftInfo = null;
   builderState.guidedStep = "websiteIntent";
   builderState.lastAskedGuidedField = "";
+  builderState.hasBackendIntakeSignal = false;
+  builderState.backendReadyToGenerate = false;
+  builderState.backendMissingFields = [];
   builderState.guidedState = createEmptyGuidedState(builderState.selectedLanguage);
   if (existingEmail) builderState.guidedState.contactInfo.email = existingEmail;
   guidedAskedSteps.clear();

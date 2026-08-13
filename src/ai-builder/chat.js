@@ -390,6 +390,9 @@ export async function sendGuidedReply() {
     // built from stale data even though the backend explicitly said this
     // message could not be processed.
     const missingBackendFields = arrayValue(result.missingImportantFields);
+    builderState.hasBackendIntakeSignal = true;
+    builderState.backendReadyToGenerate = Boolean(result.readyToGenerate);
+    builderState.backendMissingFields = missingBackendFields;
     const backendMissingStep = mapBackendSlotToGuidedField(missingBackendFields[0]);
     builderState.guidedStep = result.readyToGenerate
       ? "review"
@@ -546,9 +549,14 @@ export function understandingItem(key, label, value, priority) {
 }
 
 export function normalizeGuidedStepForCurrentState(step) {
+  if (builderState.currentSchema) return "review";
+  if (builderState.hasBackendIntakeSignal) {
+    if (builderState.backendReadyToGenerate) return "review";
+    const backendMissing = missingGuidedSteps();
+    if (backendMissing.length) return backendMissing[0];
+  }
   const normalized = normalizeNextGuidedStep(step);
   if (normalized !== "review") return normalized;
-  if (builderState.currentSchema) return "review";
   const requiredMissing = REQUIRED_GUIDED_STEPS.filter((item) => !isGuidedStepAnswered(item));
   if (requiredMissing.length) return requiredMissing[0];
   if (!hasEnoughContextForTemplatePreview()) return nextSmartGuidedStep("websiteIntent");

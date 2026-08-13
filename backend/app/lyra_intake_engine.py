@@ -64,6 +64,7 @@ VALID_LOGO_PATHS = {"has_logo", "wants_generated", "explicit_skip"}
 VALID_SALES_FLOWS = {"online_sales", "quote_request", "booking", "lead_capture", "informational"}
 CATALOG_DEPTH_SALES_FLOWS = {"online_sales", "quote_request", "booking"}
 MIN_CONCRETE_OFFERINGS = 2
+MAX_OFFERING_NAME_LENGTH = 50
 
 GENERIC_OFFERING_VALUES = {
     "catalog",
@@ -91,6 +92,19 @@ GENERIC_OFFERING_VALUES = {
     "accept bookings",
     "aceptar reservas",
 }
+
+OFFERING_SENTENCE_PREFIX_RE = re.compile(
+    r"^(?:yo\s+)?(?:fabrico|fabricamos|hago|hacemos|vendo|vendemos|ofrezco|ofrecemos|"
+    r"i\s+(?:make|sell|offer)|we\s+(?:make|sell|offer))\s+",
+    re.IGNORECASE,
+)
+OFFERING_SENTENCE_SUFFIX_RE = re.compile(
+    r"\b(?:los?|las?)\s+(?:quiero|queremos)\s+vender\b|"
+    r"\b(?:quiero|queremos|want\s+to)\s+(?:vender|sell)\b|"
+    r"\b(?:para|to)\s+(?:vender|sell)\b|"
+    r"\b(?:al\s+detal|al\s+mayor|por\s+mayor|retail|wholesale)\b",
+    re.IGNORECASE,
+)
 
 
 class FieldMeta(BaseModel):
@@ -536,6 +550,10 @@ class LyraIntakeEngine:
             tracked = TrackedField.model_validate(raw)
             if tracked.value is None or tracked.value == "":
                 continue
+            if key == "services_products":
+                tracked.value = self._normalize_services_products(tracked.value)
+                if not tracked.value:
+                    continue
             self._merge_tracked_field(key, tracked, updated_state, field_meta)
 
         detected_intent = DetectedIntent.model_validate(payload.get("detectedIntent") or {})
@@ -702,7 +720,7 @@ class LyraIntakeEngine:
     def _normalize_updates(self, updates: Dict[str, Any]) -> Dict[str, Any]:
         normalized = dict(updates)
         if "servicesProducts" in normalized:
-            normalized["servicesProducts"] = split_items(normalized["servicesProducts"])
+            normalized["servicesProducts"] = self._normalize_services_products(normalized["servicesProducts"])
         if "preferredColors" in normalized and isinstance(normalized["preferredColors"], list):
             normalized["preferredColors"] = ", ".join(str(item).strip() for item in normalized["preferredColors"] if str(item).strip())
         if "photoUrls" in normalized and not isinstance(normalized["photoUrls"], list):
@@ -710,6 +728,33 @@ class LyraIntakeEngine:
         if "contactInfo" in normalized and not isinstance(normalized["contactInfo"], dict):
             normalized.pop("contactInfo", None)
         return normalized
+
+    @staticmethod
+    def _normalize_services_products(value: Any) -> List[str]:
+        """Turn conversational catalog prose into stable offering names."""
+
+        normalized_items: List[str] = []
+        seen: set[str] = set()
+
+        def append_item(candidate: str) -> None:
+            cleaned = re.sub(r"\b(?:etc\.?|etcetera)\b", "", candidate, flags=re.IGNORECASE)
+            cleaned = re.sub(r"\s+", " ", cleaned).strip(" ,.;:-")
+            if not cleaned or len(cleaned) > MAX_OFFERING_NAME_LENGTH:
+                return
+            signature = cleaned.casefold()
+            if signature in seen or signature in GENERIC_OFFERING_VALUES:
+                return
+            seen.add(signature)
+            normalized_items.append(cleaned)
+
+        for raw_item in split_items(value):
+            item = OFFERING_SENTENCE_PREFIX_RE.sub("", str(raw_item or "").strip())
+            item = OFFERING_SENTENCE_SUFFIX_RE.split(item, maxsplit=1)[0].strip()
+            if not item:
+                continue
+            append_item(item)
+
+        return normalized_items
 
     def _state_payload(self, state: ProjectState) -> Dict[str, Any]:
         return {
@@ -1079,7 +1124,11 @@ FORMULARIO A COMPLETAR (slots):
 - business_name (string)
 - business_description (string: qué vende/hace, en sus propias palabras)
 - services_products (array: nombres concretos de productos o servicios que el cliente
-  dijo que ofrece; nunca inventes entradas para completar este slot)
+  dijo que ofrece; cada elemento debe ser SOLO el nombre de una oferta concreta, no una
+  oración, intención de venta, canal, modalidad mayorista/detal ni copy descriptivo.
+  Separa productos distintos aunque el cliente los escriba sin comas. Ejemplo:
+  "fabrico jabones velas y bombas de baño" -> ["Jabones", "Velas", "Bombas de baño"].
+  Nunca inventes entradas para completar este slot)
 - niche (debe ser EXACTAMENTE uno de: {niche_list} — nunca inventes uno nuevo;
   si no calza claramente con ninguno, usa "general" y baja tu confidence)
 - sales_flow (uno de: online_sales, quote_request, booking, lead_capture, informational)

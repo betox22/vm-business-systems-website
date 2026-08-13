@@ -210,6 +210,81 @@ class IntakeGateTests(unittest.TestCase):
         self.assertEqual(decision.updatedState["servicesProducts"], ["Lavender soap", "Vanilla candle"])
         self.assertEqual(decision.missingCriticalFields, [])
 
+    def test_services_products_generically_splits_and_cleans_raw_sales_sentence(self) -> None:
+        engine = LyraIntakeEngine()
+        state = ProjectState(
+            businessName="Bath All Day",
+            businessDescription="Handmade bath products sold online.",
+            industry="beauty",
+            salesFlow="online_sales",
+            preferredTone="organic and warm",
+            logoPreference="explicit_skip",
+            fieldMeta={
+                "niche": {"source": "explicit", "confidence": 0.95},
+                "sales_flow": {"source": "explicit", "confidence": 0.95},
+                "salesFlow": {"source": "explicit", "confidence": 0.95},
+                "brand_style": {"source": "explicit", "confidence": 0.95},
+                "logo": {"source": "explicit", "confidence": 0.95},
+            },
+        )
+        raw_reply = "yo fabrico jabones velas y bombas de bano las quiero vender al detal mayor y bundles regalos etc"
+        payload = _base_payload()
+        payload["updatedFields"] = {
+            "services_products": {
+                "value": raw_reply,
+                "source": "explicit",
+                "confidence": 0.95,
+            }
+        }
+
+        decision = engine._decision_from_tool_payload(payload, state, raw_reply)
+
+        offerings = decision.updatedState["servicesProducts"]
+        normalized_text = " ".join(offerings).lower()
+        self.assertGreaterEqual(len(offerings), 2)
+        self.assertIn("jabones", normalized_text)
+        self.assertIn("velas", normalized_text)
+        self.assertIn("bombas de bano", normalized_text)
+        self.assertNotIn("quiero vender", normalized_text)
+        self.assertTrue(all(len(item) <= 50 for item in offerings))
+        self.assertTrue(decision.canGenerate)
+
+    def test_services_products_rejects_long_bakery_sentence_fragment(self) -> None:
+        engine = LyraIntakeEngine()
+        state = ProjectState(
+            businessName="Dulce Taller",
+            businessDescription="Bakery offering custom desserts for events.",
+            industry="restaurant_food",
+            salesFlow="online_sales",
+            preferredTone="warm and artisanal",
+            logoPreference="explicit_skip",
+            fieldMeta={
+                "niche": {"source": "explicit", "confidence": 0.95},
+                "sales_flow": {"source": "explicit", "confidence": 0.95},
+                "salesFlow": {"source": "explicit", "confidence": 0.95},
+                "brand_style": {"source": "explicit", "confidence": 0.95},
+                "logo": {"source": "explicit", "confidence": 0.95},
+            },
+        )
+        raw_reply = (
+            "hago tortas cupcakes y pasteles personalizados para eventos corporativos "
+            "grandes con entrega especial en toda la ciudad"
+        )
+        payload = _base_payload()
+        payload["updatedFields"] = {
+            "services_products": {
+                "value": raw_reply,
+                "source": "explicit",
+                "confidence": 0.95,
+            }
+        }
+
+        decision = engine._decision_from_tool_payload(payload, state, raw_reply)
+
+        self.assertEqual(decision.updatedState["servicesProducts"], ["tortas cupcakes"])
+        self.assertIn("services_products", decision.missingCriticalFields)
+        self.assertFalse(decision.canGenerate)
+
     def test_cross_field_validator_reverts_sales_flow_leaks_from_industry_and_products(self) -> None:
         engine = LyraIntakeEngine()
         state = ProjectState(

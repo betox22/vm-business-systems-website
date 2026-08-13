@@ -4439,6 +4439,9 @@
     currentRequestId: null,
     currentCatalogItems: [],
     isGeneratingWebsite: false,
+    hasBackendIntakeSignal: false,
+    backendReadyToGenerate: false,
+    backendMissingFields: [],
     guidedStep: "websiteIntent",
     // Backend-reported field (mapped) that the last assistant question was
     // actually about - see mapBackendSlotToGuidedField in index.js. Preferred
@@ -5248,6 +5251,9 @@
     builderState.restoredGuidedDraftInfo = null;
     builderState.guidedStep = "websiteIntent";
     builderState.lastAskedGuidedField = "";
+    builderState.hasBackendIntakeSignal = false;
+    builderState.backendReadyToGenerate = false;
+    builderState.backendMissingFields = [];
     builderState.guidedState = createEmptyGuidedState(builderState.selectedLanguage);
     if (existingEmail) builderState.guidedState.contactInfo.email = existingEmail;
     guidedAskedSteps.clear();
@@ -5852,6 +5858,9 @@
       const planAfterAgent = refreshAiStudioPlanFromContext(message);
       const serverNextStep = result.next_step || result.nextStep || "";
       const missingBackendFields = arrayValue2(result.missingImportantFields);
+      builderState.hasBackendIntakeSignal = true;
+      builderState.backendReadyToGenerate = Boolean(result.readyToGenerate);
+      builderState.backendMissingFields = missingBackendFields;
       const backendMissingStep = mapBackendSlotToGuidedField(missingBackendFields[0]);
       builderState.guidedStep = result.readyToGenerate ? "review" : backendMissingStep || normalizeNextGuidedStep(serverNextStep || builderState.guidedStep);
       builderState.lastAskedGuidedField = result.readyToGenerate ? "" : backendMissingStep;
@@ -5985,9 +5994,14 @@
     };
   }
   function normalizeGuidedStepForCurrentState(step) {
+    if (builderState.currentSchema) return "review";
+    if (builderState.hasBackendIntakeSignal) {
+      if (builderState.backendReadyToGenerate) return "review";
+      const backendMissing = missingGuidedSteps();
+      if (backendMissing.length) return backendMissing[0];
+    }
     const normalized = normalizeNextGuidedStep(step);
     if (normalized !== "review") return normalized;
-    if (builderState.currentSchema) return "review";
     const requiredMissing = REQUIRED_GUIDED_STEPS.filter((item) => !isGuidedStepAnswered(item));
     if (requiredMissing.length) return requiredMissing[0];
     if (!hasEnoughContextForTemplatePreview()) return nextSmartGuidedStep("websiteIntent");
@@ -7741,6 +7755,30 @@ ${cleanQuestion}`;
     const card = ensureLiveSitePreviewCard();
     if (!card) return;
     card.classList.remove("template-board-card-host", "template-board-loading-host", "selected-template-card-host", "live-render-card-host");
+    if (builderState.isGeneratingWebsite) {
+      card.classList.add("live-generation-card-host");
+      card.innerHTML = `
+      <div class="live-generation-state" role="status" aria-live="polite">
+        <span class="live-generation-spinner" aria-hidden="true"></span>
+        <div>
+          <strong>${escapeHtml(langText({
+        en: "LYRA is building your website...",
+        es: "LYRA est\xE1 construyendo tu sitio...",
+        fr: "LYRA construit votre site...",
+        pt: "A LYRA est\xE1 criando seu site..."
+      }))}</strong>
+          <p>${escapeHtml(langText({
+        en: "Your structure, content, catalog and visual system are being prepared.",
+        es: "Estamos preparando la estructura, el contenido, el cat\xE1logo y el sistema visual.",
+        fr: "La structure, le contenu, le catalogue et le syst\xE8me visuel sont en pr\xE9paration.",
+        pt: "A estrutura, o conte\xFAdo, o cat\xE1logo e o sistema visual est\xE3o sendo preparados."
+      }))}</p>
+        </div>
+      </div>
+    `;
+      return;
+    }
+    card.classList.remove("live-generation-card-host");
     syncTemplateSelectionFromGuidedContext();
     if (shouldShowCanvasTemplateCarousel()) {
       if (shouldRenderTemplateBoardSkeleton()) {
@@ -7806,6 +7844,7 @@ ${cleanQuestion}`;
     });
   }
   function shouldShowCanvasTemplateCarousel() {
+    if (builderState.isGeneratingWebsite) return false;
     if (!isPublicClientSetup || builderState.currentSchema) return false;
     if (!hasEnoughContextForTemplatePreview()) return false;
     const pages = Array.isArray(builderState.guidedState.sitePlan?.pages) ? builderState.guidedState.sitePlan.pages : [];
@@ -8487,6 +8526,9 @@ ${cleanQuestion}`;
     removeGuidedBuildStatusCard();
     builderState.guidedStep = "websiteIntent";
     builderState.lastAskedGuidedField = "";
+    builderState.hasBackendIntakeSignal = false;
+    builderState.backendReadyToGenerate = false;
+    builderState.backendMissingFields = [];
     try {
       localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
       localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
@@ -8639,7 +8681,7 @@ ${langText({
       }
       const missing = missingGuidedSteps();
       const savedStep = draft.guidedStep || builderState.guidedStep;
-      builderState.guidedStep = savedStep === "review" && missing.length ? missing[0] : normalizeNextGuidedStep(savedStep);
+      builderState.guidedStep = savedStep === "review" && !builderState.hasBackendIntakeSignal && missing.length ? missing[0] : normalizeNextGuidedStep(savedStep);
       builderState.restoredGuidedDraftInfo = {
         savedAt: draft.savedAt || "",
         completionPercent: guidedCompletionPercent(),
@@ -10151,6 +10193,9 @@ ${langText({
     renderPreview();
   }
   async function reviewAndGenerateFromGuided() {
+    const ownsGenerationState = !builderState.isGeneratingWebsite;
+    if (ownsGenerationState) builderState.isGeneratingWebsite = true;
+    renderLiveSitePreview();
     syncGuidedStateFromSummary();
     normalizeGuidedStateBeforeGenerate();
     applyGuidedStateToForm();
@@ -10184,6 +10229,7 @@ ${langText({
       });
       guidedStatusText.textContent = successMessage;
       appendChatMessage("assistant", successMessage, "success");
+      renderLiveSitePreview();
       showGeneratedClientPreview();
     } else if (generated === "needs_more_info") {
       const missingQuestion = builderState.pendingServerIntakeGate?.next_question || "";
@@ -10205,6 +10251,10 @@ ${langText({
     }
     guidedGenerateButton.textContent = previousText || t("reviewGenerate");
     setGuidedGenerateControlsBusy(false);
+    if (ownsGenerationState) {
+      builderState.isGeneratingWebsite = false;
+      renderLiveSitePreview();
+    }
   }
   function setGuidedGenerateControlsBusy(isBusy, label = "") {
     const readyLabel = langText({
@@ -10244,7 +10294,7 @@ ${langText({
     }
     syncGuidedStateFromSummary();
     normalizeGuidedStateBeforeGenerate();
-    const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
+    const requiredMissing = missingGuidedSteps();
     if (requiredMissing.length) {
       const nextMissing = requiredMissing[0];
       builderState.guidedStep = nextMissing;
@@ -10281,6 +10331,7 @@ ${guidedQuestion(nextMissing)}`
     setGuidedBuildPhase("save");
     guidedStatusText.textContent = t("generatingLong");
     builderState.isGeneratingWebsite = true;
+    renderLiveSitePreview();
     try {
       await reviewAndGenerateFromGuided();
     } catch (error) {
@@ -10295,6 +10346,7 @@ ${guidedQuestion(nextMissing)}`
       }), "alert");
     } finally {
       builderState.isGeneratingWebsite = false;
+      renderLiveSitePreview();
       setGuidedGenerateControlsBusy(false);
       guidedGenerateButton.textContent = t("reviewGenerate");
     }
@@ -10434,6 +10486,11 @@ ${guidedQuestion(nextMissing)}`
   function renderGuidedSummary() {
     syncTemplateSelectionFromGuidedContext();
     builderState.guidedStep = normalizeGuidedStepForCurrentState(builderState.guidedStep);
+    if (builderState.restoredGuidedDraftInfo && builderState.hasBackendIntakeSignal) {
+      builderState.restoredGuidedDraftInfo.completionPercent = guidedCompletionPercent();
+      builderState.restoredGuidedDraftInfo.missing = missingGuidedSteps();
+      if (builderState.restoredDraftNoticeCard) renderRestoredDraftNotice({ force: true });
+    }
     syncLyraExperienceMode();
     document.querySelectorAll("[data-summary-field]").forEach((field) => {
       const key = field.dataset.summaryField;
@@ -10602,6 +10659,13 @@ ${guidedQuestion(nextMissing)}`
     return 7;
   }
   function missingGuidedSteps() {
+    if (builderState.hasBackendIntakeSignal) {
+      if (builderState.backendReadyToGenerate) return [];
+      const backendMissing = arrayValue2(builderState.backendMissingFields).map((slot) => mapBackendSlotToGuidedField(slot)).filter(Boolean);
+      if (backendMissing.length) return [...new Set(backendMissing)];
+      const fallbackStep = builderState.lastAskedGuidedField || (builderState.guidedStep !== "review" ? builderState.guidedStep : "websiteIntent");
+      return [fallbackStep];
+    }
     const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
     if (requiredMissing.length) return requiredMissing;
     return SMART_GUIDED_STEP_PRIORITY.filter((step) => {
@@ -10612,6 +10676,11 @@ ${guidedQuestion(nextMissing)}`
     });
   }
   function guidedCompletionPercent() {
+    if (builderState.hasBackendIntakeSignal) {
+      if (builderState.backendReadyToGenerate) return 100;
+      const missingCount = Math.max(1, arrayValue2(builderState.backendMissingFields).length);
+      return Math.max(10, Math.min(95, Math.round((7 - Math.min(6, missingCount)) / 7 * 100)));
+    }
     const requiredCompleted = REQUIRED_GUIDED_STEPS.filter((step) => isGuidedStepAnswered(step)).length;
     const optionalSteps = SMART_GUIDED_STEP_PRIORITY.filter((step) => OPTIONAL_GUIDED_STEPS.has(step) && step !== "desiredDomain");
     const optionalCompleted = optionalSteps.filter((step) => isGuidedStepAnswered(step) || (guidedAskedSteps.get(step) || 0) > 0).length;

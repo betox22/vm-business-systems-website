@@ -67,6 +67,9 @@ export const builderState = {
   currentRequestId: null,
   currentCatalogItems: [],
   isGeneratingWebsite: false,
+  hasBackendIntakeSignal: false,
+  backendReadyToGenerate: false,
+  backendMissingFields: [],
   guidedStep: 'websiteIntent',
   // Backend-reported field (mapped) that the last assistant question was
   // actually about - see mapBackendSlotToGuidedField in index.js. Preferred
