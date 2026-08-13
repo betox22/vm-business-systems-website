@@ -4,6 +4,8 @@ import {
   CLIENT_AUTH_SESSION_URL,
   CLIENT_AUTH_LOGOUT_URL,
   CLIENT_PROJECTS_URL,
+  SUPABASE_PROJECT_URL,
+  SUPABASE_ANON_KEY,
   SUPABASE_AUTH_URL,
   SUPPORTED_LANGUAGES,
   GUIDED_DRAFT_STORAGE_KEY,
@@ -13,6 +15,11 @@ import {
 } from './config.js';
 import { escapeHtml, escapeAttribute } from './utils.js';
 import { hasValidPersistedCredential } from './auth-session-policy.js';
+import {
+  magicLinkFeedback,
+  readSupabaseAuthRedirect,
+  requestSupabaseMagicLink,
+} from './supabase-magic-link.js';
 import {
   builderState,
   createEmptyGuidedState,
@@ -50,7 +57,6 @@ import {
   guidedAskedSteps,
   guidedCompletionPercent,
   guidedStateForApi,
-  handleGuidedGenerateButton,
   isCloudSafeUrl,
   isValidWorkspaceEmail,
   langText,
@@ -71,7 +77,6 @@ import {
   saveGeneratedSite,
   setAssistantState,
   setSelectedLanguage,
-  shortError,
   showGeneratedClientPreview,
   storageLabel,
   storedClientAccessToken,
@@ -81,7 +86,124 @@ import {
 
 const CLIENT_INTAKE_AUTOSAVE_DELAY_MS = 15000;
 const CLIENT_AUTH_SLOW_NOTICE_DELAY_MS = 9000;
+const MAGIC_LINK_RESEND_COOLDOWN_SECONDS = 60;
 let clientAuthSlowNoticeTimer = null;
+let magicLinkCooldownTimer = null;
+let magicLinkCooldownEndsAt = 0;
+let magicLinkResendEmail = "";
+
+function magicLinkElements() {
+  return {
+    confirmation: studioAuthGate?.querySelector("[data-magic-link-confirmation]") || null,
+    title: studioAuthGate?.querySelector("[data-magic-link-confirmation] strong") || null,
+    message: studioAuthGate?.querySelector("[data-magic-link-message]") || null,
+    formError: studioAuthGate?.querySelector("[data-magic-link-error]") || null,
+    resendError: studioAuthGate?.querySelector("[data-magic-link-resend-error]") || null,
+    resendButton: studioAuthGate?.querySelector("[data-magic-link-resend]") || null,
+  };
+}
+
+function setMagicLinkError(element, message = "") {
+  if (!element) return;
+  element.textContent = message;
+  element.hidden = !message;
+}
+
+function resetMagicLinkView() {
+  clearInterval(magicLinkCooldownTimer);
+  magicLinkCooldownTimer = null;
+  magicLinkCooldownEndsAt = 0;
+  magicLinkResendEmail = "";
+  const { confirmation, formError, resendError } = magicLinkElements();
+  if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+  const submitButton = studioEmailAuthForm?.querySelector("button[type='submit']") || null;
+  if (submitButton) {
+    submitButton.disabled = false;
+    submitButton.textContent = t("sendMagicLink");
+  }
+  if (confirmation) confirmation.hidden = true;
+  setMagicLinkError(formError);
+  setMagicLinkError(resendError);
+}
+
+function updateMagicLinkCooldown() {
+  const { resendButton } = magicLinkElements();
+  if (!resendButton) return;
+  const seconds = Math.max(0, Math.ceil((magicLinkCooldownEndsAt - Date.now()) / 1000));
+  resendButton.disabled = seconds > 0;
+  resendButton.textContent = seconds > 0
+    ? langText({
+        en: `Resend link (${seconds}s)`,
+        es: `Reenviar enlace (${seconds}s)`,
+        fr: `Renvoyer le lien (${seconds}s)`,
+        pt: `Reenviar link (${seconds}s)`,
+      })
+    : langText({ en: "Resend link", es: "Reenviar enlace", fr: "Renvoyer le lien", pt: "Reenviar link" });
+  if (seconds === 0) {
+    clearInterval(magicLinkCooldownTimer);
+    magicLinkCooldownTimer = null;
+  }
+}
+
+function startMagicLinkCooldown(email) {
+  magicLinkResendEmail = email;
+  magicLinkCooldownEndsAt = Date.now() + (MAGIC_LINK_RESEND_COOLDOWN_SECONDS * 1000);
+  clearInterval(magicLinkCooldownTimer);
+  updateMagicLinkCooldown();
+  magicLinkCooldownTimer = setInterval(updateMagicLinkCooldown, 1000);
+}
+
+function ensureMagicLinkResendHandler() {
+  const { resendButton } = magicLinkElements();
+  if (!resendButton || resendButton.dataset.magicLinkBound === "true") return;
+  resendButton.dataset.magicLinkBound = "true";
+  resendButton.addEventListener("click", () => {
+    if (!magicLinkResendEmail || Date.now() < magicLinkCooldownEndsAt) return;
+    sendMagicLink(magicLinkResendEmail, { resend: true });
+  });
+}
+
+async function sendMagicLink(email, { resend = false } = {}) {
+  const { confirmation, title, message, formError, resendError, resendButton } = magicLinkElements();
+  const submitButton = studioEmailAuthForm?.querySelector("button[type='submit']") || null;
+  const activeButton = resend ? resendButton : submitButton;
+  const previousText = activeButton?.textContent || "";
+  setMagicLinkError(resend ? resendError : formError);
+  if (activeButton) {
+    activeButton.disabled = true;
+    activeButton.textContent = langText({ en: "Sending...", es: "Enviando...", fr: "Envoi...", pt: "Enviando..." });
+  }
+
+  const result = await requestSupabaseMagicLink({
+    email,
+    redirectTo: window.location.href,
+    projectUrl: SUPABASE_PROJECT_URL,
+    anonKey: SUPABASE_ANON_KEY,
+  });
+  const feedback = magicLinkFeedback(result, email, builderState.selectedLanguage);
+
+  if (result.ok) {
+    if (studioEmailAuthForm) studioEmailAuthForm.hidden = true;
+    if (confirmation) confirmation.hidden = false;
+    if (title) title.textContent = feedback.title;
+    if (message) message.textContent = feedback.message;
+    setMagicLinkError(resendError);
+    startMagicLinkCooldown(email);
+    if (storageStatus) storageStatus.textContent = feedback.message;
+    if (guidedStatusText) guidedStatusText.textContent = feedback.message;
+    return true;
+  }
+
+  setMagicLinkError(resend ? resendError : formError, feedback.message);
+  if (resend) startMagicLinkCooldown(email);
+  if (storageStatus) storageStatus.textContent = feedback.message;
+  if (guidedStatusText) guidedStatusText.textContent = feedback.message;
+  if (activeButton && !resend) {
+    activeButton.disabled = false;
+    activeButton.textContent = previousText;
+  }
+  return false;
+}
 
 function authLoadingElements() {
   return {
@@ -170,15 +292,7 @@ export function initClientIntakeSessionGate() {
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
   if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
-  // Bug fix (2026-07-19): this used to hide Google for the public client
-  // flow too (isPublicClientSetup === true), which meant real clients could
-  // never see the Google button at all -- only email, which has no identity
-  // verification. Google is fully wired now (Supabase Auth, already enabled
-  // on the project), so it should always be offered. Apple stays hidden for
-  // public clients until it's enabled in Supabase (needs Beto's own Apple
-  // Developer Program setup) -- showing it today would just be a dead end.
-  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
-  if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
+  revealStudioAuthProviderButtons();
   if (studioAuthEmail) {
     studioAuthEmail.value = builderState.guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
     setTimeout(() => studioAuthEmail.focus(), 80);
@@ -234,15 +348,7 @@ export function lockClientWorkspace(reason = "idle") {
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
   if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
-  // Bug fix (2026-07-19): this used to hide Google for the public client
-  // flow too (isPublicClientSetup === true), which meant real clients could
-  // never see the Google button at all -- only email, which has no identity
-  // verification. Google is fully wired now (Supabase Auth, already enabled
-  // on the project), so it should always be offered. Apple stays hidden for
-  // public clients until it's enabled in Supabase (needs Beto's own Apple
-  // Developer Program setup) -- showing it today would just be a dead end.
-  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
-  if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
+  revealStudioAuthProviderButtons();
   if (guidedStatusText) {
     guidedStatusText.textContent = reason === "idle"
       ? langText({
@@ -347,15 +453,7 @@ export function switchClientAccount() {
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
   if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
-  // Bug fix (2026-07-19): this used to hide Google for the public client
-  // flow too (isPublicClientSetup === true), which meant real clients could
-  // never see the Google button at all -- only email, which has no identity
-  // verification. Google is fully wired now (Supabase Auth, already enabled
-  // on the project), so it should always be offered. Apple stays hidden for
-  // public clients until it's enabled in Supabase (needs Beto's own Apple
-  // Developer Program setup) -- showing it today would just be a dead end.
-  if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
-  if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
+  revealStudioAuthProviderButtons();
   if (studioAuthEmail) {
     studioAuthEmail.value = "";
     studioAuthEmail.focus();
@@ -905,10 +1003,7 @@ export function establishServerSession(accessToken, refreshToken) {
 export function captureStudioAuthRedirect() {
   if (builderState.studioAuthRedirectCaptureComplete) return;
   try {
-    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    const queryParams = new URLSearchParams(window.location.search);
-    const accessToken = hashParams.get("access_token") || queryParams.get("access_token") || "";
-    const refreshToken = hashParams.get("refresh_token") || queryParams.get("refresh_token") || "";
+    const { accessToken, refreshToken } = readSupabaseAuthRedirect(window.location);
     if (!accessToken) return;
     localStorage.setItem("lumaClientAccessToken", accessToken);
     if (refreshToken) localStorage.setItem("lumaClientRefreshToken", refreshToken);
@@ -1083,12 +1178,18 @@ export function revealStudioAuthProviderButtons() {
   const providerActions = studioGoogleAuthButton?.closest(".studio-auth-actions");
   if (providerActions) providerActions.hidden = false;
   if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
-  if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
+  if (studioAppleAuthButton) {
+    studioAppleAuthButton.hidden = false;
+    studioAppleAuthButton.disabled = true;
+    studioAppleAuthButton.setAttribute("aria-disabled", "true");
+  }
+  ensureMagicLinkResendHandler();
 }
 
 export function openStudioAuthGate(action = "continue") {
   if (!studioAuthGate) return;
   resetStudioAuthLoading();
+  resetMagicLinkView();
   persistPendingStudioAccountAction(action);
   studioAuthGate.dataset.action = action;
   if (studioAuthCloseButton) studioAuthCloseButton.hidden = action === "start";
@@ -1100,11 +1201,7 @@ export function openStudioAuthGate(action = "continue") {
   if (isPublicClientSetup) {
     if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
     if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
-    // See the 2026-07-19 fix note above other call sites: Google must stay
-    // visible for public clients now that it's actually wired up. Apple
-    // stays hidden until it's enabled in Supabase.
     revealStudioAuthProviderButtons();
-    if (studioAppleAuthButton) studioAppleAuthButton.hidden = true;
     if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   }
   setAssistantState("success");
@@ -1113,6 +1210,7 @@ export function openStudioAuthGate(action = "continue") {
 export function closeStudioAuthGate() {
   if (!studioAuthGate) return;
   resetStudioAuthLoading();
+  resetMagicLinkView();
   studioAuthGate.hidden = true;
   document.body.classList.remove("studio-auth-open");
   document.body.classList.remove("client-auth-required");
@@ -1161,53 +1259,6 @@ export async function continueWithEmailAuth(event) {
     return;
   }
   persistPendingStudioAccountAction("email");
-  const submitButton = studioEmailAuthForm?.querySelector("button[type='submit']");
-  const previousText = submitButton?.textContent || "";
-  if (submitButton) {
-    submitButton.disabled = true;
-    submitButton.textContent = langText({ en: "Opening...", es: "Abriendo...", fr: "Ouverture...", pt: "Abrindo..." });
-  }
-  try {
-    const session = await createOrResumeClientIntakeSession({
-      email,
-      name: builderState.guidedState.contactInfo?.name || builderState.guidedState.businessName || "",
-      reason: "start",
-    });
-    if (storageStatus) {
-      storageStatus.textContent = session.restored
-        ? langText({
-            en: "Workspace restored. Your answers will keep saving.",
-            es: "Espacio recuperado. Tus respuestas seguirán guardándose.",
-            fr: "Espace restauré. Vos réponses continueront à être sauvegardées.",
-            pt: "Espaço recuperado. Suas respostas continuarão salvas.",
-          })
-        : langText({
-            en: "Workspace created. LYRA will save every answer.",
-            es: "Espacio creado. LYRA guardará cada respuesta.",
-            fr: "Espace créé. LYRA sauvegardera chaque réponse.",
-            pt: "Espaço criado. LYRA salvará cada resposta.",
-          });
-    }
-    markClientWorkspaceUnlocked();
-    closeStudioAuthGate();
-    const pendingAction = localStorage.getItem("lumaPendingAuthAction") || "";
-    if (pendingAction === "generate") {
-      localStorage.removeItem("lumaPendingAuthAction");
-      await handleGuidedGenerateButton(new Event("submit"));
-    }
-  } catch (error) {
-    if (storageStatus) {
-      storageStatus.textContent = `${langText({
-        en: "Could not open your workspace",
-        es: "No se pudo abrir tu espacio",
-        fr: "Impossible d'ouvrir votre espace",
-        pt: "Não foi possível abrir seu espaço",
-      })}: ${shortError(error.message)}`;
-    }
-  } finally {
-    if (submitButton) {
-      submitButton.disabled = false;
-      submitButton.textContent = previousText || t("saveEmailContinue");
-    }
-  }
+  localStorage.setItem("lumaPendingClientEmail", email);
+  await sendMagicLink(email);
 }

@@ -28,6 +28,8 @@
   var CLIENT_AUTH_LOGOUT_URL = `${API_BASE_URL}/api/client/auth/logout`;
   var CLIENT_PROJECTS_URL = `${API_BASE_URL}/api/client/projects`;
   var ASSET_UPLOAD_URL = `${API_BASE_URL}/api/admin/assets/upload`;
+  var SUPABASE_PROJECT_URL = "https://rzdidqclbvnqqlcaueoh.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6ZGlkcWNsYnZucXFsY2F1ZW9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxOTY3NzUsImV4cCI6MjA5Mzc3Mjc3NX0.R6gl2jmRRaXDzOzh_QdsAlzdzvdSyfp0muCEJGnJku0";
   var SUPABASE_AUTH_URL = "https://rzdidqclbvnqqlcaueoh.supabase.co/auth/v1/authorize";
   var SUPPORTED_LANGUAGES = ["en", "es", "fr", "pt"];
   var ASSISTANT_AVATAR_FALLBACK = "/assets/nixie_idle.png";
@@ -127,11 +129,14 @@
       salesModePlaceholder: "online sales, quotes, or both",
       accountGateKicker: "Protected workspace",
       accountGateTitle: "Start by saving your progress",
-      accountGateText: "Use email so LYRA can save every answer, restore drafts, and keep you from repeating the same information.",
+      accountGateText: "Sign in so LYRA can save every answer, restore drafts, and keep you from repeating the same information.",
       continueGoogle: "Continue with Google",
       continueApple: "Continue with Apple",
       continueEmail: "Continue with email",
       saveEmailContinue: "Enter my workspace",
+      authOrEmail: "or continue with email",
+      comingSoon: "Coming soon",
+      sendMagicLink: "Email me a sign-in link",
       continueDemo: "Keep viewing demo",
       sendingAssistant: "LYRA is reviewing your answer...",
       summaryUpdated: "Details updated.",
@@ -240,11 +245,14 @@
       salesModePlaceholder: "ventas online, cotizaciones, o ambos",
       accountGateKicker: "Workspace protegido",
       accountGateTitle: "Empieza guardando tu progreso",
-      accountGateText: "Usa email para que LYRA guarde cada respuesta, recupere tus borradores y no tengas que repetir la misma informaci\xF3n.",
+      accountGateText: "Inicia sesi\xF3n para que LYRA guarde cada respuesta, recupere tus borradores y no tengas que repetir la misma informaci\xF3n.",
       continueGoogle: "Continuar con Google",
       continueApple: "Continuar con Apple",
       continueEmail: "Continuar con email",
       saveEmailContinue: "Entrar a mi workspace",
+      authOrEmail: "o contin\xFAa con email",
+      comingSoon: "Pr\xF3ximamente",
+      sendMagicLink: "Enviarme un enlace de acceso",
       continueDemo: "Seguir viendo demo",
       sendingAssistant: "LYRA esta revisando tu respuesta...",
       summaryUpdated: "Detalles actualizados.",
@@ -353,11 +361,14 @@
       salesModePlaceholder: "vente en ligne, devis, ou les deux",
       accountGateKicker: "Espace prot\xE9g\xE9",
       accountGateTitle: "Commencez en sauvegardant votre progression",
-      accountGateText: "Utilisez l'email pour que LYRA sauvegarde chaque r\xE9ponse, retrouve vos brouillons et \xE9vite de r\xE9p\xE9ter les m\xEAmes informations.",
+      accountGateText: "Connectez-vous pour que LYRA sauvegarde chaque r\xE9ponse, retrouve vos brouillons et \xE9vite de r\xE9p\xE9ter les m\xEAmes informations.",
       continueGoogle: "Continuer avec Google",
       continueApple: "Continuer avec Apple",
       continueEmail: "Continuer avec email",
       saveEmailContinue: "Entrer dans mon espace",
+      authOrEmail: "ou continuer avec email",
+      comingSoon: "Bient\xF4t",
+      sendMagicLink: "M'envoyer un lien de connexion",
       continueDemo: "Continuer la d\xE9mo",
       sendingAssistant: "LYRA analyse votre r\xE9ponse...",
       summaryUpdated: "D\xE9tails mis \xE0 jour.",
@@ -466,11 +477,14 @@
       salesModePlaceholder: "vendas online, or\xE7amentos, ou ambos",
       accountGateKicker: "Workspace protegido",
       accountGateTitle: "Comece salvando seu progresso",
-      accountGateText: "Use email para a LYRA salvar cada resposta, recuperar seus rascunhos e evitar repetir as mesmas informa\xE7\xF5es.",
+      accountGateText: "Entre para a LYRA salvar cada resposta, recuperar seus rascunhos e evitar repetir as mesmas informa\xE7\xF5es.",
       continueGoogle: "Continuar com Google",
       continueApple: "Continuar com Apple",
       continueEmail: "Continuar com email",
       saveEmailContinue: "Entrar no meu workspace",
+      authOrEmail: "ou continuar com email",
+      comingSoon: "Em breve",
+      sendMagicLink: "Enviar um link de acesso por email",
       continueDemo: "Continuar vendo demo",
       sendingAssistant: "LYRA est\xE1 revisando sua resposta...",
       summaryUpdated: "Detalhes atualizados.",
@@ -4608,10 +4622,199 @@
   var builderAvatarRoot = document.querySelector("#builderAvatarAssistant");
   var builderAvatarManager = window.AvatarStateManager ? new window.AvatarStateManager("idle") : null;
 
+  // src/ai-builder/supabase-magic-link.js
+  function readSupabaseAuthRedirect(locationLike = globalThis.location) {
+    const hashParams = new URLSearchParams(String(locationLike?.hash || "").replace(/^#/, ""));
+    const queryParams = new URLSearchParams(String(locationLike?.search || ""));
+    return {
+      accessToken: hashParams.get("access_token") || queryParams.get("access_token") || "",
+      refreshToken: hashParams.get("refresh_token") || queryParams.get("refresh_token") || "",
+      type: hashParams.get("type") || queryParams.get("type") || ""
+    };
+  }
+  async function requestSupabaseMagicLink({
+    email,
+    redirectTo,
+    projectUrl,
+    anonKey,
+    fetchImpl = globalThis.fetch
+  }) {
+    try {
+      const response = await fetchImpl(`${String(projectUrl || "").replace(/\/$/, "")}/auth/v1/otp`, {
+        method: "POST",
+        headers: {
+          apikey: anonKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          options: {
+            emailRedirectTo: redirectTo,
+            shouldCreateUser: true
+          }
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = payload?.msg || payload?.message || payload?.error_description || payload?.error || `Request failed (${response.status})`;
+        return {
+          ok: false,
+          status: response.status,
+          message: String(message),
+          isRateLimited: response.status === 429 || /rate|wait|seconds|retry/i.test(String(message))
+        };
+      }
+      return { ok: true, status: response.status, email };
+    } catch (error) {
+      return {
+        ok: false,
+        status: 0,
+        message: error instanceof Error ? error.message : String(error || "Network request failed"),
+        isRateLimited: false
+      };
+    }
+  }
+  function magicLinkFeedback(result, email, language = "en") {
+    const copy = {
+      en: {
+        title: "Check your email",
+        sent: `We sent a sign-in link to ${email}. Open it in this browser to continue.`,
+        rate: "Please wait a moment before trying again."
+      },
+      es: {
+        title: "Revisa tu correo",
+        sent: `Te enviamos un enlace de acceso a ${email}. \xC1brelo en este navegador para continuar.`,
+        rate: "Espera un momento antes de reintentar."
+      },
+      fr: {
+        title: "Consultez votre email",
+        sent: `Nous avons envoy\xE9 un lien de connexion \xE0 ${email}. Ouvrez-le dans ce navigateur pour continuer.`,
+        rate: "Veuillez patienter un instant avant de r\xE9essayer."
+      },
+      pt: {
+        title: "Confira seu email",
+        sent: `Enviamos um link de acesso para ${email}. Abra-o neste navegador para continuar.`,
+        rate: "Espere um momento antes de tentar novamente."
+      }
+    };
+    const selected = copy[language] || copy.en;
+    if (result?.ok) return { kind: "success", title: selected.title, message: selected.sent };
+    return {
+      kind: "error",
+      title: "",
+      message: result?.isRateLimited ? selected.rate : String(result?.message || "Unable to send the sign-in link.")
+    };
+  }
+
   // src/ai-builder/auth.js
   var CLIENT_INTAKE_AUTOSAVE_DELAY_MS = 15e3;
   var CLIENT_AUTH_SLOW_NOTICE_DELAY_MS = 9e3;
+  var MAGIC_LINK_RESEND_COOLDOWN_SECONDS = 60;
   var clientAuthSlowNoticeTimer = null;
+  var magicLinkCooldownTimer = null;
+  var magicLinkCooldownEndsAt = 0;
+  var magicLinkResendEmail = "";
+  function magicLinkElements() {
+    return {
+      confirmation: studioAuthGate?.querySelector("[data-magic-link-confirmation]") || null,
+      title: studioAuthGate?.querySelector("[data-magic-link-confirmation] strong") || null,
+      message: studioAuthGate?.querySelector("[data-magic-link-message]") || null,
+      formError: studioAuthGate?.querySelector("[data-magic-link-error]") || null,
+      resendError: studioAuthGate?.querySelector("[data-magic-link-resend-error]") || null,
+      resendButton: studioAuthGate?.querySelector("[data-magic-link-resend]") || null
+    };
+  }
+  function setMagicLinkError(element, message = "") {
+    if (!element) return;
+    element.textContent = message;
+    element.hidden = !message;
+  }
+  function resetMagicLinkView() {
+    clearInterval(magicLinkCooldownTimer);
+    magicLinkCooldownTimer = null;
+    magicLinkCooldownEndsAt = 0;
+    magicLinkResendEmail = "";
+    const { confirmation, formError, resendError } = magicLinkElements();
+    if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+    const submitButton = studioEmailAuthForm?.querySelector("button[type='submit']") || null;
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = t("sendMagicLink");
+    }
+    if (confirmation) confirmation.hidden = true;
+    setMagicLinkError(formError);
+    setMagicLinkError(resendError);
+  }
+  function updateMagicLinkCooldown() {
+    const { resendButton } = magicLinkElements();
+    if (!resendButton) return;
+    const seconds = Math.max(0, Math.ceil((magicLinkCooldownEndsAt - Date.now()) / 1e3));
+    resendButton.disabled = seconds > 0;
+    resendButton.textContent = seconds > 0 ? langText({
+      en: `Resend link (${seconds}s)`,
+      es: `Reenviar enlace (${seconds}s)`,
+      fr: `Renvoyer le lien (${seconds}s)`,
+      pt: `Reenviar link (${seconds}s)`
+    }) : langText({ en: "Resend link", es: "Reenviar enlace", fr: "Renvoyer le lien", pt: "Reenviar link" });
+    if (seconds === 0) {
+      clearInterval(magicLinkCooldownTimer);
+      magicLinkCooldownTimer = null;
+    }
+  }
+  function startMagicLinkCooldown(email) {
+    magicLinkResendEmail = email;
+    magicLinkCooldownEndsAt = Date.now() + MAGIC_LINK_RESEND_COOLDOWN_SECONDS * 1e3;
+    clearInterval(magicLinkCooldownTimer);
+    updateMagicLinkCooldown();
+    magicLinkCooldownTimer = setInterval(updateMagicLinkCooldown, 1e3);
+  }
+  function ensureMagicLinkResendHandler() {
+    const { resendButton } = magicLinkElements();
+    if (!resendButton || resendButton.dataset.magicLinkBound === "true") return;
+    resendButton.dataset.magicLinkBound = "true";
+    resendButton.addEventListener("click", () => {
+      if (!magicLinkResendEmail || Date.now() < magicLinkCooldownEndsAt) return;
+      sendMagicLink(magicLinkResendEmail, { resend: true });
+    });
+  }
+  async function sendMagicLink(email, { resend = false } = {}) {
+    const { confirmation, title, message, formError, resendError, resendButton } = magicLinkElements();
+    const submitButton = studioEmailAuthForm?.querySelector("button[type='submit']") || null;
+    const activeButton = resend ? resendButton : submitButton;
+    const previousText = activeButton?.textContent || "";
+    setMagicLinkError(resend ? resendError : formError);
+    if (activeButton) {
+      activeButton.disabled = true;
+      activeButton.textContent = langText({ en: "Sending...", es: "Enviando...", fr: "Envoi...", pt: "Enviando..." });
+    }
+    const result = await requestSupabaseMagicLink({
+      email,
+      redirectTo: window.location.href,
+      projectUrl: SUPABASE_PROJECT_URL,
+      anonKey: SUPABASE_ANON_KEY
+    });
+    const feedback = magicLinkFeedback(result, email, builderState.selectedLanguage);
+    if (result.ok) {
+      if (studioEmailAuthForm) studioEmailAuthForm.hidden = true;
+      if (confirmation) confirmation.hidden = false;
+      if (title) title.textContent = feedback.title;
+      if (message) message.textContent = feedback.message;
+      setMagicLinkError(resendError);
+      startMagicLinkCooldown(email);
+      if (storageStatus) storageStatus.textContent = feedback.message;
+      if (guidedStatusText) guidedStatusText.textContent = feedback.message;
+      return true;
+    }
+    setMagicLinkError(resend ? resendError : formError, feedback.message);
+    if (resend) startMagicLinkCooldown(email);
+    if (storageStatus) storageStatus.textContent = feedback.message;
+    if (guidedStatusText) guidedStatusText.textContent = feedback.message;
+    if (activeButton && !resend) {
+      activeButton.disabled = false;
+      activeButton.textContent = previousText;
+    }
+    return false;
+  }
   function authLoadingElements() {
     return {
       content: studioAuthGate?.querySelector("[data-studio-auth-content]") || null,
@@ -4696,8 +4899,7 @@
     if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
     if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
     if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
-    if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
-    if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
+    revealStudioAuthProviderButtons();
     if (studioAuthEmail) {
       studioAuthEmail.value = builderState.guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
       setTimeout(() => studioAuthEmail.focus(), 80);
@@ -4747,8 +4949,7 @@
     if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
     if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
     if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
-    if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
-    if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
+    revealStudioAuthProviderButtons();
     if (guidedStatusText) {
       guidedStatusText.textContent = reason === "idle" ? langText({
         en: "Workspace locked after inactivity. Sign in again to continue.",
@@ -4844,8 +5045,7 @@
     if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
     if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
     if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
-    if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
-    if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
+    revealStudioAuthProviderButtons();
     if (studioAuthEmail) {
       studioAuthEmail.value = "";
       studioAuthEmail.focus();
@@ -5366,10 +5566,7 @@
   function captureStudioAuthRedirect() {
     if (builderState.studioAuthRedirectCaptureComplete) return;
     try {
-      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      const queryParams = new URLSearchParams(window.location.search);
-      const accessToken = hashParams.get("access_token") || queryParams.get("access_token") || "";
-      const refreshToken = hashParams.get("refresh_token") || queryParams.get("refresh_token") || "";
+      const { accessToken, refreshToken } = readSupabaseAuthRedirect(window.location);
       if (!accessToken) return;
       localStorage.setItem("lumaClientAccessToken", accessToken);
       if (refreshToken) localStorage.setItem("lumaClientRefreshToken", refreshToken);
@@ -5531,11 +5728,17 @@
     const providerActions = studioGoogleAuthButton?.closest(".studio-auth-actions");
     if (providerActions) providerActions.hidden = false;
     if (studioGoogleAuthButton) studioGoogleAuthButton.hidden = false;
-    if (studioAppleAuthButton) studioAppleAuthButton.hidden = isPublicClientSetup;
+    if (studioAppleAuthButton) {
+      studioAppleAuthButton.hidden = false;
+      studioAppleAuthButton.disabled = true;
+      studioAppleAuthButton.setAttribute("aria-disabled", "true");
+    }
+    ensureMagicLinkResendHandler();
   }
   function openStudioAuthGate(action = "continue") {
     if (!studioAuthGate) return;
     resetStudioAuthLoading();
+    resetMagicLinkView();
     persistPendingStudioAccountAction(action);
     studioAuthGate.dataset.action = action;
     if (studioAuthCloseButton) studioAuthCloseButton.hidden = action === "start";
@@ -5548,7 +5751,6 @@
       if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
       if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
       revealStudioAuthProviderButtons();
-      if (studioAppleAuthButton) studioAppleAuthButton.hidden = true;
       if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
     }
     setAssistantState("success");
@@ -5556,6 +5758,7 @@
   function closeStudioAuthGate() {
     if (!studioAuthGate) return;
     resetStudioAuthLoading();
+    resetMagicLinkView();
     studioAuthGate.hidden = true;
     document.body.classList.remove("studio-auth-open");
     document.body.classList.remove("client-auth-required");
@@ -5601,53 +5804,8 @@
       return;
     }
     persistPendingStudioAccountAction("email");
-    const submitButton = studioEmailAuthForm?.querySelector("button[type='submit']");
-    const previousText = submitButton?.textContent || "";
-    if (submitButton) {
-      submitButton.disabled = true;
-      submitButton.textContent = langText({ en: "Opening...", es: "Abriendo...", fr: "Ouverture...", pt: "Abrindo..." });
-    }
-    try {
-      const session = await createOrResumeClientIntakeSession({
-        email,
-        name: builderState.guidedState.contactInfo?.name || builderState.guidedState.businessName || "",
-        reason: "start"
-      });
-      if (storageStatus) {
-        storageStatus.textContent = session.restored ? langText({
-          en: "Workspace restored. Your answers will keep saving.",
-          es: "Espacio recuperado. Tus respuestas seguir\xE1n guard\xE1ndose.",
-          fr: "Espace restaur\xE9. Vos r\xE9ponses continueront \xE0 \xEAtre sauvegard\xE9es.",
-          pt: "Espa\xE7o recuperado. Suas respostas continuar\xE3o salvas."
-        }) : langText({
-          en: "Workspace created. LYRA will save every answer.",
-          es: "Espacio creado. LYRA guardar\xE1 cada respuesta.",
-          fr: "Espace cr\xE9\xE9. LYRA sauvegardera chaque r\xE9ponse.",
-          pt: "Espa\xE7o criado. LYRA salvar\xE1 cada resposta."
-        });
-      }
-      markClientWorkspaceUnlocked();
-      closeStudioAuthGate();
-      const pendingAction = localStorage.getItem("lumaPendingAuthAction") || "";
-      if (pendingAction === "generate") {
-        localStorage.removeItem("lumaPendingAuthAction");
-        await handleGuidedGenerateButton(new Event("submit"));
-      }
-    } catch (error) {
-      if (storageStatus) {
-        storageStatus.textContent = `${langText({
-          en: "Could not open your workspace",
-          es: "No se pudo abrir tu espacio",
-          fr: "Impossible d'ouvrir votre espace",
-          pt: "N\xE3o foi poss\xEDvel abrir seu espa\xE7o"
-        })}: ${shortError(error.message)}`;
-      }
-    } finally {
-      if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = previousText || t("saveEmailContinue");
-      }
-    }
+    localStorage.setItem("lumaPendingClientEmail", email);
+    await sendMagicLink(email);
   }
 
   // src/ai-builder/chat.js

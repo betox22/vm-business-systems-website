@@ -2787,6 +2787,24 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   display: none;
 }
 
+.studio-auth-provider:disabled {
+  cursor: not-allowed;
+  background: #f8fafc;
+  color: #64748b;
+  opacity: 0.72;
+}
+
+.studio-auth-coming-soon {
+  position: absolute;
+  right: 12px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 850;
+}
+
 .studio-auth-divider {
   display: flex;
   align-items: center;
@@ -2830,6 +2848,53 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   color: #ffffff;
   padding: 12px 14px;
   font-weight: 950;
+}
+
+.studio-email-auth button:disabled,
+.studio-magic-link-confirmation button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.studio-auth-inline-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.studio-magic-link-confirmation {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e3a5f;
+  text-align: left;
+}
+
+.studio-magic-link-confirmation[hidden] {
+  display: none;
+}
+
+.studio-magic-link-confirmation strong {
+  color: #0f172a;
+  font-size: 17px;
+}
+
+.studio-magic-link-confirmation p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.studio-magic-link-confirmation button {
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1d4ed8;
+  padding: 10px 12px;
+  font-weight: 850;
 }
 
 .studio-auth-demo {

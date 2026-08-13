@@ -28,12 +28,15 @@ export const CLIENT_AUTH_LOGOUT_URL = `${API_BASE_URL}/api/client/auth/logout`;
 export const CLIENT_PROJECTS_URL = `${API_BASE_URL}/api/client/projects`;
 export const ASSET_UPLOAD_URL = `${API_BASE_URL}/api/admin/assets/upload`;
 // Public Supabase project ref used for the Google/Apple OAuth redirect (2026-07-19).
-// Not a secret -- same trust level as the anon key, safe to ship client-side.
+// Not a secret -- the anon key below uses the public "anon" role (never
+// service_role) and is safe to ship client-side with Supabase RLS enabled.
 // Google is enabled on this Supabase project already; Apple is not enabled yet
 // (needs Beto's own Apple Developer Program setup) -- until then this same URL
 // with provider=apple will land on Supabase's own "provider not enabled" page,
 // which is an honest failure, not a broken/undefined one. No code change will
 // be needed here once Apple is turned on in Supabase.
+export const SUPABASE_PROJECT_URL = "https://rzdidqclbvnqqlcaueoh.supabase.co";
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6ZGlkcWNsYnZucXFsY2F1ZW9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxOTY3NzUsImV4cCI6MjA5Mzc3Mjc3NX0.R6gl2jmRRaXDzOzh_QdsAlzdzvdSyfp0muCEJGnJku0";
 export const SUPABASE_AUTH_URL = "https://rzdidqclbvnqqlcaueoh.supabase.co/auth/v1/authorize";
 export const SUPPORTED_LANGUAGES = ["en", "es", "fr", "pt"];
 export const ASSISTANT_AVATAR_FALLBACK = "/assets/nixie_idle.png";
@@ -58,4 +61,3 @@ export const GUIDED_DRAFT_STORAGE_KEY = "lumaGuidedDraft";
 export const GENERATED_SITE_STORAGE_KEY = "lumaGeneratedSite";
 export const CLIENT_INTAKE_SESSION_STORAGE_KEY = "lumaClientIntakeSession";
 export const CLIENT_WORKSPACE_IDLE_LOCK_MS = 5 * 60 * 1000;
-
