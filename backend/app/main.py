@@ -1422,7 +1422,7 @@ def build_schema_from_state(
             {"label": "Catalog", "page_key": "catalog"},
             {"label": "Contact", "page_key": "contact"},
         ],
-        "pages": [
+        "pages": state.generatedCopy.get("pages") or [
             {
                 "page_key": "home",
                 "title": "Home",

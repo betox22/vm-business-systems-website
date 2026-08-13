@@ -1,7 +1,13 @@
 import unittest
+from unittest.mock import Mock, patch
 
 from app.ai_site_planner import AIWebGenerationResponse, site_plan_to_updates
-from app.image_assets import resolve_product_category, resolve_product_image_url
+from app.image_assets import (
+    _UNSPLASH_SEARCH_CACHE,
+    build_image_asset,
+    resolve_product_category,
+    resolve_product_image_url,
+)
 from app.models import ProjectState
 
 
@@ -43,6 +49,14 @@ def _catalog_item(name: str, index: int) -> dict:
 
 
 class ImageAssetTests(unittest.TestCase):
+    def setUp(self) -> None:
+        _UNSPLASH_SEARCH_CACHE.clear()
+        self._env_patcher = patch.dict("os.environ", {"UNSPLASH_ACCESS_KEY": ""})
+        self._env_patcher.start()
+
+    def tearDown(self) -> None:
+        self._env_patcher.stop()
+
     def test_client_named_products_are_preserved_over_invented_llm_catalog(self) -> None:
         state = ProjectState(
             businessName="Bath All Day",
@@ -159,6 +173,52 @@ class ImageAssetTests(unittest.TestCase):
         self.assertNotEqual(item["image_url"], hallucinated_url)
         self.assertEqual(item["image_asset"]["source"], "seed_bank")
         self.assertIn("images.unsplash.com/photo-", item["image_url"])
+
+    @patch("app.image_assets.httpx.get")
+    def test_missing_unsplash_key_uses_seed_bank_without_network(self, mocked_get) -> None:
+        asset = build_image_asset({"name": "Lavender Soap", "imageSearchQuery": "lavender soap"})
+
+        self.assertEqual(asset["source"], "seed_bank")
+        mocked_get.assert_not_called()
+
+    @patch("app.image_assets.httpx.get")
+    def test_unsplash_api_error_falls_back_to_seed_bank(self, mocked_get) -> None:
+        import httpx
+
+        mocked_get.side_effect = httpx.ConnectError("offline")
+        with patch.dict("os.environ", {"UNSPLASH_ACCESS_KEY": "test-key"}):
+            asset = build_image_asset({"name": "Lavender Soap", "imageSearchQuery": "lavender soap"})
+
+        self.assertEqual(asset["source"], "seed_bank")
+        self.assertIn("images.unsplash.com/photo-", asset["url"])
+
+    @patch("app.image_assets.httpx.get")
+    def test_unsplash_result_keeps_attribution_tracks_download_and_is_cached(self, mocked_get) -> None:
+        search_response = Mock()
+        search_response.raise_for_status.return_value = None
+        search_response.json.return_value = {
+            "results": [{
+                "id": "photo-123",
+                "urls": {"regular": "https://images.unsplash.com/photo-live"},
+                "links": {"download_location": "https://api.unsplash.com/photos/photo-123/download"},
+                "user": {"name": "Ada Photo", "links": {"html": "https://unsplash.com/@ada"}},
+            }]
+        }
+        tracking_response = Mock()
+        tracking_response.raise_for_status.return_value = None
+        mocked_get.side_effect = [search_response, tracking_response, tracking_response]
+
+        with patch.dict("os.environ", {"UNSPLASH_ACCESS_KEY": "test-key"}):
+            first = build_image_asset({"name": "Lavender Soap", "imageSearchQuery": "lavender soap"})
+            second = build_image_asset({"name": "Lavender Soap", "imageSearchQuery": "lavender soap"})
+
+        self.assertEqual(first["source"], "unsplash_api")
+        self.assertEqual(first["photographer_name"], "Ada Photo")
+        self.assertIn("utm_source=kreaton", first["photographer_profile_url"])
+        self.assertEqual(second["url"], first["url"])
+        search_calls = [call for call in mocked_get.call_args_list if call.args and call.args[0].endswith("/search/photos")]
+        self.assertEqual(len(search_calls), 1)
+        self.assertEqual(mocked_get.call_count, 3)
 
 
 if __name__ == "__main__":

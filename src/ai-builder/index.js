@@ -6818,7 +6818,9 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
       products: arrayValue(payload.services_products).length ? arrayValue(payload.services_products) : arrayValue(schema.products_services).map((item) => item.name),
       language: payload.selectedLanguage || builderState.selectedLanguage || "en",
     });
-    const retailPages = buildRetailInstantPages(copy, name, description, payload);
+    const sourcePagesByKey = new Map(arrayValue(schema.pages).map((page) => [page.page_key || page.pageKey || page.pageId, page]));
+    const retailPages = buildRetailInstantPages(copy, name, description, payload)
+      .map((page) => mergeLockedTemplatePage(page, sourcePagesByKey.get(page.page_key)));
     const retailPageKeys = new Set(retailPages.map((page) => page.page_key));
     const existingPages = arrayValue(schema.pages).filter((page) => page.page_key && !retailPageKeys.has(page.page_key));
     nextSchema = {
@@ -6864,7 +6866,9 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
       products: arrayValue(payload.services_products).length ? arrayValue(payload.services_products) : arrayValue(schema.products_services).map((item) => item.name),
       language: payload.selectedLanguage || builderState.selectedLanguage || "en",
     });
-    const marketplacePages = buildMarketplaceInstantPages(copy, name, description, payload);
+    const sourcePagesByKey = new Map(arrayValue(schema.pages).map((page) => [page.page_key || page.pageKey || page.pageId, page]));
+    const marketplacePages = buildMarketplaceInstantPages(copy, name, description, payload)
+      .map((page) => mergeLockedTemplatePage(page, sourcePagesByKey.get(page.page_key)));
     const marketplacePageKeys = new Set(marketplacePages.map((page) => page.page_key));
     const existingPages = arrayValue(schema.pages).filter((page) => page.page_key && !marketplacePageKeys.has(page.page_key));
     nextSchema = {
@@ -6934,7 +6938,7 @@ function lockSchemaToExecutableTemplate(schema, payload = {}, templateSelection 
   const lockedPages = executablePagesForTemplate(templateId, catalogType, copy, name, description, payload);
   if (!lockedPages.length) return schema;
 
-  const existingByKey = new Map(arrayValue(schema.pages).map((page) => [page.page_key, page]));
+  const existingByKey = new Map(arrayValue(schema.pages).map((page) => [page.page_key || page.pageKey || page.pageId, page]));
   const mergedPages = lockedPages.map((page) => mergeLockedTemplatePage(page, existingByKey.get(page.page_key)));
   const customPages = arrayValue(schema.pages).filter((page) => page.page_key && !mergedPages.some((locked) => locked.page_key === page.page_key));
   return {
@@ -6988,27 +6992,48 @@ function normalizeTemplatePresetId(templateId = "", catalogType = "") {
 
 function mergeLockedTemplatePage(lockedPage, existingPage = null) {
   if (!existingPage) return lockedPage;
-  const existingSections = new Map(arrayValue(existingPage.sections).map((section) => [section.id || section.type, section]));
+  const optionalBackendTypes = new Set(["QuoteRequestForm", "CapabilitiesEquipment", "PortfolioGallery", "VideoShowcase"]);
+  const normalizedExistingSections = arrayValue(existingPage.sections).map((section, index) => {
+    const type = section.type || section.component || "";
+    const nestedEditable = section.editable || {};
+    const copy = nestedEditable.copy || {};
+    const media = nestedEditable.media || {};
+    const dataBinding = nestedEditable.dataBinding || section.dataBinding || {};
+    return {
+      ...section,
+      id: section.id || section.sectionId || `${slugify(type || "section")}-${index + 1}`,
+      type,
+      order: section.order || index + 1,
+      editable: { ...copy, ...media, ...dataBinding, ...nestedEditable },
+      settings: { ...(section.settings || {}), layout: section.settings?.layout || section.variant || "default" },
+    };
+  });
+  const existingSections = new Map(normalizedExistingSections.map((section) => [section.id || section.type, section]));
+  const mergedLockedSections = arrayValue(lockedPage.sections).map((lockedSection) => {
+    const existing = existingSections.get(lockedSection.id) || existingSections.get(lockedSection.type);
+    if (!existing) return lockedSection;
+    return {
+      ...lockedSection,
+      editable: {
+        ...(lockedSection.editable || {}),
+        ...(existing.editable || {}),
+      },
+      settings: {
+        ...(lockedSection.settings || {}),
+        ...(existing.settings || {}),
+        layout: lockedSection.settings?.layout || existing.settings?.layout,
+      },
+    };
+  });
+  const optionalSections = normalizedExistingSections.filter((section) => (
+    optionalBackendTypes.has(section.type)
+    && !mergedLockedSections.some((locked) => locked.id === section.id || locked.type === section.type)
+  ));
   return {
     ...lockedPage,
     title: existingPage.title || lockedPage.title,
     slug: existingPage.slug || lockedPage.slug,
-    sections: arrayValue(lockedPage.sections).map((lockedSection) => {
-      const existing = existingSections.get(lockedSection.id) || existingSections.get(lockedSection.type);
-      if (!existing) return lockedSection;
-      return {
-        ...lockedSection,
-        editable: {
-          ...(lockedSection.editable || {}),
-          ...(existing.editable || {}),
-        },
-        settings: {
-          ...(lockedSection.settings || {}),
-          ...(existing.settings || {}),
-          layout: lockedSection.settings?.layout || existing.settings?.layout,
-        },
-      };
-    }),
+    sections: [...mergedLockedSections, ...optionalSections].map((section, index) => ({ ...section, order: index + 1 })),
   };
 }
 
@@ -8247,7 +8272,7 @@ function buildPremiumProductInstantPages(copy, name, description, payload = {}) 
         },
         {
           id: "premium_gallery",
-          type: "EditorialGallery",
+          type: "PortfolioGallery",
           order: 4,
           editable: {
             title: copy.premiumGalleryTitle,
@@ -9077,19 +9102,19 @@ function buildManufacturingIndustrialInstantPages(copy, name, description, paylo
       sections: [
         { id: "industrial_hero", type: "IndustrialHero", order: 1, editable: { headline: copy.industrialHeadline(name), subtitle: copy.industrialSubheadline(description), primary_button: copy.requestQuote, secondary_button: copy.viewSpecs, image_url: heroImage, badge: copy.industrialSupplier, images: [] }, settings: { layout: "industrial_rfq_dashboard", spacing: "spacious", container_width: "wide" } },
         { id: "industrial_catalog", type: "IndustrialSpecCatalog", order: 2, editable: { title: copy.industrialCatalogTitle, text: copy.industrialCatalogText, images: [] }, settings: { layout: "spec_cards", columns: 3, spacing: "compact", container_width: "wide" } },
-        { id: "industrial_capabilities", type: "IndustrialCapabilities", order: 3, editable: { title: copy.industrialCapabilitiesTitle, text: copy.industrialCapabilitiesText, items: copy.industrialCapabilityItems, images: [] }, settings: { layout: "capability_matrix", spacing: "balanced", container_width: "wide" } },
+        { id: "industrial_capabilities", type: "CapabilitiesEquipment", order: 3, editable: { title: copy.industrialCapabilitiesTitle, text: copy.industrialCapabilitiesText, items: copy.industrialCapabilityItems, images: [] }, settings: { layout: "capability_matrix", spacing: "balanced", container_width: "wide" } },
         { id: "industrial_certifications", type: "IndustrialCertifications", order: 4, editable: { title: copy.industrialCertificationsTitle, text: copy.industrialCertificationsText, items: copy.industrialCertificationItems, images: [] }, settings: { layout: "certification_grid", spacing: "balanced", container_width: "wide" } },
         { id: "industrial_supply", type: "IndustrialSupplyChain", order: 5, editable: { title: copy.industrialSupplyTitle, text: copy.industrialSupplyText, items: copy.industrialSupplyItems, images: [] }, settings: { layout: "supply_timeline", spacing: "balanced", container_width: "wide" } },
-        { id: "industrial_quote", type: "IndustrialQuotePanel", order: 6, editable: { title: copy.industrialQuoteTitle, text: copy.industrialQuoteText, primary_button: copy.requestQuote, images: [] }, settings: { layout: "rfq_panel", spacing: "spacious", container_width: "wide" } },
+        { id: "industrial_quote", type: "QuoteRequestForm", order: 6, editable: { title: copy.industrialQuoteTitle, text: copy.industrialQuoteText, primary_button: copy.requestQuote, images: [] }, settings: { layout: "rfq_panel", spacing: "spacious", container_width: "wide" } },
       ],
     },
     { page_key: "catalog", title: copy.products, slug: copy.shopSlug, order: 2, sections: [{ id: "industrial_products", type: "ProductGrid", order: 1, editable: { title: copy.industrialCatalogTitle, text: copy.industrialCatalogText, images: [] }, settings: { layout: "industrial_specs", columns: 3, spacing: "compact", container_width: "wide" } }] },
     { page_key: "about", title: copy.capabilities, slug: "/capabilities", order: 3, sections: [
-      { id: "capabilities", type: "IndustrialCapabilities", order: 1, editable: { title: copy.industrialCapabilitiesTitle, text: copy.industrialCapabilitiesText, items: copy.industrialCapabilityItems, images: [] }, settings: { layout: "capability_matrix", container_width: "wide" } },
+      { id: "capabilities", type: "CapabilitiesEquipment", order: 1, editable: { title: copy.industrialCapabilitiesTitle, text: copy.industrialCapabilitiesText, items: copy.industrialCapabilityItems, images: [] }, settings: { layout: "capability_matrix", container_width: "wide" } },
       { id: "certifications", type: "IndustrialCertifications", order: 2, editable: { title: copy.industrialCertificationsTitle, text: copy.industrialCertificationsText, items: copy.industrialCertificationItems, images: [] }, settings: { layout: "certification_grid", container_width: "wide" } },
       { id: "supply", type: "IndustrialSupplyChain", order: 3, editable: { title: copy.industrialSupplyTitle, text: copy.industrialSupplyText, items: copy.industrialSupplyItems, images: [] }, settings: { layout: "supply_timeline", container_width: "wide" } },
     ] },
-    { page_key: "contact", title: copy.requestQuote, slug: copy.contactSlug, order: 4, sections: [{ id: "quote", type: "IndustrialQuotePanel", order: 1, editable: { title: copy.industrialQuoteTitle, text: copy.industrialQuoteText, primary_button: copy.requestQuote, images: [] }, settings: { layout: "rfq_panel", container_width: "wide" } }] },
+    { page_key: "contact", title: copy.requestQuote, slug: copy.contactSlug, order: 4, sections: [{ id: "quote", type: "QuoteRequestForm", order: 1, editable: { title: copy.industrialQuoteTitle, text: copy.industrialQuoteText, primary_button: copy.requestQuote, images: [] }, settings: { layout: "rfq_panel", container_width: "wide" } }] },
   ];
 }
 
@@ -9371,7 +9396,7 @@ function buildHomeServicesPremiumInstantPages(copy, name, description, payload =
         },
         {
           id: "home_service_gallery",
-          type: "HomeServiceGallery",
+          type: "PortfolioGallery",
           order: 4,
           editable: { title: copy.beforeAfterTitle, text: copy.beforeAfterText, images: [] },
           settings: { layout: "before_after" },
@@ -9408,7 +9433,7 @@ function buildHomeServicesPremiumInstantPages(copy, name, description, payload =
       slug: copy.workSlug,
       order: 3,
       sections: [
-        { id: "work", type: "HomeServiceGallery", order: 1, editable: { title: copy.beforeAfterTitle, text: copy.beforeAfterText, images: [] }, settings: { layout: "before_after" } },
+        { id: "work", type: "PortfolioGallery", order: 1, editable: { title: copy.beforeAfterTitle, text: copy.beforeAfterText, images: [] }, settings: { layout: "before_after" } },
         { id: "trust", type: "HomeServiceTrust", order: 2, editable: { title: copy.homeServiceTrustTitle, text: copy.homeServiceTrustText, items: copy.homeServiceTrustItems, images: [] }, settings: { layout: "review_panel" } },
       ],
     },
@@ -9798,7 +9823,7 @@ function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
         ...(composition === 2 ? [{
           id: "marketplace_gallery",
           type: "Gallery",
-          editable: { title: copy.bestSellers, text: copy.catalogText, images: [] },
+          editable: { title: copy.featuredProducts, text: copy.catalogText, images: [] },
           variant: recipe.feature,
           settings: { layout: "gallery", columns: 3, spacing: "balanced", container_width: "wide" },
         }] : []),

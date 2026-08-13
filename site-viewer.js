@@ -104,7 +104,8 @@ function renderSection(section, schema) {
   if (section.type === "PremiumHero") return renderPremiumHero(section, schema);
   if (section.type === "ProductStory") return renderProductStory(section, schema);
   if (section.type === "FeatureShowcase") return renderFeatureShowcase(section, schema);
-  if (section.type === "EditorialGallery") return renderEditorialGallery(section, schema);
+  if (section.type === "EditorialGallery" || section.type === "PortfolioGallery") return renderPortfolioGallery(section, schema);
+  if (section.type === "VideoShowcase") return renderVideoShowcase(section, schema);
   if (section.type === "SpecStrip") return renderSpecStrip(section, schema);
   if (section.type === "FashionHero") return renderFashionHero(section, schema);
   if (section.type === "FashionCollectionRail") return renderFashionCollectionRail(section, schema);
@@ -161,10 +162,10 @@ function renderSection(section, schema) {
   if (section.type === "EnterpriseDemo") return renderEnterpriseDemo(section, schema);
   if (section.type === "IndustrialHero") return renderIndustrialHero(section, schema);
   if (section.type === "IndustrialSpecCatalog") return renderIndustrialSpecCatalog(section, schema);
-  if (section.type === "IndustrialCapabilities") return renderIndustrialCapabilities(section, schema);
+  if (section.type === "IndustrialCapabilities" || section.type === "CapabilitiesEquipment") return renderCapabilitiesEquipment(section, schema);
   if (section.type === "IndustrialCertifications") return renderIndustrialCertifications(section, schema);
   if (section.type === "IndustrialSupplyChain") return renderIndustrialSupplyChain(section, schema);
-  if (section.type === "IndustrialQuotePanel") return renderIndustrialQuotePanel(section, schema);
+  if (section.type === "IndustrialQuotePanel" || section.type === "QuoteRequestForm") return renderQuoteRequestForm(section, schema);
   if (section.type === "ListingHero") return renderListingHero(section, schema);
   if (section.type === "ListingFilters") return renderListingFilters(section, schema);
   if (section.type === "ListingFeatured") return renderListingFeatured(section, schema);
@@ -174,7 +175,7 @@ function renderSection(section, schema) {
   if (section.type === "HomeServiceHero") return renderHomeServiceHero(section, schema);
   if (section.type === "HomeServiceCategories") return renderHomeServiceCategories(section, schema);
   if (section.type === "HomeServiceAreas") return renderHomeServiceAreas(section, schema);
-  if (section.type === "HomeServiceGallery") return renderHomeServiceGallery(section, schema);
+  if (section.type === "HomeServiceGallery") return renderPortfolioGallery(section, schema);
   if (section.type === "HomeServiceTrust") return renderHomeServiceTrust(section, schema);
   if (section.type === "HomeServiceQuote") return renderHomeServiceQuote(section, schema);
   if (section.type === "BookingHero") return renderBookingHero(section, schema);
@@ -336,7 +337,7 @@ function renderFashionLookbook(section, schema) {
   const editable = section.editable || {};
   return `<section class="fashion-lookbook-section ${sectionClass(section)}">
     <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).lookbook)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
-    <div class="fashion-lookbook-strip">${publicCatalogItems(schema).slice(0, 5).map((item, index) => `<article class="${index === 1 ? "tall" : ""}">${renderResilientImage(item.image_url, item.name, item.name)}<strong>${escapeHtml(item.name)}</strong></article>`).join("")}</div>
+    <div class="fashion-lookbook-strip">${publicCatalogItems(schema).slice(0, 5).map((item, index) => `<article class="${index === 1 ? "tall" : ""}">${renderCatalogImage(item)}<strong>${escapeHtml(item.name)}</strong></article>`).join("")}</div>
   </section>`;
 }
 
@@ -549,7 +550,7 @@ function renderHomeServiceGallery(section, schema) {
   return `<section class="home-service-gallery ${sectionClass(section)}">
     <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.workProof)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
     <div class="home-service-work-grid">${items.map((item, index) => `<article>
-      ${renderResilientImage(item.image_url, item.name, item.name)}
+      ${renderCatalogImage(item)}
       <div><small>${escapeHtml(index % 2 ? labels.after : labels.before)}</small><strong>${escapeHtml(item.name)}</strong></div>
     </article>`).join("")}</div>
   </section>`;
@@ -807,7 +808,7 @@ function renderProductGrid(section, schema) {
     ${customCatalog || `<div class="rendered-grid columns-${columns}">
       ${catalogItems
         .map((item) => `<article class="rendered-card">
-        ${renderResilientImage(item.image_url, item.name, item.name)}
+        ${renderCatalogImage(item)}
         <div>
           <h3>${escapeHtml(item.name)}</h3>
           <p>${escapeHtml(item.description)}</p>
@@ -822,17 +823,28 @@ function renderProductGrid(section, schema) {
 function renderPremiumEditorialCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-premium-editorial">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
-    <div class="premium-card-visual">${renderResilientImage(item.image_url, item.name, item.name)}</div>
+    <div class="premium-card-visual">${renderCatalogImage(item)}</div>
     <div><small>${escapeHtml(index === 0 ? labels.flagship : labels.curated)}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><strong>${escapeHtml(item.price_label || "")}</strong><button class="rendered-button secondary" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.view)}</button></div>
   </article>`).join("")}</div>`;
 }
 
 function renderMarketplaceCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
+  const groups = groupCatalogItemsByCategory(items, labels);
   return `<div class="catalog-shell catalog-marketplace">
-    <aside><strong>${escapeHtml(labels.searchFilters)}</strong>${marketplaceCategories(schema).slice(0, 5).map((category) => `<span>${escapeHtml(category)}</span>`).join("")}<span>${escapeHtml(labels.price)}</span><span>${escapeHtml(labels.rating)}</span><span>${escapeHtml(labels.delivery)}</span></aside>
-    <div class="marketplace-catalog-main"><div class="marketplace-sort-bar"><b>${escapeHtml(labels.results)}</b><span>${escapeHtml(labels.sortBy)}: ${escapeHtml(labels.featured)}</span></div><div class="catalog-results">${items.map((item, index) => renderCatalogCard(item, "market-card", index % 3 === 0 ? labels.deal : labels.fastShip, schema)).join("")}</div></div>
+    <aside><strong>${escapeHtml(labels.searchFilters)}</strong>${groups.map(([category]) => `<a href="#catalog-category-${escapeAttribute(slugify(category))}">${escapeHtml(category)}</a>`).join("")}<span>${escapeHtml(labels.price)}</span><span>${escapeHtml(labels.rating)}</span><span>${escapeHtml(labels.delivery)}</span></aside>
+    <div class="marketplace-catalog-main"><div class="marketplace-sort-bar"><b>${escapeHtml(labels.results)}</b><span>${escapeHtml(labels.sortBy)}: ${escapeHtml(labels.featured)}</span></div><div class="marketplace-category-groups">${groups.map(([category, categoryItems]) => `<section id="catalog-category-${escapeAttribute(slugify(category))}" class="marketplace-category-group"><div class="marketplace-category-heading"><h3>${escapeHtml(category)}</h3><span>${categoryItems.length}</span></div><div class="catalog-results">${categoryItems.map((item, index) => renderCatalogCard(item, "market-card", index % 3 === 0 ? labels.deal : labels.fastShip, schema)).join("")}</div></section>`).join("")}</div></div>
   </div>${renderMarketplaceSubscribe(schema)}`;
+}
+
+function groupCatalogItemsByCategory(items, labels) {
+  const groups = new Map();
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    const category = String(item.category || labels.featured || "Featured").trim();
+    if (!groups.has(category)) groups.set(category, []);
+    groups.get(category).push(item);
+  });
+  return [...groups.entries()];
 }
 
 function renderMarketplaceSubscribe(schema) {
@@ -888,7 +900,7 @@ function marketplaceSubscribeCopy(schema) {
 function renderFashionLookbookCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-lookbook">${items.map((item, index) => `<article class="lookbook-card ${index === 0 ? "wide" : ""}">
-    ${renderResilientImage(item.image_url, item.name, item.name)}
+    ${renderCatalogImage(item)}
     <span>${escapeHtml(labels.newDrop)}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label || labels.request)}</b>
     <button class="rendered-button secondary" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.view)}</button>
   </article>`).join("")}</div>`;
@@ -931,7 +943,7 @@ function renderRestaurantMenuCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-restaurant-menu">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
     <div class="restaurant-menu-card-top"><small>${escapeHtml(item.category || (index % 2 ? labels.chefPick : labels.popularDish))}</small><span>${escapeHtml(index === 0 ? labels.signatureMenu : labels.menu)}</span></div>
-    ${renderResilientImage(item.image_url, item.name, item.name)}
+    ${renderCatalogImage(item)}
     <h3>${escapeHtml(item.name)}</h3>
     <p>${escapeHtml(item.description)}</p>
     <div class="restaurant-menu-card-bottom">
@@ -1022,7 +1034,7 @@ function renderDigitalOfferCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-digital-pro">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
     <div class="digital-card-top"><small>${escapeHtml(item.category || labels.digitalProducts)}</small><span>${escapeHtml(labels.instantAccess)}</span></div>
-    ${renderResilientImage(item.image_url, item.name, item.name)}
+    ${renderCatalogImage(item)}
     <h3>${escapeHtml(item.name)}</h3>
     <p>${escapeHtml(item.description)}</p>
     <ul><li>${escapeHtml(labels.downloadable)}</li><li>${escapeHtml(labels.bonus)}</li><li>${escapeHtml(labels.lifetime)}</li></ul>
@@ -1036,7 +1048,7 @@ function renderDigitalOfferCatalog(items, schema) {
 function renderLuxuryHighTicketCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-luxury-high-ticket">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
-    <div class="luxury-card-top">${renderResilientImage(item.image_url, item.name, item.name)}</div>
+    <div class="luxury-card-top">${renderCatalogImage(item)}</div>
     <div class="luxury-card-bottom">
       <small>${escapeHtml(item.deal_label || (index % 2 ? labels.authenticated : labels.limitedPiece))}</small>
       <h3>${escapeHtml(item.name)}</h3>
@@ -1054,7 +1066,7 @@ function renderEducationCourseCatalog(items, schema) {
       <small>${escapeHtml(item.deal_label || (index % 2 ? labels.beginnerFriendly : labels.certificateReady))}</small>
       <span>${escapeHtml(item.shipping_label || labels.educationDurations?.[index % (labels.educationDurations?.length || 1)] || "")}</span>
     </div>
-    <div class="education-card-image">${renderResilientImage(item.image_url, item.name, item.name)}</div>
+    <div class="education-card-image">${renderCatalogImage(item)}</div>
     <div class="education-card-body">
       <small>${escapeHtml(item.category || labels.courseAcademy)}</small>
       <h3>${escapeHtml(item.name)}</h3>
@@ -1076,7 +1088,7 @@ function renderMedicalWellnessCatalog(items, schema) {
       <small>${escapeHtml(item.deal_label || (index % 2 ? labels.specialistLed : labels.popularTreatment))}</small>
       <span>${escapeHtml(item.shipping_label || labels.clinicDurations?.[index % (labels.clinicDurations?.length || 1)] || "")}</span>
     </div>
-    <div class="clinic-card-visual">${renderResilientImage(item.image_url, item.name, item.name)}</div>
+    <div class="clinic-card-visual">${renderCatalogImage(item)}</div>
     <div class="clinic-card-body">
       <small>${escapeHtml(item.category || labels.treatments)}</small>
       <h3>${escapeHtml(item.name)}</h3>
@@ -1510,10 +1522,14 @@ function renderIndustrialSpecCatalog(section, schema) {
 }
 
 function renderIndustrialCapabilities(section, schema) {
+  return renderCapabilitiesEquipment(section, schema);
+}
+
+function renderCapabilitiesEquipment(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
   const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.industrialCapabilityItems;
-  return `<section class="industrial-capabilities-section ${sectionClass(section)}"><div><span class="rendered-kicker">${escapeHtml(labels.capabilities)}</span><h2>${escapeHtml(editable.title || labels.industrialCapabilitiesTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialCapabilitiesText)}</p></div><div class="industrial-capability-board">${items.slice(0, 6).map((item, index) => `<div><b>${String(index + 1).padStart(2, "0")}</b><strong>${escapeHtml(item)}</strong><span>${escapeHtml(index % 2 ? labels.bulkReady : labels.specReady)}</span></div>`).join("")}</div></section>`;
+  return `<section class="industrial-capabilities-section capabilities-equipment ${sectionClass(section)}"><div><span class="rendered-kicker">${escapeHtml(labels.capabilities)}</span><h2>${escapeHtml(editable.title || labels.industrialCapabilitiesTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialCapabilitiesText)}</p></div><div class="industrial-capability-board">${items.slice(0, 8).map((item, index) => { const entry = typeof item === "object" ? item : { title: item }; return `<div><b>${escapeHtml(entry.icon || String(index + 1).padStart(2, "0"))}</b><strong>${escapeHtml(entry.title || entry.name || "")}</strong><span>${escapeHtml(entry.description || (index % 2 ? labels.bulkReady : labels.specReady))}</span></div>`; }).join("")}</div></section>`;
 }
 
 function renderIndustrialCertifications(section, schema) {
@@ -1531,9 +1547,15 @@ function renderIndustrialSupplyChain(section, schema) {
 }
 
 function renderIndustrialQuotePanel(section, schema) {
+  return renderQuoteRequestForm(section, schema);
+}
+
+function renderQuoteRequestForm(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
-  return `<section class="industrial-quote-section ${sectionClass(section)}"><div class="industrial-quote-card"><div><span class="rendered-kicker">${escapeHtml(labels.requestQuote)}</span><h2>${escapeHtml(editable.title || labels.industrialQuoteTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialQuoteText)}</p></div><div class="industrial-rfq-fields"><span>SKU / Spec</span><span>Quantity / MOQ</span><span>Material</span><span>Deadline</span></div><button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.requestQuote)}</button></div></section>`;
+  const defaults = schema.business?.selectedLanguage === "es" ? [{ name: "need", label: "Que necesitas" }, { name: "quantity", label: "Cantidad aproximada" }, { name: "target_date", label: "Fecha deseada", type: "date" }, { name: "notes", label: "Notas", type: "textarea" }] : [{ name: "need", label: "What do you need" }, { name: "quantity", label: "Approximate quantity" }, { name: "target_date", label: "Desired date", type: "date" }, { name: "notes", label: "Notes", type: "textarea" }];
+  const fields = Array.isArray(editable.fields) && editable.fields.length ? editable.fields : defaults;
+  return `<section class="industrial-quote-section quote-request-form ${sectionClass(section)}"><div class="industrial-quote-card"><div><span class="rendered-kicker">${escapeHtml(labels.requestQuote)}</span><h2>${escapeHtml(editable.title || labels.industrialQuoteTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialQuoteText)}</p></div><div class="industrial-rfq-fields">${fields.slice(0, 8).map((field, index) => { const entry = typeof field === "object" ? field : { label: field }; const label = entry.label || entry.name || defaults[index]?.label || "Details"; const control = entry.type === "textarea" ? `<textarea name="${escapeAttribute(entry.name || slugify(label))}" placeholder="${escapeAttribute(entry.placeholder || label)}" ${entry.required ? "required" : ""}></textarea>` : `<input type="${escapeAttribute(entry.type || "text")}" name="${escapeAttribute(entry.name || slugify(label))}" placeholder="${escapeAttribute(entry.placeholder || label)}" ${entry.required ? "required" : ""}>`; return `<label><span>${escapeHtml(label)}</span>${control}</label>`; }).join("")}</div><button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || labels.requestQuote)}</button></div></section>`;
 }
 
 function industrialVisualPlaceholder(schema) {
@@ -1606,7 +1628,7 @@ function renderListingContact(section, schema) {
 function renderRealEstateListingCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-real-estate-listings">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
-    <div class="listing-image">${renderResilientImage(item.image_url, item.name, item.name)}</div>
+    <div class="listing-image">${renderCatalogImage(item)}</div>
     <div class="listing-card-body"><div class="listing-card-top"><small>${escapeHtml(item.deal_label || labels.availableNow)}</small><span>${escapeHtml(item.category || labels.listings)}</span></div><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><div class="listing-spec-row"><span>${escapeHtml(item.shipping_label || labels.listingLocations?.[index % labels.listingLocations.length] || "")}</span><span>${escapeHtml(index % 2 ? "3 bd" : "2 bd")}</span><span>${escapeHtml(index % 3 ? "2 ba" : "1 ba")}</span></div><div class="listing-card-bottom"><strong>${escapeHtml(item.price_label || labels.listingPrice)}</strong><button class="rendered-button" data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}" type="button">${escapeHtml(item.button_label || labels.inquireNow)}</button></div></div>
   </article>`).join("")}</div>`;
 }
@@ -1643,7 +1665,7 @@ function renderCatalogCard(item, className, badge, schema) {
     : `data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}"`;
   const actionLabel = isMarket ? commerce.addToCart : (item.button_label || labels.view);
   return `<article class="${className}">
-    ${renderResilientImage(item.image_url, item.name, item.name)}
+    ${renderCatalogImage(item)}
     ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
     ${item.category ? `<small>${escapeHtml(item.category)}</small>` : ""}
     <h3>${escapeHtml(item.name)}</h3>
@@ -1652,6 +1674,44 @@ function renderCatalogCard(item, className, badge, schema) {
     <b>${escapeHtml(priceLabel)}</b>
     <button class="rendered-button" ${actionAttributes} type="button">${escapeHtml(actionLabel)}</button>
   </article>`;
+}
+
+function renderCatalogImage(item = {}) {
+  return `${renderResilientImage(item.image_url || item.imageUrl, item.name || item.title, item.name || item.title)}${renderImageAttribution(item)}`;
+}
+
+function renderImageAttribution(item = {}) {
+  const asset = item.image_asset || item.imageAsset || {};
+  if (asset.source !== "unsplash_api") return "";
+  const photographer = asset.photographer_name || "Unsplash contributor";
+  const profileUrl = asset.photographer_profile_url || "https://unsplash.com";
+  return `<a class="image-attribution" href="${escapeAttribute(profileUrl)}" target="_blank" rel="noopener noreferrer">Photo: ${escapeHtml(photographer)} / Unsplash</a>`;
+}
+
+function renderPortfolioGallery(section, schema) {
+  const editable = section.editable || {};
+  const labels = catalogLocaleLabels(schema);
+  const items = (Array.isArray(editable.items) && editable.items.length ? editable.items : publicCatalogItems(schema)).slice(0, 8);
+  const beforeAfter = section.settings?.layout === "before_after" || editable.before_after === true || items.some((item) => item.beforeImageUrl || item.afterImageUrl);
+  return `<section class="home-service-gallery portfolio-gallery ${beforeAfter ? "is-before-after" : ""} ${sectionClass(section)}"><div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.workProof || labels.curated)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div><div class="home-service-work-grid">${items.map((item) => `<article>${beforeAfter && (item.beforeImageUrl || item.afterImageUrl) ? `<div class="portfolio-before-after"><figure>${renderResilientImage(item.beforeImageUrl || item.image_url, item.name, `${item.name || "Project"} before`)}<figcaption>${escapeHtml(labels.before)}</figcaption></figure><figure>${renderResilientImage(item.afterImageUrl || item.image_url, item.name, `${item.name || "Project"} after`)}<figcaption>${escapeHtml(labels.after)}</figcaption></figure></div>` : renderResilientImage(item.image_url || item.imageUrl, item.name || item.title, item.name || item.title)}${renderImageAttribution(item)}<div><strong>${escapeHtml(item.name || item.title || "")}</strong>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}${item.price_label || item.price ? `<b>${escapeHtml(item.price_label || item.price)}</b>` : ""}</div></article>`).join("")}</div></section>`;
+}
+
+function renderVideoShowcase(section) {
+  const editable = section.editable || {};
+  const embedUrl = safeVideoEmbedUrl(editable.videoUrl || editable.video_url || editable.url || "");
+  if (!embedUrl) return `<section class="video-showcase ${sectionClass(section)}"><div class="section-heading"><h2>${escapeHtml(editable.title || "Video")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div><p class="video-unavailable">Video URL unavailable or unsupported.</p></section>`;
+  return `<section class="video-showcase ${sectionClass(section)}"><div class="section-heading"><h2>${escapeHtml(editable.title || "Video")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div><div class="video-embed"><iframe src="${escapeAttribute(embedUrl)}" title="${escapeAttribute(editable.title || "Video")}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></section>`;
+}
+
+function safeVideoEmbedUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    const host = url.hostname.toLowerCase();
+    if (host === "youtu.be") { const id = url.pathname.split("/").filter(Boolean)[0]; return /^[a-zA-Z0-9_-]{6,}$/.test(id || "") ? `https://www.youtube.com/embed/${id}` : ""; }
+    if (["youtube.com", "www.youtube.com"].includes(host)) { const id = url.searchParams.get("v") || (url.pathname.match(/^\/(?:embed|shorts)\/([a-zA-Z0-9_-]+)/) || [])[1]; return /^[a-zA-Z0-9_-]{6,}$/.test(id || "") ? `https://www.youtube.com/embed/${id}` : ""; }
+    if (["vimeo.com", "www.vimeo.com", "player.vimeo.com"].includes(host)) { const id = (url.pathname.match(/\/(?:video\/)?(\d+)/) || [])[1]; return id ? `https://player.vimeo.com/video/${id}` : ""; }
+  } catch (_error) { return ""; }
+  return "";
 }
 
 function marketplaceCategories(schema) {

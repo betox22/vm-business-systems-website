@@ -4,6 +4,7 @@ import json
 import os
 import re
 from typing import Any, Dict, List, Literal, Optional
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
@@ -37,6 +38,10 @@ ALLOWED_RENDERER_COMPONENTS = {
     "RestaurantMenu",
     "ServiceAreas",
     "ProofPanel",
+    "QuoteRequestForm",
+    "CapabilitiesEquipment",
+    "PortfolioGallery",
+    "VideoShowcase",
 }
 
 
@@ -58,6 +63,14 @@ ALLOWED_SECTION_COMPONENT_TYPES = {
     "restaurant_menu": "RestaurantMenu",
     "service_areas": "ServiceAreas",
     "proof_panel": "ProofPanel",
+    "quote_request_form": "QuoteRequestForm",
+    "capabilities_equipment": "CapabilitiesEquipment",
+    "portfolio_gallery": "PortfolioGallery",
+    "video_showcase": "VideoShowcase",
+    "QuoteRequestForm": "QuoteRequestForm",
+    "CapabilitiesEquipment": "CapabilitiesEquipment",
+    "PortfolioGallery": "PortfolioGallery",
+    "VideoShowcase": "VideoShowcase",
 }
 
 
@@ -187,11 +200,40 @@ class SpecsShowcaseBinding(BaseModel):
     specs: List[SpecItem] = Field(min_length=4, max_length=8)
 
 
+class VideoShowcaseBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    videoUrl: str
+
+    @field_validator("videoUrl")
+    @classmethod
+    def video_url_must_be_supported(cls, value: str) -> str:
+        parsed = urlparse(value)
+        host = (parsed.hostname or "").lower()
+        if parsed.scheme not in {"http", "https"}:
+            raise ValueError("Video URL must use HTTP(S)")
+        if host == "youtu.be":
+            video_id = parsed.path.strip("/").split("/")[0]
+            if re.fullmatch(r"[A-Za-z0-9_-]{6,}", video_id or ""):
+                return value
+        if host in {"youtube.com", "www.youtube.com"}:
+            query_match = re.search(r"(?:^|&)v=([A-Za-z0-9_-]{6,})(?:&|$)", parsed.query)
+            path_match = re.fullmatch(r"/(?:embed|shorts)/([A-Za-z0-9_-]{6,})/?", parsed.path)
+            if query_match or path_match:
+                return value
+        if host in {"vimeo.com", "www.vimeo.com", "player.vimeo.com"}:
+            if re.fullmatch(r"/(?:video/)?\d+/?", parsed.path):
+                return value
+        raise ValueError("Video URL must point to a valid YouTube or Vimeo video")
+
+
 DATA_BINDING_SCHEMAS = {
     "product_grid_4x": MarketplaceGridBinding,
     "featured_products": MarketplaceGridBinding,
     "restaurant_menu": RestaurantMenuBinding,
     "feature_spotlight": SpecsShowcaseBinding,
+    "video_showcase": VideoShowcaseBinding,
+    "VideoShowcase": VideoShowcaseBinding,
 }
 
 
@@ -349,26 +391,34 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
         for section in page.sections:
             renderer_component = ALLOWED_SECTION_COMPONENT_TYPES[section.componentType]
             section_copy = section.copyProps.model_dump(exclude_none=True)
+            section_media = section.media.model_dump(exclude_none=True) if section.media else {}
             if not hero_copy and section_copy and renderer_component in {"Hero", "MarketplaceHero"}:
                 hero_copy = section_copy
             sections.append({
+                "id": section.sectionId,
                 "sectionId": section.sectionId,
+                "type": renderer_component,
                 "component": renderer_component,
                 "componentType": section.componentType,
                 "variant": section.variant,
                 "purpose": section.purpose,
                 "dataBinding": section.dataBinding,
                 "editable": {
+                    **section_copy,
+                    **section_media,
+                    **section.dataBinding,
                     "copy": section_copy,
-                    "media": section.media.model_dump(exclude_none=True) if section.media else {},
+                    "media": section_media,
                     "dataBinding": section.dataBinding,
                 },
             })
         pages.append({
+            "page_key": page.pageId,
             "pageKey": page.pageId,
             "pageId": page.pageId,
             "title": page.title,
             "slug": page.slug,
+            "order": len(pages) + 1,
             "sections": sections,
         })
 
@@ -758,6 +808,18 @@ class OpenAISitePlanAgent:
                 "feature_spotlight": {
                     "specs": "4 to 8 specs. Each spec requires specLabel and specValue."
                 },
+                "quote_request_form": {
+                    "fields": "Optional configurable fields with name, label, type, placeholder and required."
+                },
+                "capabilities_equipment": {
+                    "items": "3 to 8 capabilities or equipment items with icon, title and description."
+                },
+                "portfolio_gallery": {
+                    "items": "3 to 8 portfolio items with title, description, imageUrl and optional price or beforeImageUrl/afterImageUrl."
+                },
+                "video_showcase": {
+                    "videoUrl": "A verified YouTube or Vimeo URL."
+                },
             },
         }
 
@@ -824,6 +886,7 @@ Hard rules:
 - For product_grid_4x and featured_products, dataBinding.items is required with 12 to 16 realistic complete products.
 - For restaurant_menu, dataBinding.categories is required with complete menu categories and dishes.
 - For feature_spotlight, dataBinding.specs is required with complete product/service specifications.
+- Use quote_request_form for configurable quote capture, capabilities_equipment for reusable capability or equipment cards, portfolio_gallery for editorial/project/before-after work, and video_showcase only for verified YouTube or Vimeo URLs.
 - Treat the client's intake as private strategy, not public copy.
 - Do not paste raw client notes into visible website text.
 - Identify the exact niche from the business name, industry, products/services and description before writing catalog or copy.

@@ -1208,7 +1208,7 @@
     return `<div class="studio-floating-catalog" aria-hidden="true">
     <span>Store preview</span>
     <div>${items.map((item) => `<article>
-      ${renderResilientImage(item.image_url, item.name, item.name)}
+      ${renderCatalogImage(item)}
       <strong>${escapeHtml(item.name || "Product")}</strong>
       <small>${escapeHtml(item.price_label || "Precio editable")}</small>
     </article>`).join("")}</div>
@@ -1220,7 +1220,9 @@
       PremiumHero: renderPremiumHero,
       ProductStory: renderProductStory,
       FeatureShowcase: renderFeatureShowcase,
-      EditorialGallery: renderEditorialGallery,
+      EditorialGallery: renderPortfolioGallery,
+      PortfolioGallery: renderPortfolioGallery,
+      VideoShowcase: renderVideoShowcase,
       SpecStrip: renderSpecStrip,
       FashionHero: renderFashionHero,
       FashionCollectionRail: renderFashionCollectionRail,
@@ -1277,10 +1279,12 @@
       EnterpriseDemo: renderEnterpriseDemo,
       IndustrialHero: renderIndustrialHero,
       IndustrialSpecCatalog: renderIndustrialSpecCatalog,
-      IndustrialCapabilities: renderIndustrialCapabilities,
+      IndustrialCapabilities: renderCapabilitiesEquipment,
+      CapabilitiesEquipment: renderCapabilitiesEquipment,
       IndustrialCertifications: renderIndustrialCertifications,
       IndustrialSupplyChain: renderIndustrialSupplyChain,
-      IndustrialQuotePanel: renderIndustrialQuotePanel,
+      IndustrialQuotePanel: renderQuoteRequestForm,
+      QuoteRequestForm: renderQuoteRequestForm,
       ListingHero: renderListingHero,
       ListingFilters: renderListingFilters,
       ListingFeatured: renderListingFeatured,
@@ -1290,7 +1294,7 @@
       HomeServiceHero: renderHomeServiceHero,
       HomeServiceCategories: renderHomeServiceCategories,
       HomeServiceAreas: renderHomeServiceAreas,
-      HomeServiceGallery: renderHomeServiceGallery,
+      HomeServiceGallery: renderPortfolioGallery,
       HomeServiceTrust: renderHomeServiceTrust,
       HomeServiceQuote: renderHomeServiceQuote,
       BookingHero: renderBookingHero,
@@ -1399,17 +1403,6 @@
     </div>
   </section>`;
   }
-  function renderEditorialGallery(section, schema) {
-    const editable = section.editable || {};
-    return `<section class="premium-gallery-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div class="section-heading">
-      <span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).curated)}</span>
-      <h2>${escapeHtml(editable.title || "")}</h2>
-      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
-    </div>
-    ${renderPremiumEditorialCatalog(marketplaceItems(schema), schema)}
-  </section>`;
-  }
   function renderSpecStrip(section, schema) {
     const editable = section.editable || {};
     const items = Array.isArray(editable.items) && editable.items.length ? editable.items : catalogLocaleLabels(schema).premiumSpecs;
@@ -1464,7 +1457,7 @@
     const editable = section.editable || {};
     return `<section class="fashion-lookbook-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).lookbook)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
-    <div class="fashion-lookbook-strip">${marketplaceItems(schema).slice(0, 5).map((item, index) => `<article class="${index === 1 ? "tall" : ""}">${renderResilientImage(item.image_url, item.name, item.name)}<strong>${escapeHtml(item.name)}</strong></article>`).join("")}</div>
+    <div class="fashion-lookbook-strip">${marketplaceItems(schema).slice(0, 5).map((item, index) => `<article class="${index === 1 ? "tall" : ""}">${renderCatalogImage(item)}<strong>${escapeHtml(item.name)}</strong></article>`).join("")}</div>
   </section>`;
   }
   function renderFashionFitGuide(section, schema) {
@@ -2158,11 +2151,14 @@
     ${renderIndustrialSupplierCatalog(marketplaceItems(schema), schema)}
   </section>`;
   }
-  function renderIndustrialCapabilities(section, schema) {
+  function renderCapabilitiesEquipment(section, schema) {
     const editable = section.editable || {};
     const labels = catalogLocaleLabels(schema);
     const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.industrialCapabilityItems;
-    return `<section class="industrial-capabilities-section ${sectionClass(section)}" ${sectionAttrs(section)}><div><span class="rendered-kicker">${escapeHtml(labels.capabilities)}</span><h2>${escapeHtml(editable.title || labels.industrialCapabilitiesTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialCapabilitiesText)}</p></div><div class="industrial-capability-board">${items.slice(0, 6).map((item, index) => `<div><b>${String(index + 1).padStart(2, "0")}</b><strong>${escapeHtml(item)}</strong><span>${escapeHtml(index % 2 ? labels.bulkReady : labels.specReady)}</span></div>`).join("")}</div></section>`;
+    return `<section class="industrial-capabilities-section capabilities-equipment ${sectionClass(section)}" ${sectionAttrs(section)}><div><span class="rendered-kicker">${escapeHtml(labels.capabilities)}</span><h2>${escapeHtml(editable.title || labels.industrialCapabilitiesTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialCapabilitiesText)}</p></div><div class="industrial-capability-board">${items.slice(0, 8).map((item, index) => {
+      const entry = typeof item === "object" ? item : { title: item };
+      return `<div><b>${escapeHtml(entry.icon || String(index + 1).padStart(2, "0"))}</b><strong>${escapeHtml(entry.title || entry.name || "")}</strong><span>${escapeHtml(entry.description || (index % 2 ? labels.bulkReady : labels.specReady))}</span></div>`;
+    }).join("")}</div></section>`;
   }
   function renderIndustrialCertifications(section, schema) {
     const editable = section.editable || {};
@@ -2176,10 +2172,18 @@
     const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.industrialSupplyItems;
     return `<section class="industrial-supply-section ${sectionClass(section)}" ${sectionAttrs(section)}><div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.supplyChain)}</span><h2>${escapeHtml(editable.title || labels.industrialSupplyTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialSupplyText)}</p></div><div class="industrial-supply-line">${items.slice(0, 6).map((item, index) => `<article><small>STEP ${index + 1}</small><strong>${escapeHtml(item)}</strong></article>`).join("")}</div></section>`;
   }
-  function renderIndustrialQuotePanel(section, schema) {
+  function renderQuoteRequestForm(section, schema) {
     const editable = section.editable || {};
     const labels = catalogLocaleLabels(schema);
-    return `<section class="industrial-quote-section ${sectionClass(section)}" ${sectionAttrs(section)}><div class="industrial-quote-card"><div><span class="rendered-kicker">${escapeHtml(labels.requestQuote)}</span><h2>${escapeHtml(editable.title || labels.industrialQuoteTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialQuoteText)}</p></div><div class="industrial-rfq-fields"><span>SKU / Spec</span><span>Quantity / MOQ</span><span>Material</span><span>Deadline</span></div><a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.requestQuote)}</a></div></section>`;
+    const language = schema.business?.selectedLanguage || "en";
+    const defaults = language === "es" ? [{ name: "need", label: "Que necesitas" }, { name: "quantity", label: "Cantidad aproximada" }, { name: "target_date", label: "Fecha deseada", type: "date" }, { name: "notes", label: "Notas", type: "textarea" }] : [{ name: "need", label: "What do you need" }, { name: "quantity", label: "Approximate quantity" }, { name: "target_date", label: "Desired date", type: "date" }, { name: "notes", label: "Notes", type: "textarea" }];
+    const fields = Array.isArray(editable.fields) && editable.fields.length ? editable.fields : defaults;
+    return `<section class="industrial-quote-section quote-request-form ${sectionClass(section)}" ${sectionAttrs(section)}><div class="industrial-quote-card"><div><span class="rendered-kicker">${escapeHtml(labels.requestQuote)}</span><h2>${escapeHtml(editable.title || labels.industrialQuoteTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialQuoteText)}</p></div><div class="industrial-rfq-fields">${fields.slice(0, 8).map((field, index) => {
+      const entry = typeof field === "object" ? field : { label: field };
+      const label = entry.label || entry.name || defaults[index]?.label || "Details";
+      const control = entry.type === "textarea" ? `<textarea name="${escapeAttribute(entry.name || slugify(label))}" placeholder="${escapeAttribute(entry.placeholder || label)}" ${entry.required ? "required" : ""}></textarea>` : `<input type="${escapeAttribute(entry.type || "text")}" name="${escapeAttribute(entry.name || slugify(label))}" placeholder="${escapeAttribute(entry.placeholder || label)}" ${entry.required ? "required" : ""}>`;
+      return `<label><span>${escapeHtml(label)}</span>${control}</label>`;
+    }).join("")}</div><button class="rendered-button" type="button" data-open-lead>${escapeHtml(editable.primary_button || labels.requestQuote)}</button></div></section>`;
   }
   function industrialVisualPlaceholder(schema) {
     const initials = String(schema.business?.name || "IN").slice(0, 2).toUpperCase();
@@ -2266,7 +2270,7 @@
   function renderRealEstateListingCatalog(items, schema) {
     const labels = catalogLocaleLabels(schema);
     return `<div class="catalog-real-estate-listings">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
-    <div class="listing-image">${renderResilientImage(item.image_url, item.name, item.name)}</div>
+    <div class="listing-image">${renderCatalogImage(item)}</div>
     <div class="listing-card-body">
       <div class="listing-card-top"><small>${escapeHtml(item.deal_label || labels.availableNow)}</small><span>${escapeHtml(item.category || labels.listings)}</span></div>
       <h3>${escapeHtml(item.name)}</h3>
@@ -2321,17 +2325,47 @@
     <div class="home-service-area-map">${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
   </section>`;
   }
-  function renderHomeServiceGallery(section, schema) {
+  function renderPortfolioGallery(section, schema) {
     const editable = section.editable || {};
     const labels = catalogLocaleLabels(schema);
-    const items = marketplaceItems(schema).slice(0, 4);
-    return `<section class="home-service-gallery ${sectionClass(section)}" ${sectionAttrs(section)}>
+    const items = (Array.isArray(editable.items) && editable.items.length ? editable.items : marketplaceItems(schema)).slice(0, 8);
+    const beforeAfter = section.settings?.layout === "before_after" || editable.before_after === true || items.some((item) => item.beforeImageUrl || item.afterImageUrl);
+    return `<section class="home-service-gallery portfolio-gallery ${beforeAfter ? "is-before-after" : ""} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.workProof)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
-    <div class="home-service-work-grid">${items.map((item, index) => `<article>
-      ${renderResilientImage(item.image_url, item.name, item.name)}
-      <div><small>${escapeHtml(index % 2 ? labels.after : labels.before)}</small><strong>${escapeHtml(item.name)}</strong></div>
+    <div class="home-service-work-grid">${items.map((item) => `<article>
+      ${beforeAfter && (item.beforeImageUrl || item.afterImageUrl) ? `<div class="portfolio-before-after"><figure>${renderResilientImage(item.beforeImageUrl || item.image_url, item.name, `${item.name || "Project"} before`)}<figcaption>${escapeHtml(labels.before)}</figcaption></figure><figure>${renderResilientImage(item.afterImageUrl || item.image_url, item.name, `${item.name || "Project"} after`)}<figcaption>${escapeHtml(labels.after)}</figcaption></figure></div>` : renderResilientImage(item.image_url || item.imageUrl, item.name || item.title, item.name || item.title)}
+      ${renderImageAttribution(item)}
+      <div><strong>${escapeHtml(item.name || item.title || "")}</strong>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}${item.price_label || item.price ? `<b>${escapeHtml(item.price_label || item.price)}</b>` : ""}</div>
     </article>`).join("")}</div>
   </section>`;
+  }
+  function renderVideoShowcase(section) {
+    const editable = section.editable || {};
+    const videoUrl = editable.videoUrl || editable.video_url || editable.url || "";
+    const embedUrl = safeVideoEmbedUrl(videoUrl);
+    if (!embedUrl) return `<section class="video-showcase ${sectionClass(section)}" ${sectionAttrs(section)}><div class="section-heading"><h2>${escapeHtml(editable.title || "Video")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div><p class="video-unavailable">Video URL unavailable or unsupported.</p></section>`;
+    return `<section class="video-showcase ${sectionClass(section)}" ${sectionAttrs(section)}><div class="section-heading"><h2>${escapeHtml(editable.title || "Video")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div><div class="video-embed"><iframe src="${escapeAttribute(embedUrl)}" title="${escapeAttribute(editable.title || "Video")}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></section>`;
+  }
+  function safeVideoEmbedUrl(value) {
+    try {
+      const url = new URL(String(value || ""));
+      const host = url.hostname.toLowerCase();
+      if (host === "youtu.be") {
+        const id = url.pathname.split("/").filter(Boolean)[0];
+        return /^[a-zA-Z0-9_-]{6,}$/.test(id || "") ? `https://www.youtube.com/embed/${id}` : "";
+      }
+      if (["youtube.com", "www.youtube.com"].includes(host)) {
+        const id = url.searchParams.get("v") || (url.pathname.match(/^\/(?:embed|shorts)\/([a-zA-Z0-9_-]+)/) || [])[1];
+        return /^[a-zA-Z0-9_-]{6,}$/.test(id || "") ? `https://www.youtube.com/embed/${id}` : "";
+      }
+      if (["vimeo.com", "www.vimeo.com", "player.vimeo.com"].includes(host)) {
+        const id = (url.pathname.match(/\/(?:video\/)?(\d+)/) || [])[1];
+        return id ? `https://player.vimeo.com/video/${id}` : "";
+      }
+    } catch (_error) {
+      return "";
+    }
+    return "";
   }
   function renderHomeServiceTrust(section, schema) {
     const editable = section.editable || {};
@@ -2493,7 +2527,7 @@
     const topItems = items.slice(0, 4);
     const categories = marketplaceCategories(schema);
     const heroProducts = topItems.map((item, index) => `<article class="marketplace-hero-product-card">
-        ${renderResilientImage(item.image_url, item.name, item.name)}
+        ${renderCatalogImage(item)}
         <small>${escapeHtml(index % 2 ? labels.fastShip : labels.deal)}</small>
         <strong>${escapeHtml(item.name)}</strong>
         <span>${escapeHtml(productPriceLabel(item, schema))}</span>
@@ -2593,7 +2627,7 @@
     ${customCatalog || `<div class="rendered-grid columns-${columns}">
       ${catalogItems.map(
       (item) => `<article class="rendered-card">
-            ${renderResilientImage(item.image_url, item.name, item.name)}
+            ${renderCatalogImage(item)}
             <div>
               <h3>${escapeHtml(item.name)}</h3>
               <p>${escapeHtml(item.description)}</p>
@@ -2642,17 +2676,27 @@
   }
   function renderMarketplaceCatalog(items, schema) {
     const labels = catalogLocaleLabels(schema);
+    const groups = groupCatalogItemsByCategory(items, labels);
     return `<div class="catalog-shell catalog-marketplace">
     <aside>
       <strong>${labels.searchFilters}</strong>
-      ${marketplaceCategories(schema).slice(0, 5).map((category) => `<span>${escapeHtml(category)}</span>`).join("")}
+      ${groups.map(([category]) => `<a href="#catalog-category-${escapeAttribute(slugify(category))}">${escapeHtml(category)}</a>`).join("")}
       <span>${labels.price}</span><span>${labels.rating}</span><span>${labels.delivery}</span>
     </aside>
     <div class="marketplace-catalog-main">
       <div class="marketplace-sort-bar"><b>${escapeHtml(labels.results)}</b><span>${escapeHtml(labels.sortBy)}: ${escapeHtml(labels.featured)}</span></div>
-      <div class="catalog-results">${items.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? labels.deal : labels.fastShip}`, schema)).join("")}</div>
+      <div class="marketplace-category-groups">${groups.map(([category, categoryItems]) => `<section id="catalog-category-${escapeAttribute(slugify(category))}" class="marketplace-category-group"><div class="marketplace-category-heading"><h3>${escapeHtml(category)}</h3><span>${categoryItems.length}</span></div><div class="catalog-results">${categoryItems.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? labels.deal : labels.fastShip}`, schema)).join("")}</div></section>`).join("")}</div>
     </div>
   </div>${renderMarketplaceSubscribe(schema)}`;
+  }
+  function groupCatalogItemsByCategory(items, labels) {
+    const groups = /* @__PURE__ */ new Map();
+    arrayValue(items).forEach((item) => {
+      const category = String(item.category || labels.featured || "Featured").trim();
+      if (!groups.has(category)) groups.set(category, []);
+      groups.get(category).push(item);
+    });
+    return [...groups.entries()];
   }
   function renderMarketplaceSubscribe(schema) {
     const copy = marketplaceSubscribeCopy(schema);
@@ -2706,7 +2750,7 @@
     const labels = catalogLocaleLabels(schema);
     return `<div class="catalog-premium-editorial">
     ${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
-      <div class="premium-card-visual">${renderResilientImage(item.image_url, item.name, item.name)}</div>
+      <div class="premium-card-visual">${renderCatalogImage(item)}</div>
       <div>
         <small>${escapeHtml(index === 0 ? labels.flagship : labels.curated)}</small>
         <h3>${escapeHtml(item.name)}</h3>
@@ -2721,7 +2765,7 @@
     const labels = catalogLocaleLabels(arguments[1]);
     return `<div class="catalog-shell catalog-classified">
     ${items.map((item, index) => `<article class="listing-card">
-      <div>${renderResilientImage(item.image_url, item.name, item.name)}</div>
+      <div>${renderCatalogImage(item)}</div>
       <section><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml(item.description)}</p><small>${labels.sellerVerified} \xB7 ${index % 2 ? labels.used : labels.newItem} \xB7 ${labels.localPickup}</small></section>
       <aside><b>${escapeHtml(item.price_label || labels.makeOffer)}</b><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.contactSeller)}</a></aside>
     </article>`).join("")}
@@ -2733,7 +2777,7 @@
   function renderFashionLookbookCatalog(items) {
     const labels = catalogLocaleLabels(arguments[1]);
     return `<div class="catalog-lookbook">${items.map((item, index) => `<article class="lookbook-card ${index === 0 ? "wide" : ""}">
-    ${renderResilientImage(item.image_url, item.name, item.name)}
+    ${renderCatalogImage(item)}
     <span>${labels.newDrop}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
   </article>`).join("")}</div>`;
   }
@@ -2773,14 +2817,14 @@
   function renderLuxuryGalleryCatalog(items) {
     const labels = catalogLocaleLabels(arguments[1]);
     return `<div class="catalog-luxury">${items.map((item) => `<article>
-    <div>${renderResilientImage(item.image_url, item.name, item.name)}</div>
+    <div>${renderCatalogImage(item)}</div>
     <small>${labels.limitedSelection}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
   </article>`).join("")}</div>`;
   }
   function renderLuxuryHighTicketCatalog(items, schema) {
     const labels = catalogLocaleLabels(schema);
     return `<div class="catalog-luxury-high-ticket">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
-    <div class="luxury-card-top">${renderResilientImage(item.image_url, item.name, item.name)}</div>
+    <div class="luxury-card-top">${renderCatalogImage(item)}</div>
     <div class="luxury-card-bottom">
       <small>${escapeHtml(item.deal_label || (index % 2 ? labels.authenticated : labels.limitedPiece))}</small>
       <h3>${escapeHtml(item.name)}</h3>
@@ -2797,7 +2841,7 @@
       <small>${escapeHtml(item.deal_label || (index % 2 ? labels.beginnerFriendly : labels.certificateReady))}</small>
       <span>${escapeHtml(item.shipping_label || labels.educationDurations?.[index % (labels.educationDurations?.length || 1)] || "")}</span>
     </div>
-    <div class="education-card-image">${renderResilientImage(item.image_url, item.name, item.name)}</div>
+    <div class="education-card-image">${renderCatalogImage(item)}</div>
     <div class="education-card-body">
       <small>${escapeHtml(item.category || labels.courseAcademy)}</small>
       <h3>${escapeHtml(item.name)}</h3>
@@ -2818,7 +2862,7 @@
       <small>${escapeHtml(item.deal_label || (index % 2 ? labels.specialistLed : labels.popularTreatment))}</small>
       <span>${escapeHtml(item.shipping_label || labels.clinicDurations?.[index % (labels.clinicDurations?.length || 1)] || "")}</span>
     </div>
-    <div class="clinic-card-visual">${renderResilientImage(item.image_url, item.name, item.name)}</div>
+    <div class="clinic-card-visual">${renderCatalogImage(item)}</div>
     <div class="clinic-card-body">
       <small>${escapeHtml(item.category || labels.treatments)}</small>
       <h3>${escapeHtml(item.name)}</h3>
@@ -2882,7 +2926,7 @@
       <small>${escapeHtml(item.category || labels.digitalProducts)}</small>
       <span>${escapeHtml(labels.instantAccess)}</span>
     </div>
-    ${renderResilientImage(item.image_url, item.name, item.name)}
+    ${renderCatalogImage(item)}
     <h3>${escapeHtml(item.name)}</h3>
     <p>${escapeHtml(item.description)}</p>
     <ul><li>${escapeHtml(labels.downloadable)}</li><li>${escapeHtml(labels.bonus)}</li><li>${escapeHtml(labels.lifetime)}</li></ul>
@@ -2899,7 +2943,7 @@
       <small>${escapeHtml(item.category || (index % 2 ? labels.chefPick : labels.popularDish))}</small>
       <span>${escapeHtml(index === 0 ? labels.signatureMenu : labels.menu)}</span>
     </div>
-    ${renderResilientImage(item.image_url, item.name, item.name)}
+    ${renderCatalogImage(item)}
     <h3>${escapeHtml(item.name)}</h3>
     <p>${escapeHtml(item.description)}</p>
     <div class="restaurant-menu-card-bottom">
@@ -2947,7 +2991,7 @@
     const commerce = commerceLabels(schema);
     const isMarket = String(className || "").includes("market-card");
     return `<article class="${className}">
-    ${renderResilientImage(item.image_url, item.name, item.name)}
+    ${renderCatalogImage(item)}
     ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
     ${item.category ? `<small>${escapeHtml(item.category)}</small>` : ""}
     <h3>${escapeHtml(item.name)}</h3>
@@ -2957,6 +3001,16 @@
     ${productStockBadge(item)}
     <button class="rendered-button" type="button">${escapeHtml(isMarket ? commerce.addToCart : item.button_label || labels.view)}</button>
   </article>`;
+  }
+  function renderCatalogImage(item = {}) {
+    return `${renderResilientImage(item.image_url || item.imageUrl, item.name || item.title, item.name || item.title)}${renderImageAttribution(item)}`;
+  }
+  function renderImageAttribution(item = {}) {
+    const asset = item.image_asset || item.imageAsset || {};
+    if (asset.source !== "unsplash_api") return "";
+    const photographer = asset.photographer_name || "Unsplash contributor";
+    const profileUrl = asset.photographer_profile_url || "https://unsplash.com";
+    return `<a class="image-attribution" href="${escapeAttribute(profileUrl)}" target="_blank" rel="noopener noreferrer">Photo: ${escapeHtml(photographer)} / Unsplash</a>`;
   }
   function productPriceLabel(item = {}, schema = {}) {
     if (item.price_label && !/precio editable|price editable/i.test(item.price_label)) return item.price_label;
@@ -6314,6 +6368,39 @@ ${cleanQuestion}`;
     return isPublicClientSetup ? assistantVisibleCopy(value) : value;
   }
 
+  // src/ai-builder/section-policy.js
+  var REUSABLE_PLANNER_TYPES = /* @__PURE__ */ new Set([
+    "QuoteRequestForm",
+    "CapabilitiesEquipment",
+    "PortfolioGallery",
+    "VideoShowcase"
+  ]);
+  function keepEssentialSections(sections, maxSections) {
+    const priority = { Hero: 0, ProductGrid: 1, ServiceList: 2, FeatureBand: 3, Testimonials: 4, About: 5, Gallery: 6, Contact: 7, Footer: 8 };
+    const limit = Math.max(3, maxSections);
+    const sorted = [...sections].sort((a, b) => (priority[a.type] ?? 9) - (priority[b.type] ?? 9));
+    const selected = sorted.slice(0, limit);
+    const preserve = (section) => {
+      if (!section || selected.includes(section)) return;
+      if (selected.length < limit) {
+        selected.push(section);
+        return;
+      }
+      let replaceIndex = -1;
+      for (let index = selected.length - 1; index >= 0; index -= 1) {
+        const candidate = selected[index];
+        if (candidate.type !== "Contact" && !REUSABLE_PLANNER_TYPES.has(candidate.type)) {
+          replaceIndex = index;
+          break;
+        }
+      }
+      if (replaceIndex >= 0) selected[replaceIndex] = section;
+    };
+    sections.filter((section) => REUSABLE_PLANNER_TYPES.has(section.type)).forEach(preserve);
+    preserve(sections.find((section) => section.type === "Contact"));
+    return selected;
+  }
+
   // src/ai-builder/editor.js
   function ensureLiveSitePreviewCard() {
     if (!builderState.liveSitePreviewCard) {
@@ -6865,14 +6952,6 @@ ${cleanQuestion}`;
     if (!text.trim()) return false;
     if (!isHomePage) return true;
     return !/lorem ipsum|placeholder|random section|insert text/i.test(text);
-  }
-  function keepEssentialSections(sections, maxSections) {
-    const priority = { Hero: 0, ProductGrid: 1, ServiceList: 2, FeatureBand: 3, Testimonials: 4, About: 5, Gallery: 6, Contact: 7, Footer: 8 };
-    const sorted = [...sections].sort((a, b) => (priority[a.type] ?? 9) - (priority[b.type] ?? 9));
-    const selected = sorted.slice(0, Math.max(3, maxSections));
-    const contact = sections.find((section) => section.type === "Contact");
-    if (contact && !selected.includes(contact)) selected[selected.length - 1] = contact;
-    return selected;
   }
   function normalizeSectionSettings(section, index, scale, direction) {
     const settings = { ...section.settings || {} };
@@ -12631,7 +12710,8 @@ ${guidedQuestion(nextMissing)}`
         products: arrayValue2(payload.services_products).length ? arrayValue2(payload.services_products) : arrayValue2(schema.products_services).map((item) => item.name),
         language: payload.selectedLanguage || builderState.selectedLanguage || "en"
       });
-      const retailPages = buildRetailInstantPages(copy, name, description, payload);
+      const sourcePagesByKey = new Map(arrayValue2(schema.pages).map((page) => [page.page_key || page.pageKey || page.pageId, page]));
+      const retailPages = buildRetailInstantPages(copy, name, description, payload).map((page) => mergeLockedTemplatePage(page, sourcePagesByKey.get(page.page_key)));
       const retailPageKeys = new Set(retailPages.map((page) => page.page_key));
       const existingPages = arrayValue2(schema.pages).filter((page) => page.page_key && !retailPageKeys.has(page.page_key));
       nextSchema = {
@@ -12677,7 +12757,8 @@ ${guidedQuestion(nextMissing)}`
         products: arrayValue2(payload.services_products).length ? arrayValue2(payload.services_products) : arrayValue2(schema.products_services).map((item) => item.name),
         language: payload.selectedLanguage || builderState.selectedLanguage || "en"
       });
-      const marketplacePages = buildMarketplaceInstantPages(copy, name, description, payload);
+      const sourcePagesByKey = new Map(arrayValue2(schema.pages).map((page) => [page.page_key || page.pageKey || page.pageId, page]));
+      const marketplacePages = buildMarketplaceInstantPages(copy, name, description, payload).map((page) => mergeLockedTemplatePage(page, sourcePagesByKey.get(page.page_key)));
       const marketplacePageKeys = new Set(marketplacePages.map((page) => page.page_key));
       const existingPages = arrayValue2(schema.pages).filter((page) => page.page_key && !marketplacePageKeys.has(page.page_key));
       nextSchema = {
@@ -12742,7 +12823,7 @@ ${guidedQuestion(nextMissing)}`
     });
     const lockedPages = executablePagesForTemplate(templateId, catalogType, copy, name, description, payload);
     if (!lockedPages.length) return schema;
-    const existingByKey = new Map(arrayValue2(schema.pages).map((page) => [page.page_key, page]));
+    const existingByKey = new Map(arrayValue2(schema.pages).map((page) => [page.page_key || page.pageKey || page.pageId, page]));
     const mergedPages = lockedPages.map((page) => mergeLockedTemplatePage(page, existingByKey.get(page.page_key)));
     const customPages = arrayValue2(schema.pages).filter((page) => page.page_key && !mergedPages.some((locked) => locked.page_key === page.page_key));
     return {
@@ -12794,27 +12875,45 @@ ${guidedQuestion(nextMissing)}`
   }
   function mergeLockedTemplatePage(lockedPage, existingPage = null) {
     if (!existingPage) return lockedPage;
-    const existingSections = new Map(arrayValue2(existingPage.sections).map((section) => [section.id || section.type, section]));
+    const optionalBackendTypes = /* @__PURE__ */ new Set(["QuoteRequestForm", "CapabilitiesEquipment", "PortfolioGallery", "VideoShowcase"]);
+    const normalizedExistingSections = arrayValue2(existingPage.sections).map((section, index) => {
+      const type = section.type || section.component || "";
+      const nestedEditable = section.editable || {};
+      const copy = nestedEditable.copy || {};
+      const media = nestedEditable.media || {};
+      const dataBinding = nestedEditable.dataBinding || section.dataBinding || {};
+      return {
+        ...section,
+        id: section.id || section.sectionId || `${slugify2(type || "section")}-${index + 1}`,
+        type,
+        order: section.order || index + 1,
+        editable: { ...copy, ...media, ...dataBinding, ...nestedEditable },
+        settings: { ...section.settings || {}, layout: section.settings?.layout || section.variant || "default" }
+      };
+    });
+    const existingSections = new Map(normalizedExistingSections.map((section) => [section.id || section.type, section]));
+    const mergedLockedSections = arrayValue2(lockedPage.sections).map((lockedSection) => {
+      const existing = existingSections.get(lockedSection.id) || existingSections.get(lockedSection.type);
+      if (!existing) return lockedSection;
+      return {
+        ...lockedSection,
+        editable: {
+          ...lockedSection.editable || {},
+          ...existing.editable || {}
+        },
+        settings: {
+          ...lockedSection.settings || {},
+          ...existing.settings || {},
+          layout: lockedSection.settings?.layout || existing.settings?.layout
+        }
+      };
+    });
+    const optionalSections = normalizedExistingSections.filter((section) => optionalBackendTypes.has(section.type) && !mergedLockedSections.some((locked) => locked.id === section.id || locked.type === section.type));
     return {
       ...lockedPage,
       title: existingPage.title || lockedPage.title,
       slug: existingPage.slug || lockedPage.slug,
-      sections: arrayValue2(lockedPage.sections).map((lockedSection) => {
-        const existing = existingSections.get(lockedSection.id) || existingSections.get(lockedSection.type);
-        if (!existing) return lockedSection;
-        return {
-          ...lockedSection,
-          editable: {
-            ...lockedSection.editable || {},
-            ...existing.editable || {}
-          },
-          settings: {
-            ...lockedSection.settings || {},
-            ...existing.settings || {},
-            layout: lockedSection.settings?.layout || existing.settings?.layout
-          }
-        };
-      })
+      sections: [...mergedLockedSections, ...optionalSections].map((section, index) => ({ ...section, order: index + 1 }))
     };
   }
   function executablePagesForTemplate(templateId = "", catalogType = "", copy, name, description, payload = {}) {
@@ -13942,7 +14041,7 @@ ${guidedQuestion(nextMissing)}`
           },
           {
             id: "premium_gallery",
-            type: "EditorialGallery",
+            type: "PortfolioGallery",
             order: 4,
             editable: {
               title: copy.premiumGalleryTitle,
@@ -14763,19 +14862,19 @@ ${guidedQuestion(nextMissing)}`
         sections: [
           { id: "industrial_hero", type: "IndustrialHero", order: 1, editable: { headline: copy.industrialHeadline(name), subtitle: copy.industrialSubheadline(description), primary_button: copy.requestQuote, secondary_button: copy.viewSpecs, image_url: heroImage, badge: copy.industrialSupplier, images: [] }, settings: { layout: "industrial_rfq_dashboard", spacing: "spacious", container_width: "wide" } },
           { id: "industrial_catalog", type: "IndustrialSpecCatalog", order: 2, editable: { title: copy.industrialCatalogTitle, text: copy.industrialCatalogText, images: [] }, settings: { layout: "spec_cards", columns: 3, spacing: "compact", container_width: "wide" } },
-          { id: "industrial_capabilities", type: "IndustrialCapabilities", order: 3, editable: { title: copy.industrialCapabilitiesTitle, text: copy.industrialCapabilitiesText, items: copy.industrialCapabilityItems, images: [] }, settings: { layout: "capability_matrix", spacing: "balanced", container_width: "wide" } },
+          { id: "industrial_capabilities", type: "CapabilitiesEquipment", order: 3, editable: { title: copy.industrialCapabilitiesTitle, text: copy.industrialCapabilitiesText, items: copy.industrialCapabilityItems, images: [] }, settings: { layout: "capability_matrix", spacing: "balanced", container_width: "wide" } },
           { id: "industrial_certifications", type: "IndustrialCertifications", order: 4, editable: { title: copy.industrialCertificationsTitle, text: copy.industrialCertificationsText, items: copy.industrialCertificationItems, images: [] }, settings: { layout: "certification_grid", spacing: "balanced", container_width: "wide" } },
           { id: "industrial_supply", type: "IndustrialSupplyChain", order: 5, editable: { title: copy.industrialSupplyTitle, text: copy.industrialSupplyText, items: copy.industrialSupplyItems, images: [] }, settings: { layout: "supply_timeline", spacing: "balanced", container_width: "wide" } },
-          { id: "industrial_quote", type: "IndustrialQuotePanel", order: 6, editable: { title: copy.industrialQuoteTitle, text: copy.industrialQuoteText, primary_button: copy.requestQuote, images: [] }, settings: { layout: "rfq_panel", spacing: "spacious", container_width: "wide" } }
+          { id: "industrial_quote", type: "QuoteRequestForm", order: 6, editable: { title: copy.industrialQuoteTitle, text: copy.industrialQuoteText, primary_button: copy.requestQuote, images: [] }, settings: { layout: "rfq_panel", spacing: "spacious", container_width: "wide" } }
         ]
       },
       { page_key: "catalog", title: copy.products, slug: copy.shopSlug, order: 2, sections: [{ id: "industrial_products", type: "ProductGrid", order: 1, editable: { title: copy.industrialCatalogTitle, text: copy.industrialCatalogText, images: [] }, settings: { layout: "industrial_specs", columns: 3, spacing: "compact", container_width: "wide" } }] },
       { page_key: "about", title: copy.capabilities, slug: "/capabilities", order: 3, sections: [
-        { id: "capabilities", type: "IndustrialCapabilities", order: 1, editable: { title: copy.industrialCapabilitiesTitle, text: copy.industrialCapabilitiesText, items: copy.industrialCapabilityItems, images: [] }, settings: { layout: "capability_matrix", container_width: "wide" } },
+        { id: "capabilities", type: "CapabilitiesEquipment", order: 1, editable: { title: copy.industrialCapabilitiesTitle, text: copy.industrialCapabilitiesText, items: copy.industrialCapabilityItems, images: [] }, settings: { layout: "capability_matrix", container_width: "wide" } },
         { id: "certifications", type: "IndustrialCertifications", order: 2, editable: { title: copy.industrialCertificationsTitle, text: copy.industrialCertificationsText, items: copy.industrialCertificationItems, images: [] }, settings: { layout: "certification_grid", container_width: "wide" } },
         { id: "supply", type: "IndustrialSupplyChain", order: 3, editable: { title: copy.industrialSupplyTitle, text: copy.industrialSupplyText, items: copy.industrialSupplyItems, images: [] }, settings: { layout: "supply_timeline", container_width: "wide" } }
       ] },
-      { page_key: "contact", title: copy.requestQuote, slug: copy.contactSlug, order: 4, sections: [{ id: "quote", type: "IndustrialQuotePanel", order: 1, editable: { title: copy.industrialQuoteTitle, text: copy.industrialQuoteText, primary_button: copy.requestQuote, images: [] }, settings: { layout: "rfq_panel", container_width: "wide" } }] }
+      { page_key: "contact", title: copy.requestQuote, slug: copy.contactSlug, order: 4, sections: [{ id: "quote", type: "QuoteRequestForm", order: 1, editable: { title: copy.industrialQuoteTitle, text: copy.industrialQuoteText, primary_button: copy.requestQuote, images: [] }, settings: { layout: "rfq_panel", container_width: "wide" } }] }
     ];
   }
   function buildDigitalProductsInstantPages(copy, name, description, payload = {}) {
@@ -15041,7 +15140,7 @@ ${guidedQuestion(nextMissing)}`
           },
           {
             id: "home_service_gallery",
-            type: "HomeServiceGallery",
+            type: "PortfolioGallery",
             order: 4,
             editable: { title: copy.beforeAfterTitle, text: copy.beforeAfterText, images: [] },
             settings: { layout: "before_after" }
@@ -15078,7 +15177,7 @@ ${guidedQuestion(nextMissing)}`
         slug: copy.workSlug,
         order: 3,
         sections: [
-          { id: "work", type: "HomeServiceGallery", order: 1, editable: { title: copy.beforeAfterTitle, text: copy.beforeAfterText, images: [] }, settings: { layout: "before_after" } },
+          { id: "work", type: "PortfolioGallery", order: 1, editable: { title: copy.beforeAfterTitle, text: copy.beforeAfterText, images: [] }, settings: { layout: "before_after" } },
           { id: "trust", type: "HomeServiceTrust", order: 2, editable: { title: copy.homeServiceTrustTitle, text: copy.homeServiceTrustText, items: copy.homeServiceTrustItems, images: [] }, settings: { layout: "review_panel" } }
         ]
       },
@@ -15452,7 +15551,7 @@ ${guidedQuestion(nextMissing)}`
           ...composition === 2 ? [{
             id: "marketplace_gallery",
             type: "Gallery",
-            editable: { title: copy.bestSellers, text: copy.catalogText, images: [] },
+            editable: { title: copy.featuredProducts, text: copy.catalogText, images: [] },
             variant: recipe.feature,
             settings: { layout: "gallery", columns: 3, spacing: "balanced", container_width: "wide" }
           }] : []

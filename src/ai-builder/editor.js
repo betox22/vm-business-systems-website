@@ -28,6 +28,8 @@ import {
 } from './dom.js';
 import { hasStudioAccountSession, openStudioAuthGate } from './auth.js';
 import { assistantVisibleCopy } from './chat.js';
+import { keepEssentialSections } from './section-policy.js';
+export { keepEssentialSections } from './section-policy.js';
 import {
   adjustGeneratedDraftWithLuma,
   adminHeaders,
@@ -681,15 +683,6 @@ export function hasSectionPurpose(section, hasCatalog, isHomePage) {
   if (!text.trim()) return false;
   if (!isHomePage) return true;
   return !/lorem ipsum|placeholder|random section|insert text/i.test(text);
-}
-
-export function keepEssentialSections(sections, maxSections) {
-  const priority = { Hero: 0, ProductGrid: 1, ServiceList: 2, FeatureBand: 3, Testimonials: 4, About: 5, Gallery: 6, Contact: 7, Footer: 8 };
-  const sorted = [...sections].sort((a, b) => (priority[a.type] ?? 9) - (priority[b.type] ?? 9));
-  const selected = sorted.slice(0, Math.max(3, maxSections));
-  const contact = sections.find((section) => section.type === "Contact");
-  if (contact && !selected.includes(contact)) selected[selected.length - 1] = contact;
-  return selected;
 }
 
 export function normalizeSectionSettings(section, index, scale, direction) {

@@ -170,6 +170,49 @@ class PublicSitePayloadTests(unittest.TestCase):
         self.assertIn('"theme.colors.primary"', editor_source)
         self.assertIn('"theme.colors.background"', editor_source)
 
+    def test_planner_pages_and_new_section_types_reach_the_generated_schema(self) -> None:
+        planned_pages = [{
+            "page_key": "home",
+            "pageKey": "home",
+            "title": "Home",
+            "slug": "/",
+            "sections": [{
+                "id": "work",
+                "sectionId": "work",
+                "type": "PortfolioGallery",
+                "component": "PortfolioGallery",
+                "componentType": "portfolio_gallery",
+                "editable": {"copy": {"headline": "Selected work"}, "dataBinding": {"items": []}},
+            }],
+        }]
+        state = ProjectState(
+            businessName="Northstar Studio",
+            businessDescription="Architecture and interiors.",
+            generatedCopy={"pages": planned_pages},
+        )
+
+        schema = build_schema_from_state(state, catalog_items=[], catalog_source="seed_fallback")
+
+        self.assertEqual(schema["pages"], planned_pages)
+        self.assertEqual(schema["pages"][0]["sections"][0]["type"], "PortfolioGallery")
+
+    def test_frontend_keeps_and_renders_optional_planner_sections(self) -> None:
+        repo_root = Path(__file__).resolve().parents[2]
+        renderer_source = (repo_root / "src" / "ai-builder" / "renderers.js").read_text(encoding="utf-8")
+        editor_source = (repo_root / "src" / "ai-builder" / "index.js").read_text(encoding="utf-8")
+        viewer_source = (repo_root / "site-viewer.js").read_text(encoding="utf-8")
+
+        for component in ("QuoteRequestForm", "CapabilitiesEquipment", "PortfolioGallery", "VideoShowcase"):
+            self.assertIn(component, renderer_source)
+            self.assertIn(component, viewer_source)
+            self.assertIn(component, editor_source)
+        self.assertIn('host === "youtu.be"', renderer_source)
+        self.assertNotIn('host.endsWith("youtube.com")', renderer_source)
+        self.assertIn("marketplace-category-groups", renderer_source)
+        self.assertIn("marketplace-category-groups", viewer_source)
+        self.assertIn('id: "marketplace_gallery"', editor_source)
+        self.assertIn("copy.featuredProducts", editor_source)
+
 
 if __name__ == "__main__":
     unittest.main()

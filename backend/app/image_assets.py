@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import os
 import re
+from threading import Lock
 from typing import Any, Dict, List, Literal, Mapping, Optional
+
+import httpx
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -14,6 +18,7 @@ ImageAssetSource = Literal[
     "ai_generated",
     "external_url",
     "fallback_stock",
+    "unsplash_api",
 ]
 
 
@@ -33,6 +38,10 @@ class ImageAsset(BaseModel):
     url: str
     alt: str = ""
     attribution: Optional[str] = None
+    photographer_name: Optional[str] = None
+    photographer_profile_url: Optional[str] = None
+    download_tracking_url: Optional[str] = None
+    photo_id: Optional[str] = None
     license_note: str = (
         "Prototype seed image. Replace with licensed, client-owned, or generated "
         "asset before final production publishing."
@@ -117,12 +126,82 @@ STABLE_IMAGE_URLS: List[Dict[str, str]] = [
 ]
 
 
+UNSPLASH_SEARCH_URL = "https://api.unsplash.com/search/photos"
+UNSPLASH_UTM_SOURCE = "kreaton"
+_UNSPLASH_SEARCH_CACHE: Dict[str, Optional[Dict[str, str]]] = {}
+_UNSPLASH_CACHE_LOCK = Lock()
+
+
 def stable_seed_image_url(keyword: str) -> str:
     clean = re.sub(r"[^a-z0-9]+", "-", normalize_image_text(keyword) or "premium product").strip("-")
     for fallback in STABLE_IMAGE_URLS:
         if re.search(fallback["match"], clean):
             return fallback["url"]
     return "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=900&q=82"
+
+
+def _with_unsplash_attribution_params(url: str) -> str:
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}utm_source={UNSPLASH_UTM_SOURCE}&utm_medium=referral"
+
+
+def _search_unsplash_photo(query: str) -> Optional[Dict[str, str]]:
+    access_key = os.environ.get("UNSPLASH_ACCESS_KEY", "").strip()
+    normalized_query = " ".join(str(query or "").split()).lower()
+    if not access_key or not normalized_query:
+        return None
+
+    with _UNSPLASH_CACHE_LOCK:
+        cached = _UNSPLASH_SEARCH_CACHE.get(normalized_query)
+        if normalized_query in _UNSPLASH_SEARCH_CACHE:
+            return dict(cached) if cached else None
+
+    result: Optional[Dict[str, str]] = None
+    try:
+        response = httpx.get(
+            UNSPLASH_SEARCH_URL,
+            params={"query": normalized_query, "per_page": 1, "orientation": "landscape"},
+            headers={"Authorization": f"Client-ID {access_key}"},
+            timeout=3.0,
+        )
+        response.raise_for_status()
+        photos = response.json().get("results") or []
+        if photos:
+            photo = photos[0]
+            user = photo.get("user") or {}
+            links = photo.get("links") or {}
+            urls = photo.get("urls") or {}
+            image_url = str(urls.get("regular") or urls.get("raw") or "").strip()
+            profile_url = str((user.get("links") or {}).get("html") or "").strip()
+            if image_url:
+                result = {
+                    "photo_id": str(photo.get("id") or ""),
+                    "url": image_url,
+                    "photographer_name": str(user.get("name") or user.get("username") or "Unsplash contributor"),
+                    "photographer_profile_url": _with_unsplash_attribution_params(profile_url) if profile_url else "https://unsplash.com",
+                    "download_tracking_url": str(links.get("download_location") or ""),
+                }
+    except (httpx.HTTPError, TypeError, ValueError, KeyError):
+        result = None
+
+    with _UNSPLASH_CACHE_LOCK:
+        _UNSPLASH_SEARCH_CACHE[normalized_query] = dict(result) if result else None
+    return result
+
+
+def _track_unsplash_download(asset: Mapping[str, Any]) -> None:
+    tracking_url = str(asset.get("download_tracking_url") or "").strip()
+    access_key = os.environ.get("UNSPLASH_ACCESS_KEY", "").strip()
+    if not tracking_url or not access_key:
+        return
+    try:
+        httpx.get(
+            tracking_url,
+            headers={"Authorization": f"Client-ID {access_key}"},
+            timeout=2.0,
+        ).raise_for_status()
+    except httpx.HTTPError:
+        pass
 
 
 def is_legacy_or_unstable_image_url(url: Any) -> bool:
@@ -225,9 +304,38 @@ def build_image_asset(product: Mapping[str, Any], context: str = "") -> Dict[str
         or category
     )
     seed_url = stable_seed_image_url(f"{category} {query}")
-    url = resolve_product_image_url(product, context)
     existing_url = str(product.get("image_url") or product.get("imageUrl") or "")
     stable_urls = {entry["url"] for entry in STABLE_IMAGE_URLS}
+    uses_seed_candidate = (
+        is_legacy_or_unstable_image_url(existing_url)
+        or existing_url == seed_url
+        or existing_url in stable_urls
+    )
+    unsplash_photo = _search_unsplash_photo(query) if uses_seed_candidate else None
+    if unsplash_photo:
+        asset = ImageAsset(
+            source="unsplash_api",
+            provider="unsplash",
+            category=category,
+            query=query,
+            url=unsplash_photo["url"],
+            alt=str(product.get("name") or query),
+            attribution=f"Photo by {unsplash_photo['photographer_name']} on Unsplash",
+            photographer_name=unsplash_photo["photographer_name"],
+            photographer_profile_url=unsplash_photo["photographer_profile_url"],
+            download_tracking_url=unsplash_photo.get("download_tracking_url") or None,
+            photo_id=unsplash_photo.get("photo_id") or None,
+            license_note="Unsplash image. Keep photographer and Unsplash attribution visible.",
+            variants={
+                "thumb": unsplash_photo["url"],
+                "card": unsplash_photo["url"],
+                "full": unsplash_photo["url"],
+            },
+        ).model_dump(exclude_none=True)
+        _track_unsplash_download(asset)
+        return asset
+
+    url = resolve_product_image_url(product, context)
     source: ImageAssetSource = (
         "seed_bank"
         if is_legacy_or_unstable_image_url(existing_url) or url == seed_url or url in stable_urls

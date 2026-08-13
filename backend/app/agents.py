@@ -705,7 +705,7 @@ class StrategyAgent(BaseAgent):
         if re.search(r"\b(cita|booking|reserva|agenda|appointment|barber|salon|calendario)\b", text):
             add("booking-appointment-pro", 125, "appointment booking flow")
 
-        if re.search(r"\b(curso|course|academy|academia|clase|coaching|bootcamp|training|formacion)\b", text):
+        if re.search(r"\b(cursos?|courses?|academy|academia|clases?|coaching|bootcamp|training|formacion)\b", text):
             add("education-course-academy-pro", 124, "course and education offer")
 
         if re.search(
