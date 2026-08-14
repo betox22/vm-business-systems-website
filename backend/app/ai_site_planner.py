@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
+from difflib import SequenceMatcher
 from typing import Any, Dict, List, Literal, Optional, Union
 from urllib.parse import urlparse
 
@@ -14,6 +16,9 @@ from .typography_theory import build_typography_scale
 from .image_assets import attach_image_asset
 from .models import AgentResult, ProjectState, WebsiteType
 from .openai_schema import make_openai_strict_schema
+
+
+logger = logging.getLogger("kreaton")
 
 
 try:
@@ -792,8 +797,35 @@ def _normalized_offering_name(value: Any) -> str:
 
 
 OFFERING_MATCH_STOPWORDS = {
-    "a", "and", "como", "con", "de", "del", "el", "en", "for", "la", "las",
-    "los", "online", "para", "the", "to", "y",
+    "a", "and", "como", "con", "de", "del", "el", "en", "for", "hacer", "how",
+    "la", "las", "los", "online", "para", "the", "to", "y",
+}
+
+AMBIGUOUS_OFFERING_MATCH_TOKENS = {
+    "accessori", "equipment", "equipo", "material", "product", "producto",
+    "service", "servicio",
+}
+
+REQUIRED_OFFERING_CONCEPT_TOKENS = {"accessory", "course", "equipment", "material"}
+
+OFFERING_MATCH_TOKEN_ALIASES = {
+    "accessories": "accessory",
+    "accessori": "accessory",
+    "accesorio": "accessory",
+    "curso": "course",
+    "entrenamiento": "course",
+    "equipo": "equipment",
+    "filament": "material",
+    "filamento": "material",
+    "impresion": "print",
+    "impresora": "print",
+    "imprimir": "print",
+    "kit": "equipment",
+    "printer": "print",
+    "printing": "print",
+    "producto": "product",
+    "resina": "material",
+    "training": "course",
 }
 
 
@@ -806,6 +838,7 @@ def _offering_match_tokens(value: Any) -> set[str]:
             token = token[:-2]
         elif token.endswith("s") and len(token) > 4:
             token = token[:-1]
+        token = OFFERING_MATCH_TOKEN_ALIASES.get(token, token)
         tokens.add(token)
     return tokens
 
@@ -815,6 +848,44 @@ def _catalog_item_matches_offering(item: Dict[str, Any], client_name: str) -> bo
         "name", "description", "category", "imageSearchQuery", "image_search_query"
     ))
     return bool(_offering_match_tokens(client_name) & _offering_match_tokens(item_text))
+
+
+def _catalog_item_match_score(
+    client_name: str,
+    item: Dict[str, Any],
+    context: str = "",
+) -> Optional[float]:
+    client_normalized = _normalized_offering_name(client_name)
+    item_name_normalized = _normalized_offering_name(item.get("name"))
+    if not client_normalized or not item_name_normalized:
+        return None
+
+    item_text = " ".join(str(item.get(key) or "") for key in (
+        "name", "description", "category", "imageSearchQuery", "image_search_query"
+    ))
+    client_tokens = _offering_match_tokens(client_name)
+    item_tokens = _offering_match_tokens(item_text)
+    if not client_tokens:
+        return None
+
+    token_score = len(client_tokens & item_tokens) / len(client_tokens)
+    name_ratio = SequenceMatcher(None, client_normalized, item_name_normalized).ratio()
+    has_substring = client_normalized in item_name_normalized or item_name_normalized in client_normalized
+
+    required_concepts = client_tokens & REQUIRED_OFFERING_CONCEPT_TOKENS
+    if required_concepts and not required_concepts <= item_tokens:
+        return None
+
+    # A lone broad noun such as "materiales" is not enough to connect an
+    # unrelated category. Require the candidate to also share business context.
+    if len(client_tokens) == 1 and client_tokens <= AMBIGUOUS_OFFERING_MATCH_TOKENS:
+        context_tokens = _offering_match_tokens(context) - client_tokens
+        if item_name_normalized != client_normalized and not (context_tokens & item_tokens):
+            return None
+
+    if token_score >= 0.4 or name_ratio >= 0.55 or (has_substring and token_score >= 0.4):
+        return max(token_score, name_ratio, 0.9 if has_substring and token_score >= 0.4 else 0.0)
+    return None
 
 
 def _client_offering_names(state: ProjectState) -> List[str]:
@@ -836,27 +907,22 @@ def _matching_catalog_item(
     client_name: str,
     catalog_items: List[Dict[str, Any]],
     used_indexes: set[int],
+    *,
+    allow_used: bool = False,
+    context: str = "",
 ) -> tuple[Optional[Dict[str, Any]], Optional[int]]:
-    client_normalized = _normalized_offering_name(client_name)
-    client_tokens = set(client_normalized.split())
     best_index: Optional[int] = None
     best_score = 0.0
     for index, item in enumerate(catalog_items):
-        if index in used_indexes:
+        if not allow_used and index in used_indexes:
             continue
-        item_normalized = _normalized_offering_name(item.get("name"))
-        if not item_normalized:
+        score = _catalog_item_match_score(client_name, item, context)
+        if score is None:
             continue
-        if item_normalized == client_normalized:
-            return item, index
-        item_tokens = set(item_normalized.split())
-        score = len(client_tokens & item_tokens) / max(1, len(client_tokens))
-        if (client_normalized in item_normalized or item_normalized in client_normalized) and score >= 0.5:
-            score = max(score, 0.9)
         if score > best_score:
             best_score = score
             best_index = index
-    if best_index is not None and best_score >= 0.6:
+    if best_index is not None:
         return catalog_items[best_index], best_index
     return None, None
 
@@ -866,24 +932,42 @@ def _reconcile_client_catalog(
     seed: List[Dict[str, Any]],
     client_names: List[str],
     context: str,
+    business_name: str = "unknown",
 ) -> tuple[List[Dict[str, Any]], bool]:
     reconciled: List[Dict[str, Any]] = []
     used_model_indexes: set[int] = set()
     used_names = {_normalized_offering_name(name) for name in client_names}
-    used_seed_fallback = False
+    genuinely_matched_count = 0
 
     for index, client_name in enumerate(client_names):
         matched: Optional[Dict[str, Any]] = None
         matched_index: Optional[int] = None
         if index < len(catalog_items):
             ordinal_candidate = catalog_items[index]
-            if index not in used_model_indexes and _catalog_item_matches_offering(ordinal_candidate, client_name):
+            if (
+                index not in used_model_indexes
+                and _catalog_item_match_score(client_name, ordinal_candidate, context) is not None
+            ):
                 matched = ordinal_candidate
                 matched_index = index
         if matched is None:
-            matched, matched_index = _matching_catalog_item(client_name, catalog_items, used_model_indexes)
+            matched, matched_index = _matching_catalog_item(
+                client_name,
+                catalog_items,
+                used_model_indexes,
+                context=context,
+            )
+        if matched is None:
+            matched, matched_index = _matching_catalog_item(
+                client_name,
+                catalog_items,
+                used_model_indexes,
+                allow_used=True,
+                context=context,
+            )
         if matched_index is not None:
             used_model_indexes.add(matched_index)
+            genuinely_matched_count += 1
         fallback = seed[index % len(seed)] if seed else {
             "id": f"client_item_{index + 1}",
             "sku": f"CLIENT-{index + 1:03d}",
@@ -897,7 +981,11 @@ def _reconcile_client_catalog(
         }
         source = matched or fallback
         if matched is None:
-            used_seed_fallback = True
+            logger.warning(
+                "LYRA catalog item fallback to seed offering=%s business=%s",
+                client_name,
+                business_name or "unknown",
+            )
         price = parse_price_amount(source.get("price_amount") or source.get("price"), float(fallback["price_amount"]))
         image_query = str(
             source.get("imageSearchQuery") or source.get("image_search_query") or client_name
@@ -937,8 +1025,8 @@ def _reconcile_client_catalog(
         used_names.add(fallback_name)
         extra = {**fallback, "sort_order": len(reconciled)}
         reconciled.append(attach_image_asset(extra, context=context))
-        used_seed_fallback = True
 
+    used_seed_fallback = genuinely_matched_count * 2 < len(client_names)
     return reconciled, used_seed_fallback
 
 
@@ -1007,6 +1095,7 @@ def ensure_plan_seed_catalog_with_source(
             seed,
             client_names,
             seed_context,
+            state.businessName or "unknown",
         )
         return reconciled, "seed_fallback" if used_seed_fallback else "ai_generated"
 
