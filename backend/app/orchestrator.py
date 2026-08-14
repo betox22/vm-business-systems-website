@@ -160,6 +160,13 @@ class LyraOrchestrator:
         await manager.add_note(result.reasoningSummary or "")
         return result
 
+    async def retry_site_planner(self, user_input: str, state: ProjectState) -> ProjectState:
+        """Retry only the AI planner once while preserving the completed pipeline state."""
+        manager = StateManager(state)
+        await self._run_and_merge(manager, self.ai_site_planner, user_input)
+        await self._run_and_merge(manager, self.validator, user_input)
+        return await manager.snapshot()
+
     async def _safe_run(self, agent: BaseAgent, state: ProjectState, user_input: str) -> AgentResult:
         try:
             result = await agent.run(state, user_input)

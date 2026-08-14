@@ -1,0 +1,98 @@
+{
+  "captured_at_utc": "2026-08-14T18:04:07.570182+00:00",
+  "live_openai_call": true,
+  "pipeline": "website_builder_end_to_end",
+  "input": "Vendo impresoras 3D, accesorios para impresoras 3D, materiales y equipos para imprimir, y tambien vendo cursos online de como hacer los productos. Se llama Mi Mundo 3D. Vendo todo online.",
+  "elapsed_seconds": 9.636,
+  "diagnosis": {
+    "planner_raised_exception": false,
+    "planner_timed_out": false,
+    "planner_was_rate_limited": false,
+    "planner_confidence": 0.95,
+    "reason": "The planner returned valid but renamed English products. Client-offering reconciliation could not match them to the original Spanish offering names, so every unmatched item was replaced positionally with the tech semantic seed catalog and catalogSource became seed_fallback."
+  },
+  "warnings": [
+    "LYRA agent fallback agent=catalog path=seed_fallback",
+    "LYRA agent warning agent=openai_site_planner warning=OpenAI planner catalog reconciliation used seed_fallback",
+    "LYRA agent fallback agent=openai_site_planner path=seed_fallback",
+    "LYRA reviewer strategy override blocked primary=mega-retail-store suggested=digital-products-store detail=The selected template 'Mega Retail Store' does not align with the business model focused on technology products and online courses. A more suitable template would be 'Digital Products' for the online course aspect.",
+    "LYRA generation fallback path=seed_fallback business=Mi Mundo 3D template=mega-retail-store"
+  ],
+  "raw_planner_result": {
+    "templateId": "mega-retail-store",
+    "primaryOfferingCategory": "mega-retail-store",
+    "secondaryOfferingCategories": [
+      "education-course-academy-pro"
+    ],
+    "catalogSourceBeforeReconciliation": "ai_generated",
+    "catalogItems": [
+      {
+        "name": "Ultimaker S3 3D Printer",
+        "category": "3D Printers",
+        "price": 3999.99,
+        "imageSearchQuery": "Ultimaker S3 3D Printer"
+      },
+      {
+        "name": "3D Printer Filament PLA",
+        "category": "Printing Materials",
+        "price": 29.99,
+        "imageSearchQuery": "PLA filament for 3D printing"
+      },
+      {
+        "name": "3D Printer Nozzle Kit",
+        "category": "3D Printer Accessories",
+        "price": 49.99,
+        "imageSearchQuery": "3D printer nozzle kit"
+      },
+      {
+        "name": "3D Printing Basics Online Course",
+        "category": "Online Courses",
+        "price": 199.99,
+        "imageSearchQuery": "3D printing online course"
+      }
+    ]
+  },
+  "client_offerings": [
+    "Impresoras 3D",
+    "Accesorios para impresoras 3D",
+    "Materiales",
+    "Equipos para imprimir",
+    "Cursos online de como hacer los productos"
+  ],
+  "reconciliation_result": {
+    "catalogSource": "seed_fallback",
+    "all_client_offerings_used_seed_fallback": true,
+    "items": [
+      {
+        "name": "Impresoras 3D",
+        "seed_identity": "HoloGrip Magnetic Phone Stand",
+        "category": "Mobile accessories",
+        "price": 19.99
+      },
+      {
+        "name": "Accesorios para impresoras 3D",
+        "seed_identity": "PulseDrive USB-C Turbo Cable",
+        "category": "Charging",
+        "price": 12.5
+      },
+      {
+        "name": "Materiales",
+        "seed_identity": "Mini Nebula Projector",
+        "category": "Entertainment",
+        "price": 129.0
+      },
+      {
+        "name": "Equipos para imprimir",
+        "seed_identity": "Retro Reactor Keycap Set",
+        "category": "Gaming",
+        "price": 49.0
+      },
+      {
+        "name": "Cursos online de como hacer los productos",
+        "seed_identity": "CyberLamp RGB Desk Light",
+        "category": "Desk setup",
+        "price": 59.0
+      }
+    ]
+  }
+}

@@ -1304,10 +1304,18 @@ async def website_builder(
     catalog_items, catalog_source = resolve_catalog_items_and_source(final_state)
     if catalog_source == "seed_fallback":
         logger.warning(
-            "LYRA generation fallback path=seed_fallback business=%s template=%s",
+            "LYRA generation planner retry reason=seed_fallback business=%s template=%s",
             final_state.businessName or "unknown",
             final_state.selectedTemplateId or "unknown",
         )
+        final_state = await orchestrator.retry_site_planner(prompt_context, final_state)
+        catalog_items, catalog_source = resolve_catalog_items_and_source(final_state)
+        if catalog_source == "seed_fallback":
+            logger.warning(
+                "LYRA generation fallback path=seed_fallback planner_retry=exhausted business=%s template=%s",
+                final_state.businessName or "unknown",
+                final_state.selectedTemplateId or "unknown",
+            )
     schema = build_schema_from_state(final_state, catalog_items=catalog_items, catalog_source=catalog_source)
     auth_user = authenticated_client_user(authorization, luma_client_session, required=False)
     db_site = persist_generated_site(session, user=auth_user, request=request, schema=schema) if auth_user else None

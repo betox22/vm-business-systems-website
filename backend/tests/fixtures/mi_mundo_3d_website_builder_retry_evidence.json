@@ -1,0 +1,54 @@
+{
+  "captured_at_utc": "2026-08-14T20:49:23.182334+00:00",
+  "live_openai_call": true,
+  "pipeline": "website_builder_end_to_end_with_single_retry",
+  "input": "Vendo impresoras 3D, accesorios para impresoras 3D, materiales y equipos para imprimir, y tambien vendo cursos online de como hacer los productos. Se llama Mi Mundo 3D. Vendo todo online.",
+  "elapsed_seconds": 32.963,
+  "needs_more_info": false,
+  "catalog_source": "seed_fallback",
+  "selected_template_id": "mega-retail-store",
+  "catalog_items": [
+    {
+      "name": "Impresoras 3D",
+      "category": "Impresoras 3D",
+      "price": 799.99,
+      "imageSearchQuery": "advanced 3D printer"
+    },
+    {
+      "name": "Accesorios para impresoras 3D",
+      "category": "Accesorios para Impresoras",
+      "price": 49.99,
+      "imageSearchQuery": "3D printer accessories kit"
+    },
+    {
+      "name": "Materiales",
+      "category": "Materiales de Impresión",
+      "price": 29.99,
+      "imageSearchQuery": "PLA filament spool"
+    },
+    {
+      "name": "Equipos para imprimir",
+      "category": "Accesorios para impresoras 3D",
+      "price": 15.99,
+      "imageSearchQuery": "Equipos para imprimir"
+    },
+    {
+      "name": "Cursos online de como hacer los productos",
+      "category": "Cursos online",
+      "price": 49.99,
+      "imageSearchQuery": "Cursos online de como hacer los productos"
+    }
+  ],
+  "captured_warnings": [
+    "LYRA agent fallback agent=catalog path=seed_fallback",
+    "LYRA agent warning agent=openai_site_planner warning=OpenAI planner catalog reconciliation used seed_fallback",
+    "LYRA agent fallback agent=openai_site_planner path=seed_fallback",
+    "LYRA reviewer strategy override blocked primary=mega-retail-store suggested=education-course-academy-pro detail=The selected template 'Mega Retail Store' does not fully align with the business model that includes a significant educational component. A template that better fits the combination of retail and education would be more appropriate.",
+    "LYRA generation planner retry reason=seed_fallback business=Mi Mundo 3D template=mega-retail-store",
+    "LYRA agent warning agent=openai_site_planner warning=OpenAI planner catalog reconciliation used seed_fallback",
+    "LYRA agent fallback agent=openai_site_planner path=seed_fallback",
+    "LYRA generation fallback path=seed_fallback planner_retry=exhausted business=Mi Mundo 3D template=mega-retail-store"
+  ],
+  "retry_observed": true,
+  "retry_exhausted": true
+}

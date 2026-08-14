@@ -1107,6 +1107,97 @@
     return fallback ? [fallback] : [];
   }
 
+  // src/ai-builder/catalog-seed-policy.js
+  var PLACEHOLDER_CATALOG_NAME_RE = /^(?:item|product|producto|service|servicio|featured item|new arrival|limited find|customer favorite|signature item|featured offer|popular choice|main offer)(?:\s+\d+)?$/i;
+  var UNSTABLE_CATALOG_IMAGE_RE = /featured\/600x600|\/source\/|photo-1523275335684-37898b6baf30/i;
+  function cleanCatalogText(value = "", maxLength = 180) {
+    return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+  }
+  function pendingCatalogCopy(name, language = "en") {
+    const copy = {
+      es: {
+        description: `Conoce ${name}. Detalles y precio por confirmar con el negocio.`,
+        priceLabel: "Precio por confirmar"
+      },
+      fr: {
+        description: `Decouvrez ${name}. Details et prix a confirmer avec l'entreprise.`,
+        priceLabel: "Prix a confirmer"
+      },
+      pt: {
+        description: `Conheca ${name}. Detalhes e preco a confirmar com a empresa.`,
+        priceLabel: "Preco a confirmar"
+      },
+      en: {
+        description: `Explore ${name}. Details and pricing will be confirmed by the business.`,
+        priceLabel: "Price to confirm"
+      }
+    };
+    return copy[language] || copy.en;
+  }
+  function hasRealCatalogIdentity(item = {}) {
+    const source = typeof item === "string" ? { name: item } : item || {};
+    const name = String(source.name || source.title || "").trim();
+    return Boolean(name) && !PLACEHOLDER_CATALOG_NAME_RE.test(name);
+  }
+  function shouldUseSemanticSeedIdentity(item = {}, catalogSource = "") {
+    return catalogSource !== "ai_generated" && !hasRealCatalogIdentity(item);
+  }
+  function mergeSemanticSeedCatalog(existingItems = [], seedItems = [], language = "en", _contextText = "", options = {}) {
+    const existing = Array.isArray(existingItems) ? existingItems.filter(Boolean) : [];
+    const seeds = Array.isArray(seedItems) ? seedItems.filter(Boolean) : [];
+    const preserveAiGeneratedIdentity = options.catalogSource === "ai_generated";
+    const imageUrlForQuery = typeof options.imageUrlForQuery === "function" ? options.imageUrlForQuery : () => "";
+    const base = existing.length ? existing : seeds;
+    const merged = base.slice(0, 6).map((item, index) => {
+      const seed = seeds.length ? seeds[index % seeds.length] : {};
+      const source = typeof item === "string" ? { name: item } : { ...item };
+      const hasRealIdentity = hasRealCatalogIdentity(source);
+      const useSeedIdentity = shouldUseSemanticSeedIdentity(source, options.catalogSource);
+      const protectRealMetadata = options.catalogSource === "seed_fallback" && hasRealIdentity;
+      const name = useSeedIdentity ? cleanCatalogText(seed.name || seed.title, 90) : cleanCatalogText(source.name || source.title, 90);
+      const pendingCopy = pendingCatalogCopy(name, language);
+      const rawPrice = protectRealMetadata ? Number.NaN : Number(source.price_amount ?? source.price_value ?? source.price ?? seed.price);
+      const hasPrice = Number.isFinite(rawPrice) && rawPrice > 0;
+      const query = cleanCatalogText(
+        source.imageSearchQuery || source.image_search_query || (useSeedIdentity ? seed.imageSearchQuery : name),
+        160
+      );
+      const sourceImage = cleanCatalogText(source.image_url || source.imageUrl, 1e3);
+      const resolvedImage = sourceImage && !UNSTABLE_CATALOG_IMAGE_RE.test(sourceImage) ? sourceImage : imageUrlForQuery(query);
+      return {
+        ...source,
+        id: source.id || seed.id || `prod_${String(index + 1).padStart(3, "0")}`,
+        sku: source.sku || seed.sku || `SKU-${String(index + 1).padStart(3, "0")}`,
+        name,
+        description: protectRealMetadata ? pendingCopy.description : useSeedIdentity ? seed.description : source.description,
+        category: protectRealMetadata ? name : useSeedIdentity ? seed.category : source.category,
+        price: hasPrice ? rawPrice : null,
+        price_type: protectRealMetadata ? "quote_only" : source.price_type && source.price_type !== "quote_only" ? source.price_type : "fixed",
+        price_value: hasPrice ? rawPrice : null,
+        price_amount: hasPrice ? rawPrice : null,
+        currency: source.currency || "USD",
+        price_label: protectRealMetadata ? pendingCopy.priceLabel : source.price_label && !/price editable|precio editable|price to be set|consultar/i.test(source.price_label) ? source.price_label : hasPrice ? `USD ${rawPrice.toFixed(2)}` : "",
+        rating: protectRealMetadata ? source.rating : Number(source.rating || seed.rating || 4.7),
+        review_count: protectRealMetadata ? source.review_count : source.review_count || seed.review_count,
+        badge: protectRealMetadata ? source.badge : source.badge || seed.badge,
+        deal_label: protectRealMetadata ? source.deal_label || "" : source.deal_label || seed.deal_label || "",
+        shipping_label: protectRealMetadata ? source.shipping_label : source.shipping_label || seed.shipping_label,
+        button_label: source.button_label || seed.button_label,
+        inventory_quantity: protectRealMetadata ? source.inventory_quantity : source.inventory_quantity ?? seed.inventory_quantity,
+        track_inventory: protectRealMetadata ? source.track_inventory : source.track_inventory ?? seed.track_inventory,
+        imageSearchQuery: query,
+        image_url: useSeedIdentity ? seed.image_url : resolvedImage,
+        is_active: source.is_active !== false,
+        is_featured: source.is_featured ?? index < 4,
+        sort_order: Number(source.sort_order ?? index)
+      };
+    });
+    while (!preserveAiGeneratedIdentity && merged.length < 4 && seeds[merged.length]) {
+      merged.push({ ...seeds[merged.length], sort_order: merged.length });
+    }
+    return merged.slice(0, 6);
+  }
+
   // src/ai-builder/renderers.js
   function arrayValue(value) {
     if (Array.isArray(value)) return value.filter(Boolean);
@@ -12292,7 +12383,8 @@ ${guidedQuestion(nextMissing)}`
     const existing = arrayValue2(nextSchema.catalog_items || nextSchema.products_services);
     const catalogSource = catalogSourceFromSchema(nextSchema);
     const mergedCatalog = mergeSemanticSeedCatalog(existing, seedItems, language, contextText, {
-      catalogSource
+      catalogSource,
+      imageUrlForQuery: unsplashSeedUrl
     });
     nextSchema.catalog_items = mergedCatalog;
     if (Array.isArray(nextSchema.products_services)) {
@@ -12431,68 +12523,6 @@ ${guidedQuestion(nextMissing)}`
   function unsplashSeedUrl(keyword = "") {
     const clean = String(keyword || "premium-product").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "premium-product";
     return stableCatalogImageUrl(clean);
-  }
-  function mergeSemanticSeedCatalog(existingItems = [], seedItems = [], language = builderState.selectedLanguage, contextText = "", options = {}) {
-    const existing = arrayValue2(existingItems);
-    const preserveAiGeneratedIdentity = options.catalogSource === "ai_generated";
-    const genericCount = existing.filter((item) => isGenericSeedProduct(item, contextText)).length;
-    const needsReplacement = !preserveAiGeneratedIdentity && (existing.length < 4 || genericCount >= Math.max(1, Math.ceil(existing.length / 2)));
-    const base = preserveAiGeneratedIdentity ? existing : needsReplacement ? seedItems : existing;
-    const merged = base.slice(0, 6).map((item, index) => {
-      const seed = seedItems[index % seedItems.length];
-      const source = typeof item === "string" ? { name: item } : { ...item };
-      const sourceIsGeneric = isGenericSeedProduct(source, contextText);
-      const useSeedIdentity = !preserveAiGeneratedIdentity && (needsReplacement || sourceIsGeneric);
-      const price = Number(source.price_amount ?? source.price_value ?? source.price ?? seed.price);
-      return {
-        ...source,
-        id: source.id || seed.id || `prod_${String(index + 1).padStart(3, "0")}`,
-        sku: source.sku || seed.sku || `SKU-${String(index + 1).padStart(3, "0")}`,
-        name: useSeedIdentity ? seed.name : cleanShortText(source.name || source.title || (preserveAiGeneratedIdentity ? "" : seed.name), 90),
-        description: useSeedIdentity || !preserveAiGeneratedIdentity && isWeakSeedCopy(source.description, {}) ? seed.description : source.description,
-        category: useSeedIdentity || !preserveAiGeneratedIdentity && (!source.category || isGenericText(source.category)) ? seed.category : source.category,
-        price: Number.isFinite(price) && price > 0 ? price : seed.price,
-        price_type: source.price_type && source.price_type !== "quote_only" ? source.price_type : "fixed",
-        price_value: Number.isFinite(price) && price > 0 ? price : seed.price,
-        price_amount: Number.isFinite(price) && price > 0 ? price : seed.price,
-        currency: source.currency || "USD",
-        price_label: source.price_label && !/price editable|precio editable|price to be set|consultar/i.test(source.price_label) ? source.price_label : `USD ${(Number.isFinite(price) && price > 0 ? price : seed.price).toFixed(2)}`,
-        rating: Number(source.rating || seed.rating || 4.7),
-        review_count: source.review_count || seed.review_count,
-        badge: source.badge || seed.badge,
-        deal_label: source.deal_label || seed.deal_label || "",
-        shipping_label: source.shipping_label || seed.shipping_label,
-        button_label: source.button_label || seed.button_label,
-        inventory_quantity: source.inventory_quantity ?? seed.inventory_quantity,
-        track_inventory: source.track_inventory ?? seed.track_inventory,
-        imageSearchQuery: source.imageSearchQuery || source.image_search_query || seed.imageSearchQuery,
-        image_url: preserveAiGeneratedIdentity ? source.image_url || source.imageUrl || seed.image_url : useSeedIdentity || shouldReplaceCatalogSeedImage(source, seed, contextText) ? seed.image_url : source.image_url || source.imageUrl || seed.image_url,
-        is_active: source.is_active !== false,
-        is_featured: source.is_featured ?? index < 4,
-        sort_order: Number(source.sort_order ?? index)
-      };
-    });
-    while (!preserveAiGeneratedIdentity && merged.length < 4 && seedItems[merged.length]) {
-      merged.push({ ...seedItems[merged.length], sort_order: merged.length });
-    }
-    return merged.slice(0, 6);
-  }
-  function shouldReplaceCatalogSeedImage(source = {}, seed = {}, contextText = "") {
-    const raw = String(source.image_url || source.imageUrl || "").trim();
-    if (!raw) return true;
-    if (/featured\/600x600|\/source\/|photo-1523275335684-37898b6baf30/i.test(raw)) return true;
-    if (isGenericSeedProduct(source, contextText)) return true;
-    const query = normalizeTemplateIntentText(source.imageSearchQuery || source.image_search_query || source.category || source.name || "");
-    return !query && Boolean(seed.image_url);
-  }
-  function isGenericSeedProduct(item = {}, contextText = "") {
-    const source = typeof item === "string" ? { name: item } : item || {};
-    const name = normalizeTemplateIntentText(source.name || source.title || source);
-    const description = normalizeTemplateIntentText(source.description || source.text || "");
-    const price = source.price_amount ?? source.price_value ?? source.price;
-    const image = source.image_url || source.imageUrl || "";
-    const nameIsRawContext = name && contextText && contextText.includes(name) && name.split(/\s+/).length > 7;
-    return !name || /^(item|product|producto|service|servicio|featured item|new arrival|limited find|customer favorite|signature item|featured offer|popular choice|main offer)(\s+\d+)?$/.test(name) || /^(signature starter pack|pack inicial signature|customer favorite bundle|bundle favorito del cliente|premium upgrade|upgrade premium|limited edition drop|drop de edicion limitada|everyday essential|esencial de uso diario|gift ready selection|seleccion lista para regalo)$/.test(name) || /price to be set|precio editable|editable product|lorem|placeholder/.test(description) || nameIsRawContext || !description || price === "" || price === null || price === void 0;
   }
   function isWeakSeedCopy(value, payload = {}) {
     const text = String(value || "").trim();

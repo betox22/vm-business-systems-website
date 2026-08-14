@@ -1,6 +1,6 @@
 import asyncio
 import unittest
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -9,6 +9,7 @@ from starlette.requests import Request
 from app import main
 from app.db import Base
 from app.models import WebsiteGenerationRequest
+from app.models import ProjectState
 
 
 def _memory_session():
@@ -74,7 +75,10 @@ class WebsiteBuilderIntakeTests(unittest.TestCase):
             captured_state["state"] = state
             return state
 
-        with patch.object(main.orchestrator, "run", side_effect=keep_validated_state):
+        with (
+            patch.object(main.orchestrator, "run", side_effect=keep_validated_state),
+            patch.object(main.orchestrator, "retry_site_planner", side_effect=lambda _prompt, state: state),
+        ):
             response = asyncio.run(main.website_builder(
                 request,
                 _http_request(),
@@ -122,6 +126,107 @@ class WebsiteBuilderIntakeTests(unittest.TestCase):
         self.assertIn("products or services", response.next_question or "")
         self.assertIn("brand style", response.next_question or "")
         self.assertIn("logo", response.next_question or "")
+
+    def test_seed_fallback_retries_planner_once_and_uses_successful_catalog(self) -> None:
+        request = WebsiteGenerationRequest(
+            business_name="Mi Mundo 3D",
+            business_description="3D printers, materials, equipment, and online courses.",
+            industry="technology",
+            services_products=["3D printers", "Printing materials", "Online courses"],
+            preferred_tone="explicit_delegation",
+            logoPreference="explicit_skip",
+            salesFlow="online_sales",
+            selectedLanguage="en",
+            fieldMeta={
+                "niche": {"source": "explicit", "confidence": 1},
+                "sales_flow": {"source": "explicit", "confidence": 1},
+                "brand_style": {"source": "explicit_delegation", "confidence": 1},
+                "logo": {"source": "explicit", "confidence": 1},
+            },
+        )
+        first_state = ProjectState(
+            businessName="Mi Mundo 3D",
+            businessDescription=request.business_description,
+            industry="technology",
+            servicesProducts=request.services_products,
+            preferredTone="explicit_delegation",
+            logoPreference="explicit_skip",
+            salesFlow="online_sales",
+            websiteType="online_store",
+            selectedTemplateId="mega-retail-store",
+            catalogItems=[{"name": "Generic tech accessory", "category": "Tech"}],
+            catalogSource="seed_fallback",
+        )
+        retry_state = first_state.model_copy(deep=True)
+        retry_state.catalogItems = [
+            {"name": "3D Printer", "category": "3D Printers", "price": 499.0},
+            {"name": "PLA Filament", "category": "Materials", "price": 24.0},
+        ]
+        retry_state.catalogSource = "ai_generated"
+        retry = AsyncMock(return_value=retry_state)
+
+        with (
+            patch.object(main.orchestrator, "run", new=AsyncMock(return_value=first_state)),
+            patch.object(main.orchestrator, "retry_site_planner", new=retry),
+        ):
+            response = asyncio.run(main.website_builder(
+                request,
+                _http_request(),
+                authorization="",
+                luma_client_session="",
+                session=self.session,
+            ))
+
+        retry.assert_awaited_once()
+        self.assertEqual(response.catalog_source, "ai_generated")
+        self.assertEqual(response.website_schema["catalog_items"][0]["name"], "3D Printer")
+
+    def test_seed_fallback_stops_after_one_planner_retry(self) -> None:
+        request = WebsiteGenerationRequest(
+            business_name="Mi Mundo 3D",
+            business_description="3D printers, materials, equipment, and online courses.",
+            industry="technology",
+            services_products=["3D printers", "Printing materials", "Online courses"],
+            preferred_tone="explicit_delegation",
+            logoPreference="explicit_skip",
+            salesFlow="online_sales",
+            selectedLanguage="en",
+            fieldMeta={
+                "niche": {"source": "explicit", "confidence": 1},
+                "sales_flow": {"source": "explicit", "confidence": 1},
+                "brand_style": {"source": "explicit_delegation", "confidence": 1},
+                "logo": {"source": "explicit", "confidence": 1},
+            },
+        )
+        fallback_state = ProjectState(
+            businessName="Mi Mundo 3D",
+            businessDescription=request.business_description,
+            industry="technology",
+            servicesProducts=request.services_products,
+            preferredTone="explicit_delegation",
+            logoPreference="explicit_skip",
+            salesFlow="online_sales",
+            websiteType="online_store",
+            selectedTemplateId="mega-retail-store",
+            catalogItems=[{"name": "Fallback item", "category": "Tech"}],
+            catalogSource="seed_fallback",
+        )
+        retry = AsyncMock(return_value=fallback_state)
+
+        with (
+            patch.object(main.orchestrator, "run", new=AsyncMock(return_value=fallback_state)),
+            patch.object(main.orchestrator, "retry_site_planner", new=retry),
+        ):
+            response = asyncio.run(main.website_builder(
+                request,
+                _http_request(),
+                authorization="",
+                luma_client_session="",
+                session=self.session,
+            ))
+
+        retry.assert_awaited_once()
+        self.assertEqual(response.catalog_source, "seed_fallback")
 
 
 if __name__ == "__main__":

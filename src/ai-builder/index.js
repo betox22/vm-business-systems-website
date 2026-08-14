@@ -39,6 +39,7 @@ import { buildColorProvenance } from './color-provenance.js';
 import { applyAuthoritativeThemeToBrand } from './theme-policy.js';
 import { generationAuthAction } from './auth-session-policy.js';
 import { isStrongNewBusinessBrief, resolveBackendMissingSteps } from './intake-state-policy.js';
+import { mergeSemanticSeedCatalog } from './catalog-seed-policy.js';
 import {
   renderWebsite as renderWebsiteMarkup,
   marketplaceItems,
@@ -6100,6 +6101,7 @@ function ensureSemanticSeedContent(schema, payload = {}, templateSelection = nul
   const catalogSource = catalogSourceFromSchema(nextSchema);
   const mergedCatalog = mergeSemanticSeedCatalog(existing, seedItems, language, contextText, {
     catalogSource,
+    imageUrlForQuery: unsplashSeedUrl,
   });
 
   nextSchema.catalog_items = mergedCatalog;
@@ -6252,67 +6254,6 @@ function unsplashSeedUrl(keyword = "") {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "") || "premium-product";
   return stableCatalogImageUrl(clean);
-}
-
-function mergeSemanticSeedCatalog(existingItems = [], seedItems = [], language = builderState.selectedLanguage, contextText = "", options = {}) {
-  const existing = arrayValue(existingItems);
-  const preserveAiGeneratedIdentity = options.catalogSource === "ai_generated";
-  const genericCount = existing.filter((item) => isGenericSeedProduct(item, contextText)).length;
-  const needsReplacement = !preserveAiGeneratedIdentity && (existing.length < 4 || genericCount >= Math.max(1, Math.ceil(existing.length / 2)));
-  const base = preserveAiGeneratedIdentity ? existing : needsReplacement ? seedItems : existing;
-  const merged = base.slice(0, 6).map((item, index) => {
-    const seed = seedItems[index % seedItems.length];
-    const source = typeof item === "string" ? { name: item } : { ...item };
-    const sourceIsGeneric = isGenericSeedProduct(source, contextText);
-    const useSeedIdentity = !preserveAiGeneratedIdentity && (needsReplacement || sourceIsGeneric);
-    const price = Number(source.price_amount ?? source.price_value ?? source.price ?? seed.price);
-    return {
-      ...source,
-      id: source.id || seed.id || `prod_${String(index + 1).padStart(3, "0")}`,
-      sku: source.sku || seed.sku || `SKU-${String(index + 1).padStart(3, "0")}`,
-      name: useSeedIdentity ? seed.name : cleanShortText(source.name || source.title || (preserveAiGeneratedIdentity ? "" : seed.name), 90),
-      description: useSeedIdentity || (!preserveAiGeneratedIdentity && isWeakSeedCopy(source.description, {})) ? seed.description : source.description,
-      category: useSeedIdentity || (!preserveAiGeneratedIdentity && (!source.category || isGenericText(source.category))) ? seed.category : source.category,
-      price: Number.isFinite(price) && price > 0 ? price : seed.price,
-      price_type: source.price_type && source.price_type !== "quote_only" ? source.price_type : "fixed",
-      price_value: Number.isFinite(price) && price > 0 ? price : seed.price,
-      price_amount: Number.isFinite(price) && price > 0 ? price : seed.price,
-      currency: source.currency || "USD",
-      price_label: source.price_label && !/price editable|precio editable|price to be set|consultar/i.test(source.price_label)
-        ? source.price_label
-        : `USD ${(Number.isFinite(price) && price > 0 ? price : seed.price).toFixed(2)}`,
-      rating: Number(source.rating || seed.rating || 4.7),
-      review_count: source.review_count || seed.review_count,
-      badge: source.badge || seed.badge,
-      deal_label: source.deal_label || seed.deal_label || "",
-      shipping_label: source.shipping_label || seed.shipping_label,
-      button_label: source.button_label || seed.button_label,
-      inventory_quantity: source.inventory_quantity ?? seed.inventory_quantity,
-      track_inventory: source.track_inventory ?? seed.track_inventory,
-      imageSearchQuery: source.imageSearchQuery || source.image_search_query || seed.imageSearchQuery,
-      image_url: preserveAiGeneratedIdentity
-        ? source.image_url || source.imageUrl || seed.image_url
-        : (useSeedIdentity || shouldReplaceCatalogSeedImage(source, seed, contextText))
-          ? seed.image_url
-          : source.image_url || source.imageUrl || seed.image_url,
-      is_active: source.is_active !== false,
-      is_featured: source.is_featured ?? index < 4,
-      sort_order: Number(source.sort_order ?? index),
-    };
-  });
-  while (!preserveAiGeneratedIdentity && merged.length < 4 && seedItems[merged.length]) {
-    merged.push({ ...seedItems[merged.length], sort_order: merged.length });
-  }
-  return merged.slice(0, 6);
-}
-
-function shouldReplaceCatalogSeedImage(source = {}, seed = {}, contextText = "") {
-  const raw = String(source.image_url || source.imageUrl || "").trim();
-  if (!raw) return true;
-  if (/featured\/600x600|\/source\/|photo-1523275335684-37898b6baf30/i.test(raw)) return true;
-  if (isGenericSeedProduct(source, contextText)) return true;
-  const query = normalizeTemplateIntentText(source.imageSearchQuery || source.image_search_query || source.category || source.name || "");
-  return !query && Boolean(seed.image_url);
 }
 
 function isGenericSeedProduct(item = {}, contextText = "") {
