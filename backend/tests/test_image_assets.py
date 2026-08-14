@@ -97,6 +97,32 @@ class ImageAssetTests(unittest.TestCase):
         self.assertGreaterEqual(len(catalog), 4)
         self.assertEqual(updates["catalogSource"], "seed_fallback")
 
+    def test_ai_catalog_reconciles_real_3d_offerings_without_seed_fallback(self) -> None:
+        state = ProjectState(
+            businessName="Mi Mundo 3D",
+            businessDescription="Impresoras 3D, materiales, accesorios y cursos online.",
+            industry="technology",
+            servicesProducts=[
+                "Impresoras 3D",
+                "Accesorios para impresoras 3D",
+                "Materiales y equipos para imprimir",
+                "Cursos online de como hacer los productos",
+            ],
+            salesFlow="online_sales",
+        )
+        plan = _catalog_plan([
+            {**_catalog_item("Impresora 3D Avanzada", 1), "category": "Impresoras 3D"},
+            {**_catalog_item("Kit de Accesorios para Impresoras 3D", 2), "category": "Accesorios"},
+            {**_catalog_item("Filamento PLA Premium", 3), "category": "Materiales"},
+            {**_catalog_item("Curso Online: Introducción a la Impresión 3D", 4), "category": "Cursos"},
+        ])
+
+        updates = site_plan_to_updates(plan, state)
+
+        self.assertEqual(updates["catalogSource"], "ai_generated")
+        self.assertEqual([item["name"] for item in updates["catalogItems"]], state.servicesProducts)
+        self.assertIn("Impresora 3D Avanzada", updates["catalogItems"][0]["description"])
+
     def test_vanilla_candle_prefers_product_identity_over_home_description(self) -> None:
         product = {
             "name": "Vanilla Bean Candle",

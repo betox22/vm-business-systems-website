@@ -3,16 +3,17 @@ from __future__ import annotations
 import json
 import os
 import re
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, field_validator, model_validator
 
 from .agents import TEMPLATE_CATALOG, normalize_template_id, semantic_seed_catalog, state_is_commerce_seed_target, unsplash_seed_url
 from .color_theory import build_palette
 from .typography_theory import build_typography_scale
 from .image_assets import attach_image_asset
 from .models import AgentResult, ProjectState, WebsiteType
+from .openai_schema import make_openai_strict_schema
 
 
 try:
@@ -251,6 +252,76 @@ class CourseOfferingBinding(BaseModel):
         return VideoShowcaseBinding(videoUrl=value).videoUrl
 
 
+class QuoteFieldBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    label: str
+    type: str
+    placeholder: Optional[str] = None
+    required: bool
+
+
+class QuoteRequestBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    fields: List[QuoteFieldBinding]
+
+
+class CapabilityBindingItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    icon: Optional[str] = None
+    title: str
+    description: str
+
+
+class CapabilitiesBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: List[CapabilityBindingItem]
+
+
+class PortfolioBindingItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str
+    description: str
+    imageUrl: str
+    price: Optional[str] = None
+    beforeImageUrl: Optional[str] = None
+    afterImageUrl: Optional[str] = None
+
+
+class PortfolioBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: List[PortfolioBindingItem]
+
+
+class CatalogSourceBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source: str
+
+
+class EmptyDataBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class PlannerCatalogItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    name: str
+    description: str
+    category: str
+    price: float
+    price_amount: float
+    price_label: str
+    imageSearchQuery: str
+
+
 DATA_BINDING_SCHEMAS = {
     "product_grid_4x": MarketplaceGridBinding,
     "featured_products": MarketplaceGridBinding,
@@ -356,6 +427,37 @@ class AIWebGenerationResponse(BaseModel):
 
 
 AISitePlan = AIWebGenerationResponse
+
+
+PlannerDataBinding = Union[
+    MarketplaceGridBinding,
+    RestaurantMenuBinding,
+    SpecsShowcaseBinding,
+    VideoShowcaseBinding,
+    CourseOfferingBinding,
+    QuoteRequestBinding,
+    CapabilitiesBinding,
+    PortfolioBinding,
+    CatalogSourceBinding,
+    EmptyDataBinding,
+]
+
+
+def site_plan_json_schema() -> Dict[str, Any]:
+    """Return the planner model schema with closed shapes for dynamic payloads."""
+
+    schema = AIWebGenerationResponse.model_json_schema(ref_template="#/$defs/{model}")
+    definitions = schema.setdefault("$defs", {})
+
+    binding_schema = TypeAdapter(PlannerDataBinding).json_schema(ref_template="#/$defs/{model}")
+    definitions.update(binding_schema.pop("$defs", {}))
+    definitions["SectionBlock"]["properties"]["dataBinding"] = binding_schema
+
+    catalog_schema = PlannerCatalogItem.model_json_schema(ref_template="#/$defs/{model}")
+    definitions.update(catalog_schema.pop("$defs", {}))
+    definitions["PlannerCatalogItem"] = catalog_schema
+    schema["properties"]["catalogItems"]["items"] = {"$ref": "#/$defs/PlannerCatalogItem"}
+    return schema
 
 
 def compact_template_catalog() -> List[Dict[str, Any]]:
@@ -689,6 +791,32 @@ def _normalized_offering_name(value: Any) -> str:
     return re.sub(r"[^a-z0-9]+", " ", str(value or "").lower()).strip()
 
 
+OFFERING_MATCH_STOPWORDS = {
+    "a", "and", "como", "con", "de", "del", "el", "en", "for", "la", "las",
+    "los", "online", "para", "the", "to", "y",
+}
+
+
+def _offering_match_tokens(value: Any) -> set[str]:
+    tokens: set[str] = set()
+    for token in _normalized_offering_name(value).split():
+        if token in OFFERING_MATCH_STOPWORDS or len(token) < 3:
+            continue
+        if token.endswith("es") and len(token) > 5:
+            token = token[:-2]
+        elif token.endswith("s") and len(token) > 4:
+            token = token[:-1]
+        tokens.add(token)
+    return tokens
+
+
+def _catalog_item_matches_offering(item: Dict[str, Any], client_name: str) -> bool:
+    item_text = " ".join(str(item.get(key) or "") for key in (
+        "name", "description", "category", "imageSearchQuery", "image_search_query"
+    ))
+    return bool(_offering_match_tokens(client_name) & _offering_match_tokens(item_text))
+
+
 def _client_offering_names(state: ProjectState) -> List[str]:
     names: List[str] = []
     seen: set[str] = set()
@@ -745,7 +873,15 @@ def _reconcile_client_catalog(
     used_seed_fallback = False
 
     for index, client_name in enumerate(client_names):
-        matched, matched_index = _matching_catalog_item(client_name, catalog_items, used_model_indexes)
+        matched: Optional[Dict[str, Any]] = None
+        matched_index: Optional[int] = None
+        if index < len(catalog_items):
+            ordinal_candidate = catalog_items[index]
+            if index not in used_model_indexes and _catalog_item_matches_offering(ordinal_candidate, client_name):
+                matched = ordinal_candidate
+                matched_index = index
+        if matched is None:
+            matched, matched_index = _matching_catalog_item(client_name, catalog_items, used_model_indexes)
         if matched_index is not None:
             used_model_indexes.add(matched_index)
         fallback = seed[index % len(seed)] if seed else {
@@ -1036,6 +1172,7 @@ class OpenAISitePlanAgent:
             },
         }
 
+        fallback_warnings: List[str] = []
         try:
             messages = [
                 {"role": "system", "content": system_prompt},
@@ -1048,7 +1185,11 @@ class OpenAISitePlanAgent:
                     response_format=self._strict_response_format(),
                     messages=messages,
                 )
-            except Exception:
+            except Exception as strict_error:
+                fallback_warnings.append(
+                    "OpenAI planner strict response_format failed; used json_object fallback: "
+                    f"{type(strict_error).__name__}: {strict_error}"
+                )
                 response = await self.client.chat.completions.create(
                     model=self.model,
                     temperature=0.15,
@@ -1058,10 +1199,14 @@ class OpenAISitePlanAgent:
             raw = response.choices[0].message.content or "{}"
             parsed = json.loads(raw)
             plan = AISitePlan.model_validate(parsed)
+            updates = site_plan_to_updates(plan, state)
+            if updates.get("catalogSource") == "seed_fallback":
+                fallback_warnings.append("OpenAI planner catalog reconciliation used seed_fallback")
             return AgentResult(
                 agentName=self.name,
-                updates=site_plan_to_updates(plan, state),
+                updates=updates,
                 reasoningSummary=f"OpenAI site plan: {plan.reasoningSummary}",
+                warnings=fallback_warnings,
                 confidence=plan.confidence,
             )
         except (json.JSONDecodeError, ValidationError, Exception) as error:
@@ -1069,7 +1214,7 @@ class OpenAISitePlanAgent:
                 agentName=self.name,
                 updates={},
                 reasoningSummary="OpenAI planner failed validation; local deterministic agents kept the flow usable.",
-                warnings=[str(error)],
+                warnings=[*fallback_warnings, str(error)],
                 confidence=0.0,
             )
 
@@ -1080,7 +1225,7 @@ class OpenAISitePlanAgent:
             "json_schema": {
                 "name": "kreaton_ai_site_plan",
                 "strict": True,
-                "schema": AIWebGenerationResponse.model_json_schema(),
+                "schema": make_openai_strict_schema(site_plan_json_schema()),
             },
         }
 

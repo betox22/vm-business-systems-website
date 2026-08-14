@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from types import UnionType
 from typing import Any, Dict, Literal, Union, get_args, get_origin
 
@@ -21,6 +22,9 @@ from .agents import (
 )
 from .models import AgentResult, ProjectState
 from .state_manager import StateManager
+
+
+logger = logging.getLogger("kreaton")
 
 
 def _annotation_contains_literal(annotation: Any) -> bool:
@@ -159,19 +163,25 @@ class LyraOrchestrator:
     async def _safe_run(self, agent: BaseAgent, state: ProjectState, user_input: str) -> AgentResult:
         try:
             result = await agent.run(state, user_input)
-            return AgentResult.model_validate(result.model_dump())
+            validated = AgentResult.model_validate(result.model_dump())
         except ValidationError as error:
-            return AgentResult(
+            validated = AgentResult(
                 agentName=agent.name,
                 warnings=[f"Invalid agent output: {error}"],
                 confidence=0.0,
             )
         except Exception as error:
-            return AgentResult(
+            validated = AgentResult(
                 agentName=agent.name,
                 warnings=[f"Agent failed: {error}"],
                 confidence=0.0,
             )
+
+        for warning in validated.warnings:
+            logger.warning("LYRA agent warning agent=%s warning=%s", validated.agentName, warning)
+        if validated.updates.get("catalogSource") == "seed_fallback":
+            logger.warning("LYRA agent fallback agent=%s path=seed_fallback", validated.agentName)
+        return validated
 
     async def _review_and_correct_once(self, manager: StateManager, user_input: str) -> None:
         snapshot = await manager.snapshot()
@@ -208,8 +218,24 @@ class LyraOrchestrator:
                     f"{details}"
                 )
                 return
-            selected_template = TEMPLATE_CATALOG[suggested_strategy_template_id]
             snapshot = await manager.snapshot()
+            if (
+                snapshot.primaryOfferingCategory in TEMPLATE_CATALOG
+                and snapshot.selectedTemplateId == snapshot.primaryOfferingCategory
+                and suggested_strategy_template_id != snapshot.primaryOfferingCategory
+            ):
+                logger.warning(
+                    "LYRA reviewer strategy override blocked primary=%s suggested=%s detail=%s",
+                    snapshot.primaryOfferingCategory,
+                    suggested_strategy_template_id,
+                    details,
+                )
+                await manager.add_note(
+                    "Reviewer strategist correction ignored because the AI planner already supplied "
+                    f"authoritative primaryOfferingCategory={snapshot.primaryOfferingCategory}: {details}"
+                )
+                return
+            selected_template = TEMPLATE_CATALOG[suggested_strategy_template_id]
             correction_input = (
                 f"Business name: {snapshot.businessName or ''}\n"
                 f"Business description: {snapshot.businessDescription or ''}\n"

@@ -4,6 +4,7 @@ import uuid
 import re
 import os
 import json
+import logging
 import time
 from collections import defaultdict, deque
 from typing import Any, Dict, Optional
@@ -42,8 +43,11 @@ from .orchestrator import (
     normalize_state_payload,
     site_plan_from_state,
 )
-from .storage import StorageError, parse_data_url, supabase_storage_configured, upload_asset_to_supabase, validate_upload
 from .taxonomy import infer_seed_profile
+from .storage import StorageError, parse_data_url, supabase_storage_configured, upload_asset_to_supabase, validate_upload
+
+
+logger = logging.getLogger("kreaton")
 
 
 orchestrator = LyraOrchestrator()
@@ -1298,6 +1302,12 @@ async def website_builder(
     prompt_context = " ".join(str(value) for value in payload.values() if value)
     final_state = await orchestrator.run(prompt_context, state, run_review=True)
     catalog_items, catalog_source = resolve_catalog_items_and_source(final_state)
+    if catalog_source == "seed_fallback":
+        logger.warning(
+            "LYRA generation fallback path=seed_fallback business=%s template=%s",
+            final_state.businessName or "unknown",
+            final_state.selectedTemplateId or "unknown",
+        )
     schema = build_schema_from_state(final_state, catalog_items=catalog_items, catalog_source=catalog_source)
     auth_user = authenticated_client_user(authorization, luma_client_session, required=False)
     db_site = persist_generated_site(session, user=auth_user, request=request, schema=schema) if auth_user else None

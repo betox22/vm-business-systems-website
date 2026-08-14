@@ -11,6 +11,7 @@ from .color_theory import build_palette
 from .typography_theory import build_typography_scale
 from .image_assets import attach_image_asset, stable_seed_image_url
 from .models import AgentResult, ProjectState, WebsiteType
+from .openai_schema import make_openai_strict_schema
 from .taxonomy import infer_seed_profile
 
 try:
@@ -1002,6 +1003,8 @@ class ReviewerAgent(BaseAgent):
             "servicesProducts": state.servicesProducts,
             "selectedTemplateName": state.selectedTemplateName,
             "selectedTemplateId": state.selectedTemplateId,
+            "primaryOfferingCategory": state.primaryOfferingCategory,
+            "secondaryOfferingCategories": state.secondaryOfferingCategories,
             "websiteType": state.websiteType,
             "catalogType": state.catalogType,
             "salesFlow": state.salesFlow,
@@ -1024,6 +1027,7 @@ class ReviewerAgent(BaseAgent):
             {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
         ]
 
+        fallback_warnings: List[str] = []
         try:
             try:
                 response = await self.client.chat.completions.create(
@@ -1032,7 +1036,11 @@ class ReviewerAgent(BaseAgent):
                     response_format=self._strict_response_format(),
                     messages=messages,
                 )
-            except Exception:
+            except Exception as strict_error:
+                fallback_warnings.append(
+                    "Reviewer strict response_format failed; used json_object fallback: "
+                    f"{type(strict_error).__name__}: {strict_error}"
+                )
                 response = await self.client.chat.completions.create(
                     model=self.model,
                     temperature=0.0,
@@ -1056,6 +1064,7 @@ class ReviewerAgent(BaseAgent):
                     }
                 },
                 reasoningSummary=summary,
+                warnings=fallback_warnings,
                 confidence=0.92 if verdict.passed else 0.78,
             )
         except (json.JSONDecodeError, ValidationError, Exception) as error:
@@ -1063,7 +1072,7 @@ class ReviewerAgent(BaseAgent):
                 agentName=self.name,
                 updates={},
                 reasoningSummary="Reviewer failed; generation continued without review.",
-                warnings=[str(error)],
+                warnings=[*fallback_warnings, str(error)],
                 confidence=0.0,
             )
 
@@ -1154,7 +1163,7 @@ class ReviewerAgent(BaseAgent):
             "json_schema": {
                 "name": "kreaton_reviewer_verdict",
                 "strict": True,
-                "schema": ReviewerVerdict.model_json_schema(),
+                "schema": make_openai_strict_schema(ReviewerVerdict.model_json_schema()),
             },
         }
 
@@ -1171,6 +1180,7 @@ Evaluate exactly these risks:
 2. Catalog coherence: catalog items must match the client's described niche. Unrelated products, mixed-in wrong categories, generic bundles, or placeholders are issues for agent "catalog".
 3. Template fit: selectedTemplateName/websiteType/catalogType must make sense for the client's requested business model. Wrong marketplace/service/store direction is an issue for agent "strategist".
 When you create a "strategist" issue, you MUST include suggested_template_id with one exact templateId from templateCatalog that better fits the business. If no template clearly fits, omit the strategist issue.
+Treat primaryOfferingCategory as the planner's explicit decision about the main revenue offer. secondaryOfferingCategories are supporting offers and must not be promoted over that primary category merely because their keywords appear in the intake.
 
 Severity rules:
 - "none": no meaningful issue.

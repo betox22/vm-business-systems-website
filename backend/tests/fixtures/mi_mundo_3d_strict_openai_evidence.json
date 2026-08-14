@@ -1,0 +1,53 @@
+{
+  "captured_at_utc": "2026-08-14T16:13:00.990008+00:00",
+  "live_openai_call": true,
+  "test_case": "Mi Mundo 3D",
+  "input": "Vendo impresoras 3D, accesorios para impresoras 3D, materiales y equipos para imprimir, y tambien vendo cursos online de como hacer los productos. Se llama Mi Mundo 3D. Vendo todo online.",
+  "planner_calls": [
+    {
+      "response_format_type": "json_schema",
+      "strict": true,
+      "schema_name": "kreaton_ai_site_plan",
+      "model_requested": "gpt-4o",
+      "outcome": "success",
+      "openai_response_id": "chatcmpl-ECooO9OcUPi43efmP8SXMIS3Sd606",
+      "model_returned": "gpt-4o-2024-08-06"
+    }
+  ],
+  "strict_json_schema_succeeded": true,
+  "json_object_fallback_used": false,
+  "result": {
+    "selectedTemplateId": "mega-retail-store",
+    "primaryOfferingCategory": "mega-retail-store",
+    "secondaryOfferingCategories": [
+      "education-course-academy-pro"
+    ],
+    "catalogSource": "ai_generated",
+    "catalogItems": [
+      {
+        "name": "Impresoras 3D",
+        "category": "Impresoras 3D",
+        "imageSearchQuery": "advanced 3D printer"
+      },
+      {
+        "name": "Accesorios para impresoras 3D",
+        "category": "Accesorios",
+        "imageSearchQuery": "3D printer accessories kit"
+      },
+      {
+        "name": "Materiales y equipos para imprimir",
+        "category": "Materiales",
+        "imageSearchQuery": "PLA filament spool"
+      },
+      {
+        "name": "Cursos online de como hacer los productos",
+        "category": "Cursos",
+        "imageSearchQuery": "online 3D printing course"
+      }
+    ],
+    "pageTitles": [
+      "Inicio",
+      "Cursos"
+    ]
+  }
+}

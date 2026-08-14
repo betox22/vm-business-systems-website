@@ -137,6 +137,41 @@ class SitePlanSectionTests(unittest.TestCase):
         self.assertTrue(all(section["id"] == section["sectionId"] for section in sections))
         self.assertEqual(sections[-1]["editable"]["videoUrl"], "https://youtu.be/abcdefghijk")
 
+    def test_copy_driven_sections_keep_content_with_empty_data_binding(self) -> None:
+        component_types = (
+            "faq_block",
+            "cta_band",
+            "contact_panel",
+            "service_areas",
+            "proof_panel",
+            "booking_services",
+        )
+        payload = self._base_plan().model_dump(by_alias=True)
+        payload["pages"][0]["sections"] = [
+            {
+                "sectionId": component_type,
+                "componentType": component_type,
+                "copy": {
+                    "headline": f"Real headline for {component_type}",
+                    "body": f"Real body copy for {component_type}",
+                    "ctaPrimary": f"Action for {component_type}",
+                },
+                "dataBinding": {},
+            }
+            for component_type in component_types
+        ]
+
+        plan = AIWebGenerationResponse.model_validate(payload)
+        sections = site_plan_to_updates(plan)["generatedCopy"]["pages"][0]["sections"]
+
+        self.assertEqual(len(sections), len(component_types))
+        for section, component_type in zip(sections, component_types):
+            with self.subTest(component_type=component_type):
+                self.assertEqual(section["dataBinding"], {})
+                self.assertEqual(section["editable"]["headline"], f"Real headline for {component_type}")
+                self.assertEqual(section["editable"]["body"], f"Real body copy for {component_type}")
+                self.assertEqual(section["editable"]["ctaPrimary"], f"Action for {component_type}")
+
     def test_video_showcase_rejects_non_video_hosts(self) -> None:
         payload = {
             "reasoningSummary": "Unsafe video",

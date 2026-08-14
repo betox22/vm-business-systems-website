@@ -104,6 +104,51 @@ class StrategyAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(strategist.calls, 2)
         self.assertEqual(final_state.selectedTemplateId, "fashion-drop-pro")
 
+    async def test_reviewer_cannot_override_authoritative_planner_primary(self) -> None:
+        orchestrator = LyraOrchestrator()
+        orchestrator.extractor = StubAgent("extractor")
+        orchestrator.strategist = CountingStrategyAgent()
+        orchestrator.art_director = StubAgent("art_director")
+        orchestrator.copywriter = StubAgent("copywriter")
+        orchestrator.catalog = StubAgent("catalog")
+        orchestrator.ai_site_planner = StubAgent("openai_site_planner", {
+            "primaryOfferingCategory": "mega-retail-store",
+            "secondaryOfferingCategories": ["education-course-academy-pro"],
+            "catalogSource": "ai_generated",
+            "catalogItems": [{"name": "Impresoras 3D"}],
+        })
+        orchestrator.validator = StubAgent("validator")
+        orchestrator.reviewer = StubAgent("reviewer", {
+            "generatedCopy": {
+                "reviewerVerdict": {
+                    "passed": False,
+                    "severity": "critical",
+                    "issues": [{
+                        "agent": "strategist",
+                        "detail": "The online material should use a digital-products template.",
+                        "suggested_template_id": "digital-products-store",
+                    }],
+                }
+            }
+        })
+
+        with self.assertLogs("kreaton", level="WARNING") as captured:
+            final_state = await orchestrator.run(
+                "Vendo impresoras 3D y tambien cursos online.",
+                ProjectState(
+                    businessName="Mi Mundo 3D",
+                    businessDescription="Venta de impresoras 3D con cursos de apoyo.",
+                    servicesProducts=["Impresoras 3D", "Accesorios", "Cursos online"],
+                ),
+                run_review=True,
+            )
+
+        self.assertEqual(final_state.selectedTemplateId, "mega-retail-store")
+        self.assertEqual(final_state.catalogSource, "ai_generated")
+        self.assertEqual(final_state.catalogItems[0]["name"], "Impresoras 3D")
+        self.assertTrue(any("authoritative primaryOfferingCategory" in note for note in final_state.notes))
+        self.assertTrue(any("reviewer strategy override blocked" in line for line in captured.output))
+
 
 if __name__ == "__main__":
     unittest.main()
