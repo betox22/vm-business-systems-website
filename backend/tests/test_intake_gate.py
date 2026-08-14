@@ -392,6 +392,46 @@ class IntakeGateTests(unittest.TestCase):
         self.assertEqual(applied.generatedCopy, original_copy)
         self.assertEqual(applied.salesFlow, "online_sales")
 
+    def test_cross_field_validator_rejects_industry_label_as_product(self) -> None:
+        engine = LyraIntakeEngine()
+        state = ProjectState(
+            businessName="Mi Mundo 3D",
+            businessDescription="Impresoras 3D, materiales, equipos y cursos online.",
+            industry="technology",
+            servicesProducts=["Impresoras 3D", "Materiales para imprimir"],
+            salesFlow="online_sales",
+            preferredTone="technical and modern",
+            logoPreference="explicit_skip",
+            fieldMeta={
+                "niche": {"source": "explicit", "confidence": 0.95},
+                "sales_flow": {"source": "explicit", "confidence": 0.95},
+                "brand_style": {"source": "explicit", "confidence": 0.95},
+                "logo": {"source": "explicit", "confidence": 0.95},
+            },
+        )
+        decision = LyraIntakeDecision(
+            updatedState={"servicesProducts": ["technology"]},
+            fieldMeta={"servicesProducts": FieldMeta(source="inferred", confidence=0.9)},
+            detectedIntent=DetectedIntent(
+                businessModel="online_store",
+                commerceMode="single_vendor",
+                salesFlow="online_sales",
+                niche="technology",
+                confidence=0.95,
+            ),
+        )
+
+        repaired = engine.validate_and_repair_decision(
+            state=state,
+            decision=decision,
+            message="Vendo impresoras 3D y materiales para imprimir.",
+        )
+        applied = engine.apply_decision(state, repaired)
+
+        self.assertNotIn("servicesProducts", repaired.updatedState)
+        self.assertEqual(repaired.fieldMeta["servicesProducts"].source, "needs_review")
+        self.assertEqual(applied.servicesProducts, ["Impresoras 3D", "Materiales para imprimir"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1074,6 +1074,39 @@
     return workspaceUnlocked ? "continue" : "unlock_and_continue";
   }
 
+  // src/ai-builder/intake-state-policy.js
+  function isStrongNewBusinessBrief({
+    message = "",
+    isRich = false,
+    businessName = "",
+    offerings = [],
+    salesMode = ""
+  } = {}) {
+    const text = String(message || "").trim();
+    if (!text) return false;
+    const explicitBuildRequest = /\b(crear|hacer|build|create|make)\b[\s\S]{0,80}\b(p[aá]gina|website|site|tienda|store|marketplace|cat[aá]logo|catalog)\b/i.test(text) || /\b(quiero|necesito|deseo|want|need)\b\s+(?:(?:crear|hacer|build|create|make)\s+)?(?:una?|mi|a|my|an)\s+(p[aá]gina|website|site|tienda|store|marketplace|cat[aá]logo|catalog)\b/i.test(text);
+    if (explicitBuildRequest) {
+      return true;
+    }
+    const hasBusinessAction = /\b(vendo|vendemos|ofrezco|ofrecemos|hago|hacemos|fabrico|fabricamos|sell|selling|offer|offering|make|making|provide|providing)\b/i.test(text);
+    return Boolean(
+      isRich && text.length >= 80 && String(businessName || "").trim() && Array.isArray(offerings) && offerings.filter(Boolean).length >= 2 && (String(salesMode || "").trim() || hasBusinessAction)
+    );
+  }
+  function resolveBackendMissingSteps({
+    backendMissingFields = [],
+    mapField = (field) => field,
+    lastAskedField = "",
+    guidedStep = ""
+  } = {}) {
+    const reported = Array.isArray(backendMissingFields) ? backendMissingFields.map((field) => String(field || "").trim()).filter(Boolean) : [];
+    if (reported.length) {
+      return [...new Set(reported.map((field) => mapField(field) || field))];
+    }
+    const fallback = lastAskedField || (guidedStep && guidedStep !== "review" ? guidedStep : "backendClarification");
+    return fallback ? [fallback] : [];
+  }
+
   // src/ai-builder/renderers.js
   function arrayValue(value) {
     if (Array.isArray(value)) return value.filter(Boolean);
@@ -5835,7 +5868,15 @@
 
   // src/ai-builder/chat.js
   function guidedQuestion(step) {
-    return publicAssistantCopy(GUIDED_QUESTIONS[builderState.selectedLanguage]?.[step] || GUIDED_QUESTIONS.en[step] || GUIDED_QUESTIONS.en.review);
+    const configured = GUIDED_QUESTIONS[builderState.selectedLanguage]?.[step] || GUIDED_QUESTIONS.en[step];
+    if (configured) return publicAssistantCopy(configured);
+    const fieldLabel = String(step || "").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").trim();
+    return publicAssistantCopy(langText({
+      en: `Please provide the missing detail: ${fieldLabel}.`,
+      es: `Por favor completa el dato que falta: ${fieldLabel}.`,
+      fr: `Veuillez pr\xE9ciser l'information manquante : ${fieldLabel}.`,
+      pt: `Por favor, informe o dado que falta: ${fieldLabel}.`
+    }));
   }
   function ensureGuidedCoachCard() {
     if (builderState.guidedCoachCard || !guidedChatCard || !guidedChat) return builderState.guidedCoachCard;
@@ -7628,6 +7669,7 @@ ${cleanQuestion}`;
       salesMode: "Should the site support online sales, quote requests, in-person visits, or a mix?",
       hasLogoPhotos: "Do you have a logo to upload? If not, we can continue with your business name in text for now.",
       desiredDomain: "What domain would you like? You can write a name like lunastore.com or skip it for now.",
+      backendClarification: "LYRA needs one more specific detail before generating. Please answer the last question or describe the missing detail directly.",
       review: "I have enough to create the first draft."
     },
     es: {
@@ -7644,6 +7686,7 @@ ${cleanQuestion}`;
       salesMode: "\xBFQuieres ventas online, solicitudes de cotizaci\xF3n, visitas presenciales o una mezcla?",
       hasLogoPhotos: "\xBFTienes un logo para subir? Si no, seguimos con el nombre de tu negocio en texto por ahora.",
       desiredDomain: "Que dominio te gustaria? Puedes escribir algo como lunastore.com o saltarlo por ahora.",
+      backendClarification: "LYRA necesita un dato espec\xEDfico m\xE1s antes de generar. Responde la \xFAltima pregunta o describe directamente el dato que falta.",
       review: "Ya tengo suficiente para crear el primer borrador."
     },
     fr: {
@@ -7660,6 +7703,7 @@ ${cleanQuestion}`;
       salesMode: "Le site doit-il proposer la vente en ligne, les demandes de devis, les visites en personne, ou un m\xE9lange?",
       hasLogoPhotos: "Avez-vous un logo \xE0 importer ? Sinon, nous continuons avec le nom de votre entreprise en texte.",
       desiredDomain: "Quel domaine souhaitez-vous? Vous pouvez \xE9crire lunastore.com ou ignorer pour l'instant.",
+      backendClarification: "LYRA a besoin d'un dernier d\xE9tail pr\xE9cis avant de g\xE9n\xE9rer. R\xE9pondez \xE0 la derni\xE8re question ou indiquez directement l'information manquante.",
       review: "J'ai assez d'informations pour cr\xE9er le premier brouillon."
     },
     pt: {
@@ -7676,6 +7720,7 @@ ${cleanQuestion}`;
       salesMode: "O site deve aceitar vendas online, pedidos de or\xE7amento, visitas presenciais, ou uma mistura?",
       hasLogoPhotos: "Voc\xEA tem um logo para enviar? Caso n\xE3o, seguimos com o nome do neg\xF3cio em texto por enquanto.",
       desiredDomain: "Qual dom\xEDnio voc\xEA gostaria? Pode escrever lunastore.com ou pular por enquanto.",
+      backendClarification: "A LYRA precisa de mais um detalhe espec\xEDfico antes de gerar. Responda \xE0 \xFAltima pergunta ou descreva diretamente o dado que falta.",
       review: "J\xE1 tenho o suficiente para criar o primeiro rascunho."
     }
   };
@@ -7921,8 +7966,8 @@ ${cleanQuestion}`;
     summaryLanguageSelector.value = builderState.selectedLanguage;
     applyI18n();
     updateBuilderAvatarLabels();
-    renderGuidedSummary();
     if (previousLanguage !== builderState.selectedLanguage) {
+      renderGuidedSummary();
       resetAssistantConversation();
     }
   }
@@ -8817,8 +8862,13 @@ ${cleanQuestion}`;
   }
   function isNewProjectBriefMessage(message) {
     const text = String(message || "").trim();
-    if (!isRichIntakeMessage(text)) return false;
-    return /\b(quiero|necesito|vamos a|deseo|crear|hacer|build|create|make)\b[\s\S]{0,80}\b(p[aá]gina|website|site|tienda|store|marketplace|cat[aá]logo|catalog)\b/i.test(text);
+    return isStrongNewBusinessBrief({
+      message: text,
+      isRich: isRichIntakeMessage(text),
+      businessName: extractBusinessName(text),
+      offerings: extractServicesProducts(text),
+      salesMode: extractSalesMode(text)
+    });
   }
   function shouldResetRestoredWorkspaceForMessage(message) {
     if (!isPublicClientSetup || builderState.currentSchema) return false;
@@ -10928,10 +10978,12 @@ ${guidedQuestion(nextMissing)}`
   function missingGuidedSteps() {
     if (builderState.hasBackendIntakeSignal) {
       if (builderState.backendReadyToGenerate) return [];
-      const backendMissing = arrayValue2(builderState.backendMissingFields).map((slot) => mapBackendSlotToGuidedField(slot)).filter(Boolean);
-      if (backendMissing.length) return [...new Set(backendMissing)];
-      const fallbackStep = builderState.lastAskedGuidedField || (builderState.guidedStep !== "review" ? builderState.guidedStep : "websiteIntent");
-      return [fallbackStep];
+      return resolveBackendMissingSteps({
+        backendMissingFields: arrayValue2(builderState.backendMissingFields),
+        mapField: mapBackendSlotToGuidedField,
+        lastAskedField: builderState.lastAskedGuidedField,
+        guidedStep: builderState.guidedStep
+      });
     }
     const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
     if (requiredMissing.length) return requiredMissing;

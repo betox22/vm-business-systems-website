@@ -92,6 +92,8 @@ GENERIC_OFFERING_VALUES = {
     "accept bookings",
     "aceptar reservas",
 }
+GENERIC_OFFERING_VALUES.update(NICHE_TAXONOMY_LIST)
+GENERIC_OFFERING_VALUES.update(value.replace("_", " ") for value in NICHE_TAXONOMY_LIST)
 
 OFFERING_SENTENCE_PREFIX_RE = re.compile(
     r"^(?:yo\s+)?(?:fabrico|fabricamos|hago|hacemos|vendo|vendemos|ofrezco|ofrecemos|"
@@ -382,6 +384,14 @@ class LyraIntakeEngine:
         def is_flow_only(value: Any) -> bool:
             return normalized_text(value) in flow_only_values
 
+        non_offering_values = {
+            normalized_text(value)
+            for value in {*flow_only_values, *GENERIC_OFFERING_VALUES}
+        }
+
+        def is_non_offering_label(value: Any) -> bool:
+            return normalized_text(value) in non_offering_values
+
         message_text = normalized_text(message)
         logo_signal = bool(re.search(r"\b(logo|logotipo|brand mark)\b", message_text))
         logo_action = bool(
@@ -409,7 +419,7 @@ class LyraIntakeEngine:
 
         if "servicesProducts" in updates:
             items = split_items(updates.get("servicesProducts"))
-            clean_items = [item for item in items if not is_flow_only(item)]
+            clean_items = [item for item in items if not is_non_offering_label(item)]
             contaminated = len(clean_items) != len(items)
             if logo_only_reply:
                 contaminated = True

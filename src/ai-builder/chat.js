@@ -86,7 +86,18 @@ import {
 import { isExplicitRedesignRequest } from './variants.js';
 
 export function guidedQuestion(step) {
-  return publicAssistantCopy(GUIDED_QUESTIONS[builderState.selectedLanguage]?.[step] || GUIDED_QUESTIONS.en[step] || GUIDED_QUESTIONS.en.review);
+  const configured = GUIDED_QUESTIONS[builderState.selectedLanguage]?.[step] || GUIDED_QUESTIONS.en[step];
+  if (configured) return publicAssistantCopy(configured);
+  const fieldLabel = String(step || "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim();
+  return publicAssistantCopy(langText({
+    en: `Please provide the missing detail: ${fieldLabel}.`,
+    es: `Por favor completa el dato que falta: ${fieldLabel}.`,
+    fr: `Veuillez préciser l'information manquante : ${fieldLabel}.`,
+    pt: `Por favor, informe o dado que falta: ${fieldLabel}.`,
+  }));
 }
 
 export function ensureGuidedCoachCard() {

@@ -38,6 +38,7 @@ import { pickVariantSeed } from './variants.js';
 import { buildColorProvenance } from './color-provenance.js';
 import { applyAuthoritativeThemeToBrand } from './theme-policy.js';
 import { generationAuthAction } from './auth-session-policy.js';
+import { isStrongNewBusinessBrief, resolveBackendMissingSteps } from './intake-state-policy.js';
 import {
   renderWebsite as renderWebsiteMarkup,
   marketplaceItems,
@@ -457,6 +458,7 @@ export const GUIDED_QUESTIONS = {
     salesMode: "Should the site support online sales, quote requests, in-person visits, or a mix?",
     hasLogoPhotos: "Do you have a logo to upload? If not, we can continue with your business name in text for now.",
     desiredDomain: "What domain would you like? You can write a name like lunastore.com or skip it for now.",
+    backendClarification: "LYRA needs one more specific detail before generating. Please answer the last question or describe the missing detail directly.",
     review: "I have enough to create the first draft.",
   },
   es: {
@@ -473,6 +475,7 @@ export const GUIDED_QUESTIONS = {
     salesMode: "¿Quieres ventas online, solicitudes de cotización, visitas presenciales o una mezcla?",
     hasLogoPhotos: "¿Tienes un logo para subir? Si no, seguimos con el nombre de tu negocio en texto por ahora.",
     desiredDomain: "Que dominio te gustaria? Puedes escribir algo como lunastore.com o saltarlo por ahora.",
+    backendClarification: "LYRA necesita un dato específico más antes de generar. Responde la última pregunta o describe directamente el dato que falta.",
     review: "Ya tengo suficiente para crear el primer borrador.",
   },
   fr: {
@@ -489,6 +492,7 @@ export const GUIDED_QUESTIONS = {
     salesMode: "Le site doit-il proposer la vente en ligne, les demandes de devis, les visites en personne, ou un mélange?",
     hasLogoPhotos: "Avez-vous un logo à importer ? Sinon, nous continuons avec le nom de votre entreprise en texte.",
     desiredDomain: "Quel domaine souhaitez-vous? Vous pouvez écrire lunastore.com ou ignorer pour l'instant.",
+    backendClarification: "LYRA a besoin d'un dernier détail précis avant de générer. Répondez à la dernière question ou indiquez directement l'information manquante.",
     review: "J'ai assez d'informations pour créer le premier brouillon.",
   },
   pt: {
@@ -505,6 +509,7 @@ export const GUIDED_QUESTIONS = {
     salesMode: "O site deve aceitar vendas online, pedidos de orçamento, visitas presenciais, ou uma mistura?",
     hasLogoPhotos: "Você tem um logo para enviar? Caso não, seguimos com o nome do negócio em texto por enquanto.",
     desiredDomain: "Qual domínio você gostaria? Pode escrever lunastore.com ou pular por enquanto.",
+    backendClarification: "A LYRA precisa de mais um detalhe específico antes de gerar. Responda à última pergunta ou descreva diretamente o dado que falta.",
     review: "Já tenho o suficiente para criar o primeiro rascunho.",
   },
 };
@@ -769,8 +774,8 @@ export function setSelectedLanguage(value) {
   summaryLanguageSelector.value = builderState.selectedLanguage;
   applyI18n();
   updateBuilderAvatarLabels();
-  renderGuidedSummary();
   if (previousLanguage !== builderState.selectedLanguage) {
+    renderGuidedSummary();
     resetAssistantConversation();
   }
 }
@@ -1924,8 +1929,13 @@ export function resetGuidedStateForNewAccount(options = {}) {
 
 function isNewProjectBriefMessage(message) {
   const text = String(message || "").trim();
-  if (!isRichIntakeMessage(text)) return false;
-  return /\b(quiero|necesito|vamos a|deseo|crear|hacer|build|create|make)\b[\s\S]{0,80}\b(p[aá]gina|website|site|tienda|store|marketplace|cat[aá]logo|catalog)\b/i.test(text);
+  return isStrongNewBusinessBrief({
+    message: text,
+    isRich: isRichIntakeMessage(text),
+    businessName: extractBusinessName(text),
+    offerings: extractServicesProducts(text),
+    salesMode: extractSalesMode(text),
+  });
 }
 
 function shouldResetRestoredWorkspaceForMessage(message) {
@@ -4546,13 +4556,12 @@ function completedFieldCount() {
 export function missingGuidedSteps() {
   if (builderState.hasBackendIntakeSignal) {
     if (builderState.backendReadyToGenerate) return [];
-    const backendMissing = arrayValue(builderState.backendMissingFields)
-      .map((slot) => mapBackendSlotToGuidedField(slot))
-      .filter(Boolean);
-    if (backendMissing.length) return [...new Set(backendMissing)];
-    const fallbackStep = builderState.lastAskedGuidedField
-      || (builderState.guidedStep !== "review" ? builderState.guidedStep : "websiteIntent");
-    return [fallbackStep];
+    return resolveBackendMissingSteps({
+      backendMissingFields: arrayValue(builderState.backendMissingFields),
+      mapField: mapBackendSlotToGuidedField,
+      lastAskedField: builderState.lastAskedGuidedField,
+      guidedStep: builderState.guidedStep,
+    });
   }
   const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
   if (requiredMissing.length) return requiredMissing;
