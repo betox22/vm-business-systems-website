@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240" role="img" aria-labelledby="title desc">
+  <title id="title">Listo</title><desc id="desc">Logo horizontal vectorial de Listo</desc>
+  <g id="listo-symbol" transform="translate(8 8) scale(.92)"><path fill="#045A34" d="M36 58 112 14v56L78 90v66l34 20v50l-76-44z"/><path fill="#087443" d="m112 14 92 53v115l-44 26-48-28V70l48 27v61l-28 16 28 16 44-26V91l-92-53z"/><path fill="#0B8F52" d="m36 182 76 44 48-28-48-28-34-20v32l34 20-20 12-56-32z"/><path fill="#62C795" d="m112 170 48 28-20 12-48-28z" opacity=".72"/></g>
+  <g id="wordmark" fill="#06172F" font-family="Manrope, Arial, sans-serif"><text x="260" y="145" font-size="96" font-weight="800" letter-spacing="-5">Listo</text><text x="267" y="184" font-size="17" font-weight="650" letter-spacing="5" fill="#087443">TU NEGOCIO EN CONTROL</text></g>
+</svg>

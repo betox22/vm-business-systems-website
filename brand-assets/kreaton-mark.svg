@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="title desc">
+  <title id="title">Kreaton</title><desc id="desc">Símbolo K vectorial de Kreaton</desc>
+  <g id="kreaton-mark"><path id="spine-front" fill="#1261C9" d="M34 34h48v172H34z"/><path id="spine-side" fill="#083D91" d="m20 48 14-14v172l-14-14z"/><path id="upper-arm" fill="#1D73E8" d="m82 119 66-85h58l-68 86z"/><path id="upper-shadow" fill="#0A4CAD" d="m82 119 22-1 70-84h32l-68 86z" opacity=".8"/><path id="lower-arm" fill="#1261C9" d="m82 119 58 2 70 85h-62z"/><path id="lower-highlight" fill="#62A5F5" d="m104 120 34 1 70 85h-28z" opacity=".62"/></g>
+</svg>

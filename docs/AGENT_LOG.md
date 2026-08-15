@@ -16,6 +16,24 @@ Formato de entrada:
 
 ---
 
+## 2026-08-15 — Codex — Kit vectorial editable de marcas
+
+**Hecho:** se reconstruyeron como SVG nativos las marcas visuales aprobadas de
+VM Business Systems, Listo y Kreaton + Lyra. Cada marca incluye símbolo aislado
+y composición horizontal, con grupos y planos editables, colores maestros y
+texto editable. Se agregó una guía breve de uso y preparación para imprenta.
+
+**Pendiente / abierto:** si una imprenta solicita AI/EPS, abrir los maestros SVG
+en Illustrator, Affinity, CorelDRAW o Inkscape, duplicarlos y convertir solamente
+el texto a contornos antes de exportar.
+
+**Archivos tocados:** `brand-assets/README.md` y seis SVG maestros dentro de
+`brand-assets/`.
+
+**Notas para el siguiente agente:** no rasterizar estos maestros ni reemplazar
+los símbolos por aproximaciones de fuente. Mantener intactas las proporciones y
+usar los hex documentados en el README.
+
 ## 2026-08-15 — Codex — Corrección de fidelidad visual de la portada VM
 
 **Hecho:** se corrigió la desviación visual de la portada publicada frente al

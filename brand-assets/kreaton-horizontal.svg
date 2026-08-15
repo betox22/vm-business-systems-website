@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 240" role="img" aria-labelledby="title desc">
+  <title id="title">Kreaton + Lyra</title><desc id="desc">Logo horizontal vectorial de Kreaton y Lyra</desc>
+  <g id="kreaton-symbol" transform="translate(8 8) scale(.92)"><path fill="#1261C9" d="M34 34h48v172H34z"/><path fill="#083D91" d="m20 48 14-14v172l-14-14z"/><path fill="#1D73E8" d="m82 119 66-85h58l-68 86z"/><path fill="#0A4CAD" d="m82 119 22-1 70-84h32l-68 86z" opacity=".8"/><path fill="#1261C9" d="m82 119 58 2 70 85h-62z"/><path fill="#62A5F5" d="m104 120 34 1 70 85h-28z" opacity=".62"/></g>
+  <g id="wordmark" font-family="Manrope, Arial, sans-serif"><text x="260" y="143" font-size="78" font-weight="800" letter-spacing="-4" fill="#06172F">Kreaton</text><text x="574" y="143" font-size="78" font-weight="500" fill="#1261C9">+</text><text x="636" y="143" font-size="78" font-weight="800" letter-spacing="-4" fill="#06172F">Lyra</text><text x="267" y="184" font-size="17" font-weight="650" letter-spacing="5" fill="#1261C9">WEBSITES WITH INTELLIGENCE</text></g>
+</svg>
