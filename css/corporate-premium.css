@@ -80,6 +80,26 @@ a {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  align-items: center;
+}
+.vm-language {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 3px;
+}
+.vm-language button {
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 8px;
+  font: 700 11px var(--font);
+  cursor: pointer;
+}
+.vm-language button.active {
+  background: var(--navy);
+  color: #fff;
 }
 .vm-button {
   min-height: 46px;
@@ -182,6 +202,16 @@ a {
   grid-template-columns: minmax(245px, 0.78fr) minmax(330px, 1.22fr);
   align-items: center;
   overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow .25s ease, transform .25s ease;
+}
+.vm-product:hover,
+.vm-product:focus-visible {
+  position: relative;
+  z-index: 2;
+  outline: none;
+  box-shadow: 0 24px 60px rgba(6, 23, 47, .12);
+  transform: translateY(-3px);
 }
 .vm-product + .vm-product {
   border-left: 1px solid var(--line);
@@ -261,6 +291,15 @@ a {
   place-items: center;
   font-size: 48px;
   color: var(--green);
+}
+.vm-access-icon svg {
+  width: 48px;
+  height: 48px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .vm-access-internal .vm-access-icon {
   border-color: #c3d5ed;
@@ -504,6 +543,9 @@ a {
   .vm-brand {
     font-size: 13px;
   }
+  .vm-brand > span:last-child {
+    display: none;
+  }
   .vm-mark {
     font-size: 25px;
   }
@@ -512,6 +554,8 @@ a {
     padding: 0 12px;
     font-size: 11px;
   }
+  .vm-header-actions { gap: 6px; }
+  .vm-language button { padding: 5px 6px; font-size: 10px; }
   .vm-hero {
     padding-top: 52px;
   }

@@ -16,6 +16,22 @@ Formato de entrada:
 
 ---
 
+## 2026-08-15 — Codex — Navegación bilingüe y accesos semánticos
+
+**Hecho:** La portada corporativa queda en español por defecto con selector
+ES/EN persistente. Los módulos completos de Listo y Kreaton ahora abren sus
+sitios oficiales, y los símbolos abstractos de acceso fueron sustituidos por
+un perfil de cliente y un escudo verificado para el equipo de VM.
+
+**Validación:** comprobación local de ambos idiomas, destinos de navegación y
+maquetación responsive. Se conservaron sin tocar los cambios paralelos de
+Claude en Lyra y client setup.
+
+**Archivos tocados:** `index.html`, `css/corporate-premium.css`,
+`js/corporate-i18n.js` (nuevo).
+
+---
+
 ## 2026-08-15 — Codex — Kit vectorial editable de marcas
 
 **Hecho:** se reconstruyeron como SVG nativos las marcas visuales aprobadas de
