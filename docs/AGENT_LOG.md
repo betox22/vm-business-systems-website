@@ -16,6 +16,31 @@ Formato de entrada:
 
 ---
 
+## 2026-08-15 — Codex — Sede corporativa premium y accesos separados
+
+**Hecho:** se reconstruyó `index.html` como sede central premium de VM Business
+Systems. La portada presenta únicamente los productos activos: Listo como app
+insignia y Kreaton + Lyra como generador de páginas enlazado a su sitio propio.
+Flow no se anuncia porque todavía no está listo. Se agregó `access.html` como
+puerta clara entre el portal de clientes existente y el panel interno existente,
+sin mezclar credenciales, productos ni procesos de compra. El nuevo diseño usa
+una hoja aislada y un recurso visual propio; se verificó en navegador en escritorio
+y móvil, incluyendo navegación, contenido, responsive y consola sin errores.
+
+**Pendiente / abierto:** la implementación está validada localmente pero no se
+publicó en producción en esta sesión. Una fase posterior puede llevar el mismo
+sistema visual premium al formulario real de `client-portal.html` y `admin.html`
+sin cambiar su lógica de autenticación.
+
+**Archivos tocados:** `index.html`, `access.html`,
+`css/corporate-premium.css`, `images/vm-corporate-gateway.png`,
+`docs/AGENT_LOG.md`.
+
+**Notas para el siguiente agente:** no se tocaron `ai-builder.*`, `client/setup/`,
+el backend de Lyra ni los cambios pendientes de Claude. Los enlaces actuales son
+Listo → `https://listo.vmbusinesssystems.com/`, Kreaton + Lyra →
+`https://usekreaton.com/`, cliente → `client-portal.html` e interno → `admin.html`.
+
 ## 2026-08-12 — Codex — Paletas determinísticas con teoría del color
 
 **Hecho:** se agregó `color_theory.py` como única fuente matemática para las
