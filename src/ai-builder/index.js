@@ -40,6 +40,11 @@ import { applyAuthoritativeThemeToBrand } from './theme-policy.js';
 import { generationAuthAction } from './auth-session-policy.js';
 import { isStrongNewBusinessBrief, resolveBackendMissingSteps } from './intake-state-policy.js';
 import { mergeSemanticSeedCatalog } from './catalog-seed-policy.js';
+import { hasDecidedTemplateSelection, isConcreteTemplateId } from './template-carousel-policy.js';
+import {
+  MIN_GUIDED_BUILD_PHASE_VISIBLE_MS,
+  remainingBuildPhaseVisibilityMs,
+} from './build-phase-policy.js';
 import {
   renderWebsite as renderWebsiteMarkup,
   marketplaceItems,
@@ -1003,7 +1008,7 @@ function shouldShowCanvasTemplateCarousel() {
   if (!hasEnoughContextForTemplatePreview()) return false;
   const pages = Array.isArray(builderState.guidedState.sitePlan?.pages) ? builderState.guidedState.sitePlan.pages : [];
   if (pages.some((page) => Array.isArray(page.sections) && page.sections.some((section) => section?.componentType))) return false;
-  if (builderState.forcedTemplateSelection?.intent === "client_visual_template_choice") return false;
+  if (hasDecidedTemplateSelection(builderState.forcedTemplateSelection)) return false;
   return true;
 }
 
@@ -1414,11 +1419,6 @@ function resolvedAiTemplateId() {
     builderState.forcedTemplateSelection?.templateId,
   ];
   return candidates.find((templateId) => isConcreteTemplateId(templateId)) || "";
-}
-
-function isConcreteTemplateId(templateId) {
-  const value = String(templateId || "").trim();
-  return Boolean(value && !/^default_|pending|unknown|collecting|provisional/i.test(value));
 }
 
 function guidedTemplateContextText(extra = "") {
@@ -2218,6 +2218,10 @@ function setGuidedBuildPhase(phase, detail = "") {
   const activePhase = phases[Math.min(activeIndex, phases.length - 1)] || phases[0];
   const isError = phase === "error";
   const isReady = phase === "ready";
+  if (builderState.guidedBuildPhaseKey !== phase) {
+    builderState.guidedBuildPhaseKey = phase;
+    builderState.guidedBuildPhaseShownAt = Date.now();
+  }
   card.classList.toggle("is-error", isError);
   card.classList.toggle("is-ready", isReady);
   card.innerHTML = `
@@ -2250,6 +2254,16 @@ function setGuidedBuildPhase(phase, detail = "") {
   requestAnimationFrame(() => {
     card.scrollIntoView({ block: "nearest", behavior: "smooth" });
   });
+}
+
+async function keepGuidedBuildPhaseVisible(phase, minimumMs = MIN_GUIDED_BUILD_PHASE_VISIBLE_MS) {
+  if (!isPublicClientSetup || builderState.guidedBuildPhaseKey !== phase) return;
+  const remainingMs = remainingBuildPhaseVisibilityMs(
+    builderState.guidedBuildPhaseShownAt,
+    Date.now(),
+    minimumMs,
+  );
+  if (remainingMs > 0) await new Promise((resolve) => setTimeout(resolve, remainingMs));
 }
 
 function removeGuidedBuildStatusCard() {
@@ -4039,6 +4053,7 @@ export async function reviewAndGenerateFromGuided() {
   setGuidedGenerateControlsBusy(true, t("generating"));
   setGuidedBuildPhase("strategy");
   guidedStatusText.textContent = t("generatingLong");
+  await keepGuidedBuildPhaseVisible("strategy");
   const generated = await generateWebsite(guidedGenerateButton);
   if (generated && builderState.currentSchema) {
     setGuidedBuildPhase("ready");
@@ -5408,6 +5423,7 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
       }
       setStudioProgressPhase("shop");
       setGuidedBuildPhase("render");
+      await keepGuidedBuildPhaseVisible("render");
       const finalTemplateSelection = await resolveGeneratedTemplateSelection(result.schema, templateSelection);
       if (finalTemplateSelection) {
         result.schema = mergeTemplateSelectionIntoSchema(result.schema, finalTemplateSelection);

@@ -1696,6 +1696,28 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   padding: 12px;
 }
 
+.template-carousel-body > strong,
+.template-board-body > strong,
+.template-carousel-body > small,
+.template-board-body > small {
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+}
+
+.template-carousel-body > strong,
+.template-board-body > strong {
+  -webkit-line-clamp: 2;
+}
+
+.template-carousel-body > small,
+.template-board-body > small {
+  -webkit-line-clamp: 3;
+}
+
 .template-board-meta {
   display: flex;
   align-items: center;

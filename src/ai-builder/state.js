@@ -84,6 +84,8 @@ export const builderState = {
   restoredDraftNoticeCard: null,
   restoredDraftNoticeShown: false,
   guidedBuildStatusCard: null,
+  guidedBuildPhaseKey: '',
+  guidedBuildPhaseShownAt: 0,
   guidedCoachCard: null,
   liveSitePreviewCard: null,
   templateBoardLoading: false,

@@ -1198,6 +1198,30 @@
     return merged.slice(0, 6);
   }
 
+  // src/ai-builder/template-carousel-policy.js
+  var PROVISIONAL_TEMPLATE_SELECTION_INTENTS = /* @__PURE__ */ new Set([
+    "default_minimal",
+    "provisional_needs_catalog_context",
+    "guided_context_template"
+  ]);
+  function isConcreteTemplateId(templateId) {
+    const value = String(templateId || "").trim();
+    return Boolean(value && !/^default_|pending|unknown|collecting|provisional/i.test(value));
+  }
+  function hasDecidedTemplateSelection(selection) {
+    const intent = String(selection?.intent || "").trim();
+    return Boolean(
+      intent && isConcreteTemplateId(selection?.templateId) && !PROVISIONAL_TEMPLATE_SELECTION_INTENTS.has(intent)
+    );
+  }
+
+  // src/ai-builder/build-phase-policy.js
+  var MIN_GUIDED_BUILD_PHASE_VISIBLE_MS = 450;
+  function remainingBuildPhaseVisibilityMs(startedAt, now, minimumMs = MIN_GUIDED_BUILD_PHASE_VISIBLE_MS) {
+    const elapsed = Math.max(0, Number(now) - Number(startedAt));
+    return Math.max(0, Number(minimumMs) - elapsed);
+  }
+
   // src/ai-builder/renderers.js
   function arrayValue(value) {
     if (Array.isArray(value)) return value.filter(Boolean);
@@ -4673,6 +4697,8 @@
     restoredDraftNoticeCard: null,
     restoredDraftNoticeShown: false,
     guidedBuildStatusCard: null,
+    guidedBuildPhaseKey: "",
+    guidedBuildPhaseShownAt: 0,
     guidedCoachCard: null,
     liveSitePreviewCard: null,
     templateBoardLoading: false,
@@ -8248,7 +8274,7 @@ ${cleanQuestion}`;
     if (!hasEnoughContextForTemplatePreview()) return false;
     const pages = Array.isArray(builderState.guidedState.sitePlan?.pages) ? builderState.guidedState.sitePlan.pages : [];
     if (pages.some((page) => Array.isArray(page.sections) && page.sections.some((section) => section?.componentType))) return false;
-    if (builderState.forcedTemplateSelection?.intent === "client_visual_template_choice") return false;
+    if (hasDecidedTemplateSelection(builderState.forcedTemplateSelection)) return false;
     return true;
   }
   function templateBoardLoadingKey() {
@@ -8621,10 +8647,6 @@ ${cleanQuestion}`;
       builderState.forcedTemplateSelection?.templateId
     ];
     return candidates.find((templateId) => isConcreteTemplateId(templateId)) || "";
-  }
-  function isConcreteTemplateId(templateId) {
-    const value = String(templateId || "").trim();
-    return Boolean(value && !/^default_|pending|unknown|collecting|provisional/i.test(value));
   }
   function guidedTemplateContextText(extra = "") {
     return [
@@ -9209,6 +9231,10 @@ ${langText({
     const activePhase = phases[Math.min(activeIndex, phases.length - 1)] || phases[0];
     const isError = phase === "error";
     const isReady = phase === "ready";
+    if (builderState.guidedBuildPhaseKey !== phase) {
+      builderState.guidedBuildPhaseKey = phase;
+      builderState.guidedBuildPhaseShownAt = Date.now();
+    }
     card.classList.toggle("is-error", isError);
     card.classList.toggle("is-ready", isReady);
     card.innerHTML = `
@@ -9231,6 +9257,15 @@ ${langText({
     requestAnimationFrame(() => {
       card.scrollIntoView({ block: "nearest", behavior: "smooth" });
     });
+  }
+  async function keepGuidedBuildPhaseVisible(phase, minimumMs = MIN_GUIDED_BUILD_PHASE_VISIBLE_MS) {
+    if (!isPublicClientSetup || builderState.guidedBuildPhaseKey !== phase) return;
+    const remainingMs = remainingBuildPhaseVisibilityMs(
+      builderState.guidedBuildPhaseShownAt,
+      Date.now(),
+      minimumMs
+    );
+    if (remainingMs > 0) await new Promise((resolve) => setTimeout(resolve, remainingMs));
   }
   function removeGuidedBuildStatusCard() {
     document.body.classList.remove("lyra-build-mode");
@@ -10626,6 +10661,7 @@ ${langText({
     setGuidedGenerateControlsBusy(true, t("generating"));
     setGuidedBuildPhase("strategy");
     guidedStatusText.textContent = t("generatingLong");
+    await keepGuidedBuildPhaseVisible("strategy");
     const generated = await generateWebsite(guidedGenerateButton);
     if (generated && builderState.currentSchema) {
       setGuidedBuildPhase("ready");
@@ -11768,6 +11804,7 @@ ${guidedQuestion(nextMissing)}`
           }
           setStudioProgressPhase("shop");
           setGuidedBuildPhase("render");
+          await keepGuidedBuildPhaseVisible("render");
           const finalTemplateSelection = await resolveGeneratedTemplateSelection(result.schema, templateSelection);
           if (finalTemplateSelection) {
             result.schema = mergeTemplateSelectionIntoSchema(result.schema, finalTemplateSelection);
