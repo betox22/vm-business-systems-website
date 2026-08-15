@@ -16,6 +16,27 @@ Formato de entrada:
 
 ---
 
+## 2026-08-15 — Codex — Corrección de fidelidad visual de la portada VM
+
+**Hecho:** se corrigió la desviación visual de la portada publicada frente al
+concepto aprobado. La escultura central vuelve a mostrar la marca VM Business
+Systems y sombras/reflejos completos. Se reemplazaron los dibujos CSS planos de
+Listo y Kreaton por recursos tridimensionales: emblema geométrico y mesa de
+analítica comercial para Listo; K dimensional y constructor web en capas para
+Kreaton + Lyra. Se comparó el render local contra el concepto original y se
+verificaron visualmente hero, productos, accesos y destinos.
+
+**Pendiente / abierto:** publicar el commit y confirmar el contenido final en
+`vmbusinesssystems.com` después del workflow de GitHub Pages.
+
+**Archivos tocados:** `index.html`, `css/corporate-premium.css`,
+`images/vm-corporate-gateway-v2.png`, `images/listo-dimensional-product.png`,
+`images/kreaton-dimensional-product.png`, `docs/AGENT_LOG.md`.
+
+**Notas para el siguiente agente:** los tres PNG son recursos de producción
+derivados específicamente del concepto aprobado. No volver a sustituirlos por
+aproximaciones CSS ni por iconos planos.
+
 ## 2026-08-15 — Codex — Portales premium separados y publicación corporativa
 
 **Hecho:** `client-portal.html` dejó de simular un login temporal y ahora es
