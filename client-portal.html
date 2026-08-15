@@ -1,241 +1,50 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Portal de Acceso | V&M Business Systems</title>
-
-  <meta
-    name="description"
-    content="Portal privado de V&M Business Systems para clientes, representantes autorizados y administración central."
-  />
-
-  <link rel="stylesheet" href="css/styles.css" />
-</head>
-
-<body>
-  <header class="site-header">
-    <nav class="navbar container">
-      <a href="index.html" class="logo">
-        <span class="logo-mark">V&M</span>
-        <span>V&M Business Systems</span>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Accesos oficiales para clientes de Listo y Kreaton + Lyra.">
+    <title>Portal de clientes | VM Business Systems</title>
+    <link rel="stylesheet" href="css/client-gateway-premium.css">
+  </head>
+  <body>
+    <header class="gateway-header">
+      <a class="gateway-brand" href="index.html" aria-label="VM Business Systems, inicio">
+        <span class="gateway-mark">VM</span>
+        <span>Business Systems</span>
       </a>
+      <a class="header-link" href="index.html">Sede corporativa <span aria-hidden="true">↗</span></a>
+    </header>
 
-      <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">
-        ☰
-      </button>
+    <main class="gateway-main">
+      <section class="gateway-intro" aria-labelledby="gateway-title">
+        <h1 id="gateway-title">Tu producto. Tu portal.</h1>
+        <p>Cada plataforma conserva su propia cuenta, sus datos y su operación.</p>
+      </section>
 
-      <ul class="nav-menu" id="navMenu">
-        <li><a href="index.html">Inicio</a></li>
-        <li><a href="solutions.html">Soluciones</a></li>
-        <li><a href="services.html">Servicios</a></li>
-        <li><a href="start/">Crear web con IA</a></li>
-        <li><a href="client-portal.html" class="active">Portal</a></li>
-        <li><a href="plans.html">Planes</a></li>
-        <li><a href="contact.html" class="nav-cta">Contacto</a></li>
-      </ul>
-    </nav>
-  </header>
-
-  <main>
-    <section class="portal-entry-hero">
-      <div class="container portal-entry-grid">
-        <div>
-          <span class="eyebrow">Portal privado</span>
-
-          <h1>Acceso privado para clientes, representantes y administración V&M.</h1>
-
-          <p>
-            Esta será la entrada oficial a los programas que vayamos desplegando. Cada
-            usuario verá solamente lo que le corresponde: software contratado, licencias,
-            equipos autorizados, respaldos, soporte y actualizaciones según su rol.
-          </p>
-
-          <p>
-            El acceso final no se publicará abierto en esta etapa. Primero quedará
-            validado internamente y luego se activará con autenticación real por cliente,
-            representante o administración V&M.
-          </p>
-
-          <div class="hero-actions">
-            <a href="contact.html" class="btn btn-primary">Solicitar acceso</a>
-            <a href="client-portal-preview.html" class="btn btn-secondary">Ver demo Listo</a>
+      <section class="product-routes" aria-label="Selecciona tu producto">
+        <article class="product-route product-route-listo">
+          <div class="product-name listo-wordmark">Listo<span aria-hidden="true"></span></div>
+          <p>Licencias, activación, pagos y descarga de la app.</p>
+          <div class="route-actions">
+            <a class="route-primary" href="https://listo.vmbusinesssystems.com/mi-negocio/">Entrar a Listo <span aria-hidden="true">→</span></a>
+            <a class="route-secondary" href="https://listo.vmbusinesssystems.com/#comprar">Comprar Listo <span aria-hidden="true">→</span></a>
           </div>
-        </div>
+        </article>
 
-        <div class="portal-login-preview portal-access-live">
-          <span class="preview-label">Acceso de validación</span>
-          <h3>Entrar al portal</h3>
-
-          <label for="portalAccessEmail">Email</label>
-          <input id="portalAccessEmail" type="email" placeholder="usuario@empresa.com" />
-
-          <label for="portalAccessPassword">Contraseña</label>
-          <input id="portalAccessPassword" type="password" placeholder="••••••••" />
-
-          <button type="button" id="portalAccessButton">Entrar con acceso temporal</button>
-
-          <p id="portalAccessMessage" class="portal-access-message">
-            Esta credencial temporal solo abre la vista interna de validación mientras se termina el login real.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="container">
-        <div class="section-heading compact-heading">
-          <span class="eyebrow">Acceso por tipo de usuario</span>
-          <h2>Cada usuario verá una vista distinta según su rol.</h2>
-          <p>
-            El portal real no será una vista única para todos. Cada sesión quedará filtrada
-            por cliente, representante, licencia, software contratado, equipos y permisos.
-          </p>
-        </div>
-
-        <div class="access-grid">
-          <article class="access-card">
-            <div class="icon-box">CLI</div>
-            <h3>Cliente</h3>
-            <p>
-              El cliente verá únicamente su empresa, su software contratado, licencia,
-              usuarios, dispositivos, soporte y respaldos habilitados.
-            </p>
-
-            <ul class="clean-list">
-              <li>Mis aplicaciones contratadas, incluyendo Listo</li>
-              <li>Mi licencia y plan</li>
-              <li>Mis usuarios</li>
-              <li>Mis dispositivos</li>
-              <li>Mis respaldos cuando apliquen</li>
-              <li>Activación por QR cuando aplique</li>
-              <li>Mis solicitudes de soporte</li>
-            </ul>
-          </article>
-
-          <article class="access-card">
-            <div class="icon-box">REP</div>
-            <h3>Representante</h3>
-            <p>
-              El representante verá únicamente los clientes asignados, estado comercial,
-              pagos reportados y solicitudes operativas autorizadas.
-            </p>
-
-            <ul class="clean-list">
-              <li>Mis clientes asignados</li>
-              <li>Prospectos</li>
-              <li>Solicitudes de activación</li>
-              <li>Pagos reportados</li>
-              <li>Solicitudes de soporte</li>
-            </ul>
-          </article>
-
-          <article class="access-card">
-            <div class="icon-box">ADM</div>
-            <h3>Administración V&M</h3>
-            <p>
-              V&M tendrá control central de clientes, licencias, representantes, pagos,
-              software, respaldos, restauraciones, soporte y auditoría.
-            </p>
-
-            <ul class="clean-list">
-              <li>Todos los clientes</li>
-              <li>Licencias y planes</li>
-              <li>Equipos y respaldos</li>
-              <li>Solicitudes de restauración</li>
-              <li>Auditoría del sistema</li>
-            </ul>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section alt-section">
-      <div class="container split-grid">
-        <div>
-          <span class="eyebrow">Orden correcto</span>
-          <h2>Primero validación interna, luego activación pública del portal.</h2>
-          <p>
-            La ficha de cliente, los respaldos, las rutas cloud y los equipos deben probarse
-            primero en una vista privada de integración. Solo cuando esa capa quede lista se
-            activa el acceso público real con login seguro.
-          </p>
-          <p>
-            Eso evita mostrar información sensible en la web pública y separa claramente la
-            parte comercial visible de la operación interna y administrativa.
-          </p>
-        </div>
-
-        <div class="feature-list">
-          <div class="feature-item">
-            <strong>Sitio público</strong>
-            <span>Explica el portal, los roles y el acceso, pero no muestra fichas internas ni respaldos reales.</span>
+        <article class="product-route product-route-kreaton">
+          <div class="product-name">Kreaton <span>+</span> Lyra</div>
+          <p>Tus páginas web, proyectos y solicitudes.</p>
+          <div class="route-actions">
+            <a class="route-primary" href="https://usekreaton.com/start/">Entrar a Kreaton <span aria-hidden="true">→</span></a>
           </div>
+        </article>
+      </section>
+    </main>
 
-          <div class="feature-item">
-            <strong>Validación interna</strong>
-            <span>Usa una vista privada para revisar demo, datos reales, impresión y flujo operativo antes de publicar.</span>
-          </div>
-
-          <div class="feature-item">
-            <strong>Activación final</strong>
-            <span>Se habilita cuando el login, roles y seguridad estén listos para operar sin atajos visibles.</span>
-          </div>
-
-          <div class="feature-item">
-            <strong>Portal productivo</strong>
-            <span>Cliente, representante y administración entran con su sesión y ven solo su información autorizada.</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-
-
-  <footer class="site-footer">
-    <div class="container footer-grid">
-      <div>
-        <a href="index.html" class="logo footer-logo">
-          <span class="logo-mark">V&M</span>
-          <span>V&M Business Systems</span>
-        </a>
-
-        <p>
-          Soluciones digitales para comercios, operaciones, soporte, actualizaciones y
-          sistemas personalizados.
-        </p>
-      </div>
-
-      <div>
-        <h4>Soluciones</h4>
-        <a href="solutions.html">Soluciones</a>
-        <a href="services.html#solutions-in-action">Vistas preliminares</a>
-        <a href="client-portal.html">Portal de acceso</a>
-      </div>
-
-      <div>
-        <h4>Empresa</h4>
-        <a href="services.html">Servicios</a>
-        <a href="plans.html">Planes</a>
-        <a href="contact.html">Contacto</a>
-      </div>
-
-      <div>
-        <h4>Acceso</h4>
-        <a href="client-portal.html">Portal cliente</a>
-        <a href="services.html">Soporte</a>
-        <a href="contact.html">Representantes autorizados</a>
-      </div>
-    </div>
-
-    <div class="container footer-bottom">
-      <span>© 2026 V&M Global LLC. Todos los derechos reservados.</span>
-      <span>V&M Business Systems es una marca operada por V&M Global LLC.</span>
-    </div>
-  </footer>
-
-  <script src="js/main.js"></script>
-  <script src="js/client-portal-access.js"></script>
-</body>
+    <footer class="gateway-help">
+      <p>¿Necesitas ayuda para identificar tu acceso?</p>
+      <a href="contact.html">Contactar soporte <span aria-hidden="true">→</span></a>
+    </footer>
+  </body>
 </html>

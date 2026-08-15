@@ -3,33 +3,34 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>V&M AI Websites Admin</title>
+    <title>VM Operations | Acceso interno</title>
     <link rel="stylesheet" href="admin.css?v=12">
+    <link rel="stylesheet" href="css/admin-premium.css?v=1">
   </head>
   <body>
     <section id="adminLoginScreen" class="admin-login-screen hidden">
       <form id="adminLoginForm" class="admin-login-card">
-        <div class="brand-mark">AI</div>
-        <h1>Acceso admin</h1>
-        <p>Entra con tu usuario autorizado de Supabase para manejar clientes, sitios y leads.</p>
+        <div class="login-brand"><span class="brand-mark">VM</span><strong>Business<br>Systems</strong></div>
+        <h1>Acceso interno</h1>
+        <p>Operación privada de VM Business Systems</p>
         <label>Email
           <input name="email" type="email" autocomplete="email" required>
         </label>
-        <label>Password
+        <label>Contraseña
           <input name="password" type="password" autocomplete="current-password" required>
         </label>
         <button class="primary-button" type="submit">Entrar</button>
         <span id="adminLoginStatus" class="login-status"></span>
-        <button id="useTokenFallbackButton" class="secondary-link" type="button">Usar token tecnico</button>
+        <a class="login-home-link" href="index.html">Volver a la sede corporativa</a>
       </form>
     </section>
 
     <main class="admin-shell">
       <aside class="sidebar">
         <div class="brand">
-          <div class="brand-mark">AI</div>
+          <div class="brand-mark">VM</div>
           <div>
-            <strong>V&M AI Websites</strong>
+            <strong>VM Operations</strong>
             <span>Panel operativo</span>
           </div>
         </div>

@@ -16,6 +16,28 @@ Formato de entrada:
 
 ---
 
+## 2026-08-15 — Codex — Portales premium separados y publicación corporativa
+
+**Hecho:** `client-portal.html` dejó de simular un login temporal y ahora es
+una puerta de clientes explícita: Listo dirige a su portal propio de negocio y
+a su compra; Kreaton + Lyra dirige a su sitio y acceso propios. Se modernizó
+`admin.html` con el sistema visual premium de VM sin cambiar el flujo real de
+autenticación de Supabase ni los IDs que consume `admin.js`. El fallback de
+token técnico se retiró de la interfaz normal. Se validaron en navegador la
+puerta de clientes, el dashboard interno, el cierre de sesión y el formulario
+de acceso interno.
+
+**Pendiente / abierto:** publicar los dos commits de esta fase en `main` y
+confirmar el workflow de GitHub Pages y las rutas finales en producción.
+
+**Archivos tocados:** `client-portal.html`, `admin.html`,
+`css/client-gateway-premium.css`, `css/admin-premium.css`,
+`docs/AGENT_LOG.md`.
+
+**Notas para el siguiente agente:** no se modificaron `admin.js`, la API, RLS,
+Supabase ni los cambios pendientes de Claude en Lyra. El selector evita que un
+cliente confunda credenciales de Listo con las de Kreaton + Lyra.
+
 ## 2026-08-15 — Codex — Sede corporativa premium y accesos separados
 
 **Hecho:** se reconstruyó `index.html` como sede central premium de VM Business
