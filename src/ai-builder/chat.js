@@ -10,6 +10,7 @@ import {
 import { form, statusText, storageStatus, guidedPanel, guidedChatCard, guidedChat, guidedReply, guidedSendButton, guidedStatusText, guidedStepLabel, guidedGenerateButton, guidedMicButton, assistantAudioToggle, voiceStatusText, guidedThinking, guidedProgressBar, quickChipRow, guidedBriefReview, isPublicClientSetup, isEmbeddedClientSetup, builderAvatarRoot, builderAvatarManager } from './dom.js';
 import {
   applyCyberpunkVisualDirection,
+  backfillWebsiteIntentFromContext,
   applyLumaAgentDecision,
   applyPromptFromQuery,
   applyTargetedSchemaPatch,
@@ -84,9 +85,14 @@ import {
   REQUIRED_GUIDED_STEPS,
 } from './index.js';
 import { isExplicitRedesignRequest } from './variants.js';
+import {
+  isWebsiteIntentSatisfied,
+  websiteIntentQuestionKey,
+} from './guided-intent-policy.js';
 
 export function guidedQuestion(step) {
-  const configured = GUIDED_QUESTIONS[builderState.selectedLanguage]?.[step] || GUIDED_QUESTIONS.en[step];
+  const questionKey = step === "websiteIntent" ? websiteIntentQuestionKey(builderState.guidedState) : step;
+  const configured = GUIDED_QUESTIONS[builderState.selectedLanguage]?.[questionKey] || GUIDED_QUESTIONS.en[questionKey];
   if (configured) return publicAssistantCopy(configured);
   const fieldLabel = String(step || "")
     .replace(/([a-z])([A-Z])/g, "$1 $2")
@@ -325,6 +331,7 @@ export async function sendGuidedReply() {
   }
   Object.assign(localContextUpdates, completeGuidedBriefFromMessage(message, localContextUpdates));
   mergeGuidedUpdates(localContextUpdates);
+  backfillWebsiteIntentFromContext(message);
   syncTemplateSelectionFromGuidedContext(message);
   const localStudioPlan = refreshAiStudioPlanFromContext(message);
   const isPreGenerationReview = builderState.guidedStep === "review" && !builderState.currentSchema;
@@ -735,7 +742,7 @@ export function normalizeNextGuidedStep(step) {
 }
 
 export function isGuidedStepAnswered(step) {
-  if (step === "websiteIntent") return Boolean(builderState.guidedState.websiteIntent);
+  if (step === "websiteIntent") return isWebsiteIntentSatisfied(builderState.guidedState);
   if (step === "businessName") return Boolean(builderState.guidedState.businessName);
   if (step === "businessDescription") return Boolean(builderState.guidedState.businessDescription);
   if (step === "industry") return Boolean(builderState.guidedState.industry);

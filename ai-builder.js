@@ -1107,6 +1107,46 @@
     return fallback ? [fallback] : [];
   }
 
+  // src/ai-builder/guided-intent-policy.js
+  function textValue(value) {
+    return String(value || "").trim();
+  }
+  function offeringCount(value) {
+    if (Array.isArray(value)) return value.filter((item) => textValue(item)).length;
+    return textValue(value) ? 1 : 0;
+  }
+  function hasCompleteBusinessBrief(state = {}) {
+    return Boolean(
+      textValue(state.businessName) && textValue(state.businessDescription) && offeringCount(state.servicesProducts) > 0
+    );
+  }
+  function resolveWebsiteIntentBackfill({
+    websiteIntent = "",
+    message = "",
+    businessDescription = "",
+    messageIsRich = false
+  } = {}) {
+    const existing = textValue(websiteIntent);
+    if (existing) return existing;
+    const richMessage = messageIsRich ? textValue(message) : "";
+    return richMessage || textValue(businessDescription);
+  }
+  function isWebsiteIntentSatisfied(state = {}) {
+    return Boolean(textValue(state.websiteIntent) || hasCompleteBusinessBrief(state));
+  }
+  function missingRequiredGuidedSteps(state = {}, requiredSteps = []) {
+    return requiredSteps.filter((step) => {
+      if (step === "websiteIntent") return !isWebsiteIntentSatisfied(state);
+      const value = state[step];
+      if (Array.isArray(value)) return offeringCount(value) === 0;
+      if (value && typeof value === "object") return Object.keys(value).length === 0;
+      return !textValue(value);
+    });
+  }
+  function websiteIntentQuestionKey(state = {}) {
+    return !textValue(state.websiteIntent) && hasCompleteBusinessBrief(state) ? "websiteIntentFollowUp" : "websiteIntent";
+  }
+
   // src/ai-builder/catalog-seed-policy.js
   var PLACEHOLDER_CATALOG_NAME_RE = /^(?:item|product|producto|service|servicio|featured item|new arrival|limited find|customer favorite|signature item|featured offer|popular choice|main offer)(?:\s+\d+)?$/i;
   var UNSTABLE_CATALOG_IMAGE_RE = /featured\/600x600|\/source\/|photo-1523275335684-37898b6baf30/i;
@@ -5462,6 +5502,10 @@
     builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || "";
     builderState.guidedState.businessName = builderState.currentSchema.business?.name || builderState.guidedState.businessName;
     builderState.guidedState.businessDescription = builderState.currentSchema.business?.description || builderState.guidedState.businessDescription;
+    builderState.guidedState.websiteIntent = resolveWebsiteIntentBackfill({
+      websiteIntent: builderState.guidedState.websiteIntent,
+      businessDescription: builderState.guidedState.businessDescription
+    });
     builderState.guidedState.industry = builderState.currentSchema.business?.industry || builderState.guidedState.industry;
     builderState.guidedState.preferredTone = builderState.currentSchema.business?.tone || builderState.guidedState.preferredTone;
     builderState.guidedState.logoUrl = builderState.currentSchema.brand?.logoUrl || builderState.guidedState.logoUrl;
@@ -5985,7 +6029,8 @@
 
   // src/ai-builder/chat.js
   function guidedQuestion(step) {
-    const configured = GUIDED_QUESTIONS[builderState.selectedLanguage]?.[step] || GUIDED_QUESTIONS.en[step];
+    const questionKey = step === "websiteIntent" ? websiteIntentQuestionKey(builderState.guidedState) : step;
+    const configured = GUIDED_QUESTIONS[builderState.selectedLanguage]?.[questionKey] || GUIDED_QUESTIONS.en[questionKey];
     if (configured) return publicAssistantCopy(configured);
     const fieldLabel = String(step || "").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").trim();
     return publicAssistantCopy(langText({
@@ -6191,6 +6236,7 @@
     }
     Object.assign(localContextUpdates, completeGuidedBriefFromMessage(message, localContextUpdates));
     mergeGuidedUpdates(localContextUpdates);
+    backfillWebsiteIntentFromContext(message);
     syncTemplateSelectionFromGuidedContext(message);
     const localStudioPlan = refreshAiStudioPlanFromContext(message);
     const isPreGenerationReview = builderState.guidedStep === "review" && !builderState.currentSchema;
@@ -6548,7 +6594,7 @@ ${cleanQuestion}`;
     return isGuidedStepAnswered(candidate) ? nextGuidedStep(candidate) : candidate;
   }
   function isGuidedStepAnswered(step) {
-    if (step === "websiteIntent") return Boolean(builderState.guidedState.websiteIntent);
+    if (step === "websiteIntent") return isWebsiteIntentSatisfied(builderState.guidedState);
     if (step === "businessName") return Boolean(builderState.guidedState.businessName);
     if (step === "businessDescription") return Boolean(builderState.guidedState.businessDescription);
     if (step === "industry") return Boolean(builderState.guidedState.industry);
@@ -7774,6 +7820,7 @@ ${cleanQuestion}`;
   var GUIDED_QUESTIONS = {
     en: {
       websiteIntent: "Tell me what you want to build in one rich paragraph: what the business sells or does, who buys, the style/colors, location, and whether it should sell online, book appointments, collect leads, or present the company. I will choose the best structure and ask only for what is missing.",
+      websiteIntentFollowUp: "I already have the business context. I only need to confirm: should the site sell online, book appointments, collect quote requests, or simply present the company?",
       businessName: "First, what is the name of your business?",
       businessDescription: "Tell me what it sells or does in one message. I will use it as design strategy, not as literal page copy.",
       industry: "What industry or category best fits it?",
@@ -7791,6 +7838,7 @@ ${cleanQuestion}`;
     },
     es: {
       websiteIntent: "Descr\xEDbeme en un p\xE1rrafo qu\xE9 quieres construir: qu\xE9 vende o hace el negocio, para qui\xE9n, estilo/colores, ubicaci\xF3n y si debe vender online, reservar citas, captar clientes o s\xF3lo presentar la empresa. Yo elegir\xE9 la mejor estructura y s\xF3lo preguntar\xE9 lo que falte.",
+      websiteIntentFollowUp: "Ya tengo el contexto de tu negocio. Solo necesito confirmar: \xBFel sitio debe vender online, agendar citas, captar cotizaciones o solo presentar la empresa?",
       businessName: "Primero, \xBFc\xF3mo se llama tu negocio?",
       businessDescription: "Dime qu\xE9 vende o qu\xE9 hace en un solo mensaje. Lo usar\xE9 como estrategia de dise\xF1o, no como texto literal para la p\xE1gina.",
       industry: "En que industria o categoria lo pondrias?",
@@ -7808,6 +7856,7 @@ ${cleanQuestion}`;
     },
     fr: {
       websiteIntent: "D\xE9crivez en un paragraphe ce que vous voulez cr\xE9er : ce que l'entreprise vend ou fait, pour qui, le style/couleurs, la localisation, et si le site doit vendre en ligne, r\xE9server, capter des leads ou pr\xE9senter l'entreprise. Je choisirai la meilleure structure et demanderai seulement ce qui manque.",
+      websiteIntentFollowUp: "J'ai d\xE9j\xE0 le contexte de votre activit\xE9. Je dois seulement confirmer : le site doit-il vendre en ligne, prendre des rendez-vous, recueillir des demandes de devis ou simplement pr\xE9senter l'entreprise ?",
       businessName: "Quel est le nom de l'entreprise?",
       businessDescription: "Dites-moi ce qu'elle vend ou propose en un seul message. Je l'utiliserai comme strat\xE9gie de design, pas comme texte litt\xE9ral.",
       industry: "Dans quel secteur ou cat\xE9gorie la placeriez-vous?",
@@ -7825,6 +7874,7 @@ ${cleanQuestion}`;
     },
     pt: {
       websiteIntent: "Descreva em um par\xE1grafo o que voc\xEA quer criar: o que o neg\xF3cio vende ou faz, para quem, estilo/cores, localiza\xE7\xE3o, e se deve vender online, agendar, captar contatos ou apresentar a empresa. Eu escolho a melhor estrutura e pergunto apenas o que faltar.",
+      websiteIntentFollowUp: "J\xE1 tenho o contexto do seu neg\xF3cio. S\xF3 preciso confirmar: o site deve vender online, agendar hor\xE1rios, receber pedidos de or\xE7amento ou apenas apresentar a empresa?",
       businessName: "Qual \xE9 o nome do neg\xF3cio?",
       businessDescription: "Diga o que ele vende ou faz em uma mensagem. Vou usar isso como estrat\xE9gia de design, n\xE3o como texto literal da p\xE1gina.",
       industry: "Em qual setor ou categoria ele se encaixa?",
@@ -10837,6 +10887,7 @@ ${guidedQuestion(nextMissing)}`
       pt: `Site profissional para ${builderState.guidedState.businessName} focado em ${services.join(", ") || builderState.guidedState.industry}.`
     });
     builderState.guidedState.servicesProducts = services;
+    backfillWebsiteIntentFromContext();
     builderState.guidedState.targetAudience = builderState.guidedState.targetAudience || t("letAiDecide");
     builderState.guidedState.preferredTone = builderState.guidedState.preferredTone || t("letAiDecide");
     builderState.guidedState.preferredColors = arrayValue2(builderState.guidedState.preferredColors).length ? arrayValue2(builderState.guidedState.preferredColors) : arrayValue2(builderState.guidedState.logoPalette).length ? arrayValue2(builderState.guidedState.logoPalette) : [t("letAiDecide")];
@@ -11112,7 +11163,7 @@ ${guidedQuestion(nextMissing)}`
         guidedStep: builderState.guidedStep
       });
     }
-    const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
+    const requiredMissing = missingRequiredGuidedSteps(builderState.guidedState, REQUIRED_GUIDED_STEPS);
     if (requiredMissing.length) return requiredMissing;
     return SMART_GUIDED_STEP_PRIORITY.filter((step) => {
       if (!OPTIONAL_GUIDED_STEPS.has(step)) return false;
@@ -11164,6 +11215,16 @@ ${guidedQuestion(nextMissing)}`
         builderState.guidedState[key] = field.value.trim();
       }
     });
+    backfillWebsiteIntentFromContext();
+  }
+  function backfillWebsiteIntentFromContext(message = "") {
+    builderState.guidedState.websiteIntent = resolveWebsiteIntentBackfill({
+      websiteIntent: builderState.guidedState.websiteIntent,
+      message,
+      businessDescription: builderState.guidedState.businessDescription,
+      messageIsRich: isRichIntakeMessage(String(message || ""))
+    });
+    return builderState.guidedState.websiteIntent;
   }
   function mergeGuidedUpdates(updates) {
     Object.entries(updates).forEach(([key, value]) => {
@@ -11184,6 +11245,7 @@ ${guidedQuestion(nextMissing)}`
         builderState.guidedState[key] = value || builderState.guidedState[key];
       }
     });
+    backfillWebsiteIntentFromContext(updates?.businessDescription || "");
   }
   function isInvalidBusinessNameUpdate(value) {
     const text = String(value || "").trim();
@@ -15428,7 +15490,7 @@ ${guidedQuestion(nextMissing)}`
     const base = instantLocaleCopy(language);
     const source = input && typeof input === "object" ? input : {};
     const merged = { ...base, ...source };
-    const textValue = (key) => {
+    const textValue2 = (key) => {
       const value = merged[key];
       return typeof value === "string" && value.trim() ? value : base[key] || "";
     };
@@ -15438,29 +15500,29 @@ ${guidedQuestion(nextMissing)}`
     };
     return {
       ...merged,
-      services: textValue("services") || base.services || "Services",
-      servicesSlug: textValue("servicesSlug") || "/services",
-      serviceAreas: textValue("serviceAreas") || base.serviceAreas || "Service areas",
-      workProof: textValue("workProof") || base.workProof || "Work proof",
-      workSlug: textValue("workSlug") || "/work",
-      contactSlug: textValue("contactSlug") || "/contact",
-      freeQuote: textValue("freeQuote") || textValue("request") || "Request quote",
-      callNow: textValue("callNow") || "Call now",
-      askPrice: textValue("askPrice") || "Ask for price",
+      services: textValue2("services") || base.services || "Services",
+      servicesSlug: textValue2("servicesSlug") || "/services",
+      serviceAreas: textValue2("serviceAreas") || base.serviceAreas || "Service areas",
+      workProof: textValue2("workProof") || base.workProof || "Work proof",
+      workSlug: textValue2("workSlug") || "/work",
+      contactSlug: textValue2("contactSlug") || "/contact",
+      freeQuote: textValue2("freeQuote") || textValue2("request") || "Request quote",
+      callNow: textValue2("callNow") || "Call now",
+      askPrice: textValue2("askPrice") || "Ask for price",
       homeServiceHeadline: typeof merged.homeServiceHeadline === "function" ? merged.homeServiceHeadline : typeof base.homeServiceHeadline === "function" ? base.homeServiceHeadline : (businessName) => `${businessName} handles the job right the first time`,
       homeServiceSubheadline: typeof merged.homeServiceSubheadline === "function" ? merged.homeServiceSubheadline : typeof base.homeServiceSubheadline === "function" ? base.homeServiceSubheadline : (value) => value || "Trusted service with clear communication, proof, and an easy quote path.",
-      homeServiceCategoriesTitle: textValue("homeServiceCategoriesTitle"),
-      homeServiceCategoriesText: textValue("homeServiceCategoriesText"),
-      homeServiceAreasTitle: textValue("homeServiceAreasTitle"),
-      homeServiceAreasText: textValue("homeServiceAreasText"),
+      homeServiceCategoriesTitle: textValue2("homeServiceCategoriesTitle"),
+      homeServiceCategoriesText: textValue2("homeServiceCategoriesText"),
+      homeServiceAreasTitle: textValue2("homeServiceAreasTitle"),
+      homeServiceAreasText: textValue2("homeServiceAreasText"),
       serviceAreaItems: listValue("serviceAreaItems"),
-      beforeAfterTitle: textValue("beforeAfterTitle"),
-      beforeAfterText: textValue("beforeAfterText"),
-      homeServiceTrustTitle: textValue("homeServiceTrustTitle"),
-      homeServiceTrustText: textValue("homeServiceTrustText"),
+      beforeAfterTitle: textValue2("beforeAfterTitle"),
+      beforeAfterText: textValue2("beforeAfterText"),
+      homeServiceTrustTitle: textValue2("homeServiceTrustTitle"),
+      homeServiceTrustText: textValue2("homeServiceTrustText"),
       homeServiceTrustItems: listValue("homeServiceTrustItems"),
-      homeServiceQuoteTitle: textValue("homeServiceQuoteTitle"),
-      homeServiceQuoteText: textValue("homeServiceQuoteText")
+      homeServiceQuoteTitle: textValue2("homeServiceQuoteTitle"),
+      homeServiceQuoteText: textValue2("homeServiceQuoteText")
     };
   }
   function buildHomeServicesPremiumInstantPages(copy, name, description, payload = {}) {
@@ -15641,7 +15703,7 @@ ${guidedQuestion(nextMissing)}`
     const source = input && typeof input === "object" ? input : {};
     const locale = catalogLocaleLabels({ business: { selectedLanguage: language || "en" } });
     const functionValue = (key, fallback) => typeof source[key] === "function" ? source[key] : typeof locale[key] === "function" ? locale[key] : fallback;
-    const textValue = (key, fallback = "") => typeof source[key] === "string" && source[key].trim() ? source[key] : typeof locale[key] === "string" && locale[key].trim() ? locale[key] : fallback;
+    const textValue2 = (key, fallback = "") => typeof source[key] === "string" && source[key].trim() ? source[key] : typeof locale[key] === "string" && locale[key].trim() ? locale[key] : fallback;
     const listValue = (key, fallback = []) => {
       const values = arrayValue2(source[key]).filter(Boolean);
       if (values.length) return values;
@@ -15650,19 +15712,19 @@ ${guidedQuestion(nextMissing)}`
     };
     return {
       ...source,
-      fromQuote: textValue("fromQuote", source.askPrice || "Price on request"),
+      fromQuote: textValue2("fromQuote", source.askPrice || "Price on request"),
       bookingHeadline: functionValue("bookingHeadline", (businessName) => `Book ${businessName} with a clear next step`),
       bookingSubheadline: functionValue("bookingSubheadline", (value) => value || "Choose a service, preferred time, and contact method in one simple booking flow."),
-      bookingServicesTitle: textValue("bookingServicesTitle", "Choose the right appointment"),
-      bookingServicesText: textValue("bookingServicesText", "Show duration, service details, and what the client should expect before booking."),
-      availabilityTitle: textValue("availabilityTitle", "Availability that feels simple"),
-      availabilityText: textValue("availabilityText", "Make open windows, preparation notes, and confirmation expectations clear."),
+      bookingServicesTitle: textValue2("bookingServicesTitle", "Choose the right appointment"),
+      bookingServicesText: textValue2("bookingServicesText", "Show duration, service details, and what the client should expect before booking."),
+      availabilityTitle: textValue2("availabilityTitle", "Availability that feels simple"),
+      availabilityText: textValue2("availabilityText", "Make open windows, preparation notes, and confirmation expectations clear."),
       availabilityItems: listValue("availabilityItems", ["Today / tomorrow windows", "Morning appointments", "Afternoon appointments"]),
-      bookingTeamTitle: textValue("bookingTeamTitle", "A smoother visit from start to finish"),
-      bookingTeamText: textValue("bookingTeamText", "Explain the staff, process, and preparation so clients know what happens next."),
+      bookingTeamTitle: textValue2("bookingTeamTitle", "A smoother visit from start to finish"),
+      bookingTeamText: textValue2("bookingTeamText", "Explain the staff, process, and preparation so clients know what happens next."),
       bookingTeamItems: listValue("bookingTeamItems", ["Pick a service", "Choose a preferred time", "Receive confirmation"]),
-      bookingContactTitle: textValue("bookingContactTitle", "Reserve the next available time"),
-      bookingContactText: textValue("bookingContactText", "Send the preferred service, day, and contact method to request confirmation.")
+      bookingContactTitle: textValue2("bookingContactTitle", "Reserve the next available time"),
+      bookingContactText: textValue2("bookingContactText", "Send the preferred service, day, and contact method to request confirmation.")
     };
   }
   function buildLeadFunnelInstantPages(copy, name, description, payload = {}) {

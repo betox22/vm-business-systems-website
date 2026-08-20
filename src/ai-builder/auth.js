@@ -15,6 +15,7 @@ import {
 } from './config.js';
 import { escapeHtml, escapeAttribute } from './utils.js';
 import { hasValidPersistedCredential } from './auth-session-policy.js';
+import { resolveWebsiteIntentBackfill } from './guided-intent-policy.js';
 import {
   magicLinkFeedback,
   readSupabaseAuthRedirect,
@@ -706,6 +707,10 @@ export async function loadClientProject(projectId, options = {}) {
   builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || "";
   builderState.guidedState.businessName = builderState.currentSchema.business?.name || builderState.guidedState.businessName;
   builderState.guidedState.businessDescription = builderState.currentSchema.business?.description || builderState.guidedState.businessDescription;
+  builderState.guidedState.websiteIntent = resolveWebsiteIntentBackfill({
+    websiteIntent: builderState.guidedState.websiteIntent,
+    businessDescription: builderState.guidedState.businessDescription,
+  });
   builderState.guidedState.industry = builderState.currentSchema.business?.industry || builderState.guidedState.industry;
   builderState.guidedState.preferredTone = builderState.currentSchema.business?.tone || builderState.guidedState.preferredTone;
   builderState.guidedState.logoUrl = builderState.currentSchema.brand?.logoUrl || builderState.guidedState.logoUrl;

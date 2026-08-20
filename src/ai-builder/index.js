@@ -39,6 +39,10 @@ import { buildColorProvenance } from './color-provenance.js';
 import { applyAuthoritativeThemeToBrand } from './theme-policy.js';
 import { generationAuthAction } from './auth-session-policy.js';
 import { isStrongNewBusinessBrief, resolveBackendMissingSteps } from './intake-state-policy.js';
+import {
+  missingRequiredGuidedSteps,
+  resolveWebsiteIntentBackfill,
+} from './guided-intent-policy.js';
 import { mergeSemanticSeedCatalog } from './catalog-seed-policy.js';
 import { hasDecidedTemplateSelection, isConcreteTemplateId } from './template-carousel-policy.js';
 import {
@@ -452,6 +456,7 @@ function adminHeaders(extra = {}) {
 export const GUIDED_QUESTIONS = {
   en: {
     websiteIntent: "Tell me what you want to build in one rich paragraph: what the business sells or does, who buys, the style/colors, location, and whether it should sell online, book appointments, collect leads, or present the company. I will choose the best structure and ask only for what is missing.",
+    websiteIntentFollowUp: "I already have the business context. I only need to confirm: should the site sell online, book appointments, collect quote requests, or simply present the company?",
     businessName: "First, what is the name of your business?",
     businessDescription: "Tell me what it sells or does in one message. I will use it as design strategy, not as literal page copy.",
     industry: "What industry or category best fits it?",
@@ -469,6 +474,7 @@ export const GUIDED_QUESTIONS = {
   },
   es: {
     websiteIntent: "Descríbeme en un párrafo qué quieres construir: qué vende o hace el negocio, para quién, estilo/colores, ubicación y si debe vender online, reservar citas, captar clientes o sólo presentar la empresa. Yo elegiré la mejor estructura y sólo preguntaré lo que falte.",
+    websiteIntentFollowUp: "Ya tengo el contexto de tu negocio. Solo necesito confirmar: ¿el sitio debe vender online, agendar citas, captar cotizaciones o solo presentar la empresa?",
     businessName: "Primero, ¿cómo se llama tu negocio?",
     businessDescription: "Dime qué vende o qué hace en un solo mensaje. Lo usaré como estrategia de diseño, no como texto literal para la página.",
     industry: "En que industria o categoria lo pondrias?",
@@ -486,6 +492,7 @@ export const GUIDED_QUESTIONS = {
   },
   fr: {
     websiteIntent: "Décrivez en un paragraphe ce que vous voulez créer : ce que l'entreprise vend ou fait, pour qui, le style/couleurs, la localisation, et si le site doit vendre en ligne, réserver, capter des leads ou présenter l'entreprise. Je choisirai la meilleure structure et demanderai seulement ce qui manque.",
+    websiteIntentFollowUp: "J'ai déjà le contexte de votre activité. Je dois seulement confirmer : le site doit-il vendre en ligne, prendre des rendez-vous, recueillir des demandes de devis ou simplement présenter l'entreprise ?",
     businessName: "Quel est le nom de l'entreprise?",
     businessDescription: "Dites-moi ce qu'elle vend ou propose en un seul message. Je l'utiliserai comme stratégie de design, pas comme texte littéral.",
     industry: "Dans quel secteur ou catégorie la placeriez-vous?",
@@ -503,6 +510,7 @@ export const GUIDED_QUESTIONS = {
   },
   pt: {
     websiteIntent: "Descreva em um parágrafo o que você quer criar: o que o negócio vende ou faz, para quem, estilo/cores, localização, e se deve vender online, agendar, captar contatos ou apresentar a empresa. Eu escolho a melhor estrutura e pergunto apenas o que faltar.",
+    websiteIntentFollowUp: "Já tenho o contexto do seu negócio. Só preciso confirmar: o site deve vender online, agendar horários, receber pedidos de orçamento ou apenas apresentar a empresa?",
     businessName: "Qual é o nome do negócio?",
     businessDescription: "Diga o que ele vende ou faz em uma mensagem. Vou usar isso como estratégia de design, não como texto literal da página.",
     industry: "Em qual setor ou categoria ele se encaixa?",
@@ -4229,6 +4237,7 @@ function normalizeGuidedStateBeforeGenerate() {
       pt: `Site profissional para ${builderState.guidedState.businessName} focado em ${services.join(", ") || builderState.guidedState.industry}.`,
     });
   builderState.guidedState.servicesProducts = services;
+  backfillWebsiteIntentFromContext();
   builderState.guidedState.targetAudience = builderState.guidedState.targetAudience || t("letAiDecide");
   builderState.guidedState.preferredTone = builderState.guidedState.preferredTone || t("letAiDecide");
   builderState.guidedState.preferredColors = arrayValue(builderState.guidedState.preferredColors).length
@@ -4579,7 +4588,7 @@ export function missingGuidedSteps() {
       guidedStep: builderState.guidedStep,
     });
   }
-  const requiredMissing = REQUIRED_GUIDED_STEPS.filter((step) => !isGuidedStepAnswered(step));
+  const requiredMissing = missingRequiredGuidedSteps(builderState.guidedState, REQUIRED_GUIDED_STEPS);
   if (requiredMissing.length) return requiredMissing;
   return SMART_GUIDED_STEP_PRIORITY.filter((step) => {
     if (!OPTIONAL_GUIDED_STEPS.has(step)) return false;
@@ -4636,6 +4645,17 @@ function syncGuidedStateFromSummary() {
       builderState.guidedState[key] = field.value.trim();
     }
   });
+  backfillWebsiteIntentFromContext();
+}
+
+export function backfillWebsiteIntentFromContext(message = "") {
+  builderState.guidedState.websiteIntent = resolveWebsiteIntentBackfill({
+    websiteIntent: builderState.guidedState.websiteIntent,
+    message,
+    businessDescription: builderState.guidedState.businessDescription,
+    messageIsRich: isRichIntakeMessage(String(message || "")),
+  });
+  return builderState.guidedState.websiteIntent;
 }
 
 export function mergeGuidedUpdates(updates) {
@@ -4657,6 +4677,7 @@ export function mergeGuidedUpdates(updates) {
       builderState.guidedState[key] = value || builderState.guidedState[key];
     }
   });
+  backfillWebsiteIntentFromContext(updates?.businessDescription || "");
 }
 
 function isInvalidBusinessNameUpdate(value) {
