@@ -35,6 +35,41 @@ Estructura rápida:
 5. **No borres ni "limpies" trabajo del otro agente** (código, comentarios, TODOs) sin
    dejar constancia en el log de por qué.
 
+## Protocolo de calidad visual/diseño (obligatorio)
+
+Beto ha pedido repetidamente un nivel de diseño "hiper pro" — profesional, moderno,
+con animación/motion cuidado — y ese nivel no se está sosteniendo porque la
+instrucción vivía solo en mensajes de chat sueltos, no en un archivo que el agente
+lea siempre. A partir de ahora:
+
+1. **Ningún trabajo visual (logo, rediseño, template, sección nueva, animación,
+   identidad de marca) se marca como terminado sin evidencia visual real** — captura
+   de pantalla o preview del resultado ya renderizado e implementado, no solo la
+   pieza aislada (ej. no alcanza con mostrar el logo en PNG si la tarea era
+   integrarlo al header; hay que mostrar el header real con el logo puesto).
+2. **Para logos, identidad de marca o piezas de diseño nuevas**: proponer 2-3
+   conceptos o una descripción clara del enfoque ANTES de implementar, y esperar
+   aprobación explícita de Beto antes de tocar código. No implementar-y-mostrar
+   como fait accompli.
+3. **Barra de calidad para sitios generados por LYRA**: layout con jerarquía visual
+   clara (no bloques genéricos ni espacio vacío sin propósito), tipografía con
+   escala real (ya implementado vía Typography Intelligence, ver backend/app/
+   typography_theory.py — no regresar a tamaños planos), motion/microinteracciones
+   sutiles en hover/scroll donde sume (transiciones, profundidad con CSS
+   transform/parallax), NO placeholders visibles en el resultado final ("Precio por
+   confirmar", imágenes genéricas sin relación con el negocio del cliente — ver
+   catalog-seed-policy.js y _reconcile_client_catalog en ai_site_planner.py, causa
+   raíz de este problema específico).
+4. **Selección de plantilla/módulo**: la IA debe elegir entre las secciones/plantillas
+   reales disponibles (ver TEMPLATE_CATALOG en backend/app/agents.py y el registro
+   de secciones reusables en ai_site_planner.py: QuoteRequestForm,
+   CapabilitiesEquipment, PortfolioGallery, VideoShowcase, CourseOffering) según lo
+   que el cliente realmente pidió, nunca forzando un template que no encaja solo
+   porque coincide parcialmente en categoría.
+5. Si "animación 3D" significa WebGL/Three.js real (escenas 3D interactivas) en vez
+   de profundidad/motion vía CSS, aclarar con Beto antes de asumir — son esfuerzos
+   de implementación y costo de rendimiento muy distintos.
+
 ## Notas de estado conocidas
 
 - Al 2026-07-18 hay ~18 archivos con cambios sin commitear (css/html grandes:
