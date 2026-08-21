@@ -11751,3 +11751,186 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
     padding: 38px 0;
   }
 }
+/* Mega retail store */
+.template-mega-retail-store {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 28px 32px 0;
+  overflow: clip;
+  color: var(--site-text);
+  background: color-mix(in srgb, var(--site-bg) 94%, #f6f4ef);
+  font-family: var(--site-body), Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.template-mega-retail-store,
+.template-mega-retail-store * { box-sizing: border-box; }
+
+.template-mega-retail-store .rendered-page-switcher,
+.template-mega-retail-store .studio-floating-catalog { display: none; }
+
+.template-mega-retail-store .mega-retail-header {
+  position: sticky;
+  top: 14px;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: minmax(150px, .9fr) minmax(260px, 1.4fr) minmax(220px, 1.1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  margin-bottom: 22px;
+  padding: 10px 12px 10px 22px;
+  border: 1px solid color-mix(in srgb, var(--site-border) 72%, transparent);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--site-surface) 96%, transparent);
+  box-shadow: 0 16px 38px -18px rgba(20, 20, 20, .24);
+  backdrop-filter: blur(18px);
+}
+
+.template-mega-retail-store .mega-retail-brand,
+.template-mega-retail-store .mega-retail-brand .logo-lockup { min-width: 0; }
+.template-mega-retail-store .mega-retail-brand > img { display: block; width: auto; max-width: 150px; height: 38px; object-fit: contain; }
+.template-mega-retail-store .mega-retail-brand .logo-lockup small { display: none; }
+.template-mega-retail-store .mega-retail-brand .logo-lockup { display: flex; align-items: center; gap: 10px; }
+.template-mega-retail-store .mega-retail-brand .logo-lockup > span { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 12px; color: var(--brand-button-text); background: var(--site-primary); }
+
+.template-mega-retail-store .mega-retail-departments { display: flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden; }
+.template-mega-retail-store .mega-retail-departments button,
+.template-mega-retail-store .mega-retail-actions button,
+.template-mega-retail-store .mega-retail-section-heading button,
+.template-mega-retail-store .mega-retail-tile button { border: 0; cursor: pointer; font: inherit; }
+.template-mega-retail-store .mega-retail-departments button { flex: 0 1 auto; padding: 9px 10px; overflow: hidden; color: var(--site-text); background: transparent; font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.template-mega-retail-store .mega-retail-mobile-departments { display: none; min-width: 0; }
+.template-mega-retail-store .mega-retail-mobile-departments summary { display: grid; grid-template-columns: 20px minmax(0, 1fr) 18px; align-items: center; gap: 9px; min-height: 42px; padding: 9px 13px; border: 1px solid var(--site-border); border-radius: 14px; color: var(--site-text); background: color-mix(in srgb, var(--site-bg) 82%, white); font-size: 13px; font-weight: 750; cursor: pointer; list-style: none; }
+.template-mega-retail-store .mega-retail-mobile-departments summary::-webkit-details-marker { display: none; }
+.template-mega-retail-store .mega-retail-mobile-departments summary svg { width: 18px; height: 18px; }
+.template-mega-retail-store .mega-retail-menu-chevron { width: 9px; height: 9px; justify-self: center; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform .2s ease; }
+.template-mega-retail-store .mega-retail-mobile-departments[open] .mega-retail-menu-chevron { transform: translateY(2px) rotate(225deg); }
+.template-mega-retail-store .mega-retail-mobile-departments > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 7px; padding: 9px 2px 0; }
+.template-mega-retail-store .mega-retail-mobile-departments button { min-width: 0; padding: 10px 12px; overflow: hidden; border: 1px solid var(--site-border); border-radius: 12px; color: var(--site-text); background: var(--site-surface); font-size: 12px; font-weight: 700; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+
+.template-mega-retail-store .mega-retail-search { display: grid; grid-template-columns: 1fr 38px; align-items: center; min-width: 0; padding: 3px; border: 1px solid var(--site-border); border-radius: 999px; background: color-mix(in srgb, var(--site-bg) 78%, white); }
+.template-mega-retail-store .mega-retail-search input { min-width: 0; border: 0; outline: 0; padding: 8px 12px; color: var(--site-text); background: transparent; font: inherit; font-size: 13px; }
+.template-mega-retail-store .mega-retail-search button { display: grid; width: 36px; height: 36px; place-items: center; border: 0; border-radius: 50%; color: var(--brand-button-text); background: var(--site-primary); cursor: pointer; }
+.template-mega-retail-store .mega-retail-search svg,
+.template-mega-retail-store .mega-retail-actions svg { width: 18px; height: 18px; }
+
+.template-mega-retail-store .mega-retail-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.template-mega-retail-store .mega-retail-actions > button:first-child { padding: 10px 15px; border-radius: 999px; color: var(--brand-button-text); background: var(--site-primary); font-size: 13px; font-weight: 750; }
+.template-mega-retail-store .mega-retail-icon-button { position: relative; display: grid; width: 40px; height: 40px; place-items: center; border-radius: 50%; color: var(--site-text); background: color-mix(in srgb, var(--site-bg) 84%, white); }
+.template-mega-retail-store .mega-retail-icon-button span { position: absolute; top: -3px; right: -3px; display: grid; min-width: 18px; height: 18px; place-items: center; padding: 0 4px; border: 2px solid var(--site-surface); border-radius: 999px; color: var(--brand-button-text); background: var(--site-accent); font-size: 10px; font-weight: 800; }
+
+.template-mega-retail-store .mega-retail-bento { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: repeat(2, 190px); gap: 14px; margin-bottom: 16px; }
+.template-mega-retail-store .mega-retail-tile { position: relative; min-width: 0; overflow: hidden; border-radius: 22px; background: #171717; box-shadow: 0 16px 34px -22px rgba(20, 20, 20, .38); }
+.template-mega-retail-store .mega-retail-tile.is-primary { grid-column: span 3; grid-row: span 2; }
+.template-mega-retail-store .mega-retail-tile.is-medium { grid-column: span 3; }
+.template-mega-retail-store .mega-retail-tile.is-small { grid-column: span 1; }
+.template-mega-retail-store .mega-retail-tile > img { width: 100%; height: 100%; object-fit: cover; transition: transform .45s ease; }
+.template-mega-retail-store .mega-retail-tile:hover > img { transform: scale(1.035); }
+.template-mega-retail-store .mega-retail-tile::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.02) 20%, rgba(0,0,0,.78) 100%); }
+.template-mega-retail-store .mega-retail-tile.is-duotone::before { content: ""; position: absolute; z-index: 1; inset: 0; background: var(--mega-tile-tint); mix-blend-mode: color; opacity: .62; }
+.template-mega-retail-store .mega-retail-tile > div { position: absolute; z-index: 2; right: 0; bottom: 0; left: 0; padding: 22px; color: #fff; }
+.template-mega-retail-store .mega-retail-tile > div > span { display: block; margin-bottom: 7px; color: rgba(255,255,255,.78); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.template-mega-retail-store .mega-retail-tile h1 { max-width: 580px; margin: 0; font-family: var(--site-heading), Inter, sans-serif; font-size: 50px; line-height: .98; letter-spacing: 0; }
+.template-mega-retail-store .mega-retail-tile h2 { margin: 0; font-family: var(--site-heading), Inter, sans-serif; font-size: 24px; line-height: 1.05; letter-spacing: 0; }
+.template-mega-retail-store .mega-retail-tile.is-small h2 { font-size: 17px; }
+.template-mega-retail-store .mega-retail-tile p { max-width: 520px; margin: 10px 0 0; color: rgba(255,255,255,.82); font-size: 14px; line-height: 1.5; }
+.template-mega-retail-store .mega-retail-tile button { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; padding: 9px 12px; border-radius: 999px; color: #171717; background: #fff; font-size: 12px; font-weight: 800; }
+.template-mega-retail-store .mega-retail-tile button svg { width: 15px; height: 15px; }
+.template-mega-retail-store .mega-retail-tile.is-small p,
+.template-mega-retail-store .mega-retail-tile.is-small button { display: none; }
+
+.template-mega-retail-store .mega-retail-deals { min-width: 0; margin-bottom: 16px; padding: 28px 28px 8px; overflow: hidden; border-radius: 26px; background: var(--site-surface); box-shadow: 0 14px 34px -22px rgba(20,20,20,.25); }
+.template-mega-retail-store .mega-retail-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
+.template-mega-retail-store .mega-retail-section-heading > div { min-width: 0; }
+.template-mega-retail-store .mega-retail-section-heading span { display: block; margin-bottom: 4px; color: var(--site-primary); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.template-mega-retail-store .mega-retail-section-heading h2 { margin: 0; font-family: var(--site-heading), Inter, sans-serif; font-size: 32px; letter-spacing: 0; }
+.template-mega-retail-store .mega-retail-section-heading button { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 7px; padding: 9px 12px; border-radius: 999px; color: var(--site-text); background: color-mix(in srgb, var(--site-bg) 80%, white); font-size: 12px; font-weight: 750; white-space: nowrap; }
+.template-mega-retail-store .mega-retail-section-heading svg { width: 15px; height: 15px; }
+.template-mega-retail-store .mega-retail-deals-row { display: flex; max-width: 100%; gap: 16px; padding-bottom: 20px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: thin; }
+.template-mega-retail-store .mega-retail-product { flex: 0 0 230px; min-width: 0; padding: 10px; border: 1px solid color-mix(in srgb, var(--site-border) 76%, transparent); border-radius: 18px; background: color-mix(in srgb, var(--site-surface) 92%, var(--site-bg)); scroll-snap-align: start; }
+.template-mega-retail-store .mega-retail-product-image { position: relative; height: 190px; overflow: hidden; border-radius: 14px; background: var(--site-bg); }
+.template-mega-retail-store .mega-retail-product-image .image-shell,
+.template-mega-retail-store .mega-retail-product-image img { width: 100%; height: 100%; object-fit: cover; }
+.template-mega-retail-store .mega-retail-discount { position: absolute; top: 10px; left: 10px; padding: 5px 8px; border-radius: 999px; color: #fff; background: var(--site-accent); font-size: 10px; font-weight: 850; }
+.template-mega-retail-store .mega-retail-product > small { display: block; margin-top: 12px; color: var(--site-primary); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.template-mega-retail-store .mega-retail-product h3 { min-height: 42px; margin: 5px 0; overflow: hidden; font-size: 16px; line-height: 1.3; letter-spacing: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.template-mega-retail-store .mega-retail-product p { min-height: 38px; margin: 0 0 12px; overflow: hidden; color: var(--site-muted); font-size: 12px; line-height: 1.5; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.template-mega-retail-store .mega-retail-product > div:last-child { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.template-mega-retail-store .mega-retail-product > div:last-child strong { font-size: 15px; }
+.template-mega-retail-store .mega-retail-product > div:last-child button { width: 36px; height: 36px; overflow: hidden; border: 0; border-radius: 50%; color: transparent; background: var(--site-primary); cursor: pointer; }
+.template-mega-retail-store .mega-retail-product > div:last-child button::after { content: "+"; display: grid; width: 36px; height: 36px; place-items: center; color: var(--brand-button-text); font-size: 22px; }
+
+.template-mega-retail-store .mega-retail-trust { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.template-mega-retail-store .mega-retail-trust article { display: flex; align-items: center; gap: 13px; min-width: 0; padding: 18px 20px; border-radius: 18px; background: var(--site-surface); box-shadow: 0 12px 28px -20px rgba(20,20,20,.25); }
+.template-mega-retail-store .mega-retail-trust svg { flex: 0 0 auto; width: 23px; height: 23px; color: var(--site-primary); }
+.template-mega-retail-store .mega-retail-trust strong,
+.template-mega-retail-store .mega-retail-trust span { display: block; }
+.template-mega-retail-store .mega-retail-trust strong { margin-bottom: 3px; font-size: 13px; }
+.template-mega-retail-store .mega-retail-trust span { overflow-wrap: anywhere; color: var(--site-muted); font-size: 11px; line-height: 1.4; }
+
+.template-mega-retail-store .mega-retail-footer { margin: 24px -32px 0; padding: 42px 40px 24px; border-radius: 26px 26px 0 0; color: #aaa; background: #181818; }
+.template-mega-retail-store .mega-retail-footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 28px; margin-bottom: 28px; }
+.template-mega-retail-store .mega-retail-footer-grid.is-three-column { grid-template-columns: 1.4fr 1fr 1fr; }
+.template-mega-retail-store .mega-retail-footer-grid > div > strong { display: block; margin-bottom: 14px; color: #fff; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.template-mega-retail-store .mega-retail-footer-grid p { max-width: 280px; margin: 10px 0 18px; color: #8f8f8f; font-size: 12px; line-height: 1.65; }
+.template-mega-retail-store .mega-retail-footer-grid a { display: block; margin-bottom: 9px; color: #aaa; font-size: 13px; text-decoration: none; }
+.template-mega-retail-store .mega-retail-footer-brand img { width: auto; max-width: 150px; height: 42px; object-fit: contain; filter: brightness(0) invert(1); }
+.template-mega-retail-store .mega-retail-footer-brand .logo-lockup { display: flex; align-items: center; gap: 10px; color: #fff; }
+.template-mega-retail-store .mega-retail-footer-brand .logo-lockup > span { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 12px; background: var(--site-primary); }
+.template-mega-retail-store .mega-retail-footer-brand .logo-lockup small { display: none; }
+.template-mega-retail-store .mega-retail-socials { display: flex; gap: 8px; }
+.template-mega-retail-store .mega-retail-socials a { display: grid; width: 34px; height: 34px; margin: 0; place-items: center; border-radius: 50%; color: #fff; background: #292929; }
+.template-mega-retail-store .mega-retail-socials svg { width: 16px; height: 16px; }
+.template-mega-retail-store .mega-retail-newsletter { display: grid; grid-template-columns: minmax(0, 1fr) 40px; padding: 3px; border: 1px solid #343434; border-radius: 999px; background: #222; }
+.template-mega-retail-store .mega-retail-newsletter input { min-width: 0; border: 0; outline: 0; padding: 8px 11px; color: #fff; background: transparent; font: inherit; font-size: 12px; }
+.template-mega-retail-store .mega-retail-newsletter button { display: grid; width: 38px; height: 38px; place-items: center; border: 0; border-radius: 50%; color: var(--brand-button-text); background: var(--site-primary); cursor: pointer; }
+.template-mega-retail-store .mega-retail-newsletter svg { width: 16px; height: 16px; }
+.template-mega-retail-store .mega-retail-footer-bottom { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-top: 20px; border-top: 1px solid #2d2d2d; color: #777; font-size: 12px; }
+.template-mega-retail-store .mega-retail-payments { display: flex; gap: 7px; }
+.template-mega-retail-store .mega-retail-payments span { padding: 5px 8px; border: 1px solid #383838; border-radius: 6px; color: #bdbdbd; background: #222; font-size: 9px; font-weight: 800; }
+.template-mega-retail-store .mega-retail-whatsapp { position: fixed; right: 28px; bottom: 28px; z-index: 30; display: grid; width: 54px; height: 54px; place-items: center; border-radius: 50%; color: #fff; background: #25d366; box-shadow: 0 12px 28px -8px rgba(37,211,102,.64); }
+.template-mega-retail-store .mega-retail-whatsapp svg { width: 27px; height: 27px; }
+
+@media (max-width: 1100px) {
+  .template-mega-retail-store .mega-retail-header { grid-template-columns: minmax(140px, 1fr) minmax(220px, 1.4fr) auto; }
+  .template-mega-retail-store .mega-retail-departments { display: none; }
+  .template-mega-retail-store .mega-retail-mobile-departments { display: block; grid-column: 1 / -1; }
+  .template-mega-retail-store .mega-retail-bento { grid-template-rows: repeat(2, 170px); }
+  .template-mega-retail-store .mega-retail-tile h1 { font-size: 42px; }
+}
+
+@media (max-width: 760px) {
+  .template-mega-retail-store { padding: 14px 14px 0; }
+  .template-mega-retail-store .mega-retail-header { position: relative; top: auto; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 10px 12px; border-radius: 20px; }
+  .template-mega-retail-store .mega-retail-search { grid-column: 1 / -1; grid-row: 2; }
+  .template-mega-retail-store .mega-retail-mobile-departments { grid-column: 1 / -1; grid-row: 3; }
+  .template-mega-retail-store .mega-retail-actions > button:first-child { padding: 9px 11px; }
+  .template-mega-retail-store .mega-retail-actions .mega-retail-icon-button:nth-child(2) { display: none; }
+  .template-mega-retail-store .mega-retail-bento { grid-template-columns: minmax(0, 1fr); grid-template-rows: 330px 190px repeat(3, 150px); }
+  .template-mega-retail-store .mega-retail-tile.is-primary,
+  .template-mega-retail-store .mega-retail-tile.is-medium,
+  .template-mega-retail-store .mega-retail-tile.is-small { grid-column: 1; grid-row: auto; }
+  .template-mega-retail-store .mega-retail-tile h1 { font-size: 36px; }
+  .template-mega-retail-store .mega-retail-tile h2 { font-size: 20px; }
+  .template-mega-retail-store .mega-retail-deals { padding: 22px 18px 4px; border-radius: 22px; }
+  .template-mega-retail-store .mega-retail-section-heading h2 { font-size: 27px; }
+  .template-mega-retail-store .mega-retail-product { flex-basis: 210px; }
+  .template-mega-retail-store .mega-retail-trust { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .template-mega-retail-store .mega-retail-footer { margin-right: -14px; margin-left: -14px; padding: 34px 22px 22px; border-radius: 24px 24px 0 0; }
+  .template-mega-retail-store .mega-retail-footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .template-mega-retail-store .mega-retail-footer-bottom { align-items: flex-start; flex-direction: column; }
+  .template-mega-retail-store .mega-retail-whatsapp { right: 14px; bottom: max(14px, env(safe-area-inset-bottom)); width: 48px; height: 48px; }
+  .template-mega-retail-store .mega-retail-whatsapp svg { width: 23px; height: 23px; }
+}
+
+@media (max-width: 480px) {
+  .template-mega-retail-store .mega-retail-brand .logo-lockup div { display: none; }
+  .template-mega-retail-store .mega-retail-bento { grid-template-rows: 310px 175px repeat(3, 145px); }
+  .template-mega-retail-store .mega-retail-tile > div { padding: 18px; }
+  .template-mega-retail-store .mega-retail-trust,
+  .template-mega-retail-store .mega-retail-footer-grid { grid-template-columns: 1fr; }
+}
+/* End mega retail store */

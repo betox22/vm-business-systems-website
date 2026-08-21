@@ -1266,6 +1266,51 @@
     return merged.slice(0, 6);
   }
 
+  // src/ai-builder/mega-retail-policy.js
+  var STOCK_BY_CATEGORY = [
+    [/fashion|moda|ropa|style/, "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1400&q=84"],
+    [/home|hogar|decor|furniture/, "https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1400&q=84"],
+    [/beauty|belleza|skin|cosmetic/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1400&q=84"],
+    [/food|comida|gourmet|restaurant/, "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1400&q=84"],
+    [/sport|fitness|outdoor/, "https://images.unsplash.com/photo-1538805060514-97d9cc17730c?auto=format&fit=crop&w=1400&q=84"],
+    [/tech|electronic|gadget|computer/, "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=1400&q=84"]
+  ];
+  function isMegaRetailTemplate(templateId) {
+    return String(templateId || "") === "mega-retail-store";
+  }
+  function megaRetailStockImage(category = "") {
+    const normalized = String(category).toLowerCase();
+    return (STOCK_BY_CATEGORY.find(([pattern]) => pattern.test(normalized)) || [
+      null,
+      "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1400&q=84"
+    ])[1];
+  }
+  function resolveMegaRetailTileMedia({ clientPhotoUrls = [], tileIndex = 0, category = "", categoryImage = "", hasBrandVisual = false } = {}) {
+    const photos = Array.isArray(clientPhotoUrls) ? clientPhotoUrls.map((value) => String(value || "").trim()).filter(Boolean) : [];
+    if (photos.length) {
+      return { url: photos[tileIndex % photos.length], source: "client_photo", duotone: false };
+    }
+    return {
+      url: String(categoryImage || "").trim() || megaRetailStockImage(category),
+      source: hasBrandVisual ? "brand_duotone" : "stock_category",
+      duotone: Boolean(hasBrandVisual)
+    };
+  }
+  function megaRetailWhatsAppUrl(contact = {}) {
+    const raw = String(contact.whatsapp || "").trim();
+    if (!raw) return "";
+    const digits = raw.replace(/\D/g, "");
+    return digits.length >= 7 ? `https://wa.me/${digits}` : "";
+  }
+  function megaRetailFeatureFlags(schema = {}) {
+    const features = schema.global_components?.mega_retail_features || {};
+    return {
+      whatsapp: features.whatsapp !== false,
+      newsletter: features.newsletter !== false,
+      socials: features.socials !== false
+    };
+  }
+
   // src/ai-builder/template-carousel-policy.js
   var PROVISIONAL_TEMPLATE_SELECTION_INTENTS = /* @__PURE__ */ new Set([
     "default_minimal",
@@ -1387,6 +1432,9 @@
     const logo = schema.brand?.logoUrl || schema.global_components.logo_url;
     const layoutId = schema.layout_mode?.id || "standard";
     const templateId = schema.active_template?.id || schema.selected_template?.id || "standard";
+    if (isMegaRetailTemplate(templateId)) {
+      return renderMegaRetailWebsite(schema, page, context, { logo, layoutId, templateId, theme });
+    }
     const commerceActions = isCommerceSite(schema) ? renderCommerceNavActions(schema) : "";
     return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)}">
     ${renderStudioFloatingCatalog(schema, context)}
@@ -4551,6 +4599,91 @@
     const family = String(fontName || "").trim();
     if (!family) return "";
     return `family=${encodeURIComponent(family).replace(/%20/g, "+")}:wght@${weights}`;
+  }
+  function renderMegaRetailWebsite(schema, page, context, { logo, layoutId, templateId, theme }) {
+    const pages = [...schema.pages || []].sort((a, b) => a.order - b.order);
+    const sections = [...page?.sections || []].sort((a, b) => a.order - b.order);
+    const items = marketplaceItems(schema);
+    const categories = marketplaceCategories(schema).slice(0, 5);
+    const labels = megaRetailLabels(schema);
+    const hero = sections.find((section) => ["MarketplaceHero", "Hero"].includes(section.type)) || {};
+    const heroCopy = hero.editable || {};
+    const clientPhotos = arrayValue(schema.client_media?.photoUrls || schema.photoUrls);
+    const provenance = schema.brand?.colorProvenance || schema.colorProvenance || {};
+    const hasBrandVisual = Boolean(logo || provenance.anchorColor || arrayValue(schema.brand?.preferredColors).length);
+    const brandTint = /^#[0-9a-f]{6}$/i.test(String(provenance.anchorColor || "")) ? provenance.anchorColor : "var(--site-primary)";
+    const whatsappUrl = megaRetailWhatsAppUrl(schema.contact || {});
+    const features = megaRetailFeatureFlags(schema);
+    const absorbedTypes = /* @__PURE__ */ new Set(["MarketplaceHero", "Hero", "CategoryRail", "DealRow", "TrustStrip", "ProductGrid"]);
+    const remainingSections = sections.filter((section) => !absorbedTypes.has(section.type));
+    return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)};--mega-tile-tint:${escapeAttribute(brandTint)}">
+    ${renderStudioFloatingCatalog(schema, context)}
+    <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div></div>
+    ${renderMegaRetailHeader(schema, page, logo, categories, labels, false)}
+    ${page?.page_key === "home" || page === pages[0] ? `${renderMegaRetailBento(schema, heroCopy, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailDeals(schema, items, labels, false)}${renderMegaRetailTrust(labels)}` : ""}
+    ${remainingSections.map((section) => renderSection(section, schema)).join("")}
+    ${renderMegaRetailFooter(schema, pages, logo, labels, features)}
+    ${features.whatsapp && whatsappUrl ? `<a class="mega-retail-whatsapp" href="${escapeAttribute(whatsappUrl)}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">${megaRetailIcon("whatsapp")}</a>` : ""}
+  </div>`;
+  }
+  function renderMegaRetailHeader(schema, page, logo, categories, labels, interactive) {
+    const departmentButtons = categories.slice(0, 5).map((category) => `<button type="button" data-catalog-category="${escapeAttribute(String(category).toLowerCase())}">${escapeHtml(category)}</button>`).join("");
+    return `<header class="mega-retail-header">
+    <div class="mega-retail-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business?.name || "")}">` : renderLogoMark(schema)}</div>
+    <nav class="mega-retail-departments" aria-label="${escapeAttribute(labels.departments)}">${departmentButtons}</nav>
+    <form class="mega-retail-search" data-catalog-search-form><input type="search" name="catalog-search" aria-label="${escapeAttribute(labels.search)}" placeholder="${escapeAttribute(labels.search)}"><button type="submit" aria-label="${escapeAttribute(labels.search)}">${megaRetailIcon("search")}</button></form>
+    <div class="mega-retail-actions"><button type="button" ${interactive ? "data-account-open" : ""}>${escapeHtml(labels.account)}</button><button class="mega-retail-icon-button" type="button" aria-label="${escapeAttribute(labels.favorites)}">${megaRetailIcon("heart")}</button><button class="mega-retail-icon-button" type="button" ${interactive ? "data-cart-open" : ""} aria-label="${escapeAttribute(labels.cart)}">${megaRetailIcon("bag")}<span ${interactive ? "data-cart-count" : ""}>0</span></button></div>
+    <details class="mega-retail-mobile-departments"><summary>${megaRetailIcon("grid")}<span>${escapeHtml(labels.departments)}</span><span class="mega-retail-menu-chevron" aria-hidden="true"></span></summary><div>${departmentButtons}</div></details>
+  </header>`;
+  }
+  function renderMegaRetailBento(schema, heroCopy, categories, items, clientPhotos, hasBrandVisual, labels) {
+    const tileCategories = categories.length ? categories : labels.fallbackCategories;
+    const tiles = Array.from({ length: 5 }, (_, index) => {
+      const category = tileCategories[index % tileCategories.length];
+      const item = items.find((entry) => String(entry.category || "").toLowerCase() === String(category).toLowerCase()) || items[index];
+      const media = resolveMegaRetailTileMedia({ clientPhotoUrls: clientPhotos, tileIndex: index, category, categoryImage: item?.image_url || item?.imageUrl, hasBrandVisual });
+      const title = index === 0 ? heroCopy.headline || schema.business?.name || labels.featured : category;
+      const text = index === 0 ? heroCopy.subtitle || schema.business?.description || labels.heroText : item?.description || labels.discover;
+      const className = index === 0 ? "is-primary" : index === 1 ? "is-medium" : "is-small";
+      return `<article class="mega-retail-tile ${className} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}"><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p>${escapeHtml(text)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}">${escapeHtml(labels.explore)} ${megaRetailIcon("arrow")}</button></div></article>`;
+    });
+    return `<main class="mega-retail-bento">${tiles.join("")}</main>`;
+  }
+  function renderMegaRetailDeals(schema, items, labels, interactive) {
+    const commerce = commerceLabels(schema);
+    return `<section class="mega-retail-deals"><div class="mega-retail-section-heading"><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => `<article class="mega-retail-product" ${catalogSearchAttributes(item)}><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${interactive ? `data-cart-add data-item-id="${escapeAttribute(item.id || item.name || "")}" data-item-name="${escapeAttribute(item.name || "")}" data-item-price="${escapeAttribute(item.price_label || "")}"` : ""}>${escapeHtml(commerce.addToCart)}</button></div></article>`).join("")}</div></section>`;
+  }
+  function megaRetailDiscountBadge(item = {}) {
+    const badge = item.badge || item.deal_label || item.discount_label || "";
+    return badge ? `<span class="mega-retail-discount">${escapeHtml(badge)}</span>` : "";
+  }
+  function renderMegaRetailTrust(labels) {
+    return `<section class="mega-retail-trust">${labels.trust.map((item, index) => `<article>${megaRetailIcon(["truck", "return", "grid", "lock"][index])}<div><strong>${escapeHtml(item[0])}</strong><span>${escapeHtml(item[1])}</span></div></article>`).join("")}</section>`;
+  }
+  function renderMegaRetailFooter(schema, pages, logo, labels, features) {
+    const socials = megaRetailSocialLinks(schema.contact || {});
+    const newsletter = features.newsletter ? `<div><strong>${escapeHtml(labels.newsletter)}</strong><p>${escapeHtml(labels.newsletterText)}</p><div class="mega-retail-newsletter"><input type="email" aria-label="Email" placeholder="email@example.com"><button type="button" data-open-lead aria-label="${escapeAttribute(labels.subscribe)}">${megaRetailIcon("arrow")}</button></div></div>` : "";
+    return `<footer class="mega-retail-footer"><div class="mega-retail-footer-grid ${features.newsletter ? "" : "is-three-column"}"><div><div class="mega-retail-footer-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="">` : renderLogoMark(schema)}</div><p>${escapeHtml(schema.business?.description || labels.tagline)}</p>${features.socials && socials ? `<div class="mega-retail-socials">${socials}</div>` : ""}</div><div><strong>${escapeHtml(labels.help)}</strong>${labels.helpLinks.map((label) => `<a href="#contact" data-page-link="${escapeAttribute(pages.find((item) => /contact/i.test(item.page_key || item.title))?.page_key || pages[0]?.page_key || "home")}">${escapeHtml(label)}</a>`).join("")}</div><div><strong>${escapeHtml(labels.company)}</strong>${pages.slice(0, 4).map((item) => `<a href="#${escapeAttribute(item.page_key)}" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div>${newsletter}</div><div class="mega-retail-footer-bottom"><span>${escapeHtml(schema.global_components?.footer_text || `\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} ${schema.business?.name || ""}`)}</span><div class="mega-retail-payments"><span>VISA</span><span>MC</span><span>AMEX</span><span>Pay</span></div></div></footer>`;
+  }
+  function megaRetailSocialLinks(contact = {}) {
+    return [["instagram", "Instagram"], ["facebook", "Facebook"], ["tiktok", "TikTok"], ["twitter", "Twitter"]].map(([key, label]) => {
+      const raw = String(contact[key] || "").trim();
+      if (!raw) return "";
+      const url = /^https?:\/\//i.test(raw) ? raw : `https://${key === "twitter" ? "x.com" : `${key}.com`}/${raw.replace(/^@/, "")}`;
+      return `<a href="${escapeAttribute(url)}" target="_blank" rel="noopener noreferrer" aria-label="${label}">${megaRetailIcon(key)}</a>`;
+    }).join("");
+  }
+  function megaRetailLabels(schema = {}) {
+    const language = schema.business?.selectedLanguage || schema.business?.selected_language || "en";
+    const all = {
+      en: { departments: "Departments", search: "Search products and departments", account: "Sign in", favorites: "Favorites", cart: "Cart", featured: "Featured", department: "Department", heroText: "Everything you need, in one place.", discover: "Discover the collection", explore: "Explore", limited: "Limited-time picks", deals: "Today's deals", viewAll: "View all", price: "Price on request", tagline: "Everything you need in one place.", help: "Help", company: "Company", newsletter: "Get the best deals", newsletterText: "New arrivals and special offers in your inbox.", subscribe: "Subscribe", helpLinks: ["Shipping", "Returns", "Contact", "Frequently asked questions"], fallbackCategories: ["Technology", "Home", "Fashion", "Beauty", "Outdoor"], trust: [["Fast shipping", "Reliable delivery options"], ["Easy returns", "Simple exchanges and returns"], ["A broad catalog", "Everything in one place"], ["Secure payment", "Protected checkout"]] },
+      es: { departments: "Departamentos", search: "Buscar productos y departamentos", account: "Ingresar", favorites: "Favoritos", cart: "Carrito", featured: "Destacado", department: "Departamento", heroText: "Todo lo que buscas, en un solo lugar.", discover: "Descubre la colecci\xF3n", explore: "Explorar", limited: "Selecci\xF3n por tiempo limitado", deals: "Ofertas de hoy", viewAll: "Ver todo", price: "Precio a consultar", tagline: "Todo lo que buscas en un solo lugar.", help: "Ayuda", company: "Empresa", newsletter: "Recibe las mejores ofertas", newsletterText: "Novedades y promociones directo en tu correo.", subscribe: "Suscribirse", helpLinks: ["Env\xEDos", "Devoluciones", "Contacto", "Preguntas frecuentes"], fallbackCategories: ["Tecnolog\xEDa", "Hogar", "Moda", "Belleza", "Aire libre"], trust: [["Env\xEDo r\xE1pido", "Opciones de entrega confiables"], ["Devoluciones f\xE1ciles", "Cambios y devoluciones simples"], ["Cat\xE1logo amplio", "Todo en un solo lugar"], ["Pago seguro", "Compra protegida"]] }
+    };
+    return all[language] || all.en;
+  }
+  function megaRetailIcon(name) {
+    const paths = { search: '<circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>', heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"></path>', bag: '<path d="M6 8h12l1 13H5L6 8Z"></path><path d="M9 9V6a3 3 0 0 1 6 0v3"></path>', arrow: '<path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path>', truck: '<path d="M3 6h11v10H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="2"></circle><circle cx="18" cy="18" r="2"></circle>', return: '<path d="m9 14-4-4 4-4"></path><path d="M5 10h9a5 5 0 0 1 5 5v1"></path>', grid: '<rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect>', lock: '<rect x="5" y="10" width="14" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path>', whatsapp: '<path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4A8 8 0 1 1 20 11.5Z"></path><path d="M9 8.5c.8 2.2 2.3 3.8 4.7 4.7"></path>', instagram: '<rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1"></circle>', facebook: '<path d="M14 8h3V4h-3a5 5 0 0 0-5 5v3H6v4h3v6h4v-6h3l1-4h-4V9a1 1 0 0 1 1-1Z"></path>', tiktok: '<path d="M15 4v10a4 4 0 1 1-4-4"></path><path d="M15 4c1 3 3 4 5 4"></path>', twitter: '<path d="M4 4l16 16M20 4 4 20"></path>' };
+    return `<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths[name] || paths.grid}</svg>`;
   }
   function renderCourseOffering(section, schema) {
     const editable = section.editable || {};
@@ -14051,9 +14184,9 @@ ${guidedQuestion(nextMissing)}`
     );
     const description = professionalPublicDescription({ payload, template, templateId, catalogType, copy, name, products, language });
     const salesText = `${payload.salesMode || ""} ${payload.sales_mode || ""} ${payload.templateIntent || ""} ${template.category || ""} ${template.id || ""}`.toLowerCase();
-    const isMegaRetailTemplate = catalogType === "single_vendor_dense_catalog" || catalogType === "dense_retail_catalog" || /mega-retail-store/i.test(template.id || "");
+    const isMegaRetailTemplate2 = catalogType === "single_vendor_dense_catalog" || catalogType === "dense_retail_catalog" || /mega-retail-store/i.test(template.id || "");
     const isMarketplaceTemplate = catalogType === "dense_marketplace_catalog" || /mega-marketplace|marketplace-style/i.test(template.id || "");
-    const isOnlineShop = /sell online|online sales|shop|store|tienda|ecommerce|cart|checkout|vender|comprar|marketplace/.test(salesText) || isMarketplaceTemplate || isMegaRetailTemplate;
+    const isOnlineShop = /sell online|online sales|shop|store|tienda|ecommerce|cart|checkout|vender|comprar|marketplace/.test(salesText) || isMarketplaceTemplate || isMegaRetailTemplate2;
     const categoryContext = [
       payload.business_description,
       payload.industry,
@@ -14083,11 +14216,11 @@ ${guidedQuestion(nextMissing)}`
       shipping_label: index % 2 === 0 ? copy.fastDelivery : copy.freeShipping,
       deal_label: index % 3 === 0 ? copy.todayDeal : "",
       price_type: isOnlineShop ? "fixed" : "quote_only",
-      price_amount: isMarketplaceTemplate || isMegaRetailTemplate ? marketplacePriceForIndex(index) : "",
+      price_amount: isMarketplaceTemplate || isMegaRetailTemplate2 ? marketplacePriceForIndex(index) : "",
       currency: "USD",
-      price_label: isMarketplaceTemplate || isMegaRetailTemplate ? `USD ${marketplacePriceForIndex(index).toFixed(2)}` : isOnlineShop ? copy.priceNotSet : copy.askPrice,
+      price_label: isMarketplaceTemplate || isMegaRetailTemplate2 ? `USD ${marketplacePriceForIndex(index).toFixed(2)}` : isOnlineShop ? copy.priceNotSet : copy.askPrice,
       button_label: isOnlineShop ? copy.viewProduct : copy.request,
-      inventory_quantity: isMarketplaceTemplate || isMegaRetailTemplate ? 24 + index * 3 : "",
+      inventory_quantity: isMarketplaceTemplate || isMegaRetailTemplate2 ? 24 + index * 3 : "",
       track_inventory: isOnlineShop,
       image_url: "",
       is_active: true,
@@ -14227,7 +14360,7 @@ ${guidedQuestion(nextMissing)}`
         };
       });
     }
-    const instantPages = isMegaRetailTemplate ? buildRetailInstantPages(copy, name, description, payload) : isMarketplaceTemplate ? buildMarketplaceInstantPages(copy, name, description, payload) : isPremiumTemplate ? buildPremiumProductInstantPages(copy, name, description, payload) : isLuxuryHighTicketTemplate ? buildLuxuryHighTicketInstantPages(copy, name, description, payload) : isEducationTemplate ? buildEducationAcademyInstantPages(copy, name, description, payload) : isClinicTemplate ? buildMedicalWellnessInstantPages(copy, name, description, payload) : isProfessionalTemplate ? buildLegalProfessionalInstantPages(copy, name, description, payload) : isB2BTemplate ? buildB2BEnterpriseInstantPages(copy, name, description, payload) : isManufacturingTemplate ? buildManufacturingIndustrialInstantPages(copy, name, description, payload) : isFashionTemplate ? buildFashionDropInstantPages(copy, name, description, payload) : isCorporateTemplate ? buildCorporateCompanyInstantPages(copy, name, description, payload) : isHomeServicesTemplate ? buildHomeServicesPremiumInstantPages(copy, name, description, payload) : isBookingTemplate ? buildBookingAppointmentInstantPages(copy, name, description, payload) : isRestaurantTemplate ? buildRestaurantMenuInstantPages(copy, name, description, payload) : isDigitalTemplate ? buildDigitalProductsInstantPages(copy, name, description, payload) : isRealEstateListingTemplate ? buildRealEstateListingsInstantPages(copy, name, description, payload) : isLeadFunnelTemplate ? buildLeadFunnelInstantPages(copy, name, description, payload) : buildDefaultInstantPages(copy, name, description, payload);
+    const instantPages = isMegaRetailTemplate2 ? buildRetailInstantPages(copy, name, description, payload) : isMarketplaceTemplate ? buildMarketplaceInstantPages(copy, name, description, payload) : isPremiumTemplate ? buildPremiumProductInstantPages(copy, name, description, payload) : isLuxuryHighTicketTemplate ? buildLuxuryHighTicketInstantPages(copy, name, description, payload) : isEducationTemplate ? buildEducationAcademyInstantPages(copy, name, description, payload) : isClinicTemplate ? buildMedicalWellnessInstantPages(copy, name, description, payload) : isProfessionalTemplate ? buildLegalProfessionalInstantPages(copy, name, description, payload) : isB2BTemplate ? buildB2BEnterpriseInstantPages(copy, name, description, payload) : isManufacturingTemplate ? buildManufacturingIndustrialInstantPages(copy, name, description, payload) : isFashionTemplate ? buildFashionDropInstantPages(copy, name, description, payload) : isCorporateTemplate ? buildCorporateCompanyInstantPages(copy, name, description, payload) : isHomeServicesTemplate ? buildHomeServicesPremiumInstantPages(copy, name, description, payload) : isBookingTemplate ? buildBookingAppointmentInstantPages(copy, name, description, payload) : isRestaurantTemplate ? buildRestaurantMenuInstantPages(copy, name, description, payload) : isDigitalTemplate ? buildDigitalProductsInstantPages(copy, name, description, payload) : isRealEstateListingTemplate ? buildRealEstateListingsInstantPages(copy, name, description, payload) : isLeadFunnelTemplate ? buildLeadFunnelInstantPages(copy, name, description, payload) : buildDefaultInstantPages(copy, name, description, payload);
     const schema = {
       schema_version: "1.0",
       site_type: isBusinessWebsite ? "business_website" : "online_store",
@@ -14266,7 +14399,7 @@ ${guidedQuestion(nextMissing)}`
       integrations: { contact: { whatsapp_enabled: true, email_enabled: true }, analytics: { enabled: false, provider: "" }, payments: { enabled: false, mode: "setup_required" } },
       custom_logic: { enabled: false, risk_level: "restricted", automations: "" },
       site_plan: payload.sitePlan || buildSitePlan(templateSelection),
-      navigation: isMegaRetailTemplate ? [
+      navigation: isMegaRetailTemplate2 ? [
         { label: copy.home, page_key: "home" },
         { label: copy.deals, page_key: "catalog" },
         { label: copy.categories, page_key: "catalog" },
@@ -18106,6 +18239,8 @@ Site ID: ${builderState.currentSiteId}`
   }
   function renderEditor() {
     if (!builderState.currentSchema) return;
+    const currentTemplateId = builderState.currentSchema.active_template?.id || builderState.currentSchema.selected_template?.id || "";
+    const megaRetailFeatures = megaRetailFeatureFlags(builderState.currentSchema);
     editorMount.classList.toggle("advanced-inspector-open", builderState.advancedInspectorOpen);
     const pageOptions = builderState.currentSchema.pages.map(
       (page) => `<option value="${escapeAttribute(page.page_key)}" ${page.page_key === builderState.selectedPageKey ? "selected" : ""}>${escapeHtml(page.title)}</option>`
@@ -18144,6 +18279,12 @@ Site ID: ${builderState.currentSiteId}`
       <h3>Contact</h3>
       ${Object.entries(builderState.currentSchema.contact || {}).map(([key, value]) => inputField(key, `contact.${key}`, value)).join("")}
     </div>
+    ${isMegaRetailTemplate(currentTemplateId) ? `<div class="editor-group">
+      <h3>Mega retail features</h3>
+      ${checkboxField("Show WhatsApp button", "global_components.mega_retail_features.whatsapp", megaRetailFeatures.whatsapp, "data-path")}
+      ${checkboxField("Show newsletter signup", "global_components.mega_retail_features.newsletter", megaRetailFeatures.newsletter, "data-path")}
+      ${checkboxField("Show social links", "global_components.mega_retail_features.socials", megaRetailFeatures.socials, "data-path")}
+    </div>` : ""}
     <div class="editor-group">
       <h3>Catalog Manager</h3>
       <p class="mini-note">The public site renders products from catalog_items, not hardcoded page JSON.</p>
@@ -18177,7 +18318,8 @@ Site ID: ${builderState.currentSiteId}`
     });
     editorMount.querySelectorAll("[data-path]").forEach((input) => {
       input.addEventListener("input", () => {
-        setPath(builderState.currentSchema, input.dataset.path, normalizeEditedValue(input.dataset.path, input.value));
+        const value = input.type === "checkbox" ? input.checked : normalizeEditedValue(input.dataset.path, input.value);
+        setPath(builderState.currentSchema, input.dataset.path, value);
         if (input.dataset.path.startsWith("brand.") || input.dataset.path === "global_components.logo_url") {
           builderState.currentSchema.brand = normalizeBrand({
             ...builderState.currentSchema.brand || {},
@@ -18317,7 +18459,10 @@ Site ID: ${builderState.currentSiteId}`
       });
     });
     root.querySelectorAll("[data-catalog-category]").forEach((button) => {
-      button.addEventListener("click", () => applyFilter(button.dataset.catalogCategory || ""));
+      button.addEventListener("click", () => {
+        applyFilter(button.dataset.catalogCategory || "");
+        button.closest("details")?.removeAttribute("open");
+      });
     });
   }
   function renderSchemaPreviewInto(schema, containerElement, payload = {}, templateSelection = null) {

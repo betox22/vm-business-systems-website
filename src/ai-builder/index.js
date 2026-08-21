@@ -48,6 +48,7 @@ import {
   resolveWebsiteIntentBackfill,
 } from './guided-intent-policy.js';
 import { mergeSemanticSeedCatalog } from './catalog-seed-policy.js';
+import { isMegaRetailTemplate, megaRetailFeatureFlags } from './mega-retail-policy.js';
 import { hasDecidedTemplateSelection, isConcreteTemplateId } from './template-carousel-policy.js';
 import {
   MIN_GUIDED_BUILD_PHASE_VISIBLE_MS,
@@ -12081,6 +12082,8 @@ function catalogItemsForApi() {
 
 export function renderEditor() {
   if (!builderState.currentSchema) return;
+  const currentTemplateId = builderState.currentSchema.active_template?.id || builderState.currentSchema.selected_template?.id || "";
+  const megaRetailFeatures = megaRetailFeatureFlags(builderState.currentSchema);
   editorMount.classList.toggle("advanced-inspector-open", builderState.advancedInspectorOpen);
   const pageOptions = builderState.currentSchema.pages
     .map(
@@ -12125,6 +12128,12 @@ export function renderEditor() {
         .map(([key, value]) => inputField(key, `contact.${key}`, value))
         .join("")}
     </div>
+    ${isMegaRetailTemplate(currentTemplateId) ? `<div class="editor-group">
+      <h3>Mega retail features</h3>
+      ${checkboxField("Show WhatsApp button", "global_components.mega_retail_features.whatsapp", megaRetailFeatures.whatsapp, "data-path")}
+      ${checkboxField("Show newsletter signup", "global_components.mega_retail_features.newsletter", megaRetailFeatures.newsletter, "data-path")}
+      ${checkboxField("Show social links", "global_components.mega_retail_features.socials", megaRetailFeatures.socials, "data-path")}
+    </div>` : ""}
     <div class="editor-group">
       <h3>Catalog Manager</h3>
       <p class="mini-note">The public site renders products from catalog_items, not hardcoded page JSON.</p>
@@ -12162,7 +12171,8 @@ export function renderEditor() {
 
   editorMount.querySelectorAll("[data-path]").forEach((input) => {
     input.addEventListener("input", () => {
-      setPath(builderState.currentSchema, input.dataset.path, normalizeEditedValue(input.dataset.path, input.value));
+      const value = input.type === "checkbox" ? input.checked : normalizeEditedValue(input.dataset.path, input.value);
+      setPath(builderState.currentSchema, input.dataset.path, value);
       if (input.dataset.path.startsWith("brand.") || input.dataset.path === "global_components.logo_url") {
         builderState.currentSchema.brand = normalizeBrand({
           ...(builderState.currentSchema.brand || {}),
@@ -12313,7 +12323,10 @@ function bindCatalogSearchInteractions(root) {
     });
   });
   root.querySelectorAll("[data-catalog-category]").forEach((button) => {
-    button.addEventListener("click", () => applyFilter(button.dataset.catalogCategory || ""));
+    button.addEventListener("click", () => {
+      applyFilter(button.dataset.catalogCategory || "");
+      button.closest("details")?.removeAttribute("open");
+    });
   });
 }
 
