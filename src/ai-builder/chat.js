@@ -289,7 +289,10 @@ export async function sendGuidedReply() {
       || readClientIntakeSession()?.client_email
       || localStorage.getItem("lumaPendingClientEmail")
       || "";
-    resetGuidedStateForNewAccount();
+    resetGuidedStateForNewAccount({ preserveAuth: true });
+    // resetAssistantConversation() clears the message appended just before
+    // the reset, so restore it as the first turn of the clean project.
+    appendChatMessage("user", message);
     if (email) {
       builderState.guidedState.contactInfo.email = email;
       localStorage.setItem("lumaPendingClientEmail", email);

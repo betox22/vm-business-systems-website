@@ -24,6 +24,38 @@ export function isStrongNewBusinessBrief({
   );
 }
 
+function normalizedBusinessIdentity(value = "") {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+export function shouldStartCleanBusinessProject({
+  isPublicClientSetup = false,
+  isStrongNewBrief = false,
+  incomingBusinessName = "",
+  existingBusinessName = "",
+  hasCurrentSchema = false,
+  hasRestoredDraft = false,
+  hasExistingContext = false,
+} = {}) {
+  if (!isPublicClientSetup || !isStrongNewBrief) return false;
+
+  const incoming = normalizedBusinessIdentity(incomingBusinessName);
+  const existing = normalizedBusinessIdentity(existingBusinessName);
+  const namesClearlyDiffer = Boolean(incoming && existing && incoming !== existing);
+
+  // A loaded/generated site is normally an edit target. Only an explicit,
+  // rich brief with a different concrete business identity can replace it.
+  if (hasCurrentSchema) return namesClearlyDiffer;
+
+  if (!hasRestoredDraft) return false;
+  return namesClearlyDiffer || Boolean(hasExistingContext);
+}
+
 export function resolveBackendMissingSteps({
   backendMissingFields = [],
   mapField = (field) => field,

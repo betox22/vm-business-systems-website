@@ -1,0 +1,73 @@
+{
+  "capturedAt": "2026-08-20T23:49:31.677Z",
+  "harness": "Playwright browser flow with production host HTML, local dist/ai-builder.js, and deterministic mocked API responses",
+  "priorProject": {
+    "businessName": "Mi Mundo 3D",
+    "servicesProducts": [
+      "Impresiones 3D",
+      "Regalos",
+      "Accesorios"
+    ],
+    "generatedSiteId": "site-mi-mundo-3d"
+  },
+  "correction": "Quiero crear una tienda nueva y diferente llamada Turbo Parts VE. Vendemos repuestos y piezas de carro usados y nuevos, filtros, frenos, aceite, bujias. Vendemos online con envio a todo el pais y tambien recibimos clientes en el taller fisico en Caracas. Estilo moderno, oscuro, agresivo, para mecanicos y dueños de carros.",
+  "cleanSessionRequest": {
+    "forceNew": true,
+    "generatedSiteId": "",
+    "projectId": ""
+  },
+  "lumaChatCurrent": {
+    "businessName": "Turbo Parts VE",
+    "businessDescription": "Quiero crear una tienda nueva y diferente llamada Turbo Parts VE. Vendemos repuestos y piezas de carro usados y nuevos, filtros, frenos, aceite, bujias. Vendemos online con envio a todo el pais y tambien recibimos clientes en el taller fisico en Caracas. Estilo moderno, oscuro, agresivo, para mecanicos y dueños de carros.",
+    "servicesProducts": [
+      "repuestos",
+      "piezas de carro usados",
+      "nuevos",
+      "filtros",
+      "frenos",
+      "aceite",
+      "bujias"
+    ],
+    "generatedSiteId": "",
+    "projectId": ""
+  },
+  "websiteBuilderRequest": {
+    "businessName": "Turbo Parts VE",
+    "businessDescription": "Quiero crear una tienda nueva y diferente llamada Turbo Parts VE. Vendemos repuestos y piezas de carro usados y nuevos, filtros, frenos, aceite, bujias. Vendemos online con envio a todo el pais y tambien recibimos clientes en el taller fisico en Caracas. Estilo moderno, oscuro, agresivo, para mecanicos y dueños de carros.",
+    "industry": "automotive",
+    "location": "Caracas",
+    "servicesProducts": [
+      "repuestos",
+      "piezas de carro usados",
+      "nuevos",
+      "filtros",
+      "frenos",
+      "aceite",
+      "bujias",
+      "repuestos y piezas de carro usados"
+    ],
+    "generatedSiteId": "",
+    "projectId": ""
+  },
+  "finalStorage": {
+    "businessName": "Turbo Parts VE",
+    "catalogSource": "ai_generated",
+    "catalogNames": [
+      "Filtro de aceite premium",
+      "Pastillas de freno delanteras",
+      "Aceite sintetico 5W-30",
+      "Juego de bujias"
+    ],
+    "currentSiteId": "site-turbo-parts"
+  },
+  "assertions": {
+    "cleanSessionWasCreated": true,
+    "lumaCurrentHasNoOldOfferings": true,
+    "lumaCurrentDoesNotReuseOldSite": true,
+    "generationHasOnlyNewOfferings": true,
+    "generationDoesNotReuseOldSite": true,
+    "catalogIsAiGenerated": true,
+    "finalCatalogHasNoOldOfferings": true
+  },
+  "pageErrors": []
+}

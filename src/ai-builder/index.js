@@ -38,7 +38,11 @@ import { pickVariantSeed } from './variants.js';
 import { buildColorProvenance } from './color-provenance.js';
 import { applyAuthoritativeThemeToBrand } from './theme-policy.js';
 import { generationAuthAction } from './auth-session-policy.js';
-import { isStrongNewBusinessBrief, resolveBackendMissingSteps } from './intake-state-policy.js';
+import {
+  isStrongNewBusinessBrief,
+  resolveBackendMissingSteps,
+  shouldStartCleanBusinessProject,
+} from './intake-state-policy.js';
 import {
   missingRequiredGuidedSteps,
   resolveWebsiteIntentBackfill,
@@ -1948,13 +1952,23 @@ function isNewProjectBriefMessage(message) {
 }
 
 function shouldResetRestoredWorkspaceForMessage(message) {
-  if (!isPublicClientSetup || builderState.currentSchema) return false;
+  if (!isPublicClientSetup) return false;
   const restored = Boolean(builderState.restoredGuidedDraftInfo || builderState.clientIntakeSession?.restored || readClientIntakeSession()?.restored);
-  if (!restored || !isNewProjectBriefMessage(message)) return false;
-  const incomingName = extractBusinessName(message).toLowerCase();
-  const existingName = String(builderState.guidedState.businessName || "").trim().toLowerCase();
-  if (incomingName && existingName && incomingName !== existingName) return true;
-  return Boolean(builderState.guidedState.businessDescription || builderState.guidedState.websiteIntent || builderState.guidedState.selectedTemplateId || builderState.guidedState.catalogType);
+  const hasExistingContext = Boolean(
+    builderState.guidedState.businessDescription
+    || builderState.guidedState.websiteIntent
+    || builderState.guidedState.selectedTemplateId
+    || builderState.guidedState.catalogType
+  );
+  return shouldStartCleanBusinessProject({
+    isPublicClientSetup,
+    isStrongNewBrief: isNewProjectBriefMessage(message),
+    incomingBusinessName: extractBusinessName(message),
+    existingBusinessName: builderState.guidedState.businessName,
+    hasCurrentSchema: Boolean(builderState.currentSchema),
+    hasRestoredDraft: restored,
+    hasExistingContext,
+  });
 }
 
 

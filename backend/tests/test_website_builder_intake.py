@@ -228,6 +228,72 @@ class WebsiteBuilderIntakeTests(unittest.TestCase):
         retry.assert_awaited_once()
         self.assertEqual(response.catalog_source, "seed_fallback")
 
+    def test_replaced_business_reaches_generation_with_only_new_offerings(self) -> None:
+        new_offerings = [
+            "Repuestos y piezas de carro usados y nuevos",
+            "Filtros",
+            "Frenos",
+            "Aceite",
+            "Bujias",
+        ]
+        request = WebsiteGenerationRequest(
+            business_name="Turbo Parts VE",
+            business_description=(
+                "Repuestos y piezas de carro usados y nuevos, filtros, frenos, "
+                "aceite y bujias, con venta online y taller fisico en Caracas."
+            ),
+            industry="automotive",
+            location="Caracas",
+            services_products=new_offerings,
+            target_audience="Mecanicos y duenos de carros",
+            preferred_tone="Moderno, oscuro y agresivo",
+            logoPreference="explicit_skip",
+            salesFlow="online_sales",
+            selectedLanguage="es",
+            fieldMeta={
+                "niche": {"source": "explicit", "confidence": 1},
+                "sales_flow": {"source": "explicit", "confidence": 1},
+                "brand_style": {"source": "explicit", "confidence": 1},
+                "logo": {"source": "explicit", "confidence": 1},
+            },
+        )
+        captured_state = {}
+
+        async def generate_turbo_parts(_prompt, state, **_kwargs):
+            captured_state["servicesProducts"] = list(state.servicesProducts)
+            state.websiteType = "online_store"
+            state.selectedTemplateId = "premium-product-store"
+            state.catalogItems = [
+                {"name": "Filtro de aceite premium", "category": "Filtros", "price": 18.0},
+                {"name": "Pastillas de freno delanteras", "category": "Frenos", "price": 42.0},
+                {"name": "Aceite sintetico 5W-30", "category": "Aceites", "price": 29.0},
+                {"name": "Juego de bujias", "category": "Encendido", "price": 24.0},
+            ]
+            state.catalogSource = "ai_generated"
+            return state
+
+        with patch.object(main.orchestrator, "run", side_effect=generate_turbo_parts):
+            response = asyncio.run(main.website_builder(
+                request,
+                _http_request(),
+                authorization="",
+                luma_client_session="",
+                session=self.session,
+            ))
+
+        self.assertEqual(captured_state["servicesProducts"], new_offerings)
+        self.assertEqual(response.catalog_source, "ai_generated")
+        catalog_names = [item["name"] for item in response.website_schema["catalog_items"]]
+        self.assertEqual(catalog_names, [
+            "Filtro de aceite premium",
+            "Pastillas de freno delanteras",
+            "Aceite sintetico 5W-30",
+            "Juego de bujias",
+        ])
+        contaminated = " ".join(catalog_names).lower()
+        for stale_term in ("impresiones 3d", "regalos", "accessories", "gifts", "toys"):
+            self.assertNotIn(stale_term, contaminated)
+
 
 if __name__ == "__main__":
     unittest.main()

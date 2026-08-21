@@ -1093,6 +1093,26 @@
       isRich && text.length >= 80 && String(businessName || "").trim() && Array.isArray(offerings) && offerings.filter(Boolean).length >= 2 && (String(salesMode || "").trim() || hasBusinessAction)
     );
   }
+  function normalizedBusinessIdentity(value = "") {
+    return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  }
+  function shouldStartCleanBusinessProject({
+    isPublicClientSetup: isPublicClientSetup2 = false,
+    isStrongNewBrief = false,
+    incomingBusinessName = "",
+    existingBusinessName = "",
+    hasCurrentSchema = false,
+    hasRestoredDraft = false,
+    hasExistingContext = false
+  } = {}) {
+    if (!isPublicClientSetup2 || !isStrongNewBrief) return false;
+    const incoming = normalizedBusinessIdentity(incomingBusinessName);
+    const existing = normalizedBusinessIdentity(existingBusinessName);
+    const namesClearlyDiffer = Boolean(incoming && existing && incoming !== existing);
+    if (hasCurrentSchema) return namesClearlyDiffer;
+    if (!hasRestoredDraft) return false;
+    return namesClearlyDiffer || Boolean(hasExistingContext);
+  }
   function resolveBackendMissingSteps({
     backendMissingFields = [],
     mapField = (field) => field,
@@ -6201,7 +6221,8 @@
     guidedReply2.value = "";
     if (shouldResetRestoredWorkspaceForMessage(message)) {
       const email = builderState.clientIntakeSession?.clientEmail || builderState.clientIntakeSession?.client_email || readClientIntakeSession()?.clientEmail || readClientIntakeSession()?.client_email || localStorage.getItem("lumaPendingClientEmail") || "";
-      resetGuidedStateForNewAccount();
+      resetGuidedStateForNewAccount({ preserveAuth: true });
+      appendChatMessage("user", message);
       if (email) {
         builderState.guidedState.contactInfo.email = email;
         localStorage.setItem("lumaPendingClientEmail", email);
@@ -9034,13 +9055,20 @@ ${cleanQuestion}`;
     });
   }
   function shouldResetRestoredWorkspaceForMessage(message) {
-    if (!isPublicClientSetup || builderState.currentSchema) return false;
+    if (!isPublicClientSetup) return false;
     const restored = Boolean(builderState.restoredGuidedDraftInfo || builderState.clientIntakeSession?.restored || readClientIntakeSession()?.restored);
-    if (!restored || !isNewProjectBriefMessage(message)) return false;
-    const incomingName = extractBusinessName(message).toLowerCase();
-    const existingName = String(builderState.guidedState.businessName || "").trim().toLowerCase();
-    if (incomingName && existingName && incomingName !== existingName) return true;
-    return Boolean(builderState.guidedState.businessDescription || builderState.guidedState.websiteIntent || builderState.guidedState.selectedTemplateId || builderState.guidedState.catalogType);
+    const hasExistingContext = Boolean(
+      builderState.guidedState.businessDescription || builderState.guidedState.websiteIntent || builderState.guidedState.selectedTemplateId || builderState.guidedState.catalogType
+    );
+    return shouldStartCleanBusinessProject({
+      isPublicClientSetup,
+      isStrongNewBrief: isNewProjectBriefMessage(message),
+      incomingBusinessName: extractBusinessName(message),
+      existingBusinessName: builderState.guidedState.businessName,
+      hasCurrentSchema: Boolean(builderState.currentSchema),
+      hasRestoredDraft: restored,
+      hasExistingContext
+    });
   }
   function applyPromptFromQuery() {
     const params = new URLSearchParams(window.location.search);

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   isStrongNewBusinessBrief,
   resolveBackendMissingSteps,
+  shouldStartCleanBusinessProject,
 } from "../src/ai-builder/intake-state-policy.js";
 
 test("recognizes the Mi Mundo 3D free-paragraph brief as a new project", () => {
@@ -24,6 +25,44 @@ test("does not reset a restored project for a normal detailed follow-up", () => 
     businessName: "",
     offerings: [],
     salesMode: "",
+  }), false);
+});
+
+test("starts a clean project when a loaded site receives a rich brief for a different business", () => {
+  const correction = "Quiero crear una tienda nueva y diferente llamada Turbo Parts VE. Vendemos repuestos y piezas de carro usados y nuevos, filtros, frenos, aceite, bujias. Vendemos online con envio a todo el pais y tambien recibimos clientes en el taller fisico en Caracas. Estilo moderno, oscuro, agresivo, para mecanicos y dueños de carros.";
+  const isStrongNewBrief = isStrongNewBusinessBrief({
+    message: correction,
+    isRich: true,
+    businessName: "Turbo Parts VE",
+    offerings: ["Repuestos", "Filtros", "Frenos", "Aceite", "Bujias"],
+    salesMode: "online_sales",
+  });
+  assert.equal(isStrongNewBrief, true);
+  assert.equal(shouldStartCleanBusinessProject({
+    isPublicClientSetup: true,
+    isStrongNewBrief,
+    incomingBusinessName: "Turbo Parts VE",
+    existingBusinessName: "Mi Mundo 3D",
+    hasCurrentSchema: true,
+    hasRestoredDraft: true,
+    hasExistingContext: true,
+  }), true);
+});
+
+test("keeps the loaded project for a targeted correction or the same business", () => {
+  assert.equal(shouldStartCleanBusinessProject({
+    isPublicClientSetup: true,
+    isStrongNewBrief: false,
+    incomingBusinessName: "",
+    existingBusinessName: "Mi Mundo 3D",
+    hasCurrentSchema: true,
+  }), false);
+  assert.equal(shouldStartCleanBusinessProject({
+    isPublicClientSetup: true,
+    isStrongNewBrief: true,
+    incomingBusinessName: "Mi Mundo 3D",
+    existingBusinessName: "Mi Mundo 3D",
+    hasCurrentSchema: true,
   }), false);
 });
 
