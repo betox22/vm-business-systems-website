@@ -5,10 +5,32 @@ function normalizedColorValues(values) {
   return source.map((value) => String(value || "").trim()).filter(Boolean);
 }
 
+function delegatesColorChoice(values) {
+  const text = normalizedColorValues(values)
+    .join(" ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return /\b(?:let (?:ai|lyra) (?:choose|decide)|(?:ai|lyra|ia|tu|you) (?:decide|elige|choose)|que (?:la )?(?:ia|lyra) (?:decida|elija)|surprise me|sorprendeme)\b/.test(text);
+}
+
+export function colorPreferenceUpdate(values) {
+  const preferredColors = normalizedColorValues(values);
+  if (!preferredColors.length) return {};
+  const source = delegatesColorChoice(preferredColors)
+    ? "explicit_delegation"
+    : "explicit_user_choice";
+  return {
+    preferredColors,
+    fieldMeta: {
+      preferredColors: { source, confidence: 1 },
+    },
+  };
+}
+
 export function buildColorProvenance({
   preferredColors = [],
   logoPalette = [],
-  localBrand = {},
   preferredColorMeta = {},
   structuredFormInput = false,
 } = {}) {
@@ -16,11 +38,6 @@ export function buildColorProvenance({
     ? normalizedColorValues(preferredColors)
     : [];
   const logoColors = normalizedColorValues(logoPalette);
-  const localColors = normalizedColorValues([
-    localBrand?.primaryColor,
-    localBrand?.secondaryColor,
-    localBrand?.accentColor,
-  ]);
   const entries = [];
   const seen = new Set();
   const append = (colors, source) => {
@@ -34,7 +51,7 @@ export function buildColorProvenance({
 
   append(explicitPreferred, "explicit_client");
   append(logoColors, "logo_extracted");
-  append(localColors, "local_suggestion");
+  // Editor preview defaults are visual placeholders, not client color evidence.
   const anchor = entries[0] || null;
   return {
     anchorColor: anchor?.color || null,

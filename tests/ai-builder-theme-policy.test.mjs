@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildColorProvenance } from "../src/ai-builder/color-provenance.js";
+import { buildColorProvenance, colorPreferenceUpdate } from "../src/ai-builder/color-provenance.js";
 import {
   applyAuthoritativeThemeToBrand,
   shouldPreserveBackendTheme,
@@ -60,7 +60,7 @@ test("local fallback without backend marker keeps the existing brand unchanged",
   assert.strictEqual(result, localBrand);
 });
 
-test("color provenance prioritizes explicit client colors, then logo, then local suggestions", () => {
+test("color provenance prioritizes explicit client colors, then logo colors", () => {
   const result = buildColorProvenance({
     preferredColors: ["#112233"],
     logoPalette: ["#445566", "#112233"],
@@ -73,19 +73,41 @@ test("color provenance prioritizes explicit client colors, then logo, then local
   assert.deepEqual(result.colors, [
     { color: "#112233", source: "explicit_client" },
     { color: "#445566", source: "logo_extracted" },
-    { color: "#778899", source: "local_suggestion" },
+  ]);
+});
+
+test("guided color reply becomes the explicit client anchor in the final provenance payload", () => {
+  const update = colorPreferenceUpdate(["morado", "azul"]);
+  const result = buildColorProvenance({
+    preferredColors: update.preferredColors,
+    logoPalette: ["#445566"],
+    localBrand: { primaryColor: "#778899" },
+    preferredColorMeta: update.fieldMeta.preferredColors,
+  });
+
+  assert.deepEqual(update.fieldMeta.preferredColors, {
+    source: "explicit_user_choice",
+    confidence: 1,
+  });
+  assert.equal(result.anchorColor, "morado");
+  assert.equal(result.anchorSource, "explicit_client");
+  assert.deepEqual(result.colors.slice(0, 2), [
+    { color: "morado", source: "explicit_client" },
+    { color: "azul", source: "explicit_client" },
   ]);
 });
 
 test("delegated color choice does not outrank an extracted logo palette", () => {
+  const update = colorPreferenceUpdate(["Let AI choose"]);
   const result = buildColorProvenance({
-    preferredColors: ["Lyra decide"],
+    preferredColors: update.preferredColors,
     logoPalette: ["#445566"],
     localBrand: { primaryColor: "#778899" },
-    preferredColorMeta: { source: "explicit_delegation", confidence: 1 },
+    preferredColorMeta: update.fieldMeta.preferredColors,
   });
 
+  assert.equal(update.fieldMeta.preferredColors.source, "explicit_delegation");
   assert.equal(result.anchorColor, "#445566");
   assert.equal(result.anchorSource, "logo_extracted");
-  assert.equal(result.colors.some((item) => item.color === "Lyra decide"), false);
+  assert.equal(result.colors.some((item) => item.color === "Let AI choose"), false);
 });

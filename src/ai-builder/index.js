@@ -35,7 +35,7 @@ import {
 } from './templates.js';
 import { escapeHtml, escapeAttribute } from './utils.js';
 import { pickVariantSeed } from './variants.js';
-import { buildColorProvenance } from './color-provenance.js';
+import { buildColorProvenance, colorPreferenceUpdate } from './color-provenance.js';
 import { applyAuthoritativeThemeToBrand } from './theme-policy.js';
 import { generationAuthAction } from './auth-session-policy.js';
 import {
@@ -4651,7 +4651,17 @@ function syncGuidedStateFromSummary() {
     const key = field.dataset.summaryField;
     if (key === "selectedLanguage") {
       setSelectedLanguage(field.value);
-    } else if (["servicesProducts", "preferredColors", "photoUrls", "videoUrls"].includes(key)) {
+    } else if (key === "preferredColors") {
+      const colors = splitCommaOrLines(field.value);
+      if (colors.length) {
+        mergeGuidedUpdates(colorPreferenceUpdate(colors));
+      } else {
+        builderState.guidedState.preferredColors = [];
+        const fieldMeta = { ...(builderState.guidedState.fieldMeta || {}) };
+        delete fieldMeta.preferredColors;
+        builderState.guidedState.fieldMeta = fieldMeta;
+      }
+    } else if (["servicesProducts", "photoUrls", "videoUrls"].includes(key)) {
       builderState.guidedState[key] = splitCommaOrLines(field.value);
     } else if (key === "contactInfo") {
       builderState.guidedState[key] = parseKeyValueLines(field.value);
@@ -4723,7 +4733,6 @@ export function guidedStateForApi() {
   const colorProvenance = buildColorProvenance({
     preferredColors: builderState.guidedState.preferredColors,
     logoPalette: builderState.guidedState.logoPalette,
-    localBrand: brand,
     preferredColorMeta: fieldMeta.preferredColors || {},
   });
   builderState.guidedState.colorProvenance = colorProvenance;
@@ -4949,7 +4958,7 @@ function completeGuidedBriefFromMessage(message, pendingUpdates = {}) {
   }
 
   if (!arrayValue(merged.preferredColors).length && briefRequestsCyberpunk(text)) {
-    updates.preferredColors = ["cyberpunk", "neon cyan", "magenta", "deep black"];
+    Object.assign(updates, colorPreferenceUpdate(["cyberpunk", "neon cyan", "magenta", "deep black"]));
   }
 
   if (wantsAiGeneratedLogo(text)) {
@@ -5033,7 +5042,7 @@ function inferGuidedUpdates(step, message) {
     return extracted.length ? { servicesProducts: extracted } : {};
   }
   if (step === "preferredColors") {
-    return hasExistingGuidedValue("preferredColors") ? {} : { preferredColors: splitCommaOrLines(message) };
+    return hasExistingGuidedValue("preferredColors") ? {} : colorPreferenceUpdate(splitCommaOrLines(message));
   }
   if (step === "contactInfo") {
     return hasExistingGuidedValue("contactInfo") ? {} : { contactInfo: parseKeyValueLines(message.includes(":") ? message : `notes: ${message}`) };
@@ -5116,9 +5125,9 @@ function inferGuidedUpdatesFromAnyMessage(message, attributionStep = "") {
 
   const colors = extractColorsFromText(text);
   if (colors.length && !arrayValue(builderState.guidedState.preferredColors).length) {
-    updates.preferredColors = colors;
+    Object.assign(updates, colorPreferenceUpdate(colors));
   } else if (briefRequestsCyberpunk(text) && !arrayValue(builderState.guidedState.preferredColors).length) {
-    updates.preferredColors = ["cyberpunk", "neon cyan", "magenta"];
+    Object.assign(updates, colorPreferenceUpdate(["cyberpunk", "neon cyan", "magenta"]));
     if (!updates.preferredTone && !builderState.guidedState.preferredTone) updates.preferredTone = "Cyberpunk, neon, energetic, modern";
   }
 
@@ -11864,7 +11873,6 @@ async function collectPayload() {
   const colorProvenance = validatedGuidedPayload?.colorProvenance || buildColorProvenance({
     preferredColors: preferredColorsValue,
     logoPalette: builderState.guidedState.logoPalette,
-    localBrand: payloadBrand,
     preferredColorMeta: fieldMeta.preferredColors || {},
     structuredFormInput: !validatedGuidedPayload && preferredColorsValue.length > 0,
   });

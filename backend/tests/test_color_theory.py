@@ -108,6 +108,33 @@ class ColorTheoryTests(unittest.TestCase):
         self.assertEqual(updates["brand_identity"]["primary_color"], "#5B7F55")
         self.assertEqual(len(updates["colors"]), 10)
 
+    def test_planner_uses_distinct_niche_hues_without_an_explicit_anchor(self) -> None:
+        pet_state = ProjectState(
+            businessName="Happy Paws",
+            businessDescription="Pet grooming and supplies for dogs and cats.",
+            industry="pet grooming",
+            servicesProducts=["Dog grooming", "Pet shampoo"],
+        )
+        technology_state = ProjectState(
+            businessName="Signal Stack",
+            businessDescription="Technology and software services for growing teams.",
+            industry="technology",
+            servicesProducts=["Cloud software", "Technical consulting"],
+        )
+
+        pet_updates = site_plan_to_updates(_minimal_plan(), pet_state)
+        technology_updates = site_plan_to_updates(_minimal_plan(), technology_state)
+        pet_hue = hex_to_hsl(pet_updates["colors"]["primary"])[0]
+        technology_hue = hex_to_hsl(technology_updates["colors"]["primary"])[0]
+
+        self.assertIsNone(pet_state.colorProvenance.anchorColor)
+        self.assertIsNone(technology_state.colorProvenance.anchorColor)
+        self.assertGreater(_hue_distance(pet_hue, technology_hue), 20.0)
+        self.assertNotEqual(
+            pet_updates["colors"]["primary"],
+            technology_updates["colors"]["primary"],
+        )
+
     def test_art_director_uses_same_logo_anchor_in_fallback(self) -> None:
         state = ProjectState(
             businessDescription="Natural handmade skincare and bath products.",

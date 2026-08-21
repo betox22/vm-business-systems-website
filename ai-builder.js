@@ -979,20 +979,29 @@
     const source = Array.isArray(values) ? values : values ? [values] : [];
     return source.map((value) => String(value || "").trim()).filter(Boolean);
   }
+  function delegatesColorChoice(values) {
+    const text = normalizedColorValues(values).join(" ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    return /\b(?:let (?:ai|lyra) (?:choose|decide)|(?:ai|lyra|ia|tu|you) (?:decide|elige|choose)|que (?:la )?(?:ia|lyra) (?:decida|elija)|surprise me|sorprendeme)\b/.test(text);
+  }
+  function colorPreferenceUpdate(values) {
+    const preferredColors = normalizedColorValues(values);
+    if (!preferredColors.length) return {};
+    const source = delegatesColorChoice(preferredColors) ? "explicit_delegation" : "explicit_user_choice";
+    return {
+      preferredColors,
+      fieldMeta: {
+        preferredColors: { source, confidence: 1 }
+      }
+    };
+  }
   function buildColorProvenance({
     preferredColors = [],
     logoPalette = [],
-    localBrand = {},
     preferredColorMeta = {},
     structuredFormInput = false
   } = {}) {
     const explicitPreferred = structuredFormInput || EXPLICIT_META_SOURCES.has(preferredColorMeta?.source) ? normalizedColorValues(preferredColors) : [];
     const logoColors = normalizedColorValues(logoPalette);
-    const localColors = normalizedColorValues([
-      localBrand?.primaryColor,
-      localBrand?.secondaryColor,
-      localBrand?.accentColor
-    ]);
     const entries = [];
     const seen = /* @__PURE__ */ new Set();
     const append = (colors, source) => {
@@ -1005,7 +1014,6 @@
     };
     append(explicitPreferred, "explicit_client");
     append(logoColors, "logo_extracted");
-    append(localColors, "local_suggestion");
     const anchor = entries[0] || null;
     return {
       anchorColor: anchor?.color || null,
@@ -11235,7 +11243,17 @@ ${guidedQuestion(nextMissing)}`
       const key = field.dataset.summaryField;
       if (key === "selectedLanguage") {
         setSelectedLanguage(field.value);
-      } else if (["servicesProducts", "preferredColors", "photoUrls", "videoUrls"].includes(key)) {
+      } else if (key === "preferredColors") {
+        const colors = splitCommaOrLines(field.value);
+        if (colors.length) {
+          mergeGuidedUpdates(colorPreferenceUpdate(colors));
+        } else {
+          builderState.guidedState.preferredColors = [];
+          const fieldMeta = { ...builderState.guidedState.fieldMeta || {} };
+          delete fieldMeta.preferredColors;
+          builderState.guidedState.fieldMeta = fieldMeta;
+        }
+      } else if (["servicesProducts", "photoUrls", "videoUrls"].includes(key)) {
         builderState.guidedState[key] = splitCommaOrLines(field.value);
       } else if (key === "contactInfo") {
         builderState.guidedState[key] = parseKeyValueLines(field.value);
@@ -11302,7 +11320,6 @@ ${guidedQuestion(nextMissing)}`
     const colorProvenance = buildColorProvenance({
       preferredColors: builderState.guidedState.preferredColors,
       logoPalette: builderState.guidedState.logoPalette,
-      localBrand: brand,
       preferredColorMeta: fieldMeta.preferredColors || {}
     });
     builderState.guidedState.colorProvenance = colorProvenance;
@@ -11474,7 +11491,7 @@ ${guidedQuestion(nextMissing)}`
       });
     }
     if (!arrayValue2(merged.preferredColors).length && briefRequestsCyberpunk(text)) {
-      updates.preferredColors = ["cyberpunk", "neon cyan", "magenta", "deep black"];
+      Object.assign(updates, colorPreferenceUpdate(["cyberpunk", "neon cyan", "magenta", "deep black"]));
     }
     if (wantsAiGeneratedLogo(text)) {
       updates.aiGeneratedLogoRequested = true;
@@ -11516,7 +11533,7 @@ ${guidedQuestion(nextMissing)}`
       return extracted.length ? { servicesProducts: extracted } : {};
     }
     if (step === "preferredColors") {
-      return hasExistingGuidedValue("preferredColors") ? {} : { preferredColors: splitCommaOrLines(message) };
+      return hasExistingGuidedValue("preferredColors") ? {} : colorPreferenceUpdate(splitCommaOrLines(message));
     }
     if (step === "contactInfo") {
       return hasExistingGuidedValue("contactInfo") ? {} : { contactInfo: parseKeyValueLines(message.includes(":") ? message : `notes: ${message}`) };
@@ -11576,9 +11593,9 @@ ${guidedQuestion(nextMissing)}`
     if (tone && !builderState.guidedState.preferredTone) updates.preferredTone = tone;
     const colors = extractColorsFromText(text);
     if (colors.length && !arrayValue2(builderState.guidedState.preferredColors).length) {
-      updates.preferredColors = colors;
+      Object.assign(updates, colorPreferenceUpdate(colors));
     } else if (briefRequestsCyberpunk(text) && !arrayValue2(builderState.guidedState.preferredColors).length) {
-      updates.preferredColors = ["cyberpunk", "neon cyan", "magenta"];
+      Object.assign(updates, colorPreferenceUpdate(["cyberpunk", "neon cyan", "magenta"]));
       if (!updates.preferredTone && !builderState.guidedState.preferredTone) updates.preferredTone = "Cyberpunk, neon, energetic, modern";
     }
     const contactInfo = extractContactInfo(text);
@@ -17898,7 +17915,6 @@ Site ID: ${builderState.currentSiteId}`
     const colorProvenance = validatedGuidedPayload?.colorProvenance || buildColorProvenance({
       preferredColors: preferredColorsValue,
       logoPalette: builderState.guidedState.logoPalette,
-      localBrand: payloadBrand,
       preferredColorMeta: fieldMeta.preferredColors || {},
       structuredFormInput: !validatedGuidedPayload && preferredColorsValue.length > 0
     });
