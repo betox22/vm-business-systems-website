@@ -157,6 +157,59 @@ class PublicSitePayloadTests(unittest.TestCase):
         self.assertEqual(_schema_summary(public_schema)["accent_color"], "#0F766E")
         self.assertEqual(_schema_summary({"theme": {"accent": "#AABBCC"}})["accent_color"], "#AABBCC")
 
+    def test_real_contact_and_client_photo_reach_generated_schema(self) -> None:
+        contact_info = {
+            "phone": "+1 305 555 0100",
+            "whatsapp": "+1 305 555 0101",
+            "email": "hello@northstar.example",
+            "instagram": "@northstar",
+            "address": "100 Ocean Drive, Miami, FL",
+        }
+        state = ProjectState(
+            businessName="Northstar Studio",
+            businessDescription="A client-owned creative studio.",
+            contactInfo=contact_info,
+            photoUrls=["https://cdn.example.com/client-hero.jpg"],
+            videoUrls=["https://www.youtube.com/watch?v=abc12345"],
+            generatedCopy={"pages": [{
+                "page_key": "home",
+                "title": "Home",
+                "slug": "/",
+                "order": 1,
+                "sections": [
+                    {"id": "hero", "type": "Hero", "editable": {"headline": "Northstar Studio"}},
+                    {"id": "video", "type": "VideoShowcase", "editable": {"title": "Our process"}},
+                ],
+            }]},
+        )
+
+        schema = build_schema_from_state(state, catalog_items=[], catalog_source="seed_fallback")
+        contact_section = next(
+            section
+            for page in schema["pages"]
+            for section in page.get("sections", [])
+            if section.get("type") == "Contact"
+        )
+        hero_section = next(
+            section
+            for page in schema["pages"]
+            for section in page.get("sections", [])
+            if section.get("type") in {"Hero", "MarketplaceHero"}
+        )
+        video_section = next(
+            section
+            for page in schema["pages"]
+            for section in page.get("sections", [])
+            if section.get("type") == "VideoShowcase"
+        )
+
+        self.assertEqual(schema["contact"], contact_info)
+        self.assertEqual(contact_section["editable"]["contactInfo"], contact_info)
+        self.assertEqual(hero_section["editable"]["image_url"], state.photoUrls[0])
+        self.assertEqual(video_section["editable"]["videoUrl"], state.videoUrls[0])
+        self.assertEqual(schema["client_media"]["photoUrls"], state.photoUrls)
+        self.assertEqual(schema["client_media"]["videoUrls"], state.videoUrls)
+
     def test_frontend_theme_consumers_use_nested_colors_and_fonts(self) -> None:
         repo_root = Path(__file__).resolve().parents[2]
         renderer_source = (repo_root / "src" / "ai-builder" / "renderers.js").read_text(encoding="utf-8")

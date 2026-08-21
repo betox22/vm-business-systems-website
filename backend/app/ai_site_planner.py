@@ -481,6 +481,11 @@ def compact_template_catalog() -> List[Dict[str, Any]]:
 
 
 def state_to_client_summary(state: ProjectState, user_input: str) -> Dict[str, Any]:
+    contact_info = {
+        key: str(value).strip()
+        for key, value in (state.contactInfo or {}).items()
+        if value is not None and str(value).strip()
+    }
     return {
         "userInput": user_input,
         "businessName": state.businessName,
@@ -491,6 +496,9 @@ def state_to_client_summary(state: ProjectState, user_input: str) -> Dict[str, A
         "targetAudience": state.targetAudience,
         "preferredTone": state.preferredTone,
         "preferredColors": state.preferredColors,
+        "contactInfo": contact_info,
+        "photoUrls": list(state.photoUrls or []),
+        "videoUrls": list(state.videoUrls or []),
         "selectedLanguage": state.selectedLanguage,
         "salesFlow": state.salesFlow,
         "selectedTemplateId": normalize_template_id(state.selectedTemplateId),
@@ -1353,6 +1361,9 @@ Hard rules:
 - If clientSummary.servicesProducts or clientSummary.businessDescription names concrete products or services, catalogItems MUST preserve those real names as the catalog foundation. Polish only their public description, category, price, price label, and imageSearchQuery. Never replace a client-named offering with a different invented offering.
 - This does not conflict with the private-notes rule: do not paste the client's raw sentences as public copy, but always preserve the identity and name of each concrete product or service they actually offer.
 - Only when the client supplied fewer than 4 concrete offerings may you add niche-plausible offerings to reach the minimum of 4. Client-named offerings always come first and are never discarded.
+- clientSummary.contactInfo contains verified public contact details supplied by the client. Contact sections must use those exact values when present; never invent a phone number, email, social handle, WhatsApp number, or address.
+- clientSummary.photoUrls contains client-owned photos. Prefer those exact URLs in section media.imageUrl, starting with the hero or strongest primary visual, instead of replacing them with generic stock imagery. Never alter or invent a client photo URL.
+- clientSummary.videoUrls contains client-provided videos. Use only those exact URLs for relevant VideoShowcase sections; never invent a video URL.
 - Each catalogItems object must include id, name, description, category, numeric price, price_amount, price_label, and imageSearchQuery.
 - Do not generate image_url, imageUrl, stock image URLs, Unsplash URLs, CDN URLs, or any other image URL in catalogItems. KREATON resolves product imagery server-side from imageSearchQuery.
 - If a client sells a focused product family such as jewelry, handmade accessories, fashion, candles, beauty, or crafts, choose a focused store/showroom template, not a broad marketplace.

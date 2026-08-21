@@ -11838,6 +11838,9 @@ async function collectPayload() {
   const photoUrls = validatedGuidedPayload
     ? arrayValue(validatedGuidedPayload.photoUrls)
     : splitLines(data.get("photo_urls")?.toString() || "");
+  const videoUrls = validatedGuidedPayload
+    ? arrayValue(validatedGuidedPayload.videoUrls)
+    : arrayValue(builderState.guidedState.videoUrls).filter(isCloudSafeUrl);
   const assets = [];
 
   if (logoUrl) {
@@ -11846,7 +11849,7 @@ async function collectPayload() {
   photoUrls.forEach((url, index) => {
     assets.push({ asset_type: "photo", label: `Photo ${index + 1}`, url });
   });
-  arrayValue(builderState.guidedState.videoUrls).filter(isCloudSafeUrl).forEach((url, index) => {
+  videoUrls.forEach((url, index) => {
     assets.push({ asset_type: "video", label: `Video ${index + 1}`, url });
   });
 
@@ -11901,6 +11904,8 @@ async function collectPayload() {
     request_id: builderState.currentRequestId,
     catalog_items: catalogItemsFromForm(),
     assets,
+    photoUrls,
+    videoUrls,
     logoPalette: arrayValue(builderState.guidedState.logoPalette),
     colorProvenance,
     brand: payloadBrand,

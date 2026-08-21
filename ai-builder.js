@@ -17884,6 +17884,7 @@ Site ID: ${builderState.currentSiteId}`
     const contactInfo = validatedGuidedPayload ? validatedGuidedPayload.contactInfo || {} : parseKeyValueLines(data.get("contact_info")?.toString() || "");
     const logoUrl = validatedGuidedPayload ? validatedGuidedPayload.logoUrl || "" : data.get("logo_url")?.toString().trim();
     const photoUrls = validatedGuidedPayload ? arrayValue2(validatedGuidedPayload.photoUrls) : splitLines(data.get("photo_urls")?.toString() || "");
+    const videoUrls = validatedGuidedPayload ? arrayValue2(validatedGuidedPayload.videoUrls) : arrayValue2(builderState.guidedState.videoUrls).filter(isCloudSafeUrl);
     const assets = [];
     if (logoUrl) {
       assets.push({ asset_type: "logo", label: "Logo", url: logoUrl });
@@ -17891,7 +17892,7 @@ Site ID: ${builderState.currentSiteId}`
     photoUrls.forEach((url, index) => {
       assets.push({ asset_type: "photo", label: `Photo ${index + 1}`, url });
     });
-    arrayValue2(builderState.guidedState.videoUrls).filter(isCloudSafeUrl).forEach((url, index) => {
+    videoUrls.forEach((url, index) => {
       assets.push({ asset_type: "video", label: `Video ${index + 1}`, url });
     });
     const logoFile = data.get("logo_file");
@@ -17940,6 +17941,8 @@ Site ID: ${builderState.currentSiteId}`
       request_id: builderState.currentRequestId,
       catalog_items: catalogItemsFromForm(),
       assets,
+      photoUrls,
+      videoUrls,
       logoPalette: arrayValue2(builderState.guidedState.logoPalette),
       colorProvenance,
       brand: payloadBrand,

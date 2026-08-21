@@ -6,6 +6,7 @@ import os
 import json
 import logging
 import time
+from copy import deepcopy
 from collections import defaultdict, deque
 from typing import Any, Dict, Optional
 
@@ -138,6 +139,7 @@ def sanitize_client_draft(raw: Any) -> Dict[str, Any]:
                 "phone": _trim_text(info.get("phone"), 80),
                 "whatsapp": _trim_text(info.get("whatsapp"), 80),
                 "instagram": _trim_text(info.get("instagram"), 120),
+                "address": _trim_text(info.get("address"), 240),
                 "website": _trim_text(info.get("website"), 200),
                 "notes": _trim_text(info.get("notes"), 700),
             }
@@ -1284,6 +1286,7 @@ async def website_builder(
         "logoPalette": request.logoPalette,
         "colorProvenance": request.colorProvenance.model_dump(),
         "photoUrls": request.photoUrls,
+        "videoUrls": request.videoUrls,
         "selectedLanguage": request.selectedLanguage,
         "selectedTemplateId": request.selected_template_id or request.designStrategy.get("selectedTemplateId"),
         "salesFlow": sales_flow,
@@ -1362,6 +1365,93 @@ def resolve_catalog_items_and_source(state) -> tuple[list[Dict[str, Any]], Catal
     return [], getattr(state, "catalogSource", None) or "seed_fallback"
 
 
+PUBLIC_CONTACT_FIELDS = ("phone", "whatsapp", "email", "instagram", "address", "website")
+CLIENT_PHOTO_SECTION_TYPES = {"Hero", "MarketplaceHero", "StoryBlock", "FeatureSpotlight", "Lookbook"}
+
+
+def _public_contact_info(state) -> Dict[str, str]:
+    raw_contact = state.contactInfo if isinstance(state.contactInfo, dict) else {}
+    return {
+        field: str(raw_contact.get(field)).strip()
+        for field in PUBLIC_CONTACT_FIELDS
+        if raw_contact.get(field) is not None and str(raw_contact.get(field)).strip()
+    }
+
+
+def _client_media_urls(values: Any) -> list[str]:
+    urls: list[str] = []
+    for value in values or []:
+        url = str(value or "").strip()
+        if url.startswith(("https://", "http://")) and url not in urls:
+            urls.append(url)
+    return urls
+
+
+def _apply_client_content_to_pages(
+    source_pages: list[Dict[str, Any]],
+    *,
+    contact_info: Dict[str, str],
+    photo_urls: list[str],
+    video_urls: list[str],
+) -> list[Dict[str, Any]]:
+    pages = deepcopy(source_pages)
+    contact_section_found = False
+    photo_index = 0
+    video_index = 0
+
+    for page in pages:
+        for section in page.get("sections") or []:
+            section_type = str(section.get("type") or section.get("component") or "")
+            editable = section.setdefault("editable", {})
+            if section_type == "Contact":
+                contact_section_found = True
+                if contact_info:
+                    editable["contactInfo"] = dict(contact_info)
+            if photo_index < len(photo_urls) and section_type in CLIENT_PHOTO_SECTION_TYPES:
+                editable["image_url"] = photo_urls[photo_index]
+                editable["imageUrl"] = photo_urls[photo_index]
+                photo_index += 1
+            if video_index < len(video_urls) and section_type == "VideoShowcase":
+                editable["videoUrl"] = video_urls[video_index]
+                video_index += 1
+
+    if contact_info and not contact_section_found:
+        contact_page = next(
+            (
+                page
+                for page in pages
+                if str(page.get("page_key") or page.get("pageKey") or page.get("pageId") or "").lower() == "contact"
+            ),
+            None,
+        )
+        if contact_page is None:
+            contact_page = {
+                "page_key": "contact",
+                "pageKey": "contact",
+                "pageId": "contact",
+                "title": "Contact",
+                "slug": "/contact",
+                "order": len(pages) + 1,
+                "sections": [],
+            }
+            pages.append(contact_page)
+        contact_page.setdefault("sections", []).append({
+            "id": "contact",
+            "sectionId": "contact",
+            "type": "Contact",
+            "component": "Contact",
+            "order": len(contact_page["sections"]) + 1,
+            "editable": {
+                "title": "Contact us",
+                "text": "Use the contact details below to get in touch.",
+                "contactInfo": dict(contact_info),
+            },
+            "settings": {"layout": "simple"},
+        })
+
+    return pages
+
+
 def build_schema_from_state(
     state,
     *,
@@ -1393,6 +1483,9 @@ def build_schema_from_state(
         if hasattr(state.colorProvenance, "model_dump")
         else ColorProvenance.model_validate(state.colorProvenance or {}).model_dump()
     )
+    contact_info = _public_contact_info(state)
+    photo_urls = _client_media_urls(state.photoUrls)
+    video_urls = _client_media_urls(state.videoUrls)
 
     schema = {
         "version": "1.0",
@@ -1409,6 +1502,11 @@ def build_schema_from_state(
             "location": state.location or "",
             "selectedLanguage": state.selectedLanguage,
             "tone": state.preferredTone or "",
+        },
+        "contact": contact_info,
+        "client_media": {
+            "photoUrls": photo_urls,
+            "videoUrls": video_urls,
         },
         "brand": {
             "logoUrl": state.logoUrl or "",
@@ -1536,6 +1634,12 @@ def build_schema_from_state(
             "visibleCopyPolicy": "Never paste raw intake notes verbatim.",
         },
     }
+    schema["pages"] = _apply_client_content_to_pages(
+        schema["pages"],
+        contact_info=contact_info,
+        photo_urls=photo_urls,
+        video_urls=video_urls,
+    )
     schema["navigation"] = [
         {
             "label": str(page.get("title") or page.get("page_key") or "Page"),

@@ -78,6 +78,7 @@ def normalize_state_payload(payload: Dict[str, Any] | None) -> ProjectState:
         "logoPalette": payload.get("logoPalette") or payload.get("logo_palette") or [],
         "colorProvenance": color_provenance if isinstance(color_provenance, dict) else {},
         "photoUrls": payload.get("photoUrls") or [],
+        "videoUrls": payload.get("videoUrls") or [],
         "selectedLanguage": payload.get("selectedLanguage"),
         "websiteIntent": payload.get("websiteIntent") or payload.get("website_intent"),
         "websiteType": payload.get("websiteType"),

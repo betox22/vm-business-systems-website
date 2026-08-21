@@ -2,7 +2,7 @@ import unittest
 
 from pydantic import ValidationError
 
-from app.ai_site_planner import AIWebGenerationResponse, site_plan_to_updates
+from app.ai_site_planner import AIWebGenerationResponse, site_plan_to_updates, state_to_client_summary
 from app.models import ProjectState
 
 
@@ -56,6 +56,24 @@ class SitePlanSectionTests(unittest.TestCase):
 
         self.assertEqual(updates["primaryOfferingCategory"], "premium-product-store")
         self.assertEqual(updates["secondaryOfferingCategories"], ["education-course-academy-pro"])
+
+    def test_client_summary_includes_contact_and_uploaded_media(self) -> None:
+        state = ProjectState(
+            businessName="Northstar Studio",
+            contactInfo={
+                "phone": "+1 305 555 0100",
+                "whatsapp": "+1 305 555 0101",
+                "email": "hello@northstar.example",
+            },
+            photoUrls=["https://cdn.example.com/client-hero.jpg"],
+            videoUrls=["https://www.youtube.com/watch?v=abc12345"],
+        )
+
+        summary = state_to_client_summary(state, "Build my site")
+
+        self.assertEqual(summary["contactInfo"], state.contactInfo)
+        self.assertEqual(summary["photoUrls"], state.photoUrls)
+        self.assertEqual(summary["videoUrls"], state.videoUrls)
 
     def test_secondary_courses_create_a_dedicated_repeatable_course_page(self) -> None:
         state = ProjectState(

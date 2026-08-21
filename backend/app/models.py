@@ -83,6 +83,7 @@ class ProjectState(BaseModel):
     logoPalette: List[str] = Field(default_factory=list)
     colorProvenance: ColorProvenance = Field(default_factory=ColorProvenance)
     photoUrls: List[str] = Field(default_factory=list)
+    videoUrls: List[str] = Field(default_factory=list)
     selectedLanguage: SupportedLanguage = "en"
 
     websiteIntent: Optional[str] = None
@@ -176,6 +177,7 @@ class WebsiteGenerationRequest(BaseModel):
     brandStyle: Optional[str] = None
     intakeFollowupAnswer: Optional[str] = None
     photoUrls: List[str] = Field(default_factory=list)
+    videoUrls: List[str] = Field(default_factory=list)
     selectedLanguage: SupportedLanguage = "en"
     selected_template_id: Optional[str] = None
     generatedSiteId: Optional[str] = None
