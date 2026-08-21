@@ -36,6 +36,7 @@ from .models import (
 )
 from .lyra_edit_engine import LyraEditEngine
 from .lyra_intake_engine import LyraIntakeDecision, LyraIntakeEngine
+from .logo_generation import generate_and_store_ai_logo
 from .orchestrator import (
     LyraOrchestrator,
     assistant_message_for_state,
@@ -1316,6 +1317,19 @@ async def website_builder(
                 final_state.businessName or "unknown",
                 final_state.selectedTemplateId or "unknown",
             )
+    if final_state.logoPreference == "generate_ai_logo" and not final_state.logoUrl:
+        logo_site_id = (
+            request.generatedSiteId
+            or request.generated_site_id
+            or request.projectId
+            or request.project_id
+            or f"generation-{uuid.uuid4().hex[:12]}"
+        )
+        await generate_and_store_ai_logo(
+            final_state,
+            business_id=final_state.businessName or "generated-business",
+            site_id=logo_site_id,
+        )
     schema = build_schema_from_state(final_state, catalog_items=catalog_items, catalog_source=catalog_source)
     auth_user = authenticated_client_user(authorization, luma_client_session, required=False)
     db_site = persist_generated_site(session, user=auth_user, request=request, schema=schema) if auth_user else None
@@ -1364,8 +1378,16 @@ def build_schema_from_state(
         catalog_items, catalog_source = resolve_catalog_items_and_source(state)
     colors = state.colors or {}
     logo_preference = state.logoPreference or ""
-    logo_pending_generation = bool(logo_preference and not state.logoUrl)
-    logo_status = "provided" if state.logoUrl else "pending_ai_generation" if logo_pending_generation else "not_provided"
+    logo_generation_status = str(getattr(state, "logoGenerationStatus", None) or "")
+    if state.logoUrl:
+        logo_status = "generated" if logo_generation_status == "generated" else "provided"
+    elif logo_generation_status == "generation_failed":
+        logo_status = "generation_failed"
+    elif logo_preference == "generate_ai_logo":
+        logo_status = "pending_ai_generation"
+    else:
+        logo_status = "not_provided"
+    logo_pending_generation = logo_status == "pending_ai_generation"
     color_provenance = (
         state.colorProvenance.model_dump()
         if hasattr(state.colorProvenance, "model_dump")
