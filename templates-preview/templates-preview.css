@@ -354,6 +354,29 @@ a {
   box-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
 }
 
+.all-template-catalog picture {
+  display: block;
+  min-width: 0;
+}
+
+.all-template-catalog picture img {
+  width: 100%;
+}
+
+.production-template-preview {
+  padding: 0;
+  background: #fff;
+  overflow: hidden;
+}
+
+.production-template-preview iframe {
+  display: block;
+  width: 100%;
+  min-height: 980px;
+  border: 0;
+  background: #fff;
+}
+
 .all-template-catalog img {
   width: 100%;
   height: 100%;
@@ -1548,6 +1571,10 @@ button {
 
   .all-template-catalog article {
     grid-template-columns: 112px minmax(0, 1fr);
+  }
+
+  .production-template-preview iframe {
+    min-height: 1180px;
   }
 
   .template-switcher,
