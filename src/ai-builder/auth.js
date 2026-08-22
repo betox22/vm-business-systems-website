@@ -17,6 +17,16 @@ import { escapeHtml, escapeAttribute } from './utils.js';
 import { hasValidPersistedCredential } from './auth-session-policy.js';
 import { resolveWebsiteIntentBackfill } from './guided-intent-policy.js';
 import {
+  clientProjectEntryDecision,
+  savedProjectName,
+} from './client-project-resume-policy.js';
+import {
+  clientProjectDomain,
+  clientProjectPreviewPath,
+  clientProjectStatusClass,
+  clientProjectVisualHue,
+} from './client-project-card-policy.js';
+import {
   magicLinkFeedback,
   readSupabaseAuthRedirect,
   requestSupabaseMagicLink,
@@ -92,6 +102,7 @@ let clientAuthSlowNoticeTimer = null;
 let magicLinkCooldownTimer = null;
 let magicLinkCooldownEndsAt = 0;
 let magicLinkResendEmail = "";
+let pendingClientProjectSession = null;
 
 function magicLinkElements() {
   return {
@@ -562,13 +573,26 @@ export function ensureClientProjectsPanel() {
     }
     const continueButton = event.target?.closest?.("[data-client-project-id]");
     if (continueButton) {
+      if (pendingClientProjectSession) hydrateClientIntakeSession(pendingClientProjectSession, { silent: true });
+      pendingClientProjectSession = null;
       loadClientProject(continueButton.dataset.clientProjectId).catch((error) => {
         console.warn("Could not open client project", error);
         if (storageStatus) storageStatus.textContent = t("loadProjectsError");
       });
       return;
     }
+    const resumeButton = event.target?.closest?.("[data-client-resume-project]");
+    if (resumeButton) {
+      if (pendingClientProjectSession) hydrateClientIntakeSession(pendingClientProjectSession, { silent: true });
+      pendingClientProjectSession = null;
+      loadClientProject(resumeButton.dataset.clientResumeProject).catch((error) => {
+        console.warn("Could not resume client project", error);
+        if (storageStatus) storageStatus.textContent = t("loadProjectsError");
+      });
+      return;
+    }
     if (event.target?.closest?.("[data-client-new-project]")) {
+      pendingClientProjectSession = null;
       startNewClientProject({ skipConfirm: true });
     }
   });
@@ -594,23 +618,61 @@ export function renderClientProjectsLoading() {
 
 export function renderClientProjectsPanel(projects = []) {
   const panel = ensureClientProjectsPanel();
+  const newPageLabel = t("startNewProject");
   const emptyState = `
     <div class="client-projects-empty">
       <strong>${escapeHtml(t("myPages"))}</strong>
       <p>${escapeHtml(t("emptyProjects"))}</p>
     </div>
   `;
-  const rows = projects.map((project) => `
-    <article class="client-project-card">
-      <div>
-        <span>${escapeHtml(project.status || "draft")}</span>
-        <h3>${escapeHtml(project.business_name || "Untitled page")}</h3>
-        <p>${escapeHtml(project.template_name || "Generated website")} · ${escapeHtml(formatProjectUpdatedAt(project.updated_at))}</p>
-        ${project.public_url ? `<small>${escapeHtml(project.public_url)}</small>` : ""}
-      </div>
-      <button type="button" data-client-project-id="${escapeAttribute(project.id)}">${escapeHtml(t("openProject"))}</button>
-    </article>
-  `).join("");
+  const newProjectCard = `
+    <button class="client-new-project-card" type="button" data-client-new-project>
+      <span class="client-new-project-icon" aria-hidden="true">+</span>
+      <strong>${escapeHtml(newPageLabel)}</strong>
+      <small>${escapeHtml(langText({
+        en: "Start with a fresh conversation",
+        es: "Empieza con una conversación nueva",
+        fr: "Commencez une nouvelle conversation",
+        pt: "Comece uma nova conversa",
+      }))}</small>
+    </button>
+  `;
+  const rows = projects.map((project) => {
+    const businessName = project.business_name || "Untitled page";
+    const status = String(project.status || "draft").trim().toLowerCase();
+    const statusLabel = status === "published"
+      ? langText({ en: "Published", es: "Publicada", fr: "Publiée", pt: "Publicada" })
+      : langText({ en: "Draft", es: "Borrador", fr: "Brouillon", pt: "Rascunho" });
+    const previewPath = clientProjectPreviewPath(project.id);
+    const domain = clientProjectDomain(project.public_url);
+    const hue = clientProjectVisualHue(project);
+    return `
+      <article class="client-project-card" style="--client-project-hue: ${hue}">
+        <div class="client-project-preview" aria-label="${escapeAttribute(langText({
+          en: `Preview of ${businessName}`,
+          es: `Vista previa de ${businessName}`,
+          fr: `Aperçu de ${businessName}`,
+          pt: `Prévia de ${businessName}`,
+        }))}">
+          <div class="client-project-preview-fallback" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <div><i></i><i></i><i></i></div>
+          </div>
+          ${previewPath ? `<iframe src="${escapeAttribute(previewPath)}" title="${escapeAttribute(businessName)}" loading="lazy" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>` : ""}
+          <span class="client-project-status ${clientProjectStatusClass(status)}">${escapeHtml(statusLabel)}</span>
+        </div>
+        <div class="client-project-content">
+          <div class="client-project-copy">
+            <span class="client-project-template">${escapeHtml(project.template_name || "Generated website")}</span>
+            <h3>${escapeHtml(businessName)}</h3>
+            <p>${escapeHtml(langText({ en: "Last edited", es: "Última edición", fr: "Dernière modification", pt: "Última edição" }))} · ${escapeHtml(formatProjectUpdatedAt(project.updated_at))}</p>
+            ${domain ? `<small title="${escapeAttribute(project.public_url)}">${escapeHtml(domain)}</small>` : ""}
+          </div>
+          <button class="client-project-open" type="button" data-client-project-id="${escapeAttribute(project.id)}">${escapeHtml(t("openProject"))}</button>
+        </div>
+      </article>
+    `;
+  }).join("");
   panel.innerHTML = `
     <div class="client-projects-card">
       <button class="client-projects-close" type="button" data-client-projects-close aria-label="Close">×</button>
@@ -624,16 +686,55 @@ export function renderClientProjectsPanel(projects = []) {
           pt: "Cada página fica separada dentro da sua conta.",
         }))}</p>
       </div>
-      <div class="client-projects-list">${rows || emptyState}</div>
-      <button class="client-new-project-button" type="button" data-client-new-project>${escapeHtml(t("startNewProject"))}</button>
+      <div class="client-projects-list">${newProjectCard}${rows || emptyState}</div>
     </div>
   `;
   panel.hidden = false;
   document.body.classList.add("client-projects-open");
 }
 
+export function renderClientProjectResumePrompt(project, session = null) {
+  const panel = ensureClientProjectsPanel();
+  const projectName = savedProjectName(project);
+  pendingClientProjectSession = session;
+  panel.innerHTML = `
+    <div class="client-projects-card client-project-resume-card" role="dialog" aria-modal="true" aria-labelledby="clientProjectResumeTitle">
+      <div class="client-project-resume-mark" aria-hidden="true">LYRA</div>
+      <div class="client-projects-head">
+        <span>${escapeHtml(langText({ en: "Saved progress", es: "Progreso guardado", fr: "Progression sauvegardée", pt: "Progresso salvo" }))}</span>
+        <h2 id="clientProjectResumeTitle">${escapeHtml(langText({
+          en: `You have an unfinished project (${projectName}).`,
+          es: `Tienes un proyecto sin terminar (${projectName}).`,
+          fr: `Vous avez un projet inachevé (${projectName}).`,
+          pt: `Você tem um projeto inacabado (${projectName}).`,
+        }))}</h2>
+        <p>${escapeHtml(langText({
+          en: "Would you like to continue it or start a new one?",
+          es: "¿Quieres continuarlo o empezar uno nuevo?",
+          fr: "Souhaitez-vous le continuer ou en commencer un nouveau ?",
+          pt: "Quer continuar ou começar um novo?",
+        }))}</p>
+      </div>
+      <div class="client-project-resume-actions">
+        <button class="client-project-resume-primary" type="button" data-client-resume-project="${escapeAttribute(project.id)}">${escapeHtml(langText({ en: "Continue project", es: "Continuar proyecto", fr: "Continuer le projet", pt: "Continuar projeto" }))}</button>
+        <button class="client-project-resume-secondary" type="button" data-client-new-project>${escapeHtml(langText({ en: "Start a new one", es: "Empezar uno nuevo", fr: "En commencer un nouveau", pt: "Começar um novo" }))}</button>
+      </div>
+    </div>
+  `;
+  panel.hidden = false;
+  document.body.classList.add("client-projects-open");
+  guidedStatusText.textContent = langText({
+    en: "Choose whether to continue your saved project or begin a new one.",
+    es: "Elige si quieres continuar tu proyecto guardado o comenzar uno nuevo.",
+    fr: "Choisissez de continuer votre projet sauvegardé ou d'en commencer un nouveau.",
+    pt: "Escolha entre continuar seu projeto salvo ou começar um novo.",
+  });
+  panel.querySelector("[data-client-resume-project]")?.focus();
+}
+
 export function closeClientProjectsPanel() {
   if (builderState.clientProjectsPanel) builderState.clientProjectsPanel.hidden = true;
+  pendingClientProjectSession = null;
   document.body.classList.remove("client-projects-open");
 }
 
@@ -663,7 +764,12 @@ export async function handleClientProjectsAfterAuth(user, session) {
     console.warn("Could not load client projects", error);
     return;
   }
-  if (builderState.clientProjects.length > 1) {
+  const decision = clientProjectEntryDecision({
+    projects: builderState.clientProjects,
+    hasCurrentSchema: Boolean(builderState.currentSchema),
+  });
+  if (decision.action === "choose_project") {
+    pendingClientProjectSession = session;
     renderClientProjectsPanel(builderState.clientProjects);
     guidedStatusText.textContent = langText({
       en: "Choose which page you want to continue, or start a new one.",
@@ -673,8 +779,12 @@ export async function handleClientProjectsAfterAuth(user, session) {
     });
     return;
   }
-  if (builderState.clientProjects.length === 1 && !builderState.currentSchema) {
-    await loadClientProject(builderState.clientProjects[0].id, { silent: true, session });
+  if (decision.action === "confirm_resume") {
+    renderClientProjectResumePrompt(decision.project, session);
+    return;
+  }
+  if (decision.action === "hydrate_session") {
+    hydrateClientIntakeSession(session);
   }
 }
 
@@ -756,6 +866,7 @@ export async function resumeClientSessionFromAuthToken() {
       email,
       name,
       reason: "oauth-resume",
+      deferHydration: true,
     });
     if (storageStatus) {
       storageStatus.textContent = session.restored
@@ -837,7 +948,7 @@ export function hydrateClientIntakeSession(session, options = {}) {
   }
 }
 
-export async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false } = {}) {
+export async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false, deferHydration = false } = {}) {
   const cleanEmail = String(email || "").trim().toLowerCase();
   if (!cleanEmail) throw new Error("Email is required.");
   const storedSession = readClientIntakeSession();
@@ -877,7 +988,7 @@ export async function createOrResumeClientIntakeSession({ email, name = "", reas
   const session = await response.json();
   writeClientIntakeSession(session);
   localStorage.setItem("lumaPendingClientEmail", cleanEmail);
-  hydrateClientIntakeSession(session, { silent: reason === "autosave" });
+  if (!deferHydration) hydrateClientIntakeSession(session, { silent: reason === "autosave" });
   return session;
 }
 
