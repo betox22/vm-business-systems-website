@@ -2,6 +2,8 @@ import { DEFAULT_BRAND } from './templates.js';
 import { escapeHtml, escapeAttribute } from './utils.js';
 import { listingLocationForIndex, marketplaceCategories } from './index.js';
 import { isMegaRetailTemplate, megaRetailFeatureFlags, megaRetailWhatsAppUrl, resolveMegaRetailTileMedia } from './mega-retail-policy.js';
+import { isB2BSaasTemplate } from './b2b-saas-policy.js';
+import { renderB2BSaasWebsite } from './b2b-saas-renderer.js';
 
 function arrayValue(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
@@ -114,6 +116,15 @@ export function renderWebsite(schema, pageKey, context = {}) {
   const templateId = schema.active_template?.id || schema.selected_template?.id || "standard";
   if (isMegaRetailTemplate(templateId)) {
     return renderMegaRetailWebsite(schema, page, context, { logo, layoutId, templateId, theme });
+  }
+  if (isB2BSaasTemplate(templateId)) {
+    return renderB2BSaasWebsite(schema, page, context, { logo, layoutId, templateId, theme }, {
+      marketplaceItems,
+      renderLogoMark,
+      renderSection,
+      renderStudioFloatingCatalog,
+      themeVars,
+    });
   }
   const commerceActions = isCommerceSite(schema) ? renderCommerceNavActions(schema) : "";
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)}">

@@ -1342,13 +1342,166 @@
     return Math.max(0, Number(minimumMs) - elapsed);
   }
 
+  // src/ai-builder/b2b-saas-policy.js
+  var NAV_TARGETS = [
+    { key: "product", patterns: [/\bproduct/i, /\bproducto/i, /\bcatalog/i, /\bsolution/i, /\bsoluci/i] },
+    { key: "pricing", patterns: [/\bpricing/i, /\bprice/i, /\bprecio/i, /\bplan(?:es|s)?\b/i] },
+    { key: "customers", patterns: [/\bcustomer/i, /\bclient/i, /\bcliente/i, /\bcase(?:s)?\b/i, /\bcasos?\b/i] },
+    { key: "docs", patterns: [/\bdocs?\b/i, /\bdocument/i, /\bresources?\b/i, /\brecursos?\b/i] }
+  ];
+  var RECURRING_VALUE_RE = /^(?:recurring|subscription|monthly|annual|yearly|month|year|mensual|anual|mes|ano)$/i;
+  var RECURRING_LABEL_RE = /(?:\/\s*(?:mo|month|mes|yr|year|ano)|\b(?:per month|per year|monthly|annual|yearly|mensual|anual|cada mes|cada ano)\b)/i;
+  function isB2BSaasTemplate(templateId) {
+    return String(templateId || "") === "b2b-saas-enterprise-pro";
+  }
+  function b2bSaasNavigationPages(pages = []) {
+    const available = Array.isArray(pages) ? pages : [];
+    const used = /* @__PURE__ */ new Set();
+    return NAV_TARGETS.map((target) => {
+      const page = available.find((candidate) => {
+        if (!candidate || used.has(candidate.page_key)) return false;
+        const text = `${candidate.page_key || ""} ${candidate.title || ""} ${candidate.slug || ""}`;
+        return target.patterns.some((pattern) => pattern.test(text));
+      });
+      if (!page) return null;
+      used.add(page.page_key);
+      return { key: target.key, page };
+    }).filter(Boolean);
+  }
+  function numericPrice(item = {}) {
+    const value = item.price_amount ?? item.price;
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) return value;
+    const match = String(value || "").replace(/,/g, ".").match(/\d+(?:\.\d+)?/);
+    return match && Number(match[0]) > 0 ? Number(match[0]) : null;
+  }
+  function hasRecurringEvidence(item = {}) {
+    if (item.recurring === true || item.subscription === true) return true;
+    const structured = [item.price_type, item.billing_interval, item.billing_period, item.interval, item.cadence].map((value) => String(value || "").trim()).filter(Boolean);
+    if (structured.some((value) => RECURRING_VALUE_RE.test(value))) return true;
+    return RECURRING_LABEL_RE.test(String(item.price_label || ""));
+  }
+  function b2bSaasSubscriptionPlans(schema = {}) {
+    const items = (schema.catalog_items || schema.products_services || []).filter((item) => item && item.is_active !== false && item.display_in_catalog !== false).filter((item) => numericPrice(item) !== null && hasRecurringEvidence(item));
+    return items.length >= 3 ? items.slice(0, 3) : [];
+  }
+
+  // src/ai-builder/b2b-saas-renderer.js
+  function renderB2BSaasWebsite(schema, page, context, options, helpers) {
+    const { logo, layoutId, templateId, theme } = options;
+    const { marketplaceItems: marketplaceItems2, renderSection: renderSection2, renderStudioFloatingCatalog: renderStudioFloatingCatalog2, themeVars: themeVars2 } = helpers;
+    const pages = [...schema.pages || []].sort((a, b) => a.order - b.order);
+    const sections = [...page?.sections || []].sort((a, b) => a.order - b.order);
+    const labels = b2bSaasLabels(schema);
+    const plans = b2bSaasSubscriptionPlans(schema);
+    const items = marketplaceItems2(schema);
+    const isHome = page?.page_key === "home" || page === pages[0];
+    const absorbed = /* @__PURE__ */ new Set(["EnterpriseHero", "EnterpriseSolutions", "EnterpriseUseCases", "EnterpriseIntegrations", "EnterpriseProof", "EnterprisePricing", "EnterpriseDemo"]);
+    const remaining = isHome ? sections.filter((section) => !absorbed.has(section.type)) : sections;
+    const hero = sections.find((section) => section.type === "EnterpriseHero") || sections.find((section) => /Hero$/.test(section.type)) || {};
+    const className = `rendered-site layout-${slugify(layoutId)} template-${slugify(templateId)}`;
+    return `<div class="${escapeAttribute(className)}" style="${themeVars2(theme, b2bSaasThemeBrand(theme, schema.brand))}">
+    ${renderStudioFloatingCatalog2(schema, context)}
+    <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => pageLink(item, item.page_key === page?.page_key)).join("")}</div></div>
+    ${renderHeader(schema, page, pages, logo, labels, plans)}
+    ${isHome ? `${renderHero(schema, hero, pages, items, labels, plans)}${renderLogoRow(labels)}${renderFeatures(schema, sections, items, labels)}${renderPricing(plans, labels)}` : ""}
+    ${remaining.map((section) => renderSection2(section, schema)).join("")}
+    <footer class="b2b-saas-footer"><div>${renderBrand(schema, logo)}</div><span>${escapeHtml(schema.global_components?.footer_text || `\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} ${schema.business?.name || ""}`)}</span></footer>
+  </div>`;
+  }
+  function renderHeader(schema, page, pages, logo, labels, plans) {
+    const navigation = b2bSaasNavigationPages(pages);
+    const loginPage = findPage(pages, /(?:^|\b)(?:login|sign[ -]?in|account|cuenta|ingresar)(?:\b|$)/i);
+    const contactPage = findPage(pages, /contact|demo|consulta/i);
+    const pricingPage = navigation.find((item) => item.key === "pricing")?.page;
+    const startPage = (plans.length ? pricingPage : null) || contactPage || navigation[0]?.page || pages[0];
+    return `<header class="b2b-saas-header">
+    <a class="b2b-saas-brand" href="#" data-page-link="${escapeAttribute(pages[0]?.page_key || "home")}">${renderBrand(schema, logo)}</a>
+    <nav aria-label="${escapeAttribute(labels.navigation)}">${navigation.map(({ key, page: target }) => `<a class="${target.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(target.page_key)}">${escapeHtml(labels.nav[key])}</a>`).join("")}</nav>
+    <div class="b2b-saas-header-actions">${loginPage ? `<a class="b2b-saas-login" href="#" data-page-link="${escapeAttribute(loginPage.page_key)}">${escapeHtml(labels.login)}</a>` : ""}<button class="b2b-saas-start" type="button" data-page-link="${escapeAttribute(startPage?.page_key || "")}">${escapeHtml(labels.start)}</button></div>
+  </header>`;
+  }
+  function renderBrand(schema, logo) {
+    const name = schema.business?.name || "Business";
+    if (logo) return `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(name)}"><strong>${escapeHtml(name)}</strong>`;
+    const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join("").toUpperCase();
+    return `<span class="b2b-saas-monogram" aria-hidden="true">${escapeHtml(initials || "B")}</span><strong>${escapeHtml(name)}</strong>`;
+  }
+  function renderHero(schema, section, pages, items, labels, plans) {
+    const editable = section.editable || {};
+    const [lead, highlight] = headlineParts(editable.headline || schema.business?.name || "");
+    const navigation = b2bSaasNavigationPages(pages);
+    const contactPage = findPage(pages, /contact|demo|consulta/i);
+    const primaryPage = (plans.length ? navigation.find((item) => item.key === "pricing")?.page : null) || contactPage || navigation[0]?.page || pages[0];
+    const secondaryPage = navigation.find((item) => item.key === "product")?.page || contactPage || pages[0];
+    return `<main class="b2b-saas-hero"><div class="b2b-saas-hero-copy"><span class="b2b-saas-eyebrow">${escapeHtml(editable.badge || labels.eyebrow)}</span><h1>${escapeHtml(lead)}${highlight ? ` <span>${escapeHtml(highlight)}</span>` : ""}</h1><p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p><div class="b2b-saas-hero-actions"><button class="b2b-saas-primary" type="button" data-page-link="${escapeAttribute(primaryPage?.page_key || "")}">${escapeHtml(editable.primary_button || labels.start)}</button><button class="b2b-saas-secondary" type="button" data-page-link="${escapeAttribute(secondaryPage?.page_key || "")}">${escapeHtml(editable.secondary_button || labels.demo)}</button></div></div>${renderDashboard(schema, items, labels)}</main>`;
+  }
+  function renderDashboard(schema, items, labels) {
+    const pages = schema.pages || [];
+    const sectionCount = pages.reduce((total, item) => total + (item.sections || []).length, 0);
+    const sidebar = [...items.map((item) => item.name), ...pages.map((item) => item.title || item.page_key)].filter(Boolean).slice(0, 5);
+    const metrics = [[labels.metrics.solutions, items.length], [labels.metrics.pages, pages.length], [labels.metrics.workflows, sectionCount]];
+    return `<div class="b2b-saas-dashboard" aria-label="${escapeAttribute(labels.dashboard)}"><div class="b2b-saas-dashboard-bar"><span></span><span></span><span></span><strong>${escapeHtml(schema.business?.name || labels.dashboard)}</strong></div><div class="b2b-saas-dashboard-body"><aside>${sidebar.map((item, index) => `<span class="${index === 0 ? "active" : ""}">${icon(index)}${escapeHtml(item)}</span>`).join("")}</aside><div class="b2b-saas-metrics">${metrics.map(([label, value], index) => `<article><small>${escapeHtml(label)}</small><strong>${escapeHtml(value)}</strong><div class="b2b-saas-mini-chart chart-${index + 1}" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></article>`).join("")}</div></div></div>`;
+  }
+  function renderLogoRow(labels) {
+    return `<section class="b2b-saas-logo-row" aria-label="${escapeAttribute(labels.exampleLogos)}"><span>${escapeHtml(labels.teams)}</span><div><strong>Northstar</strong><strong>Vertex</strong><strong>Meridian</strong><strong>Atlas</strong><strong>Aperture</strong></div></section>`;
+  }
+  function renderFeatures(schema, sections, items, labels) {
+    const features = items.slice(0, 3).map((item) => ({ title: item.name, description: item.description }));
+    const fallbacks = ["EnterpriseSolutions", "EnterpriseUseCases", "EnterpriseIntegrations"].map((type) => sections.find((section) => section.type === type)?.editable || {}).filter((item) => item.title || item.text);
+    [...fallbacks].forEach((item) => {
+      if (features.length < 3) features.push({ title: item.title, description: item.text });
+    });
+    if (!features.length && schema.business?.description) features.push({ title: schema.business?.name || labels.product, description: schema.business.description });
+    return `<section class="b2b-saas-features"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.product)}</span><h2>${escapeHtml(labels.featuresTitle)}</h2></div><div>${features.map((feature, index) => `<article><span>${icon(index)}</span><h3>${escapeHtml(feature.title || schema.business?.name || "")}</h3><p>${escapeHtml(feature.description || schema.business?.description || "")}</p></article>`).join("")}</div></section>`;
+  }
+  function renderPricing(plans, labels) {
+    if (plans.length !== 3) return "";
+    return `<section class="b2b-saas-pricing" id="pricing"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.pricing)}</span><h2>${escapeHtml(labels.pricingTitle)}</h2></div><div class="b2b-saas-plans">${plans.map((plan, index) => `<article class="${index === 1 ? "featured" : ""}">${index === 1 ? `<span class="b2b-saas-plan-badge">${escapeHtml(labels.popular)}</span>` : ""}<small>${escapeHtml(plan.category || labels.plan)}</small><h3>${escapeHtml(plan.name || "")}</h3><strong>${escapeHtml(plan.price_label || plan.price || "")}</strong>${plan.description ? `<p>${escapeHtml(plan.description)}</p>` : ""}<button type="button" data-item-id="${escapeAttribute(plan.id || "")}" data-item-name="${escapeAttribute(plan.name || "")}">${escapeHtml(plan.button_label || labels.choose)}</button></article>`).join("")}</div></section>`;
+  }
+  function pageLink(page, active) {
+    return `<a class="${active ? "active" : ""}" href="#" data-page-link="${escapeAttribute(page.page_key)}">${escapeHtml(page.title || page.page_key)}</a>`;
+  }
+  function findPage(pages, pattern) {
+    return pages.find((page) => pattern.test(`${page.page_key || ""} ${page.title || ""} ${page.slug || ""}`));
+  }
+  function headlineParts(value) {
+    const words = String(value || "").trim().split(/\s+/).filter(Boolean);
+    if (words.length < 4) return [words.slice(0, -1).join(" "), words.at(-1) || ""];
+    const size = Math.min(3, Math.max(2, Math.round(words.length * 0.35)));
+    return [words.slice(0, -size).join(" "), words.slice(-size).join(" ")];
+  }
+  function slugify(value) {
+    return String(value || "default").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  }
+  function b2bSaasThemeBrand(theme = {}, brand = {}) {
+    return {
+      ...brand || {},
+      colors: { ...brand?.colors || {}, ...theme.colors || {} },
+      fontPairing: theme.fonts || brand?.fontPairing
+    };
+  }
+  function icon(index) {
+    const paths = ['<path d="M4 12h16M12 4v16"></path><circle cx="12" cy="12" r="8"></circle>', '<path d="M4 18V8l8-4 8 4v10"></path><path d="M8 18v-5h8v5"></path>', '<path d="M5 19V9m7 10V5m7 14v-8"></path>'];
+    return `<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[index % paths.length]}</svg>`;
+  }
+  function b2bSaasLabels(schema = {}) {
+    const language = schema.business?.selectedLanguage || schema.business?.selected_language || "en";
+    const all = {
+      en: { navigation: "Main navigation", nav: { product: "Product", pricing: "Pricing", customers: "Customers", docs: "Docs" }, login: "Sign in", start: "Start free", demo: "View demo", eyebrow: "Built for modern teams", dashboard: "Product dashboard", teams: "Designed for teams moving work forward", exampleLogos: "Example customer names", product: "Product", featuresTitle: "A clearer way to run the work that matters", pricing: "Pricing", pricingTitle: "Simple plans, without surprises", popular: "Most popular", plan: "Plan", choose: "Choose plan", metrics: { solutions: "Solutions", pages: "Pages", workflows: "Workflows" } },
+      es: { navigation: "Navegaci\xF3n principal", nav: { product: "Producto", pricing: "Precios", customers: "Clientes", docs: "Docs" }, login: "Iniciar sesi\xF3n", start: "Empezar gratis", demo: "Ver demo", eyebrow: "Creado para equipos modernos", dashboard: "Panel del producto", teams: "Dise\xF1ado para equipos que hacen avanzar el trabajo", exampleLogos: "Nombres de clientes de ejemplo", product: "Producto", featuresTitle: "Una forma m\xE1s clara de gestionar el trabajo importante", pricing: "Precios", pricingTitle: "Planes simples, sin sorpresas", popular: "M\xE1s popular", plan: "Plan", choose: "Elegir plan", metrics: { solutions: "Soluciones", pages: "P\xE1ginas", workflows: "Flujos" } },
+      fr: { navigation: "Navigation principale", nav: { product: "Produit", pricing: "Tarifs", customers: "Clients", docs: "Docs" }, login: "Se connecter", start: "Commencer", demo: "Voir la d\xE9mo", eyebrow: "Con\xE7u pour les \xE9quipes modernes", dashboard: "Tableau de bord", teams: "Con\xE7u pour les \xE9quipes qui avancent", exampleLogos: "Exemples de noms clients", product: "Produit", featuresTitle: "Une mani\xE8re plus claire de g\xE9rer le travail essentiel", pricing: "Tarifs", pricingTitle: "Des offres simples, sans surprise", popular: "Le plus populaire", plan: "Offre", choose: "Choisir", metrics: { solutions: "Solutions", pages: "Pages", workflows: "Flux" } },
+      pt: { navigation: "Navega\xE7\xE3o principal", nav: { product: "Produto", pricing: "Pre\xE7os", customers: "Clientes", docs: "Docs" }, login: "Entrar", start: "Come\xE7ar gr\xE1tis", demo: "Ver demo", eyebrow: "Criado para equipes modernas", dashboard: "Painel do produto", teams: "Criado para equipes que fazem o trabalho avan\xE7ar", exampleLogos: "Nomes de clientes de exemplo", product: "Produto", featuresTitle: "Uma forma mais clara de gerir o trabalho importante", pricing: "Pre\xE7os", pricingTitle: "Planos simples, sem surpresas", popular: "Mais popular", plan: "Plano", choose: "Escolher plano", metrics: { solutions: "Solu\xE7\xF5es", pages: "P\xE1ginas", workflows: "Fluxos" } }
+    };
+    return all[language] || all.en;
+  }
+
   // src/ai-builder/renderers.js
   function arrayValue(value) {
     if (Array.isArray(value)) return value.filter(Boolean);
     if (!value) return [];
     return String(value).split(/[\n,]+/).map((item) => item.trim()).filter(Boolean);
   }
-  function slugify(value) {
+  function slugify2(value) {
     return String(value || "default").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   }
   function normalizeBrandForTheme(brandInput = {}) {
@@ -1442,8 +1595,17 @@
     if (isMegaRetailTemplate(templateId)) {
       return renderMegaRetailWebsite(schema, page, context, { logo, layoutId, templateId, theme });
     }
+    if (isB2BSaasTemplate(templateId)) {
+      return renderB2BSaasWebsite(schema, page, context, { logo, layoutId, templateId, theme }, {
+        marketplaceItems,
+        renderLogoMark,
+        renderSection,
+        renderStudioFloatingCatalog,
+        themeVars
+      });
+    }
     const commerceActions = isCommerceSite(schema) ? renderCommerceNavActions(schema) : "";
-    return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)}">
+    return `<div class="rendered-site layout-${escapeAttribute(slugify2(layoutId))} template-${escapeAttribute(slugify2(templateId))}" style="${themeVars(theme, schema.brand)}">
     ${renderStudioFloatingCatalog(schema, context)}
     <div class="rendered-page-switcher">
       <span>${escapeHtml(schema.business.name || "Website")}</span>
@@ -1501,7 +1663,7 @@
   }
   function renderSection(section, schema) {
     const renderers = {
-      Hero: renderHero,
+      Hero: renderHero2,
       PremiumHero: renderPremiumHero,
       ProductStory: renderProductStory,
       FeatureShowcase: renderFeatureShowcase,
@@ -1611,7 +1773,7 @@
   function marketplaceItems(schema) {
     return (schema.catalog_items || schema.products_services || []).filter((item) => item.is_active !== false && item.display_in_catalog !== false).sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
   }
-  function renderHero(section, schema) {
+  function renderHero2(section, schema) {
     const editable = section.editable || {};
     const heroItem = (schema.catalog_items || schema.products_services || []).find((item) => item.is_featured && item.image_url) || (schema.catalog_items || schema.products_services || []).find((item) => item.image_url);
     const image = editable.image_url || heroItem?.image_url || "";
@@ -1634,7 +1796,7 @@
       <div class="rendered-hero-backdrop">${visual}</div>${heroCopy}
     </section>`;
     }
-    return `<section class="rendered-hero hero-${escapeAttribute(slugify(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>${heroCopy}${visual}</section>`;
+    return `<section class="rendered-hero hero-${escapeAttribute(slugify2(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>${heroCopy}${visual}</section>`;
   }
   function renderPremiumHero(section, schema) {
     const editable = section.editable || {};
@@ -1643,7 +1805,7 @@
     const image = editable.image_url || heroItem?.image_url || "";
     const firstItem = items[0];
     const variant = section.variant || section.settings?.layout || "split_showcase";
-    return `<section class="premium-hero premium-hero-${escapeAttribute(slugify(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>
+    return `<section class="premium-hero premium-hero-${escapeAttribute(slugify2(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="premium-hero-copy">
       <span class="rendered-kicker">${escapeHtml(schema.business?.industry || schema.business?.tone || "")}</span>
       <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
@@ -2467,7 +2629,7 @@
     return `<section class="industrial-quote-section quote-request-form ${sectionClass(section)}" ${sectionAttrs(section)}><div class="industrial-quote-card"><div><span class="rendered-kicker">${escapeHtml(labels.requestQuote)}</span><h2>${escapeHtml(editable.title || labels.industrialQuoteTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialQuoteText)}</p></div><div class="industrial-rfq-fields">${fields.slice(0, 8).map((field, index) => {
       const entry = typeof field === "object" ? field : { label: field };
       const label = entry.label || entry.name || defaults[index]?.label || "Details";
-      const control = entry.type === "textarea" ? `<textarea name="${escapeAttribute(entry.name || slugify(label))}" placeholder="${escapeAttribute(entry.placeholder || label)}" ${entry.required ? "required" : ""}></textarea>` : `<input type="${escapeAttribute(entry.type || "text")}" name="${escapeAttribute(entry.name || slugify(label))}" placeholder="${escapeAttribute(entry.placeholder || label)}" ${entry.required ? "required" : ""}>`;
+      const control = entry.type === "textarea" ? `<textarea name="${escapeAttribute(entry.name || slugify2(label))}" placeholder="${escapeAttribute(entry.placeholder || label)}" ${entry.required ? "required" : ""}></textarea>` : `<input type="${escapeAttribute(entry.type || "text")}" name="${escapeAttribute(entry.name || slugify2(label))}" placeholder="${escapeAttribute(entry.placeholder || label)}" ${entry.required ? "required" : ""}>`;
       return `<label><span>${escapeHtml(label)}</span>${control}</label>`;
     }).join("")}</div><button class="rendered-button" type="button" data-open-lead>${escapeHtml(editable.primary_button || labels.requestQuote)}</button></div></section>`;
   }
@@ -2819,7 +2981,7 @@
         <span>${escapeHtml(productPriceLabel(item, schema))}</span>
       </article>`).join("");
     const variant = section.variant || section.settings?.layout || "split_showcase";
-    return `<section class="marketplace-hero marketplace-hero-${escapeAttribute(slugify(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>
+    return `<section class="marketplace-hero marketplace-hero-${escapeAttribute(slugify2(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="marketplace-search-panel">
       <div class="marketplace-logo-row">
         <strong>${escapeHtml(schema.business?.name || "Marketplace")}</strong>
@@ -2903,7 +3065,7 @@
     const catalogItems = (schema.catalog_items || schema.products_services || []).filter((item) => item.is_active !== false && item.display_in_catalog !== false).sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
     const catalogType = schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || "editorial_minimal_grid";
     const customCatalog = renderCatalogByType(catalogType, catalogItems, schema);
-    return `<section class="rendered-section section-${escapeAttribute(slugify(section.settings?.layout || "grid"))} ${sectionClass(section)}" ${sectionAttrs(section)}>
+    return `<section class="rendered-section section-${escapeAttribute(slugify2(section.settings?.layout || "grid"))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="section-heading">
       <span class="rendered-kicker">${escapeHtml(schema.business.tone || "Selected")}</span>
       <h2>${escapeHtml(editable.title || editable.headline || "Products and services")}</h2>
@@ -2965,12 +3127,12 @@
     return `<div class="catalog-shell catalog-marketplace">
     <aside>
       <strong>${labels.searchFilters}</strong>
-      ${groups.map(([category]) => `<a href="#catalog-category-${escapeAttribute(slugify(category))}">${escapeHtml(category)}</a>`).join("")}
+      ${groups.map(([category]) => `<a href="#catalog-category-${escapeAttribute(slugify2(category))}">${escapeHtml(category)}</a>`).join("")}
       <span>${labels.price}</span><span>${labels.rating}</span><span>${labels.delivery}</span>
     </aside>
     <div class="marketplace-catalog-main">
       <div class="marketplace-sort-bar"><b>${escapeHtml(labels.results)}</b><span>${escapeHtml(labels.sortBy)}: ${escapeHtml(labels.featured)}</span></div>
-      <div class="marketplace-category-groups">${groups.map(([category, categoryItems]) => `<section id="catalog-category-${escapeAttribute(slugify(category))}" class="marketplace-category-group" data-catalog-group><div class="marketplace-category-heading"><h3>${escapeHtml(category)}</h3><span>${categoryItems.length}</span></div><div class="catalog-results">${categoryItems.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? labels.deal : labels.fastShip}`, schema)).join("")}</div></section>`).join("")}</div>
+      <div class="marketplace-category-groups">${groups.map(([category, categoryItems]) => `<section id="catalog-category-${escapeAttribute(slugify2(category))}" class="marketplace-category-group" data-catalog-group><div class="marketplace-category-heading"><h3>${escapeHtml(category)}</h3><span>${categoryItems.length}</span></div><div class="catalog-results">${categoryItems.map((item, index) => renderCatalogCard(item, "market-card", `${index % 3 === 0 ? labels.deal : labels.fastShip}`, schema)).join("")}</div></section>`).join("")}</div>
     </div>
   </div>${renderMarketplaceSubscribe(schema)}`;
   }
@@ -4487,7 +4649,7 @@
     </section>`;
     }
     const visual = image ? `<div class="feature-band-visual"><img src="${escapeAttribute(image)}" alt=""></div>` : "";
-    return `<section class="rendered-section feature-band feature-${escapeAttribute(slugify(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>
+    return `<section class="rendered-section feature-band feature-${escapeAttribute(slugify2(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     ${variant === "image_left" ? `${visual}${heading}` : `${heading}${visual}`}
   </section>`;
   }
@@ -4528,12 +4690,12 @@
   </div>`;
   }
   function sectionClass(section) {
-    const headingSize = slugify(section.settings?.heading_size || "medium");
-    const spacing = slugify(section.settings?.spacing || "balanced");
-    const container = slugify(section.settings?.container_width || "standard");
-    const density = slugify(section.settings?.card_density || "comfortable");
-    const gap = slugify(section.settings?.card_gap || "comfortable");
-    const variant = slugify(section.variant || "default");
+    const headingSize = slugify2(section.settings?.heading_size || "medium");
+    const spacing = slugify2(section.settings?.spacing || "balanced");
+    const container = slugify2(section.settings?.container_width || "standard");
+    const density = slugify2(section.settings?.card_density || "comfortable");
+    const gap = slugify2(section.settings?.card_gap || "comfortable");
+    const variant = slugify2(section.variant || "default");
     return `heading-${headingSize} spacing-${spacing} container-${container} density-${density} gap-${gap} variant-${variant}`;
   }
   function sectionVars(section) {
@@ -4623,7 +4785,7 @@
     const features = megaRetailFeatureFlags(schema);
     const absorbedTypes = /* @__PURE__ */ new Set(["MarketplaceHero", "Hero", "CategoryRail", "DealRow", "TrustStrip", "ProductGrid"]);
     const remainingSections = sections.filter((section) => !absorbedTypes.has(section.type));
-    return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)};--mega-tile-tint:${escapeAttribute(brandTint)}">
+    return `<div class="rendered-site layout-${escapeAttribute(slugify2(layoutId))} template-${escapeAttribute(slugify2(templateId))}" style="${themeVars(theme, schema.brand)};--mega-tile-tint:${escapeAttribute(brandTint)}">
     ${renderStudioFloatingCatalog(schema, context)}
     <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div></div>
     ${renderMegaRetailHeader(schema, page, logo, categories, labels, false)}
@@ -7679,7 +7841,7 @@ ${cleanQuestion}`;
       }
     } else if (action === "duplicate") {
       const copy = structuredClone(page.sections[index]);
-      copy.id = `${slugify2(copy.type)}_${Date.now()}`;
+      copy.id = `${slugify3(copy.type)}_${Date.now()}`;
       copy.order = index + 2;
       page.sections.splice(index + 1, 0, copy);
       builderState.selectedStudioSectionId = copy.id;
@@ -7745,8 +7907,8 @@ ${cleanQuestion}`;
     renderStudioLyraInsights();
   }
   function studioProgressItems(items) {
-    const icon = { done: "<span></span>", active: "<i></i>", pending: "<em></em>" };
-    return items.map(([state, label]) => `<div data-progress-state="${escapeAttribute(state)}">${icon[state] || icon.pending}<strong>${escapeHtml(label)}</strong></div>`).join("");
+    const icon2 = { done: "<span></span>", active: "<i></i>", pending: "<em></em>" };
+    return items.map(([state, label]) => `<div data-progress-state="${escapeAttribute(state)}">${icon2[state] || icon2.pending}<strong>${escapeHtml(label)}</strong></div>`).join("");
   }
   function renderStudioLyraInsights() {
     if (studioSuggestedList) studioSuggestedList.innerHTML = studioInsightItems(studioSuggestedImprovements());
@@ -7813,7 +7975,7 @@ ${cleanQuestion}`;
   }
   function createSectionByType(type, order) {
     const base = {
-      id: `${slugify2(type)}_${Date.now()}`,
+      id: `${slugify3(type)}_${Date.now()}`,
       type,
       order,
       editable: {},
@@ -9988,7 +10150,7 @@ ${langText({
     const shopLabel = isBooking ? langText({ en: "Services", es: "Servicios", fr: "Services", pt: "Servi\xE7os" }) : isService ? langText({ en: "Services", es: "Servicios", fr: "Services", pt: "Servi\xE7os" }) : isListing ? langText({ en: "Listings", es: "Listados", fr: "Annonces", pt: "An\xFAncios" }) : isDigital ? langText({ en: "Offers", es: "Ofertas", fr: "Offres", pt: "Ofertas" }) : langText({ en: "Catalog", es: "Cat\xE1logo", fr: "Catalogue", pt: "Cat\xE1logo" });
     const actionLabel = isBooking ? langText({ en: "Booking", es: "Reservas", fr: "R\xE9servation", pt: "Agendamento" }) : isService ? langText({ en: "Quote", es: "Cotizaci\xF3n", fr: "Devis", pt: "Or\xE7amento" }) : langText({ en: "Checkout / Contact", es: "Checkout / Contacto", fr: "Checkout / Contact", pt: "Checkout / Contato" });
     const templatePages = Array.isArray(template.pages) && template.pages.length ? template.pages.slice(0, 4).map((page, index) => ({
-      key: slugify2(page.name || page.page_key || `page-${index + 1}`),
+      key: slugify3(page.name || page.page_key || `page-${index + 1}`),
       title: page.name || page.title || `Page ${index + 1}`,
       purpose: page.purpose || page.layout || "",
       sections: arrayValue2(page.usesSections || page.sections).slice(0, 6)
@@ -13453,7 +13615,7 @@ ${guidedQuestion(nextMissing)}`
       const dataBinding = nestedEditable.dataBinding || section.dataBinding || {};
       return {
         ...section,
-        id: section.id || section.sectionId || `${slugify2(type || "section")}-${index + 1}`,
+        id: section.id || section.sectionId || `${slugify3(type || "section")}-${index + 1}`,
         type,
         order: section.order || index + 1,
         editable: { ...copy, ...media, ...dataBinding, ...nestedEditable },
@@ -18866,7 +19028,7 @@ Site ID: ${builderState.currentSiteId}`
       reader.readAsDataURL(file);
     });
   }
-  function slugify2(value) {
+  function slugify3(value) {
     return String(value || "default").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   }
 })();

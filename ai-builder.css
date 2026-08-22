@@ -11934,3 +11934,693 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   .template-mega-retail-store .mega-retail-footer-grid { grid-template-columns: 1fr; }
 }
 /* End mega retail store */
+
+/* B2B SaaS enterprise */
+.template-b2b-saas-enterprise-pro {
+  min-height: 100%;
+  overflow-x: hidden;
+  background: #fff;
+  color: var(--site-text);
+}
+
+.template-b2b-saas-enterprise-pro .rendered-page-switcher,
+.template-b2b-saas-enterprise-pro .studio-floating-catalog {
+  display: none;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-header {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: minmax(180px, auto) 1fr auto;
+  align-items: center;
+  gap: 28px;
+  width: min(1180px, calc(100% - 40px));
+  min-height: 72px;
+  margin: 18px auto 0;
+  padding: 12px 16px 12px 20px;
+  border: 1px solid color-mix(in srgb, var(--site-primary) 12%, #e5e7eb);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--site-surface) 94%, transparent);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-brand,
+.template-b2b-saas-enterprise-pro .b2b-saas-header nav,
+.template-b2b-saas-enterprise-pro .b2b-saas-header-actions,
+.template-b2b-saas-enterprise-pro .b2b-saas-hero-actions {
+  display: flex;
+  align-items: center;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-brand {
+  min-width: 0;
+  gap: 10px;
+  color: var(--site-text);
+  text-decoration: none;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-brand img,
+.template-b2b-saas-enterprise-pro .b2b-saas-footer img {
+  width: auto;
+  max-width: 132px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-brand .rendered-logo-mark,
+.template-b2b-saas-enterprise-pro .b2b-saas-footer .rendered-logo-mark {
+  width: 34px;
+  height: 34px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-monogram {
+  display: inline-grid;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--site-primary), var(--site-accent));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-brand strong {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-header nav {
+  justify-content: center;
+  gap: clamp(18px, 3vw, 34px);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-header nav a,
+.template-b2b-saas-enterprise-pro .b2b-saas-login {
+  color: color-mix(in srgb, var(--site-text) 78%, transparent);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-header nav a:hover,
+.template-b2b-saas-enterprise-pro .b2b-saas-header nav a.active,
+.template-b2b-saas-enterprise-pro .b2b-saas-login:hover {
+  color: var(--site-primary);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-header-actions {
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-start,
+.template-b2b-saas-enterprise-pro .b2b-saas-primary,
+.template-b2b-saas-enterprise-pro .b2b-saas-secondary,
+.template-b2b-saas-enterprise-pro .b2b-saas-plans button {
+  min-height: 44px;
+  border-radius: 10px;
+  padding: 0 20px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-start,
+.template-b2b-saas-enterprise-pro .b2b-saas-primary,
+.template-b2b-saas-enterprise-pro .b2b-saas-plans button {
+  border: 1px solid var(--site-primary);
+  background: var(--site-primary);
+  color: var(--site-button-text, #fff);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--site-primary) 22%, transparent);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-login {
+  padding: 10px 14px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 58px;
+  min-height: 760px;
+  padding: clamp(82px, 9vw, 118px) max(28px, calc((100% - 1180px) / 2)) 78px;
+  background:
+    radial-gradient(ellipse 46% 58% at 12% 14%, color-mix(in srgb, var(--site-primary) 21%, transparent), transparent 72%),
+    radial-gradient(ellipse 42% 54% at 91% 18%, color-mix(in srgb, var(--site-accent) 19%, transparent), transparent 74%),
+    linear-gradient(180deg, color-mix(in srgb, var(--site-background) 96%, #fff), #fff 78%);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-hero-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 780px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-eyebrow,
+.template-b2b-saas-enterprise-pro .b2b-saas-section-heading > span {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-bottom: 20px;
+  border-radius: 999px;
+  padding: 8px 15px;
+  background: color-mix(in srgb, var(--site-primary) 10%, #fff);
+  color: var(--site-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-hero h1 {
+  max-width: 720px;
+  margin: 0;
+  color: var(--site-text);
+  font-family: var(--site-heading, Inter, sans-serif);
+  font-size: clamp(50px, 6vw, 78px);
+  font-weight: 800;
+  line-height: 1.03;
+  letter-spacing: 0;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-hero h1 span {
+  background: linear-gradient(100deg, var(--site-primary), var(--site-accent));
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-hero-copy > p {
+  max-width: 580px;
+  margin: 24px auto 32px;
+  color: color-mix(in srgb, var(--site-text) 68%, transparent);
+  font-size: 17px;
+  line-height: 1.68;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-hero-actions {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-secondary {
+  border: 1px solid color-mix(in srgb, var(--site-text) 16%, transparent);
+  background: color-mix(in srgb, var(--site-surface) 92%, transparent);
+  color: var(--site-text);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-dashboard {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  width: min(920px, 100%);
+  margin: 0 auto;
+  border: 1px solid color-mix(in srgb, var(--site-primary) 13%, #e5e7eb);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--site-surface) 97%, #fff);
+  box-shadow: 0 44px 86px -34px rgba(15, 23, 42, 0.36);
+  transform: perspective(1200px) rotateX(1deg);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-dashboard-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--site-text) 8%, transparent);
+  background: color-mix(in srgb, var(--site-background) 74%, #fff);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-dashboard-bar > span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--site-text) 18%, transparent);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-dashboard-bar strong {
+  margin-left: auto;
+  color: color-mix(in srgb, var(--site-text) 55%, transparent);
+  font-size: 11px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-dashboard-body {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  min-height: 300px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-dashboard aside {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 14px;
+  border-right: 1px solid color-mix(in srgb, var(--site-text) 8%, transparent);
+  background: color-mix(in srgb, var(--site-background) 68%, #fff);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-dashboard aside span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  min-height: 36px;
+  border-radius: 8px;
+  padding: 0 9px;
+  color: color-mix(in srgb, var(--site-text) 60%, transparent);
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-dashboard aside span.active {
+  background: color-mix(in srgb, var(--site-primary) 10%, #fff);
+  color: var(--site-primary);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-dashboard svg,
+.template-b2b-saas-enterprise-pro .b2b-saas-features svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-content: center;
+  padding: 26px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-metrics article {
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--site-text) 8%, transparent);
+  border-radius: 14px;
+  padding: 18px;
+  background: #fff;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-metrics small {
+  display: block;
+  color: color-mix(in srgb, var(--site-text) 52%, transparent);
+  font-size: 11px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-metrics strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--site-text);
+  font-size: clamp(24px, 3vw, 34px);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-mini-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 52px;
+  margin-top: 18px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-mini-chart i {
+  flex: 1;
+  height: 44%;
+  border-radius: 4px 4px 2px 2px;
+  background: linear-gradient(180deg, var(--site-accent), color-mix(in srgb, var(--site-primary) 65%, #fff));
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-mini-chart i:nth-child(2) { height: 68%; }
+.template-b2b-saas-enterprise-pro .b2b-saas-mini-chart i:nth-child(3) { height: 54%; }
+.template-b2b-saas-enterprise-pro .b2b-saas-mini-chart i:nth-child(4) { height: 88%; }
+.template-b2b-saas-enterprise-pro .b2b-saas-mini-chart i:nth-child(5) { height: 76%; }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-logo-row {
+  padding: 48px max(24px, calc((100% - 1080px) / 2));
+  text-align: center;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-logo-row > span {
+  display: block;
+  margin-bottom: 24px;
+  color: color-mix(in srgb, var(--site-text) 45%, transparent);
+  font-size: 12px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-logo-row > div {
+  display: flex;
+  justify-content: center;
+  gap: clamp(24px, 5vw, 58px);
+  color: color-mix(in srgb, var(--site-text) 36%, transparent);
+  filter: grayscale(1);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-logo-row strong {
+  font-size: 15px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features,
+.template-b2b-saas-enterprise-pro .b2b-saas-pricing {
+  padding: 72px max(24px, calc((100% - 1080px) / 2));
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-section-heading {
+  max-width: 660px;
+  margin: 0 auto 38px;
+  text-align: center;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-section-heading > span {
+  margin-inline: auto;
+  margin-bottom: 14px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-section-heading h2 {
+  margin: 0;
+  color: var(--site-text);
+  font-size: clamp(34px, 4vw, 50px);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features > div:last-child {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features article {
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--site-text) 9%, transparent);
+  border-radius: 16px;
+  padding: 28px;
+  background: #fff;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features article > span {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--site-primary) 10%, #fff);
+  color: var(--site-primary);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features h3,
+.template-b2b-saas-enterprise-pro .b2b-saas-plans h3 {
+  margin: 0 0 10px;
+  color: var(--site-text);
+  font-size: 18px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features p,
+.template-b2b-saas-enterprise-pro .b2b-saas-plans p {
+  margin: 0;
+  color: color-mix(in srgb, var(--site-text) 62%, transparent);
+  font-size: 14px;
+  line-height: 1.62;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-pricing {
+  background: color-mix(in srgb, var(--site-background) 72%, #fff);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-plans {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-plans article {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--site-text) 10%, transparent);
+  border-radius: 18px;
+  padding: 30px;
+  background: #fff;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-plans article.featured {
+  border: 2px solid var(--site-primary);
+  box-shadow: 0 24px 54px color-mix(in srgb, var(--site-primary) 15%, transparent);
+  transform: translateY(-8px);
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-plan-badge {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  border-radius: 999px;
+  padding: 5px 14px;
+  background: var(--site-primary);
+  color: var(--site-button-text, #fff);
+  font-size: 11px;
+  font-weight: 700;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-plans article > small {
+  color: color-mix(in srgb, var(--site-text) 48%, transparent);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-plans article > strong {
+  margin: 8px 0 18px;
+  color: var(--site-text);
+  font-size: 32px;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-plans button {
+  width: 100%;
+  margin-top: auto;
+}
+
+.template-b2b-saas-enterprise-pro .b2b-saas-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 34px max(24px, calc((100% - 1080px) / 2));
+  border-top: 1px solid color-mix(in srgb, var(--site-text) 8%, transparent);
+  background: #fff;
+  color: color-mix(in srgb, var(--site-text) 52%, transparent);
+  font-size: 12px;
+}
+
+@media (max-width: 980px) {
+  .template-b2b-saas-enterprise-pro .b2b-saas-header {
+    grid-template-columns: minmax(150px, 1fr) auto;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-header nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 6px 0 2px;
+    scrollbar-width: none;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-hero {
+    grid-template-columns: 1fr;
+    gap: 56px;
+    padding-top: 82px;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-hero-copy {
+    max-width: 760px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-hero-copy > p {
+    margin-inline: auto;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-hero-actions {
+    justify-content: center;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-dashboard {
+    max-width: 760px;
+    margin: 0 auto;
+    transform: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .template-b2b-saas-enterprise-pro .b2b-saas-header {
+    width: calc(100% - 24px);
+    min-height: 64px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-brand strong,
+  .template-b2b-saas-enterprise-pro .b2b-saas-login {
+    display: none;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-start {
+    min-height: 42px;
+    padding-inline: 14px;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-header nav {
+    gap: 20px;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-header nav a {
+    font-size: 13px;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-hero {
+    min-height: 0;
+    gap: 44px;
+    padding: 68px 18px 54px;
+    background:
+      radial-gradient(ellipse 85% 36% at 12% 5%, color-mix(in srgb, var(--site-primary) 20%, transparent), transparent 76%),
+      radial-gradient(ellipse 80% 34% at 94% 16%, color-mix(in srgb, var(--site-accent) 17%, transparent), transparent 76%),
+      linear-gradient(180deg, color-mix(in srgb, var(--site-background) 96%, #fff), #fff 82%);
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-eyebrow {
+    margin-bottom: 16px;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-hero h1 {
+    font-size: clamp(40px, 12vw, 54px);
+    line-height: 1.02;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-hero-copy > p {
+    margin: 20px auto 26px;
+    font-size: 15px;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-hero-actions > button {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-dashboard {
+    overflow: hidden;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    border-radius: 15px;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-dashboard-body {
+    display: block;
+    min-height: 0;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-dashboard aside {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 8px;
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--site-text) 8%, transparent);
+    padding: 12px;
+    scrollbar-width: none;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-dashboard aside span {
+    flex: 0 0 auto;
+    max-width: 160px;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-metrics {
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    padding: 16px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-metrics article {
+    flex: 0 0 min(76vw, 250px);
+    scroll-snap-align: start;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-logo-row {
+    overflow: hidden;
+    padding: 38px 18px;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-logo-row > div {
+    justify-content: flex-start;
+    overflow-x: auto;
+    gap: 34px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-logo-row strong {
+    flex: 0 0 auto;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-features,
+  .template-b2b-saas-enterprise-pro .b2b-saas-pricing {
+    padding: 58px 18px;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-section-heading {
+    margin-bottom: 28px;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-section-heading h2 {
+    font-size: 34px;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-features > div:last-child,
+  .template-b2b-saas-enterprise-pro .b2b-saas-plans {
+    display: flex;
+    overflow-x: auto;
+    gap: 14px;
+    padding: 4px 18px 20px 0;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-features article,
+  .template-b2b-saas-enterprise-pro .b2b-saas-plans article {
+    flex: 0 0 min(82vw, 310px);
+    scroll-snap-align: start;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-plans article.featured {
+    transform: none;
+  }
+
+  .template-b2b-saas-enterprise-pro .b2b-saas-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 28px 18px;
+  }
+}
+/* End B2B SaaS enterprise */
