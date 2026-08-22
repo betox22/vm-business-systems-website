@@ -1,7 +1,7 @@
-// Rewrites the `ai-builder.js?v=NNN` cache-busting query string in every
-// staged HTML file to a value derived from the current commit, so every
-// deploy gets a URL Cloudflare/GitHub Pages/the browser have never seen
-// before.
+// Rewrites the `ai-builder.js?v=NNN` and `ai-builder.css?v=NNN` cache-busting
+// query strings in every staged HTML file to a value derived from the current
+// commit, so every deploy gets URLs Cloudflare/GitHub Pages/the browser have
+// never seen before.
 //
 // Root cause this fixes (found 2026-08-10): `?v=162` was a hand-maintained
 // number baked directly into ai-builder.html and client/setup/index.html.
@@ -37,7 +37,7 @@ function resolveCacheBustValue() {
 }
 
 const cacheBust = resolveCacheBustValue();
-const pattern = /ai-builder\.js\?v=[^"'\s]+/g;
+const assets = ["ai-builder.js", "ai-builder.css"];
 
 for (const relativePath of TARGET_FILES) {
   const filePath = `${OUT_DIR}/${relativePath}`;
@@ -48,11 +48,22 @@ for (const relativePath of TARGET_FILES) {
     console.warn(`[inject-cache-bust] skipping ${filePath}: ${error.message}`);
     continue;
   }
-  const next = contents.replace(pattern, `ai-builder.js?v=${cacheBust}`);
+  let next = contents;
+  const updatedAssets = [];
+  for (const asset of assets) {
+    const pattern = new RegExp(`${asset.replace(".", "\\.")}\\?v=[^"'\\s]+`, "g");
+    const updated = next.replace(pattern, `${asset}?v=${cacheBust}`);
+    if (updated !== next) updatedAssets.push(asset);
+    next = updated;
+  }
   if (next !== contents) {
     await writeFile(filePath, next, "utf8");
-    console.log(`[inject-cache-bust] ${filePath} -> ai-builder.js?v=${cacheBust}`);
+    console.log(
+      `[inject-cache-bust] ${filePath} -> ${updatedAssets
+        .map((asset) => `${asset}?v=${cacheBust}`)
+        .join(", ")}`,
+    );
   } else {
-    console.warn(`[inject-cache-bust] no ai-builder.js?v= reference found in ${filePath}`);
+    console.warn(`[inject-cache-bust] no versioned ai-builder asset found in ${filePath}`);
   }
 }
