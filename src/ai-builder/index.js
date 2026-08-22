@@ -55,6 +55,11 @@ import { constructionPreviewModel } from './construction-preview-policy.js';
 import { logoRequestUpdate, wantsAiGeneratedLogo } from './logo-intent-policy.js';
 import { isBathBodyCatalogContext } from './catalog-preview-policy.js';
 import {
+  advanceClientProjectSessionEpoch,
+  clearClientProjectRuntimeState,
+} from './client-project-start-policy.js';
+import { quickChipsNeedAssistantPrompt } from './quick-chip-context-policy.js';
+import {
   MIN_GUIDED_BUILD_PHASE_VISIBLE_MS,
   remainingBuildPhaseVisibilityMs,
 } from './build-phase-policy.js';
@@ -1921,27 +1926,16 @@ export function formatProjectUpdatedAt(value) {
 // conversation. See docs/AGENT_LOG.md for the full trace.
 export function resetGuidedStateForNewAccount(options = {}) {
   const preserveAuth = Boolean(options.preserveAuth);
-  builderState.guidedState = createEmptyGuidedState(builderState.selectedLanguage);
-  builderState.currentSchema = null;
-  builderState.currentRequestId = null;
-  builderState.currentSiteId = null;
-  builderState.currentBusinessId = null;
-  builderState.currentGenerationId = null;
-  builderState.currentCatalogItems = [];
-  builderState.selectedPageKey = "home";
-  builderState.selectedVariantId = "";
-  builderState.forcedTemplateSelection = null;
-  builderState.clientIntakeSession = null;
-  builderState.restoredGuidedDraftInfo = null;
-  builderState.restoredDraftNoticeShown = false;
-  builderState.restoredDraftNoticeCard?.remove();
-  builderState.restoredDraftNoticeCard = null;
+  const restoredDraftNoticeCard = builderState.restoredDraftNoticeCard;
+  advanceClientProjectSessionEpoch(builderState);
+  clearTimeout(builderState.clientIntakeSyncTimer);
+  builderState.clientIntakeSyncTimer = null;
+  clearClientProjectRuntimeState(
+    builderState,
+    createEmptyGuidedState(builderState.selectedLanguage),
+  );
+  restoredDraftNoticeCard?.remove();
   removeGuidedBuildStatusCard();
-  builderState.guidedStep = "websiteIntent";
-  builderState.lastAskedGuidedField = "";
-  builderState.hasBackendIntakeSignal = false;
-  builderState.backendReadyToGenerate = false;
-  builderState.backendMissingFields = [];
   try {
     localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
     localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
@@ -3464,6 +3458,16 @@ export function refreshQuickChips() {
     review: [],
   };
   const chips = (chipsByStep[builderState.guidedStep] || []).slice(0, 4);
+  const assistantMessages = [...guidedChat.querySelectorAll(".chat-message.assistant, .chat-message.system")];
+  const lastAssistantMessage = assistantMessages.at(-1);
+  if (quickChipsNeedAssistantPrompt({
+    chips,
+    guidedStep: builderState.guidedStep,
+    lastAssistantStep: lastAssistantMessage?.dataset.guidedStep || "",
+    lastAssistantText: lastAssistantMessage?.textContent || "",
+  })) {
+    appendChatMessage("assistant", guidedQuestion(builderState.guidedStep), "speaking");
+  }
   quickChipRow.innerHTML = chips
     .map((chip) => `<button data-chip="${escapeAttribute(chip)}" type="button">${escapeHtml(translateChip(chip))}</button>`)
     .join("");

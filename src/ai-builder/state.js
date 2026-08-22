@@ -98,6 +98,7 @@ export const builderState = {
   clientIntakeSyncTimer: null,
   clientIntakeSyncInFlight: false,
   clientIntakeLastSyncedSnapshot: '',
+  clientIntakeSessionEpoch: 0,
   clientAccountButton: null,
   clientProjectsButton: null,
   clientProjectsPanel: null,

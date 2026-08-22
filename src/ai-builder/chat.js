@@ -636,6 +636,7 @@ export function appendChatMessage(role, message, emotion = "neutral") {
   const state = role === "user" ? "neutral" : normalizeAssistantState(emotion);
   bubble.className = `chat-message ${role} state-${state}`;
   if (role === "assistant" || role === "system") {
+    bubble.dataset.guidedStep = builderState.guidedStep || "";
     setAssistantState(state);
     const avatar = document.createElement("img");
     avatar.className = "assistant-avatar tiny";

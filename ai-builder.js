@@ -1451,6 +1451,57 @@
     return "";
   }
 
+  // src/ai-builder/client-project-start-policy.js
+  var CLIENT_PROJECT_RUNTIME_DEFAULTS = Object.freeze({
+    currentSchema: null,
+    currentRequestId: null,
+    currentSiteId: null,
+    currentBusinessId: null,
+    currentGenerationId: null,
+    currentCatalogItems: [],
+    selectedPageKey: "home",
+    selectedVariantId: "",
+    selectedStudioSectionId: "",
+    forcedTemplateSelection: null,
+    clientIntakeSession: null,
+    restoredGuidedDraftInfo: null,
+    restoredDraftNoticeShown: false,
+    restoredDraftNoticeCard: null,
+    guidedStep: "websiteIntent",
+    lastAskedGuidedField: "",
+    hasBackendIntakeSignal: false,
+    backendReadyToGenerate: false,
+    backendMissingFields: [],
+    clientIntakeLastSyncedSnapshot: ""
+  });
+  function clearClientProjectRuntimeState(state, emptyGuidedState) {
+    Object.entries(CLIENT_PROJECT_RUNTIME_DEFAULTS).forEach(([key, value]) => {
+      state[key] = Array.isArray(value) ? [...value] : value;
+    });
+    state.guidedState = emptyGuidedState;
+    return state;
+  }
+  function advanceClientProjectSessionEpoch(state) {
+    state.clientIntakeSessionEpoch = Number(state.clientIntakeSessionEpoch || 0) + 1;
+    return state.clientIntakeSessionEpoch;
+  }
+  function isCurrentClientProjectSessionEpoch(requestEpoch, currentEpoch) {
+    return Number(requestEpoch || 0) === Number(currentEpoch || 0);
+  }
+
+  // src/ai-builder/quick-chip-context-policy.js
+  function quickChipsNeedAssistantPrompt({
+    chips = [],
+    guidedStep = "",
+    lastAssistantStep = "",
+    lastAssistantText = ""
+  } = {}) {
+    if (!Array.isArray(chips) || chips.length === 0) return false;
+    if (!String(guidedStep || "").trim()) return false;
+    if (!String(lastAssistantText || "").trim()) return true;
+    return String(lastAssistantStep || "").trim() !== String(guidedStep || "").trim();
+  }
+
   // src/ai-builder/build-phase-policy.js
   var MIN_GUIDED_BUILD_PHASE_VISIBLE_MS = 450;
   function remainingBuildPhaseVisibilityMs(startedAt, now, minimumMs = MIN_GUIDED_BUILD_PHASE_VISIBLE_MS) {
@@ -5193,6 +5244,7 @@
     clientIntakeSyncTimer: null,
     clientIntakeSyncInFlight: false,
     clientIntakeLastSyncedSnapshot: "",
+    clientIntakeSessionEpoch: 0,
     clientAccountButton: null,
     clientProjectsButton: null,
     clientProjectsPanel: null,
@@ -5209,7 +5261,7 @@
 
   // src/ai-builder/dom.js
   var isLegacyBuilderPage = Boolean(document.querySelector("#intakeForm"));
-  var form2 = document.querySelector("#intakeForm");
+  var form = document.querySelector("#intakeForm");
   var statusText = document.querySelector("#statusText");
   var storageStatus2 = document.querySelector("#storageStatus");
   var siteTitle2 = document.querySelector("#siteTitle");
@@ -6224,6 +6276,7 @@
     }
   }
   async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false, deferHydration = false } = {}) {
+    const requestEpoch = builderState.clientIntakeSessionEpoch;
     const cleanEmail = String(email || "").trim().toLowerCase();
     if (!cleanEmail) throw new Error("Email is required.");
     const storedSession = readClientIntakeSession();
@@ -6256,6 +6309,14 @@
     }, 18e3);
     if (!response.ok) throw new Error(await readErrorMessage(response));
     const session = await response.json();
+    if (!isCurrentClientProjectSessionEpoch(requestEpoch, builderState.clientIntakeSessionEpoch)) {
+      console.info("Ignoring stale client intake response after starting a new project", {
+        reason,
+        requestEpoch,
+        currentEpoch: builderState.clientIntakeSessionEpoch
+      });
+      return null;
+    }
     writeClientIntakeSession(session);
     localStorage.setItem("lumaPendingClientEmail", cleanEmail);
     if (!deferHydration) hydrateClientIntakeSession(session, { silent: reason === "autosave" });
@@ -6275,7 +6336,7 @@
           name: builderState.guidedState.contactInfo?.name || builderState.guidedState.businessName || "",
           reason
         });
-        if (session.requestId) builderState.currentRequestId = session.requestId;
+        if (session?.requestId) builderState.currentRequestId = session.requestId;
         builderState.clientIntakeLastSyncedSnapshot = currentSnapshot;
       } catch (error) {
         console.warn("Client intake autosave failed", error);
@@ -6303,27 +6364,8 @@
     if (hasExistingWork && !options.skipConfirm && !window.confirm(t("startNewProjectConfirm"))) return;
     const existingEmail = builderState.clientIntakeSession?.clientEmail || readClientIntakeSession()?.clientEmail || "";
     closeClientProjectsPanel();
-    localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
-    localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
-    localStorage.removeItem("lumaPendingGeneratedSite");
     localStorage.removeItem("lumaPendingAuthAction");
-    builderState.currentSchema = null;
-    builderState.selectedPageKey = "home";
-    builderState.selectedVariantId = "";
-    builderState.selectedStudioSectionId = "";
-    builderState.currentRequestId = null;
-    builderState.currentSiteId = "";
-    builderState.currentBusinessId = "";
-    builderState.currentGenerationId = null;
-    builderState.currentCatalogItems = [];
-    builderState.forcedTemplateSelection = null;
-    builderState.restoredGuidedDraftInfo = null;
-    builderState.guidedStep = "websiteIntent";
-    builderState.lastAskedGuidedField = "";
-    builderState.hasBackendIntakeSignal = false;
-    builderState.backendReadyToGenerate = false;
-    builderState.backendMissingFields = [];
-    builderState.guidedState = createEmptyGuidedState(builderState.selectedLanguage);
+    resetGuidedStateForNewAccount({ preserveAuth: true });
     if (existingEmail) builderState.guidedState.contactInfo.email = existingEmail;
     guidedAskedSteps.clear();
     builderState.lastAssistantPromptSignature = "";
@@ -6774,7 +6816,7 @@
     const guided = mode === "guided";
     quickModeButton.classList.toggle("active", !guided);
     guidedModeButton.classList.toggle("active", guided);
-    form2.classList.toggle("active", !guided);
+    form.classList.toggle("active", !guided);
     guidedPanel2.classList.toggle("active", guided);
     document.body.classList.toggle("guided-modal-open", guided);
     document.body.classList.remove("review-details-open", "final-review-mode");
@@ -7102,6 +7144,7 @@ ${guidedQuestion(nextMissing)}`
     const state = role === "user" ? "neutral" : normalizeAssistantState(emotion);
     bubble.className = `chat-message ${role} state-${state}`;
     if (role === "assistant" || role === "system") {
+      bubble.dataset.guidedStep = builderState.guidedStep || "";
       setAssistantState(state);
       const avatar = document.createElement("img");
       avatar.className = "assistant-avatar tiny";
@@ -7225,7 +7268,7 @@ ${cleanQuestion}`;
     <p class="server-intake-question"></p>
     <textarea name="server_intake_reply" rows="2" placeholder="Type your answer..."></textarea>
   `;
-    form2.prepend(gate);
+    form.prepend(gate);
     return gate;
   }
   async function applyDraftAdjustmentFromChat(message, localContextUpdates = {}) {
@@ -8572,7 +8615,7 @@ ${cleanQuestion}`;
         handleGuidedSendAction(event);
       }, true);
     }
-    form2.addEventListener("submit", async (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       await generateWebsite();
     });
@@ -9566,27 +9609,16 @@ ${cleanQuestion}`;
   }
   function resetGuidedStateForNewAccount(options = {}) {
     const preserveAuth = Boolean(options.preserveAuth);
-    builderState.guidedState = createEmptyGuidedState(builderState.selectedLanguage);
-    builderState.currentSchema = null;
-    builderState.currentRequestId = null;
-    builderState.currentSiteId = null;
-    builderState.currentBusinessId = null;
-    builderState.currentGenerationId = null;
-    builderState.currentCatalogItems = [];
-    builderState.selectedPageKey = "home";
-    builderState.selectedVariantId = "";
-    builderState.forcedTemplateSelection = null;
-    builderState.clientIntakeSession = null;
-    builderState.restoredGuidedDraftInfo = null;
-    builderState.restoredDraftNoticeShown = false;
-    builderState.restoredDraftNoticeCard?.remove();
-    builderState.restoredDraftNoticeCard = null;
+    const restoredDraftNoticeCard = builderState.restoredDraftNoticeCard;
+    advanceClientProjectSessionEpoch(builderState);
+    clearTimeout(builderState.clientIntakeSyncTimer);
+    builderState.clientIntakeSyncTimer = null;
+    clearClientProjectRuntimeState(
+      builderState,
+      createEmptyGuidedState(builderState.selectedLanguage)
+    );
+    restoredDraftNoticeCard?.remove();
     removeGuidedBuildStatusCard();
-    builderState.guidedStep = "websiteIntent";
-    builderState.lastAskedGuidedField = "";
-    builderState.hasBackendIntakeSignal = false;
-    builderState.backendReadyToGenerate = false;
-    builderState.backendMissingFields = [];
     try {
       localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
       localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
@@ -9706,7 +9738,7 @@ ${langText({
     applyGuidedStateToForm();
     document.body.classList.add("manual-form-open");
     document.body.classList.remove("review-details-open", "final-review-mode");
-    form2.classList.add("active");
+    form.classList.add("active");
     guidedPanel2.classList.remove("active");
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     setAssistantState("neutral");
@@ -10568,6 +10600,16 @@ ${langText({
       review: []
     };
     const chips = (chipsByStep[builderState.guidedStep] || []).slice(0, 4);
+    const assistantMessages = [...guidedChat.querySelectorAll(".chat-message.assistant, .chat-message.system")];
+    const lastAssistantMessage = assistantMessages.at(-1);
+    if (quickChipsNeedAssistantPrompt({
+      chips,
+      guidedStep: builderState.guidedStep,
+      lastAssistantStep: lastAssistantMessage?.dataset.guidedStep || "",
+      lastAssistantText: lastAssistantMessage?.textContent || ""
+    })) {
+      appendChatMessage("assistant", guidedQuestion(builderState.guidedStep), "speaking");
+    }
     quickChipRow.innerHTML = chips.map((chip) => `<button data-chip="${escapeAttribute(chip)}" type="button">${escapeHtml(translateChip(chip))}</button>`).join("");
     quickChipRow.querySelectorAll("[data-chip]").forEach((button) => {
       button.addEventListener("click", () => insertQuickChip(button.dataset.chip));
@@ -11358,7 +11400,7 @@ ${guidedQuestion(nextMissing)}`
     return response.json();
   }
   function importQuickFormToGuidedState() {
-    const data = new FormData(form2);
+    const data = new FormData(form);
     builderState.guidedState = {
       ...builderState.guidedState,
       businessName: data.get("business_name")?.toString().trim() || builderState.guidedState.businessName,
@@ -18207,7 +18249,7 @@ Site ID: ${builderState.currentSiteId}`
   async function collectPayload() {
     if (isPublicClientSetup) syncTemplateSelectionFromGuidedContext();
     const aiStudioPlan = isPublicClientSetup ? refreshAiStudioPlanFromContext() : builderState.guidedState.aiStudioPlan;
-    const data = new FormData(form2);
+    const data = new FormData(form);
     const intakeFollowupAnswer = data.get("server_intake_reply")?.toString().trim() || "";
     const intakeFollowupField = builderState.pendingServerIntakeGate?.missing_fields?.[0] || "";
     const baseIndustryValue = data.get("industry")?.toString().trim() || builderState.guidedState.industry || "";
@@ -18430,12 +18472,12 @@ Site ID: ${builderState.currentSiteId}`
     }
   }
   function setInputValue(name, value) {
-    const field = form2.elements.namedItem(name);
+    const field = form.elements.namedItem(name);
     if (!field) return;
     field.value = value;
   }
   function catalogItemsFromForm() {
-    return splitCommaOrLines(new FormData(form2).get("services_products")?.toString() || "").map((name, index) => ({
+    return splitCommaOrLines(new FormData(form).get("services_products")?.toString() || "").map((name, index) => ({
       id: `seed_${index + 1}`,
       name,
       description: "",
@@ -18692,10 +18734,10 @@ Site ID: ${builderState.currentSiteId}`
         group.hidden = Boolean(query) && !group.querySelector("[data-catalog-item]:not([hidden])");
       });
     };
-    root.querySelectorAll("[data-catalog-search-form]").forEach((form3) => {
-      form3.addEventListener("submit", (event) => {
+    root.querySelectorAll("[data-catalog-search-form]").forEach((form2) => {
+      form2.addEventListener("submit", (event) => {
         event.preventDefault();
-        applyFilter(new FormData(form3).get("catalog-search") || "");
+        applyFilter(new FormData(form2).get("catalog-search") || "");
       });
     });
     root.querySelectorAll("[data-catalog-category]").forEach((button) => {

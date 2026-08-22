@@ -20,6 +20,7 @@ import {
   clientProjectEntryDecision,
   savedProjectName,
 } from './client-project-resume-policy.js';
+import { isCurrentClientProjectSessionEpoch } from './client-project-start-policy.js';
 import {
   clientProjectDomain,
   clientProjectPreviewPath,
@@ -31,13 +32,11 @@ import {
   readSupabaseAuthRedirect,
   requestSupabaseMagicLink,
 } from './supabase-magic-link.js';
-import {
-  builderState,
-  createEmptyGuidedState,
-} from './state.js';
+import { builderState } from './state.js';
 import {
   isPublicClientSetup,
   isEmbeddedClientSetup,
+  form,
   studioAuthGate,
   studioAuthCloseButton,
   studioGoogleAuthButton,
@@ -959,6 +958,7 @@ export function hydrateClientIntakeSession(session, options = {}) {
 }
 
 export async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false, deferHydration = false } = {}) {
+  const requestEpoch = builderState.clientIntakeSessionEpoch;
   const cleanEmail = String(email || "").trim().toLowerCase();
   if (!cleanEmail) throw new Error("Email is required.");
   const storedSession = readClientIntakeSession();
@@ -996,6 +996,14 @@ export async function createOrResumeClientIntakeSession({ email, name = "", reas
   }, 18000);
   if (!response.ok) throw new Error(await readErrorMessage(response));
   const session = await response.json();
+  if (!isCurrentClientProjectSessionEpoch(requestEpoch, builderState.clientIntakeSessionEpoch)) {
+    console.info("Ignoring stale client intake response after starting a new project", {
+      reason,
+      requestEpoch,
+      currentEpoch: builderState.clientIntakeSessionEpoch,
+    });
+    return null;
+  }
   writeClientIntakeSession(session);
   localStorage.setItem("lumaPendingClientEmail", cleanEmail);
   if (!deferHydration) hydrateClientIntakeSession(session, { silent: reason === "autosave" });
@@ -1016,7 +1024,7 @@ export function syncClientIntakeSession({ immediate = false, reason = "autosave"
         name: builderState.guidedState.contactInfo?.name || builderState.guidedState.businessName || "",
         reason,
       });
-      if (session.requestId) builderState.currentRequestId = session.requestId;
+      if (session?.requestId) builderState.currentRequestId = session.requestId;
       builderState.clientIntakeLastSyncedSnapshot = currentSnapshot;
     } catch (error) {
       console.warn("Client intake autosave failed", error);
@@ -1045,29 +1053,8 @@ export function startNewClientProject(options = {}) {
   if (hasExistingWork && !options.skipConfirm && !window.confirm(t("startNewProjectConfirm"))) return;
   const existingEmail = builderState.clientIntakeSession?.clientEmail || readClientIntakeSession()?.clientEmail || "";
   closeClientProjectsPanel();
-
-  localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
-  localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
-  localStorage.removeItem("lumaPendingGeneratedSite");
   localStorage.removeItem("lumaPendingAuthAction");
-
-  builderState.currentSchema = null;
-  builderState.selectedPageKey = "home";
-  builderState.selectedVariantId = "";
-  builderState.selectedStudioSectionId = "";
-  builderState.currentRequestId = null;
-  builderState.currentSiteId = "";
-  builderState.currentBusinessId = "";
-  builderState.currentGenerationId = null;
-  builderState.currentCatalogItems = [];
-  builderState.forcedTemplateSelection = null;
-  builderState.restoredGuidedDraftInfo = null;
-  builderState.guidedStep = "websiteIntent";
-  builderState.lastAskedGuidedField = "";
-  builderState.hasBackendIntakeSignal = false;
-  builderState.backendReadyToGenerate = false;
-  builderState.backendMissingFields = [];
-  builderState.guidedState = createEmptyGuidedState(builderState.selectedLanguage);
+  resetGuidedStateForNewAccount({ preserveAuth: true });
   if (existingEmail) builderState.guidedState.contactInfo.email = existingEmail;
   guidedAskedSteps.clear();
   builderState.lastAssistantPromptSignature = "";
