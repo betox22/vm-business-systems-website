@@ -51,6 +51,7 @@ import {
 import { mergeSemanticSeedCatalog } from './catalog-seed-policy.js';
 import { isMegaRetailTemplate, megaRetailFeatureFlags } from './mega-retail-policy.js';
 import { hasDecidedTemplateSelection, isConcreteTemplateId } from './template-carousel-policy.js';
+import { constructionPreviewModel } from './construction-preview-policy.js';
 import {
   MIN_GUIDED_BUILD_PHASE_VISIBLE_MS,
   remainingBuildPhaseVisibilityMs,
@@ -902,7 +903,12 @@ function guidedStage(step = builderState.guidedStep) {
 export function renderLiveSitePreview() {
   const card = ensureLiveSitePreviewCard();
   if (!card) return;
-  card.classList.remove("template-board-card-host", "template-board-loading-host", "selected-template-card-host", "live-render-card-host");
+  card.classList.remove("template-board-card-host", "template-board-loading-host", "selected-template-card-host", "live-render-card-host", "live-construction-card-host");
+  syncTemplateSelectionFromGuidedContext();
+  if (isPublicClientSetup && !builderState.currentSchema) {
+    renderCanvasTemplateCarousel(card);
+    return;
+  }
   if (builderState.isGeneratingWebsite) {
     card.classList.add("live-generation-card-host");
     card.innerHTML = `
@@ -927,7 +933,6 @@ export function renderLiveSitePreview() {
     return;
   }
   card.classList.remove("live-generation-card-host");
-  syncTemplateSelectionFromGuidedContext();
   if (shouldShowCanvasTemplateCarousel()) {
     if (shouldRenderTemplateBoardSkeleton()) {
       renderCanvasTemplateSkeleton(card);
@@ -1009,7 +1014,11 @@ if (typeof window !== "undefined") {
     if (__livePreviewResizeTimer) clearTimeout(__livePreviewResizeTimer);
     __livePreviewResizeTimer = setTimeout(() => {
       const card = document.querySelector(".live-site-preview-card.live-render-card-host");
-      if (card) fitLiveTemplatePreviewToCard(card);
+      if (card?.classList.contains("live-construction-card-host")) {
+        fitConstructionTemplatePreviewToCard(card);
+      } else if (card) {
+        fitLiveTemplatePreviewToCard(card);
+      }
     }, 150);
   });
 }
@@ -1092,65 +1101,83 @@ function renderCanvasTemplateSkeleton(card) {
 }
 
 function renderCanvasTemplateCarousel(card) {
-  card.classList.add("template-board-card-host");
   const selection = livePreviewTemplateSelection();
-  const selectedId = selection?.templateId || "";
-  const choices = canvasTemplateChoices(selectedId).slice(0, 5);
-  if (!choices.length) {
-    card.innerHTML = renderNeutralLiveWorkspace();
-    return;
-  }
-  const shouldAnimateCards = !window.__lyraTemplateBoardAnimated;
-  card.innerHTML = `
-    <section class="template-choice-panel template-board-panel">
-      <div class="template-choice-heading template-carousel-heading">
-        <strong>${escapeHtml(langText({
-          en: "Select the structure LYRA should use",
-          es: "Selecciona la estructura que LYRA debe usar",
-          fr: "Selectionnez la structure que LYRA doit utiliser",
-          pt: "Selecione a estrutura que a LYRA deve usar",
-        }))}</strong>
-        <span>${escapeHtml(langText({
-          en: "These are real template bases. LYRA will adapt copy, colors, products and flow after you choose one.",
-          es: "Estas son bases reales. LYRA adaptara textos, colores, productos y flujo despues de elegir una.",
-          fr: "Ce sont de vraies bases. LYRA adaptera textes, couleurs, produits et parcours apres le choix.",
-          pt: "Estas sao bases reais. A LYRA adapta textos, cores, produtos e fluxo depois da escolha.",
-        }))}</span>
+  const model = constructionPreviewModel({
+    guidedState: builderState.guidedState,
+    selection,
+    backendReadyToGenerate: builderState.backendReadyToGenerate,
+    isGenerating: builderState.isGeneratingWebsite,
+    hasCurrentSchema: Boolean(builderState.currentSchema),
+  });
+  const choice = templatePreviewMeta(selection?.templateId) || templatePreviewMeta("premium-product-store");
+  const stageLabels = {
+    brand: langText({ en: "Brand", es: "Marca", fr: "Marque", pt: "Marca" }),
+    content: langText({ en: "Content", es: "Contenido", fr: "Contenu", pt: "Conteúdo" }),
+    media: langText({ en: "Media", es: "Medios", fr: "Médias", pt: "Mídia" }),
+    ready: langText({ en: "Ready", es: "Listo", fr: "Prêt", pt: "Pronto" }),
+  };
+  let previewMarkup = `
+    <div class="live-construction-sketch" aria-label="${escapeAttribute(langText({ en: "Early website sketch", es: "Boceto inicial del sitio", fr: "Première esquisse du site", pt: "Esboço inicial do site" }))}">
+      ${templateLivePreviewMarkup(choice)}
+      <div class="live-construction-sketch-lines" aria-hidden="true"><i></i><i></i><i></i></div>
+    </div>
+  `;
+  if (model.mode === "template") {
+    const payload = livePreviewPayload();
+    let schema = buildInstantTemplateSchema(payload, selection);
+    schema = prepareWebsiteConfig(schema, payload, selection);
+    previewMarkup = `
+      <div class="live-template-preview-viewport">
+        <div class="live-template-preview-shell">
+          ${renderWebsite(schema, schema.pages?.[0]?.page_key || "home")}
+        </div>
       </div>
-      <div class="template-board-grid template-coverflow-track ${shouldAnimateCards ? "template-board-grid-enter" : ""}" aria-label="Template options">
-        ${choices.map((choice, index) => `
-          <article class="template-choice-card template-board-card template-coverflow-card template-carousel-card ${choice.templateId === selectedId ? "active-card recommended" : index === 0 ? "recommended" : ""}" style="--template-card-index: ${index};" data-template-choice="${escapeAttribute(choice.templateId)}" data-catalog-type="${escapeAttribute(choice.catalogType || "")}" tabindex="0">
-            <div class="template-board-image">
-              ${templateLivePreviewMarkup(choice)}
-            </div>
-            <div class="template-board-body">
-              <div class="template-board-meta">
-                <span class="template-status-pill">${escapeHtml(choice.templateId === selectedId || index === 0 ? langText({ en: "Recommended", es: "Recomendada", fr: "Recommandee", pt: "Recomendada" }) : langText({ en: "Alternative", es: "Alternativa", fr: "Alternative", pt: "Alternativa" }))}</span>
-                <div class="template-board-badges" aria-label="${escapeAttribute(langText({ en: "Template categories", es: "Categorias del template", fr: "Categories du template", pt: "Categorias do template" }))}">
-                  ${templateCardBadges(choice).map((badge, badgeIndex) => `<em data-badge-tone="${badgeIndex % 3}">${escapeHtml(badge)}</em>`).join("")}
-                </div>
-              </div>
-              <strong>${escapeHtml(localizedTemplateName(choice))}</strong>
-              <small>${escapeHtml(localizedTemplateDescription(choice))}</small>
-              <button type="button" data-template-preview="${escapeAttribute(choice.templateId)}">${escapeHtml(langText({ en: "Preview", es: "Previsualizar", fr: "Previsualiser", pt: "Previsualizar" }))}</button>
-            </div>
-          </article>
+    `;
+  }
+
+  card.classList.add("live-construction-card-host");
+  if (model.mode === "template") card.classList.add("live-render-card-host");
+  card.innerHTML = `
+    <section class="live-construction-panel" data-construction-level="${model.level}" data-construction-mode="${model.mode}">
+      <header class="live-construction-header">
+        <div>
+          <span>${escapeHtml(model.mode === "template" ? langText({ en: "Live website", es: "Sitio en vivo", fr: "Site en direct", pt: "Site ao vivo" }) : langText({ en: "Building the foundation", es: "Construyendo la base", fr: "Construction de la base", pt: "Construindo a base" }))}</span>
+          <strong>${escapeHtml(model.mode === "template" ? localizedTemplateName(choice) : langText({ en: "Your site is taking shape", es: "Tu sitio está tomando forma", fr: "Votre site prend forme", pt: "Seu site está tomando forma" }))}</strong>
+        </div>
+        <em>${model.progress}%</em>
+      </header>
+      <div class="live-construction-progress" aria-label="${escapeAttribute(langText({ en: "Website build progress", es: "Progreso de construcción", fr: "Progression de construction", pt: "Progresso da construção" }))}">
+        <i style="--construction-progress:${model.progress}%"></i>
+      </div>
+      <ol class="live-construction-stages">
+        ${model.stages.map((stage) => `
+          <li class="${stage.complete ? "is-complete" : stage.active ? "is-active" : ""}">
+            <i aria-hidden="true">${stage.complete ? "✓" : ""}</i>
+            <span>${escapeHtml(stageLabels[stage.id])}</span>
+          </li>
         `).join("")}
+      </ol>
+      <div class="live-construction-canvas ${model.mode === "template" ? "is-template" : "is-sketch"}">
+        ${previewMarkup}
       </div>
     </section>
   `;
-  window.__lyraTemplateBoardAnimated = true;
-  const panel = card.querySelector(".template-board-panel");
-  initTemplateCarousel(card.querySelector(".template-board-grid"));
-  panel?.addEventListener("click", (event) => {
-    const button = event.target?.closest?.("[data-template-preview]");
-    if (!button) return;
-    const templateId = button.dataset.templatePreview || "";
-    if (!templateId) return;
-    event.preventDefault();
-    event.stopPropagation();
-    window.Lyra?.selectTemplate(templateId);
-  });
+  if (model.mode === "template") fitConstructionTemplatePreviewToCard(card);
+}
+
+function fitConstructionTemplatePreviewToCard(card) {
+  const canvas = card.querySelector(".live-construction-canvas");
+  const viewport = card.querySelector(".live-template-preview-viewport");
+  const shell = card.querySelector(".live-template-preview-shell");
+  if (!canvas || !viewport || !shell) return;
+  shell.style.width = `${LIVE_PREVIEW_DESIGN_WIDTH}px`;
+  shell.style.transform = "none";
+  const availableWidth = Math.max(1, canvas.clientWidth || card.clientWidth || LIVE_PREVIEW_DESIGN_WIDTH);
+  const availableHeight = Math.max(360, canvas.clientHeight || card.clientHeight - 132 || 520);
+  const scale = Math.min(availableWidth / LIVE_PREVIEW_DESIGN_WIDTH, 1);
+  shell.style.transformOrigin = "top left";
+  shell.style.transform = `scale(${scale})`;
+  viewport.style.height = `${availableHeight}px`;
 }
 
 function canvasTemplateChoices(selectedTemplateId = "") {

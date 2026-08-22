@@ -138,6 +138,22 @@ TEMPLATE_CATALOG: Dict[str, Dict[str, str]] = {
     },
 }
 
+FLAGSHIP_TEMPLATE_IDS = frozenset({
+    "mega-marketplace",
+    "listing-marketplace-pro",
+    "fashion-drop-pro",
+    "premium-product-store",
+    "local-services-pro-plus",
+    "booking-appointment-pro",
+    "mega-retail-store",
+    "b2b-saas-enterprise-pro",
+})
+
+for _template_id, _template_meta in TEMPLATE_CATALOG.items():
+    _template_meta["design_maturity"] = (
+        "flagship" if _template_id in FLAGSHIP_TEMPLATE_IDS else "standard"
+    )
+
 TEMPLATE_ID_ALIASES: Dict[str, str] = {
     "apple-premium-product": "premium-product-store",
     "premium-product-showcase": "premium-product-store",

@@ -4,6 +4,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Premium Product",
     names: { en: "Premium Product", es: "Producto premium", fr: "Produit premium", pt: "Produto premium" },
     catalogType: "premium_editorial_catalog",
+    design_maturity: "flagship",
     image: "/templates-preview/carousel-assets/apple_2.png",
     description: "Premium product showcase with spacious hero, refined copy, and polished sections.",
     descriptions: {
@@ -18,6 +19,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Luxury High Ticket",
     names: { en: "Luxury High Ticket", es: "Lujo high ticket", fr: "Luxe high ticket", pt: "Luxo high ticket" },
     catalogType: "luxury_high_ticket_catalog",
+    design_maturity: "standard",
     image: "/templates-preview/carousel-assets/professional_2.png",
     description: "Private showroom style for jewelry, watches, art, luxury cars, collectibles, and high-ticket pieces.",
     descriptions: {
@@ -32,6 +34,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Course Academy",
     names: { en: "Course Academy", es: "Academia de cursos", fr: "Academie de cours", pt: "Academia de cursos" },
     catalogType: "education_course_catalog",
+    design_maturity: "standard",
     image: "/templates-preview/screenshots/education.png",
     description: "Premium academy style for courses, coaching programs, bootcamps, classes, and training centers.",
     descriptions: {
@@ -46,6 +49,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Clinic / Wellness",
     names: { en: "Clinic / Wellness", es: "Clinica / Wellness", fr: "Clinique / Wellness", pt: "Clinica / Wellness" },
     catalogType: "medical_wellness_service_catalog",
+    design_maturity: "standard",
     image: "/templates-preview/carousel-assets/clinic_2.png",
     description: "Premium clinic style for medical, aesthetic, dental, wellness, therapy, and consultation-based businesses.",
     descriptions: {
@@ -60,6 +64,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Legal / Professional",
     names: { en: "Legal / Professional", es: "Legal / Profesional", fr: "Juridique / Professionnel", pt: "Juridico / Profissional" },
     catalogType: "legal_professional_services_catalog",
+    design_maturity: "standard",
     image: "/templates-preview/carousel-assets/professional_2.png",
     description: "Premium professional firm style for legal, accounting, tax, consulting, insurance, and B2B advisory.",
     descriptions: {
@@ -74,6 +79,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "B2B SaaS / Enterprise",
     names: { en: "B2B SaaS / Enterprise", es: "B2B SaaS / Empresarial", fr: "B2B SaaS / Entreprise", pt: "B2B SaaS / Empresarial" },
     catalogType: "b2b_solution_catalog",
+    design_maturity: "flagship",
     image: "/templates-preview/carousel-assets/b2b_2.png",
     description: "Enterprise software style for SaaS, automation, IT services, integrations, dashboards, and B2B systems.",
     descriptions: {
@@ -88,6 +94,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Industrial Supplier",
     names: { en: "Industrial Supplier", es: "Proveedor industrial", fr: "Fournisseur industriel", pt: "Fornecedor industrial" },
     catalogType: "industrial_supplier_catalog",
+    design_maturity: "standard",
     image: "/templates-preview/carousel-assets/industrial_2.png",
     description: "Technical B2B supplier style for manufacturing, machinery, parts, tools, safety equipment, and bulk RFQs.",
     descriptions: {
@@ -102,6 +109,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Mega Retail Store",
     names: { en: "Mega Retail Store", es: "Mega tienda retail", fr: "Mega boutique retail", pt: "Mega loja retail" },
     catalogType: "single_vendor_dense_catalog",
+    design_maturity: "flagship",
     image: "/templates-preview/carousel-assets/amazon_2.jpg",
     description: "Large owned catalog store with search, categories, deals, filters, cart, checkout, and one-store inventory.",
     descriptions: {
@@ -116,6 +124,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Mega Marketplace",
     names: { en: "Mega Marketplace", es: "Mega marketplace", fr: "Mega marketplace", pt: "Mega marketplace" },
     catalogType: "dense_marketplace_catalog",
+    design_maturity: "flagship",
     image: "/templates-preview/carousel-assets/amazon_2.jpg",
     description: "Large catalog marketplace with search, categories, deals, filters, and dense products.",
     descriptions: {
@@ -130,6 +139,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Listing Marketplace",
     names: { en: "Listing Marketplace", es: "Marketplace de listados", fr: "Marketplace d'annonces", pt: "Marketplace de anuncios" },
     catalogType: "listing_marketplace_catalog",
+    design_maturity: "flagship",
     image: "/templates-preview/carousel-assets/ebay_2.png",
     description: "Seller listing marketplace with condition labels, offers, and comparison layout.",
     descriptions: {
@@ -144,6 +154,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Fashion Drop",
     names: { en: "Fashion Drop", es: "Fashion drop", fr: "Drop mode", pt: "Fashion drop" },
     catalogType: "lookbook_collection_catalog",
+    design_maturity: "flagship",
     image: "/templates-preview/carousel-assets/apple_2.png",
     description: "Editorial boutique storefront with visual hero, collections, lookbook, and launch energy.",
     descriptions: {
@@ -158,6 +169,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Corporate Company",
     names: { en: "Corporate Company", es: "Pagina de empresa", fr: "Site entreprise", pt: "Site empresarial" },
     catalogType: "company_services_catalog",
+    design_maturity: "standard",
     image: "/templates-preview/carousel-assets/services_2.png",
     description: "Professional company website with positioning, services, process, proof, and contact.",
     descriptions: {
@@ -172,6 +184,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Lead Funnel",
     names: { en: "Lead Funnel", es: "Landing de conversion", fr: "Landing de conversion", pt: "Landing de conversao" },
     catalogType: "lead_funnel_offer_catalog",
+    design_maturity: "standard",
     image: "/templates-preview/carousel-assets/services_2.png",
     description: "Focused landing page for one offer, benefits, proof, FAQ, and lead capture.",
     descriptions: {
@@ -186,6 +199,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Restaurant Menu",
     names: { en: "Restaurant Menu", es: "Menu restaurante", fr: "Menu restaurant", pt: "Menu restaurante" },
     catalogType: "restaurant_menu_catalog",
+    design_maturity: "standard",
     image: "/templates-preview/carousel-assets/services_2.png",
     description: "Restaurant-first site with menu categories, signature dishes, specials, hours, and order CTA.",
     descriptions: {
@@ -200,6 +214,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Digital Products",
     names: { en: "Digital Products", es: "Productos digitales", fr: "Produits digitaux", pt: "Produtos digitais" },
     catalogType: "digital_offer_catalog",
+    design_maturity: "standard",
     image: "/templates-preview/carousel-assets/apple_2.png",
     description: "Creator/SaaS-style digital product site with bundles, modules, proof, and instant access CTA.",
     descriptions: {
@@ -214,6 +229,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Real Estate / Listings",
     names: { en: "Real Estate / Listings", es: "Propiedades / listings", fr: "Immobilier / annonces", pt: "Imoveis / anuncios" },
     catalogType: "real_estate_listing_catalog",
+    design_maturity: "standard",
     image: "/templates-preview/carousel-assets/ebay_2.png",
     description: "Search-first listing site with filters, location, price/spec cards, area panel, and inquiry CTAs.",
     descriptions: {
@@ -228,6 +244,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Local Services Premium",
     names: { en: "Local Services Premium", es: "Servicios locales premium", fr: "Services locaux premium", pt: "Servicos locais premium" },
     catalogType: "home_services_quote_catalog",
+    design_maturity: "standard",
     image: "/templates-preview/carousel-assets/services_2.png",
     description: "Premium local service site with phone-first hero, service areas, proof, reviews, and quote flow.",
     descriptions: {
@@ -242,6 +259,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Local Services",
     names: { en: "Local Services", es: "Servicios locales", fr: "Services locaux", pt: "Servicos locais" },
     catalogType: "service_area_catalog",
+    design_maturity: "flagship",
     image: "/templates-preview/carousel-assets/services_2.png",
     description: "Quote-focused service site with service cards, trust, service area, and contact CTA.",
     descriptions: {
@@ -256,6 +274,7 @@ export const TEMPLATE_PREVIEW_CHOICES = [
     name: "Booking",
     names: { en: "Booking", es: "Reservas", fr: "Reservations", pt: "Agendamentos" },
     catalogType: "booking_menu_catalog",
+    design_maturity: "flagship",
     image: "/templates-preview/carousel-assets/booking_2.jpg",
     description: "Appointment-first layout with service menu, availability, staff/process, and booking CTA.",
     descriptions: {

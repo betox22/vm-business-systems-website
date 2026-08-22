@@ -524,6 +524,7 @@
       name: "Premium Product",
       names: { en: "Premium Product", es: "Producto premium", fr: "Produit premium", pt: "Produto premium" },
       catalogType: "premium_editorial_catalog",
+      design_maturity: "flagship",
       image: "/templates-preview/carousel-assets/apple_2.png",
       description: "Premium product showcase with spacious hero, refined copy, and polished sections.",
       descriptions: {
@@ -538,6 +539,7 @@
       name: "Luxury High Ticket",
       names: { en: "Luxury High Ticket", es: "Lujo high ticket", fr: "Luxe high ticket", pt: "Luxo high ticket" },
       catalogType: "luxury_high_ticket_catalog",
+      design_maturity: "standard",
       image: "/templates-preview/carousel-assets/professional_2.png",
       description: "Private showroom style for jewelry, watches, art, luxury cars, collectibles, and high-ticket pieces.",
       descriptions: {
@@ -552,6 +554,7 @@
       name: "Course Academy",
       names: { en: "Course Academy", es: "Academia de cursos", fr: "Academie de cours", pt: "Academia de cursos" },
       catalogType: "education_course_catalog",
+      design_maturity: "standard",
       image: "/templates-preview/screenshots/education.png",
       description: "Premium academy style for courses, coaching programs, bootcamps, classes, and training centers.",
       descriptions: {
@@ -566,6 +569,7 @@
       name: "Clinic / Wellness",
       names: { en: "Clinic / Wellness", es: "Clinica / Wellness", fr: "Clinique / Wellness", pt: "Clinica / Wellness" },
       catalogType: "medical_wellness_service_catalog",
+      design_maturity: "standard",
       image: "/templates-preview/carousel-assets/clinic_2.png",
       description: "Premium clinic style for medical, aesthetic, dental, wellness, therapy, and consultation-based businesses.",
       descriptions: {
@@ -580,6 +584,7 @@
       name: "Legal / Professional",
       names: { en: "Legal / Professional", es: "Legal / Profesional", fr: "Juridique / Professionnel", pt: "Juridico / Profissional" },
       catalogType: "legal_professional_services_catalog",
+      design_maturity: "standard",
       image: "/templates-preview/carousel-assets/professional_2.png",
       description: "Premium professional firm style for legal, accounting, tax, consulting, insurance, and B2B advisory.",
       descriptions: {
@@ -594,6 +599,7 @@
       name: "B2B SaaS / Enterprise",
       names: { en: "B2B SaaS / Enterprise", es: "B2B SaaS / Empresarial", fr: "B2B SaaS / Entreprise", pt: "B2B SaaS / Empresarial" },
       catalogType: "b2b_solution_catalog",
+      design_maturity: "flagship",
       image: "/templates-preview/carousel-assets/b2b_2.png",
       description: "Enterprise software style for SaaS, automation, IT services, integrations, dashboards, and B2B systems.",
       descriptions: {
@@ -608,6 +614,7 @@
       name: "Industrial Supplier",
       names: { en: "Industrial Supplier", es: "Proveedor industrial", fr: "Fournisseur industriel", pt: "Fornecedor industrial" },
       catalogType: "industrial_supplier_catalog",
+      design_maturity: "standard",
       image: "/templates-preview/carousel-assets/industrial_2.png",
       description: "Technical B2B supplier style for manufacturing, machinery, parts, tools, safety equipment, and bulk RFQs.",
       descriptions: {
@@ -622,6 +629,7 @@
       name: "Mega Retail Store",
       names: { en: "Mega Retail Store", es: "Mega tienda retail", fr: "Mega boutique retail", pt: "Mega loja retail" },
       catalogType: "single_vendor_dense_catalog",
+      design_maturity: "flagship",
       image: "/templates-preview/carousel-assets/amazon_2.jpg",
       description: "Large owned catalog store with search, categories, deals, filters, cart, checkout, and one-store inventory.",
       descriptions: {
@@ -636,6 +644,7 @@
       name: "Mega Marketplace",
       names: { en: "Mega Marketplace", es: "Mega marketplace", fr: "Mega marketplace", pt: "Mega marketplace" },
       catalogType: "dense_marketplace_catalog",
+      design_maturity: "flagship",
       image: "/templates-preview/carousel-assets/amazon_2.jpg",
       description: "Large catalog marketplace with search, categories, deals, filters, and dense products.",
       descriptions: {
@@ -650,6 +659,7 @@
       name: "Listing Marketplace",
       names: { en: "Listing Marketplace", es: "Marketplace de listados", fr: "Marketplace d'annonces", pt: "Marketplace de anuncios" },
       catalogType: "listing_marketplace_catalog",
+      design_maturity: "flagship",
       image: "/templates-preview/carousel-assets/ebay_2.png",
       description: "Seller listing marketplace with condition labels, offers, and comparison layout.",
       descriptions: {
@@ -664,6 +674,7 @@
       name: "Fashion Drop",
       names: { en: "Fashion Drop", es: "Fashion drop", fr: "Drop mode", pt: "Fashion drop" },
       catalogType: "lookbook_collection_catalog",
+      design_maturity: "flagship",
       image: "/templates-preview/carousel-assets/apple_2.png",
       description: "Editorial boutique storefront with visual hero, collections, lookbook, and launch energy.",
       descriptions: {
@@ -678,6 +689,7 @@
       name: "Corporate Company",
       names: { en: "Corporate Company", es: "Pagina de empresa", fr: "Site entreprise", pt: "Site empresarial" },
       catalogType: "company_services_catalog",
+      design_maturity: "standard",
       image: "/templates-preview/carousel-assets/services_2.png",
       description: "Professional company website with positioning, services, process, proof, and contact.",
       descriptions: {
@@ -692,6 +704,7 @@
       name: "Lead Funnel",
       names: { en: "Lead Funnel", es: "Landing de conversion", fr: "Landing de conversion", pt: "Landing de conversao" },
       catalogType: "lead_funnel_offer_catalog",
+      design_maturity: "standard",
       image: "/templates-preview/carousel-assets/services_2.png",
       description: "Focused landing page for one offer, benefits, proof, FAQ, and lead capture.",
       descriptions: {
@@ -706,6 +719,7 @@
       name: "Restaurant Menu",
       names: { en: "Restaurant Menu", es: "Menu restaurante", fr: "Menu restaurant", pt: "Menu restaurante" },
       catalogType: "restaurant_menu_catalog",
+      design_maturity: "standard",
       image: "/templates-preview/carousel-assets/services_2.png",
       description: "Restaurant-first site with menu categories, signature dishes, specials, hours, and order CTA.",
       descriptions: {
@@ -720,6 +734,7 @@
       name: "Digital Products",
       names: { en: "Digital Products", es: "Productos digitales", fr: "Produits digitaux", pt: "Produtos digitais" },
       catalogType: "digital_offer_catalog",
+      design_maturity: "standard",
       image: "/templates-preview/carousel-assets/apple_2.png",
       description: "Creator/SaaS-style digital product site with bundles, modules, proof, and instant access CTA.",
       descriptions: {
@@ -734,6 +749,7 @@
       name: "Real Estate / Listings",
       names: { en: "Real Estate / Listings", es: "Propiedades / listings", fr: "Immobilier / annonces", pt: "Imoveis / anuncios" },
       catalogType: "real_estate_listing_catalog",
+      design_maturity: "standard",
       image: "/templates-preview/carousel-assets/ebay_2.png",
       description: "Search-first listing site with filters, location, price/spec cards, area panel, and inquiry CTAs.",
       descriptions: {
@@ -748,6 +764,7 @@
       name: "Local Services Premium",
       names: { en: "Local Services Premium", es: "Servicios locales premium", fr: "Services locaux premium", pt: "Servicos locais premium" },
       catalogType: "home_services_quote_catalog",
+      design_maturity: "standard",
       image: "/templates-preview/carousel-assets/services_2.png",
       description: "Premium local service site with phone-first hero, service areas, proof, reviews, and quote flow.",
       descriptions: {
@@ -762,6 +779,7 @@
       name: "Local Services",
       names: { en: "Local Services", es: "Servicios locales", fr: "Services locaux", pt: "Servicos locais" },
       catalogType: "service_area_catalog",
+      design_maturity: "flagship",
       image: "/templates-preview/carousel-assets/services_2.png",
       description: "Quote-focused service site with service cards, trust, service area, and contact CTA.",
       descriptions: {
@@ -776,6 +794,7 @@
       name: "Booking",
       names: { en: "Booking", es: "Reservas", fr: "Reservations", pt: "Agendamentos" },
       catalogType: "booking_menu_catalog",
+      design_maturity: "flagship",
       image: "/templates-preview/carousel-assets/booking_2.jpg",
       description: "Appointment-first layout with service menu, availability, staff/process, and booking CTA.",
       descriptions: {
@@ -1333,6 +1352,61 @@
     return Boolean(
       intent && isConcreteTemplateId(selection?.templateId) && !PROVISIONAL_TEMPLATE_SELECTION_INTENTS.has(intent)
     );
+  }
+
+  // src/ai-builder/construction-preview-policy.js
+  var GENERIC_VALUES = /* @__PURE__ */ new Set([
+    "product",
+    "products",
+    "producto",
+    "productos",
+    "service",
+    "services",
+    "servicio",
+    "servicios",
+    "online",
+    "website",
+    "sitio web"
+  ]);
+  function cleanList(value) {
+    const items = Array.isArray(value) ? value : String(value || "").split(/[,;\n]/);
+    return items.map((item) => String(item || "").trim()).filter((item) => item && !GENERIC_VALUES.has(item.toLowerCase()));
+  }
+  function constructionPreviewModel({
+    guidedState = {},
+    selection = {},
+    backendReadyToGenerate = false,
+    isGenerating = false,
+    hasCurrentSchema = false
+  } = {}) {
+    const offers = cleanList(guidedState.servicesProducts);
+    const hasCategory = Boolean(
+      String(guidedState.industry || "").trim() || String(guidedState.businessDescription || "").trim().length >= 32 || String(guidedState.websiteIntent || "").trim().length >= 32
+    );
+    const hasConcreteTemplate = Boolean(String(selection.templateId || "").trim());
+    const showRealTemplate = hasConcreteTemplate && hasCategory && offers.length >= 2;
+    const brandReady = Boolean(
+      String(guidedState.businessName || "").trim() || String(guidedState.preferredTone || "").trim() || cleanList(guidedState.preferredColors).length
+    );
+    const contentReady = hasCategory && offers.length >= 2;
+    const mediaReady = Boolean(
+      String(guidedState.logoUrl || "").trim() || cleanList(guidedState.photoUrls).length || String(guidedState.logoPreference || "").trim()
+    );
+    const ready = Boolean(backendReadyToGenerate || hasCurrentSchema);
+    const completedCount = [brandReady, contentReady, mediaReady, ready].filter(Boolean).length;
+    const progress = ready ? 100 : Math.max(12, Math.min(92, completedCount * 23 + (isGenerating ? 8 : 0)));
+    return {
+      level: showRealTemplate ? 2 : 1,
+      mode: showRealTemplate ? "template" : "sketch",
+      progress,
+      offers,
+      stages: [
+        { id: "brand", complete: brandReady, active: !brandReady },
+        { id: "content", complete: contentReady, active: brandReady && !contentReady },
+        { id: "media", complete: mediaReady, active: contentReady && !mediaReady },
+        { id: "ready", complete: ready, active: (mediaReady || isGenerating) && !ready }
+      ]
+    };
   }
 
   // src/ai-builder/build-phase-policy.js
@@ -6206,7 +6280,7 @@
   function sanitizeClientSessionDraft(raw = {}) {
     const source = raw && typeof raw === "object" ? raw : {};
     const trimmed = (value, limit = 1200) => String(value || "").trim().slice(0, limit);
-    const cleanList = (value, limit = 20) => arrayValue2(value).map((item) => String(item || "").trim()).filter(Boolean).slice(0, limit);
+    const cleanList2 = (value, limit = 20) => arrayValue2(value).map((item) => String(item || "").trim()).filter(Boolean).slice(0, limit);
     const contactInfo = source.contactInfo && typeof source.contactInfo === "object" ? source.contactInfo : {};
     const fieldMeta = source.fieldMeta && typeof source.fieldMeta === "object" ? source.fieldMeta : {};
     const colorProvenance = source.colorProvenance && typeof source.colorProvenance === "object" ? source.colorProvenance : null;
@@ -6218,10 +6292,10 @@
       businessDescription: trimmed(source.businessDescription, 1600),
       industry: trimmed(source.industry, 220),
       location: trimmed(source.location, 220),
-      servicesProducts: cleanList(source.servicesProducts),
+      servicesProducts: cleanList2(source.servicesProducts),
       targetAudience: trimmed(source.targetAudience, 500),
       preferredTone: trimmed(source.preferredTone, 240),
-      preferredColors: cleanList(source.preferredColors, 10),
+      preferredColors: cleanList2(source.preferredColors, 10),
       contactInfo: {
         name: trimmed(contactInfo.name, 180),
         email: trimmed(contactInfo.email, 220),
@@ -6233,9 +6307,9 @@
       },
       desiredDomain: trimmed(source.desiredDomain, 240),
       logoUrl: isCloudSafeUrl(source.logoUrl) ? trimmed(source.logoUrl, 1200) : "",
-      photoUrls: cleanList(source.photoUrls).filter(isCloudSafeUrl),
-      videoUrls: cleanList(source.videoUrls).filter(isCloudSafeUrl),
-      logoPalette: cleanList(source.logoPalette, 12),
+      photoUrls: cleanList2(source.photoUrls).filter(isCloudSafeUrl),
+      videoUrls: cleanList2(source.videoUrls).filter(isCloudSafeUrl),
+      logoPalette: cleanList2(source.logoPalette, 12),
       colorProvenance: colorProvenance ? {
         anchorColor: trimmed(colorProvenance.anchorColor, 80) || null,
         anchorSource: trimmed(colorProvenance.anchorSource, 40) || "unknown",
@@ -6247,7 +6321,7 @@
       fieldMeta,
       selectedLanguage: SUPPORTED_LANGUAGES.includes(source.selectedLanguage) ? source.selectedLanguage : builderState.selectedLanguage,
       hasLogo: Boolean(source.hasLogo || source.logoUrl),
-      hasPhotos: Boolean(source.hasPhotos || cleanList(source.photoUrls).length || cleanList(source.videoUrls).length),
+      hasPhotos: Boolean(source.hasPhotos || cleanList2(source.photoUrls).length || cleanList2(source.videoUrls).length),
       salesMode: trimmed(source.salesMode, 160),
       hasLogoPhotos: trimmed(source.hasLogoPhotos, 180),
       logoPreference: trimmed(source.logoPreference, 180),
@@ -8560,7 +8634,12 @@ ${cleanQuestion}`;
   function renderLiveSitePreview() {
     const card = ensureLiveSitePreviewCard();
     if (!card) return;
-    card.classList.remove("template-board-card-host", "template-board-loading-host", "selected-template-card-host", "live-render-card-host");
+    card.classList.remove("template-board-card-host", "template-board-loading-host", "selected-template-card-host", "live-render-card-host", "live-construction-card-host");
+    syncTemplateSelectionFromGuidedContext();
+    if (isPublicClientSetup && !builderState.currentSchema) {
+      renderCanvasTemplateCarousel(card);
+      return;
+    }
     if (builderState.isGeneratingWebsite) {
       card.classList.add("live-generation-card-host");
       card.innerHTML = `
@@ -8585,7 +8664,6 @@ ${cleanQuestion}`;
       return;
     }
     card.classList.remove("live-generation-card-host");
-    syncTemplateSelectionFromGuidedContext();
     if (shouldShowCanvasTemplateCarousel()) {
       if (shouldRenderTemplateBoardSkeleton()) {
         renderCanvasTemplateSkeleton(card);
@@ -8645,7 +8723,11 @@ ${cleanQuestion}`;
       if (__livePreviewResizeTimer) clearTimeout(__livePreviewResizeTimer);
       __livePreviewResizeTimer = setTimeout(() => {
         const card = document.querySelector(".live-site-preview-card.live-render-card-host");
-        if (card) fitLiveTemplatePreviewToCard(card);
+        if (card?.classList.contains("live-construction-card-host")) {
+          fitConstructionTemplatePreviewToCard(card);
+        } else if (card) {
+          fitLiveTemplatePreviewToCard(card);
+        }
       }, 150);
     });
   }
@@ -8721,108 +8803,81 @@ ${cleanQuestion}`;
   `;
   }
   function renderCanvasTemplateCarousel(card) {
-    card.classList.add("template-board-card-host");
     const selection = livePreviewTemplateSelection();
-    const selectedId = selection?.templateId || "";
-    const choices = canvasTemplateChoices(selectedId).slice(0, 5);
-    if (!choices.length) {
-      card.innerHTML = renderNeutralLiveWorkspace();
-      return;
-    }
-    const shouldAnimateCards = !window.__lyraTemplateBoardAnimated;
-    card.innerHTML = `
-    <section class="template-choice-panel template-board-panel">
-      <div class="template-choice-heading template-carousel-heading">
-        <strong>${escapeHtml(langText({
-      en: "Select the structure LYRA should use",
-      es: "Selecciona la estructura que LYRA debe usar",
-      fr: "Selectionnez la structure que LYRA doit utiliser",
-      pt: "Selecione a estrutura que a LYRA deve usar"
-    }))}</strong>
-        <span>${escapeHtml(langText({
-      en: "These are real template bases. LYRA will adapt copy, colors, products and flow after you choose one.",
-      es: "Estas son bases reales. LYRA adaptara textos, colores, productos y flujo despues de elegir una.",
-      fr: "Ce sont de vraies bases. LYRA adaptera textes, couleurs, produits et parcours apres le choix.",
-      pt: "Estas sao bases reais. A LYRA adapta textos, cores, produtos e fluxo depois da escolha."
-    }))}</span>
+    const model = constructionPreviewModel({
+      guidedState: builderState.guidedState,
+      selection,
+      backendReadyToGenerate: builderState.backendReadyToGenerate,
+      isGenerating: builderState.isGeneratingWebsite,
+      hasCurrentSchema: Boolean(builderState.currentSchema)
+    });
+    const choice = templatePreviewMeta(selection?.templateId) || templatePreviewMeta("premium-product-store");
+    const stageLabels = {
+      brand: langText({ en: "Brand", es: "Marca", fr: "Marque", pt: "Marca" }),
+      content: langText({ en: "Content", es: "Contenido", fr: "Contenu", pt: "Conte\xFAdo" }),
+      media: langText({ en: "Media", es: "Medios", fr: "M\xE9dias", pt: "M\xEDdia" }),
+      ready: langText({ en: "Ready", es: "Listo", fr: "Pr\xEAt", pt: "Pronto" })
+    };
+    let previewMarkup = `
+    <div class="live-construction-sketch" aria-label="${escapeAttribute(langText({ en: "Early website sketch", es: "Boceto inicial del sitio", fr: "Premi\xE8re esquisse du site", pt: "Esbo\xE7o inicial do site" }))}">
+      ${templateLivePreviewMarkup(choice)}
+      <div class="live-construction-sketch-lines" aria-hidden="true"><i></i><i></i><i></i></div>
+    </div>
+  `;
+    if (model.mode === "template") {
+      const payload = livePreviewPayload();
+      let schema = buildInstantTemplateSchema(payload, selection);
+      schema = prepareWebsiteConfig(schema, payload, selection);
+      previewMarkup = `
+      <div class="live-template-preview-viewport">
+        <div class="live-template-preview-shell">
+          ${renderWebsite2(schema, schema.pages?.[0]?.page_key || "home")}
+        </div>
       </div>
-      <div class="template-board-grid template-coverflow-track ${shouldAnimateCards ? "template-board-grid-enter" : ""}" aria-label="Template options">
-        ${choices.map((choice, index) => `
-          <article class="template-choice-card template-board-card template-coverflow-card template-carousel-card ${choice.templateId === selectedId ? "active-card recommended" : index === 0 ? "recommended" : ""}" style="--template-card-index: ${index};" data-template-choice="${escapeAttribute(choice.templateId)}" data-catalog-type="${escapeAttribute(choice.catalogType || "")}" tabindex="0">
-            <div class="template-board-image">
-              ${templateLivePreviewMarkup(choice)}
-            </div>
-            <div class="template-board-body">
-              <div class="template-board-meta">
-                <span class="template-status-pill">${escapeHtml(choice.templateId === selectedId || index === 0 ? langText({ en: "Recommended", es: "Recomendada", fr: "Recommandee", pt: "Recomendada" }) : langText({ en: "Alternative", es: "Alternativa", fr: "Alternative", pt: "Alternativa" }))}</span>
-                <div class="template-board-badges" aria-label="${escapeAttribute(langText({ en: "Template categories", es: "Categorias del template", fr: "Categories du template", pt: "Categorias do template" }))}">
-                  ${templateCardBadges(choice).map((badge, badgeIndex) => `<em data-badge-tone="${badgeIndex % 3}">${escapeHtml(badge)}</em>`).join("")}
-                </div>
-              </div>
-              <strong>${escapeHtml(localizedTemplateName(choice))}</strong>
-              <small>${escapeHtml(localizedTemplateDescription(choice))}</small>
-              <button type="button" data-template-preview="${escapeAttribute(choice.templateId)}">${escapeHtml(langText({ en: "Preview", es: "Previsualizar", fr: "Previsualiser", pt: "Previsualizar" }))}</button>
-            </div>
-          </article>
+    `;
+    }
+    card.classList.add("live-construction-card-host");
+    if (model.mode === "template") card.classList.add("live-render-card-host");
+    card.innerHTML = `
+    <section class="live-construction-panel" data-construction-level="${model.level}" data-construction-mode="${model.mode}">
+      <header class="live-construction-header">
+        <div>
+          <span>${escapeHtml(model.mode === "template" ? langText({ en: "Live website", es: "Sitio en vivo", fr: "Site en direct", pt: "Site ao vivo" }) : langText({ en: "Building the foundation", es: "Construyendo la base", fr: "Construction de la base", pt: "Construindo a base" }))}</span>
+          <strong>${escapeHtml(model.mode === "template" ? localizedTemplateName(choice) : langText({ en: "Your site is taking shape", es: "Tu sitio est\xE1 tomando forma", fr: "Votre site prend forme", pt: "Seu site est\xE1 tomando forma" }))}</strong>
+        </div>
+        <em>${model.progress}%</em>
+      </header>
+      <div class="live-construction-progress" aria-label="${escapeAttribute(langText({ en: "Website build progress", es: "Progreso de construcci\xF3n", fr: "Progression de construction", pt: "Progresso da constru\xE7\xE3o" }))}">
+        <i style="--construction-progress:${model.progress}%"></i>
+      </div>
+      <ol class="live-construction-stages">
+        ${model.stages.map((stage) => `
+          <li class="${stage.complete ? "is-complete" : stage.active ? "is-active" : ""}">
+            <i aria-hidden="true">${stage.complete ? "\u2713" : ""}</i>
+            <span>${escapeHtml(stageLabels[stage.id])}</span>
+          </li>
         `).join("")}
+      </ol>
+      <div class="live-construction-canvas ${model.mode === "template" ? "is-template" : "is-sketch"}">
+        ${previewMarkup}
       </div>
     </section>
   `;
-    window.__lyraTemplateBoardAnimated = true;
-    const panel = card.querySelector(".template-board-panel");
-    initTemplateCarousel(card.querySelector(".template-board-grid"));
-    panel?.addEventListener("click", (event) => {
-      const button = event.target?.closest?.("[data-template-preview]");
-      if (!button) return;
-      const templateId = button.dataset.templatePreview || "";
-      if (!templateId) return;
-      event.preventDefault();
-      event.stopPropagation();
-      window.Lyra?.selectTemplate(templateId);
-    });
+    if (model.mode === "template") fitConstructionTemplatePreviewToCard(card);
   }
-  function canvasTemplateChoices(selectedTemplateId = "") {
-    const selected = templatePreviewMeta(selectedTemplateId);
-    const selectedCatalog = selected?.catalogType || "";
-    const selectedText = `${selectedTemplateId} ${selectedCatalog}`;
-    const ordered = [];
-    const usedImages = /* @__PURE__ */ new Set();
-    const add = (templateId, options = {}) => {
-      const choice = templatePreviewMeta(templateId);
-      if (!choice || ordered.some((item) => item.templateId === choice.templateId)) return;
-      if (usedImages.has(choice.image) && !options.allowDuplicateImage) return;
-      usedImages.add(choice.image);
-      ordered.push(choice);
-    };
-    add(selectedTemplateId);
-    if (/legal|professional|consulting|tax|insurance|advisor/.test(selectedText)) {
-      ["legal-professional-services-pro", "corporate-company-pro", "b2b-saas-enterprise-pro", "booking-appointment-pro", "medical-wellness-clinic-pro"].forEach(add);
-    } else if (/clinic|medical|wellness|dental/.test(selectedText)) {
-      ["medical-wellness-clinic-pro", "booking-appointment-pro", "local-services-pro-plus", "corporate-company-pro", "lead-funnel-pro"].forEach(add);
-    } else if (/single_vendor_dense|retail|dense|mega/.test(selectedText)) {
-      ["mega-retail-store", "mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro", "digital-products-store"].forEach(add);
-    } else if (/listing|classified|real_estate|real-estate/.test(selectedText)) {
-      ["listing-marketplace-pro", "real-estate-listings-pro", "mega-marketplace", "mega-retail-store", "corporate-company-pro"].forEach(add);
-    } else if (/restaurant|menu|food/.test(selectedText)) {
-      ["restaurant-food-business", "booking-appointment-pro", "lead-funnel-pro", "home-services-premium", "local-services-pro-plus"].forEach(add);
-    } else if (/booking|appointment/.test(selectedText)) {
-      ["booking-appointment-pro", "local-services-pro-plus", "home-services-premium", "lead-funnel-pro", "corporate-company-pro"].forEach(add);
-    } else if (/industrial|manufacturing|supplier/.test(selectedText)) {
-      ["manufacturing-industrial-supplier-pro", "b2b-saas-enterprise-pro", "corporate-company-pro", "lead-funnel-pro", "mega-retail-store"].forEach(add);
-    } else if (/b2b|saas|enterprise|solution/.test(selectedText)) {
-      ["b2b-saas-enterprise-pro", "corporate-company-pro", "lead-funnel-pro", "manufacturing-industrial-supplier-pro", "premium-product-store"].forEach(add);
-    } else if (/fashion|lookbook|collection/.test(selectedText)) {
-      ["fashion-drop-pro", "luxury-high-ticket-pro", "premium-product-store", "mega-retail-store", "listing-marketplace-pro"].forEach(add);
-    } else {
-      rankedFallbackChoices(selectedTemplateId).forEach((choice) => add(choice.templateId));
-    }
-    TEMPLATE_PREVIEW_CHOICES.forEach((choice) => {
-      if (ordered.length < 5) add(choice.templateId);
-    });
-    TEMPLATE_PREVIEW_CHOICES.forEach((choice) => {
-      if (ordered.length < 5) add(choice.templateId, { allowDuplicateImage: true });
-    });
-    return ordered;
+  function fitConstructionTemplatePreviewToCard(card) {
+    const canvas = card.querySelector(".live-construction-canvas");
+    const viewport = card.querySelector(".live-template-preview-viewport");
+    const shell = card.querySelector(".live-template-preview-shell");
+    if (!canvas || !viewport || !shell) return;
+    shell.style.width = `${LIVE_PREVIEW_DESIGN_WIDTH}px`;
+    shell.style.transform = "none";
+    const availableWidth = Math.max(1, canvas.clientWidth || card.clientWidth || LIVE_PREVIEW_DESIGN_WIDTH);
+    const availableHeight = Math.max(360, canvas.clientHeight || card.clientHeight - 132 || 520);
+    const scale = Math.min(availableWidth / LIVE_PREVIEW_DESIGN_WIDTH, 1);
+    shell.style.transformOrigin = "top left";
+    shell.style.transform = `scale(${scale})`;
+    viewport.style.height = `${availableHeight}px`;
   }
   function shouldShowSelectedTemplatePreview() {
     return Boolean(
@@ -9785,17 +9840,6 @@ ${langText({
     const planSignal = `${localPlan.websiteType || ""} ${localPlan.recommendedCatalogType || ""} ${localPlan.reasoningSummary || ""}`;
     return /mega_marketplace|marketplace|broad catalog|muchos productos|de todo|varied|catalog|booking|restaurant|service|quote|premium_showcase/i.test(planSignal);
   }
-  function rankedFallbackChoices(selectedTemplateId = "") {
-    const selected = templatePreviewMeta(selectedTemplateId);
-    const selectedCatalog = selected?.catalogType || "";
-    const commerceHeavy = /marketplace|dense|listing|retail|single_vendor/.test(selectedCatalog);
-    const listingHeavy = /real_estate|listing/.test(selectedCatalog);
-    const restaurantHeavy = /restaurant|menu|food/.test(selectedCatalog);
-    const digitalHeavy = /digital|pricing|software|course/.test(selectedCatalog);
-    const serviceHeavy = /service|booking/.test(selectedCatalog);
-    const ordered = commerceHeavy ? listingHeavy ? ["real-estate-listings-pro", "listing-marketplace-pro", "mega-marketplace", "mega-retail-store"] : ["mega-retail-store", "mega-marketplace", "listing-marketplace-pro", "fashion-drop-pro"] : restaurantHeavy ? ["restaurant-food-business", "lead-funnel-pro", "home-services-premium", "booking-appointment-pro"] : digitalHeavy ? ["digital-products-store", "lead-funnel-pro", "premium-product-store", "corporate-company-pro"] : serviceHeavy ? ["home-services-premium", "lead-funnel-pro", "local-services-pro-plus", "booking-appointment-pro"] : ["lead-funnel-pro", "corporate-company-pro", "premium-product-store", "fashion-drop-pro"];
-    return ordered.map((templateId) => templatePreviewMeta(templateId)).filter(Boolean);
-  }
   function templatePreviewMeta(templateId) {
     const id = normalizeTemplateId(templateId);
     return withTemplateExecutionStatus(TEMPLATE_PREVIEW_CHOICES.find((choice) => normalizeTemplateId(choice.templateId) === id) || null);
@@ -9805,92 +9849,6 @@ ${langText({
   }
   function localizedTemplateDescription(choice) {
     return choice?.descriptions?.[builderState.selectedLanguage] || choice?.description || choice?.template?.clientSelectionCard?.difference || choice?.template?.visualDifference || "";
-  }
-  function localizedTemplateBadgeSet(map, language = builderState.selectedLanguage) {
-    const value = map[language] || map.en || [];
-    const badges = Array.isArray(value) ? value : [value];
-    return badges.map((badge) => publicAssistantCopy(badge)).filter(Boolean);
-  }
-  function templateCardBadges(choice) {
-    const catalogType = String(choice?.catalogType || "").toLowerCase();
-    if (/dense_marketplace/.test(catalogType)) return localizedTemplateBadgeSet({
-      en: ["E-commerce", "Deals", "Search-first"],
-      es: ["E-commerce", "Ofertas", "Busqueda"],
-      fr: ["E-commerce", "Offres", "Recherche"],
-      pt: ["E-commerce", "Ofertas", "Busca"]
-    });
-    if (/listing/.test(catalogType)) return localizedTemplateBadgeSet({
-      en: ["Marketplace", "Listings", "Offers"],
-      es: ["Marketplace", "Listados", "Ofertas"],
-      fr: ["Marketplace", "Annonces", "Offres"],
-      pt: ["Marketplace", "Anuncios", "Ofertas"]
-    });
-    if (/lookbook|collection/.test(catalogType)) return localizedTemplateBadgeSet({
-      en: ["Fashion", "Lookbook", "Drops"],
-      es: ["Moda", "Lookbook", "Drops"],
-      fr: ["Mode", "Lookbook", "Drops"],
-      pt: ["Moda", "Lookbook", "Drops"]
-    });
-    if (/premium|luxury/.test(catalogType)) return localizedTemplateBadgeSet({
-      en: ["Premium", "Showcase", "Editorial"],
-      es: ["Premium", "Showcase", "Editorial"],
-      fr: ["Premium", "Showcase", "Editorial"],
-      pt: ["Premium", "Showcase", "Editorial"]
-    });
-    if (/industrial|supplier/.test(catalogType)) return localizedTemplateBadgeSet({
-      en: ["B2B", "RFQ", "Materials"],
-      es: ["B2B", "Cotizacion", "Materiales"],
-      fr: ["B2B", "Devis", "Materiaux"],
-      pt: ["B2B", "Orcamento", "Materiais"]
-    });
-    if (/b2b|solution/.test(catalogType)) return localizedTemplateBadgeSet({
-      en: ["B2B", "SaaS", "Systems"],
-      es: ["B2B", "SaaS", "Sistemas"],
-      fr: ["B2B", "SaaS", "Systemes"],
-      pt: ["B2B", "SaaS", "Sistemas"]
-    });
-    if (/medical|wellness/.test(catalogType)) return localizedTemplateBadgeSet({
-      en: ["Clinic", "Booking", "Trust"],
-      es: ["Clinica", "Reservas", "Confianza"],
-      fr: ["Clinique", "Reservations", "Confiance"],
-      pt: ["Clinica", "Agendas", "Confianca"]
-    });
-    if (/legal|professional|company/.test(catalogType)) return localizedTemplateBadgeSet({
-      en: ["Services", "Authority", "Leads"],
-      es: ["Servicios", "Autoridad", "Leads"],
-      fr: ["Services", "Autorite", "Leads"],
-      pt: ["Servicos", "Autoridade", "Leads"]
-    });
-    if (/restaurant|menu/.test(catalogType)) return localizedTemplateBadgeSet({
-      en: ["Menu", "Orders", "Local"],
-      es: ["Menu", "Pedidos", "Local"],
-      fr: ["Menu", "Commandes", "Local"],
-      pt: ["Menu", "Pedidos", "Local"]
-    });
-    if (/booking/.test(catalogType)) return localizedTemplateBadgeSet({
-      en: ["Booking", "Services", "Calendar"],
-      es: ["Reservas", "Servicios", "Calendario"],
-      fr: ["Reservations", "Services", "Calendrier"],
-      pt: ["Agendas", "Servicos", "Calendario"]
-    });
-    if (/digital/.test(catalogType)) return localizedTemplateBadgeSet({
-      en: ["Digital", "Bundles", "Instant access"],
-      es: ["Digital", "Bundles", "Acceso inmediato"],
-      fr: ["Digital", "Bundles", "Acces immediat"],
-      pt: ["Digital", "Bundles", "Acesso imediato"]
-    });
-    if (/service|quote/.test(catalogType)) return localizedTemplateBadgeSet({
-      en: ["Services", "Quote", "Local"],
-      es: ["Servicios", "Cotizacion", "Local"],
-      fr: ["Services", "Devis", "Local"],
-      pt: ["Servicos", "Orcamento", "Local"]
-    });
-    return localizedTemplateBadgeSet({
-      en: ["Website", "Editable", "AI-ready"],
-      es: ["Web", "Editable", "IA lista"],
-      fr: ["Site", "Modifiable", "IA prete"],
-      pt: ["Site", "Editavel", "IA pronta"]
-    });
   }
   var TEMPLATE_PREVIEW_PALETTES = Object.freeze({
     "premium-product-store": { paper: "#f7f6ff", ink: "#10101a", accent: "#6d5dfc" },
@@ -10279,77 +10237,6 @@ ${langText({
       explanation
     ];
     appendChatMessage("assistant", lines.join("\n"), "success");
-  }
-  function initTemplateCarousel(track) {
-    if (!track || track.dataset.carouselReady === "1") return;
-    track.dataset.carouselReady = "1";
-    let rafId = 0;
-    const schedule = () => {
-      cancelAnimationFrame(rafId);
-      updateTemplateCarouselActiveCard(track);
-      rafId = requestAnimationFrame(() => updateTemplateCarouselActiveCard(track));
-    };
-    track.addEventListener("click", (event) => {
-      if (event.target?.closest?.("[data-template-preview]")) return;
-      const card = event.target?.closest?.(".template-carousel-card");
-      if (!card) return;
-      card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-      schedule();
-    });
-    track.addEventListener("keydown", (event) => {
-      if (!["Enter", " "].includes(event.key)) return;
-      const card = event.target?.closest?.(".template-carousel-card");
-      if (!card) return;
-      event.preventDefault();
-      card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-      schedule();
-    });
-    track.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule, { passive: true });
-    schedule();
-  }
-  function updateTemplateCarouselActiveCard(track) {
-    if (!track) return;
-    const cards = [...track.querySelectorAll(".template-carousel-card")];
-    if (!cards.length) return;
-    const trackRect = track.getBoundingClientRect();
-    const center = trackRect.left + trackRect.width / 2;
-    let active = cards[0];
-    let smallestDistance = Infinity;
-    cards.forEach((card) => {
-      const rect = card.getBoundingClientRect();
-      const cardCenter = rect.left + rect.width / 2;
-      const distance = Math.abs(center - cardCenter);
-      if (distance < smallestDistance) {
-        active = card;
-        smallestDistance = distance;
-      }
-    });
-    cards.forEach((card) => {
-      const rect = card.getBoundingClientRect();
-      const cardCenter = rect.left + rect.width / 2;
-      const cardWidth = Math.max(1, rect.width);
-      const rawOffset = (cardCenter - center) / cardWidth;
-      const offset = Math.max(-2.4, Math.min(2.4, rawOffset));
-      const distance = Math.min(2.4, Math.abs(offset));
-      const rotate = -offset * 17;
-      const scale = Math.max(0.78, 1 - distance * 0.085);
-      const depth = Math.max(-30, 26 - distance * 24);
-      const shift = -offset * 14;
-      const opacity = Math.max(0.62, 1 - distance * 0.16);
-      const brightness = Math.max(0.86, 1 - distance * 0.055);
-      const saturate = Math.max(0.78, 1 - distance * 0.07);
-      card.style.setProperty("--coverflow-rotate", `${rotate.toFixed(2)}deg`);
-      card.style.setProperty("--coverflow-scale", scale.toFixed(3));
-      card.style.setProperty("--coverflow-depth", `${depth.toFixed(1)}px`);
-      card.style.setProperty("--coverflow-shift", `${shift.toFixed(1)}px`);
-      card.style.setProperty("--coverflow-opacity", opacity.toFixed(3));
-      card.style.setProperty("--coverflow-brightness", brightness.toFixed(3));
-      card.style.setProperty("--coverflow-saturate", saturate.toFixed(3));
-      card.style.setProperty("--coverflow-z", String(Math.round(100 - distance * 18)));
-      card.classList.toggle("active-card", card === active);
-      card.setAttribute("aria-current", card === active ? "true" : "false");
-    });
   }
   async function chooseTemplatePreview(choice, options = {}) {
     const template = window.TemplateRouter?.getTemplateById ? await window.TemplateRouter.getTemplateById(choice.templateId) : null;

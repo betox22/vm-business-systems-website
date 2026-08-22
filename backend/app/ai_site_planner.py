@@ -379,6 +379,9 @@ class AIWebGenerationResponse(BaseModel):
 
     reasoningSummary: str
     templateId: str
+    primaryCatalogType: Optional[str] = None
+    confidenceScore: float = Field(default=0.0, ge=0.0, le=1.0)
+    alternativeCatalogTypes: List[str] = Field(default_factory=list, max_length=2)
     primaryOfferingCategory: Optional[str] = None
     secondaryOfferingCategories: List[str] = Field(default_factory=list)
     websiteType: WebsiteType
@@ -390,6 +393,30 @@ class AIWebGenerationResponse(BaseModel):
     catalogCategories: List[str] = Field(default_factory=list)
     catalogItems: List[Dict[str, Any]] = Field(default_factory=list)
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    @field_validator("primaryCatalogType", mode="before")
+    @classmethod
+    def primary_catalog_type_must_exist(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = str(value or "").strip()
+        allowed = {data["catalogType"] for data in TEMPLATE_CATALOG.values()}
+        if normalized not in allowed:
+            raise ValueError(f"Unsupported primary catalog type: {normalized}")
+        return normalized
+
+    @field_validator("alternativeCatalogTypes", mode="before")
+    @classmethod
+    def alternative_catalog_types_must_exist(cls, value: Any) -> List[str]:
+        allowed = {data["catalogType"] for data in TEMPLATE_CATALOG.values()}
+        normalized: List[str] = []
+        for item in value or []:
+            catalog_type = str(item or "").strip()
+            if catalog_type not in allowed:
+                raise ValueError(f"Unsupported alternative catalog type: {catalog_type}")
+            if catalog_type not in normalized:
+                normalized.append(catalog_type)
+        return normalized[:2]
 
     @field_validator("templateId", "primaryOfferingCategory", mode="before")
     @classmethod
@@ -474,10 +501,75 @@ def compact_template_catalog() -> List[Dict[str, Any]]:
             "name": data["name"],
             "websiteType": data["websiteType"],
             "catalogType": data["catalogType"],
+            "design_maturity": data["design_maturity"],
             "bestFor": data["audience"],
         }
         for template_id, data in TEMPLATE_CATALOG.items()
     ]
+
+
+PLANNER_LOW_CONFIDENCE_THRESHOLD = 0.58
+
+
+def resolve_planner_template(
+    plan: AIWebGenerationResponse,
+    business_context: str,
+) -> AIWebGenerationResponse:
+    """Resolve the AI's catalog intent to one stable template decision."""
+
+    compact_context = re.sub(r"\s+", " ", str(business_context or "").strip())
+    meaningful_words = re.findall(r"[\wÀ-ÿ]+", compact_context, flags=re.UNICODE)
+    is_very_short = len(compact_context) < 32 or len(meaningful_words) < 5
+    confidence = plan.confidenceScore
+
+    if is_very_short or confidence < PLANNER_LOW_CONFIDENCE_THRESHOLD:
+        selected_template_id = "premium-product-store"
+    else:
+        catalog_types = [
+            plan.primaryCatalogType or plan.catalogStrategy,
+            *plan.alternativeCatalogTypes,
+        ]
+        candidates: List[str] = []
+        for catalog_type in catalog_types:
+            for template_id, template in TEMPLATE_CATALOG.items():
+                if template["catalogType"] == catalog_type and template_id not in candidates:
+                    candidates.append(template_id)
+
+        flagship_candidates = [
+            template_id
+            for template_id in candidates
+            if TEMPLATE_CATALOG[template_id]["design_maturity"] == "flagship"
+        ]
+        selected_template_id = (
+            flagship_candidates[0]
+            if flagship_candidates
+            else candidates[0] if candidates
+            else "premium-product-store"
+        )
+
+    selected = TEMPLATE_CATALOG[selected_template_id]
+    secondary_templates: List[str] = []
+    for catalog_type in plan.alternativeCatalogTypes:
+        template_id = next(
+            (
+                candidate_id
+                for candidate_id, template in TEMPLATE_CATALOG.items()
+                if template["catalogType"] == catalog_type
+            ),
+            None,
+        )
+        if template_id and template_id != selected_template_id and template_id not in secondary_templates:
+            secondary_templates.append(template_id)
+
+    return plan.model_copy(update={
+        "templateId": selected_template_id,
+        "primaryCatalogType": selected["catalogType"],
+        "primaryOfferingCategory": selected_template_id,
+        "secondaryOfferingCategories": secondary_templates[:2],
+        "websiteType": selected["websiteType"],
+        "catalogStrategy": selected["catalogType"],
+        "confidence": max(plan.confidence, confidence),
+    })
 
 
 def state_to_client_summary(state: ProjectState, user_input: str) -> Dict[str, Any]:
@@ -1183,6 +1275,9 @@ class OpenAISitePlanAgent:
             "requiredOutput": {
                 "websiteType": "one allowed WebsiteType",
                 "templateId": "one id from allowedTemplates",
+                "primaryCatalogType": "catalogType for the business's main revenue offer",
+                "confidenceScore": "confidence from 0 to 1 in the primary catalog decision",
+                "alternativeCatalogTypes": "up to two plausible alternative catalogType values",
                 "primaryOfferingCategory": "the one allowed template id that matches the business's primary revenue offer; must equal templateId",
                 "secondaryOfferingCategories": "zero or more other allowed template ids for meaningful secondary offers",
                 "catalogStrategy": "matching catalog model",
@@ -1296,6 +1391,16 @@ class OpenAISitePlanAgent:
             raw = response.choices[0].message.content or "{}"
             parsed = json.loads(raw)
             plan = AISitePlan.model_validate(parsed)
+            plan = resolve_planner_template(
+                plan,
+                " ".join(filter(None, [
+                    user_input,
+                    state.businessName or "",
+                    state.businessDescription or "",
+                    state.industry or "",
+                    " ".join(state.servicesProducts),
+                ])),
+            )
             updates = site_plan_to_updates(plan, state)
             if updates.get("catalogSource") == "seed_fallback":
                 fallback_warnings.append("OpenAI planner catalog reconciliation used seed_fallback")
@@ -1337,6 +1442,10 @@ Hard rules:
 - Return ONLY valid JSON. No markdown.
 - Never return HTML, CSS, class names, JavaScript, or invented renderer components.
 - templateId must be exactly one id from allowedTemplates.
+- primaryCatalogType must be the catalogType that best describes the main revenue offer.
+- confidenceScore must reflect how certain you are about primaryCatalogType, from 0 to 1.
+- alternativeCatalogTypes may contain at most two allowed catalogType values and only when the fit is genuinely close.
+- Prefer a flagship design_maturity template over a standard template when both are plausible for the same business context.
 - primaryOfferingCategory must identify the business's main revenue offer and MUST equal templateId. Decide the primary offer from the complete business model, not from isolated words.
 - secondaryOfferingCategories may contain other allowed template ids only when those offers are genuinely secondary. Secondary signals must never override the primary business architecture.
 - A pure course or academy remains education-course-academy-pro when downloadable materials support the teaching offer. A product retailer remains a commerce template when classes support product sales. A fashion boutique with styling classes remains fashion-first; a physical equipment retailer with training remains product-first.
