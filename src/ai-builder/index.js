@@ -39,6 +39,7 @@ import { buildColorProvenance, colorPreferenceUpdate } from './color-provenance.
 import { applyAuthoritativeThemeToBrand } from './theme-policy.js';
 import { generationAuthAction } from './auth-session-policy.js';
 import {
+  hasOnlineSalesSignal,
   isStrongNewBusinessBrief,
   resolveBackendMissingSteps,
   shouldStartCleanBusinessProject,
@@ -5310,7 +5311,7 @@ function extractContactInfo(text) {
 
 function extractSalesMode(lower) {
   const modes = [];
-  if (/online|ecommerce|e-commerce|env[ií]o|delivery|pago en linea|pago online|comprar/.test(lower)) modes.push(langText({ en: "online sales", es: "ventas online", fr: "vente en ligne", pt: "vendas online" }));
+  if (hasOnlineSalesSignal(lower)) modes.push(langText({ en: "online sales", es: "ventas online", fr: "vente en ligne", pt: "vendas online" }));
   if (/presencial|tienda fisica|tienda física|in person|local|visita/.test(lower)) modes.push(langText({ en: "in-person visits", es: "visitas presenciales", fr: "visites en personne", pt: "visitas presenciais" }));
   if (/cotizaci[oó]n|cotizar|quote|estimate|presupuesto/.test(lower)) modes.push(langText({ en: "quote requests", es: "solicitudes de cotización", fr: "demandes de devis", pt: "pedidos de orçamento" }));
   if (/\b(cita|citas|reserva|reservas|booking|appointment|agendar|agenda|consulta|consultas)\b/.test(lower)) modes.push(langText({ en: "appointments/bookings", es: "citas/reservas", fr: "rendez-vous/réservations", pt: "agendamentos/reservas" }));

@@ -1096,10 +1096,17 @@
     if (explicitBuildRequest) {
       return true;
     }
-    const hasBusinessAction = /\b(vendo|vendemos|ofrezco|ofrecemos|hago|hacemos|fabrico|fabricamos|sell|selling|offer|offering|make|making|provide|providing)\b/i.test(text);
+    const hasBusinessAction = /\b(vender|vendo|vendemos|ofrecer|ofrezco|ofrecemos|hacer|hago|hacemos|fabricar|fabrico|fabricamos|sell|selling|offer|offering|make|making|provide|providing)\b/i.test(text);
+    const offeringCount2 = Array.isArray(offerings) ? offerings.filter(Boolean).length : 0;
+    const hasNamedBusiness = Boolean(String(businessName || "").trim());
+    const hasStructuredBusinessIdentity = hasNamedBusiness && offeringCount2 >= 2;
+    const hasActionBackedIdentity = hasNamedBusiness && offeringCount2 >= 1 && Boolean(String(salesMode || "").trim() || hasBusinessAction);
     return Boolean(
-      isRich && text.length >= 80 && String(businessName || "").trim() && Array.isArray(offerings) && offerings.filter(Boolean).length >= 2 && (String(salesMode || "").trim() || hasBusinessAction)
+      isRich && text.length >= 80 && (hasStructuredBusinessIdentity || hasActionBackedIdentity)
     );
+  }
+  function hasOnlineSalesSignal(value = "") {
+    return /\b(?:online|ecommerce|e-commerce|en\s+l[ií]nea)\b|env[ií]o|delivery|pago\s+(?:en\s+l[ií]nea|online)|comprar/i.test(String(value || ""));
   }
   function normalizedBusinessIdentity(value = "") {
     return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -11919,7 +11926,7 @@ ${guidedQuestion(nextMissing)}`
   }
   function extractSalesMode(lower) {
     const modes = [];
-    if (/online|ecommerce|e-commerce|env[ií]o|delivery|pago en linea|pago online|comprar/.test(lower)) modes.push(langText({ en: "online sales", es: "ventas online", fr: "vente en ligne", pt: "vendas online" }));
+    if (hasOnlineSalesSignal(lower)) modes.push(langText({ en: "online sales", es: "ventas online", fr: "vente en ligne", pt: "vendas online" }));
     if (/presencial|tienda fisica|tienda física|in person|local|visita/.test(lower)) modes.push(langText({ en: "in-person visits", es: "visitas presenciales", fr: "visites en personne", pt: "visitas presenciais" }));
     if (/cotizaci[oó]n|cotizar|quote|estimate|presupuesto/.test(lower)) modes.push(langText({ en: "quote requests", es: "solicitudes de cotizaci\xF3n", fr: "demandes de devis", pt: "pedidos de or\xE7amento" }));
     if (/\b(cita|citas|reserva|reservas|booking|appointment|agendar|agenda|consulta|consultas)\b/.test(lower)) modes.push(langText({ en: "appointments/bookings", es: "citas/reservas", fr: "rendez-vous/r\xE9servations", pt: "agendamentos/reservas" }));

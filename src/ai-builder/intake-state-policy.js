@@ -13,15 +13,22 @@ export function isStrongNewBusinessBrief({
     return true;
   }
 
-  const hasBusinessAction = /\b(vendo|vendemos|ofrezco|ofrecemos|hago|hacemos|fabrico|fabricamos|sell|selling|offer|offering|make|making|provide|providing)\b/i.test(text);
+  const hasBusinessAction = /\b(vender|vendo|vendemos|ofrecer|ofrezco|ofrecemos|hacer|hago|hacemos|fabricar|fabrico|fabricamos|sell|selling|offer|offering|make|making|provide|providing)\b/i.test(text);
+  const offeringCount = Array.isArray(offerings) ? offerings.filter(Boolean).length : 0;
+  const hasNamedBusiness = Boolean(String(businessName || "").trim());
+  const hasStructuredBusinessIdentity = hasNamedBusiness && offeringCount >= 2;
+  const hasActionBackedIdentity = hasNamedBusiness
+    && offeringCount >= 1
+    && Boolean(String(salesMode || "").trim() || hasBusinessAction);
   return Boolean(
     isRich
     && text.length >= 80
-    && String(businessName || "").trim()
-    && Array.isArray(offerings)
-    && offerings.filter(Boolean).length >= 2
-    && (String(salesMode || "").trim() || hasBusinessAction)
+    && (hasStructuredBusinessIdentity || hasActionBackedIdentity)
   );
+}
+
+export function hasOnlineSalesSignal(value = "") {
+  return /\b(?:online|ecommerce|e-commerce|en\s+l[ií]nea)\b|env[ií]o|delivery|pago\s+(?:en\s+l[ií]nea|online)|comprar/i.test(String(value || ""));
 }
 
 function normalizedBusinessIdentity(value = "") {

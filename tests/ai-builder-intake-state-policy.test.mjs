@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  hasOnlineSalesSignal,
   isStrongNewBusinessBrief,
   resolveBackendMissingSteps,
   shouldStartCleanBusinessProject,
@@ -42,6 +43,30 @@ test("starts a clean project when a loaded site receives a rich brief for a diff
     isPublicClientSetup: true,
     isStrongNewBrief,
     incomingBusinessName: "Turbo Parts VE",
+    existingBusinessName: "Mi Mundo 3D",
+    hasCurrentSchema: true,
+    hasRestoredDraft: true,
+    hasExistingContext: true,
+  }), true);
+});
+
+test("starts Bath All Day cleanly over a loaded Mi Mundo 3D project", () => {
+  const message = "quiero vender en linea mi linea de jabones velas y bombas de bano, el negocio se llama bath all day";
+  const isStrongNewBrief = isStrongNewBusinessBrief({
+    message,
+    isRich: true,
+    businessName: "Bath All Day",
+    offerings: ["Jabones", "Velas", "Bombas de bano"],
+    salesMode: "",
+  });
+
+  assert.equal(hasOnlineSalesSignal(message), true);
+  assert.equal(hasOnlineSalesSignal("quiero vender en línea"), true);
+  assert.equal(isStrongNewBrief, true);
+  assert.equal(shouldStartCleanBusinessProject({
+    isPublicClientSetup: true,
+    isStrongNewBrief,
+    incomingBusinessName: "Bath All Day",
     existingBusinessName: "Mi Mundo 3D",
     hasCurrentSchema: true,
     hasRestoredDraft: true,
