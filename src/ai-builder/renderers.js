@@ -4,6 +4,7 @@ import { listingLocationForIndex, marketplaceCategories } from './index.js';
 import { isMegaRetailTemplate, megaRetailFeatureFlags, megaRetailWhatsAppUrl, resolveMegaRetailTileMedia } from './mega-retail-policy.js';
 import { isB2BSaasTemplate } from './b2b-saas-policy.js';
 import { renderB2BSaasWebsite } from './b2b-saas-renderer.js';
+import { bathBodyStockImageUrl } from './catalog-preview-policy.js';
 
 function arrayValue(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
@@ -2194,6 +2195,8 @@ export function stableCatalogImageUrl(seed = "") {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+  const bathBodyImage = bathBodyStockImageUrl(text);
+  if (bathBodyImage) return bathBodyImage;
   const fallbacks = [
     [/bracelet|pulsera|pearl|perla|charm/, "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=900&q=82"],
     [/earring|arete/, "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=900&q=82"],
@@ -2204,14 +2207,8 @@ export function stableCatalogImageUrl(seed = "") {
     [/truck|bumper|4x4|off-road|auto|car|automotive/, "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=82"],
     [/coffee|espresso|brew|latte|cafe/, "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=82"],
     [/restaurant|food|menu|pizza|dish|comida/, "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82"],
-    [/spa-bath-towel|bath-towel|toalla|towel/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-    [/handmade-soap|soap-bar|jabon|jabón|jabones|soap/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-    [/bath-salts|sales-de-bano|sales de bano|sales de baño/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-    [/bath-sponge|bano-sponge|natural-bath-sponge|esponja/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-    [/body-oil|aceite-corporal|body oil/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-    [/bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-    [/aromatic-candle|scented-candle|candle|candles|vela|velas/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-    [/soap|jabon|jabón|jabones|bath|bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño|body-care|body care|candle|candles|vela|velas|beauty|skincare|cosmetic|belleza|makeup|spa/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+    [/spa-bath-towel|bath-towel|toalla|towel|bath-salts|sales-de-bano|bath-sponge|esponja|body-oil|aceite-corporal/, "https://images.unsplash.com/photo-1603006905003-be475563bc59?auto=format&fit=crop&w=900&q=82"],
+    [/beauty|skincare|cosmetic|belleza|makeup|spa/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
     [/home|decor|furniture|mueble|hogar/, "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82"],
   ];
   return (fallbacks.find(([pattern]) => pattern.test(text)) || [null, "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=900&q=82"])[1];

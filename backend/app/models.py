@@ -79,6 +79,7 @@ class ProjectState(BaseModel):
     contactInfo: Dict[str, Any] = Field(default_factory=dict)
     logoUrl: Optional[str] = None
     logoPreference: Optional[str] = None
+    logoBrief: Optional[str] = None
     logoGenerationStatus: Optional[str] = None
     logoPalette: List[str] = Field(default_factory=list)
     colorProvenance: ColorProvenance = Field(default_factory=ColorProvenance)
@@ -172,6 +173,7 @@ class WebsiteGenerationRequest(BaseModel):
     contactInfo: Dict[str, Any] | str | None = None
     logoUrl: Optional[str] = None
     logoPreference: Optional[str] = None
+    logoBrief: Optional[str] = None
     logoPalette: List[str] = Field(default_factory=list)
     colorProvenance: ColorProvenance = Field(default_factory=ColorProvenance)
     brandStyle: Optional[str] = None

@@ -74,6 +74,7 @@ def normalize_state_payload(payload: Dict[str, Any] | None) -> ProjectState:
         "contactInfo": payload.get("contactInfo") if isinstance(payload.get("contactInfo"), dict) else {},
         "logoUrl": payload.get("logoUrl"),
         "logoPreference": payload.get("logoPreference") or payload.get("logo_preference"),
+        "logoBrief": payload.get("logoBrief") or payload.get("logo_brief"),
         "logoGenerationStatus": payload.get("logoGenerationStatus"),
         "logoPalette": payload.get("logoPalette") or payload.get("logo_palette") or [],
         "colorProvenance": color_provenance if isinstance(color_provenance, dict) else {},

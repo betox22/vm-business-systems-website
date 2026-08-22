@@ -52,6 +52,8 @@ import { mergeSemanticSeedCatalog } from './catalog-seed-policy.js';
 import { isMegaRetailTemplate, megaRetailFeatureFlags } from './mega-retail-policy.js';
 import { hasDecidedTemplateSelection, isConcreteTemplateId } from './template-carousel-policy.js';
 import { constructionPreviewModel } from './construction-preview-policy.js';
+import { logoRequestUpdate, wantsAiGeneratedLogo } from './logo-intent-policy.js';
+import { isBathBodyCatalogContext } from './catalog-preview-policy.js';
 import {
   MIN_GUIDED_BUILD_PHASE_VISIBLE_MS,
   remainingBuildPhaseVisibilityMs,
@@ -1129,7 +1131,7 @@ function renderCanvasTemplateCarousel(card) {
     previewMarkup = `
       <div class="live-template-preview-viewport">
         <div class="live-template-preview-shell">
-          ${renderWebsite(schema, schema.pages?.[0]?.page_key || "home")}
+          ${renderWebsite(schema, schema.pages?.[0]?.page_key || "home", { isClientPreviewMode: true })}
         </div>
       </div>
     `;
@@ -1141,7 +1143,7 @@ function renderCanvasTemplateCarousel(card) {
     <section class="live-construction-panel" data-construction-level="${model.level}" data-construction-mode="${model.mode}">
       <header class="live-construction-header">
         <div>
-          <span>${escapeHtml(model.mode === "template" ? langText({ en: "Live website", es: "Sitio en vivo", fr: "Site en direct", pt: "Site ao vivo" }) : langText({ en: "Building the foundation", es: "Construyendo la base", fr: "Construction de la base", pt: "Construindo a base" }))}</span>
+          <span>${escapeHtml(model.mode === "template" ? langText({ en: "Instant working preview", es: "Vista instantánea en construcción", fr: "Aperçu instantané en construction", pt: "Prévia instantânea em construção" }) : langText({ en: "Building the foundation", es: "Construyendo la base", fr: "Construction de la base", pt: "Construindo a base" }))}</span>
           <strong>${escapeHtml(model.mode === "template" ? localizedTemplateName(choice) : langText({ en: "Your site is taking shape", es: "Tu sitio está tomando forma", fr: "Votre site prend forme", pt: "Seu site está tomando forma" }))}</strong>
         </div>
         <em>${model.progress}%</em>
@@ -1162,7 +1164,9 @@ function renderCanvasTemplateCarousel(card) {
       </div>
     </section>
   `;
-  if (model.mode === "template") fitConstructionTemplatePreviewToCard(card);
+  if (model.mode === "template") {
+    fitConstructionTemplatePreviewToCard(card);
+  }
 }
 
 function fitConstructionTemplatePreviewToCard(card) {
@@ -3473,14 +3477,6 @@ export function refreshQuickChips() {
 
 
 
-function wantsAiGeneratedLogo(value, options = {}) {
-  const text = String(value || "").toLowerCase();
-  const logoContext = options.assumeLogoContext || /logo|brand mark|marca visual|identidad visual|brand identity/.test(text);
-  const directCreateRequest = /no tengo logo|sin logo|crea(?:r)?(?:me)?(?: un)? logo|crear(?: un)? logo|generate(?: a)? logo|make(?: a)? logo|haz(?:me)?(?: un)? logo|diseñ(?:a|ar)(?: un)? logo|disena(?:r)?(?: un)? logo|gen[eé]rame(?: un)? logo/.test(text);
-  const delegatedCreation = /(?:lyra|ia|ai|tu|t[uú]|you)\s+(?:decide|elige|choose|hazlo|create it)|(?:decide|elige|hazlo|crealo|créalo|generalo|gen[eé]ralo)\s+(?:tu|t[uú]|lyra|ia|ai|you)|sorpr[eé]ndeme|surprise me|you decide/.test(text);
-  return directCreateRequest || (logoContext && delegatedCreation);
-}
-
 function logoPreferenceFromText(value, options = {}) {
   return wantsAiGeneratedLogo(value, options) ? "generate_ai_logo" : "";
 }
@@ -4785,6 +4781,7 @@ export function guidedStateForApi() {
     logoPalette: arrayValue(builderState.guidedState.logoPalette),
     colorProvenance,
     logoPreference,
+    logoBrief: builderState.guidedState.logoBrief || "",
     salesFlow: builderState.guidedState.salesFlow || "",
     fieldMeta,
     brand,
@@ -4991,14 +4988,7 @@ function completeGuidedBriefFromMessage(message, pendingUpdates = {}) {
   }
 
   if (wantsAiGeneratedLogo(text)) {
-    updates.aiGeneratedLogoRequested = true;
-    updates.logoPreference = "generate_ai_logo";
-    updates.hasLogoPhotos = langText({
-      en: "Client has no logo and wants LYRA to create a simple brand mark from the business name and style.",
-      es: "El cliente no tiene logo y quiere que LYRA cree una marca simple con el nombre y el estilo.",
-      fr: "Le client n'a pas de logo et veut que LYRA crée une marque simple avec le nom et le style.",
-      pt: "O cliente nao tem logo e quer que a LYRA crie uma marca simples com o nome e o estilo.",
-    });
+    Object.assign(updates, logoRequestUpdate(text));
   }
 
   return updates;
@@ -5077,11 +5067,7 @@ function inferGuidedUpdates(step, message) {
     return hasExistingGuidedValue("contactInfo") ? {} : { contactInfo: parseKeyValueLines(message.includes(":") ? message : `notes: ${message}`) };
   }
   if (step === "hasLogoPhotos" && wantsAiGeneratedLogo(message, { assumeLogoContext: true })) {
-    return {
-      hasLogoPhotos: message,
-      aiGeneratedLogoRequested: true,
-      logoPreference: "generate_ai_logo",
-    };
+    return logoRequestUpdate(message, { assumeLogoContext: true }) || {};
   }
   if (step === "businessName" && isRichIntakeMessage(message) && !extractBusinessName(message)) {
     return {};
@@ -5169,17 +5155,9 @@ function inferGuidedUpdatesFromAnyMessage(message, attributionStep = "") {
   if (salesMode && !builderState.guidedState.salesMode) updates.salesMode = salesMode;
 
   if (/logo|foto|fotos|imagen|imagenes|photo|photos|image|images/.test(lower) && !builderState.guidedState.hasLogoPhotos) {
-    const wantsGeneratedLogo = wantsAiGeneratedLogo(text, { assumeLogoContext: true });
-    if (wantsGeneratedLogo) updates.aiGeneratedLogoRequested = true;
-    if (wantsGeneratedLogo) updates.logoPreference = "generate_ai_logo";
-    updates.hasLogoPhotos = wantsGeneratedLogo
-      ? langText({
-          en: "Client has no logo and wants LYRA to create a simple brand mark from the business name and style.",
-          es: "El cliente no tiene logo y quiere que LYRA cree una marca simple con el nombre y el estilo.",
-          fr: "Le client n'a pas de logo et veut que LYRA crée une marque simple avec le nom et le style.",
-          pt: "O cliente nao tem logo e quer que a LYRA crie uma marca simples com o nome e o estilo.",
-        })
-      : langText({
+    const logoUpdate = logoRequestUpdate(text, { assumeLogoContext: true });
+    if (logoUpdate) Object.assign(updates, logoUpdate);
+    else updates.hasLogoPhotos = langText({
           en: "Client mentioned logo/photos",
           es: "El cliente mencionó logo/fotos",
           fr: "Le client a mentionné logo/photos",
@@ -6123,6 +6101,14 @@ const SEMANTIC_SEED_PRODUCT_LIBRARY = {
     { name: { en: "CyberLamp Ambient Desk Light", es: "Lampara de Escritorio CyberLamp" }, category: { en: "Desk setup", es: "Setup de escritorio" }, price: 59.0, keyword: "rgb-desk-lamp", description: { en: "Customizable ambient lighting for desks, rooms, and streaming spaces. Adds mood, color, and a strong upsell for tech carts.", es: "Luz ambiental personalizable para escritorios, habitaciones y streaming. Agrega atmosfera, color y mejora el valor del carrito." } },
     { name: { en: "GlowPatch Sticker Pack", es: "Pack de Stickers GlowPatch" }, category: { en: "Collectibles", es: "Coleccionables" }, price: 9.99, keyword: "holographic-sticker-pack", description: { en: "A weatherproof glow-style sticker pack for laptops, bottles, cars, and gifts. Affordable, collectible, and ideal for checkout add-ons.", es: "Pack de stickers estilo glow resistente para laptops, botellas, carros y regalos. Accesible, coleccionable e ideal como add-on." } },
   ],
+  bath_body: [
+    { name: { en: "Handmade Botanical Soap", es: "Jabon Botanico Artesanal" }, category: { en: "Handmade soaps", es: "Jabones artesanales" }, price: 12, keyword: "lavender handmade soap", description: { en: "A small-batch botanical soap with a creamy lather and a clean, gift-ready finish.", es: "Jabon botanico de lote pequeno con espuma cremosa y presentacion lista para regalar." } },
+    { name: { en: "Aromatic Soy Candle", es: "Vela Aromatica de Soya" }, category: { en: "Scented candles", es: "Velas aromaticas" }, price: 18, keyword: "vanilla scented candle", description: { en: "A hand-poured candle made for calm rooms, warm rituals, and thoughtful gifts.", es: "Vela vertida a mano para ambientes tranquilos, rituales calidos y regalos especiales." } },
+    { name: { en: "Rose Bath Bomb", es: "Bomba de Bano de Rosas" }, category: { en: "Bath bombs", es: "Bombas de bano" }, price: 9, keyword: "rose bath bomb", description: { en: "A fragrant bath bomb that turns an everyday soak into a colorful self-care moment.", es: "Bomba de bano aromatica que convierte un bano cotidiano en un momento de autocuidado." } },
+    { name: { en: "Mineral Bath Salt Soak", es: "Sales Minerales de Bano" }, category: { en: "Bath salts", es: "Sales de bano" }, price: 15, keyword: "mineral bath salts", description: { en: "Mineral bath salts blended for a relaxing soak and an easy at-home spa ritual.", es: "Sales minerales mezcladas para un bano relajante y un ritual de spa en casa." } },
+    { name: { en: "Nourishing Body Oil", es: "Aceite Corporal Nutritivo" }, category: { en: "Body care", es: "Cuidado corporal" }, price: 22, keyword: "botanical body oil", description: { en: "A lightweight botanical oil for soft skin and a polished post-bath routine.", es: "Aceite botanico ligero para una piel suave y una rutina cuidada despues del bano." } },
+    { name: { en: "Bath Ritual Gift Set", es: "Set Regalo Ritual de Bano" }, category: { en: "Gift sets", es: "Sets de regalo" }, price: 36, keyword: "handmade soap candle bath gift set", description: { en: "A coordinated soap, candle, and bath set prepared for birthdays and thoughtful gifting.", es: "Set coordinado de jabon, vela y bano preparado para cumpleanos y regalos especiales." } },
+  ],
   beauty: [
     { name: { en: "GlowReset Vitamin C Serum", es: "Serum Vitamina C GlowReset" }, category: { en: "Skincare", es: "Cuidado facial" }, price: 28.0, keyword: "vitamin-c-serum", description: { en: "A brightening serum positioned for daily routines and visible glow. Strong for educational product pages and subscription bundles.", es: "Serum iluminador para rutinas diarias y brillo visible. Ideal para paginas educativas de producto y combos de suscripcion." } },
     { name: { en: "HydraCloud Moisture Cream", es: "Crema Hidratante HydraCloud" }, category: { en: "Moisturizers", es: "Hidratantes" }, price: 32.5, keyword: "moisturizing-face-cream", description: { en: "A rich but lightweight moisturizer for soft skin and simple routine building. Easy to pair with cleansers, serums, and bundles.", es: "Hidratante rica pero ligera para piel suave y rutina simple. Facil de combinar con limpiadores, serums y kits." } },
@@ -6238,7 +6224,8 @@ function inferSemanticSeedProfile(contextText = "", templateText = "") {
   if (textSuggestsJewelryAccessoryStore(text)) return "jewelry";
   if (/parachoques|bumper|4x4|off road|off-road|auto parts|repuestos|automotriz|camioneta|truck|motos?|car accessories/.test(text)) return "auto";
   if (/ropa|fashion|moda|streetwear|sneaker|zapato|camiseta|clothing|apparel|boutique/.test(text)) return "fashion";
-  if (/beauty|belleza|skincare|cosmet|maquillaje|spa|bath|bano|baño|jabon|jabón|soap|vela|velas|candle|personal care|cuidado personal/.test(text)) return "beauty";
+  if (isBathBodyCatalogContext(text)) return "bath_body";
+  if (/beauty|belleza|skincare|cosmet|maquillaje|spa|personal care|cuidado personal/.test(text)) return "beauty";
   if (/decor|hogar|home|furniture|muebles|interior|lampara|casa/.test(text)) return "home";
   if (/tech|tecnologia|gadget|electron|gaming|usb|phone|laptop|anime|juguete|toy|curioso|raro|inusual|cyberpunk/.test(text)) return "tech";
   if (/luxury|lujo|premium|exclusive|exclusivo|alta gama|private|privado/.test(text)) return "default";
@@ -11925,6 +11912,7 @@ async function collectPayload() {
     brandStyle: generationPreferredTone,
     contact_info: contactInfo,
     logoPreference: logoPreferenceValue,
+    logoBrief: validatedGuidedPayload?.logoBrief || builderState.guidedState.logoBrief || "",
     fieldMeta: validatedGuidedPayload?.fieldMeta || fieldMeta,
     intakeFollowupAnswer,
     salesFlow: resolvedSalesFlow,

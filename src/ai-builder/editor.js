@@ -1084,10 +1084,12 @@ export function brandKitEditor(brandInput, score) {
   </div>`;
 }
 
-export function renderWebsite(schema, pageKey) {
+export function renderWebsite(schema, pageKey, context = {}) {
   return renderWebsiteMarkup(schema, pageKey, {
     selectedLanguage: builderState.selectedLanguage,
-    isClientPreviewMode: Boolean(document.body?.classList?.contains("client-preview-mode")),
+    isClientPreviewMode: context.isClientPreviewMode
+      ?? Boolean(document.body?.classList?.contains("client-preview-mode")),
+    ...context,
   });
 }
 

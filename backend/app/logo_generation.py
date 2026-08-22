@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import logging
 import os
+import re
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
@@ -43,14 +44,24 @@ def build_logo_prompt(state: ProjectState) -> str:
     ]
     palette_values = list(dict.fromkeys(str(value).strip() for value in palette if str(value or "").strip()))
     palette_instruction = ", ".join(palette_values[:6]) or "the brand palette selected for this business niche"
+    logo_brief = str(state.logoBrief or "").strip()
+    initials_match = re.search(r"\b(?:initials?|iniciales?)\s*[\"':-]*\s*([A-Z0-9]{2,6})\b", logo_brief, re.I)
+    mark_instruction = (
+        f"The client explicitly requested the initials {initials_match.group(1).upper()}; integrate exactly those initials as the central monogram, with no other words. "
+        if initials_match
+        else "Do not render words or letters. "
+    )
+    brief_instruction = f"Client logo direction: {logo_brief}. " if logo_brief else ""
     return (
         f"Create one professional flat vector brand symbol for {state.businessName or 'this business'}. "
         f"Industry: {state.industry or 'general business'}. "
         f"Business context: {state.businessDescription or 'professional independent business'}. "
+        f"{brief_instruction}"
         f"Use this exact color direction: {palette_instruction}. "
+        f"{mark_instruction}"
         "Design a distinctive, simple, scalable icon that remains recognizable at favicon size. "
         "Transparent background, centered composition, solid colors, crisp geometric forms, no gradients, "
-        "no mockup, no photograph, no watermark, no border, and no rendered words or letters."
+        "no mockup, no photograph, no watermark, and no border."
     )
 
 

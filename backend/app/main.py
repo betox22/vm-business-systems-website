@@ -72,6 +72,7 @@ CLIENT_DRAFT_KEYS = {
     "desiredDomain",
     "logoUrl",
     "logoPreference",
+    "logoBrief",
     "photoUrls",
     "logoPalette",
     "colorProvenance",
@@ -1021,6 +1022,12 @@ async def luma_chat(request: LumaChatRequest, http_request: Request) -> LumaChat
         message=request.message,
     )
     state = intake_engine.apply_decision(state, intake_decision)
+    if state.logoBrief and str(request.message or "").strip() == str(state.logoBrief).strip() and not direct_user_question_response(intake_decision):
+        intake_decision.userQuestionResponse = {
+            "es": "Anoté el logo con las iniciales que pediste y usaré esa dirección al generarlo.",
+            "fr": "J'ai noté le logo avec les initiales demandées et je suivrai cette direction pour le générer.",
+            "pt": "Anotei o logo com as iniciais que você pediu e seguirei essa direção ao gerá-lo.",
+        }.get(state.selectedLanguage, "I noted the logo initials you requested and will use that direction when generating it.")
 
     if intake_decision.canGenerate:
         final_state = await orchestrator.run(request.message, state, skip_intake_strategy=True)
@@ -1066,6 +1073,8 @@ async def luma_chat(request: LumaChatRequest, http_request: Request) -> LumaChat
             "typography": final_state.typography,
             "generatedCopy": final_state.generatedCopy,
             "catalogItems": final_state.catalogItems,
+            "logoPreference": final_state.logoPreference,
+            "logoBrief": final_state.logoBrief,
             "fieldMeta": final_state.fieldMeta,
             "detectedIntent": intake_decision.detectedIntent.model_dump(),
             "intakeCanGenerate": intake_decision.canGenerate,
@@ -1126,6 +1135,19 @@ def apply_current_step_hint(state: Any, request: LumaChatRequest) -> None:
     step = request.currentStep or request.current_step or ""
     message = str(request.message or "").strip()
     if not message:
+        return
+
+    logo_request = bool(re.search(
+        r"(?:no tengo|sin) logo|(?:quiero|quisiera|necesito|me gustaria|me gustaría|podrias|podrías|puedes|quiero que).{0,32}\blogo\b|crea(?:r)?(?:me)?(?: un)? logo|haz(?:me)?(?: un)? logo|diseñ(?:a|ar)(?: un)? logo|gen[eé]rame(?: un)? logo",
+        message,
+        re.I,
+    ))
+    if logo_request:
+        state.logoPreference = "generate_ai_logo"
+        state.logoBrief = message
+        mark_field_meta(state, "logo", "explicit", 0.98)
+        mark_field_meta(state, "logoPreference", "explicit", 0.98)
+        mark_field_meta(state, "logoBrief", "explicit", 0.98)
         return
 
     if step == "websiteIntent" and not state.websiteIntent:
@@ -1283,6 +1305,7 @@ async def website_builder(
         "contactInfo": request.contactInfo or request.contact_info,
         "logoUrl": request.logoUrl,
         "logoPreference": request.logoPreference,
+        "logoBrief": request.logoBrief,
         "logoPalette": request.logoPalette,
         "colorProvenance": request.colorProvenance.model_dump(),
         "photoUrls": request.photoUrls,

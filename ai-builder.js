@@ -1305,8 +1305,8 @@
     return String(templateId || "") === "mega-retail-store";
   }
   function megaRetailStockImage(category = "") {
-    const normalized = String(category).toLowerCase();
-    return (STOCK_BY_CATEGORY.find(([pattern]) => pattern.test(normalized)) || [
+    const normalized2 = String(category).toLowerCase();
+    return (STOCK_BY_CATEGORY.find(([pattern]) => pattern.test(normalized2)) || [
       null,
       "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1400&q=84"
     ])[1];
@@ -1407,6 +1407,48 @@
         { id: "ready", complete: ready, active: (mediaReady || isGenerating) && !ready }
       ]
     };
+  }
+
+  // src/ai-builder/logo-intent-policy.js
+  var LOGO_CONTEXT_RE = /logo|brand mark|marca visual|identidad visual|brand identity/i;
+  var DIRECT_LOGO_REQUEST_RE = /(?:no tengo|sin) logo|(?:quiero|quisiera|necesito|me gustaria|me gustaría|podrias|podrías|puedes|quiero que|we need|i want|i need|could you|can you).{0,32}\blogo\b|crea(?:r)?(?:me)?(?: un)? logo|crear(?: un)? logo|generate(?: a)? logo|make(?: a)? logo|haz(?:me)?(?: un)? logo|diseñ(?:a|ar)(?: un)? logo|disena(?:r)?(?: un)? logo|gen[eé]rame(?: un)? logo/i;
+  var DELEGATED_LOGO_RE = /(?:lyra|ia|ai|tu|t[uú]|you)\s+(?:decide|elige|choose|hazlo|create it)|(?:decide|elige|hazlo|crealo|créalo|generalo|gen[eé]ralo)\s+(?:tu|t[uú]|lyra|ia|ai|you)|sorpr[eé]ndeme|surprise me|you decide/i;
+  function wantsAiGeneratedLogo(value, options = {}) {
+    const text = String(value || "").trim();
+    const logoContext = Boolean(options.assumeLogoContext) || LOGO_CONTEXT_RE.test(text);
+    return DIRECT_LOGO_REQUEST_RE.test(text) || logoContext && DELEGATED_LOGO_RE.test(text);
+  }
+  function logoRequestUpdate(value, options = {}) {
+    const text = String(value || "").trim();
+    if (!wantsAiGeneratedLogo(text, options)) return null;
+    return {
+      hasLogoPhotos: text,
+      logoBrief: text,
+      aiGeneratedLogoRequested: true,
+      logoPreference: "generate_ai_logo"
+    };
+  }
+
+  // src/ai-builder/catalog-preview-policy.js
+  function normalized(value) {
+    return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+  function isBathBodyCatalogContext(value) {
+    const text = normalized(value);
+    return /\b(jabon|jabones|soap|bath bomb|bombas? de bano|vela|velas|candle|candles|sales de bano|bath salts|body oil|aceite corporal)\b/.test(text);
+  }
+  function bathBodyStockImageUrl(value) {
+    const text = normalized(value);
+    if (/\b(vela|velas|candle|candles)\b/.test(text)) {
+      return "https://images.unsplash.com/photo-1742544637816-44a0e7f016c6?auto=format&fit=crop&w=900&q=82";
+    }
+    if (/\b(bath bomb|bombas? de bano)\b/.test(text)) {
+      return "https://images.unsplash.com/photo-1777748219969-eb14767165f4?auto=format&fit=crop&w=900&q=82";
+    }
+    if (/\b(jabon|jabones|soap)\b/.test(text)) {
+      return "https://images.unsplash.com/photo-1663108275588-f39db09701e1?auto=format&fit=crop&w=900&q=82";
+    }
+    return "";
   }
 
   // src/ai-builder/build-phase-policy.js
@@ -3551,6 +3593,8 @@
   }
   function stableCatalogImageUrl(seed = "") {
     const text = String(seed || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const bathBodyImage = bathBodyStockImageUrl(text);
+    if (bathBodyImage) return bathBodyImage;
     const fallbacks = [
       [/bracelet|pulsera|pearl|perla|charm/, "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=900&q=82"],
       [/earring|arete/, "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=900&q=82"],
@@ -3561,14 +3605,8 @@
       [/truck|bumper|4x4|off-road|auto|car|automotive/, "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=82"],
       [/coffee|espresso|brew|latte|cafe/, "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=82"],
       [/restaurant|food|menu|pizza|dish|comida/, "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82"],
-      [/spa-bath-towel|bath-towel|toalla|towel/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-      [/handmade-soap|soap-bar|jabon|jabón|jabones|soap/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-      [/bath-salts|sales-de-bano|sales de bano|sales de baño/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-      [/bath-sponge|bano-sponge|natural-bath-sponge|esponja/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-      [/body-oil|aceite-corporal|body oil/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-      [/bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-      [/aromatic-candle|scented-candle|candle|candles|vela|velas/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
-      [/soap|jabon|jabón|jabones|bath|bath-bomb|bath bomb|bombas-de-bano|bombas de bano|bombas de baño|body-care|body care|candle|candles|vela|velas|beauty|skincare|cosmetic|belleza|makeup|spa/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
+      [/spa-bath-towel|bath-towel|toalla|towel|bath-salts|sales-de-bano|bath-sponge|esponja|body-oil|aceite-corporal/, "https://images.unsplash.com/photo-1603006905003-be475563bc59?auto=format&fit=crop&w=900&q=82"],
+      [/beauty|skincare|cosmetic|belleza|makeup|spa/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"],
       [/home|decor|furniture|mueble|hogar/, "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82"]
     ];
     return (fallbacks.find(([pattern]) => pattern.test(text)) || [null, "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=900&q=82"])[1];
@@ -5037,7 +5075,7 @@
     if (!raw) return fallback;
     if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(raw)) return raw;
     if (/^(rgb|hsl)a?\(/i.test(raw)) return raw;
-    const normalized = raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const normalized2 = raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const palettes = [
       [["negro", "black", "oscuro", "noir"], "#111111"],
       [["dorado", "gold", "oro"], "#C89B3C"],
@@ -5056,14 +5094,14 @@
       [["minimalista", "minimal", "limpio"], "#F8FAFC"],
       [["lujo", "luxury", "premium"], "#14110F"]
     ];
-    const match = palettes.find(([words]) => words.some((word) => normalized.includes(word)));
+    const match = palettes.find(([words]) => words.some((word) => normalized2.includes(word)));
     return match ? match[1] : fallback;
   }
 
   // src/ai-builder/state.js
   function normalizeBrowserLanguage(input) {
-    const normalized = String(input || "en").trim().toLowerCase();
-    const base = normalized.split("-")[0];
+    const normalized2 = String(input || "en").trim().toLowerCase();
+    const base = normalized2.split("-")[0];
     return SUPPORTED_LANGUAGES.includes(base) ? base : "en";
   }
   function detectBrowserLanguage() {
@@ -5094,6 +5132,7 @@
       salesMode: "",
       salesFlow: "",
       hasLogoPhotos: "",
+      logoBrief: "",
       aiGeneratedLogoRequested: false,
       logoPreference: "",
       sectionsPreference: "",
@@ -5241,6 +5280,51 @@
   var builderAvatarRoot = document.querySelector("#builderAvatarAssistant");
   var builderAvatarManager = window.AvatarStateManager ? new window.AvatarStateManager("idle") : null;
 
+  // src/ai-builder/client-project-resume-policy.js
+  function clientProjectEntryDecision({ projects = [], hasCurrentSchema = false } = {}) {
+    if (hasCurrentSchema) return { action: "keep_current" };
+    const savedProjects = Array.isArray(projects) ? projects.filter((project) => project?.id) : [];
+    if (savedProjects.length === 1) {
+      return { action: "confirm_resume", project: savedProjects[0] };
+    }
+    if (savedProjects.length > 1) {
+      return { action: "choose_project", projects: savedProjects };
+    }
+    return { action: "hydrate_session" };
+  }
+  function savedProjectName(project = {}) {
+    return String(project.business_name || project.businessName || "").trim() || "Untitled page";
+  }
+
+  // src/ai-builder/client-project-card-policy.js
+  var PROJECT_STATUS_CLASSES = /* @__PURE__ */ new Map([
+    ["published", "is-published"],
+    ["draft", "is-draft"]
+  ]);
+  function clientProjectPreviewPath(projectId) {
+    const cleanId = String(projectId || "").trim();
+    return cleanId ? `/site.html?site_id=${encodeURIComponent(cleanId)}` : "";
+  }
+  function clientProjectStatusClass(status) {
+    return PROJECT_STATUS_CLASSES.get(String(status || "draft").trim().toLowerCase()) || "is-draft";
+  }
+  function clientProjectDomain(publicUrl) {
+    const cleanUrl = String(publicUrl || "").trim();
+    if (!cleanUrl) return "";
+    try {
+      const parsed = new URL(/^https?:\/\//i.test(cleanUrl) ? cleanUrl : `https://${cleanUrl}`);
+      return `${parsed.hostname}${parsed.pathname === "/" ? "" : parsed.pathname}`;
+    } catch (_error) {
+      return cleanUrl.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+    }
+  }
+  function clientProjectVisualHue(project = {}) {
+    const identity = String(project.template_name || project.business_name || project.id || "kreaton");
+    let hash = 0;
+    for (const character of identity) hash = (hash << 5) - hash + character.charCodeAt(0) | 0;
+    return Math.abs(hash) % 360;
+  }
+
   // src/ai-builder/supabase-magic-link.js
   function readSupabaseAuthRedirect(locationLike = globalThis.location) {
     const hashParams = new URLSearchParams(String(locationLike?.hash || "").replace(/^#/, ""));
@@ -5333,6 +5417,7 @@
   var magicLinkCooldownTimer = null;
   var magicLinkCooldownEndsAt = 0;
   var magicLinkResendEmail = "";
+  var pendingClientProjectSession = null;
   function magicLinkElements() {
     return {
       confirmation: studioAuthGate?.querySelector("[data-magic-link-confirmation]") || null,
@@ -5767,13 +5852,26 @@
       }
       const continueButton = event.target?.closest?.("[data-client-project-id]");
       if (continueButton) {
+        if (pendingClientProjectSession) hydrateClientIntakeSession(pendingClientProjectSession, { silent: true });
+        pendingClientProjectSession = null;
         loadClientProject(continueButton.dataset.clientProjectId).catch((error) => {
           console.warn("Could not open client project", error);
           if (storageStatus) storageStatus.textContent = t("loadProjectsError");
         });
         return;
       }
+      const resumeButton = event.target?.closest?.("[data-client-resume-project]");
+      if (resumeButton) {
+        if (pendingClientProjectSession) hydrateClientIntakeSession(pendingClientProjectSession, { silent: true });
+        pendingClientProjectSession = null;
+        loadClientProject(resumeButton.dataset.clientResumeProject).catch((error) => {
+          console.warn("Could not resume client project", error);
+          if (storageStatus) storageStatus.textContent = t("loadProjectsError");
+        });
+        return;
+      }
       if (event.target?.closest?.("[data-client-new-project]")) {
+        pendingClientProjectSession = null;
         startNewClientProject({ skipConfirm: true });
       }
     });
@@ -5797,23 +5895,59 @@
   }
   function renderClientProjectsPanel(projects = []) {
     const panel = ensureClientProjectsPanel();
+    const newPageLabel = t("startNewProject");
     const emptyState = `
     <div class="client-projects-empty">
       <strong>${escapeHtml(t("myPages"))}</strong>
       <p>${escapeHtml(t("emptyProjects"))}</p>
     </div>
   `;
-    const rows = projects.map((project) => `
-    <article class="client-project-card">
-      <div>
-        <span>${escapeHtml(project.status || "draft")}</span>
-        <h3>${escapeHtml(project.business_name || "Untitled page")}</h3>
-        <p>${escapeHtml(project.template_name || "Generated website")} \xB7 ${escapeHtml(formatProjectUpdatedAt(project.updated_at))}</p>
-        ${project.public_url ? `<small>${escapeHtml(project.public_url)}</small>` : ""}
-      </div>
-      <button type="button" data-client-project-id="${escapeAttribute(project.id)}">${escapeHtml(t("openProject"))}</button>
-    </article>
-  `).join("");
+    const newProjectCard = `
+    <button class="client-new-project-card" type="button" data-client-new-project>
+      <span class="client-new-project-icon" aria-hidden="true">+</span>
+      <strong>${escapeHtml(newPageLabel)}</strong>
+      <small>${escapeHtml(langText({
+      en: "Start with a fresh conversation",
+      es: "Empieza con una conversaci\xF3n nueva",
+      fr: "Commencez une nouvelle conversation",
+      pt: "Comece uma nova conversa"
+    }))}</small>
+    </button>
+  `;
+    const rows = projects.map((project) => {
+      const businessName = project.business_name || "Untitled page";
+      const status = String(project.status || "draft").trim().toLowerCase();
+      const statusLabel = status === "published" ? langText({ en: "Published", es: "Publicada", fr: "Publi\xE9e", pt: "Publicada" }) : langText({ en: "Draft", es: "Borrador", fr: "Brouillon", pt: "Rascunho" });
+      const previewPath = clientProjectPreviewPath(project.id);
+      const domain = clientProjectDomain(project.public_url);
+      const hue = clientProjectVisualHue(project);
+      return `
+      <article class="client-project-card" style="--client-project-hue: ${hue}">
+        <div class="client-project-preview" aria-label="${escapeAttribute(langText({
+        en: `Preview of ${businessName}`,
+        es: `Vista previa de ${businessName}`,
+        fr: `Aper\xE7u de ${businessName}`,
+        pt: `Pr\xE9via de ${businessName}`
+      }))}">
+          <div class="client-project-preview-fallback" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <div><i></i><i></i><i></i></div>
+          </div>
+          ${previewPath ? `<iframe src="${escapeAttribute(previewPath)}" title="${escapeAttribute(businessName)}" loading="lazy" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>` : ""}
+          <span class="client-project-status ${clientProjectStatusClass(status)}">${escapeHtml(statusLabel)}</span>
+        </div>
+        <div class="client-project-content">
+          <div class="client-project-copy">
+            <span class="client-project-template">${escapeHtml(project.template_name || "Generated website")}</span>
+            <h3>${escapeHtml(businessName)}</h3>
+            <p>${escapeHtml(langText({ en: "Last edited", es: "\xDAltima edici\xF3n", fr: "Derni\xE8re modification", pt: "\xDAltima edi\xE7\xE3o" }))} \xB7 ${escapeHtml(formatProjectUpdatedAt(project.updated_at))}</p>
+            ${domain ? `<small title="${escapeAttribute(project.public_url)}">${escapeHtml(domain)}</small>` : ""}
+          </div>
+          <button class="client-project-open" type="button" data-client-project-id="${escapeAttribute(project.id)}">${escapeHtml(t("openProject"))}</button>
+        </div>
+      </article>
+    `;
+    }).join("");
     panel.innerHTML = `
     <div class="client-projects-card">
       <button class="client-projects-close" type="button" data-client-projects-close aria-label="Close">\xD7</button>
@@ -5827,15 +5961,63 @@
       pt: "Cada p\xE1gina fica separada dentro da sua conta."
     }))}</p>
       </div>
-      <div class="client-projects-list">${rows || emptyState}</div>
-      <button class="client-new-project-button" type="button" data-client-new-project>${escapeHtml(t("startNewProject"))}</button>
+      <div class="client-projects-list">${newProjectCard}${rows || emptyState}</div>
     </div>
   `;
     panel.hidden = false;
     document.body.classList.add("client-projects-open");
   }
+  function renderClientProjectResumePrompt(project, session = null) {
+    const panel = ensureClientProjectsPanel();
+    const projectName = savedProjectName(project);
+    pendingClientProjectSession = session;
+    panel.innerHTML = `
+    <div class="client-projects-card client-project-resume-card" role="dialog" aria-modal="true" aria-labelledby="clientProjectResumeTitle">
+      <div class="client-project-resume-brand" aria-hidden="true">
+        <span><img src="/assets/nixie_idle.png" alt=""></span>
+        <strong>LYRA</strong>
+      </div>
+      <div class="client-projects-head">
+        <span>${escapeHtml(langText({ en: "Saved progress", es: "Progreso guardado", fr: "Progression sauvegard\xE9e", pt: "Progresso salvo" }))}</span>
+        <h2 id="clientProjectResumeTitle">${escapeHtml(langText({
+      en: "You have an unfinished project",
+      es: "Tienes un proyecto sin terminar",
+      fr: "Vous avez un projet inachev\xE9",
+      pt: "Voc\xEA tem um projeto inacabado"
+    }))}</h2>
+      </div>
+      <div class="client-project-resume-project">
+        <span aria-hidden="true"></span>
+        <div>
+          <strong>${escapeHtml(projectName)}</strong>
+          <small>${escapeHtml(project.template_name || langText({ en: "Saved website", es: "Sitio guardado", fr: "Site sauvegard\xE9", pt: "Site salvo" }))}</small>
+        </div>
+      </div>
+      <p class="client-project-resume-question">${escapeHtml(langText({
+      en: "Would you like to continue it or start a new one?",
+      es: "\xBFQuieres continuarlo o empezar uno nuevo?",
+      fr: "Souhaitez-vous le continuer ou en commencer un nouveau ?",
+      pt: "Quer continuar ou come\xE7ar um novo?"
+    }))}</p>
+      <div class="client-project-resume-actions">
+        <button class="client-project-resume-primary" type="button" data-client-resume-project="${escapeAttribute(project.id)}">${escapeHtml(langText({ en: "Continue project", es: "Continuar proyecto", fr: "Continuer le projet", pt: "Continuar projeto" }))}</button>
+        <button class="client-project-resume-secondary" type="button" data-client-new-project>${escapeHtml(langText({ en: "Start a new one", es: "Empezar uno nuevo", fr: "En commencer un nouveau", pt: "Come\xE7ar um novo" }))}</button>
+      </div>
+    </div>
+  `;
+    panel.hidden = false;
+    document.body.classList.add("client-projects-open");
+    guidedStatusText.textContent = langText({
+      en: "Choose whether to continue your saved project or begin a new one.",
+      es: "Elige si quieres continuar tu proyecto guardado o comenzar uno nuevo.",
+      fr: "Choisissez de continuer votre projet sauvegard\xE9 ou d'en commencer un nouveau.",
+      pt: "Escolha entre continuar seu projeto salvo ou come\xE7ar um novo."
+    });
+    panel.querySelector("[data-client-resume-project]")?.focus();
+  }
   function closeClientProjectsPanel() {
     if (builderState.clientProjectsPanel) builderState.clientProjectsPanel.hidden = true;
+    pendingClientProjectSession = null;
     document.body.classList.remove("client-projects-open");
   }
   async function openClientProjectsPanel() {
@@ -5863,7 +6045,12 @@
       console.warn("Could not load client projects", error);
       return;
     }
-    if (builderState.clientProjects.length > 1) {
+    const decision = clientProjectEntryDecision({
+      projects: builderState.clientProjects,
+      hasCurrentSchema: Boolean(builderState.currentSchema)
+    });
+    if (decision.action === "choose_project") {
+      pendingClientProjectSession = session;
       renderClientProjectsPanel(builderState.clientProjects);
       guidedStatusText.textContent = langText({
         en: "Choose which page you want to continue, or start a new one.",
@@ -5873,8 +6060,12 @@
       });
       return;
     }
-    if (builderState.clientProjects.length === 1 && !builderState.currentSchema) {
-      await loadClientProject(builderState.clientProjects[0].id, { silent: true, session });
+    if (decision.action === "confirm_resume") {
+      renderClientProjectResumePrompt(decision.project, session);
+      return;
+    }
+    if (decision.action === "hydrate_session") {
+      hydrateClientIntakeSession(session);
     }
   }
   async function loadClientProject(projectId, options = {}) {
@@ -5953,7 +6144,8 @@
         const session = await createOrResumeClientIntakeSession({
           email,
           name,
-          reason: "oauth-resume"
+          reason: "oauth-resume",
+          deferHydration: true
         });
         if (storageStatus) {
           storageStatus.textContent = session.restored ? langText({
@@ -6031,7 +6223,7 @@
       renderRestoredDraftNotice();
     }
   }
-  async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false } = {}) {
+  async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false, deferHydration = false } = {}) {
     const cleanEmail = String(email || "").trim().toLowerCase();
     if (!cleanEmail) throw new Error("Email is required.");
     const storedSession = readClientIntakeSession();
@@ -6066,7 +6258,7 @@
     const session = await response.json();
     writeClientIntakeSession(session);
     localStorage.setItem("lumaPendingClientEmail", cleanEmail);
-    hydrateClientIntakeSession(session, { silent: reason === "autosave" });
+    if (!deferHydration) hydrateClientIntakeSession(session, { silent: reason === "autosave" });
     return session;
   }
   function syncClientIntakeSession({ immediate = false, reason = "autosave" } = {}) {
@@ -6262,6 +6454,7 @@
       logoPalette: arrayValue2(builderState.guidedState.logoPalette),
       colorProvenance: builderState.guidedState.colorProvenance,
       logoPreference,
+      logoBrief: builderState.guidedState.logoBrief || "",
       fieldMeta,
       selectedLanguage: builderState.selectedLanguage,
       hasLogo: Boolean(builderState.guidedState.hasLogo || builderState.guidedState.logoUrl),
@@ -6325,6 +6518,7 @@
       salesMode: trimmed(source.salesMode, 160),
       hasLogoPhotos: trimmed(source.hasLogoPhotos, 180),
       logoPreference: trimmed(source.logoPreference, 180),
+      logoBrief: trimmed(source.logoBrief, 500),
       sectionsPreference: trimmed(source.sectionsPreference, 600),
       selectedTemplateId: trimmed(source.selectedTemplateId, 180),
       selectedTemplateName: trimmed(source.selectedTemplateName, 180),
@@ -6846,8 +7040,8 @@
       const backendMissing = missingGuidedSteps();
       if (backendMissing.length) return backendMissing[0];
     }
-    const normalized = normalizeNextGuidedStep(step);
-    if (normalized !== "review") return normalized;
+    const normalized2 = normalizeNextGuidedStep(step);
+    if (normalized2 !== "review") return normalized2;
     const requiredMissing = REQUIRED_GUIDED_STEPS.filter((item) => !isGuidedStepAnswered(item));
     if (requiredMissing.length) return requiredMissing[0];
     if (!hasEnoughContextForTemplatePreview()) return nextSmartGuidedStep("websiteIntent");
@@ -8123,10 +8317,11 @@ ${cleanQuestion}`;
     </div>
   </div>`;
   }
-  function renderWebsite2(schema, pageKey) {
+  function renderWebsite2(schema, pageKey, context = {}) {
     return renderWebsite(schema, pageKey, {
       selectedLanguage: builderState.selectedLanguage,
-      isClientPreviewMode: Boolean(document.body?.classList?.contains("client-preview-mode"))
+      isClientPreviewMode: context.isClientPreviewMode ?? Boolean(document.body?.classList?.contains("client-preview-mode")),
+      ...context
     });
   }
   function sectionEditor(section, index) {
@@ -8831,7 +9026,7 @@ ${cleanQuestion}`;
       previewMarkup = `
       <div class="live-template-preview-viewport">
         <div class="live-template-preview-shell">
-          ${renderWebsite2(schema, schema.pages?.[0]?.page_key || "home")}
+          ${renderWebsite2(schema, schema.pages?.[0]?.page_key || "home", { isClientPreviewMode: true })}
         </div>
       </div>
     `;
@@ -8842,7 +9037,7 @@ ${cleanQuestion}`;
     <section class="live-construction-panel" data-construction-level="${model.level}" data-construction-mode="${model.mode}">
       <header class="live-construction-header">
         <div>
-          <span>${escapeHtml(model.mode === "template" ? langText({ en: "Live website", es: "Sitio en vivo", fr: "Site en direct", pt: "Site ao vivo" }) : langText({ en: "Building the foundation", es: "Construyendo la base", fr: "Construction de la base", pt: "Construindo a base" }))}</span>
+          <span>${escapeHtml(model.mode === "template" ? langText({ en: "Instant working preview", es: "Vista instant\xE1nea en construcci\xF3n", fr: "Aper\xE7u instantan\xE9 en construction", pt: "Pr\xE9via instant\xE2nea em constru\xE7\xE3o" }) : langText({ en: "Building the foundation", es: "Construyendo la base", fr: "Construction de la base", pt: "Construindo a base" }))}</span>
           <strong>${escapeHtml(model.mode === "template" ? localizedTemplateName(choice) : langText({ en: "Your site is taking shape", es: "Tu sitio est\xE1 tomando forma", fr: "Votre site prend forme", pt: "Seu site est\xE1 tomando forma" }))}</strong>
         </div>
         <em>${model.progress}%</em>
@@ -8863,7 +9058,9 @@ ${cleanQuestion}`;
       </div>
     </section>
   `;
-    if (model.mode === "template") fitConstructionTemplatePreviewToCard(card);
+    if (model.mode === "template") {
+      fitConstructionTemplatePreviewToCard(card);
+    }
   }
   function fitConstructionTemplatePreviewToCard(card) {
     const canvas = card.querySelector(".live-construction-canvas");
@@ -10377,13 +10574,6 @@ ${langText({
     });
     updateAssetPromptVisibility();
   }
-  function wantsAiGeneratedLogo(value, options = {}) {
-    const text = String(value || "").toLowerCase();
-    const logoContext = options.assumeLogoContext || /logo|brand mark|marca visual|identidad visual|brand identity/.test(text);
-    const directCreateRequest = /no tengo logo|sin logo|crea(?:r)?(?:me)?(?: un)? logo|crear(?: un)? logo|generate(?: a)? logo|make(?: a)? logo|haz(?:me)?(?: un)? logo|diseñ(?:a|ar)(?: un)? logo|disena(?:r)?(?: un)? logo|gen[eé]rame(?: un)? logo/.test(text);
-    const delegatedCreation = /(?:lyra|ia|ai|tu|t[uú]|you)\s+(?:decide|elige|choose|hazlo|create it)|(?:decide|elige|hazlo|crealo|créalo|generalo|gen[eé]ralo)\s+(?:tu|t[uú]|lyra|ia|ai|you)|sorpr[eé]ndeme|surprise me|you decide/.test(text);
-    return directCreateRequest || logoContext && delegatedCreation;
-  }
   function logoPreferenceFromText(value, options = {}) {
     return wantsAiGeneratedLogo(value, options) ? "generate_ai_logo" : "";
   }
@@ -10890,9 +11080,9 @@ ${langText({
     return `#${[r, g, b].map((value) => Math.max(0, Math.min(255, value)).toString(16).padStart(2, "0")).join("")}`;
   }
   function hexToRgb(hex) {
-    const normalized = String(hex || "").replace("#", "");
-    if (normalized.length !== 6) return [0, 0, 0];
-    return [0, 2, 4].map((index) => parseInt(normalized.slice(index, index + 2), 16));
+    const normalized2 = String(hex || "").replace("#", "");
+    if (normalized2.length !== 6) return [0, 0, 0];
+    return [0, 2, 4].map((index) => parseInt(normalized2.slice(index, index + 2), 16));
   }
   function colorDistance(a, b) {
     return Math.sqrt(
@@ -11532,6 +11722,7 @@ ${guidedQuestion(nextMissing)}`
       logoPalette: arrayValue2(builderState.guidedState.logoPalette),
       colorProvenance,
       logoPreference,
+      logoBrief: builderState.guidedState.logoBrief || "",
       salesFlow: builderState.guidedState.salesFlow || "",
       fieldMeta,
       brand,
@@ -11683,14 +11874,7 @@ ${guidedQuestion(nextMissing)}`
       Object.assign(updates, colorPreferenceUpdate(["cyberpunk", "neon cyan", "magenta", "deep black"]));
     }
     if (wantsAiGeneratedLogo(text)) {
-      updates.aiGeneratedLogoRequested = true;
-      updates.logoPreference = "generate_ai_logo";
-      updates.hasLogoPhotos = langText({
-        en: "Client has no logo and wants LYRA to create a simple brand mark from the business name and style.",
-        es: "El cliente no tiene logo y quiere que LYRA cree una marca simple con el nombre y el estilo.",
-        fr: "Le client n'a pas de logo et veut que LYRA cr\xE9e une marque simple avec le nom et le style.",
-        pt: "O cliente nao tem logo e quer que a LYRA crie uma marca simples com o nome e o estilo."
-      });
+      Object.assign(updates, logoRequestUpdate(text));
     }
     return updates;
   }
@@ -11728,11 +11912,7 @@ ${guidedQuestion(nextMissing)}`
       return hasExistingGuidedValue("contactInfo") ? {} : { contactInfo: parseKeyValueLines(message.includes(":") ? message : `notes: ${message}`) };
     }
     if (step === "hasLogoPhotos" && wantsAiGeneratedLogo(message, { assumeLogoContext: true })) {
-      return {
-        hasLogoPhotos: message,
-        aiGeneratedLogoRequested: true,
-        logoPreference: "generate_ai_logo"
-      };
+      return logoRequestUpdate(message, { assumeLogoContext: true }) || {};
     }
     if (step === "businessName" && isRichIntakeMessage(message) && !extractBusinessName(message)) {
       return {};
@@ -11794,15 +11974,9 @@ ${guidedQuestion(nextMissing)}`
     const salesMode = extractSalesMode(lower);
     if (salesMode && !builderState.guidedState.salesMode) updates.salesMode = salesMode;
     if (/logo|foto|fotos|imagen|imagenes|photo|photos|image|images/.test(lower) && !builderState.guidedState.hasLogoPhotos) {
-      const wantsGeneratedLogo = wantsAiGeneratedLogo(text, { assumeLogoContext: true });
-      if (wantsGeneratedLogo) updates.aiGeneratedLogoRequested = true;
-      if (wantsGeneratedLogo) updates.logoPreference = "generate_ai_logo";
-      updates.hasLogoPhotos = wantsGeneratedLogo ? langText({
-        en: "Client has no logo and wants LYRA to create a simple brand mark from the business name and style.",
-        es: "El cliente no tiene logo y quiere que LYRA cree una marca simple con el nombre y el estilo.",
-        fr: "Le client n'a pas de logo et veut que LYRA cr\xE9e une marque simple avec le nom et le style.",
-        pt: "O cliente nao tem logo e quer que a LYRA crie uma marca simples com o nome e o estilo."
-      }) : langText({
+      const logoUpdate = logoRequestUpdate(text, { assumeLogoContext: true });
+      if (logoUpdate) Object.assign(updates, logoUpdate);
+      else updates.hasLogoPhotos = langText({
         en: "Client mentioned logo/photos",
         es: "El cliente mencion\xF3 logo/fotos",
         fr: "Le client a mentionn\xE9 logo/photos",
@@ -11868,8 +12042,8 @@ ${guidedQuestion(nextMissing)}`
         ["inusual", "unusual products"],
         ["unusual", "unusual products"]
       ];
-      const normalized = normalizeTemplateIntentText(text);
-      const inferred = candidates.filter(([needle]) => normalized.includes(needle)).map(([, label]) => label);
+      const normalized2 = normalizeTemplateIntentText(text);
+      const inferred = candidates.filter(([needle]) => normalized2.includes(needle)).map(([, label]) => label);
       return [...new Set(inferred)].slice(0, 8);
     }
     const productLine = text.match(/(?:l[ií]nea|linea|colecci[oó]n|collection)\s+(?:de|para)\s+([^.;,\n]+)/i)?.[1];
@@ -11910,8 +12084,8 @@ ${guidedQuestion(nextMissing)}`
     const styleHint = extractStyleHint(text);
     const styles = ["elegante", "moderno", "premium", "minimalista", "lujoso", "juvenil", "profesional", "futurista", "cyberpunk", "neon", "ne\xF3n", "oscuro", "dark", "friendly", "modern", "luxury", "minimal", "bold", "clean"];
     const found = styles.filter((style) => new RegExp(`\\b${escapeRegExp(style)}\\b`, "i").test(text));
-    const normalized = [...splitCommaOrLines(styleHint), ...found].map((item) => cleanExtractedPhrase(item.replace(/neón/i, "neon"), 32).toLowerCase()).filter(Boolean);
-    return [...new Set(normalized)].join(", ");
+    const normalized2 = [...splitCommaOrLines(styleHint), ...found].map((item) => cleanExtractedPhrase(item.replace(/neón/i, "neon"), 32).toLowerCase()).filter(Boolean);
+    return [...new Set(normalized2)].join(", ");
   }
   function extractColorsFromText(text) {
     const hexColors = text.match(/#[0-9a-f]{3,8}\b/gi) || [];
@@ -12528,9 +12702,9 @@ ${guidedQuestion(nextMissing)}`
   function isUnsafeHeroHeadline(headline, templateId = "", catalogType = "") {
     const value = String(headline || "").trim();
     if (!value) return true;
-    const normalized = normalizeTemplateIntentText(value);
+    const normalized2 = normalizeTemplateIntentText(value);
     const isEditorialTemplate = /luxury|premium|fashion|editorial|high-ticket|product-store/.test(`${templateId} ${catalogType}`);
-    if (/quiero|necesito|debe|puede|para venderlo|lo que quiero/.test(normalized)) return true;
+    if (/quiero|necesito|debe|puede|para venderlo|lo que quiero/.test(normalized2)) return true;
     if (/\n/.test(value)) return true;
     if (isEditorialTemplate && value.length > 42) return true;
     return value.length > 70;
@@ -12666,6 +12840,14 @@ ${guidedQuestion(nextMissing)}`
       { name: { en: "CyberLamp Ambient Desk Light", es: "Lampara de Escritorio CyberLamp" }, category: { en: "Desk setup", es: "Setup de escritorio" }, price: 59, keyword: "rgb-desk-lamp", description: { en: "Customizable ambient lighting for desks, rooms, and streaming spaces. Adds mood, color, and a strong upsell for tech carts.", es: "Luz ambiental personalizable para escritorios, habitaciones y streaming. Agrega atmosfera, color y mejora el valor del carrito." } },
       { name: { en: "GlowPatch Sticker Pack", es: "Pack de Stickers GlowPatch" }, category: { en: "Collectibles", es: "Coleccionables" }, price: 9.99, keyword: "holographic-sticker-pack", description: { en: "A weatherproof glow-style sticker pack for laptops, bottles, cars, and gifts. Affordable, collectible, and ideal for checkout add-ons.", es: "Pack de stickers estilo glow resistente para laptops, botellas, carros y regalos. Accesible, coleccionable e ideal como add-on." } }
     ],
+    bath_body: [
+      { name: { en: "Handmade Botanical Soap", es: "Jabon Botanico Artesanal" }, category: { en: "Handmade soaps", es: "Jabones artesanales" }, price: 12, keyword: "lavender handmade soap", description: { en: "A small-batch botanical soap with a creamy lather and a clean, gift-ready finish.", es: "Jabon botanico de lote pequeno con espuma cremosa y presentacion lista para regalar." } },
+      { name: { en: "Aromatic Soy Candle", es: "Vela Aromatica de Soya" }, category: { en: "Scented candles", es: "Velas aromaticas" }, price: 18, keyword: "vanilla scented candle", description: { en: "A hand-poured candle made for calm rooms, warm rituals, and thoughtful gifts.", es: "Vela vertida a mano para ambientes tranquilos, rituales calidos y regalos especiales." } },
+      { name: { en: "Rose Bath Bomb", es: "Bomba de Bano de Rosas" }, category: { en: "Bath bombs", es: "Bombas de bano" }, price: 9, keyword: "rose bath bomb", description: { en: "A fragrant bath bomb that turns an everyday soak into a colorful self-care moment.", es: "Bomba de bano aromatica que convierte un bano cotidiano en un momento de autocuidado." } },
+      { name: { en: "Mineral Bath Salt Soak", es: "Sales Minerales de Bano" }, category: { en: "Bath salts", es: "Sales de bano" }, price: 15, keyword: "mineral bath salts", description: { en: "Mineral bath salts blended for a relaxing soak and an easy at-home spa ritual.", es: "Sales minerales mezcladas para un bano relajante y un ritual de spa en casa." } },
+      { name: { en: "Nourishing Body Oil", es: "Aceite Corporal Nutritivo" }, category: { en: "Body care", es: "Cuidado corporal" }, price: 22, keyword: "botanical body oil", description: { en: "A lightweight botanical oil for soft skin and a polished post-bath routine.", es: "Aceite botanico ligero para una piel suave y una rutina cuidada despues del bano." } },
+      { name: { en: "Bath Ritual Gift Set", es: "Set Regalo Ritual de Bano" }, category: { en: "Gift sets", es: "Sets de regalo" }, price: 36, keyword: "handmade soap candle bath gift set", description: { en: "A coordinated soap, candle, and bath set prepared for birthdays and thoughtful gifting.", es: "Set coordinado de jabon, vela y bano preparado para cumpleanos y regalos especiales." } }
+    ],
     beauty: [
       { name: { en: "GlowReset Vitamin C Serum", es: "Serum Vitamina C GlowReset" }, category: { en: "Skincare", es: "Cuidado facial" }, price: 28, keyword: "vitamin-c-serum", description: { en: "A brightening serum positioned for daily routines and visible glow. Strong for educational product pages and subscription bundles.", es: "Serum iluminador para rutinas diarias y brillo visible. Ideal para paginas educativas de producto y combos de suscripcion." } },
       { name: { en: "HydraCloud Moisture Cream", es: "Crema Hidratante HydraCloud" }, category: { en: "Moisturizers", es: "Hidratantes" }, price: 32.5, keyword: "moisturizing-face-cream", description: { en: "A rich but lightweight moisturizer for soft skin and simple routine building. Easy to pair with cleansers, serums, and bundles.", es: "Hidratante rica pero ligera para piel suave y rutina simple. Facil de combinar con limpiadores, serums y kits." } },
@@ -12762,7 +12944,8 @@ ${guidedQuestion(nextMissing)}`
     if (textSuggestsJewelryAccessoryStore(text)) return "jewelry";
     if (/parachoques|bumper|4x4|off road|off-road|auto parts|repuestos|automotriz|camioneta|truck|motos?|car accessories/.test(text)) return "auto";
     if (/ropa|fashion|moda|streetwear|sneaker|zapato|camiseta|clothing|apparel|boutique/.test(text)) return "fashion";
-    if (/beauty|belleza|skincare|cosmet|maquillaje|spa|bath|bano|baño|jabon|jabón|soap|vela|velas|candle|personal care|cuidado personal/.test(text)) return "beauty";
+    if (isBathBodyCatalogContext(text)) return "bath_body";
+    if (/beauty|belleza|skincare|cosmet|maquillaje|spa|personal care|cuidado personal/.test(text)) return "beauty";
     if (/decor|hogar|home|furniture|muebles|interior|lampara|casa/.test(text)) return "home";
     if (/tech|tecnologia|gadget|electron|gaming|usb|phone|laptop|anime|juguete|toy|curioso|raro|inusual|cyberpunk/.test(text)) return "tech";
     if (/luxury|lujo|premium|exclusive|exclusivo|alta gama|private|privado/.test(text)) return "default";
@@ -12860,13 +13043,13 @@ ${guidedQuestion(nextMissing)}`
   function isWeakSeedCopy(value, payload = {}) {
     const text = String(value || "").trim();
     if (!text) return true;
-    const normalized = normalizeTemplateIntentText(text);
+    const normalized2 = normalizeTemplateIntentText(text);
     const raw = normalizeTemplateIntentText([
       payload.business_description,
       arrayValue2(payload.services_products).join(" "),
       payload.target_audience
     ].join(" "));
-    return isGenericText(text) || /lorem|placeholder|your business|your site|producto 1|product 1|price to be set|editable product/i.test(text) || text.length > 260 || raw && normalized.length > 60 && raw.includes(normalized.slice(0, 60));
+    return isGenericText(text) || /lorem|placeholder|your business|your site|producto 1|product 1|price to be set|editable product/i.test(text) || text.length > 260 || raw && normalized2.length > 60 && raw.includes(normalized2.slice(0, 60));
   }
   function semanticSeedCopyKit(profileKey = "default", businessName = "Kreaton Store", language = builderState.selectedLanguage, templateText = "") {
     const name = cleanShortText(businessName, 48);
@@ -16353,7 +16536,7 @@ ${guidedQuestion(nextMissing)}`
     return pages;
   }
   function marketplaceCategoryForIndex(index, copy, contextText = "", language = builderState.selectedLanguage) {
-    const normalized = normalizeTemplateIntentText(contextText);
+    const normalized2 = normalizeTemplateIntentText(contextText);
     const localized = {
       en: {
         jewelry: ["Necklaces", "Bracelets", "Earrings", "Custom pieces", "Gift sets", "New arrivals"],
@@ -16378,11 +16561,11 @@ ${guidedQuestion(nextMissing)}`
     };
     const set = localized[language] || localized.en;
     let categories = copy.marketplaceCategories || ["Featured", "Deals", "New", "Popular"];
-    if (textSuggestsJewelryAccessoryStore(normalized)) {
+    if (textSuggestsJewelryAccessoryStore(normalized2)) {
       categories = set.jewelry;
-    } else if (/ropa|moda|fashion|camisa|zapato|sneaker|clothing|apparel|streetwear|lookbook/.test(normalized)) {
+    } else if (/ropa|moda|fashion|camisa|zapato|sneaker|clothing|apparel|streetwear|lookbook/.test(normalized2)) {
       categories = set.fashion;
-    } else if (/carro|auto|automotriz|anime|gadget|juguete|regalo|raro|curioso|hogar|home|gift|collectible|variedad|varied|variado/.test(normalized)) {
+    } else if (/carro|auto|automotriz|anime|gadget|juguete|regalo|raro|curioso|hogar|home|gift|collectible|variedad|varied|variado/.test(normalized2)) {
       categories = set.variety;
     }
     return categories[index % categories.length];
@@ -18122,6 +18305,7 @@ Site ID: ${builderState.currentSiteId}`
       brandStyle: generationPreferredTone,
       contact_info: contactInfo,
       logoPreference: logoPreferenceValue,
+      logoBrief: validatedGuidedPayload?.logoBrief || builderState.guidedState.logoBrief || "",
       fieldMeta: validatedGuidedPayload?.fieldMeta || fieldMeta,
       intakeFollowupAnswer,
       salesFlow: resolvedSalesFlow,

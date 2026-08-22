@@ -35,6 +35,7 @@ export function createEmptyGuidedState(language = detectBrowserLanguage()) {
     salesMode: "",
     salesFlow: "",
     hasLogoPhotos: "",
+    logoBrief: "",
     aiGeneratedLogoRequested: false,
     logoPreference: "",
     sectionsPreference: "",
