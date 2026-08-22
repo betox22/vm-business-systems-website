@@ -29,6 +29,7 @@ import {
 import { hasStudioAccountSession, openStudioAuthGate } from './auth.js';
 import { assistantVisibleCopy } from './chat.js';
 import { keepEssentialSections } from './section-policy.js';
+import { naturalBusinessSummary } from './client-summary-policy.js';
 export { keepEssentialSections } from './section-policy.js';
 import {
   adjustGeneratedDraftWithLuma,
@@ -452,38 +453,38 @@ export function renderBrandKit(brand = builderState.guidedState.brand) {
 export function renderGuidedBriefReview() {
   if (!guidedBriefReview) return;
   syncTemplateSelectionFromGuidedContext();
-  const offer = meaningfulOfferItems(builderState.guidedState.servicesProducts).slice(0, 3).join(", ");
-  const summary = [
-    builderState.guidedState.businessName,
-    builderState.guidedState.industry,
-    builderState.guidedState.location,
-    builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
-    offer,
-  ].filter(Boolean);
+  const summary = naturalBusinessSummary({
+    language: builderState.selectedLanguage,
+    businessName: builderState.guidedState.businessName,
+    industry: builderState.guidedState.industry,
+    location: builderState.guidedState.location,
+    salesFlow: builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
+    offers: meaningfulOfferItems(builderState.guidedState.servicesProducts),
+  });
   guidedBriefReview.innerHTML = `
     <section class="business-review-summary">
       <strong>${escapeHtml(langText({ en: "What we understand about your business", es: "Esto entendimos de tu negocio", fr: "Ce que nous avons compris de votre entreprise", pt: "O que entendemos sobre seu negócio" }))}</strong>
-      <p>${escapeHtml(summary.join(" · ") || langText({ en: "Add a few details and LYRA will prepare your draft.", es: "Agrega algunos detalles y LYRA preparará tu borrador.", fr: "Ajoutez quelques détails et LYRA préparera votre brouillon.", pt: "Adicione alguns detalhes e a LYRA preparará seu rascunho." }))}</p>
+      <p>${escapeHtml(summary || langText({ en: "Add a few details and LYRA will prepare your draft.", es: "Agrega algunos detalles y LYRA preparará tu borrador.", fr: "Ajoutez quelques détails et LYRA préparera votre brouillon.", pt: "Adicione alguns detalhes e a LYRA preparará seu rascunho." }))}</p>
     </section>
   `;
 }
 
 export function renderLumaReadyCard() {
-  const offer = meaningfulOfferItems(builderState.guidedState.servicesProducts).slice(0, 3).join(", ");
-  const summary = [
-    builderState.guidedState.businessName,
-    builderState.guidedState.industry,
-    builderState.guidedState.location,
-    builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
-    offer,
-  ].filter(Boolean);
+  const summary = naturalBusinessSummary({
+    language: builderState.selectedLanguage,
+    businessName: builderState.guidedState.businessName,
+    industry: builderState.guidedState.industry,
+    location: builderState.guidedState.location,
+    salesFlow: builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
+    offers: meaningfulOfferItems(builderState.guidedState.servicesProducts),
+  });
   const card = document.createElement("section");
   card.className = "luma-ready-card";
   card.innerHTML = `
     <div class="luma-ready-head">
       <strong>${escapeHtml(langText({ en: "This is what I understand about your business", es: "Esto entendimos de tu negocio", fr: "Voici ce que j'ai compris de votre entreprise", pt: "Isto é o que entendi sobre seu negócio" }))}</strong>
     </div>
-    <p>${escapeHtml(summary.join(" · "))}</p>
+    <p>${escapeHtml(summary)}</p>
     <div class="luma-ready-actions">
       <button type="button" data-chat-generate>${escapeHtml(langText({ en: "Generate my website", es: "Generar mi web", fr: "Générer mon site", pt: "Gerar meu site" }))}</button>
       <button type="button" data-chat-review>${escapeHtml(langText({ en: "Correct something", es: "Corregir algo", fr: "Corriger quelque chose", pt: "Corrigir algo" }))}</button>
@@ -575,15 +576,16 @@ export function domainStatusLabel(item) {
 export function compactCollectedPreview() {
   const templateMeta = templatePreviewMeta(builderState.forcedTemplateSelection?.templateId || builderState.guidedState.sitePlan?.templateId || "");
   const humanTemplate = localizedTemplateName(templateMeta);
-  const parts = [
-    builderState.guidedState.businessName,
-    humanTemplate,
-    builderState.guidedState.industry,
-    builderState.guidedState.location,
-    arrayValue(builderState.guidedState.servicesProducts).slice(0, 2).join(", "),
-  ].filter(Boolean);
-  return parts.length
-    ? parts.join(" · ")
+  const summary = naturalBusinessSummary({
+    language: builderState.selectedLanguage,
+    businessName: builderState.guidedState.businessName,
+    industry: builderState.guidedState.industry,
+    location: builderState.guidedState.location,
+    salesFlow: builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
+    offers: arrayValue(builderState.guidedState.servicesProducts).slice(0, 2),
+  });
+  return builderState.guidedState.businessName || builderState.guidedState.industry
+    ? `${summary}${humanTemplate ? ` ${langText({ en: `LYRA selected ${humanTemplate} as the visual base.`, es: `LYRA eligió ${humanTemplate} como base visual.`, fr: `LYRA a choisi ${humanTemplate} comme base visuelle.`, pt: `A LYRA escolheu ${humanTemplate} como base visual.` })}` : ""}`
     : langText({
         en: "LYRA is collecting the essentials.",
         es: "LYRA está reuniendo lo esencial.",

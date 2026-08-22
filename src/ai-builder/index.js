@@ -53,7 +53,8 @@ import { isMegaRetailTemplate, megaRetailFeatureFlags } from './mega-retail-poli
 import { hasDecidedTemplateSelection, isConcreteTemplateId } from './template-carousel-policy.js';
 import { constructionPreviewModel } from './construction-preview-policy.js';
 import { logoRequestUpdate, wantsAiGeneratedLogo } from './logo-intent-policy.js';
-import { isBathBodyCatalogContext } from './catalog-preview-policy.js';
+import { bathBodyCategoryLabel, bathBodyStockImageUrl, isBathBodyCatalogContext, shouldExpandInstantCatalog } from './catalog-preview-policy.js';
+import { applyInstantPreviewPaletteToBrand, semanticInstantPreviewPalette } from './instant-preview-theme-policy.js';
 import {
   advanceClientProjectSessionEpoch,
   clearClientProjectRuntimeState,
@@ -7686,7 +7687,13 @@ function sanitizePublicProductList(products = [], payload = {}, copy = {}, langu
     .map((item) => cleanPublicItemLabel(item))
     .filter(Boolean)
     .slice(0, 8);
-  if (sourceSuggestsBroadMarketplace || usesMarketplaceTemplate || usesMegaRetailTemplate) {
+  const expandCatalog = shouldExpandInstantCatalog({
+    items: cleaned,
+    sourceIsBroad: sourceSuggestsBroadMarketplace,
+    templateIsBroad: usesMarketplaceTemplate || usesMegaRetailTemplate,
+  });
+  if (!expandCatalog && cleaned.length >= 2) return cleaned;
+  if (expandCatalog) {
     const inferred = inferredPublicCatalogLabels({ text: sourceText, language });
     return [
       ...new Set([
@@ -7696,7 +7703,6 @@ function sanitizePublicProductList(products = [], payload = {}, copy = {}, langu
       ]),
     ].slice(0, 12);
   }
-  if (cleaned.length >= 2 && !sourceSuggestsBroadMarketplace) return cleaned;
   const inferred = inferredPublicCatalogLabels({
     text: sourceText,
     language,
@@ -7888,7 +7894,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     template.id,
     catalogType,
   ].join(" ");
-  const brand = normalizeBrand(payload.brand || createBrandSystem({
+  const baseBrand = normalizeBrand(payload.brand || createBrandSystem({
     logoUrl: payload.assets?.find((asset) => asset.asset_type === "logo")?.url || "",
     extractedColors: payload.logoPalette,
     preferredColors: payload.preferred_colors,
@@ -7896,13 +7902,15 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     industry: payload.industry,
     tone: payload.preferred_tone,
   }));
+  const previewPalette = semanticInstantPreviewPalette(payload.preferred_colors);
+  const brand = applyInstantPreviewPaletteToBrand(baseBrand, previewPalette);
   const colors = brandToThemeColors(brand);
   const catalogItems = products.map((item, index) => ({
     id: `instant_${index + 1}`,
     sku: `SKU-${index + 1}`,
     name: item,
     description: copy.itemDescription(name),
-    category: marketplaceCategoryForIndex(index, copy, categoryContext, language),
+    category: marketplaceCategoryForIndex(index, copy, categoryContext, language, item),
     rating: (4.3 + ((index % 5) * 0.12)).toFixed(1),
     review_count: 42 + index * 31,
     shipping_label: index % 2 === 0 ? copy.fastDelivery : copy.freeShipping,
@@ -7914,7 +7922,7 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     button_label: isOnlineShop ? copy.viewProduct : copy.request,
     inventory_quantity: (isMarketplaceTemplate || isMegaRetailTemplate) ? 24 + index * 3 : "",
     track_inventory: isOnlineShop,
-    image_url: "",
+    image_url: bathBodyStockImageUrl(item),
     is_active: true,
     is_featured: index < 3,
     offer_type: textSuggestsCourseOffering(item) ? "course" : "product",
@@ -10066,8 +10074,10 @@ function buildMarketplaceInstantPages(copy, name, description, payload = {}) {
   return pages;
 }
 
-function marketplaceCategoryForIndex(index, copy, contextText = "", language = builderState.selectedLanguage) {
+function marketplaceCategoryForIndex(index, copy, contextText = "", language = builderState.selectedLanguage, item = "") {
   const normalized = normalizeTemplateIntentText(contextText);
+  const bathCategory = bathBodyCategoryLabel(item, language);
+  if (bathCategory) return bathCategory;
   const localized = {
     en: {
       jewelry: ["Necklaces", "Bracelets", "Earrings", "Custom pieces", "Gift sets", "New arrivals"],

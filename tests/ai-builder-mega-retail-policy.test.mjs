@@ -4,9 +4,21 @@ import test from "node:test";
 import {
   isMegaRetailTemplate,
   megaRetailFeatureFlags,
+  megaRetailStockImage,
   megaRetailWhatsAppUrl,
   resolveMegaRetailTileMedia,
 } from "../src/ai-builder/mega-retail-policy.js";
+
+test("bath departments use bath-specific media instead of the generic OPEN storefront", () => {
+  assert.match(megaRetailStockImage("Bath bombs"), /1540555700478/);
+  assert.match(megaRetailStockImage("Artisan soaps"), /1663108275588/);
+  assert.match(megaRetailStockImage("Scented candles"), /1742544637816/);
+  const protectedBathBomb = resolveMegaRetailTileMedia({
+    category: "Bombas de bano",
+    categoryImage: "https://images.unsplash.com/photo-1472851294608-062f824d29cc",
+  });
+  assert.match(protectedBathBomb.url, /1540555700478/);
+});
 
 test("mega retail tile images prioritize client photos over brand treatment and stock", () => {
   const client = resolveMegaRetailTileMedia({ clientPhotoUrls: ["https://client.example/real.jpg"], categoryImage: "https://stock.example/category.jpg", hasBrandVisual: true });

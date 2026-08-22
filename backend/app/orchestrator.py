@@ -373,15 +373,15 @@ def assistant_message_for_state(state: ProjectState) -> str:
     if state.selectedLanguage == "es":
         if state.missingImportantFields:
             return f"Ya organicé lo que entendí y estoy usando {template} como base. Falta un dato clave antes de generar."
-        return f"Listo. Para {name}, la mejor base es {template}. Voy a usar tu información como estrategia y crear copy público profesional, no copiar tus notas."
+        return f"Listo. Para {name}, elegí {template} como punto de partida. Ahora voy a adaptar el diseño y el contenido para que se sientan propios de tu negocio."
     if state.selectedLanguage == "fr":
         if state.missingImportantFields:
             return f"J'ai organisé ce que j'ai compris et j'utilise {template} comme base. Il manque une information clé."
-        return f"Parfait. Pour {name}, la meilleure base est {template}. Je vais créer un contenu public professionnel sans copier vos notes."
+        return f"Parfait. Pour {name}, j'ai choisi {template} comme point de départ. Je vais maintenant adapter le design et le contenu à votre entreprise."
     if state.selectedLanguage == "pt":
         if state.missingImportantFields:
             return f"Organizei o que entendi e estou usando {template} como base. Falta uma informação importante."
-        return f"Pronto. Para {name}, a melhor base é {template}. Vou criar textos profissionais sem copiar suas notas."
+        return f"Pronto. Para {name}, escolhi {template} como ponto de partida. Agora vou adaptar o design e o conteúdo ao seu negócio."
     if state.missingImportantFields:
         return f"I organized the intake and selected {template} as the base. One important detail is still missing."
-    return f"Ready. For {name}, the best base is {template}. I will use your intake as strategy and write polished public copy."
+    return f"Ready. For {name}, I chose {template} as the starting point. Now I'll tailor the design and content to feel specific to your business."

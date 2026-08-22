@@ -1292,6 +1292,47 @@
     return merged.slice(0, 6);
   }
 
+  // src/ai-builder/catalog-preview-policy.js
+  function normalized(value) {
+    return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+  function isBathBodyCatalogContext(value) {
+    const text = normalized(value);
+    return /\b(jabon|jabones|soaps?|bath bombs?|bombas? de bano|vela|velas|candle|candles|sales de bano|bath salts|body oil|aceite corporal)\b/.test(text);
+  }
+  function bathBodyStockImageUrl(value) {
+    const text = normalized(value);
+    if (/\b(vela|velas|candle|candles)\b/.test(text)) {
+      return "https://images.unsplash.com/photo-1742544637816-44a0e7f016c6?auto=format&fit=crop&w=900&q=82";
+    }
+    if (/\b(bath bombs?|bombas? de bano)\b/.test(text)) {
+      return "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=900&q=82";
+    }
+    if (/\b(jabon|jabones|soaps?)\b/.test(text)) {
+      return "https://images.unsplash.com/photo-1663108275588-f39db09701e1?auto=format&fit=crop&w=900&q=82";
+    }
+    return "";
+  }
+  function bathBodyCategoryLabel(value, language = "en") {
+    const text = normalized(value);
+    const labels = {
+      en: { soap: "Artisan soaps", candle: "Scented candles", bathBomb: "Bath bombs", bath: "Bath essentials" },
+      es: { soap: "Jabones artesanales", candle: "Velas arom\xE1ticas", bathBomb: "Bombas de ba\xF1o", bath: "Cuidado para el ba\xF1o" },
+      fr: { soap: "Savons artisanaux", candle: "Bougies parfumees", bathBomb: "Bombes de bain", bath: "Essentiels pour le bain" },
+      pt: { soap: "Sabonetes artesanais", candle: "Velas aromaticas", bathBomb: "Bombas de banho", bath: "Cuidados para o banho" }
+    };
+    const copy = labels[language] || labels.en;
+    if (/\b(vela|velas|candle|candles)\b/.test(text)) return copy.candle;
+    if (/\b(bath bombs?|bombas? de bano)\b/.test(text)) return copy.bathBomb;
+    if (/\b(jabon|jabones|soaps?)\b/.test(text)) return copy.soap;
+    return isBathBodyCatalogContext(text) ? copy.bath : "";
+  }
+  function shouldExpandInstantCatalog({ items = [], sourceIsBroad = false, templateIsBroad = false } = {}) {
+    const concreteItems = (Array.isArray(items) ? items : []).filter((item) => String(item || "").trim());
+    if (concreteItems.length >= 2 && !sourceIsBroad) return false;
+    return Boolean(sourceIsBroad || templateIsBroad);
+  }
+
   // src/ai-builder/mega-retail-policy.js
   var STOCK_BY_CATEGORY = [
     [/fashion|moda|ropa|style/, "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1400&q=84"],
@@ -1305,8 +1346,10 @@
     return String(templateId || "") === "mega-retail-store";
   }
   function megaRetailStockImage(category = "") {
-    const normalized2 = String(category).toLowerCase();
-    return (STOCK_BY_CATEGORY.find(([pattern]) => pattern.test(normalized2)) || [
+    const normalized3 = String(category).toLowerCase();
+    const bathBodyImage = bathBodyStockImageUrl(normalized3);
+    if (bathBodyImage) return bathBodyImage;
+    return (STOCK_BY_CATEGORY.find(([pattern]) => pattern.test(normalized3)) || [
       null,
       "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1400&q=84"
     ])[1];
@@ -1316,8 +1359,9 @@
     if (photos.length) {
       return { url: photos[tileIndex % photos.length], source: "client_photo", duotone: false };
     }
+    const bathBodyImage = bathBodyStockImageUrl(category);
     return {
-      url: String(categoryImage || "").trim() || megaRetailStockImage(category),
+      url: bathBodyImage || String(categoryImage || "").trim() || megaRetailStockImage(category),
       source: hasBrandVisual ? "brand_duotone" : "stock_category",
       duotone: Boolean(hasBrandVisual)
     };
@@ -1429,26 +1473,35 @@
     };
   }
 
-  // src/ai-builder/catalog-preview-policy.js
-  function normalized(value) {
+  // src/ai-builder/instant-preview-theme-policy.js
+  function normalized2(value) {
     return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   }
-  function isBathBodyCatalogContext(value) {
-    const text = normalized(value);
-    return /\b(jabon|jabones|soap|bath bomb|bombas? de bano|vela|velas|candle|candles|sales de bano|bath salts|body oil|aceite corporal)\b/.test(text);
+  function semanticInstantPreviewPalette(preferredColors = []) {
+    const preference = normalized2(Array.isArray(preferredColors) ? preferredColors.join(" ") : preferredColors);
+    if (!preference) return null;
+    if (!/\b(bano|banos|tina|tinas|bath|tub|agua|water|acuatico|aquatic|mar|ocean)\b/.test(preference)) return null;
+    return {
+      background: "#f3fbfc",
+      surface: "#ffffff",
+      primary: "#176b87",
+      secondary: "#bfe5e9",
+      accent: "#46b6c7",
+      text: "#102a36"
+    };
   }
-  function bathBodyStockImageUrl(value) {
-    const text = normalized(value);
-    if (/\b(vela|velas|candle|candles)\b/.test(text)) {
-      return "https://images.unsplash.com/photo-1742544637816-44a0e7f016c6?auto=format&fit=crop&w=900&q=82";
-    }
-    if (/\b(bath bomb|bombas? de bano)\b/.test(text)) {
-      return "https://images.unsplash.com/photo-1777748219969-eb14767165f4?auto=format&fit=crop&w=900&q=82";
-    }
-    if (/\b(jabon|jabones|soap)\b/.test(text)) {
-      return "https://images.unsplash.com/photo-1663108275588-f39db09701e1?auto=format&fit=crop&w=900&q=82";
-    }
-    return "";
+  function applyInstantPreviewPaletteToBrand(brand = {}, palette = null) {
+    if (!palette) return brand;
+    return {
+      ...brand,
+      primaryColor: palette.primary,
+      secondaryColor: palette.secondary,
+      accentColor: palette.accent,
+      backgroundColor: palette.background,
+      textColor: palette.text,
+      buttonColor: palette.primary,
+      buttonTextColor: "#ffffff"
+    };
   }
 
   // src/ai-builder/client-project-start-policy.js
@@ -1718,8 +1771,8 @@
     return { heading: heading || "Inter", body: body || heading || "Inter" };
   }
   function hexToRgbForTheme(hex) {
-    const clean = String(hex || "").replace("#", "");
-    const full = clean.length === 3 ? clean.split("").map((char) => char + char).join("") : clean.padEnd(6, "0").slice(0, 6);
+    const clean2 = String(hex || "").replace("#", "");
+    const full = clean2.length === 3 ? clean2.split("").map((char) => char + char).join("") : clean2.padEnd(6, "0").slice(0, 6);
     const int = Number.parseInt(full, 16);
     if (Number.isNaN(int)) return [16, 24, 40];
     return [int >> 16 & 255, int >> 8 & 255, int & 255];
@@ -5126,7 +5179,7 @@
     if (!raw) return fallback;
     if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(raw)) return raw;
     if (/^(rgb|hsl)a?\(/i.test(raw)) return raw;
-    const normalized2 = raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const normalized3 = raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const palettes = [
       [["negro", "black", "oscuro", "noir"], "#111111"],
       [["dorado", "gold", "oro"], "#C89B3C"],
@@ -5145,14 +5198,14 @@
       [["minimalista", "minimal", "limpio"], "#F8FAFC"],
       [["lujo", "luxury", "premium"], "#14110F"]
     ];
-    const match = palettes.find(([words]) => words.some((word) => normalized2.includes(word)));
+    const match = palettes.find(([words]) => words.some((word) => normalized3.includes(word)));
     return match ? match[1] : fallback;
   }
 
   // src/ai-builder/state.js
   function normalizeBrowserLanguage(input) {
-    const normalized2 = String(input || "en").trim().toLowerCase();
-    const base = normalized2.split("-")[0];
+    const normalized3 = String(input || "en").trim().toLowerCase();
+    const base = normalized3.split("-")[0];
     return SUPPORTED_LANGUAGES.includes(base) ? base : "en";
   }
   function detectBrowserLanguage() {
@@ -7082,8 +7135,8 @@
       const backendMissing = missingGuidedSteps();
       if (backendMissing.length) return backendMissing[0];
     }
-    const normalized2 = normalizeNextGuidedStep(step);
-    if (normalized2 !== "review") return normalized2;
+    const normalized3 = normalizeNextGuidedStep(step);
+    if (normalized3 !== "review") return normalized3;
     const requiredMissing = REQUIRED_GUIDED_STEPS.filter((item) => !isGuidedStepAnswered(item));
     if (requiredMissing.length) return requiredMissing[0];
     if (!hasEnoughContextForTemplatePreview()) return nextSmartGuidedStep("websiteIntent");
@@ -7431,6 +7484,66 @@ ${cleanQuestion}`;
     return selected;
   }
 
+  // src/ai-builder/client-summary-policy.js
+  function clean(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+  function naturalList(items, language) {
+    const cleanItems = (Array.isArray(items) ? items : []).map(clean).filter(Boolean).slice(0, 3);
+    if (!cleanItems.length) return "";
+    try {
+      return new Intl.ListFormat(language || "en", { style: "long", type: "conjunction" }).format(cleanItems);
+    } catch {
+      return cleanItems.join(", ");
+    }
+  }
+  var SALES_COPY = {
+    en: { online_sales: "sell online", quote_request: "receive quote requests", booking: "accept bookings", lead_capture: "connect with new customers", informational: "present the business clearly" },
+    es: { online_sales: "vender en l\xEDnea", quote_request: "recibir solicitudes de cotizaci\xF3n", booking: "aceptar reservas", lead_capture: "conectar con nuevos clientes", informational: "presentar el negocio con claridad" },
+    fr: { online_sales: "vendre en ligne", quote_request: "recevoir des demandes de devis", booking: "accepter des reservations", lead_capture: "attirer de nouveaux clients", informational: "presenter clairement l'entreprise" },
+    pt: { online_sales: "vender online", quote_request: "receber pedidos de orcamento", booking: "aceitar reservas", lead_capture: "conectar-se com novos clientes", informational: "apresentar o negocio com clareza" }
+  };
+  function naturalBusinessSummary({ language = "en", businessName = "", industry = "", location = "", salesFlow = "", offers = [] } = {}) {
+    const name = clean(businessName);
+    const offerList = naturalList(offers, language);
+    const sales = (SALES_COPY[language] || SALES_COPY.en)[clean(salesFlow)] || "";
+    const place = clean(location);
+    const sector = clean(industry).replace(/_/g, " ");
+    const copy = {
+      en: {
+        intro: name ? `I understand that ${name}` : "I understand that your business",
+        offers: offerList ? ` offers ${offerList}` : sector ? ` works in ${sector}` : " is taking shape",
+        sales: sales ? ` and will ${sales}` : "",
+        location: place ? ` from ${place}` : ""
+      },
+      es: {
+        intro: name ? `Entend\xED que ${name}` : "Entend\xED que tu negocio",
+        offers: offerList ? ` ofrece ${offerList}` : sector ? ` pertenece al sector ${sector}` : " ya est\xE1 tomando forma",
+        sales: sales ? ` y busca ${sales}` : "",
+        location: place ? ` desde ${place}` : ""
+      },
+      fr: {
+        intro: name ? `J'ai compris que ${name}` : "J'ai compris que votre entreprise",
+        offers: offerList ? ` propose ${offerList}` : sector ? ` travaille dans le secteur ${sector}` : " prend forme",
+        sales: sales ? ` et souhaite ${sales}` : "",
+        location: place ? ` depuis ${place}` : ""
+      },
+      pt: {
+        intro: name ? `Entendi que ${name}` : "Entendi que seu negocio",
+        offers: offerList ? ` oferece ${offerList}` : sector ? ` atua no setor ${sector}` : " ja esta tomando forma",
+        sales: sales ? ` e pretende ${sales}` : "",
+        location: place ? ` a partir de ${place}` : ""
+      }
+    }[language] || null;
+    const selected = copy || {
+      intro: name ? `I understand that ${name}` : "I understand that your business",
+      offers: offerList ? ` offers ${offerList}` : sector ? ` works in ${sector}` : " is taking shape",
+      sales: sales ? ` and will ${sales}` : "",
+      location: place ? ` from ${place}` : ""
+    };
+    return `${selected.intro}${selected.offers}${selected.sales}${selected.location}.`;
+  }
+
   // src/ai-builder/editor.js
   function ensureLiveSitePreviewCard() {
     if (!builderState.liveSitePreviewCard) {
@@ -7768,37 +7881,37 @@ ${cleanQuestion}`;
   function renderGuidedBriefReview() {
     if (!guidedBriefReview) return;
     syncTemplateSelectionFromGuidedContext();
-    const offer = meaningfulOfferItems(builderState.guidedState.servicesProducts).slice(0, 3).join(", ");
-    const summary = [
-      builderState.guidedState.businessName,
-      builderState.guidedState.industry,
-      builderState.guidedState.location,
-      builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
-      offer
-    ].filter(Boolean);
+    const summary = naturalBusinessSummary({
+      language: builderState.selectedLanguage,
+      businessName: builderState.guidedState.businessName,
+      industry: builderState.guidedState.industry,
+      location: builderState.guidedState.location,
+      salesFlow: builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
+      offers: meaningfulOfferItems(builderState.guidedState.servicesProducts)
+    });
     guidedBriefReview.innerHTML = `
     <section class="business-review-summary">
       <strong>${escapeHtml(langText({ en: "What we understand about your business", es: "Esto entendimos de tu negocio", fr: "Ce que nous avons compris de votre entreprise", pt: "O que entendemos sobre seu neg\xF3cio" }))}</strong>
-      <p>${escapeHtml(summary.join(" \xB7 ") || langText({ en: "Add a few details and LYRA will prepare your draft.", es: "Agrega algunos detalles y LYRA preparar\xE1 tu borrador.", fr: "Ajoutez quelques d\xE9tails et LYRA pr\xE9parera votre brouillon.", pt: "Adicione alguns detalhes e a LYRA preparar\xE1 seu rascunho." }))}</p>
+      <p>${escapeHtml(summary || langText({ en: "Add a few details and LYRA will prepare your draft.", es: "Agrega algunos detalles y LYRA preparar\xE1 tu borrador.", fr: "Ajoutez quelques d\xE9tails et LYRA pr\xE9parera votre brouillon.", pt: "Adicione alguns detalhes e a LYRA preparar\xE1 seu rascunho." }))}</p>
     </section>
   `;
   }
   function renderLumaReadyCard() {
-    const offer = meaningfulOfferItems(builderState.guidedState.servicesProducts).slice(0, 3).join(", ");
-    const summary = [
-      builderState.guidedState.businessName,
-      builderState.guidedState.industry,
-      builderState.guidedState.location,
-      builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
-      offer
-    ].filter(Boolean);
+    const summary = naturalBusinessSummary({
+      language: builderState.selectedLanguage,
+      businessName: builderState.guidedState.businessName,
+      industry: builderState.guidedState.industry,
+      location: builderState.guidedState.location,
+      salesFlow: builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
+      offers: meaningfulOfferItems(builderState.guidedState.servicesProducts)
+    });
     const card = document.createElement("section");
     card.className = "luma-ready-card";
     card.innerHTML = `
     <div class="luma-ready-head">
       <strong>${escapeHtml(langText({ en: "This is what I understand about your business", es: "Esto entendimos de tu negocio", fr: "Voici ce que j'ai compris de votre entreprise", pt: "Isto \xE9 o que entendi sobre seu neg\xF3cio" }))}</strong>
     </div>
-    <p>${escapeHtml(summary.join(" \xB7 "))}</p>
+    <p>${escapeHtml(summary)}</p>
     <div class="luma-ready-actions">
       <button type="button" data-chat-generate>${escapeHtml(langText({ en: "Generate my website", es: "Generar mi web", fr: "G\xE9n\xE9rer mon site", pt: "Gerar meu site" }))}</button>
       <button type="button" data-chat-review>${escapeHtml(langText({ en: "Correct something", es: "Corregir algo", fr: "Corriger quelque chose", pt: "Corrigir algo" }))}</button>
@@ -7883,14 +7996,15 @@ ${cleanQuestion}`;
   function compactCollectedPreview() {
     const templateMeta = templatePreviewMeta(builderState.forcedTemplateSelection?.templateId || builderState.guidedState.sitePlan?.templateId || "");
     const humanTemplate = localizedTemplateName(templateMeta);
-    const parts = [
-      builderState.guidedState.businessName,
-      humanTemplate,
-      builderState.guidedState.industry,
-      builderState.guidedState.location,
-      arrayValue2(builderState.guidedState.servicesProducts).slice(0, 2).join(", ")
-    ].filter(Boolean);
-    return parts.length ? parts.join(" \xB7 ") : langText({
+    const summary = naturalBusinessSummary({
+      language: builderState.selectedLanguage,
+      businessName: builderState.guidedState.businessName,
+      industry: builderState.guidedState.industry,
+      location: builderState.guidedState.location,
+      salesFlow: builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
+      offers: arrayValue2(builderState.guidedState.servicesProducts).slice(0, 2)
+    });
+    return builderState.guidedState.businessName || builderState.guidedState.industry ? `${summary}${humanTemplate ? ` ${langText({ en: `LYRA selected ${humanTemplate} as the visual base.`, es: `LYRA eligi\xF3 ${humanTemplate} como base visual.`, fr: `LYRA a choisi ${humanTemplate} comme base visuelle.`, pt: `A LYRA escolheu ${humanTemplate} como base visual.` })}` : ""}` : langText({
       en: "LYRA is collecting the essentials.",
       es: "LYRA est\xE1 reuniendo lo esencial.",
       fr: "LYRA collecte l'essentiel.",
@@ -11122,9 +11236,9 @@ ${langText({
     return `#${[r, g, b].map((value) => Math.max(0, Math.min(255, value)).toString(16).padStart(2, "0")).join("")}`;
   }
   function hexToRgb(hex) {
-    const normalized2 = String(hex || "").replace("#", "");
-    if (normalized2.length !== 6) return [0, 0, 0];
-    return [0, 2, 4].map((index) => parseInt(normalized2.slice(index, index + 2), 16));
+    const normalized3 = String(hex || "").replace("#", "");
+    if (normalized3.length !== 6) return [0, 0, 0];
+    return [0, 2, 4].map((index) => parseInt(normalized3.slice(index, index + 2), 16));
   }
   function colorDistance(a, b) {
     return Math.sqrt(
@@ -12084,8 +12198,8 @@ ${guidedQuestion(nextMissing)}`
         ["inusual", "unusual products"],
         ["unusual", "unusual products"]
       ];
-      const normalized2 = normalizeTemplateIntentText(text);
-      const inferred = candidates.filter(([needle]) => normalized2.includes(needle)).map(([, label]) => label);
+      const normalized3 = normalizeTemplateIntentText(text);
+      const inferred = candidates.filter(([needle]) => normalized3.includes(needle)).map(([, label]) => label);
       return [...new Set(inferred)].slice(0, 8);
     }
     const productLine = text.match(/(?:l[ií]nea|linea|colecci[oó]n|collection)\s+(?:de|para)\s+([^.;,\n]+)/i)?.[1];
@@ -12126,8 +12240,8 @@ ${guidedQuestion(nextMissing)}`
     const styleHint = extractStyleHint(text);
     const styles = ["elegante", "moderno", "premium", "minimalista", "lujoso", "juvenil", "profesional", "futurista", "cyberpunk", "neon", "ne\xF3n", "oscuro", "dark", "friendly", "modern", "luxury", "minimal", "bold", "clean"];
     const found = styles.filter((style) => new RegExp(`\\b${escapeRegExp(style)}\\b`, "i").test(text));
-    const normalized2 = [...splitCommaOrLines(styleHint), ...found].map((item) => cleanExtractedPhrase(item.replace(/neón/i, "neon"), 32).toLowerCase()).filter(Boolean);
-    return [...new Set(normalized2)].join(", ");
+    const normalized3 = [...splitCommaOrLines(styleHint), ...found].map((item) => cleanExtractedPhrase(item.replace(/neón/i, "neon"), 32).toLowerCase()).filter(Boolean);
+    return [...new Set(normalized3)].join(", ");
   }
   function extractColorsFromText(text) {
     const hexColors = text.match(/#[0-9a-f]{3,8}\b/gi) || [];
@@ -12744,9 +12858,9 @@ ${guidedQuestion(nextMissing)}`
   function isUnsafeHeroHeadline(headline, templateId = "", catalogType = "") {
     const value = String(headline || "").trim();
     if (!value) return true;
-    const normalized2 = normalizeTemplateIntentText(value);
+    const normalized3 = normalizeTemplateIntentText(value);
     const isEditorialTemplate = /luxury|premium|fashion|editorial|high-ticket|product-store/.test(`${templateId} ${catalogType}`);
-    if (/quiero|necesito|debe|puede|para venderlo|lo que quiero/.test(normalized2)) return true;
+    if (/quiero|necesito|debe|puede|para venderlo|lo que quiero/.test(normalized3)) return true;
     if (/\n/.test(value)) return true;
     if (isEditorialTemplate && value.length > 42) return true;
     return value.length > 70;
@@ -13079,19 +13193,19 @@ ${guidedQuestion(nextMissing)}`
     return value[language] || value.es || value.en || Object.values(value).find(Boolean) || "";
   }
   function unsplashSeedUrl(keyword = "") {
-    const clean = String(keyword || "premium-product").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "premium-product";
-    return stableCatalogImageUrl(clean);
+    const clean2 = String(keyword || "premium-product").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "premium-product";
+    return stableCatalogImageUrl(clean2);
   }
   function isWeakSeedCopy(value, payload = {}) {
     const text = String(value || "").trim();
     if (!text) return true;
-    const normalized2 = normalizeTemplateIntentText(text);
+    const normalized3 = normalizeTemplateIntentText(text);
     const raw = normalizeTemplateIntentText([
       payload.business_description,
       arrayValue2(payload.services_products).join(" "),
       payload.target_audience
     ].join(" "));
-    return isGenericText(text) || /lorem|placeholder|your business|your site|producto 1|product 1|price to be set|editable product/i.test(text) || text.length > 260 || raw && normalized2.length > 60 && raw.includes(normalized2.slice(0, 60));
+    return isGenericText(text) || /lorem|placeholder|your business|your site|producto 1|product 1|price to be set|editable product/i.test(text) || text.length > 260 || raw && normalized3.length > 60 && raw.includes(normalized3.slice(0, 60));
   }
   function semanticSeedCopyKit(profileKey = "default", businessName = "Kreaton Store", language = builderState.selectedLanguage, templateText = "") {
     const name = cleanShortText(businessName, 48);
@@ -14272,10 +14386,10 @@ ${guidedQuestion(nextMissing)}`
     return set.premium || copy.defaultDescription || name;
   }
   function productFocusForLanguage(products = [], fallback = "", language = builderState.selectedLanguage) {
-    const clean = arrayValue2(products).map((item) => String(item || "").trim()).filter(Boolean).slice(0, 2);
-    if (clean.length) {
+    const clean2 = arrayValue2(products).map((item) => String(item || "").trim()).filter(Boolean).slice(0, 2);
+    if (clean2.length) {
       const joiner = language === "en" ? " and " : language === "fr" ? " et " : " y ";
-      return clean.join(joiner);
+      return clean2.join(joiner);
     }
     const fallbacks = {
       en: "the right products and services",
@@ -14291,7 +14405,13 @@ ${guidedQuestion(nextMissing)}`
     const usesMarketplaceTemplate = /mega-marketplace|marketplace-style|dense_marketplace_catalog/i.test(templateHint);
     const usesMegaRetailTemplate = /mega-retail-store|single_vendor_dense_catalog|dense_retail_catalog/i.test(templateHint);
     const cleaned = arrayValue2(products).map((item) => cleanPublicItemLabel(item)).filter(Boolean).slice(0, 8);
-    if (sourceSuggestsBroadMarketplace || usesMarketplaceTemplate || usesMegaRetailTemplate) {
+    const expandCatalog = shouldExpandInstantCatalog({
+      items: cleaned,
+      sourceIsBroad: sourceSuggestsBroadMarketplace,
+      templateIsBroad: usesMarketplaceTemplate || usesMegaRetailTemplate
+    });
+    if (!expandCatalog && cleaned.length >= 2) return cleaned;
+    if (expandCatalog) {
       const inferred2 = inferredPublicCatalogLabels({ text: sourceText, language });
       return [
         .../* @__PURE__ */ new Set([
@@ -14301,7 +14421,6 @@ ${guidedQuestion(nextMissing)}`
         ])
       ].slice(0, 12);
     }
-    if (cleaned.length >= 2 && !sourceSuggestsBroadMarketplace) return cleaned;
     const inferred = inferredPublicCatalogLabels({
       text: sourceText,
       language
@@ -14477,7 +14596,7 @@ ${guidedQuestion(nextMissing)}`
       template.id,
       catalogType
     ].join(" ");
-    const brand = normalizeBrand(payload.brand || createBrandSystem({
+    const baseBrand = normalizeBrand(payload.brand || createBrandSystem({
       logoUrl: payload.assets?.find((asset) => asset.asset_type === "logo")?.url || "",
       extractedColors: payload.logoPalette,
       preferredColors: payload.preferred_colors,
@@ -14485,13 +14604,15 @@ ${guidedQuestion(nextMissing)}`
       industry: payload.industry,
       tone: payload.preferred_tone
     }));
+    const previewPalette = semanticInstantPreviewPalette(payload.preferred_colors);
+    const brand = applyInstantPreviewPaletteToBrand(baseBrand, previewPalette);
     const colors = brandToThemeColors(brand);
     const catalogItems = products.map((item, index) => ({
       id: `instant_${index + 1}`,
       sku: `SKU-${index + 1}`,
       name: item,
       description: copy.itemDescription(name),
-      category: marketplaceCategoryForIndex(index, copy, categoryContext, language),
+      category: marketplaceCategoryForIndex(index, copy, categoryContext, language, item),
       rating: (4.3 + index % 5 * 0.12).toFixed(1),
       review_count: 42 + index * 31,
       shipping_label: index % 2 === 0 ? copy.fastDelivery : copy.freeShipping,
@@ -14503,7 +14624,7 @@ ${guidedQuestion(nextMissing)}`
       button_label: isOnlineShop ? copy.viewProduct : copy.request,
       inventory_quantity: isMarketplaceTemplate || isMegaRetailTemplate2 ? 24 + index * 3 : "",
       track_inventory: isOnlineShop,
-      image_url: "",
+      image_url: bathBodyStockImageUrl(item),
       is_active: true,
       is_featured: index < 3,
       offer_type: textSuggestsCourseOffering(item) ? "course" : "product",
@@ -16577,8 +16698,10 @@ ${guidedQuestion(nextMissing)}`
     }
     return pages;
   }
-  function marketplaceCategoryForIndex(index, copy, contextText = "", language = builderState.selectedLanguage) {
-    const normalized2 = normalizeTemplateIntentText(contextText);
+  function marketplaceCategoryForIndex(index, copy, contextText = "", language = builderState.selectedLanguage, item = "") {
+    const normalized3 = normalizeTemplateIntentText(contextText);
+    const bathCategory = bathBodyCategoryLabel(item, language);
+    if (bathCategory) return bathCategory;
     const localized = {
       en: {
         jewelry: ["Necklaces", "Bracelets", "Earrings", "Custom pieces", "Gift sets", "New arrivals"],
@@ -16603,11 +16726,11 @@ ${guidedQuestion(nextMissing)}`
     };
     const set = localized[language] || localized.en;
     let categories = copy.marketplaceCategories || ["Featured", "Deals", "New", "Popular"];
-    if (textSuggestsJewelryAccessoryStore(normalized2)) {
+    if (textSuggestsJewelryAccessoryStore(normalized3)) {
       categories = set.jewelry;
-    } else if (/ropa|moda|fashion|camisa|zapato|sneaker|clothing|apparel|streetwear|lookbook/.test(normalized2)) {
+    } else if (/ropa|moda|fashion|camisa|zapato|sneaker|clothing|apparel|streetwear|lookbook/.test(normalized3)) {
       categories = set.fashion;
-    } else if (/carro|auto|automotriz|anime|gadget|juguete|regalo|raro|curioso|hogar|home|gift|collectible|variedad|varied|variado/.test(normalized2)) {
+    } else if (/carro|auto|automotriz|anime|gadget|juguete|regalo|raro|curioso|hogar|home|gift|collectible|variedad|varied|variado/.test(normalized3)) {
       categories = set.variety;
     }
     return categories[index % categories.length];
