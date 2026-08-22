@@ -3253,6 +3253,179 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   line-height: 1.4;
 }
 
+.client-project-resume-card {
+  --client-resume-teal: #0f8f83;
+  width: min(600px, 100%);
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid rgba(15, 143, 131, 0.2);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(45, 212, 191, 0.12), transparent 30%),
+    #ffffff;
+  padding: 34px;
+  font-family: inherit;
+  box-shadow: 0 28px 80px rgba(8, 47, 73, 0.24);
+}
+
+.client-project-resume-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: linear-gradient(90deg, var(--client-resume-teal), #22d3ee);
+}
+
+.client-project-resume-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 24px;
+  color: #0f172a;
+}
+
+.client-project-resume-brand > span {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(15, 143, 131, 0.18);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #ecfeff, #ccfbf1);
+  box-shadow: 0 10px 24px rgba(15, 143, 131, 0.14);
+}
+
+.client-project-resume-brand img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+
+.client-project-resume-brand strong {
+  font-size: 14px;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.client-project-resume-card .client-projects-head {
+  gap: 9px;
+  padding-right: 0;
+}
+
+.client-project-resume-card .client-projects-head > span {
+  color: var(--client-resume-teal);
+}
+
+.client-project-resume-card .client-projects-head h2 {
+  max-width: 520px;
+  color: #0f172a;
+  font-size: clamp(30px, 5vw, 40px);
+  line-height: 1.04;
+  letter-spacing: 0;
+}
+
+.client-project-resume-project {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-top: 24px;
+  border: 1px solid rgba(15, 143, 131, 0.18);
+  border-radius: 15px;
+  background: linear-gradient(135deg, rgba(240, 253, 250, 0.92), rgba(236, 254, 255, 0.72));
+  padding: 15px 17px;
+}
+
+.client-project-resume-project > span {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  border: 3px solid #ccfbf1;
+  border-radius: 999px;
+  background: var(--client-resume-teal);
+  box-shadow: 0 0 0 4px rgba(15, 143, 131, 0.09);
+}
+
+.client-project-resume-project div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.client-project-resume-project strong,
+.client-project-resume-project small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-project-resume-project strong {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.client-project-resume-project small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.client-project-resume-question {
+  margin: 17px 0 0;
+  color: #526077;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.client-project-resume-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  margin-top: 26px;
+}
+
+.client-project-resume-actions button {
+  min-height: 50px;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.client-project-resume-actions button:hover {
+  transform: translateY(-2px);
+}
+
+.client-project-resume-actions button:focus-visible {
+  outline: 3px solid rgba(34, 211, 238, 0.34);
+  outline-offset: 3px;
+}
+
+.client-project-resume-primary {
+  border: 1px solid var(--client-resume-teal);
+  background: var(--client-resume-teal);
+  color: #ffffff;
+  box-shadow: 0 13px 26px rgba(15, 143, 131, 0.22);
+}
+
+.client-project-resume-primary:hover {
+  background: #0b766d;
+  box-shadow: 0 17px 32px rgba(15, 143, 131, 0.28);
+}
+
+.client-project-resume-secondary {
+  border: 1px solid rgba(15, 143, 131, 0.46);
+  background: rgba(255, 255, 255, 0.9);
+  color: #0b766d;
+}
+
+.client-project-resume-secondary:hover {
+  border-color: var(--client-resume-teal);
+  background: #f0fdfa;
+}
+
 .client-projects-empty {
   grid-column: 1 / -1;
   border: 1px dashed rgba(20, 184, 166, 0.38);
@@ -3341,6 +3514,23 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 
   .client-project-preview {
     min-height: 184px;
+  }
+
+  .client-project-resume-card {
+    align-self: center;
+    padding: 26px 22px 22px;
+  }
+
+  .client-project-resume-brand {
+    margin-bottom: 20px;
+  }
+
+  .client-project-resume-card .client-projects-head h2 {
+    font-size: 31px;
+  }
+
+  .client-project-resume-actions {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -699,22 +699,32 @@ export function renderClientProjectResumePrompt(project, session = null) {
   pendingClientProjectSession = session;
   panel.innerHTML = `
     <div class="client-projects-card client-project-resume-card" role="dialog" aria-modal="true" aria-labelledby="clientProjectResumeTitle">
-      <div class="client-project-resume-mark" aria-hidden="true">LYRA</div>
+      <div class="client-project-resume-brand" aria-hidden="true">
+        <span><img src="/assets/nixie_idle.png" alt=""></span>
+        <strong>LYRA</strong>
+      </div>
       <div class="client-projects-head">
         <span>${escapeHtml(langText({ en: "Saved progress", es: "Progreso guardado", fr: "Progression sauvegardée", pt: "Progresso salvo" }))}</span>
         <h2 id="clientProjectResumeTitle">${escapeHtml(langText({
-          en: `You have an unfinished project (${projectName}).`,
-          es: `Tienes un proyecto sin terminar (${projectName}).`,
-          fr: `Vous avez un projet inachevé (${projectName}).`,
-          pt: `Você tem um projeto inacabado (${projectName}).`,
+          en: "You have an unfinished project",
+          es: "Tienes un proyecto sin terminar",
+          fr: "Vous avez un projet inachevé",
+          pt: "Você tem um projeto inacabado",
         }))}</h2>
-        <p>${escapeHtml(langText({
+      </div>
+      <div class="client-project-resume-project">
+        <span aria-hidden="true"></span>
+        <div>
+          <strong>${escapeHtml(projectName)}</strong>
+          <small>${escapeHtml(project.template_name || langText({ en: "Saved website", es: "Sitio guardado", fr: "Site sauvegardé", pt: "Site salvo" }))}</small>
+        </div>
+      </div>
+      <p class="client-project-resume-question">${escapeHtml(langText({
           en: "Would you like to continue it or start a new one?",
           es: "¿Quieres continuarlo o empezar uno nuevo?",
           fr: "Souhaitez-vous le continuer ou en commencer un nouveau ?",
           pt: "Quer continuar ou começar um novo?",
         }))}</p>
-      </div>
       <div class="client-project-resume-actions">
         <button class="client-project-resume-primary" type="button" data-client-resume-project="${escapeAttribute(project.id)}">${escapeHtml(langText({ en: "Continue project", es: "Continuar proyecto", fr: "Continuer le projet", pt: "Continuar projeto" }))}</button>
         <button class="client-project-resume-secondary" type="button" data-client-new-project>${escapeHtml(langText({ en: "Start a new one", es: "Empezar uno nuevo", fr: "En commencer un nouveau", pt: "Começar um novo" }))}</button>
