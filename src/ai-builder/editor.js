@@ -808,7 +808,7 @@ export function sectionQuickInspector(section) {
   const index = page.sections.findIndex((item) => (item.id || item.type) === (section.id || section.type));
   const basePath = `pages.${pageIndex()}.sections.${index}`;
   const editable = section.editable || {};
-  if (section.type === "Hero") {
+  if (["Hero", "PremiumHero", "EnterpriseHero"].includes(section.type)) {
     return `<div class="studio-inspector-grid">
       ${textareaField("Headline", `${basePath}.editable.headline`, editable.headline || "", "data-section-path")}
       ${textareaField("Subtitle", `${basePath}.editable.subtitle`, editable.subtitle || "", "data-section-path")}

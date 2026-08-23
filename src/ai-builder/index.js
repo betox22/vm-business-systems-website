@@ -70,6 +70,11 @@ import {
 } from './client-project-start-policy.js';
 import { quickChipsNeedAssistantPrompt } from './quick-chip-context-policy.js';
 import {
+  constrainInlinePaste,
+  inlineEditEnterAction,
+  normalizeInlineEditText,
+} from './inline-edit-policy.js';
+import {
   MIN_GUIDED_BUILD_PHASE_VISIBLE_MS,
   remainingBuildPhaseVisibilityMs,
 } from './build-phase-policy.js';
@@ -12470,13 +12475,253 @@ export function renderEditor() {
   });
 }
 
+let activeInlineEdit = null;
+let selectedInlineEditPath = "";
+
+function inlineEditConfigFromElement(element) {
+  return {
+    mode: element?.dataset.inlineEditMode === "multiline" ? "multiline" : "single",
+    maxLength: Math.max(1, Number(element?.dataset.inlineEditMaxLength) || 320),
+    maxLines: Math.max(1, Number(element?.dataset.inlineEditMaxLines) || 1),
+  };
+}
+
+function inlineElementText(element) {
+  const readNode = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || "";
+    if (node.nodeName === "BR") return "\n";
+    const isBlock = node !== element && /^(DIV|P)$/.test(node.nodeName);
+    const content = [...node.childNodes].map(readNode).join("");
+    return isBlock ? `\n${content}` : content;
+  };
+  return readNode(element).replace(/[\u00a0\u200b]/g, (character) => character === "\u00a0" ? " " : "").replace(/^\n|\n$/g, "");
+}
+
+function placeInlineCaretAtEnd(element) {
+  const selection = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  range.collapse(false);
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}
+
+function selectInlineContents(element) {
+  const selection = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}
+
+function insertInlinePlainText(element, text) {
+  const selection = window.getSelection();
+  let range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+  if (!range || !element.contains(range.commonAncestorContainer)) {
+    range = document.createRange();
+    range.selectNodeContents(element);
+    range.collapse(false);
+  }
+  range.deleteContents();
+  const fragment = document.createDocumentFragment();
+  let lastNode = null;
+  const parts = String(text).split("\n");
+  parts.forEach((part, index) => {
+    if (index > 0) {
+      lastNode = document.createElement("br");
+      fragment.append(lastNode);
+    }
+    if (part) {
+      lastNode = document.createTextNode(part);
+      fragment.append(lastNode);
+    } else if (index > 0 && index === parts.length - 1) {
+      lastNode = document.createTextNode("\u200b");
+      fragment.append(lastNode);
+    }
+  });
+  if (!lastNode) return;
+  range.insertNode(fragment);
+  range.setStartAfter(lastNode);
+  range.collapse(true);
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}
+
+function selectInlineEditElement(element) {
+  previewFrame.querySelectorAll("[data-inline-edit-path].is-inline-selected").forEach((candidate) => {
+    candidate.classList.remove("is-inline-selected");
+  });
+  selectedInlineEditPath = element?.dataset.inlineEditPath || "";
+  element?.classList.add("is-inline-selected");
+}
+
+function restoreInlineEditSelection() {
+  if (!selectedInlineEditPath) return;
+  const element = [...previewFrame.querySelectorAll("[data-inline-edit-path]")]
+    .find((candidate) => candidate.dataset.inlineEditPath === selectedInlineEditPath);
+  element?.classList.add("is-inline-selected");
+}
+
+function syncInlineEditHeight(element, config) {
+  if (!element || config.mode !== "multiline") return;
+  element.style.height = "auto";
+  element.style.height = `${Math.ceil(element.scrollHeight)}px`;
+  element.style.overflowY = "hidden";
+}
+
+function clearInlineEditState() {
+  if (!activeInlineEdit) return;
+  const { element, onBlur, onInput, onKeyDown, onPaste } = activeInlineEdit;
+  element.removeEventListener("blur", onBlur);
+  element.removeEventListener("input", onInput);
+  element.removeEventListener("keydown", onKeyDown);
+  element.removeEventListener("paste", onPaste);
+  element.removeAttribute("contenteditable");
+  element.removeAttribute("role");
+  element.removeAttribute("aria-multiline");
+  element.classList.remove("is-inline-editing");
+  element.classList.toggle("is-inline-empty", !inlineElementText(element).trim());
+  element.style.removeProperty("height");
+  element.style.removeProperty("min-height");
+  element.style.removeProperty("overflow-y");
+  activeInlineEdit = null;
+}
+
+function finishInlineEdit(commit) {
+  if (!activeInlineEdit) return;
+  const { config, element, originalText, path, sectionId } = activeInlineEdit;
+  const nextText = normalizeInlineEditText(inlineElementText(element), config, originalText);
+  clearInlineEditState();
+  if (commit) setPath(builderState.currentSchema, path, nextText);
+  builderState.selectedStudioSectionId = sectionId;
+  renderEditor();
+  renderPreview();
+}
+
+function beginInlineEdit(element, { selectAll = false } = {}) {
+  if (!element?.dataset.inlineEditPath || activeInlineEdit?.element === element) return;
+  if (activeInlineEdit) finishInlineEdit(true);
+  const section = element.closest("[data-studio-section]");
+  const sectionId = section?.dataset.studioSection || "";
+  const config = inlineEditConfigFromElement(element);
+  const originalText = normalizeInlineEditText(inlineElementText(element), config);
+  selectInlineEditElement(element);
+  let lastAcceptedText = inlineElementText(element);
+  const onKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      finishInlineEdit(false);
+    } else if (event.key === "Enter") {
+      const currentText = inlineElementText(element);
+      const selectedText = window.getSelection()?.toString() || "";
+      const action = inlineEditEnterAction(config, event, currentText, selectedText);
+      if (action === "commit") {
+        event.preventDefault();
+        finishInlineEdit(true);
+        return;
+      }
+      if (action === "block") {
+        event.preventDefault();
+        return;
+      }
+      event.preventDefault();
+      insertInlinePlainText(element, "\n");
+      onInput();
+    }
+  };
+  const onInput = () => {
+    const value = inlineElementText(element);
+    element.classList.toggle("is-inline-empty", !value.trim());
+    const withinLength = value.length <= config.maxLength;
+    const withinLines = config.mode === "single" || value.split("\n").length <= config.maxLines;
+    if (withinLength && withinLines) {
+      lastAcceptedText = value;
+      syncInlineEditHeight(element, config);
+      return;
+    }
+    element.textContent = lastAcceptedText;
+    placeInlineCaretAtEnd(element);
+    syncInlineEditHeight(element, config);
+  };
+  const onPaste = (event) => {
+    event.preventDefault();
+    const currentText = inlineElementText(element);
+    const selectedLength = window.getSelection()?.toString().length || 0;
+    const availableLength = Math.max(0, config.maxLength - (currentText.length - selectedLength));
+    const pasted = constrainInlinePaste(event.clipboardData?.getData("text/plain") || "", config, availableLength);
+    insertInlinePlainText(element, pasted);
+    onInput();
+  };
+  const onBlur = () => finishInlineEdit(true);
+  activeInlineEdit = {
+    config,
+    element,
+    onBlur,
+    onInput,
+    onKeyDown,
+    onPaste,
+    originalText,
+    path: element.dataset.inlineEditPath,
+    sectionId,
+  };
+  element.style.minHeight = `${Math.ceil(element.offsetHeight)}px`;
+  element.setAttribute("contenteditable", "plaintext-only");
+  if (!element.isContentEditable) element.setAttribute("contenteditable", "true");
+  element.setAttribute("role", "textbox");
+  element.setAttribute("aria-multiline", config.mode === "multiline" ? "true" : "false");
+  element.classList.add("is-inline-editing");
+  syncInlineEditHeight(element, config);
+  element.addEventListener("blur", onBlur);
+  element.addEventListener("input", onInput);
+  element.addEventListener("keydown", onKeyDown);
+  element.addEventListener("paste", onPaste);
+  element.focus();
+  const selection = window.getSelection();
+  const selectionIsInside = selection?.anchorNode && element.contains(selection.anchorNode);
+  if (selectAll) selectInlineContents(element);
+  else if (!selectionIsInside) placeInlineCaretAtEnd(element);
+}
+
+function bindInlineEditing(root) {
+  root.querySelectorAll("[data-inline-edit-path]").forEach((element) => {
+    element.classList.toggle("is-inline-empty", !inlineElementText(element).trim());
+    element.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (activeInlineEdit?.element === element) return;
+      const sectionId = element.closest("[data-studio-section]")?.dataset.studioSection || "";
+      const wasSelected = Boolean(sectionId && builderState.selectedStudioSectionId === sectionId);
+      selectStudioSection(sectionId);
+      const wasInlineSelected = selectedInlineEditPath === element.dataset.inlineEditPath;
+      selectInlineEditElement(element);
+      if (wasSelected && wasInlineSelected) beginInlineEdit(element);
+    });
+    element.addEventListener("dblclick", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const sectionId = element.closest("[data-studio-section]")?.dataset.studioSection || "";
+      selectStudioSection(sectionId);
+      selectInlineEditElement(element);
+      beginInlineEdit(element);
+    });
+    element.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || activeInlineEdit?.element === element) return;
+      event.preventDefault();
+      beginInlineEdit(element, { selectAll: true });
+    });
+  });
+}
+
 export function renderPreview() {
   if (!builderState.currentSchema) return;
+  clearInlineEditState();
   applyGeneratedFavicon(builderState.currentSchema);
   previewFrame.innerHTML = renderWebsite(schemaForPreview(), builderState.selectedPageKey);
+  restoreInlineEditSelection();
   renderStudioProgress();
   previewFrame.querySelectorAll("[data-page-link]").forEach((link) => {
     link.addEventListener("click", (event) => {
+      if (link.matches("[data-inline-edit-path]")) return;
       event.preventDefault();
       builderState.selectedPageKey = link.dataset.pageLink;
       renderEditor();
@@ -12491,6 +12736,10 @@ export function renderPreview() {
       selectStudioSection(sectionElement.dataset.studioSection);
     });
   });
+  bindInlineEditing(previewFrame);
+  const selectedSection = previewFrame.querySelector(`[data-studio-section="${cssEscape(builderState.selectedStudioSectionId)}"]`);
+  selectedSection?.classList.add("is-selected");
+  if (studioSelectionToolbar) studioSelectionToolbar.hidden = !selectedSection;
   bindCatalogSearchInteractions(previewFrame);
 }
 

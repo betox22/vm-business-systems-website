@@ -5,6 +5,7 @@ import { isMegaRetailTemplate, megaRetailFeatureFlags, megaRetailWhatsAppUrl, re
 import { isB2BSaasTemplate } from './b2b-saas-policy.js';
 import { renderB2BSaasWebsite } from './b2b-saas-renderer.js';
 import { bathBodyStockImageUrl } from './catalog-preview-policy.js';
+import { inlineEditConfig, inlineEditPath, inlineEditPlaceholder } from './inline-edit-policy.js';
 
 function arrayValue(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
@@ -124,6 +125,8 @@ export function renderWebsite(schema, pageKey, context = {}) {
       renderLogoMark,
       renderSection,
       renderStudioFloatingCatalog,
+      inlineEditAttrs,
+      sectionAttrs,
       themeVars,
     });
   }
@@ -349,12 +352,12 @@ function renderPremiumHero(section, schema) {
   const variant = section.variant || section.settings?.layout || "split_showcase";
   return `<section class="premium-hero premium-hero-${escapeAttribute(slugify(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="premium-hero-copy">
-      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || schema.business?.tone || "")}</span>
-      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
-      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <span class="rendered-kicker" ${inlineEditAttrs(schema, section, "badge")}>${escapeHtml(inlineEditableValue(editable, "badge", schema.business?.industry || schema.business?.tone || ""))}</span>
+      <h1 ${inlineEditAttrs(schema, section, "headline")}>${escapeHtml(inlineEditableValue(editable, "headline", schema.business?.name || ""))}</h1>
+      <p ${inlineEditAttrs(schema, section, "subtitle")}>${escapeHtml(inlineEditableValue(editable, "subtitle", schema.business?.description || ""))}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || "Explore")}</a>
-        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || schema.theme?.buttons?.secondary_label || "Learn more")}</a>
+        <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(inlineEditableValue(editable, "primary_button", schema.theme?.buttons?.primary_label || "Explore"))}</a>
+        <a class="rendered-button secondary" href="#" ${inlineEditAttrs(schema, section, "secondary_button")}>${escapeHtml(inlineEditableValue(editable, "secondary_button", schema.theme?.buttons?.secondary_label || "Learn more"))}</a>
       </div>
     </div>
     <div class="premium-product-stage">
@@ -2474,6 +2477,28 @@ function googleFontFamilyParam(fontName, weights) {
   const family = String(fontName || "").trim();
   if (!family) return "";
   return `family=${encodeURIComponent(family).replace(/%20/g, "+")}:wght@${weights}`;
+}
+
+function inlineEditAttrs(schema, section, field) {
+  const path = inlineEditPath(schema, section, field);
+  const config = inlineEditConfig(field);
+  if (!path) return "";
+  const label = field.replaceAll("_", " ");
+  const placeholder = inlineEditPlaceholder(field, schema.business?.selectedLanguage);
+  return [
+    `data-inline-edit-path="${escapeAttribute(path)}"`,
+    `data-inline-edit-field="${escapeAttribute(field)}"`,
+    `data-inline-edit-mode="${escapeAttribute(config.mode)}"`,
+    `data-inline-edit-max-length="${config.maxLength}"`,
+    `data-inline-edit-max-lines="${config.maxLines}"`,
+    `data-inline-edit-placeholder="${escapeAttribute(placeholder)}"`,
+    'tabindex="0"',
+    `aria-label="${escapeAttribute(`Edit hero ${label}`)}"`,
+  ].join(" ");
+}
+
+function inlineEditableValue(editable, field, fallback = "") {
+  return Object.prototype.hasOwnProperty.call(editable || {}, field) ? editable[field] : fallback;
 }
 
 function renderMegaRetailWebsite(schema, page, context, { logo, layoutId, templateId, theme }) {

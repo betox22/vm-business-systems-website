@@ -3,7 +3,14 @@ import { b2bSaasNavigationPages, b2bSaasSubscriptionPlans } from "./b2b-saas-pol
 
 export function renderB2BSaasWebsite(schema, page, context, options, helpers) {
   const { logo, layoutId, templateId, theme } = options;
-  const { marketplaceItems, renderSection, renderStudioFloatingCatalog, themeVars } = helpers;
+  const {
+    inlineEditAttrs = () => "",
+    marketplaceItems,
+    renderSection,
+    renderStudioFloatingCatalog,
+    sectionAttrs = () => "",
+    themeVars,
+  } = helpers;
   const pages = [...(schema.pages || [])].sort((a, b) => a.order - b.order);
   const sections = [...(page?.sections || [])].sort((a, b) => a.order - b.order);
   const labels = b2bSaasLabels(schema);
@@ -19,7 +26,7 @@ export function renderB2BSaasWebsite(schema, page, context, options, helpers) {
     ${renderStudioFloatingCatalog(schema, context)}
     <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => pageLink(item, item.page_key === page?.page_key)).join("")}</div></div>
     ${renderHeader(schema, page, pages, logo, labels, plans)}
-    ${isHome ? `${renderHero(schema, hero, pages, items, labels, plans)}${renderLogoRow(labels)}${renderFeatures(schema, sections, items, labels)}${renderPricing(plans, labels)}` : ""}
+    ${isHome ? `${renderHero(schema, hero, pages, items, labels, plans, { inlineEditAttrs, sectionAttrs })}${renderLogoRow(labels)}${renderFeatures(schema, sections, items, labels)}${renderPricing(plans, labels)}` : ""}
     ${remaining.map((section) => renderSection(section, schema)).join("")}
     <footer class="b2b-saas-footer"><div>${renderBrand(schema, logo)}</div><span>${escapeHtml(schema.global_components?.footer_text || `© ${new Date().getFullYear()} ${schema.business?.name || ""}`)}</span></footer>
   </div>`;
@@ -45,14 +52,19 @@ function renderBrand(schema, logo) {
   return `<span class="b2b-saas-monogram" aria-hidden="true">${escapeHtml(initials || "B")}</span><strong>${escapeHtml(name)}</strong>`;
 }
 
-function renderHero(schema, section, pages, items, labels, plans) {
+function renderHero(schema, section, pages, items, labels, plans, helpers) {
+  const { inlineEditAttrs, sectionAttrs } = helpers;
   const editable = section.editable || {};
-  const [lead, highlight] = headlineParts(editable.headline || schema.business?.name || "");
+  const [lead, highlight] = headlineParts(inlineEditableValue(editable, "headline", schema.business?.name || ""));
   const navigation = b2bSaasNavigationPages(pages);
   const contactPage = findPage(pages, /contact|demo|consulta/i);
   const primaryPage = (plans.length ? navigation.find((item) => item.key === "pricing")?.page : null) || contactPage || navigation[0]?.page || pages[0];
   const secondaryPage = navigation.find((item) => item.key === "product")?.page || contactPage || pages[0];
-  return `<main class="b2b-saas-hero"><div class="b2b-saas-hero-copy"><span class="b2b-saas-eyebrow">${escapeHtml(editable.badge || labels.eyebrow)}</span><h1>${escapeHtml(lead)}${highlight ? ` <span>${escapeHtml(highlight)}</span>` : ""}</h1><p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p><div class="b2b-saas-hero-actions"><button class="b2b-saas-primary" type="button" data-page-link="${escapeAttribute(primaryPage?.page_key || "")}">${escapeHtml(editable.primary_button || labels.start)}</button><button class="b2b-saas-secondary" type="button" data-page-link="${escapeAttribute(secondaryPage?.page_key || "")}">${escapeHtml(editable.secondary_button || labels.demo)}</button></div></div>${renderDashboard(schema, items, labels)}</main>`;
+  return `<main class="b2b-saas-hero" ${sectionAttrs(section)}><div class="b2b-saas-hero-copy"><span class="b2b-saas-eyebrow" ${inlineEditAttrs(schema, section, "badge")}>${escapeHtml(inlineEditableValue(editable, "badge", labels.eyebrow))}</span><h1 ${inlineEditAttrs(schema, section, "headline")}>${escapeHtml(lead)}${highlight ? ` <span>${escapeHtml(highlight)}</span>` : ""}</h1><p ${inlineEditAttrs(schema, section, "subtitle")}>${escapeHtml(inlineEditableValue(editable, "subtitle", schema.business?.description || ""))}</p><div class="b2b-saas-hero-actions"><button class="b2b-saas-primary" type="button" data-page-link="${escapeAttribute(primaryPage?.page_key || "")}" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(inlineEditableValue(editable, "primary_button", labels.start))}</button><button class="b2b-saas-secondary" type="button" data-page-link="${escapeAttribute(secondaryPage?.page_key || "")}" ${inlineEditAttrs(schema, section, "secondary_button")}>${escapeHtml(inlineEditableValue(editable, "secondary_button", labels.demo))}</button></div></div>${renderDashboard(schema, items, labels)}</main>`;
+}
+
+function inlineEditableValue(editable, field, fallback = "") {
+  return Object.prototype.hasOwnProperty.call(editable || {}, field) ? editable[field] : fallback;
 }
 
 function renderDashboard(schema, items, labels) {
