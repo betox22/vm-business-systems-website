@@ -57,7 +57,7 @@ test("coverage paths map only to persistent section, catalog, navigation, footer
   const about = { id: "about", type: "About", editable: { title: "Our story", text: "Made with care." } };
   const faq = { id: "faq", type: "FAQ", editable: { title: "Questions", items: [{ question: "Why us?", answer: "Because it works." }] } };
   const feature = { id: "feature", type: "FeatureBand", editable: { items: [{ name: "Fast setup", description: "Ready quickly." }] } };
-  const product = { id: "product-1", name: "Calm Kit", description: "A complete ritual." };
+  const product = { id: "product-1", name: "Calm Kit", description: "A complete ritual.", category: "Bath", button_label: "Shop now" };
   const nav = { page_key: "home", label: "Home" };
   schema.pages[0].sections.push(about, faq, feature);
   schema.catalog_items.push(product);
@@ -70,6 +70,8 @@ test("coverage paths map only to persistent section, catalog, navigation, footer
   assert.equal(inlineEditSectionItemPath(schema, feature, 0, "name"), "pages.0.sections.3.editable.items.0.name");
   assert.equal(inlineEditCatalogPath(schema, product, "name"), "catalog_items.0.name");
   assert.equal(inlineEditCatalogPath(schema, product, "description"), "catalog_items.0.description");
+  assert.equal(inlineEditCatalogPath(schema, product, "category"), "catalog_items.0.category");
+  assert.equal(inlineEditCatalogPath(schema, product, "button_label"), "catalog_items.0.button_label");
   assert.equal(inlineEditNavigationPath(schema, nav), "navigation.0.label");
   assert.equal(inlineEditPageTitlePath(schema, schema.pages[0]), "pages.0.title");
   assert.equal(inlineEditPersistentPath("global_components.footer_text", "footer_text"), "global_components.footer_text");
@@ -120,7 +122,7 @@ test("reusable section collections resolve only to persistent course and quote p
   assert.equal(inlineEditPersistentPath("pages.0.sections.0.editable.includes.1", "item_title"), "pages.0.sections.0.editable.includes.1");
 });
 
-test("shared renderers carry persistent paths while dedicated family renderers remain untouched", () => {
+test("shared renderers carry persistent paths while the next dedicated families remain untouched", () => {
   const renderer = readFileSync(new URL("../src/ai-builder/renderers.js", import.meta.url), "utf8");
   assert.match(renderer, /navigation\.0\.label|inlineEditNavigationPath/);
   assert.match(renderer, /global_components\.footer_text/);
@@ -129,7 +131,63 @@ test("shared renderers carry persistent paths while dedicated family renderers r
   assert.match(renderer, /function renderCourseOffering[\s\S]*"includes", index[\s\S]*"item_title"/);
   assert.match(renderer, /function renderQuoteRequestForm[\s\S]*"fields", index, "label"[\s\S]*inlineEditAttrs\(schema, section, "primary_button"\)/);
   assert.match(renderer, /function renderPortfolioGallery[\s\S]*inlineCatalogEditAttrs[\s\S]*inlineSectionItemEditAttrs/);
-  assert.doesNotMatch(renderer.match(/function renderLuxuryHero[\s\S]*?(?=\nfunction )/)?.[0] || "", /inlineEditAttrs/);
+  for (const functionName of [
+    "renderClinicHero",
+    "renderProfessionalHero",
+    "renderIndustrialHero",
+    "renderFashionHero",
+    "renderCorporateHero",
+    "renderDigitalHero",
+    "renderListingHero",
+    "renderBookingHero",
+    "renderFunnelHero",
+    "renderMarketplaceHero",
+  ]) {
+    const source = renderer.match(new RegExp(`function ${functionName}\\b[\\s\\S]*?(?=\\nfunction )`))?.[0] || "";
+    assert.doesNotMatch(source, /inlineEdit(?:Attrs|SectionItemEditAttrs|CatalogEditAttrs)/, functionName);
+  }
+});
+
+test("Luxury, Academy, and Restaurant dedicated renderers expose persistent inline paths centrally", () => {
+  const renderer = readFileSync(new URL("../src/ai-builder/renderers.js", import.meta.url), "utf8");
+  const dedicatedFunctions = [
+    "renderLuxuryHero",
+    "renderLuxurySignature",
+    "renderLuxuryCollection",
+    "renderLuxuryProvenance",
+    "renderLuxuryPrivateService",
+    "renderLuxuryContact",
+    "renderAcademyHero",
+    "renderAcademyLearningPath",
+    "renderAcademyPrograms",
+    "renderAcademyOutcomes",
+    "renderAcademyInstructor",
+    "renderAcademyEnroll",
+    "renderRestaurantHero",
+    "renderRestaurantCategoryRail",
+    "renderRestaurantSignatureMenu",
+    "renderRestaurantSpecials",
+    "renderRestaurantInfo",
+    "renderRestaurantOrderPanel",
+  ];
+  dedicatedFunctions.forEach((functionName) => {
+    const source = renderer.match(new RegExp(`function ${functionName}\\b[\\s\\S]*?(?=\\nfunction )`))?.[0] || "";
+    assert.match(source, /inlineEdit(?:Attrs|SectionItemEditAttrs|CatalogEditAttrs)/, functionName);
+  });
+  for (const functionName of [
+    "renderAcademyHero",
+    "renderAcademyLearningPath",
+    "renderAcademyPrograms",
+    "renderAcademyOutcomes",
+    "renderAcademyInstructor",
+    "renderAcademyEnroll",
+  ]) {
+    const source = renderer.match(new RegExp(`function ${functionName}\\b[\\s\\S]*?(?=\\nfunction )`))?.[0] || "";
+    assert.match(source, /sectionAttrs\(section\)/, functionName);
+  }
+  assert.match(renderer, /function renderLuxuryHighTicketCatalog[\s\S]*"category"[\s\S]*"button_label"/);
+  assert.match(renderer, /function renderEducationCourseCatalog[\s\S]*"category"[\s\S]*"button_label"/);
+  assert.match(renderer, /function renderRestaurantMenuCatalog[\s\S]*"category"[\s\S]*"button_label"/);
 });
 
 test("single-line and controlled multiline fields normalize without losing their contract", () => {
@@ -241,6 +299,9 @@ test("inline editing inherits the owning card radius instead of forcing one gene
   assert.match(css, /\.catalog-premium-editorial article\s*\{\s*--inline-edit-radius:\s*32px;/);
   assert.match(css, /\.template-b2b-saas-enterprise-pro \.b2b-saas-features article\s*\{\s*--inline-edit-radius:\s*28px;/);
   assert.match(css, /\.template-b2b-saas-enterprise-pro \.b2b-saas-plans article\s*\{\s*--inline-edit-radius:\s*18px;/);
+  assert.match(css, /\.catalog-luxury-high-ticket article\s*\{\s*--inline-edit-radius:\s*6px;/);
+  assert.match(css, /\.academy-path-grid article,[\s\S]*\.catalog-education-course article\s*\{\s*--inline-edit-radius:\s*22px;/);
+  assert.match(css, /\.restaurant-category-rail article\s*\{\s*--inline-edit-radius:\s*var\(--brand-radius\);/);
 });
 
 test("editorial elevation is scoped to Premium showcase and B2B solution cards", () => {

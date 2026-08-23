@@ -123,7 +123,7 @@ export function inlineEditSectionCollectionItemPath(schema, section, collection,
 }
 
 export function inlineEditCatalogPath(schema, item, field) {
-  if (!["name", "description"].includes(field)) return "";
+  if (!["name", "description", "category", "button_label"].includes(field)) return "";
   for (const collection of ["catalog_items", "products_services"]) {
     const items = Array.isArray(schema?.[collection]) ? schema[collection] : [];
     const index = items.findIndex((candidate) => candidate === item || (candidate?.id && item?.id && candidate.id === item.id));
@@ -157,7 +157,7 @@ export function inlineEditPersistentPath(path, field) {
     /^pages\.\d+\.sections\.\d+\.editable\.items\.\d+$/,
     /^pages\.\d+\.sections\.\d+\.editable\.includes\.\d+$/,
     /^pages\.\d+\.sections\.\d+\.editable\.fields\.\d+\.label$/,
-    /^(?:catalog_items|products_services)\.\d+\.(?:name|description)$/,
+    /^(?:catalog_items|products_services)\.\d+\.(?:name|description|category|button_label)$/,
     /^navigation\.\d+\.label$/,
     /^pages\.\d+\.title$/,
     /^global_components\.footer_text$/,

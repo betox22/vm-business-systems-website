@@ -1924,7 +1924,7 @@
     return `${sectionPath}.${collection}.${index}${field ? `.${field}` : ""}`;
   }
   function inlineEditCatalogPath(schema, item, field) {
-    if (!["name", "description"].includes(field)) return "";
+    if (!["name", "description", "category", "button_label"].includes(field)) return "";
     for (const collection of ["catalog_items", "products_services"]) {
       const items = Array.isArray(schema?.[collection]) ? schema[collection] : [];
       const index = items.findIndex((candidate) => candidate === item || candidate?.id && item?.id && candidate.id === item.id);
@@ -1951,7 +1951,7 @@
       /^pages\.\d+\.sections\.\d+\.editable\.items\.\d+$/,
       /^pages\.\d+\.sections\.\d+\.editable\.includes\.\d+$/,
       /^pages\.\d+\.sections\.\d+\.editable\.fields\.\d+\.label$/,
-      /^(?:catalog_items|products_services)\.\d+\.(?:name|description)$/,
+      /^(?:catalog_items|products_services)\.\d+\.(?:name|description|category|button_label)$/,
       /^navigation\.\d+\.label$/,
       /^pages\.\d+\.title$/,
       /^global_components\.footer_text$/,
@@ -2676,12 +2676,12 @@
     const image = editable.image_url || heroItem?.image_url || "";
     return `<section class="restaurant-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="restaurant-hero-copy">
-      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || labels.menu)}</span>
-      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
-      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <span class="rendered-kicker" ${inlineEditAttrs(schema, section, "badge")}>${escapeHtml(editable.badge || schema.business?.industry || labels.menu)}</span>
+      <h1 ${inlineEditAttrs(schema, section, "headline")}>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p ${inlineEditAttrs(schema, section, "subtitle")}>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.orderNow)}</a>
-        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewMenu)}</a>
+        <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(editable.primary_button || labels.orderNow)}</a>
+        <a class="rendered-button secondary" href="#" ${inlineEditAttrs(schema, section, "secondary_button")}>${escapeHtml(editable.secondary_button || labels.viewMenu)}</a>
       </div>
       <div class="restaurant-proof-strip">${labels.restaurantProofItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
     </div>
@@ -2698,16 +2698,17 @@
   function renderRestaurantCategoryRail(section, schema) {
     const editable = section.editable || {};
     const labels = catalogLocaleLabels(schema);
+    const editableCategories = Array.isArray(editable.items) ? editable.items : [];
     const categories = restaurantMenuCategories(schema, editable.items);
     return `<section class="restaurant-categories-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="section-heading">
       <span class="rendered-kicker">${escapeHtml(labels.menu)}</span>
-      <h2>${escapeHtml(editable.title || labels.restaurantCategoriesTitle)}</h2>
-      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.restaurantCategoriesTitle)}</h2>
+      ${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}
     </div>
     <div class="restaurant-category-rail">${categories.map((category, index) => `<article>
       <small>0${index + 1}</small>
-      <strong>${escapeHtml(category)}</strong>
+      <strong ${editableCategories.includes(category) ? inlineSectionItemEditAttrs(schema, section, editableCategories.indexOf(category), "", "item_title") : ""}>${escapeHtml(category)}</strong>
       <span>${escapeHtml(index % 2 ? labels.chefPick : labels.popularDish)}</span>
     </article>`).join("")}</div>
   </section>`;
@@ -2718,8 +2719,8 @@
     return `<section class="restaurant-menu-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="section-heading">
       <span class="rendered-kicker">${escapeHtml(labels.signatureMenu)}</span>
-      <h2>${escapeHtml(editable.title || labels.restaurantSignatureTitle)}</h2>
-      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.restaurantSignatureTitle)}</h2>
+      ${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}
     </div>
     ${renderRestaurantMenuCatalog(marketplaceItems(schema), schema)}
   </section>`;
@@ -2731,12 +2732,12 @@
     return `<section class="restaurant-specials-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div>
       <span class="rendered-kicker">${escapeHtml(labels.specials)}</span>
-      <h2>${escapeHtml(editable.title || labels.restaurantSpecialsTitle)}</h2>
-      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.restaurantSpecialsTitle)}</h2>
+      ${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}
     </div>
     <div class="restaurant-specials-list">${items.map((item, index) => `<article>
       <small>${escapeHtml(index === 0 ? labels.chefPick : labels.specials)}</small>
-      <strong>${escapeHtml(item)}</strong>
+      <strong ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</strong>
       <span>${escapeHtml(labels.editableMenuNote)}</span>
     </article>`).join("")}</div>
   </section>`;
@@ -2748,10 +2749,10 @@
     return `<section class="restaurant-info-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div>
       <span class="rendered-kicker">${escapeHtml(labels.hoursLocation)}</span>
-      <h2>${escapeHtml(editable.title || labels.restaurantInfoTitle)}</h2>
-      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.restaurantInfoTitle)}</h2>
+      ${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}
     </div>
-    <div>${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    <div>${items.map((item, index) => `<span ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</span>`).join("")}</div>
   </section>`;
   }
   function renderRestaurantOrderPanel(section, schema) {
@@ -2760,11 +2761,11 @@
     return `<section class="restaurant-order-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="restaurant-order-card">
       <span class="rendered-kicker">${escapeHtml(labels.orderNow)}</span>
-      <h2>${escapeHtml(editable.title || labels.restaurantOrderTitle)}</h2>
-      <p>${escapeHtml(editable.text || labels.restaurantOrderText)}</p>
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.restaurantOrderTitle)}</h2>
+      <p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.restaurantOrderText)}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#">${escapeHtml(labels.orderNow)}</a>
-        <a class="rendered-button secondary" href="#">${escapeHtml(labels.contact)}</a>
+        <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(editable.primary_button || labels.orderNow)}</a>
+        <a class="rendered-button secondary" href="#" ${inlineEditAttrs(schema, section, "secondary_button")}>${escapeHtml(editable.secondary_button || labels.contact)}</a>
       </div>
     </div>
   </section>`;
@@ -2865,12 +2866,12 @@
     const image = editable.image_url || heroItem?.image_url || "";
     return `<section class="luxury-pro-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="luxury-pro-copy">
-      <span class="rendered-kicker">${escapeHtml(editable.badge || labels.limitedSelection)}</span>
-      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
-      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <span class="rendered-kicker" ${inlineEditAttrs(schema, section, "badge")}>${escapeHtml(editable.badge || labels.limitedSelection)}</span>
+      <h1 ${inlineEditAttrs(schema, section, "headline")}>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p ${inlineEditAttrs(schema, section, "subtitle")}>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.requestPrivateViewing)}</a>
-        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewCollection)}</a>
+        <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(editable.primary_button || labels.requestPrivateViewing)}</a>
+        <a class="rendered-button secondary" href="#" ${inlineEditAttrs(schema, section, "secondary_button")}>${escapeHtml(editable.secondary_button || labels.viewCollection)}</a>
       </div>
       <div class="luxury-proof-strip">
         ${(labels.luxuryProofItems || []).slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
@@ -2880,7 +2881,7 @@
       <div class="luxury-hero-visual">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(heroItem?.name || schema.business?.name || "")}">` : luxuryVisualPlaceholder(schema)}</div>
       <div class="luxury-floating-card">
         <small>${escapeHtml(labels.signaturePiece)}</small>
-        <strong>${escapeHtml(heroItem?.name || schema.business?.name || "")}</strong>
+        <strong ${inlineCatalogEditAttrs(schema, heroItem, "name", "product_name")}>${escapeHtml(heroItem?.name || schema.business?.name || "")}</strong>
         <span>${escapeHtml(heroItem?.price_label || labels.priceOnRequest)}</span>
       </div>
     </div>
@@ -2896,9 +2897,9 @@
     <div class="luxury-signature-media">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(item?.name || "")}">` : luxuryVisualPlaceholder(schema)}</div>
     <div class="luxury-signature-copy">
       <span class="rendered-kicker">${escapeHtml(labels.authenticated)}</span>
-      <h2>${escapeHtml(editable.title || labels.signaturePiece)}</h2>
-      <p>${escapeHtml(editable.text || "")}</p>
-      <div class="luxury-mini-proof">${proofItems.slice(0, 4).map((proof) => `<span>${escapeHtml(proof)}</span>`).join("")}</div>
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.signaturePiece)}</h2>
+      <p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || "")}</p>
+      <div class="luxury-mini-proof">${proofItems.slice(0, 4).map((proof, index) => `<span ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(proof)}</span>`).join("")}</div>
     </div>
   </section>`;
   }
@@ -2907,8 +2908,8 @@
     return `<section class="luxury-collection-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="section-heading">
       <span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).collection)}</span>
-      <h2>${escapeHtml(editable.title || "")}</h2>
-      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || "")}</h2>
+      ${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}
     </div>
     ${renderLuxuryHighTicketCatalog(marketplaceItems(schema), schema)}
   </section>`;
@@ -2920,11 +2921,11 @@
     return `<section class="luxury-provenance-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div>
       <span class="rendered-kicker">${escapeHtml(labels.provenance)}</span>
-      <h2>${escapeHtml(editable.title || labels.luxuryProvenanceTitle)}</h2>
-      <p>${escapeHtml(editable.text || labels.luxuryProvenanceText)}</p>
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.luxuryProvenanceTitle)}</h2>
+      <p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.luxuryProvenanceText)}</p>
     </div>
     <div class="luxury-provenance-grid">
-      ${items.slice(0, 6).map((item) => `<article><span></span><strong>${escapeHtml(item)}</strong><p>${escapeHtml(labels.privateService)}</p></article>`).join("")}
+      ${items.slice(0, 6).map((item, index) => `<article><span></span><strong ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</strong><p>${escapeHtml(labels.privateService)}</p></article>`).join("")}
     </div>
   </section>`;
   }
@@ -2934,10 +2935,10 @@
     return `<section class="luxury-private-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div>
       <span class="rendered-kicker">${escapeHtml(labels.privateInquiry)}</span>
-      <h2>${escapeHtml(editable.title || labels.luxuryPrivateTitle)}</h2>
-      <p>${escapeHtml(editable.text || labels.luxuryPrivateText)}</p>
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.luxuryPrivateTitle)}</h2>
+      <p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.luxuryPrivateText)}</p>
     </div>
-    <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.requestPrivateViewing)}</a>
+    <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(editable.primary_button || labels.requestPrivateViewing)}</a>
   </section>`;
   }
   function renderLuxuryContact(section, schema) {
@@ -2946,9 +2947,9 @@
     return `<section class="luxury-contact-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="luxury-contact-card">
       <span class="rendered-kicker">${escapeHtml(labels.privateInquiry)}</span>
-      <h2>${escapeHtml(editable.title || labels.luxuryContactTitle)}</h2>
-      <p>${escapeHtml(editable.text || labels.luxuryContactText)}</p>
-      <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.requestPrivateViewing)}</a>
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.luxuryContactTitle)}</h2>
+      <p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.luxuryContactText)}</p>
+      <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(editable.primary_button || labels.requestPrivateViewing)}</a>
     </div>
   </section>`;
   }
@@ -2962,14 +2963,14 @@
     const items = marketplaceItems(schema);
     const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url) || items[0];
     const image = editable.image_url || heroItem?.image_url || "";
-    return `<section class="academy-pro-hero ${sectionClass(section)}">
+    return `<section class="academy-pro-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="academy-pro-copy">
-      <span class="rendered-kicker">${escapeHtml(editable.badge || labels.courseAcademy)}</span>
-      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
-      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <span class="rendered-kicker" ${inlineEditAttrs(schema, section, "badge")}>${escapeHtml(editable.badge || labels.courseAcademy)}</span>
+      <h1 ${inlineEditAttrs(schema, section, "headline")}>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p ${inlineEditAttrs(schema, section, "subtitle")}>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.enrollNow)}</a>
-        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewCurriculum)}</a>
+        <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(editable.primary_button || labels.enrollNow)}</a>
+        <a class="rendered-button secondary" href="#" ${inlineEditAttrs(schema, section, "secondary_button")}>${escapeHtml(editable.secondary_button || labels.viewCurriculum)}</a>
       </div>
       <div class="academy-proof-strip">${(labels.learningOutcomeItems || []).slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
     </div>
@@ -2984,7 +2985,7 @@
           </div>
         </div>
       </div>
-      <div class="academy-floating-card"><small>${escapeHtml(labels.featuredProgram)}</small><strong>${escapeHtml(heroItem?.name || labels.programsTitle)}</strong><span>${escapeHtml(heroItem?.shipping_label || labels.educationDurations?.[0] || "")}</span></div>
+      <div class="academy-floating-card"><small>${escapeHtml(labels.featuredProgram)}</small><strong ${inlineCatalogEditAttrs(schema, heroItem, "name", "product_name")}>${escapeHtml(heroItem?.name || labels.programsTitle)}</strong><span>${escapeHtml(heroItem?.shipping_label || labels.educationDurations?.[0] || "")}</span></div>
     </div>
   </section>`;
   }
@@ -2992,15 +2993,15 @@
     const editable = section.editable || {};
     const labels = catalogLocaleLabels(schema);
     const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.learningPathItems;
-    return `<section class="academy-path-section ${sectionClass(section)}">
-    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.curriculum)}</span><h2>${escapeHtml(editable.title || labels.learningPathTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
-    <div class="academy-path-grid">${items.slice(0, 6).map((item, index) => `<article><span>0${index + 1}</span><strong>${escapeHtml(item)}</strong><p>${escapeHtml(index % 2 ? labels.beginnerFriendly : labels.certificateReady)}</p></article>`).join("")}</div>
+    return `<section class="academy-path-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.curriculum)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.learningPathTitle)}</h2>${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="academy-path-grid">${items.slice(0, 6).map((item, index) => `<article><span>0${index + 1}</span><strong ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</strong><p>${escapeHtml(index % 2 ? labels.beginnerFriendly : labels.certificateReady)}</p></article>`).join("")}</div>
   </section>`;
   }
   function renderAcademyPrograms(section, schema) {
     const editable = section.editable || {};
-    return `<section class="academy-programs-section ${sectionClass(section)}">
-    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).programs)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    return `<section class="academy-programs-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).programs)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || "")}</h2>${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}</div>
     ${renderEducationCourseCatalog(marketplaceItems(schema), schema)}
   </section>`;
   }
@@ -3008,26 +3009,26 @@
     const editable = section.editable || {};
     const labels = catalogLocaleLabels(schema);
     const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.learningOutcomeItems;
-    return `<section class="academy-outcomes-section ${sectionClass(section)}">
-    <div><span class="rendered-kicker">${escapeHtml(labels.outcomes)}</span><h2>${escapeHtml(editable.title || labels.outcomesTitle)}</h2><p>${escapeHtml(editable.text || labels.outcomesText)}</p></div>
-    <div class="academy-outcome-grid">${items.slice(0, 6).map((item) => `<article><span></span><strong>${escapeHtml(item)}</strong><p>${escapeHtml(labels.courseAcademy)}</p></article>`).join("")}</div>
+    return `<section class="academy-outcomes-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.outcomes)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.outcomesTitle)}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.outcomesText)}</p></div>
+    <div class="academy-outcome-grid">${items.slice(0, 6).map((item, index) => `<article><span></span><strong ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</strong><p>${escapeHtml(labels.courseAcademy)}</p></article>`).join("")}</div>
   </section>`;
   }
   function renderAcademyInstructor(section, schema) {
     const editable = section.editable || {};
     const labels = catalogLocaleLabels(schema);
     const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.instructorTrustItems;
-    return `<section class="academy-instructor-section ${sectionClass(section)}">
+    return `<section class="academy-instructor-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="academy-instructor-card">${editable.image_url ? `<img src="${escapeAttribute(editable.image_url)}" alt="${escapeAttribute(editable.title || "")}">` : academyVisualPlaceholder(schema)}</div>
-    <div><span class="rendered-kicker">${escapeHtml(labels.instructor)}</span><h2>${escapeHtml(editable.title || labels.instructorTitle)}</h2><p>${escapeHtml(editable.text || labels.instructorText)}</p><div class="academy-mini-proof">${items.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div>
+    <div><span class="rendered-kicker">${escapeHtml(labels.instructor)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.instructorTitle)}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.instructorText)}</p><div class="academy-mini-proof">${items.slice(0, 4).map((item, index) => `<span ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</span>`).join("")}</div></div>
   </section>`;
   }
   function renderAcademyEnroll(section, schema) {
     const editable = section.editable || {};
     const labels = catalogLocaleLabels(schema);
-    return `<section class="academy-enroll-section ${sectionClass(section)}">
-    <div><span class="rendered-kicker">${escapeHtml(labels.enroll)}</span><h2>${escapeHtml(editable.title || labels.enrollmentTitle)}</h2><p>${escapeHtml(editable.text || labels.enrollmentText)}</p></div>
-    <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.enrollNow)}</a>
+    return `<section class="academy-enroll-section ${sectionClass(section)}" ${sectionAttrs(section)}>
+    <div><span class="rendered-kicker">${escapeHtml(labels.enroll)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.enrollmentTitle)}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.enrollmentText)}</p></div>
+    <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(editable.primary_button || labels.enrollNow)}</a>
   </section>`;
   }
   function academyVisualPlaceholder(schema) {
@@ -3976,10 +3977,10 @@
     <div class="luxury-card-top">${renderCatalogImage(item)}</div>
     <div class="luxury-card-bottom">
       <small>${escapeHtml(item.deal_label || (index % 2 ? labels.authenticated : labels.limitedPiece))}</small>
-      <h3>${escapeHtml(item.name)}</h3>
-      <p>${escapeHtml(item.description)}</p>
-      <div><span>${escapeHtml(item.category || labels.collection)}</span><strong>${escapeHtml(productPriceLabel(item, schema) || labels.priceOnRequest)}</strong></div>
-      <a class="rendered-button secondary" href="#">${escapeHtml(item.button_label || labels.requestPrivateViewing)}</a>
+      <h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</h3>
+      <p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p>
+      <div><span ${inlineCatalogEditAttrs(schema, item, "category", "item_title")}>${escapeHtml(item.category || labels.collection)}</span><strong>${escapeHtml(productPriceLabel(item, schema) || labels.priceOnRequest)}</strong></div>
+      <a class="rendered-button secondary" href="#" ${inlineCatalogEditAttrs(schema, item, "button_label", "primary_button")}>${escapeHtml(item.button_label || labels.requestPrivateViewing)}</a>
     </div>
   </article>`).join("")}</div>`;
   }
@@ -3992,15 +3993,15 @@
     </div>
     <div class="education-card-image">${renderCatalogImage(item)}</div>
     <div class="education-card-body">
-      <small>${escapeHtml(item.category || labels.courseAcademy)}</small>
-      <h3>${escapeHtml(item.name)}</h3>
-      <p>${escapeHtml(item.description)}</p>
+      <small ${inlineCatalogEditAttrs(schema, item, "category", "item_title")}>${escapeHtml(item.category || labels.courseAcademy)}</small>
+      <h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</h3>
+      <p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p>
       <ul>
         <li>${escapeHtml(labels.structuredModules)}</li>
         <li>${escapeHtml(labels.practicalOutcome)}</li>
         <li>${escapeHtml(labels.flexibleAccess)}</li>
       </ul>
-      <div><strong>${escapeHtml(productPriceLabel(item, schema) || labels.coursePrice)}</strong><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.enrollNow)}</a></div>
+      <div><strong>${escapeHtml(productPriceLabel(item, schema) || labels.coursePrice)}</strong><a class="rendered-button" href="#" ${inlineCatalogEditAttrs(schema, item, "button_label", "primary_button")}>${escapeHtml(item.button_label || labels.enrollNow)}</a></div>
     </div>
   </article>`).join("")}</div>`;
   }
@@ -4089,15 +4090,15 @@
     const labels = catalogLocaleLabels(schema);
     return `<div class="catalog-restaurant-menu">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
     <div class="restaurant-menu-card-top">
-      <small>${escapeHtml(item.category || (index % 2 ? labels.chefPick : labels.popularDish))}</small>
+      <small ${inlineCatalogEditAttrs(schema, item, "category", "item_title")}>${escapeHtml(item.category || (index % 2 ? labels.chefPick : labels.popularDish))}</small>
       <span>${escapeHtml(index === 0 ? labels.signatureMenu : labels.menu)}</span>
     </div>
     ${renderCatalogImage(item)}
-    <h3>${escapeHtml(item.name)}</h3>
-    <p>${escapeHtml(item.description)}</p>
+    <h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</h3>
+    <p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p>
     <div class="restaurant-menu-card-bottom">
       <strong>${escapeHtml(productPriceLabel(item, schema) || labels.menuPrice)}</strong>
-      <a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.orderNow)}</a>
+      <a class="rendered-button" href="#" ${inlineCatalogEditAttrs(schema, item, "button_label", "primary_button")}>${escapeHtml(item.button_label || labels.orderNow)}</a>
     </div>
   </article>`).join("")}</div>`;
   }
