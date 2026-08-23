@@ -4,7 +4,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from app.logo_generation import generate_and_store_ai_logo
+from app.logo_generation import build_logo_prompt, generate_and_store_ai_logo
 from app.main import build_schema_from_state
 from app.models import ProjectState
 
@@ -25,6 +25,55 @@ class _FakeImages:
 
 
 class LogoGenerationTests(unittest.TestCase):
+    def test_logo_prompt_preserves_explicit_bad_initials(self) -> None:
+        prompt = build_logo_prompt(ProjectState(
+            businessName="Bath All Day",
+            industry="beauty",
+            logoPreference="generate_ai_logo",
+            logoBrief="Quiero un logo con las iniciales BAD.",
+        ))
+
+        self.assertIn("initials BAD", prompt)
+        self.assertIn("central monogram", prompt)
+        self.assertNotIn("no rendered words or letters", prompt)
+
+    def test_logo_prompt_requires_original_non_trademarked_design(self) -> None:
+        prompt = build_logo_prompt(ProjectState(
+            businessName="Turbo Parts VE",
+            industry="automotive",
+            logoPreference="generate_ai_logo",
+        ))
+
+        self.assertIn("100% original", prompt)
+        self.assertIn("must not imitate, reference, remix, or reuse", prompt)
+        self.assertIn("brand, logo, trademark, trade dress, or competitor", prompt)
+        self.assertIn("independent visual identity from first principles", prompt)
+        self.assertIn("discard it and create a substantially different original concept", prompt)
+        self.assertIn("senior brand identity designer and marketing strategist", prompt)
+        self.assertIn("emotional promise", prompt)
+        self.assertIn("purposeful symbol, monogram, or typographic composition", prompt)
+        self.assertIn("Avoid clip art", prompt)
+        self.assertIn("one central metaphor", prompt)
+        self.assertIn("at most two or three visual elements", prompt)
+        self.assertIn("No gradients, glow, shadows", prompt)
+
+    def test_logo_prompt_uses_business_positioning_inputs(self) -> None:
+        prompt = build_logo_prompt(ProjectState(
+            businessName="NexusOps",
+            businessDescription="B2B automation platform for operations teams.",
+            industry="enterprise technology",
+            servicesProducts=["workflow automation", "analytics", "integrations"],
+            targetAudience="operations leaders at mid-market companies",
+            preferredTone="precise, trustworthy, modern",
+            logoPreference="generate_ai_logo",
+        ))
+
+        self.assertIn("workflow automation, analytics, integrations", prompt)
+        self.assertIn("operations leaders at mid-market companies", prompt)
+        self.assertIn("precise, trustworthy, modern", prompt)
+        self.assertIn("symbol, wordmark, or combination mark", prompt)
+        self.assertIn("exact business name 'NexusOps'", prompt)
+
     def test_openai_logo_is_uploaded_and_attached_to_state(self) -> None:
         images = _FakeImages(image_bytes=b"generated-png")
         client = SimpleNamespace(images=images)
@@ -55,6 +104,8 @@ class LogoGenerationTests(unittest.TestCase):
         self.assertEqual(images.calls[0]["size"], "1024x1024")
         self.assertEqual(images.calls[0]["background"], "transparent")
         self.assertIn("#7C6AA6", images.calls[0]["prompt"])
+        self.assertIn("100% original", images.calls[0]["prompt"])
+        self.assertIn("must not imitate", images.calls[0]["prompt"])
         uploader.assert_called_once()
         self.assertEqual(uploader.call_args.kwargs["data"], b"generated-png")
 

@@ -32,6 +32,7 @@ class LogoGenerationOutcome:
 
 
 def build_logo_prompt(state: ProjectState) -> str:
+    business_name = str(state.businessName or "this business").strip()
     provenance = state.colorProvenance
     anchor_color = getattr(provenance, "anchorColor", None)
     palette = [
@@ -45,23 +46,40 @@ def build_logo_prompt(state: ProjectState) -> str:
     palette_values = list(dict.fromkeys(str(value).strip() for value in palette if str(value or "").strip()))
     palette_instruction = ", ".join(palette_values[:6]) or "the brand palette selected for this business niche"
     logo_brief = str(state.logoBrief or "").strip()
+    offerings = ", ".join(str(item).strip() for item in state.servicesProducts if str(item).strip())
     initials_match = re.search(r"\b(?:initials?|iniciales?)\s*[\"':-]*\s*([A-Z0-9]{2,6})\b", logo_brief, re.I)
     mark_instruction = (
         f"The client explicitly requested the initials {initials_match.group(1).upper()}; integrate exactly those initials as the central monogram, with no other words. "
         if initials_match
-        else "Do not render words or letters. "
+        else f"Choose the strongest format for the strategy: symbol, wordmark, or combination mark. If text is used, render only the exact business name '{business_name}', spelled correctly, with no slogan or extra words. "
     )
     brief_instruction = f"Client logo direction: {logo_brief}. " if logo_brief else ""
     return (
-        f"Create one professional flat vector brand symbol for {state.businessName or 'this business'}. "
+        "Act as a senior brand identity designer and marketing strategist, not an illustration generator. "
+        f"Create one market-ready flat vector identity for {business_name}. "
         f"Industry: {state.industry or 'general business'}. "
         f"Business context: {state.businessDescription or 'professional independent business'}. "
+        f"Products or services: {offerings or 'infer the core offering from the business context'}. "
+        f"Audience: {state.targetAudience or 'the business primary customers'}. "
+        f"Desired brand tone: {state.preferredTone or 'infer the most credible tone for this market'}. "
         f"{brief_instruction}"
         f"Use this exact color direction: {palette_instruction}. "
         f"{mark_instruction}"
-        "Design a distinctive, simple, scalable icon that remains recognizable at favicon size. "
-        "Transparent background, centered composition, solid colors, crisp geometric forms, no gradients, "
-        "no mockup, no photograph, no watermark, and no border."
+        "First identify the emotional promise the brand should communicate, such as calm, craftsmanship, trust, luxury, energy, or technical precision, based on this specific business. "
+        "Translate that positioning into one ownable visual idea: a purposeful symbol, monogram, or typographic composition with a clear meaning connected to the actual offering and audience. "
+        "Choose one central metaphor and reduce it to one cohesive mark with at most two or three visual elements; do not illustrate a scene, collection of products, or collage of category symbols. "
+        "Use typography with distinctive character appropriate to the brand tone, with intentional custom letterforms when letters are requested. "
+        "The result must feel art-directed, balanced, memorable, and commercially credible at the standard of a professional identity used in the real market. "
+        "Avoid clip art, stock-logo conventions, meaningless geometric marks, arbitrary abstract shapes, literal collages, generic initial monograms, and generic industry icons with no strategic connection. "
+        "Do not default to a letter inside a geometric frame unless the client explicitly requested initials and the letterform itself carries a distinctive strategic idea. "
+        "Keep the composition clean and scalable, with strong silhouette, controlled negative space, and legibility from storefront or website header down to favicon size. "
+        "The design must be 100% original and must not imitate, reference, remix, or reuse any element "
+        "from an existing or recognizable brand, logo, trademark, trade dress, or competitor in this industry. "
+        "Do not use icons, silhouettes, letterforms, typography, compositions, or visual signatures that could "
+        "reasonably evoke a known real-world brand. Create an independent visual identity from first principles. "
+        "If any candidate concept resembles a known brand, discard it and create a substantially different original concept before returning the image. "
+        "Transparent background, centered composition, flat two-dimensional vector execution, solid colors, and crisp forms. "
+        "No gradients, glow, shadows, lighting effects, texture, atmosphere, mockup, photograph, watermark, border, or decorative background."
     )
 
 
