@@ -1816,6 +1816,75 @@
     return String(lastAssistantStep || "").trim() !== String(guidedStep || "").trim();
   }
 
+  // src/ai-builder/inline-edit-policy.js
+  var INLINE_EDIT_FIELD_CONFIG = Object.freeze({
+    badge: Object.freeze({ mode: "single", maxLength: 60, maxLines: 1 }),
+    headline: Object.freeze({ mode: "single", maxLength: 140, maxLines: 1 }),
+    subtitle: Object.freeze({ mode: "multiline", maxLength: 320, maxLines: 3 }),
+    primary_button: Object.freeze({ mode: "single", maxLength: 48, maxLines: 1 }),
+    secondary_button: Object.freeze({ mode: "single", maxLength: 48, maxLines: 1 })
+  });
+  var INLINE_EDIT_PLACEHOLDERS = Object.freeze({
+    en: Object.freeze({
+      badge: "Add a label",
+      headline: "Write a headline here",
+      subtitle: "Write supporting text here",
+      primary_button: "Add button text",
+      secondary_button: "Add button text"
+    }),
+    es: Object.freeze({
+      badge: "Agrega una etiqueta",
+      headline: "Escribe el titular aqui",
+      subtitle: "Escribe el texto de apoyo aqui",
+      primary_button: "Agrega el texto del boton",
+      secondary_button: "Agrega el texto del boton"
+    })
+  });
+  function inlineEditConfig(field) {
+    return INLINE_EDIT_FIELD_CONFIG[field] || null;
+  }
+  function inlineEditPlaceholder(field, language = "en") {
+    const locale = String(language || "en").toLowerCase().startsWith("es") ? "es" : "en";
+    return INLINE_EDIT_PLACEHOLDERS[locale][field] || INLINE_EDIT_PLACEHOLDERS[locale].headline;
+  }
+  function inlineEditPath(schema, section, field) {
+    if (!inlineEditConfig(field)) return "";
+    const pages = Array.isArray(schema?.pages) ? schema.pages : [];
+    for (let pageIndex2 = 0; pageIndex2 < pages.length; pageIndex2 += 1) {
+      const sections = Array.isArray(pages[pageIndex2]?.sections) ? pages[pageIndex2].sections : [];
+      const sectionIndex = sections.findIndex((candidate) => candidate === section || candidate?.id && section?.id && candidate.id === section.id);
+      if (sectionIndex >= 0) {
+        return `pages.${pageIndex2}.sections.${sectionIndex}.editable.${field}`;
+      }
+    }
+    return "";
+  }
+  function normalizeInlineEditText(value, config = {}, fallback = "") {
+    const mode = config.mode === "multiline" ? "multiline" : "single";
+    const maxLength = Math.max(1, Number(config.maxLength) || 320);
+    const maxLines = Math.max(1, Number(config.maxLines) || 1);
+    const normalize = (input) => {
+      const raw = String(input || "").replace(/\r\n?/g, "\n");
+      if (mode === "single") return raw.replace(/\s+/g, " ").trim().slice(0, maxLength).trim();
+      return raw.split("\n").map((line) => line.replace(/[\t\f\v ]+/g, " ").trim()).filter(Boolean).slice(0, maxLines).join("\n").slice(0, maxLength).trim();
+    };
+    return normalize(value) || normalize(fallback);
+  }
+  function inlineEditEnterAction(config = {}, event = {}, currentText = "", selectedText = "") {
+    if (config.mode !== "multiline" || event.ctrlKey || event.metaKey) return "commit";
+    const lineCount = String(currentText || "").replace(/\r\n?/g, "\n").split("\n").length;
+    if (lineCount >= Math.max(1, Number(config.maxLines) || 1) && !String(selectedText).includes("\n")) {
+      return "block";
+    }
+    return "newline";
+  }
+  function constrainInlinePaste(value, config = {}, availableLength = Infinity) {
+    let result = String(value || "").replace(/\r\n?/g, "\n");
+    if (config.mode !== "multiline") result = result.replace(/\s+/g, " ");
+    else result = result.split("\n").slice(0, Math.max(1, Number(config.maxLines) || 1)).join("\n");
+    return result.slice(0, Math.max(0, Number(availableLength)));
+  }
+
   // src/ai-builder/build-phase-policy.js
   var MIN_GUIDED_BUILD_PHASE_VISIBLE_MS = 450;
   function remainingBuildPhaseVisibilityMs(startedAt, now, minimumMs = MIN_GUIDED_BUILD_PHASE_VISIBLE_MS) {
@@ -1869,7 +1938,14 @@
   // src/ai-builder/b2b-saas-renderer.js
   function renderB2BSaasWebsite(schema, page, context, options, helpers) {
     const { logo, layoutId, templateId, theme } = options;
-    const { marketplaceItems: marketplaceItems2, renderSection: renderSection2, renderStudioFloatingCatalog: renderStudioFloatingCatalog2, themeVars: themeVars2 } = helpers;
+    const {
+      inlineEditAttrs: inlineEditAttrs2 = () => "",
+      marketplaceItems: marketplaceItems2,
+      renderSection: renderSection2,
+      renderStudioFloatingCatalog: renderStudioFloatingCatalog2,
+      sectionAttrs: sectionAttrs2 = () => "",
+      themeVars: themeVars2
+    } = helpers;
     const pages = [...schema.pages || []].sort((a, b) => a.order - b.order);
     const sections = [...page?.sections || []].sort((a, b) => a.order - b.order);
     const labels = b2bSaasLabels(schema);
@@ -1884,7 +1960,7 @@
     ${renderStudioFloatingCatalog2(schema, context)}
     <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => pageLink(item, item.page_key === page?.page_key)).join("")}</div></div>
     ${renderHeader(schema, page, pages, logo, labels, plans)}
-    ${isHome ? `${renderHero(schema, hero, pages, items, labels, plans)}${renderLogoRow(labels)}${renderFeatures(schema, sections, items, labels)}${renderPricing(plans, labels)}` : ""}
+    ${isHome ? `${renderHero(schema, hero, pages, items, labels, plans, { inlineEditAttrs: inlineEditAttrs2, sectionAttrs: sectionAttrs2 })}${renderLogoRow(labels)}${renderFeatures(schema, sections, items, labels)}${renderPricing(plans, labels)}` : ""}
     ${remaining.map((section) => renderSection2(section, schema)).join("")}
     <footer class="b2b-saas-footer"><div>${renderBrand(schema, logo)}</div><span>${escapeHtml(schema.global_components?.footer_text || `\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} ${schema.business?.name || ""}`)}</span></footer>
   </div>`;
@@ -1907,14 +1983,18 @@
     const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join("").toUpperCase();
     return `<span class="b2b-saas-monogram" aria-hidden="true">${escapeHtml(initials || "B")}</span><strong>${escapeHtml(name)}</strong>`;
   }
-  function renderHero(schema, section, pages, items, labels, plans) {
+  function renderHero(schema, section, pages, items, labels, plans, helpers) {
+    const { inlineEditAttrs: inlineEditAttrs2, sectionAttrs: sectionAttrs2 } = helpers;
     const editable = section.editable || {};
-    const [lead, highlight] = headlineParts(editable.headline || schema.business?.name || "");
+    const [lead, highlight] = headlineParts(inlineEditableValue(editable, "headline", schema.business?.name || ""));
     const navigation = b2bSaasNavigationPages(pages);
     const contactPage = findPage(pages, /contact|demo|consulta/i);
     const primaryPage = (plans.length ? navigation.find((item) => item.key === "pricing")?.page : null) || contactPage || navigation[0]?.page || pages[0];
     const secondaryPage = navigation.find((item) => item.key === "product")?.page || contactPage || pages[0];
-    return `<main class="b2b-saas-hero"><div class="b2b-saas-hero-copy"><span class="b2b-saas-eyebrow">${escapeHtml(editable.badge || labels.eyebrow)}</span><h1>${escapeHtml(lead)}${highlight ? ` <span>${escapeHtml(highlight)}</span>` : ""}</h1><p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p><div class="b2b-saas-hero-actions"><button class="b2b-saas-primary" type="button" data-page-link="${escapeAttribute(primaryPage?.page_key || "")}">${escapeHtml(editable.primary_button || labels.start)}</button><button class="b2b-saas-secondary" type="button" data-page-link="${escapeAttribute(secondaryPage?.page_key || "")}">${escapeHtml(editable.secondary_button || labels.demo)}</button></div></div>${renderDashboard(schema, items, labels)}</main>`;
+    return `<main class="b2b-saas-hero" ${sectionAttrs2(section)}><div class="b2b-saas-hero-copy"><span class="b2b-saas-eyebrow" ${inlineEditAttrs2(schema, section, "badge")}>${escapeHtml(inlineEditableValue(editable, "badge", labels.eyebrow))}</span><h1 ${inlineEditAttrs2(schema, section, "headline")}>${escapeHtml(lead)}${highlight ? ` <span>${escapeHtml(highlight)}</span>` : ""}</h1><p ${inlineEditAttrs2(schema, section, "subtitle")}>${escapeHtml(inlineEditableValue(editable, "subtitle", schema.business?.description || ""))}</p><div class="b2b-saas-hero-actions"><button class="b2b-saas-primary" type="button" data-page-link="${escapeAttribute(primaryPage?.page_key || "")}" ${inlineEditAttrs2(schema, section, "primary_button")}>${escapeHtml(inlineEditableValue(editable, "primary_button", labels.start))}</button><button class="b2b-saas-secondary" type="button" data-page-link="${escapeAttribute(secondaryPage?.page_key || "")}" ${inlineEditAttrs2(schema, section, "secondary_button")}>${escapeHtml(inlineEditableValue(editable, "secondary_button", labels.demo))}</button></div></div>${renderDashboard(schema, items, labels)}</main>`;
+  }
+  function inlineEditableValue(editable, field, fallback = "") {
+    return Object.prototype.hasOwnProperty.call(editable || {}, field) ? editable[field] : fallback;
   }
   function renderDashboard(schema, items, labels) {
     const pages = schema.pages || [];
@@ -2082,6 +2162,8 @@
         renderLogoMark,
         renderSection,
         renderStudioFloatingCatalog,
+        inlineEditAttrs,
+        sectionAttrs,
         themeVars
       });
     }
@@ -2288,12 +2370,12 @@
     const variant = section.variant || section.settings?.layout || "split_showcase";
     return `<section class="premium-hero premium-hero-${escapeAttribute(slugify2(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="premium-hero-copy">
-      <span class="rendered-kicker">${escapeHtml(schema.business?.industry || schema.business?.tone || "")}</span>
-      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
-      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <span class="rendered-kicker" ${inlineEditAttrs(schema, section, "badge")}>${escapeHtml(inlineEditableValue2(editable, "badge", schema.business?.industry || schema.business?.tone || ""))}</span>
+      <h1 ${inlineEditAttrs(schema, section, "headline")}>${escapeHtml(inlineEditableValue2(editable, "headline", schema.business?.name || ""))}</h1>
+      <p ${inlineEditAttrs(schema, section, "subtitle")}>${escapeHtml(inlineEditableValue2(editable, "subtitle", schema.business?.description || ""))}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || "Explore")}</a>
-        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || schema.theme?.buttons?.secondary_label || "Learn more")}</a>
+        <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(inlineEditableValue2(editable, "primary_button", schema.theme?.buttons?.primary_label || "Explore"))}</a>
+        <a class="rendered-button secondary" href="#" ${inlineEditAttrs(schema, section, "secondary_button")}>${escapeHtml(inlineEditableValue2(editable, "secondary_button", schema.theme?.buttons?.secondary_label || "Learn more"))}</a>
       </div>
     </div>
     <div class="premium-product-stage">
@@ -5245,6 +5327,26 @@
     const family = String(fontName || "").trim();
     if (!family) return "";
     return `family=${encodeURIComponent(family).replace(/%20/g, "+")}:wght@${weights}`;
+  }
+  function inlineEditAttrs(schema, section, field) {
+    const path = inlineEditPath(schema, section, field);
+    const config = inlineEditConfig(field);
+    if (!path) return "";
+    const label = field.replaceAll("_", " ");
+    const placeholder = inlineEditPlaceholder(field, schema.business?.selectedLanguage);
+    return [
+      `data-inline-edit-path="${escapeAttribute(path)}"`,
+      `data-inline-edit-field="${escapeAttribute(field)}"`,
+      `data-inline-edit-mode="${escapeAttribute(config.mode)}"`,
+      `data-inline-edit-max-length="${config.maxLength}"`,
+      `data-inline-edit-max-lines="${config.maxLines}"`,
+      `data-inline-edit-placeholder="${escapeAttribute(placeholder)}"`,
+      'tabindex="0"',
+      `aria-label="${escapeAttribute(`Edit hero ${label}`)}"`
+    ].join(" ");
+  }
+  function inlineEditableValue2(editable, field, fallback = "") {
+    return Object.prototype.hasOwnProperty.call(editable || {}, field) ? editable[field] : fallback;
   }
   function renderMegaRetailWebsite(schema, page, context, { logo, layoutId, templateId, theme }) {
     const pages = [...schema.pages || []].sort((a, b) => a.order - b.order);
@@ -8657,7 +8759,7 @@ ${cleanQuestion}`;
     const index = page.sections.findIndex((item) => (item.id || item.type) === (section.id || section.type));
     const basePath = `pages.${pageIndex()}.sections.${index}`;
     const editable = section.editable || {};
-    if (section.type === "Hero") {
+    if (["Hero", "PremiumHero", "EnterpriseHero"].includes(section.type)) {
       return `<div class="studio-inspector-grid">
       ${textareaField("Headline", `${basePath}.editable.headline`, editable.headline || "", "data-section-path")}
       ${textareaField("Subtitle", `${basePath}.editable.subtitle`, editable.subtitle || "", "data-section-path")}
@@ -19410,13 +19512,240 @@ Site ID: ${builderState.currentSiteId}`
       });
     });
   }
+  var activeInlineEdit = null;
+  var selectedInlineEditPath = "";
+  function inlineEditConfigFromElement(element) {
+    return {
+      mode: element?.dataset.inlineEditMode === "multiline" ? "multiline" : "single",
+      maxLength: Math.max(1, Number(element?.dataset.inlineEditMaxLength) || 320),
+      maxLines: Math.max(1, Number(element?.dataset.inlineEditMaxLines) || 1)
+    };
+  }
+  function inlineElementText(element) {
+    const readNode = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || "";
+      if (node.nodeName === "BR") return "\n";
+      const isBlock = node !== element && /^(DIV|P)$/.test(node.nodeName);
+      const content = [...node.childNodes].map(readNode).join("");
+      return isBlock ? `
+${content}` : content;
+    };
+    return readNode(element).replace(/[\u00a0\u200b]/g, (character) => character === "\xA0" ? " " : "").replace(/^\n|\n$/g, "");
+  }
+  function placeInlineCaretAtEnd(element) {
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    range.collapse(false);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+  function selectInlineContents(element) {
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+  function insertInlinePlainText(element, text) {
+    const selection = window.getSelection();
+    let range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    if (!range || !element.contains(range.commonAncestorContainer)) {
+      range = document.createRange();
+      range.selectNodeContents(element);
+      range.collapse(false);
+    }
+    range.deleteContents();
+    const fragment = document.createDocumentFragment();
+    let lastNode = null;
+    const parts = String(text).split("\n");
+    parts.forEach((part, index) => {
+      if (index > 0) {
+        lastNode = document.createElement("br");
+        fragment.append(lastNode);
+      }
+      if (part) {
+        lastNode = document.createTextNode(part);
+        fragment.append(lastNode);
+      } else if (index > 0 && index === parts.length - 1) {
+        lastNode = document.createTextNode("\u200B");
+        fragment.append(lastNode);
+      }
+    });
+    if (!lastNode) return;
+    range.insertNode(fragment);
+    range.setStartAfter(lastNode);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+  function selectInlineEditElement(element) {
+    previewFrame2.querySelectorAll("[data-inline-edit-path].is-inline-selected").forEach((candidate) => {
+      candidate.classList.remove("is-inline-selected");
+    });
+    selectedInlineEditPath = element?.dataset.inlineEditPath || "";
+    element?.classList.add("is-inline-selected");
+  }
+  function restoreInlineEditSelection() {
+    if (!selectedInlineEditPath) return;
+    const element = [...previewFrame2.querySelectorAll("[data-inline-edit-path]")].find((candidate) => candidate.dataset.inlineEditPath === selectedInlineEditPath);
+    element?.classList.add("is-inline-selected");
+  }
+  function syncInlineEditHeight(element, config) {
+    if (!element || config.mode !== "multiline") return;
+    element.style.height = "auto";
+    element.style.height = `${Math.ceil(element.scrollHeight)}px`;
+    element.style.overflowY = "hidden";
+  }
+  function clearInlineEditState() {
+    if (!activeInlineEdit) return;
+    const { element, onBlur, onInput, onKeyDown, onPaste } = activeInlineEdit;
+    element.removeEventListener("blur", onBlur);
+    element.removeEventListener("input", onInput);
+    element.removeEventListener("keydown", onKeyDown);
+    element.removeEventListener("paste", onPaste);
+    element.removeAttribute("contenteditable");
+    element.removeAttribute("role");
+    element.removeAttribute("aria-multiline");
+    element.classList.remove("is-inline-editing");
+    element.classList.toggle("is-inline-empty", !inlineElementText(element).trim());
+    element.style.removeProperty("height");
+    element.style.removeProperty("min-height");
+    element.style.removeProperty("overflow-y");
+    activeInlineEdit = null;
+  }
+  function finishInlineEdit(commit) {
+    if (!activeInlineEdit) return;
+    const { config, element, originalText, path, sectionId } = activeInlineEdit;
+    const nextText = normalizeInlineEditText(inlineElementText(element), config, originalText);
+    clearInlineEditState();
+    if (commit) setPath(builderState.currentSchema, path, nextText);
+    builderState.selectedStudioSectionId = sectionId;
+    renderEditor();
+    renderPreview();
+  }
+  function beginInlineEdit(element, { selectAll = false } = {}) {
+    if (!element?.dataset.inlineEditPath || activeInlineEdit?.element === element) return;
+    if (activeInlineEdit) finishInlineEdit(true);
+    const section = element.closest("[data-studio-section]");
+    const sectionId = section?.dataset.studioSection || "";
+    const config = inlineEditConfigFromElement(element);
+    const originalText = normalizeInlineEditText(inlineElementText(element), config);
+    selectInlineEditElement(element);
+    let lastAcceptedText = inlineElementText(element);
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        finishInlineEdit(false);
+      } else if (event.key === "Enter") {
+        const currentText = inlineElementText(element);
+        const selectedText = window.getSelection()?.toString() || "";
+        const action = inlineEditEnterAction(config, event, currentText, selectedText);
+        if (action === "commit") {
+          event.preventDefault();
+          finishInlineEdit(true);
+          return;
+        }
+        if (action === "block") {
+          event.preventDefault();
+          return;
+        }
+        event.preventDefault();
+        insertInlinePlainText(element, "\n");
+        onInput();
+      }
+    };
+    const onInput = () => {
+      const value = inlineElementText(element);
+      element.classList.toggle("is-inline-empty", !value.trim());
+      const withinLength = value.length <= config.maxLength;
+      const withinLines = config.mode === "single" || value.split("\n").length <= config.maxLines;
+      if (withinLength && withinLines) {
+        lastAcceptedText = value;
+        syncInlineEditHeight(element, config);
+        return;
+      }
+      element.textContent = lastAcceptedText;
+      placeInlineCaretAtEnd(element);
+      syncInlineEditHeight(element, config);
+    };
+    const onPaste = (event) => {
+      event.preventDefault();
+      const currentText = inlineElementText(element);
+      const selectedLength = window.getSelection()?.toString().length || 0;
+      const availableLength = Math.max(0, config.maxLength - (currentText.length - selectedLength));
+      const pasted = constrainInlinePaste(event.clipboardData?.getData("text/plain") || "", config, availableLength);
+      insertInlinePlainText(element, pasted);
+      onInput();
+    };
+    const onBlur = () => finishInlineEdit(true);
+    activeInlineEdit = {
+      config,
+      element,
+      onBlur,
+      onInput,
+      onKeyDown,
+      onPaste,
+      originalText,
+      path: element.dataset.inlineEditPath,
+      sectionId
+    };
+    element.style.minHeight = `${Math.ceil(element.offsetHeight)}px`;
+    element.setAttribute("contenteditable", "plaintext-only");
+    if (!element.isContentEditable) element.setAttribute("contenteditable", "true");
+    element.setAttribute("role", "textbox");
+    element.setAttribute("aria-multiline", config.mode === "multiline" ? "true" : "false");
+    element.classList.add("is-inline-editing");
+    syncInlineEditHeight(element, config);
+    element.addEventListener("blur", onBlur);
+    element.addEventListener("input", onInput);
+    element.addEventListener("keydown", onKeyDown);
+    element.addEventListener("paste", onPaste);
+    element.focus();
+    const selection = window.getSelection();
+    const selectionIsInside = selection?.anchorNode && element.contains(selection.anchorNode);
+    if (selectAll) selectInlineContents(element);
+    else if (!selectionIsInside) placeInlineCaretAtEnd(element);
+  }
+  function bindInlineEditing(root) {
+    root.querySelectorAll("[data-inline-edit-path]").forEach((element) => {
+      element.classList.toggle("is-inline-empty", !inlineElementText(element).trim());
+      element.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (activeInlineEdit?.element === element) return;
+        const sectionId = element.closest("[data-studio-section]")?.dataset.studioSection || "";
+        const wasSelected = Boolean(sectionId && builderState.selectedStudioSectionId === sectionId);
+        selectStudioSection(sectionId);
+        const wasInlineSelected = selectedInlineEditPath === element.dataset.inlineEditPath;
+        selectInlineEditElement(element);
+        if (wasSelected && wasInlineSelected) beginInlineEdit(element);
+      });
+      element.addEventListener("dblclick", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const sectionId = element.closest("[data-studio-section]")?.dataset.studioSection || "";
+        selectStudioSection(sectionId);
+        selectInlineEditElement(element);
+        beginInlineEdit(element);
+      });
+      element.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || activeInlineEdit?.element === element) return;
+        event.preventDefault();
+        beginInlineEdit(element, { selectAll: true });
+      });
+    });
+  }
   function renderPreview() {
     if (!builderState.currentSchema) return;
+    clearInlineEditState();
     applyGeneratedFavicon(builderState.currentSchema);
     previewFrame2.innerHTML = renderWebsite2(schemaForPreview(), builderState.selectedPageKey);
+    restoreInlineEditSelection();
     renderStudioProgress();
     previewFrame2.querySelectorAll("[data-page-link]").forEach((link) => {
       link.addEventListener("click", (event) => {
+        if (link.matches("[data-inline-edit-path]")) return;
         event.preventDefault();
         builderState.selectedPageKey = link.dataset.pageLink;
         renderEditor();
@@ -19431,6 +19760,10 @@ Site ID: ${builderState.currentSiteId}`
         selectStudioSection(sectionElement.dataset.studioSection);
       });
     });
+    bindInlineEditing(previewFrame2);
+    const selectedSection = previewFrame2.querySelector(`[data-studio-section="${cssEscape(builderState.selectedStudioSectionId)}"]`);
+    selectedSection?.classList.add("is-selected");
+    if (studioSelectionToolbar) studioSelectionToolbar.hidden = !selectedSection;
     bindCatalogSearchInteractions(previewFrame2);
   }
   function bindCatalogSearchInteractions(root) {
