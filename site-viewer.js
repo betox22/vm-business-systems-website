@@ -524,9 +524,18 @@ function renderFeatureShowcase(section, schema) {
       ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
     </div>
     <div class="premium-feature-grid">
-      ${publicCatalogItems(schema).slice(0, 3).map((item, index) => `<article><small>${escapeHtml(index === 0 ? labels.signature : labels.detail)}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p></article>`).join("")}
+      ${publicCatalogItems(schema).slice(0, 3).map((item, index) => `<article><span class="premium-feature-icon" aria-hidden="true">${premiumFeatureIcon(index)}</span><small>${escapeHtml(index === 0 ? labels.signature : labels.detail)}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p></article>`).join("")}
     </div>
   </section>`;
+}
+
+function premiumFeatureIcon(index) {
+  const icons = [
+    '<svg viewBox="0 0 24 24"><path d="M12 3c3 4 5 6 5 10a5 5 0 0 1-10 0c0-4 2-6 5-10Z"></path><path d="M9 15c1 1 2 1.5 3 1.5"></path></svg>',
+    '<svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M8 2h8l1 12H7L8 2Z"></path><path d="M12 2c0-1 1-2 2-2"></path></svg>',
+    '<svg viewBox="0 0 24 24"><path d="M12 3l1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4L12 3Z"></path><path d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14Z"></path></svg>',
+  ];
+  return icons[index % icons.length];
 }
 
 function renderEditorialGallery(section, schema) {

@@ -12592,8 +12592,14 @@ function finishInlineEdit(commit) {
   const { config, element, originalText, path, sectionId } = activeInlineEdit;
   const nextText = normalizeInlineEditText(inlineElementText(element), config, originalText);
   clearInlineEditState();
-  if (commit) setPath(builderState.currentSchema, path, nextText);
-  builderState.selectedStudioSectionId = sectionId;
+  if (commit) {
+    setPath(builderState.currentSchema, path, nextText);
+    if (/^(?:catalog_items|products_services)\.\d+\./.test(path)) {
+      const catalogPath = path.replace(/^products_services\./, "catalog_items.");
+      setPath({ catalog_items: builderState.currentCatalogItems }, catalogPath, nextText);
+    }
+  }
+  if (sectionId) builderState.selectedStudioSectionId = sectionId;
   renderEditor();
   renderPreview();
 }

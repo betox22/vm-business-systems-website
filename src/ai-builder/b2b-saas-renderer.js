@@ -1,10 +1,12 @@
 import { escapeAttribute, escapeHtml } from "./utils.js";
 import { b2bSaasNavigationPages, b2bSaasSubscriptionPlans } from "./b2b-saas-policy.js";
+import { inlineEditCatalogPath, inlineEditPageTitlePath, inlineEditPath } from "./inline-edit-policy.js";
 
 export function renderB2BSaasWebsite(schema, page, context, options, helpers) {
   const { logo, layoutId, templateId, theme } = options;
   const {
     inlineEditAttrs = () => "",
+    inlineEditAttrsForPath = () => "",
     marketplaceItems,
     renderSection,
     renderStudioFloatingCatalog,
@@ -25,14 +27,14 @@ export function renderB2BSaasWebsite(schema, page, context, options, helpers) {
   return `<div class="${escapeAttribute(className)}" style="${themeVars(theme, b2bSaasThemeBrand(theme, schema.brand))}">
     ${renderStudioFloatingCatalog(schema, context)}
     <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => pageLink(item, item.page_key === page?.page_key)).join("")}</div></div>
-    ${renderHeader(schema, page, pages, logo, labels, plans)}
-    ${isHome ? `${renderHero(schema, hero, pages, items, labels, plans, { inlineEditAttrs, sectionAttrs })}${renderLogoRow(labels)}${renderFeatures(schema, sections, items, labels)}${renderPricing(plans, labels)}` : ""}
+    ${renderHeader(schema, page, pages, logo, labels, plans, inlineEditAttrsForPath)}
+    ${isHome ? `${renderHero(schema, hero, pages, items, labels, plans, { inlineEditAttrs, sectionAttrs })}${renderLogoRow(labels)}${renderFeatures(schema, sections, items, labels, inlineEditAttrsForPath)}${renderPricing(schema, plans, labels, inlineEditAttrsForPath)}${renderCallToAction(schema, sections, labels, inlineEditAttrsForPath, sectionAttrs)}` : ""}
     ${remaining.map((section) => renderSection(section, schema)).join("")}
-    <footer class="b2b-saas-footer"><div>${renderBrand(schema, logo)}</div><span>${escapeHtml(schema.global_components?.footer_text || `© ${new Date().getFullYear()} ${schema.business?.name || ""}`)}</span></footer>
+    <footer class="b2b-saas-footer"><div>${renderBrand(schema, logo)}</div><span ${inlineEditAttrsForPath(schema, "global_components.footer_text", "footer_text")}>${escapeHtml(schema.global_components?.footer_text || `© ${new Date().getFullYear()} ${schema.business?.name || ""}`)}</span></footer>
   </div>`;
 }
 
-function renderHeader(schema, page, pages, logo, labels, plans) {
+function renderHeader(schema, page, pages, logo, labels, plans, inlineEditAttrsForPath) {
   const navigation = b2bSaasNavigationPages(pages);
   const loginPage = findPage(pages, /(?:^|\b)(?:login|sign[ -]?in|account|cuenta|ingresar)(?:\b|$)/i);
   const contactPage = findPage(pages, /contact|demo|consulta/i);
@@ -40,7 +42,7 @@ function renderHeader(schema, page, pages, logo, labels, plans) {
   const startPage = (plans.length ? pricingPage : null) || contactPage || navigation[0]?.page || pages[0];
   return `<header class="b2b-saas-header">
     <a class="b2b-saas-brand" href="#" data-page-link="${escapeAttribute(pages[0]?.page_key || "home")}">${renderBrand(schema, logo)}</a>
-    <nav aria-label="${escapeAttribute(labels.navigation)}">${navigation.map(({ key, page: target }) => `<a class="${target.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(target.page_key)}">${escapeHtml(labels.nav[key])}</a>`).join("")}</nav>
+    <nav aria-label="${escapeAttribute(labels.navigation)}">${navigation.map(({ key, page: target }) => `<a class="${target.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(target.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditPageTitlePath(schema, target), "nav_label")}>${escapeHtml(target.title || labels.nav[key])}</a>`).join("")}</nav>
     <div class="b2b-saas-header-actions">${loginPage ? `<a class="b2b-saas-login" href="#" data-page-link="${escapeAttribute(loginPage.page_key)}">${escapeHtml(labels.login)}</a>` : ""}<button class="b2b-saas-start" type="button" data-page-link="${escapeAttribute(startPage?.page_key || "")}">${escapeHtml(labels.start)}</button></div>
   </header>`;
 }
@@ -79,19 +81,38 @@ function renderLogoRow(labels) {
   return `<section class="b2b-saas-logo-row" aria-label="${escapeAttribute(labels.exampleLogos)}"><span>${escapeHtml(labels.teams)}</span><div><strong>Northstar</strong><strong>Vertex</strong><strong>Meridian</strong><strong>Atlas</strong><strong>Aperture</strong></div></section>`;
 }
 
-function renderFeatures(schema, sections, items, labels) {
-  const features = items.slice(0, 3).map((item) => ({ title: item.name, description: item.description }));
-  const fallbacks = ["EnterpriseSolutions", "EnterpriseUseCases", "EnterpriseIntegrations"].map((type) => sections.find((section) => section.type === type)?.editable || {}).filter((item) => item.title || item.text);
-  [...fallbacks].forEach((item) => {
-    if (features.length < 3) features.push({ title: item.title, description: item.text });
+function renderFeatures(schema, sections, items, labels, inlineEditAttrsForPath) {
+  const headingSection = sections.find((section) => section.type === "EnterpriseSolutions") || {};
+  const heading = headingSection.editable || {};
+  const features = items.slice(0, 3).map((item) => ({
+    title: item.name,
+    description: item.description,
+    titlePath: inlineEditCatalogPath(schema, item, "name"),
+    descriptionPath: inlineEditCatalogPath(schema, item, "description"),
+  }));
+  const fallbacks = ["EnterpriseSolutions", "EnterpriseUseCases", "EnterpriseIntegrations"].map((type) => sections.find((section) => section.type === type)).filter((section) => section?.editable?.title || section?.editable?.text);
+  [...fallbacks].forEach((section) => {
+    if (features.length < 3) features.push({
+      title: section.editable.title,
+      description: section.editable.text,
+      titlePath: inlineEditPath(schema, section, "title"),
+      descriptionPath: inlineEditPath(schema, section, "text"),
+    });
   });
   if (!features.length && schema.business?.description) features.push({ title: schema.business?.name || labels.product, description: schema.business.description });
-  return `<section class="b2b-saas-features"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.product)}</span><h2>${escapeHtml(labels.featuresTitle)}</h2></div><div>${features.map((feature, index) => `<article><span>${icon(index)}</span><h3>${escapeHtml(feature.title || schema.business?.name || "")}</h3><p>${escapeHtml(feature.description || schema.business?.description || "")}</p></article>`).join("")}</div></section>`;
+  return `<section class="b2b-saas-features"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.product)}</span><h2 ${inlineEditAttrsForPath(schema, inlineEditPath(schema, headingSection, "title"), "title")}>${escapeHtml(heading.title || labels.featuresTitle)}</h2>${Object.prototype.hasOwnProperty.call(heading, "text") ? `<p ${inlineEditAttrsForPath(schema, inlineEditPath(schema, headingSection, "text"), "text")}>${escapeHtml(heading.text)}</p>` : ""}</div><div>${features.map((feature, index) => `<article><span>${icon(index)}</span><h3 ${inlineEditAttrsForPath(schema, feature.titlePath, "product_name")}>${escapeHtml(feature.title || schema.business?.name || "")}</h3><p ${inlineEditAttrsForPath(schema, feature.descriptionPath, "product_description")}>${escapeHtml(feature.description || schema.business?.description || "")}</p></article>`).join("")}</div></section>`;
 }
 
-function renderPricing(plans, labels) {
+function renderPricing(schema, plans, labels, inlineEditAttrsForPath) {
   if (plans.length !== 3) return "";
-  return `<section class="b2b-saas-pricing" id="pricing"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.pricing)}</span><h2>${escapeHtml(labels.pricingTitle)}</h2></div><div class="b2b-saas-plans">${plans.map((plan, index) => `<article class="${index === 1 ? "featured" : ""}">${index === 1 ? `<span class="b2b-saas-plan-badge">${escapeHtml(labels.popular)}</span>` : ""}<small>${escapeHtml(plan.category || labels.plan)}</small><h3>${escapeHtml(plan.name || "")}</h3><strong>${escapeHtml(plan.price_label || plan.price || "")}</strong>${plan.description ? `<p>${escapeHtml(plan.description)}</p>` : ""}<button type="button" data-item-id="${escapeAttribute(plan.id || "")}" data-item-name="${escapeAttribute(plan.name || "")}">${escapeHtml(plan.button_label || labels.choose)}</button></article>`).join("")}</div></section>`;
+  return `<section class="b2b-saas-pricing" id="pricing"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.pricing)}</span><h2>${escapeHtml(labels.pricingTitle)}</h2></div><div class="b2b-saas-plans">${plans.map((plan, index) => `<article class="${index === 1 ? "featured" : ""}">${index === 1 ? `<span class="b2b-saas-plan-badge">${escapeHtml(labels.popular)}</span>` : ""}<small>${escapeHtml(plan.category || labels.plan)}</small><h3 ${inlineEditAttrsForPath(schema, inlineEditCatalogPath(schema, plan, "name"), "product_name")}>${escapeHtml(plan.name || "")}</h3><strong>${escapeHtml(plan.price_label || plan.price || "")}</strong>${plan.description ? `<p ${inlineEditAttrsForPath(schema, inlineEditCatalogPath(schema, plan, "description"), "product_description")}>${escapeHtml(plan.description)}</p>` : ""}<button type="button" data-item-id="${escapeAttribute(plan.id || "")}" data-item-name="${escapeAttribute(plan.name || "")}">${escapeHtml(plan.button_label || labels.choose)}</button></article>`).join("")}</div></section>`;
+}
+
+function renderCallToAction(schema, sections, labels, inlineEditAttrsForPath, sectionAttrs) {
+  const section = sections.find((item) => item.type === "EnterpriseDemo");
+  if (!section) return "";
+  const editable = section.editable || {};
+  return `<section class="enterprise-demo-section b2b-saas-final-cta" ${sectionAttrs(section)}><div><span class="rendered-kicker">${escapeHtml(labels.demo)}</span><h2 ${inlineEditAttrsForPath(schema, inlineEditPath(schema, section, "title"), "title")}>${escapeHtml(editable.title || "")}</h2><p ${inlineEditAttrsForPath(schema, inlineEditPath(schema, section, "text"), "text")}>${escapeHtml(editable.text || "")}</p></div><button class="rendered-button" type="button" ${inlineEditAttrsForPath(schema, inlineEditPath(schema, section, "primary_button"), "primary_button")}>${escapeHtml(editable.primary_button || labels.demo)}</button></section>`;
 }
 
 function pageLink(page, active) {

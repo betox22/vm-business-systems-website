@@ -1822,7 +1822,18 @@
     headline: Object.freeze({ mode: "single", maxLength: 140, maxLines: 1 }),
     subtitle: Object.freeze({ mode: "multiline", maxLength: 320, maxLines: 3 }),
     primary_button: Object.freeze({ mode: "single", maxLength: 48, maxLines: 1 }),
-    secondary_button: Object.freeze({ mode: "single", maxLength: 48, maxLines: 1 })
+    secondary_button: Object.freeze({ mode: "single", maxLength: 48, maxLines: 1 }),
+    title: Object.freeze({ mode: "single", maxLength: 140, maxLines: 1 }),
+    text: Object.freeze({ mode: "multiline", maxLength: 520, maxLines: 6 }),
+    item_title: Object.freeze({ mode: "single", maxLength: 120, maxLines: 1 }),
+    item_description: Object.freeze({ mode: "multiline", maxLength: 360, maxLines: 4 }),
+    faq_question: Object.freeze({ mode: "single", maxLength: 180, maxLines: 1 }),
+    faq_answer: Object.freeze({ mode: "multiline", maxLength: 520, maxLines: 6 }),
+    product_name: Object.freeze({ mode: "single", maxLength: 120, maxLines: 1 }),
+    product_description: Object.freeze({ mode: "multiline", maxLength: 420, maxLines: 5 }),
+    nav_label: Object.freeze({ mode: "single", maxLength: 40, maxLines: 1 }),
+    footer_text: Object.freeze({ mode: "single", maxLength: 180, maxLines: 1 }),
+    contact_value: Object.freeze({ mode: "single", maxLength: 180, maxLines: 1 })
   });
   var INLINE_EDIT_PLACEHOLDERS = Object.freeze({
     en: Object.freeze({
@@ -1830,14 +1841,36 @@
       headline: "Write a headline here",
       subtitle: "Write supporting text here",
       primary_button: "Add button text",
-      secondary_button: "Add button text"
+      secondary_button: "Add button text",
+      title: "Write a section title",
+      text: "Write section copy here",
+      item_title: "Write an item title",
+      item_description: "Write an item description",
+      faq_question: "Write a question",
+      faq_answer: "Write an answer",
+      product_name: "Write a product or service name",
+      product_description: "Write a product or service description",
+      nav_label: "Write a navigation label",
+      footer_text: "Write footer text",
+      contact_value: "Add contact information"
     }),
     es: Object.freeze({
       badge: "Agrega una etiqueta",
       headline: "Escribe el titular aqui",
       subtitle: "Escribe el texto de apoyo aqui",
       primary_button: "Agrega el texto del boton",
-      secondary_button: "Agrega el texto del boton"
+      secondary_button: "Agrega el texto del boton",
+      title: "Escribe el titulo de la seccion",
+      text: "Escribe el contenido de la seccion",
+      item_title: "Escribe el titulo del elemento",
+      item_description: "Escribe la descripcion del elemento",
+      faq_question: "Escribe una pregunta",
+      faq_answer: "Escribe una respuesta",
+      product_name: "Escribe el nombre del producto o servicio",
+      product_description: "Escribe la descripcion del producto o servicio",
+      nav_label: "Escribe la etiqueta de navegacion",
+      footer_text: "Escribe el texto del pie de pagina",
+      contact_value: "Agrega la informacion de contacto"
     })
   });
   function inlineEditConfig(field) {
@@ -1858,6 +1891,46 @@
       }
     }
     return "";
+  }
+  function inlineEditSectionItemPath(schema, section, itemIndex, field) {
+    const sectionPath = inlineEditPath(schema, section, "title").replace(/\.title$/, "");
+    const index = Number(itemIndex);
+    if (!sectionPath || !Number.isInteger(index) || index < 0 || !["", "question", "answer", "name", "title", "description"].includes(field)) return "";
+    return `${sectionPath}.items.${index}${field ? `.${field}` : ""}`;
+  }
+  function inlineEditCatalogPath(schema, item, field) {
+    if (!["name", "description"].includes(field)) return "";
+    for (const collection of ["catalog_items", "products_services"]) {
+      const items = Array.isArray(schema?.[collection]) ? schema[collection] : [];
+      const index = items.findIndex((candidate) => candidate === item || candidate?.id && item?.id && candidate.id === item.id);
+      if (index >= 0) return `${collection}.${index}.${field}`;
+    }
+    return "";
+  }
+  function inlineEditNavigationPath(schema, item) {
+    const items = Array.isArray(schema?.navigation) ? schema.navigation : [];
+    const index = items.findIndex((candidate) => candidate === item || candidate?.page_key && item?.page_key && candidate.page_key === item.page_key);
+    return index >= 0 ? `navigation.${index}.label` : "";
+  }
+  function inlineEditPageTitlePath(schema, page) {
+    const pages = Array.isArray(schema?.pages) ? schema.pages : [];
+    const index = pages.findIndex((candidate) => candidate === page || candidate?.page_key && page?.page_key && candidate.page_key === page.page_key);
+    return index >= 0 ? `pages.${index}.title` : "";
+  }
+  function inlineEditPersistentPath(path, field) {
+    if (!inlineEditConfig(field)) return "";
+    const value = String(path || "");
+    const allowed = [
+      /^pages\.\d+\.sections\.\d+\.editable\.(?:badge|headline|subtitle|primary_button|secondary_button|title|text)$/,
+      /^pages\.\d+\.sections\.\d+\.editable\.items\.\d+\.(?:question|answer|name|title|description)$/,
+      /^pages\.\d+\.sections\.\d+\.editable\.items\.\d+$/,
+      /^(?:catalog_items|products_services)\.\d+\.(?:name|description)$/,
+      /^navigation\.\d+\.label$/,
+      /^pages\.\d+\.title$/,
+      /^global_components\.footer_text$/,
+      /^contact\.[A-Za-z0-9_-]+$/
+    ];
+    return allowed.some((pattern) => pattern.test(value)) ? value : "";
   }
   function normalizeInlineEditText(value, config = {}, fallback = "") {
     const mode = config.mode === "multiline" ? "multiline" : "single";
@@ -1940,6 +2013,7 @@
     const { logo, layoutId, templateId, theme } = options;
     const {
       inlineEditAttrs: inlineEditAttrs2 = () => "",
+      inlineEditAttrsForPath: inlineEditAttrsForPath2 = () => "",
       marketplaceItems: marketplaceItems2,
       renderSection: renderSection2,
       renderStudioFloatingCatalog: renderStudioFloatingCatalog2,
@@ -1959,13 +2033,13 @@
     return `<div class="${escapeAttribute(className)}" style="${themeVars2(theme, b2bSaasThemeBrand(theme, schema.brand))}">
     ${renderStudioFloatingCatalog2(schema, context)}
     <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => pageLink(item, item.page_key === page?.page_key)).join("")}</div></div>
-    ${renderHeader(schema, page, pages, logo, labels, plans)}
-    ${isHome ? `${renderHero(schema, hero, pages, items, labels, plans, { inlineEditAttrs: inlineEditAttrs2, sectionAttrs: sectionAttrs2 })}${renderLogoRow(labels)}${renderFeatures(schema, sections, items, labels)}${renderPricing(plans, labels)}` : ""}
+    ${renderHeader(schema, page, pages, logo, labels, plans, inlineEditAttrsForPath2)}
+    ${isHome ? `${renderHero(schema, hero, pages, items, labels, plans, { inlineEditAttrs: inlineEditAttrs2, sectionAttrs: sectionAttrs2 })}${renderLogoRow(labels)}${renderFeatures(schema, sections, items, labels, inlineEditAttrsForPath2)}${renderPricing(schema, plans, labels, inlineEditAttrsForPath2)}${renderCallToAction(schema, sections, labels, inlineEditAttrsForPath2, sectionAttrs2)}` : ""}
     ${remaining.map((section) => renderSection2(section, schema)).join("")}
-    <footer class="b2b-saas-footer"><div>${renderBrand(schema, logo)}</div><span>${escapeHtml(schema.global_components?.footer_text || `\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} ${schema.business?.name || ""}`)}</span></footer>
+    <footer class="b2b-saas-footer"><div>${renderBrand(schema, logo)}</div><span ${inlineEditAttrsForPath2(schema, "global_components.footer_text", "footer_text")}>${escapeHtml(schema.global_components?.footer_text || `\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} ${schema.business?.name || ""}`)}</span></footer>
   </div>`;
   }
-  function renderHeader(schema, page, pages, logo, labels, plans) {
+  function renderHeader(schema, page, pages, logo, labels, plans, inlineEditAttrsForPath2) {
     const navigation = b2bSaasNavigationPages(pages);
     const loginPage = findPage(pages, /(?:^|\b)(?:login|sign[ -]?in|account|cuenta|ingresar)(?:\b|$)/i);
     const contactPage = findPage(pages, /contact|demo|consulta/i);
@@ -1973,7 +2047,7 @@
     const startPage = (plans.length ? pricingPage : null) || contactPage || navigation[0]?.page || pages[0];
     return `<header class="b2b-saas-header">
     <a class="b2b-saas-brand" href="#" data-page-link="${escapeAttribute(pages[0]?.page_key || "home")}">${renderBrand(schema, logo)}</a>
-    <nav aria-label="${escapeAttribute(labels.navigation)}">${navigation.map(({ key, page: target }) => `<a class="${target.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(target.page_key)}">${escapeHtml(labels.nav[key])}</a>`).join("")}</nav>
+    <nav aria-label="${escapeAttribute(labels.navigation)}">${navigation.map(({ key, page: target }) => `<a class="${target.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(target.page_key)}" ${inlineEditAttrsForPath2(schema, inlineEditPageTitlePath(schema, target), "nav_label")}>${escapeHtml(target.title || labels.nav[key])}</a>`).join("")}</nav>
     <div class="b2b-saas-header-actions">${loginPage ? `<a class="b2b-saas-login" href="#" data-page-link="${escapeAttribute(loginPage.page_key)}">${escapeHtml(labels.login)}</a>` : ""}<button class="b2b-saas-start" type="button" data-page-link="${escapeAttribute(startPage?.page_key || "")}">${escapeHtml(labels.start)}</button></div>
   </header>`;
   }
@@ -2006,18 +2080,36 @@
   function renderLogoRow(labels) {
     return `<section class="b2b-saas-logo-row" aria-label="${escapeAttribute(labels.exampleLogos)}"><span>${escapeHtml(labels.teams)}</span><div><strong>Northstar</strong><strong>Vertex</strong><strong>Meridian</strong><strong>Atlas</strong><strong>Aperture</strong></div></section>`;
   }
-  function renderFeatures(schema, sections, items, labels) {
-    const features = items.slice(0, 3).map((item) => ({ title: item.name, description: item.description }));
-    const fallbacks = ["EnterpriseSolutions", "EnterpriseUseCases", "EnterpriseIntegrations"].map((type) => sections.find((section) => section.type === type)?.editable || {}).filter((item) => item.title || item.text);
-    [...fallbacks].forEach((item) => {
-      if (features.length < 3) features.push({ title: item.title, description: item.text });
+  function renderFeatures(schema, sections, items, labels, inlineEditAttrsForPath2) {
+    const headingSection = sections.find((section) => section.type === "EnterpriseSolutions") || {};
+    const heading = headingSection.editable || {};
+    const features = items.slice(0, 3).map((item) => ({
+      title: item.name,
+      description: item.description,
+      titlePath: inlineEditCatalogPath(schema, item, "name"),
+      descriptionPath: inlineEditCatalogPath(schema, item, "description")
+    }));
+    const fallbacks = ["EnterpriseSolutions", "EnterpriseUseCases", "EnterpriseIntegrations"].map((type) => sections.find((section) => section.type === type)).filter((section) => section?.editable?.title || section?.editable?.text);
+    [...fallbacks].forEach((section) => {
+      if (features.length < 3) features.push({
+        title: section.editable.title,
+        description: section.editable.text,
+        titlePath: inlineEditPath(schema, section, "title"),
+        descriptionPath: inlineEditPath(schema, section, "text")
+      });
     });
     if (!features.length && schema.business?.description) features.push({ title: schema.business?.name || labels.product, description: schema.business.description });
-    return `<section class="b2b-saas-features"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.product)}</span><h2>${escapeHtml(labels.featuresTitle)}</h2></div><div>${features.map((feature, index) => `<article><span>${icon(index)}</span><h3>${escapeHtml(feature.title || schema.business?.name || "")}</h3><p>${escapeHtml(feature.description || schema.business?.description || "")}</p></article>`).join("")}</div></section>`;
+    return `<section class="b2b-saas-features"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.product)}</span><h2 ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, headingSection, "title"), "title")}>${escapeHtml(heading.title || labels.featuresTitle)}</h2>${Object.prototype.hasOwnProperty.call(heading, "text") ? `<p ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, headingSection, "text"), "text")}>${escapeHtml(heading.text)}</p>` : ""}</div><div>${features.map((feature, index) => `<article><span>${icon(index)}</span><h3 ${inlineEditAttrsForPath2(schema, feature.titlePath, "product_name")}>${escapeHtml(feature.title || schema.business?.name || "")}</h3><p ${inlineEditAttrsForPath2(schema, feature.descriptionPath, "product_description")}>${escapeHtml(feature.description || schema.business?.description || "")}</p></article>`).join("")}</div></section>`;
   }
-  function renderPricing(plans, labels) {
+  function renderPricing(schema, plans, labels, inlineEditAttrsForPath2) {
     if (plans.length !== 3) return "";
-    return `<section class="b2b-saas-pricing" id="pricing"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.pricing)}</span><h2>${escapeHtml(labels.pricingTitle)}</h2></div><div class="b2b-saas-plans">${plans.map((plan, index) => `<article class="${index === 1 ? "featured" : ""}">${index === 1 ? `<span class="b2b-saas-plan-badge">${escapeHtml(labels.popular)}</span>` : ""}<small>${escapeHtml(plan.category || labels.plan)}</small><h3>${escapeHtml(plan.name || "")}</h3><strong>${escapeHtml(plan.price_label || plan.price || "")}</strong>${plan.description ? `<p>${escapeHtml(plan.description)}</p>` : ""}<button type="button" data-item-id="${escapeAttribute(plan.id || "")}" data-item-name="${escapeAttribute(plan.name || "")}">${escapeHtml(plan.button_label || labels.choose)}</button></article>`).join("")}</div></section>`;
+    return `<section class="b2b-saas-pricing" id="pricing"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.pricing)}</span><h2>${escapeHtml(labels.pricingTitle)}</h2></div><div class="b2b-saas-plans">${plans.map((plan, index) => `<article class="${index === 1 ? "featured" : ""}">${index === 1 ? `<span class="b2b-saas-plan-badge">${escapeHtml(labels.popular)}</span>` : ""}<small>${escapeHtml(plan.category || labels.plan)}</small><h3 ${inlineEditAttrsForPath2(schema, inlineEditCatalogPath(schema, plan, "name"), "product_name")}>${escapeHtml(plan.name || "")}</h3><strong>${escapeHtml(plan.price_label || plan.price || "")}</strong>${plan.description ? `<p ${inlineEditAttrsForPath2(schema, inlineEditCatalogPath(schema, plan, "description"), "product_description")}>${escapeHtml(plan.description)}</p>` : ""}<button type="button" data-item-id="${escapeAttribute(plan.id || "")}" data-item-name="${escapeAttribute(plan.name || "")}">${escapeHtml(plan.button_label || labels.choose)}</button></article>`).join("")}</div></section>`;
+  }
+  function renderCallToAction(schema, sections, labels, inlineEditAttrsForPath2, sectionAttrs2) {
+    const section = sections.find((item) => item.type === "EnterpriseDemo");
+    if (!section) return "";
+    const editable = section.editable || {};
+    return `<section class="enterprise-demo-section b2b-saas-final-cta" ${sectionAttrs2(section)}><div><span class="rendered-kicker">${escapeHtml(labels.demo)}</span><h2 ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, section, "title"), "title")}>${escapeHtml(editable.title || "")}</h2><p ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, section, "text"), "text")}>${escapeHtml(editable.text || "")}</p></div><button class="rendered-button" type="button" ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, section, "primary_button"), "primary_button")}>${escapeHtml(editable.primary_button || labels.demo)}</button></section>`;
   }
   function pageLink(page, active) {
     return `<a class="${active ? "active" : ""}" href="#" data-page-link="${escapeAttribute(page.page_key)}">${escapeHtml(page.title || page.page_key)}</a>`;
@@ -2163,6 +2255,7 @@
         renderSection,
         renderStudioFloatingCatalog,
         inlineEditAttrs,
+        inlineEditAttrsForPath,
         sectionAttrs,
         themeVars
       });
@@ -2176,13 +2269,13 @@
     </div>
     <header class="rendered-nav ${schema.layout_mode?.navigation?.sticky_header ? "sticky" : ""}">
       <div class="rendered-nav-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business.name)}">` : renderLogoMark(schema)}</div>
-      <nav>${schema.navigation.map((item) => `<a class="${item.page_key === page.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.label)}</a>`).join("")}</nav>
+      <nav>${schema.navigation.map((item) => `<a class="${item.page_key === page.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditNavigationPath(schema, item), "nav_label")}>${escapeHtml(item.label)}</a>`).join("")}</nav>
       ${commerceActions}
     </header>
     ${page.sections.sort((a, b) => a.order - b.order).map((section) => renderSection(section, schema)).join("")}
     <footer class="rendered-footer">
       <div>${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business.name)}">` : renderLogoMark(schema)}</div>
-      <span>${escapeHtml(schema.global_components.footer_text || "")}</span>
+      <span ${inlineEditAttrsForPath(schema, "global_components.footer_text", "footer_text")}>${escapeHtml(schema.global_components.footer_text || "")}</span>
     </footer>
   </div>`;
   }
@@ -2225,6 +2318,9 @@
   </div>`;
   }
   function renderSection(section, schema) {
+    if (supportsExpandedInlineEditing(schema) && /FAQ$/i.test(section.type || "")) {
+      return renderFunnelFAQ(section, schema);
+    }
     const renderers = {
       Hero: renderHero2,
       PremiumHero: renderPremiumHero,
@@ -2390,8 +2486,8 @@
     return `<section class="premium-story ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div>
       <span class="rendered-kicker">${escapeHtml(schema.business?.tone || "")}</span>
-      <h2>${escapeHtml(editable.title || editable.headline || "")}</h2>
-      <p>${escapeHtml(editable.text || editable.subtitle || "")}</p>
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(inlineEditableValue2(editable, "title", editable.headline || ""))}</h2>
+      <p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(inlineEditableValue2(editable, "text", editable.subtitle || ""))}</p>
     </div>
     <div class="premium-story-visual">${image ? `<img src="${escapeAttribute(image)}" alt="">` : premiumVisualPlaceholder(schema)}</div>
   </section>`;
@@ -2402,27 +2498,36 @@
     return `<section class="premium-feature-showcase ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="section-heading">
       <span class="rendered-kicker">${escapeHtml(schema.business?.industry || "")}</span>
-      <h2>${escapeHtml(editable.title || "")}</h2>
-      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(inlineEditableValue2(editable, "title", ""))}</h2>
+      ${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}
     </div>
     <div class="premium-feature-grid">
       ${items.map((item, index) => `<article>
+        <span class="premium-feature-icon" aria-hidden="true">${premiumFeatureIcon(index)}</span>
         <small>${escapeHtml(index === 0 ? catalogLocaleLabels(schema).signature : catalogLocaleLabels(schema).detail)}</small>
-        <h3>${escapeHtml(item.name)}</h3>
-        <p>${escapeHtml(item.description)}</p>
+        <h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</h3>
+        <p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p>
       </article>`).join("")}
     </div>
   </section>`;
+  }
+  function premiumFeatureIcon(index) {
+    const icons = [
+      '<svg viewBox="0 0 24 24"><path d="M12 3c3 4 5 6 5 10a5 5 0 0 1-10 0c0-4 2-6 5-10Z"></path><path d="M9 15c1 1 2 1.5 3 1.5"></path></svg>',
+      '<svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M8 2h8l1 12H7L8 2Z"></path><path d="M12 2c0-1 1-2 2-2"></path></svg>',
+      '<svg viewBox="0 0 24 24"><path d="M12 3l1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4L12 3Z"></path><path d="M18 14l.8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14Z"></path></svg>'
+    ];
+    return icons[index % icons.length];
   }
   function renderSpecStrip(section, schema) {
     const editable = section.editable || {};
     const items = Array.isArray(editable.items) && editable.items.length ? editable.items : catalogLocaleLabels(schema).premiumSpecs;
     return `<section class="premium-spec-strip ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div>
-      <h2>${escapeHtml(editable.title || "")}</h2>
-      ${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(inlineEditableValue2(editable, "title", ""))}</h2>
+      ${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}
     </div>
-    <div>${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    <div>${items.map((item, index) => `<span ${inlineSectionItemEditAttrs(schema, section, index, "", "item_title")}>${escapeHtml(item)}</span>`).join("")}</div>
   </section>`;
   }
   function premiumVisualPlaceholder(schema) {
@@ -3342,11 +3447,11 @@
     const items = (Array.isArray(editable.items) && editable.items.length ? editable.items : marketplaceItems(schema)).slice(0, 8);
     const beforeAfter = section.settings?.layout === "before_after" || editable.before_after === true || items.some((item) => item.beforeImageUrl || item.afterImageUrl);
     return `<section class="home-service-gallery portfolio-gallery ${beforeAfter ? "is-before-after" : ""} ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.workProof)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.workProof)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(inlineEditableValue2(editable, "title", ""))}</h2>${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}</div>
     <div class="home-service-work-grid">${items.map((item) => `<article>
       ${beforeAfter && (item.beforeImageUrl || item.afterImageUrl) ? `<div class="portfolio-before-after"><figure>${renderResilientImage(item.beforeImageUrl || item.image_url, item.name, `${item.name || "Project"} before`)}<figcaption>${escapeHtml(labels.before)}</figcaption></figure><figure>${renderResilientImage(item.afterImageUrl || item.image_url, item.name, `${item.name || "Project"} after`)}<figcaption>${escapeHtml(labels.after)}</figcaption></figure></div>` : renderResilientImage(item.image_url || item.imageUrl, item.name || item.title, item.name || item.title)}
       ${renderImageAttribution(item)}
-      <div><strong>${escapeHtml(item.name || item.title || "")}</strong>${item.description ? `<p>${escapeHtml(item.description)}</p>` : ""}${item.price_label || item.price ? `<b>${escapeHtml(item.price_label || item.price)}</b>` : ""}</div>
+      <div><strong ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name || item.title || "")}</strong>${item.description ? `<p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p>` : ""}${item.price_label || item.price ? `<b>${escapeHtml(item.price_label || item.price)}</b>` : ""}</div>
     </article>`).join("")}</div>
   </section>`;
   }
@@ -3523,8 +3628,8 @@
     const labels = catalogLocaleLabels(schema);
     const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.funnelFaqItems;
     return `<section class="funnel-faq-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div><span class="rendered-kicker">${escapeHtml(labels.faq)}</span><h2>${escapeHtml(editable.title || "")}</h2></div>
-    <div class="funnel-faq-list">${items.map((item, index) => `<article><strong>${escapeHtml(item.question || item)}</strong><p>${escapeHtml(item.answer || labels.faqAnswer)}</p></article>`).join("")}</div>
+    <div><span class="rendered-kicker">${escapeHtml(labels.faq)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(inlineEditableValue2(editable, "title", ""))}</h2></div>
+    <div class="funnel-faq-list">${items.map((item, index) => `<article><strong ${inlineSectionItemEditAttrs(schema, section, index, typeof item === "object" ? "question" : "", "faq_question")}>${escapeHtml(item.question || item)}</strong><p ${typeof item === "object" && Object.prototype.hasOwnProperty.call(item, "answer") ? inlineSectionItemEditAttrs(schema, section, index, "answer", "faq_answer") : ""}>${escapeHtml(item.answer || labels.faqAnswer)}</p></article>`).join("")}</div>
   </section>`;
   }
   function funnelVisualPlaceholder(schema) {
@@ -3631,16 +3736,16 @@
     return `<section class="rendered-section section-${escapeAttribute(slugify2(section.settings?.layout || "grid"))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="section-heading">
       <span class="rendered-kicker">${escapeHtml(schema.business.tone || "Selected")}</span>
-      <h2>${escapeHtml(editable.title || editable.headline || "Products and services")}</h2>
-      ${editable.text || editable.subtitle ? `<p>${escapeHtml(editable.text || editable.subtitle)}</p>` : ""}
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(inlineEditableValue2(editable, "title", editable.headline || "Products and services"))}</h2>
+      ${Object.prototype.hasOwnProperty.call(editable, "text") || editable.subtitle ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(inlineEditableValue2(editable, "text", editable.subtitle || ""))}</p>` : ""}
     </div>
     ${customCatalog || `<div class="rendered-grid columns-${columns}">
       ${catalogItems.map(
       (item) => `<article class="rendered-card">
             ${renderCatalogImage(item)}
             <div>
-              <h3>${escapeHtml(item.name)}</h3>
-              <p>${escapeHtml(item.description)}</p>
+              <h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</h3>
+              <p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p>
               <strong>${escapeHtml(productPriceLabel(item, schema))}</strong>
               ${productStockBadge(item)}
               <br><a class="rendered-button" href="#">${escapeHtml(item.button_label)}</a>
@@ -3763,8 +3868,8 @@
       <div class="premium-card-visual">${renderCatalogImage(item)}</div>
       <div>
         <small>${escapeHtml(index === 0 ? labels.flagship : labels.curated)}</small>
-        <h3>${escapeHtml(item.name)}</h3>
-        <p>${escapeHtml(item.description)}</p>
+        <h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</h3>
+        <p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p>
         <strong>${escapeHtml(productPriceLabel(item, schema))}</strong>
         <a class="rendered-button secondary" href="#">${escapeHtml(item.button_label || labels.view)}</a>
       </div>
@@ -3910,7 +4015,7 @@
     const labels = catalogLocaleLabels(schema);
     return `<div class="catalog-b2b-solutions">${items.map((item, index) => `<article class="${index === 0 ? "featured" : ""}">
     <div class="b2b-card-top"><small>${escapeHtml(item.deal_label || (index % 2 ? labels.integrationReady : labels.enterpriseReady))}</small><span>${escapeHtml(item.shipping_label || labels.enterpriseTimelines?.[index % (labels.enterpriseTimelines?.length || 1)] || "")}</span></div>
-    <div class="b2b-card-body"><small>${escapeHtml(item.category || labels.solutions)}</small><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><ul><li>${escapeHtml(labels.roiFocused)}</li><li>${escapeHtml(labels.integrationReady)}</li><li>${escapeHtml(labels.enterpriseReady)}</li></ul><div><strong>${escapeHtml(productPriceLabel(item, schema) || labels.customPlan)}</strong><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.requestDemo)}</a></div></div>
+    <div class="b2b-card-body"><small>${escapeHtml(item.category || labels.solutions)}</small><h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</h3><p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p><ul><li>${escapeHtml(labels.roiFocused)}</li><li>${escapeHtml(labels.integrationReady)}</li><li>${escapeHtml(labels.enterpriseReady)}</li></ul><div><strong>${escapeHtml(productPriceLabel(item, schema) || labels.customPlan)}</strong><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.requestDemo)}</a></div></div>
   </article>`).join("")}</div>`;
   }
   function renderIndustrialSupplierCatalog(items, schema) {
@@ -5198,13 +5303,13 @@
     const image = editable.image_url || marketplaceItems(schema).find((item) => item.image_url)?.image_url || "";
     const heading = `<div class="section-heading">
       <span class="rendered-kicker">${escapeHtml(section.type)}</span>
-      <h2>${escapeHtml(editable.title || editable.headline || section.type)}</h2>
-      <p>${escapeHtml(editable.text || editable.subtitle || "")}</p>
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(inlineEditableValue2(editable, "title", editable.headline || section.type))}</h2>
+      <p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(inlineEditableValue2(editable, "text", editable.subtitle || ""))}</p>
     </div>`;
     if (variant === "card_grid") {
       const items = Array.isArray(editable.items) && editable.items.length ? editable.items : marketplaceItems(schema).slice(0, 3).map((item) => item.name);
       return `<section class="rendered-section feature-band feature-card-grid ${sectionClass(section)}" ${sectionAttrs(section)}>
-      ${heading}<div class="feature-band-cards">${items.slice(0, 3).map((item) => `<article><strong>${escapeHtml(item.name || item)}</strong><span>${escapeHtml(item.description || editable.text || "")}</span></article>`).join("")}</div>
+      ${heading}<div class="feature-band-cards">${items.slice(0, 3).map((item, index) => `<article><strong ${inlineSectionItemEditAttrs(schema, section, index, typeof item === "object" ? Object.prototype.hasOwnProperty.call(item, "name") ? "name" : "title" : "", "item_title")}>${escapeHtml(item.name || item.title || item)}</strong>${typeof item === "object" && Object.prototype.hasOwnProperty.call(item, "description") ? `<span ${inlineSectionItemEditAttrs(schema, section, index, "description", "item_description")}>${escapeHtml(item.description)}</span>` : `<span>${escapeHtml(editable.text || "")}</span>`}</article>`).join("")}</div>
     </section>`;
     }
     const visual = image ? `<div class="feature-band-visual"><img src="${escapeAttribute(image)}" alt=""></div>` : "";
@@ -5225,10 +5330,10 @@
     return `<section class="rendered-section contact-panel ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div>
       <span class="rendered-kicker">${escapeHtml(schema.business.location || "Contact")}</span>
-      <h2>${escapeHtml(editable.title || "Contact")}</h2>
-      <p>${escapeHtml(editable.text || "Reach out for more information.")}</p>
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(inlineEditableValue2(editable, "title", "Contact"))}</h2>
+      <p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(inlineEditableValue2(editable, "text", "Reach out for more information."))}</p>
     </div>
-    <div class="contact-list">${Object.entries(schema.contact || {}).filter(([, value]) => value).map(([key, value]) => `<p><strong>${escapeHtml(key)}</strong><span>${escapeHtml(value)}</span></p>`).join("")}</div>
+    <div class="contact-list">${Object.entries(schema.contact || {}).filter(([, value]) => value).map(([key, value]) => `<p><strong>${escapeHtml(key)}</strong><span ${inlineEditAttrsForPath(schema, `contact.${key}`, "contact_value")}>${escapeHtml(value)}</span></p>`).join("")}</div>
   </section>`;
   }
   function visualPlaceholder(schema) {
@@ -5329,9 +5434,19 @@
     return `family=${encodeURIComponent(family).replace(/%20/g, "+")}:wght@${weights}`;
   }
   function inlineEditAttrs(schema, section, field) {
-    const path = inlineEditPath(schema, section, field);
+    return inlineEditAttrsForPath(schema, inlineEditPath(schema, section, field), field);
+  }
+  function inlineCatalogEditAttrs(schema, item, itemField, editField) {
+    return inlineEditAttrsForPath(schema, inlineEditCatalogPath(schema, item, itemField), editField);
+  }
+  function inlineSectionItemEditAttrs(schema, section, index, itemField, editField) {
+    return inlineEditAttrsForPath(schema, inlineEditSectionItemPath(schema, section, index, itemField), editField);
+  }
+  function inlineEditAttrsForPath(schema, candidatePath, field) {
+    if (!supportsExpandedInlineEditing(schema)) return "";
+    const path = inlineEditPersistentPath(candidatePath, field);
     const config = inlineEditConfig(field);
-    if (!path) return "";
+    if (!path || !config) return "";
     const label = field.replaceAll("_", " ");
     const placeholder = inlineEditPlaceholder(field, schema.business?.selectedLanguage);
     return [
@@ -5342,8 +5457,12 @@
       `data-inline-edit-max-lines="${config.maxLines}"`,
       `data-inline-edit-placeholder="${escapeAttribute(placeholder)}"`,
       'tabindex="0"',
-      `aria-label="${escapeAttribute(`Edit hero ${label}`)}"`
+      `aria-label="${escapeAttribute(`Edit ${label}`)}"`
     ].join(" ");
+  }
+  function supportsExpandedInlineEditing(schema = {}) {
+    const templateId = schema.active_template?.id || schema.selected_template?.id || "";
+    return ["premium-product-store", "b2b-saas-enterprise-pro"].includes(templateId);
   }
   function inlineEditableValue2(editable, field, fallback = "") {
     return Object.prototype.hasOwnProperty.call(editable || {}, field) ? editable[field] : fallback;
@@ -19619,8 +19738,14 @@ ${content}` : content;
     const { config, element, originalText, path, sectionId } = activeInlineEdit;
     const nextText = normalizeInlineEditText(inlineElementText(element), config, originalText);
     clearInlineEditState();
-    if (commit) setPath(builderState.currentSchema, path, nextText);
-    builderState.selectedStudioSectionId = sectionId;
+    if (commit) {
+      setPath(builderState.currentSchema, path, nextText);
+      if (/^(?:catalog_items|products_services)\.\d+\./.test(path)) {
+        const catalogPath = path.replace(/^products_services\./, "catalog_items.");
+        setPath({ catalog_items: builderState.currentCatalogItems }, catalogPath, nextText);
+      }
+    }
+    if (sectionId) builderState.selectedStudioSectionId = sectionId;
     renderEditor();
     renderPreview();
   }
