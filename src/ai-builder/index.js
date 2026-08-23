@@ -38,6 +38,7 @@ import { escapeHtml, escapeAttribute } from './utils.js';
 import { pickVariantSeed } from './variants.js';
 import { buildColorProvenance, colorPreferenceUpdate } from './color-provenance.js';
 import { applyAuthoritativeThemeToBrand } from './theme-policy.js';
+import { applySurgicalSchemaEdit, detectSurgicalEditIntent } from './surgical-edit-policy.js';
 import { generationAuthAction } from './auth-session-policy.js';
 import {
   hasOnlineSalesSignal,
@@ -5846,6 +5847,7 @@ function buildRevisionInstructions() {
 
 
 async function requestLyraSchemaEdit(message, payload = {}, localContextUpdates = {}, templateSelection = null) {
+  const editIntent = detectSurgicalEditIntent(message, builderState.currentSchema || {});
   const response = await fetch(LYRA_EDIT_URL, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -5853,6 +5855,7 @@ async function requestLyraSchemaEdit(message, payload = {}, localContextUpdates 
       currentSchema: builderState.currentSchema,
       instruction: message,
       selectedLanguage: builderState.selectedLanguage,
+      editIntent,
       userContext: {
         businessName: builderState.guidedState.businessName || payload.business_name,
         businessDescription: builderState.guidedState.businessDescription || payload.business_description,
@@ -5879,26 +5882,28 @@ function explicitlyRequestsTemplateSwitch(text) {
 }
 
 function shouldRebuildDraftFromTemplate(message, payload = {}, templateSelection = null) {
-  const text = normalizeTemplateIntentText([
-    message,
-    payload.business_description,
-    payload.industry,
-    arrayValue(payload.services_products).join(" "),
-    payload.templateIntent,
-    templateSelection?.templateId,
-    templateSelection?.catalogType,
-  ].join(" "));
-  const currentTemplateId = builderState.currentSchema?.selected_template?.id || builderState.currentSchema?.active_template?.id || builderState.currentSchema?.layout_mode?.template_id || "";
-  const nextTemplateId = templateSelection?.templateId || inferDesignerTemplateIdFromPayload(payload) || inferTemplateIdFromText(text);
-  return Boolean(
-    /template|plantilla|estructura|layout|marketplace|catalogo|catálogo|tienda|store|shop|cyberpunk|neon|estilo|style|diseño|diseno/.test(text)
-      || textSuggestsBroadMarketplace(text)
-      || textSuggestsFocusedProductLine(text)
-      || (nextTemplateId && nextTemplateId !== currentTemplateId)
-  );
+  const text = normalizeTemplateIntentText(message);
+  return explicitlyRequestsTemplateSwitch(text) || isExplicitRedesignRequest(message);
 }
 
 function applyTargetedSchemaPatch(schema, message, payload = {}, localContextUpdates = {}, templateSelection = null) {
+  const surgicalEdit = applySurgicalSchemaEdit(schema, message);
+  if (surgicalEdit.changedPaths.length) {
+    surgicalEdit.schema.revision_history = [
+      ...arrayValue(surgicalEdit.schema.revision_history).slice(-8),
+      {
+        requested_at: new Date().toISOString(),
+        request: cleanShortText(message, 260),
+        applied_locally: true,
+        edit_intent: surgicalEdit.intent.kind,
+        changed_fields: surgicalEdit.changedPaths,
+      },
+    ];
+    return surgicalEdit.schema;
+  }
+  if (surgicalEdit.intent.kind !== "layout") {
+    return surgicalEdit.schema;
+  }
   let nextSchema = structuredClone(schema);
   const text = normalizeTemplateIntentText(message);
   const revisionFlags = draftRevisionFlags(text);

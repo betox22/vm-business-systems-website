@@ -8,6 +8,11 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from .models import SupportedLanguage
+from .surgical_edit_policy import (
+    detect_surgical_edit_intent,
+    filter_operations_for_intent,
+    synchronize_color_mirrors,
+)
 
 try:
     from openai import AsyncOpenAI
@@ -92,6 +97,8 @@ class LyraEditEngine:
                 "allowedRootPaths": sorted(self.ALLOWED_ROOTS),
             },
         }
+        edit_intent = detect_surgical_edit_intent(instruction, current_schema)
+        payload["editIntent"] = edit_intent.as_dict()
 
         response = await self.client.chat.completions.create(
             model=self.model,
@@ -109,14 +116,19 @@ class LyraEditEngine:
 
         raw_args = tool_calls[0].function.arguments or "{}"
         patch = LyraSchemaPatch.model_validate(json.loads(raw_args))
-        safe_ops = [op for op in patch.operations[:16] if self._is_allowed_path(op.path)]
+        root_safe_ops = [op for op in patch.operations[:16] if self._is_allowed_path(op.path)]
+        safe_ops = filter_operations_for_intent(root_safe_ops, edit_intent)
         patched_schema = apply_patch_operations(current_schema, safe_ops)
+        mirror_paths = synchronize_color_mirrors(current_schema, patched_schema, edit_intent)
+        changed_paths = [op.path for op in safe_ops]
+        changed_paths.extend(path for path in mirror_paths if path not in changed_paths)
 
         return {
             "patchedSchema": patched_schema,
             "patchOperations": [op.model_dump() for op in safe_ops],
             "patchSummary": patch.patchSummary,
-            "changedFields": patch.changedFields[:16],
+            "changedFields": changed_paths,
+            "editIntent": edit_intent.as_dict(),
             "usedAI": True,
         }
 
@@ -207,19 +219,22 @@ Your job is to patch only the requested parts.
 Rules:
 1. Return only apply_schema_patch tool output. Never return a full schema.
 2. Preserve the selected template, layout, page order, unrelated sections, catalog items, business data, and language unless the user explicitly asks to change that exact thing.
-3. If the user asks for colors, patch theme/brand colors only.
-4. If the user asks for copy, patch only editable text fields or relevant business text.
-5. If the user asks to fix overlap, clipping, mobile layout, or visual safety, patch section settings/theme spacing/classes only. Do not rewrite unrelated copy.
-6. If the user asks to add products, add only catalog_items.
-7. If the user asks to remove or rename products, patch only matching catalog_items.
-8. If the instruction is ambiguous, make the smallest safe patch and mention it in patchSummary.
-9. patchSummary must be in selectedLanguage.
-10. Use JSON Pointer paths such as /theme/colors/accent, /pages/0/sections/0/editable/headline, /catalog_items/0/name.
+3. Obey editIntent exactly. It is an authoritative allowlist, not a suggestion.
+4. If the user asks for colors, patch only the requested theme/brand color field.
+5. If the user asks for section copy, patch only the targeted section and requested text field.
+6. If the user asks about one product, patch only the matching catalog item and requested product field.
+7. If the user asks for an image, patch only the targeted section or product image field.
+8. If the user asks to fix overlap, clipping, mobile layout, or visual safety, patch section settings only. Do not rewrite unrelated copy.
+9. If editIntent is unknown or has no target, return no operations and explain what must be clarified in patchSummary.
+10. patchSummary must be in selectedLanguage.
+11. Use JSON Pointer paths such as /theme/colors/accent, /pages/0/sections/0/editable/headline, /catalog_items/0/name.
 """.strip()
 
 
 def apply_patch_operations(schema: Dict[str, Any], operations: List[SchemaPatchOperation]) -> Dict[str, Any]:
     next_schema = copy.deepcopy(schema)
+    if not operations:
+        return next_schema
     for operation in operations:
         try:
             apply_single_operation(next_schema, operation)

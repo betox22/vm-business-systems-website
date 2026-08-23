@@ -232,6 +232,7 @@ class LyraEditResponse(BaseModel):
     patchOperations: List[Dict[str, Any]] = Field(default_factory=list)
     patchSummary: str = ""
     changedFields: List[str] = Field(default_factory=list)
+    editIntent: Dict[str, Any] = Field(default_factory=dict)
     usedAI: bool = False
 
 

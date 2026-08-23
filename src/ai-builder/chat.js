@@ -799,7 +799,10 @@ export async function applyDraftAdjustmentFromChat(message, localContextUpdates 
   builderAvatarManager?.setState("thinking", { source: "draft-adjustment" });
   try {
     applyGuidedStateToForm();
-    syncTemplateSelectionFromGuidedContext(message);
+    const explicitTemplateSwitch = explicitlyRequestsTemplateSwitch(normalizeTemplateIntentText(message));
+    if (explicitTemplateSwitch || requestsDifferentDesign) {
+      syncTemplateSelectionFromGuidedContext(message);
+    }
     const payload = await collectPayload();
     const text = normalizeTemplateIntentText([
       message,
@@ -809,8 +812,9 @@ export async function applyDraftAdjustmentFromChat(message, localContextUpdates 
       payload.preferred_tone,
       arrayValue(payload.preferred_colors).join(" "),
     ].join(" "));
-    const templateSelection = await selectTemplateForPayload(payload);
-    const explicitTemplateSwitch = explicitlyRequestsTemplateSwitch(text);
+    const templateSelection = explicitTemplateSwitch || requestsDifferentDesign
+      ? await selectTemplateForPayload(payload)
+      : null;
     const serverEdit = builderState.currentSchema && !explicitTemplateSwitch
       ? await requestLyraSchemaEdit(message, payload, localContextUpdates, templateSelection).catch((error) => {
           console.warn("Lyra server edit unavailable; falling back to local patch.", error);
@@ -818,8 +822,7 @@ export async function applyDraftAdjustmentFromChat(message, localContextUpdates 
         })
       : null;
     if (serverEdit?.patchedSchema) {
-      builderState.currentSchema = prepareWebsiteConfig(serverEdit.patchedSchema, payload, templateSelection);
-      if (briefRequestsCyberpunk(text)) builderState.currentSchema = applyCyberpunkVisualDirection(builderState.currentSchema);
+      builderState.currentSchema = serverEdit.patchedSchema;
       builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
       builderState.selectedPageKey = builderState.currentSchema.pages?.[0]?.page_key || "home";
       builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || builderState.selectedVariantId || "";
@@ -849,9 +852,13 @@ export async function applyDraftAdjustmentFromChat(message, localContextUpdates 
     const nextSchema = shouldRebuildFromTemplate
       ? buildInstantTemplateSchema(payload, templateSelection)
       : applyTargetedSchemaPatch(builderState.currentSchema, message, payload, localContextUpdates, templateSelection);
-    const mergedSchema = templateSelection ? mergeTemplateSelectionIntoSchema(nextSchema, templateSelection) : nextSchema;
-    builderState.currentSchema = prepareWebsiteConfig(mergedSchema, payload, templateSelection);
-    if (briefRequestsCyberpunk(text)) builderState.currentSchema = applyCyberpunkVisualDirection(builderState.currentSchema);
+    if (shouldRebuildFromTemplate) {
+      const mergedSchema = templateSelection ? mergeTemplateSelectionIntoSchema(nextSchema, templateSelection) : nextSchema;
+      builderState.currentSchema = prepareWebsiteConfig(mergedSchema, payload, templateSelection);
+      if (briefRequestsCyberpunk(text)) builderState.currentSchema = applyCyberpunkVisualDirection(builderState.currentSchema);
+    } else {
+      builderState.currentSchema = nextSchema;
+    }
     builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
     builderState.selectedPageKey = builderState.currentSchema.pages?.[0]?.page_key || "home";
     builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || builderState.selectedVariantId || "";
