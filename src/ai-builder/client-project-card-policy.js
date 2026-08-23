@@ -5,7 +5,15 @@ const PROJECT_STATUS_CLASSES = new Map([
 
 export function clientProjectPreviewPath(projectId) {
   const cleanId = String(projectId || "").trim();
-  return cleanId ? `/site.html?site_id=${encodeURIComponent(cleanId)}` : "";
+  return cleanId ? `/site.html?site_id=${encodeURIComponent(cleanId)}&embed=project-card` : "";
+}
+
+export function isClientProjectPreviewMessage(data) {
+  return Boolean(
+    data
+    && data.type === "kreaton:project-preview"
+    && ["ready", "error"].includes(data.status),
+  );
 }
 
 export function clientProjectStatusClass(status) {

@@ -26,6 +26,7 @@ import {
   clientProjectPreviewPath,
   clientProjectStatusClass,
   clientProjectVisualHue,
+  isClientProjectPreviewMessage,
 } from './client-project-card-policy.js';
 import {
   clientProjectDeletePayload,
@@ -570,6 +571,7 @@ export function ensureClientProjectsPanel() {
   builderState.clientProjectsPanel.className = "client-projects-panel";
   builderState.clientProjectsPanel.hidden = true;
   builderState.clientProjectsPanel.setAttribute("aria-label", "Mis páginas");
+  window.addEventListener("message", handleClientProjectPreviewMessage);
   builderState.clientProjectsPanel.addEventListener("click", (event) => {
     if (event.target?.closest?.("[data-client-project-delete-cancel]")) {
       closeClientProjectDeleteDialog();
@@ -633,6 +635,17 @@ export function ensureClientProjectsPanel() {
   return builderState.clientProjectsPanel;
 }
 
+function handleClientProjectPreviewMessage(event) {
+  if (event.origin !== window.location.origin || !isClientProjectPreviewMessage(event.data)) return;
+  const iframe = Array.from(builderState.clientProjectsPanel?.querySelectorAll("[data-client-project-preview-frame]") || [])
+    .find((frame) => frame.contentWindow === event.source);
+  const preview = iframe?.closest(".client-project-preview, .client-project-resume-thumb");
+  if (!iframe || !preview) return;
+  preview.classList.remove("is-loading", "is-ready", "is-unavailable");
+  preview.classList.add(event.data.status === "ready" ? "is-ready" : "is-unavailable");
+  iframe.setAttribute("aria-hidden", String(event.data.status !== "ready"));
+}
+
 export function renderClientProjectsLoading() {
   const panel = ensureClientProjectsPanel();
   panel.innerHTML = `
@@ -650,6 +663,17 @@ export function renderClientProjectsLoading() {
   document.body.classList.add("client-projects-open");
 }
 
+function clientProjectPreviewFallbackMarkup() {
+  return `
+    <div class="client-project-preview-fallback" aria-hidden="true">
+      <span class="client-project-preview-spinner"></span>
+      <span class="client-project-preview-mark">K</span>
+      <span class="client-project-preview-loading-copy">${escapeHtml(langText({ en: "Preparing preview", es: "Preparando vista previa", fr: "Préparation de l'aperçu", pt: "Preparando prévia" }))}</span>
+      <span class="client-project-preview-unavailable-copy">${escapeHtml(langText({ en: "Your draft is saved", es: "Tu borrador está guardado", fr: "Votre brouillon est enregistré", pt: "Seu rascunho está salvo" }))}</span>
+    </div>
+  `;
+}
+
 function clientProjectCardMarkup(project) {
   const businessName = project.business_name || "Untitled page";
   const status = String(project.status || "draft").trim().toLowerCase();
@@ -661,14 +685,14 @@ function clientProjectCardMarkup(project) {
   const hue = clientProjectVisualHue(project);
   return `
     <article class="client-project-card" style="--client-project-hue: ${hue}">
-      <div class="client-project-preview" aria-label="${escapeAttribute(langText({
+      <div class="client-project-preview is-loading" aria-label="${escapeAttribute(langText({
         en: `Preview of ${businessName}`,
         es: `Vista previa de ${businessName}`,
         fr: `Aperçu de ${businessName}`,
         pt: `Prévia de ${businessName}`,
       }))}">
-        <div class="client-project-preview-fallback" aria-hidden="true"><span></span><span></span><span></span><div><i></i><i></i><i></i></div></div>
-        ${previewPath ? `<iframe src="${escapeAttribute(previewPath)}" title="${escapeAttribute(businessName)}" loading="lazy" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>` : ""}
+        ${clientProjectPreviewFallbackMarkup()}
+        ${previewPath ? `<iframe src="${escapeAttribute(previewPath)}" title="${escapeAttribute(businessName)}" loading="lazy" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true" data-client-project-preview-frame></iframe>` : ""}
         <span class="client-project-status ${clientProjectStatusClass(status)}">${escapeHtml(statusLabel)}</span>
       </div>
       <div class="client-project-content">
@@ -704,8 +728,9 @@ function clientProjectResumeBannerMarkup(project) {
     : langText({ en: "Draft", es: "Borrador", fr: "Brouillon", pt: "Rascunho" });
   return `
     <section class="client-project-resume-banner" aria-labelledby="clientProjectResumeTitle">
-      <div class="client-project-resume-thumb" style="--client-project-hue: ${clientProjectVisualHue(project)}">
-        ${clientProjectPreviewPath(project.id) ? `<iframe src="${escapeAttribute(clientProjectPreviewPath(project.id))}" title="${escapeAttribute(projectName)}" loading="lazy" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>` : ""}
+      <div class="client-project-resume-thumb is-loading" style="--client-project-hue: ${clientProjectVisualHue(project)}">
+        ${clientProjectPreviewFallbackMarkup()}
+        ${clientProjectPreviewPath(project.id) ? `<iframe src="${escapeAttribute(clientProjectPreviewPath(project.id))}" title="${escapeAttribute(projectName)}" loading="lazy" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true" data-client-project-preview-frame></iframe>` : ""}
       </div>
       <div class="client-project-resume-details">
         <div class="client-project-resume-copy">
@@ -735,7 +760,12 @@ export function renderClientProjectsPanel(projects = [], options = {}) {
     <button class="client-new-project-card" type="button" data-client-new-project>
       <span class="client-new-project-icon" aria-hidden="true">+</span>
       <strong>${escapeHtml(newPageLabel)}</strong>
-      <small>${escapeHtml(langText({
+      <span class="client-new-project-prompts" aria-hidden="true">
+        <span>${escapeHtml(langText({ en: "What will you launch next?", es: "¿Cuál es tu próxima idea?", fr: "Quelle sera votre prochaine idée ?", pt: "Qual é a sua próxima ideia?" }))}</span>
+        <span>${escapeHtml(langText({ en: "A store, service, or new brand?", es: "¿Una tienda, un servicio o una marca?", fr: "Une boutique, un service ou une marque ?", pt: "Uma loja, serviço ou nova marca?" }))}</span>
+        <span>${escapeHtml(langText({ en: "Build the first version with LYRA", es: "Construye la primera versión con LYRA", fr: "Créez la première version avec LYRA", pt: "Crie a primeira versão com a LYRA" }))}</span>
+      </span>
+      <small class="client-new-project-accessible-copy">${escapeHtml(langText({
         en: "Start with a fresh conversation",
         es: "Empieza con una conversación nueva",
         fr: "Commencez une nouvelle conversation",

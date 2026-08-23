@@ -6,11 +6,19 @@ import {
   clientProjectPreviewPath,
   clientProjectStatusClass,
   clientProjectVisualHue,
+  isClientProjectPreviewMessage,
 } from "../src/ai-builder/client-project-card-policy.js";
 
 test("builds a same-site real project preview URL", () => {
-  assert.equal(clientProjectPreviewPath("site bath/all"), "/site.html?site_id=site%20bath%2Fall");
+  assert.equal(clientProjectPreviewPath("site bath/all"), "/site.html?site_id=site%20bath%2Fall&embed=project-card");
   assert.equal(clientProjectPreviewPath(""), "");
+});
+
+test("accepts only the project-preview lifecycle messages used by the panel", () => {
+  assert.equal(isClientProjectPreviewMessage({ type: "kreaton:project-preview", status: "ready" }), true);
+  assert.equal(isClientProjectPreviewMessage({ type: "kreaton:project-preview", status: "error" }), true);
+  assert.equal(isClientProjectPreviewMessage({ type: "kreaton:project-preview", status: "loading" }), false);
+  assert.equal(isClientProjectPreviewMessage({ type: "other", status: "ready" }), false);
 });
 
 test("formats project status and domain without inventing links", () => {

@@ -5671,7 +5671,12 @@
   ]);
   function clientProjectPreviewPath(projectId) {
     const cleanId = String(projectId || "").trim();
-    return cleanId ? `/site.html?site_id=${encodeURIComponent(cleanId)}` : "";
+    return cleanId ? `/site.html?site_id=${encodeURIComponent(cleanId)}&embed=project-card` : "";
+  }
+  function isClientProjectPreviewMessage(data) {
+    return Boolean(
+      data && data.type === "kreaton:project-preview" && ["ready", "error"].includes(data.status)
+    );
   }
   function clientProjectStatusClass(status) {
     return PROJECT_STATUS_CLASSES.get(String(status || "draft").trim().toLowerCase()) || "is-draft";
@@ -6231,6 +6236,7 @@
     builderState.clientProjectsPanel.className = "client-projects-panel";
     builderState.clientProjectsPanel.hidden = true;
     builderState.clientProjectsPanel.setAttribute("aria-label", "Mis p\xE1ginas");
+    window.addEventListener("message", handleClientProjectPreviewMessage);
     builderState.clientProjectsPanel.addEventListener("click", (event) => {
       if (event.target?.closest?.("[data-client-project-delete-cancel]")) {
         closeClientProjectDeleteDialog();
@@ -6293,6 +6299,15 @@
     document.body.appendChild(builderState.clientProjectsPanel);
     return builderState.clientProjectsPanel;
   }
+  function handleClientProjectPreviewMessage(event) {
+    if (event.origin !== window.location.origin || !isClientProjectPreviewMessage(event.data)) return;
+    const iframe = Array.from(builderState.clientProjectsPanel?.querySelectorAll("[data-client-project-preview-frame]") || []).find((frame) => frame.contentWindow === event.source);
+    const preview = iframe?.closest(".client-project-preview, .client-project-resume-thumb");
+    if (!iframe || !preview) return;
+    preview.classList.remove("is-loading", "is-ready", "is-unavailable");
+    preview.classList.add(event.data.status === "ready" ? "is-ready" : "is-unavailable");
+    iframe.setAttribute("aria-hidden", String(event.data.status !== "ready"));
+  }
   function renderClientProjectsLoading() {
     const panel = ensureClientProjectsPanel();
     panel.innerHTML = `
@@ -6309,6 +6324,16 @@
     panel.hidden = false;
     document.body.classList.add("client-projects-open");
   }
+  function clientProjectPreviewFallbackMarkup() {
+    return `
+    <div class="client-project-preview-fallback" aria-hidden="true">
+      <span class="client-project-preview-spinner"></span>
+      <span class="client-project-preview-mark">K</span>
+      <span class="client-project-preview-loading-copy">${escapeHtml(langText({ en: "Preparing preview", es: "Preparando vista previa", fr: "Pr\xE9paration de l'aper\xE7u", pt: "Preparando pr\xE9via" }))}</span>
+      <span class="client-project-preview-unavailable-copy">${escapeHtml(langText({ en: "Your draft is saved", es: "Tu borrador est\xE1 guardado", fr: "Votre brouillon est enregistr\xE9", pt: "Seu rascunho est\xE1 salvo" }))}</span>
+    </div>
+  `;
+  }
   function clientProjectCardMarkup(project) {
     const businessName = project.business_name || "Untitled page";
     const status = String(project.status || "draft").trim().toLowerCase();
@@ -6318,14 +6343,14 @@
     const hue = clientProjectVisualHue(project);
     return `
     <article class="client-project-card" style="--client-project-hue: ${hue}">
-      <div class="client-project-preview" aria-label="${escapeAttribute(langText({
+      <div class="client-project-preview is-loading" aria-label="${escapeAttribute(langText({
       en: `Preview of ${businessName}`,
       es: `Vista previa de ${businessName}`,
       fr: `Aper\xE7u de ${businessName}`,
       pt: `Pr\xE9via de ${businessName}`
     }))}">
-        <div class="client-project-preview-fallback" aria-hidden="true"><span></span><span></span><span></span><div><i></i><i></i><i></i></div></div>
-        ${previewPath ? `<iframe src="${escapeAttribute(previewPath)}" title="${escapeAttribute(businessName)}" loading="lazy" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>` : ""}
+        ${clientProjectPreviewFallbackMarkup()}
+        ${previewPath ? `<iframe src="${escapeAttribute(previewPath)}" title="${escapeAttribute(businessName)}" loading="lazy" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true" data-client-project-preview-frame></iframe>` : ""}
         <span class="client-project-status ${clientProjectStatusClass(status)}">${escapeHtml(statusLabel)}</span>
       </div>
       <div class="client-project-content">
@@ -6358,8 +6383,9 @@
     const statusLabel = status === "published" ? langText({ en: "Published", es: "Publicada", fr: "Publi\xE9e", pt: "Publicada" }) : langText({ en: "Draft", es: "Borrador", fr: "Brouillon", pt: "Rascunho" });
     return `
     <section class="client-project-resume-banner" aria-labelledby="clientProjectResumeTitle">
-      <div class="client-project-resume-thumb" style="--client-project-hue: ${clientProjectVisualHue(project)}">
-        ${clientProjectPreviewPath(project.id) ? `<iframe src="${escapeAttribute(clientProjectPreviewPath(project.id))}" title="${escapeAttribute(projectName)}" loading="lazy" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>` : ""}
+      <div class="client-project-resume-thumb is-loading" style="--client-project-hue: ${clientProjectVisualHue(project)}">
+        ${clientProjectPreviewFallbackMarkup()}
+        ${clientProjectPreviewPath(project.id) ? `<iframe src="${escapeAttribute(clientProjectPreviewPath(project.id))}" title="${escapeAttribute(projectName)}" loading="lazy" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true" data-client-project-preview-frame></iframe>` : ""}
       </div>
       <div class="client-project-resume-details">
         <div class="client-project-resume-copy">
@@ -6388,7 +6414,12 @@
     <button class="client-new-project-card" type="button" data-client-new-project>
       <span class="client-new-project-icon" aria-hidden="true">+</span>
       <strong>${escapeHtml(newPageLabel)}</strong>
-      <small>${escapeHtml(langText({
+      <span class="client-new-project-prompts" aria-hidden="true">
+        <span>${escapeHtml(langText({ en: "What will you launch next?", es: "\xBFCu\xE1l es tu pr\xF3xima idea?", fr: "Quelle sera votre prochaine id\xE9e ?", pt: "Qual \xE9 a sua pr\xF3xima ideia?" }))}</span>
+        <span>${escapeHtml(langText({ en: "A store, service, or new brand?", es: "\xBFUna tienda, un servicio o una marca?", fr: "Une boutique, un service ou une marque ?", pt: "Uma loja, servi\xE7o ou nova marca?" }))}</span>
+        <span>${escapeHtml(langText({ en: "Build the first version with LYRA", es: "Construye la primera versi\xF3n con LYRA", fr: "Cr\xE9ez la premi\xE8re version avec LYRA", pt: "Crie a primeira vers\xE3o com a LYRA" }))}</span>
+      </span>
+      <small class="client-new-project-accessible-copy">${escapeHtml(langText({
       en: "Start with a fresh conversation",
       es: "Empieza con una conversaci\xF3n nueva",
       fr: "Commencez une nouvelle conversation",

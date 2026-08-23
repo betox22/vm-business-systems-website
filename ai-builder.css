@@ -4177,6 +4177,175 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   opacity: 0.64;
 }
 
+/* Full-viewport project library and resilient project previews. */
+.client-projects-panel {
+  place-items: stretch;
+  padding: 0;
+  background: #f8fbfa;
+  backdrop-filter: none;
+}
+
+.client-projects-card {
+  width: 100%;
+  height: 100dvh;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  padding: clamp(22px, 3vw, 42px) clamp(20px, 5vw, 72px);
+  box-shadow: none;
+}
+
+.client-project-preview iframe,
+.client-project-resume-thumb iframe {
+  opacity: 0;
+  transition: opacity 240ms ease, transform 450ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.client-project-preview.is-ready iframe,
+.client-project-resume-thumb.is-ready iframe {
+  opacity: 1;
+}
+
+.client-project-preview.is-unavailable iframe,
+.client-project-resume-thumb.is-unavailable iframe {
+  visibility: hidden;
+}
+
+.client-project-preview-fallback {
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background:
+    radial-gradient(circle at 74% 18%, hsla(var(--client-project-hue) 78% 62% / 0.22), transparent 34%),
+    linear-gradient(145deg, hsl(var(--client-project-hue) 48% 97%), hsl(var(--client-project-hue) 38% 90%));
+  color: hsl(var(--client-project-hue) 42% 25%);
+  text-align: center;
+}
+
+.client-project-preview-fallback > span {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+}
+
+.client-project-preview-mark {
+  width: 36px !important;
+  height: 36px !important;
+  display: grid;
+  place-items: center;
+  border-radius: 11px !important;
+  background: hsl(var(--client-project-hue) 58% 42%) !important;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 950;
+  box-shadow: 0 10px 24px hsla(var(--client-project-hue) 46% 28% / 0.2);
+}
+
+.client-project-preview-spinner {
+  position: absolute;
+  width: 50px !important;
+  height: 50px !important;
+  border: 2px solid hsla(var(--client-project-hue) 42% 36% / 0.16) !important;
+  border-top-color: hsl(var(--client-project-hue) 58% 42%) !important;
+  border-radius: 999px !important;
+  animation: client-project-preview-spin 900ms linear infinite;
+}
+
+.client-project-preview-loading-copy,
+.client-project-preview-unavailable-copy {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.client-project-preview-unavailable-copy,
+.is-unavailable .client-project-preview-loading-copy,
+.is-ready .client-project-preview-fallback {
+  display: none;
+}
+
+.is-unavailable .client-project-preview-unavailable-copy {
+  display: block;
+}
+
+.is-unavailable .client-project-preview-spinner {
+  display: none;
+}
+
+.client-new-project-prompts {
+  position: relative;
+  width: min(230px, 100%);
+  height: 34px;
+  overflow: hidden;
+  color: var(--client-hub-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.client-new-project-prompts > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: start center;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: client-new-project-prompt 9s ease-in-out infinite;
+}
+
+.client-new-project-prompts > span:nth-child(2) {
+  animation-delay: 3s;
+}
+
+.client-new-project-prompts > span:nth-child(3) {
+  animation-delay: 6s;
+}
+
+.client-new-project-icon {
+  animation: client-new-project-float 2.8s ease-in-out infinite;
+}
+
+.client-new-project-accessible-copy {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@keyframes client-project-preview-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes client-new-project-float {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-5px) rotate(4deg); }
+}
+
+@keyframes client-new-project-prompt {
+  0%, 7% { opacity: 0; transform: translateY(8px); }
+  13%, 28% { opacity: 1; transform: translateY(0); }
+  34%, 100% { opacity: 0; transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .client-project-preview-spinner,
+  .client-new-project-icon,
+  .client-new-project-prompts > span {
+    animation: none;
+  }
+
+  .client-new-project-prompts > span:first-child {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (max-width: 760px) {
   .client-projects-panel {
     align-items: stretch;

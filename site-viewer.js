@@ -1,5 +1,7 @@
 const API_BASE_URL = resolveApiBaseUrl();
 const publicSite = document.querySelector("#publicSite");
+const viewerParams = new URLSearchParams(window.location.search);
+const isProjectCardPreview = viewerParams.get("embed") === "project-card";
 let currentPublicSite = null;
 let currentPublicSchema = null;
 let currentPublicPageKey = "home";
@@ -8,9 +10,8 @@ let publicCart = loadPublicCart();
 loadPublicSite();
 
 async function loadPublicSite() {
-  const params = new URLSearchParams(window.location.search);
-  const siteId = params.get("site_id");
-  const host = params.get("host") || window.location.hostname;
+  const siteId = viewerParams.get("site_id");
+  const host = viewerParams.get("host") || window.location.hostname;
 
   try {
     const url = siteId
@@ -26,9 +27,19 @@ async function loadPublicSite() {
     currentPublicPageKey = window.location.hash.replace(/^#/, "") || currentPublicSchema.pages?.[0]?.page_key || "home";
     applyGeneratedFavicon(site.schema);
     renderCurrentPublicPage();
+    notifyProjectCardPreview("ready");
   } catch (error) {
-    publicSite.innerHTML = `<div class="public-empty">Could not load published site.</div>`;
+    console.error("Could not load public site preview", { siteId, error });
+    notifyProjectCardPreview("error");
+    publicSite.innerHTML = isProjectCardPreview
+      ? `<div class="public-empty">Your draft is safely stored in KREATON.</div>`
+      : `<div class="public-empty">Could not load published site.</div>`;
   }
+}
+
+function notifyProjectCardPreview(status) {
+  if (!isProjectCardPreview || window.parent === window) return;
+  window.parent.postMessage({ type: "kreaton:project-preview", status }, window.location.origin);
 }
 
 function renderCurrentPublicPage() {
