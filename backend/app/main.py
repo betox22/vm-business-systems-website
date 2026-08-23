@@ -73,6 +73,8 @@ CLIENT_DRAFT_KEYS = {
     "logoUrl",
     "logoPreference",
     "logoBrief",
+    "logoGenerationStatus",
+    "logoApprovalStatus",
     "photoUrls",
     "logoPalette",
     "colorProvenance",
@@ -1273,6 +1275,46 @@ async def luma_edit(request: LyraEditRequest, http_request: Request) -> LyraEdit
     return LyraEditResponse(**result)
 
 
+@app.post("/api/client/logo/generate")
+async def generate_client_logo(
+    request: WebsiteGenerationRequest,
+    http_request: Request,
+    authorization: str = Header(default=""),
+    luma_client_session: str = Cookie(default=""),
+) -> Dict[str, Any]:
+    _enforce_rate_limit(http_request, "client_logo_generate", limit=4, window_seconds=600)
+    auth_user = authenticated_client_user(authorization, luma_client_session)
+    state = normalize_state_payload(request.model_dump())
+    state.logoPreference = "generate_ai_logo"
+    state.logoUrl = None
+    state.logoGenerationStatus = None
+    business_id = str(
+        auth_user.get("sub")
+        or auth_user.get("id")
+        or auth_user.get("email")
+        or "client"
+    )
+    site_id = str(
+        request.generatedSiteId
+        or request.generated_site_id
+        or request.projectId
+        or request.project_id
+        or f"logo-review-{uuid.uuid4().hex[:12]}"
+    )
+    outcome = await generate_and_store_ai_logo(
+        state,
+        business_id=business_id,
+        site_id=site_id,
+    )
+    return {
+        "status": outcome.status,
+        "logoUrl": outcome.url or "",
+        "message": "Logo generated and ready for review."
+        if outcome.status == "generated"
+        else "The logo could not be generated. Website generation can continue without it.",
+    }
+
+
 @app.post("/ai/website-builder", response_model=WebsiteGenerationResponse)
 async def website_builder(
     request: WebsiteGenerationRequest,
@@ -1306,6 +1348,7 @@ async def website_builder(
         "logoUrl": request.logoUrl,
         "logoPreference": request.logoPreference,
         "logoBrief": request.logoBrief,
+        "logoGenerationStatus": request.logoGenerationStatus,
         "logoPalette": request.logoPalette,
         "colorProvenance": request.colorProvenance.model_dump(),
         "photoUrls": request.photoUrls,

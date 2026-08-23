@@ -788,6 +788,104 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   border-color: color-mix(in srgb, var(--primary) 36%, var(--line));
 }
 
+.generated-logo-review-card {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  gap: 10px;
+  margin: 12px 0;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--line));
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 14px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12);
+}
+
+.generated-logo-review-copy span,
+.generated-logo-review-copy strong {
+  display: block;
+}
+
+.generated-logo-review-copy {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.generated-logo-review-copy span {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.generated-logo-review-copy strong {
+  margin-top: 4px;
+  color: #17241f;
+  font-size: 15px;
+}
+
+.generated-logo-review-image {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  display: grid;
+  min-height: 120px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 14px;
+  background:
+    linear-gradient(45deg, #eef2f6 25%, transparent 25%),
+    linear-gradient(-45deg, #eef2f6 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eef2f6 75%),
+    linear-gradient(-45deg, transparent 75%, #eef2f6 75%),
+    #ffffff;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
+}
+
+.generated-logo-review-image img {
+  width: min(110px, 88%);
+  max-height: 120px;
+  object-fit: contain;
+}
+
+.generated-logo-review-actions {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: end;
+  gap: 8px;
+}
+
+.generated-logo-review-actions button {
+  min-height: 38px;
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--primary);
+  font-weight: 900;
+}
+
+.generated-logo-review-actions button:first-child {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.generated-logo-review-card.is-approved {
+  border-color: color-mix(in srgb, #15803d 42%, var(--line));
+}
+
+.generated-logo-approved {
+  grid-column: 1 / -1;
+  display: block;
+  border-radius: 10px;
+  background: #ecfdf3;
+  padding: 12px;
+  color: #166534;
+  font-weight: 900;
+  text-align: center;
+}
+
 .guided-build-head {
   display: grid;
   grid-template-columns: 1fr auto;

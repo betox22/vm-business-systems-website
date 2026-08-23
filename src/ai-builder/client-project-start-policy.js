@@ -25,7 +25,17 @@ export function clearClientProjectRuntimeState(state, emptyGuidedState) {
   Object.entries(CLIENT_PROJECT_RUNTIME_DEFAULTS).forEach(([key, value]) => {
     state[key] = Array.isArray(value) ? [...value] : value;
   });
-  state.guidedState = emptyGuidedState;
+  state.guidedState = {
+    ...emptyGuidedState,
+    logoUrl: "",
+    logoBrief: "",
+    logoPreference: "",
+    logoGenerationStatus: "",
+    logoApprovalStatus: "",
+    aiGeneratedLogoRequested: false,
+    hasLogo: false,
+    logoPalette: [],
+  };
   return state;
 }
 

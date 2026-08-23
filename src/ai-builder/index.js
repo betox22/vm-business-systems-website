@@ -10,6 +10,7 @@ import {
   CLIENT_AUTH_SESSION_URL,
   CLIENT_AUTH_LOGOUT_URL,
   CLIENT_PROJECTS_URL,
+  CLIENT_LOGO_GENERATION_URL,
   ASSET_UPLOAD_URL,
   SUPABASE_AUTH_URL,
   SUPPORTED_LANGUAGES,
@@ -53,6 +54,13 @@ import { isMegaRetailTemplate, megaRetailFeatureFlags } from './mega-retail-poli
 import { hasDecidedTemplateSelection, isConcreteTemplateId } from './template-carousel-policy.js';
 import { constructionPreviewModel } from './construction-preview-policy.js';
 import { logoRequestUpdate, wantsAiGeneratedLogo } from './logo-intent-policy.js';
+import {
+  applyGeneratedLogoToState,
+  approveGeneratedLogo,
+  needsGeneratedLogoApproval,
+  needsGeneratedLogoRequest,
+  prepareGeneratedLogoRetry,
+} from './logo-review-policy.js';
 import { bathBodyCategoryLabel, bathBodyStockImageUrl, isBathBodyCatalogContext, shouldExpandInstantCatalog } from './catalog-preview-policy.js';
 import { applyInstantPreviewPaletteToBrand, semanticInstantPreviewPalette } from './instant-preview-theme-policy.js';
 import {
@@ -1110,11 +1118,15 @@ function renderCanvasTemplateSkeleton(card) {
 
 function renderCanvasTemplateCarousel(card) {
   const selection = livePreviewTemplateSelection();
+  const logoWorkflowActive = builderState.isGeneratingWebsite
+    && builderState.guidedState.logoPreference === "generate_ai_logo"
+    && builderState.guidedState.logoApprovalStatus !== "approved"
+    && builderState.guidedState.logoApprovalStatus !== "skipped";
   const model = constructionPreviewModel({
     guidedState: builderState.guidedState,
     selection,
     backendReadyToGenerate: builderState.backendReadyToGenerate,
-    isGenerating: builderState.isGeneratingWebsite,
+    isGenerating: builderState.isGeneratingWebsite && !logoWorkflowActive,
     hasCurrentSchema: Boolean(builderState.currentSchema),
   });
   const choice = templatePreviewMeta(selection?.templateId) || templatePreviewMeta("premium-product-store");
@@ -1146,11 +1158,11 @@ function renderCanvasTemplateCarousel(card) {
   card.classList.add("live-construction-card-host");
   if (model.mode === "template") card.classList.add("live-render-card-host");
   card.innerHTML = `
-    <section class="live-construction-panel" data-construction-level="${model.level}" data-construction-mode="${model.mode}">
+    <section class="live-construction-panel${model.isGenerating ? " is-generating" : ""}" data-construction-level="${model.level}" data-construction-mode="${model.mode}" ${model.isGenerating ? 'role="status" aria-live="polite" aria-busy="true"' : ""}>
       <header class="live-construction-header">
         <div>
-          <span>${escapeHtml(model.mode === "template" ? langText({ en: "Instant working preview", es: "Vista instantánea en construcción", fr: "Aperçu instantané en construction", pt: "Prévia instantânea em construção" }) : langText({ en: "Building the foundation", es: "Construyendo la base", fr: "Construction de la base", pt: "Construindo a base" }))}</span>
-          <strong>${escapeHtml(model.mode === "template" ? localizedTemplateName(choice) : langText({ en: "Your site is taking shape", es: "Tu sitio está tomando forma", fr: "Votre site prend forme", pt: "Seu site está tomando forma" }))}</strong>
+          <span>${escapeHtml(model.isGenerating ? langText({ en: "Final generation in progress", es: "Generación final en progreso", fr: "Génération finale en cours", pt: "Geração final em andamento" }) : model.mode === "template" ? langText({ en: "Instant working preview", es: "Vista instantánea en construcción", fr: "Aperçu instantané en construction", pt: "Prévia instantânea em construção" }) : langText({ en: "Building the foundation", es: "Construyendo la base", fr: "Construction de la base", pt: "Construindo a base" }))}</span>
+          <strong>${escapeHtml(model.isGenerating ? langText({ en: "LYRA is building your complete website", es: "LYRA está construyendo tu sitio completo", fr: "LYRA construit votre site complet", pt: "A LYRA está criando seu site completo" }) : model.mode === "template" ? localizedTemplateName(choice) : langText({ en: "Your site is taking shape", es: "Tu sitio está tomando forma", fr: "Votre site prend forme", pt: "Seu site está tomando forma" }))}</strong>
         </div>
         <em>${model.progress}%</em>
       </header>
@@ -1167,6 +1179,7 @@ function renderCanvasTemplateCarousel(card) {
       </ol>
       <div class="live-construction-canvas ${model.mode === "template" ? "is-template" : "is-sketch"}">
         ${previewMarkup}
+        ${model.isGenerating ? `<div class="live-construction-working"><span aria-hidden="true"></span><strong>${escapeHtml(langText({ en: "Working on structure, content and visuals...", es: "Trabajando en estructura, contenido e imágenes...", fr: "Travail sur la structure, le contenu et les visuels...", pt: "Trabalhando em estrutura, conteúdo e imagens..." }))}</strong></div>` : ""}
       </div>
     </section>
   `;
@@ -2211,6 +2224,16 @@ function guidedBuildPhases() {
       }),
     },
     {
+      key: "logo",
+      label: langText({ en: "Creating your logo", es: "Creando tu logo", fr: "Création de votre logo", pt: "Criando seu logo" }),
+      body: langText({
+        en: "Preparing the visual mark you asked for so you can approve it.",
+        es: "Preparando la identidad visual que pediste para que puedas aprobarla.",
+        fr: "Préparation de l'identité visuelle demandée afin que vous puissiez l'approuver.",
+        pt: "Preparando a identidade visual que você pediu para sua aprovação.",
+      }),
+    },
+    {
       key: "strategy",
       label: langText({ en: "Choosing your style", es: "Eligiendo tu estilo", fr: "Choix de votre style", pt: "Escolhendo seu estilo" }),
       body: langText({
@@ -2251,7 +2274,10 @@ function ensureGuidedBuildStatusCard() {
     builderState.guidedBuildStatusCard.setAttribute("aria-live", "polite");
   }
   if (builderState.guidedBuildStatusCard.parentElement !== guidedChatCard) {
-    guidedChatCard.appendChild(builderState.guidedBuildStatusCard);
+    guidedChatCard.insertBefore(
+      builderState.guidedBuildStatusCard,
+      guidedChatCard.querySelector(".chat-composer") || null,
+    );
   }
   return builderState.guidedBuildStatusCard;
 }
@@ -4725,6 +4751,10 @@ export function mergeGuidedUpdates(updates) {
       const existing = meaningfulOfferItems(builderState.guidedState.servicesProducts);
       if (!incoming.length && existing.length) return;
       builderState.guidedState.servicesProducts = [...new Set([...existing, ...incoming])];
+    } else if (["logoUrl", "logoBrief", "logoPreference", "logoGenerationStatus", "logoApprovalStatus"].includes(key)) {
+      builderState.guidedState[key] = value ?? "";
+    } else if (key === "aiGeneratedLogoRequested" || key === "hasLogo") {
+      builderState.guidedState[key] = Boolean(value);
     } else if (["servicesProducts", "preferredColors", "photoUrls", "videoUrls"].includes(key)) {
       builderState.guidedState[key] = arrayValue(value);
     } else {
@@ -4787,6 +4817,8 @@ export function guidedStateForApi() {
     colorProvenance,
     logoPreference,
     logoBrief: builderState.guidedState.logoBrief || "",
+    logoGenerationStatus: builderState.guidedState.logoGenerationStatus || "",
+    logoApprovalStatus: builderState.guidedState.logoApprovalStatus || "",
     salesFlow: builderState.guidedState.salesFlow || "",
     fieldMeta,
     brand,
@@ -5442,6 +5474,9 @@ function handleServerNeedsMoreInfo(result = {}) {
 async function generateWebsite(triggerButton = document.querySelector("#generateButton")) {
   setStudioProgressPhase("understanding");
   const payload = await collectPayload();
+  const logoReady = await ensureGeneratedLogoReview(payload);
+  if (!logoReady) return false;
+  renderLiveSitePreview();
   setStudioProgressPhase("brand");
   setGuidedBuildPhase("strategy");
   const templateSelection = await selectTemplateForPayload(payload);
@@ -6578,6 +6613,17 @@ function applyGenerationResult(result, payload = {}, templateSelection = null) {
   builderState.currentBusinessId = result.business_id || null;
   builderState.currentGenerationId = result.generation_id || null;
   builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
+  const generatedLogoUrl = builderState.currentSchema?.brand?.logoUrl
+    || builderState.currentSchema?.global_components?.logo_url
+    || "";
+  const generatedLogoStatus = builderState.currentSchema?.generation_metadata?.logo_status
+    || builderState.currentSchema?.brand?.logoStatus
+    || "";
+  if (generatedLogoUrl) {
+    builderState.guidedState.logoUrl = generatedLogoUrl;
+    builderState.guidedState.hasLogo = true;
+  }
+  if (generatedLogoStatus) builderState.guidedState.logoGenerationStatus = generatedLogoStatus;
   builderState.selectedPageKey = builderState.currentSchema.pages[0]?.page_key || "home";
   builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || "";
   saveGeneratedSite(result);
@@ -6943,6 +6989,114 @@ function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelec
     nextSchema = applyCyberpunkVisualDirection(nextSchema);
   }
   return nextSchema;
+}
+
+async function ensureGeneratedLogoReview(payload) {
+  if (!isPublicClientSetup || payload.logoPreference !== "generate_ai_logo") return true;
+  let needsRequest = needsGeneratedLogoRequest({
+    logoPreference: payload.logoPreference,
+    logoUrl: builderState.guidedState.logoUrl,
+    logoApprovalStatus: builderState.guidedState.logoApprovalStatus,
+  });
+  let needsApproval = needsGeneratedLogoApproval({
+    logoPreference: payload.logoPreference,
+    logoUrl: builderState.guidedState.logoUrl,
+    logoGenerationStatus: builderState.guidedState.logoGenerationStatus,
+    logoApprovalStatus: builderState.guidedState.logoApprovalStatus,
+  });
+
+  while (needsRequest || needsApproval) {
+    if (needsRequest) {
+      setGuidedBuildPhase("logo", langText({
+        en: "LYRA is creating a logo from your business and the direction you requested.",
+        es: "LYRA está creando un logo a partir de tu negocio y la dirección que pediste.",
+        fr: "LYRA crée un logo à partir de votre activité et de vos indications.",
+        pt: "A LYRA está criando um logo a partir do seu negócio e da direção que você pediu.",
+      }));
+      renderLiveSitePreview();
+      try {
+        const response = await fetch(CLIENT_LOGO_GENERATION_URL, {
+          method: "POST",
+          headers: clientAuthHeaders({ "content-type": "application/json" }),
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) throw new Error(await readErrorMessage(response));
+        const result = applyGeneratedLogoToState(builderState.guidedState, await response.json());
+        if (!result.generated) throw new Error("Logo generation did not return an image.");
+        payload.logoUrl = result.logoUrl;
+        payload.logoGenerationStatus = "generated";
+        needsRequest = false;
+        needsApproval = true;
+        saveGuidedDraft();
+      } catch (error) {
+        builderState.guidedState.logoGenerationStatus = "generation_failed";
+        builderState.guidedState.logoApprovalStatus = "skipped";
+        payload.logoGenerationStatus = "generation_failed";
+        appendChatMessage("assistant", langText({
+          en: "I could not generate the logo this time. I will keep building your website without it, and you can try the logo again later.",
+          es: "No pude generar el logo esta vez. Seguiré creando tu sitio sin él y podrás intentarlo de nuevo más tarde.",
+          fr: "Je n'ai pas pu générer le logo cette fois-ci. Je poursuis la création du site sans logo et vous pourrez réessayer plus tard.",
+          pt: "Não consegui gerar o logo desta vez. Vou continuar criando o site sem ele e você poderá tentar novamente depois.",
+        }), "alert");
+        return true;
+      }
+    }
+
+    const decision = await showGeneratedLogoReviewCard(builderState.guidedState.logoUrl);
+    if (decision === "accept") {
+      approveGeneratedLogo(builderState.guidedState);
+      payload.logoUrl = builderState.guidedState.logoUrl;
+      payload.logoGenerationStatus = "generated";
+      saveGuidedDraft();
+      return true;
+    }
+    prepareGeneratedLogoRetry(builderState.guidedState);
+    payload.logoUrl = "";
+    payload.logoGenerationStatus = "";
+    saveGuidedDraft();
+    needsRequest = true;
+    needsApproval = false;
+  }
+  return true;
+}
+
+function showGeneratedLogoReviewCard(logoUrl) {
+  return new Promise((resolve) => {
+    guidedChat.querySelector(".generated-logo-review-card")?.remove();
+    const card = document.createElement("section");
+    card.className = "generated-logo-review-card";
+    card.setAttribute("aria-live", "polite");
+    card.innerHTML = `
+      <div class="generated-logo-review-copy">
+        <span>${escapeHtml(langText({ en: "Your new logo", es: "Tu nuevo logo", fr: "Votre nouveau logo", pt: "Seu novo logo" }))}</span>
+        <strong>${escapeHtml(langText({ en: "Review it before I build the final website", es: "Revísalo antes de que construya el sitio definitivo", fr: "Vérifiez-le avant la création du site final", pt: "Revise antes de eu criar o site final" }))}</strong>
+      </div>
+      <div class="generated-logo-review-image"><img src="${escapeAttribute(logoUrl)}" alt="${escapeAttribute(langText({ en: "AI-generated logo preview", es: "Vista previa del logo generado por IA", fr: "Aperçu du logo généré par IA", pt: "Prévia do logo gerado por IA" }))}"></div>
+      <div class="generated-logo-review-actions">
+        <button type="button" data-logo-review-accept>${escapeHtml(langText({ en: "Use this logo", es: "Usar este logo", fr: "Utiliser ce logo", pt: "Usar este logo" }))}</button>
+        <button type="button" data-logo-review-retry>${escapeHtml(langText({ en: "Generate another", es: "Generar otro", fr: "En générer un autre", pt: "Gerar outro" }))}</button>
+      </div>
+    `;
+    guidedChat.appendChild(card);
+    const revealReviewActions = () => {
+      guidedChat.scrollTop = guidedChat.scrollHeight;
+    };
+    requestAnimationFrame(revealReviewActions);
+    card.querySelector("img")?.addEventListener("load", revealReviewActions, { once: true });
+    card.querySelector("[data-logo-review-accept]")?.addEventListener("click", () => {
+      card.classList.add("is-approved");
+      const actions = card.querySelector(".generated-logo-review-actions");
+      if (actions) {
+        actions.innerHTML = `<span class="generated-logo-approved">${escapeHtml(langText({ en: "Logo approved", es: "Logo aprobado", fr: "Logo approuvé", pt: "Logo aprovado" }))}</span>`;
+      }
+      resolve("accept");
+    }, { once: true });
+    card.querySelector("[data-logo-review-retry]")?.addEventListener("click", () => {
+      card.remove();
+      resolve("retry");
+    }, { once: true });
+  });
 }
 
 function navigationWithCustomPages(baseNavigation = [], customPages = [], sourceNavigation = []) {
@@ -11897,7 +12051,7 @@ async function collectPayload() {
   const sitePlan = builderState.guidedState.sitePlan || (builderState.forcedTemplateSelection?.templateId ? buildSitePlan(builderState.forcedTemplateSelection) : null);
   if (sitePlan && aiStudioPlan) sitePlan.aiStudioPlan = aiStudioPlan;
   const payloadBrand = normalizeBrand(builderState.guidedState.brand || {
-    logoUrl: assets.find((asset) => asset.asset_type === "logo")?.url || "",
+    logoUrl: assets.find((asset) => asset.asset_type === "logo")?.url || builderState.guidedState.logoUrl || "",
     extractedColors: arrayValue(builderState.guidedState.logoPalette),
     preferredColors: preferredColorsValue,
     industry: generationIndustry,
@@ -11927,6 +12081,7 @@ async function collectPayload() {
     contact_info: contactInfo,
     logoPreference: logoPreferenceValue,
     logoBrief: validatedGuidedPayload?.logoBrief || builderState.guidedState.logoBrief || "",
+    logoGenerationStatus: builderState.guidedState.logoGenerationStatus || "",
     fieldMeta: validatedGuidedPayload?.fieldMeta || fieldMeta,
     intakeFollowupAnswer,
     salesFlow: resolvedSalesFlow,

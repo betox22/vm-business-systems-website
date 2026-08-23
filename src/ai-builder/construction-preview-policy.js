@@ -53,6 +53,7 @@ export function constructionPreviewModel({
     level: showRealTemplate ? 2 : 1,
     mode: showRealTemplate ? "template" : "sketch",
     progress,
+    isGenerating: Boolean(isGenerating),
     offers,
     stages: [
       { id: "brand", complete: brandReady, active: !brandReady },

@@ -174,6 +174,7 @@ class WebsiteGenerationRequest(BaseModel):
     logoUrl: Optional[str] = None
     logoPreference: Optional[str] = None
     logoBrief: Optional[str] = None
+    logoGenerationStatus: Optional[str] = None
     logoPalette: List[str] = Field(default_factory=list)
     colorProvenance: ColorProvenance = Field(default_factory=ColorProvenance)
     brandStyle: Optional[str] = None

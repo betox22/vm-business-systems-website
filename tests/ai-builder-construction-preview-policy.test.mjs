@@ -52,3 +52,19 @@ test("shows the real template after category and concrete offers are known", () 
   assert.equal(model.mode, "template");
   assert.equal(model.offers.length, 3);
 });
+
+test("exposes a visible busy state while the final website is generated", () => {
+  const model = constructionPreviewModel({
+    guidedState: {
+      businessName: "Bath All Day",
+      businessDescription: "Handmade soaps, candles and bath bombs.",
+      industry: "beauty",
+      servicesProducts: ["Handmade soaps", "Candles", "Bath bombs"],
+    },
+    selection: { templateId: "premium-product-store" },
+    isGenerating: true,
+  });
+
+  assert.equal(model.mode, "template");
+  assert.equal(model.isGenerating, true);
+});
