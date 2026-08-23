@@ -56,6 +56,30 @@ const INLINE_EDIT_PLACEHOLDERS = Object.freeze({
   }),
 });
 
+const INLINE_EDITABLE_SHARED_SHELL_TEMPLATE_IDS = new Set([
+  "premium-product-store",
+  "luxury-high-ticket-pro",
+  "education-course-academy-pro",
+  "medical-wellness-clinic-pro",
+  "legal-professional-services-pro",
+  "manufacturing-industrial-supplier-pro",
+  "mega-marketplace",
+  "listing-marketplace-pro",
+  "fashion-drop-pro",
+  "corporate-company-pro",
+  "lead-funnel-pro",
+  "restaurant-food-business",
+  "digital-products-store",
+  "real-estate-listings-pro",
+  "home-services-premium",
+  "local-services-pro-plus",
+  "booking-appointment-pro",
+]);
+
+export function supportsSharedShellInlineEditing(templateId = "") {
+  return INLINE_EDITABLE_SHARED_SHELL_TEMPLATE_IDS.has(String(templateId || ""));
+}
+
 export function inlineEditConfig(field) {
   return INLINE_EDIT_FIELD_CONFIG[field] || null;
 }
@@ -82,10 +106,20 @@ export function inlineEditPath(schema, section, field) {
 }
 
 export function inlineEditSectionItemPath(schema, section, itemIndex, field) {
+  return inlineEditSectionCollectionItemPath(schema, section, "items", itemIndex, field);
+}
+
+export function inlineEditSectionCollectionItemPath(schema, section, collection, itemIndex, field) {
   const sectionPath = inlineEditPath(schema, section, "title").replace(/\.title$/, "");
   const index = Number(itemIndex);
-  if (!sectionPath || !Number.isInteger(index) || index < 0 || !["", "question", "answer", "name", "title", "description"].includes(field)) return "";
-  return `${sectionPath}.items.${index}${field ? `.${field}` : ""}`;
+  if (
+    !sectionPath
+    || !["items", "includes", "fields"].includes(collection)
+    || !Number.isInteger(index)
+    || index < 0
+    || !["", "question", "answer", "name", "title", "description", "label"].includes(field)
+  ) return "";
+  return `${sectionPath}.${collection}.${index}${field ? `.${field}` : ""}`;
 }
 
 export function inlineEditCatalogPath(schema, item, field) {
@@ -118,9 +152,11 @@ export function inlineEditPersistentPath(path, field) {
   if (!inlineEditConfig(field)) return "";
   const value = String(path || "");
   const allowed = [
-    /^pages\.\d+\.sections\.\d+\.editable\.(?:badge|headline|subtitle|primary_button|secondary_button|title|text)$/,
+    /^pages\.\d+\.sections\.\d+\.editable\.(?:badge|headline|subtitle|primary_button|secondary_button|title|text|audience|description|ctaLabel)$/,
     /^pages\.\d+\.sections\.\d+\.editable\.items\.\d+\.(?:question|answer|name|title|description)$/,
     /^pages\.\d+\.sections\.\d+\.editable\.items\.\d+$/,
+    /^pages\.\d+\.sections\.\d+\.editable\.includes\.\d+$/,
+    /^pages\.\d+\.sections\.\d+\.editable\.fields\.\d+\.label$/,
     /^(?:catalog_items|products_services)\.\d+\.(?:name|description)$/,
     /^navigation\.\d+\.label$/,
     /^pages\.\d+\.title$/,

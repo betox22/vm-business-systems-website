@@ -12,7 +12,9 @@ import {
   inlineEditPath,
   inlineEditPersistentPath,
   inlineEditPlaceholder,
+  inlineEditSectionCollectionItemPath,
   inlineEditSectionItemPath,
+  supportsSharedShellInlineEditing,
 } from './inline-edit-policy.js';
 
 function arrayValue(value) {
@@ -1281,14 +1283,15 @@ function renderQuoteRequestForm(section, schema) {
     ? [{ name: "need", label: "Que necesitas" }, { name: "quantity", label: "Cantidad aproximada" }, { name: "target_date", label: "Fecha deseada", type: "date" }, { name: "notes", label: "Notas", type: "textarea" }]
     : [{ name: "need", label: "What do you need" }, { name: "quantity", label: "Approximate quantity" }, { name: "target_date", label: "Desired date", type: "date" }, { name: "notes", label: "Notes", type: "textarea" }];
   const fields = Array.isArray(editable.fields) && editable.fields.length ? editable.fields : defaults;
-  return `<section class="industrial-quote-section quote-request-form ${sectionClass(section)}" ${sectionAttrs(section)}><div class="industrial-quote-card"><div><span class="rendered-kicker">${escapeHtml(labels.requestQuote)}</span><h2>${escapeHtml(editable.title || labels.industrialQuoteTitle)}</h2><p>${escapeHtml(editable.text || labels.industrialQuoteText)}</p></div><div class="industrial-rfq-fields">${fields.slice(0, 8).map((field, index) => {
+  return `<section class="industrial-quote-section quote-request-form ${sectionClass(section)}" ${sectionAttrs(section)}><div class="industrial-quote-card"><div><span class="rendered-kicker">${escapeHtml(labels.requestQuote)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.industrialQuoteTitle)}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.industrialQuoteText)}</p></div><div class="industrial-rfq-fields">${fields.slice(0, 8).map((field, index) => {
     const entry = typeof field === "object" ? field : { label: field };
     const label = entry.label || entry.name || defaults[index]?.label || "Details";
     const control = entry.type === "textarea"
       ? `<textarea name="${escapeAttribute(entry.name || slugify(label))}" placeholder="${escapeAttribute(entry.placeholder || label)}" ${entry.required ? "required" : ""}></textarea>`
       : `<input type="${escapeAttribute(entry.type || "text")}" name="${escapeAttribute(entry.name || slugify(label))}" placeholder="${escapeAttribute(entry.placeholder || label)}" ${entry.required ? "required" : ""}>`;
-    return `<label><span>${escapeHtml(label)}</span>${control}</label>`;
-  }).join("")}</div><button class="rendered-button" type="button" data-open-lead>${escapeHtml(editable.primary_button || labels.requestQuote)}</button></div></section>`;
+    const labelAttrs = inlineEditAttrsForPath(schema, inlineEditSectionCollectionItemPath(schema, section, "fields", index, "label"), "item_title");
+    return `<label><span ${labelAttrs}>${escapeHtml(label)}</span>${control}</label>`;
+  }).join("")}</div><button class="rendered-button" type="button" data-open-lead ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(editable.primary_button || labels.requestQuote)}</button></div></section>`;
 }
 
 function industrialVisualPlaceholder(schema) {
@@ -1455,20 +1458,28 @@ function renderPortfolioGallery(section, schema) {
   const beforeAfter = section.settings?.layout === "before_after" || editable.before_after === true || items.some((item) => item.beforeImageUrl || item.afterImageUrl);
   return `<section class="home-service-gallery portfolio-gallery ${beforeAfter ? "is-before-after" : ""} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.workProof)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(inlineEditableValue(editable, "title", ""))}</h2>${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}</div>
-    <div class="home-service-work-grid">${items.map((item) => `<article>
-      ${beforeAfter && (item.beforeImageUrl || item.afterImageUrl) ? `<div class="portfolio-before-after"><figure>${renderResilientImage(item.beforeImageUrl || item.image_url, item.name, `${item.name || "Project"} before`)}<figcaption>${escapeHtml(labels.before)}</figcaption></figure><figure>${renderResilientImage(item.afterImageUrl || item.image_url, item.name, `${item.name || "Project"} after`)}<figcaption>${escapeHtml(labels.after)}</figcaption></figure></div>` : renderResilientImage(item.image_url || item.imageUrl, item.name || item.title, item.name || item.title)}
-      ${renderImageAttribution(item)}
-      <div><strong ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name || item.title || "")}</strong>${item.description ? `<p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p>` : ""}${item.price_label || item.price ? `<b>${escapeHtml(item.price_label || item.price)}</b>` : ""}</div>
-    </article>`).join("")}</div>
+    <div class="home-service-work-grid">${items.map((item, index) => {
+      const titleField = Object.prototype.hasOwnProperty.call(item, "name") ? "name" : "title";
+      const titleAttrs = inlineCatalogEditAttrs(schema, item, "name", "product_name")
+        || inlineSectionItemEditAttrs(schema, section, index, titleField, "item_title");
+      const descriptionAttrs = inlineCatalogEditAttrs(schema, item, "description", "product_description")
+        || inlineSectionItemEditAttrs(schema, section, index, "description", "item_description");
+      return `<article>
+        ${beforeAfter && (item.beforeImageUrl || item.afterImageUrl) ? `<div class="portfolio-before-after"><figure>${renderResilientImage(item.beforeImageUrl || item.image_url, item.name, `${item.name || "Project"} before`)}<figcaption>${escapeHtml(labels.before)}</figcaption></figure><figure>${renderResilientImage(item.afterImageUrl || item.image_url, item.name, `${item.name || "Project"} after`)}<figcaption>${escapeHtml(labels.after)}</figcaption></figure></div>` : renderResilientImage(item.image_url || item.imageUrl, item.name || item.title, item.name || item.title)}
+        ${renderImageAttribution(item)}
+        <div><strong ${titleAttrs}>${escapeHtml(item.name || item.title || "")}</strong>${item.description ? `<p ${descriptionAttrs}>${escapeHtml(item.description)}</p>` : ""}${item.price_label || item.price ? `<b>${escapeHtml(item.price_label || item.price)}</b>` : ""}</div>
+      </article>`;
+    }).join("")}</div>
   </section>`;
 }
 
-function renderVideoShowcase(section) {
+function renderVideoShowcase(section, schema) {
   const editable = section.editable || {};
   const videoUrl = editable.videoUrl || editable.video_url || editable.url || "";
   const embedUrl = safeVideoEmbedUrl(videoUrl);
-  if (!embedUrl) return `<section class="video-showcase ${sectionClass(section)}" ${sectionAttrs(section)}><div class="section-heading"><h2>${escapeHtml(editable.title || "Video")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div><p class="video-unavailable">Video URL unavailable or unsupported.</p></section>`;
-  return `<section class="video-showcase ${sectionClass(section)}" ${sectionAttrs(section)}><div class="section-heading"><h2>${escapeHtml(editable.title || "Video")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div><div class="video-embed"><iframe src="${escapeAttribute(embedUrl)}" title="${escapeAttribute(editable.title || "Video")}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></section>`;
+  const heading = `<div class="section-heading"><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || "Video")}</h2>${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}</div>`;
+  if (!embedUrl) return `<section class="video-showcase ${sectionClass(section)}" ${sectionAttrs(section)}>${heading}<p class="video-unavailable">Video URL unavailable or unsupported.</p></section>`;
+  return `<section class="video-showcase ${sectionClass(section)}" ${sectionAttrs(section)}>${heading}<div class="video-embed"><iframe src="${escapeAttribute(embedUrl)}" title="${escapeAttribute(editable.title || "Video")}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div></section>`;
 }
 
 function safeVideoEmbedUrl(value) {
@@ -2505,6 +2516,11 @@ function inlineEditAttrs(schema, section, field) {
   return inlineEditAttrsForPath(schema, inlineEditPath(schema, section, field), field);
 }
 
+function inlineEditSectionPropertyAttrs(schema, section, property, field) {
+  const sectionPath = inlineEditPath(schema, section, "title").replace(/\.title$/, "");
+  return inlineEditAttrsForPath(schema, sectionPath ? `${sectionPath}.${property}` : "", field);
+}
+
 function inlineCatalogEditAttrs(schema, item, itemField, editField) {
   return inlineEditAttrsForPath(schema, inlineEditCatalogPath(schema, item, itemField), editField);
 }
@@ -2534,7 +2550,7 @@ function inlineEditAttrsForPath(schema, candidatePath, field) {
 
 function supportsExpandedInlineEditing(schema = {}) {
   const templateId = schema.active_template?.id || schema.selected_template?.id || "";
-  return ["premium-product-store", "b2b-saas-enterprise-pro"].includes(templateId);
+  return templateId === "b2b-saas-enterprise-pro" || supportsSharedShellInlineEditing(templateId);
 }
 
 function inlineEditableValue(editable, field, fallback = "") {
@@ -2649,13 +2665,13 @@ function renderCourseOffering(section, schema) {
         : `<div class="course-video-placeholder"><span>${escapeHtml(schema.business?.name || "LYRA")}</span><strong>${escapeHtml(editable.title || "Course")}</strong></div>`}
     </div>
     <div class="course-offering-copy">
-      <span class="rendered-kicker">${escapeHtml(editable.audience || "Course")}</span>
-      <h2>${escapeHtml(editable.title || "Course")}</h2>
-      <p>${escapeHtml(editable.description || editable.text || "")}</p>
-      ${includes.length ? `<ul>${includes.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+      <span class="rendered-kicker" ${inlineEditSectionPropertyAttrs(schema, section, "audience", "badge")}>${escapeHtml(editable.audience || "Course")}</span>
+      <h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || "Course")}</h2>
+      <p ${Object.prototype.hasOwnProperty.call(editable, "description") ? inlineEditSectionPropertyAttrs(schema, section, "description", "text") : inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.description || editable.text || "")}</p>
+      ${includes.length ? `<ul>${includes.map((item, index) => `<li ${inlineEditAttrsForPath(schema, inlineEditSectionCollectionItemPath(schema, section, "includes", index, ""), "item_title")}>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
       <div class="course-offering-action">
         ${editable.priceLabel ? `<strong>${escapeHtml(editable.priceLabel)}</strong>` : ""}
-        <a class="rendered-button" href="#" data-page-link="${actionPage}">${escapeHtml(editable.ctaLabel || "Learn more")}</a>
+        <a class="rendered-button" href="#" data-page-link="${actionPage}" ${inlineEditSectionPropertyAttrs(schema, section, "ctaLabel", "primary_button")}>${escapeHtml(editable.ctaLabel || "Learn more")}</a>
       </div>
     </div>
   </section>`;

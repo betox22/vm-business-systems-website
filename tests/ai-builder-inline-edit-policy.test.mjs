@@ -12,8 +12,10 @@ import {
   inlineEditPlaceholder,
   inlineEditPath,
   inlineEditPersistentPath,
+  inlineEditSectionCollectionItemPath,
   inlineEditSectionItemPath,
   normalizeInlineEditText,
+  supportsSharedShellInlineEditing,
 } from "../src/ai-builder/inline-edit-policy.js";
 
 function schemaWithHero(type = "PremiumHero") {
@@ -72,11 +74,62 @@ test("coverage paths map only to persistent section, catalog, navigation, footer
   assert.equal(inlineEditPageTitlePath(schema, schema.pages[0]), "pages.0.title");
   assert.equal(inlineEditPersistentPath("global_components.footer_text", "footer_text"), "global_components.footer_text");
   assert.equal(inlineEditPersistentPath("contact.whatsapp", "contact_value"), "contact.whatsapp");
+  assert.equal(inlineEditPersistentPath("pages.0.sections.4.editable.description", "text"), "pages.0.sections.4.editable.description");
+  assert.equal(inlineEditPersistentPath("pages.0.sections.4.editable.ctaLabel", "primary_button"), "pages.0.sections.4.editable.ctaLabel");
 
   assert.equal(inlineEditPersistentPath("theme.colors.primary", "text"), "");
   assert.equal(inlineEditPersistentPath("dashboard.metrics.0", "item_title"), "");
   assert.equal(inlineEditCatalogPath(schema, product, "price"), "");
   assert.equal(inlineEditSectionItemPath(schema, hero, 0, "image_url"), "");
+});
+
+const NEW_SHARED_SHELL_TEMPLATE_IDS = [
+  "luxury-high-ticket-pro",
+  "education-course-academy-pro",
+  "medical-wellness-clinic-pro",
+  "legal-professional-services-pro",
+  "manufacturing-industrial-supplier-pro",
+  "mega-marketplace",
+  "listing-marketplace-pro",
+  "fashion-drop-pro",
+  "corporate-company-pro",
+  "lead-funnel-pro",
+  "restaurant-food-business",
+  "digital-products-store",
+  "real-estate-listings-pro",
+  "home-services-premium",
+  "local-services-pro-plus",
+  "booking-appointment-pro",
+];
+
+test("the 16 new templates enter the shared shell while dedicated top-level renderers stay isolated", () => {
+  NEW_SHARED_SHELL_TEMPLATE_IDS.forEach((templateId) => {
+    assert.equal(supportsSharedShellInlineEditing(templateId), true, templateId);
+  });
+  assert.equal(supportsSharedShellInlineEditing("premium-product-store"), true);
+  assert.equal(supportsSharedShellInlineEditing("b2b-saas-enterprise-pro"), false);
+  assert.equal(supportsSharedShellInlineEditing("mega-retail-store"), false);
+  assert.equal(supportsSharedShellInlineEditing("standard"), false);
+});
+
+test("reusable section collections resolve only to persistent course and quote paths", () => {
+  const { hero, schema } = schemaWithHero("CourseOffering");
+  assert.equal(inlineEditSectionCollectionItemPath(schema, hero, "includes", 1, ""), "pages.0.sections.0.editable.includes.1");
+  assert.equal(inlineEditSectionCollectionItemPath(schema, hero, "fields", 0, "label"), "pages.0.sections.0.editable.fields.0.label");
+  assert.equal(inlineEditSectionCollectionItemPath(schema, hero, "decorative", 0, "label"), "");
+  assert.equal(inlineEditPersistentPath("pages.0.sections.0.editable.includes.1", "item_title"), "pages.0.sections.0.editable.includes.1");
+});
+
+test("shared renderers carry persistent paths while dedicated family renderers remain untouched", () => {
+  const renderer = readFileSync(new URL("../src/ai-builder/renderers.js", import.meta.url), "utf8");
+  assert.match(renderer, /navigation\.0\.label|inlineEditNavigationPath/);
+  assert.match(renderer, /global_components\.footer_text/);
+  assert.match(renderer, /function renderVideoShowcase\(section, schema\)[\s\S]*inlineEditAttrs\(schema, section, "title"\)/);
+  assert.match(renderer, /function renderCourseOffering[\s\S]*"audience", "badge"[\s\S]*"ctaLabel", "primary_button"/);
+  assert.match(renderer, /function renderCourseOffering[\s\S]*"includes", index[\s\S]*"item_title"/);
+  assert.match(renderer, /function renderQuoteRequestForm[\s\S]*"fields", index, "label"[\s\S]*inlineEditAttrs\(schema, section, "primary_button"\)/);
+  assert.match(renderer, /function renderPortfolioGallery[\s\S]*inlineCatalogEditAttrs[\s\S]*inlineSectionItemEditAttrs/);
+  assert.doesNotMatch(renderer.match(/function renderLuxuryHero[\s\S]*?(?=\nfunction )/)?.[0] || "", /inlineEditAttrs/);
 });
 
 test("single-line and controlled multiline fields normalize without losing their contract", () => {
