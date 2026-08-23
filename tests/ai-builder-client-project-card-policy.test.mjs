@@ -2,12 +2,17 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  CLIENT_PROJECT_PREVIEW_TIMEOUT_MS,
   clientProjectDomain,
   clientProjectPreviewPath,
   clientProjectStatusClass,
   clientProjectVisualHue,
   isClientProjectPreviewMessage,
 } from "../src/ai-builder/client-project-card-policy.js";
+
+test("caps project preview loading at seven seconds", () => {
+  assert.equal(CLIENT_PROJECT_PREVIEW_TIMEOUT_MS, 7000);
+});
 
 test("builds a same-site real project preview URL", () => {
   assert.equal(clientProjectPreviewPath("site bath/all"), "/site.html?site_id=site%20bath%2Fall&embed=project-card");

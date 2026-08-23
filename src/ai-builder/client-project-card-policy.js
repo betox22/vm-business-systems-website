@@ -3,6 +3,8 @@ const PROJECT_STATUS_CLASSES = new Map([
   ["draft", "is-draft"],
 ]);
 
+export const CLIENT_PROJECT_PREVIEW_TIMEOUT_MS = 7000;
+
 export function clientProjectPreviewPath(projectId) {
   const cleanId = String(projectId || "").trim();
   return cleanId ? `/site.html?site_id=${encodeURIComponent(cleanId)}&embed=project-card` : "";

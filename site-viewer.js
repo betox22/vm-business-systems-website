@@ -39,7 +39,7 @@ async function loadPublicSite() {
 
 function notifyProjectCardPreview(status) {
   if (!isProjectCardPreview || window.parent === window) return;
-  window.parent.postMessage({ type: "kreaton:project-preview", status }, window.location.origin);
+  window.parent.postMessage({ type: "kreaton:project-preview", status }, "*");
 }
 
 function renderCurrentPublicPage() {

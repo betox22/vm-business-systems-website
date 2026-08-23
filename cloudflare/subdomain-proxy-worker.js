@@ -109,6 +109,15 @@ export default {
     // resolve-site API call, not at this proxy layer.
     const response = new Response(originResponse.body, originResponse);
     response.headers.set("X-Proxied-By", "kreaton-subdomain-worker");
+    const isEmbeddedProjectCard = originUrl.pathname === SUBDOMAIN_HOME_PATH
+      && originUrl.searchParams.get("embed") === "project-card";
+    if (isEmbeddedProjectCard) {
+      response.headers.delete("X-Frame-Options");
+      response.headers.set(
+        "Content-Security-Policy",
+        "frame-ancestors 'self' https://usekreaton.com https://www.usekreaton.com",
+      );
+    }
     return response;
   },
 };

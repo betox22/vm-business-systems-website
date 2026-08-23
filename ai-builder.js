@@ -5669,6 +5669,7 @@
     ["published", "is-published"],
     ["draft", "is-draft"]
   ]);
+  var CLIENT_PROJECT_PREVIEW_TIMEOUT_MS = 7e3;
   function clientProjectPreviewPath(projectId) {
     const cleanId = String(projectId || "").trim();
     return cleanId ? `/site.html?site_id=${encodeURIComponent(cleanId)}&embed=project-card` : "";
@@ -5809,6 +5810,7 @@
   var magicLinkCooldownEndsAt = 0;
   var magicLinkResendEmail = "";
   var pendingClientProjectSession = null;
+  var clientProjectPreviewTimers = /* @__PURE__ */ new WeakMap();
   function magicLinkElements() {
     return {
       confirmation: studioAuthGate?.querySelector("[data-magic-link-confirmation]") || null,
@@ -6237,6 +6239,10 @@
     builderState.clientProjectsPanel.hidden = true;
     builderState.clientProjectsPanel.setAttribute("aria-label", "Mis p\xE1ginas");
     window.addEventListener("message", handleClientProjectPreviewMessage);
+    builderState.clientProjectsPanel.addEventListener("load", (event) => {
+      const iframe = event.target?.closest?.("[data-client-project-preview-frame]");
+      if (iframe) startClientProjectPreviewTimeout(iframe);
+    }, true);
     builderState.clientProjectsPanel.addEventListener("click", (event) => {
       if (event.target?.closest?.("[data-client-project-delete-cancel]")) {
         closeClientProjectDeleteDialog();
@@ -6299,14 +6305,31 @@
     document.body.appendChild(builderState.clientProjectsPanel);
     return builderState.clientProjectsPanel;
   }
-  function handleClientProjectPreviewMessage(event) {
-    if (event.origin !== window.location.origin || !isClientProjectPreviewMessage(event.data)) return;
-    const iframe = Array.from(builderState.clientProjectsPanel?.querySelectorAll("[data-client-project-preview-frame]") || []).find((frame) => frame.contentWindow === event.source);
+  function setClientProjectPreviewState(iframe, status) {
     const preview = iframe?.closest(".client-project-preview, .client-project-resume-thumb");
     if (!iframe || !preview) return;
+    const timeoutId = clientProjectPreviewTimers.get(iframe);
+    if (timeoutId) clearTimeout(timeoutId);
+    clientProjectPreviewTimers.delete(iframe);
     preview.classList.remove("is-loading", "is-ready", "is-unavailable");
-    preview.classList.add(event.data.status === "ready" ? "is-ready" : "is-unavailable");
-    iframe.setAttribute("aria-hidden", String(event.data.status !== "ready"));
+    preview.classList.add(status === "ready" ? "is-ready" : "is-unavailable");
+    iframe.setAttribute("aria-hidden", String(status !== "ready"));
+  }
+  function startClientProjectPreviewTimeout(iframe) {
+    const previousTimeoutId = clientProjectPreviewTimers.get(iframe);
+    if (previousTimeoutId) clearTimeout(previousTimeoutId);
+    clientProjectPreviewTimers.set(iframe, setTimeout(() => {
+      console.warn("Project preview did not signal readiness before timeout", {
+        siteId: new URL(iframe.src, window.location.href).searchParams.get("site_id")
+      });
+      setClientProjectPreviewState(iframe, "error");
+    }, CLIENT_PROJECT_PREVIEW_TIMEOUT_MS));
+  }
+  function handleClientProjectPreviewMessage(event) {
+    if (!isClientProjectPreviewMessage(event.data)) return;
+    const iframe = Array.from(builderState.clientProjectsPanel?.querySelectorAll("[data-client-project-preview-frame]") || []).find((frame) => frame.contentWindow === event.source);
+    if (!iframe) return;
+    setClientProjectPreviewState(iframe, event.data.status);
   }
   function renderClientProjectsLoading() {
     const panel = ensureClientProjectsPanel();
@@ -6469,6 +6492,7 @@
   `;
     panel.hidden = false;
     document.body.classList.add("client-projects-open");
+    panel.querySelectorAll("[data-client-project-preview-frame]").forEach(startClientProjectPreviewTimeout);
   }
   function renderClientProjectResumePrompt(project, session = null) {
     pendingClientProjectSession = session;
