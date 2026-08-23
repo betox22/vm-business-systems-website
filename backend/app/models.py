@@ -210,6 +210,12 @@ class WebsiteGenerationResponse(BaseModel):
     generation_id: Optional[str] = None
 
 
+class ClientProjectDeleteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    businessName: str = Field(min_length=1, max_length=220)
+
+
 class LyraEditRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 

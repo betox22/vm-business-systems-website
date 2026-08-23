@@ -28,6 +28,11 @@ import {
   clientProjectVisualHue,
 } from './client-project-card-policy.js';
 import {
+  clientProjectDeletePayload,
+  removeClientProject,
+  unfinishedClientProject,
+} from './client-project-delete-policy.js';
+import {
   magicLinkFeedback,
   readSupabaseAuthRedirect,
   requestSupabaseMagicLink,
@@ -566,6 +571,35 @@ export function ensureClientProjectsPanel() {
   builderState.clientProjectsPanel.hidden = true;
   builderState.clientProjectsPanel.setAttribute("aria-label", "Mis páginas");
   builderState.clientProjectsPanel.addEventListener("click", (event) => {
+    if (event.target?.closest?.("[data-client-project-delete-cancel]")) {
+      closeClientProjectDeleteDialog();
+      return;
+    }
+    const confirmDeleteButton = event.target?.closest?.("[data-client-project-delete-confirm]");
+    if (confirmDeleteButton) {
+      deleteClientProject(confirmDeleteButton.dataset.clientProjectDeleteConfirm).catch((error) => {
+        console.warn("Could not delete client project", error);
+      });
+      return;
+    }
+    const deleteButton = event.target?.closest?.("[data-client-project-delete]");
+    if (deleteButton) {
+      const project = builderState.clientProjects.find((item) => item.id === deleteButton.dataset.clientProjectDelete);
+      if (project) openClientProjectDeleteDialog(project);
+      return;
+    }
+    const menuButton = event.target?.closest?.("[data-client-project-menu]");
+    if (menuButton) {
+      const menu = menuButton.nextElementSibling;
+      const willOpen = !menu?.classList.contains("is-open");
+      builderState.clientProjectsPanel.querySelectorAll(".client-project-actions-menu.is-open").forEach((item) => item.classList.remove("is-open"));
+      builderState.clientProjectsPanel.querySelectorAll("[data-client-project-menu]").forEach((item) => item.setAttribute("aria-expanded", "false"));
+      menu?.classList.toggle("is-open", willOpen);
+      menuButton.setAttribute("aria-expanded", String(willOpen));
+      return;
+    }
+    builderState.clientProjectsPanel.querySelectorAll(".client-project-actions-menu.is-open").forEach((item) => item.classList.remove("is-open"));
+    builderState.clientProjectsPanel.querySelectorAll("[data-client-project-menu]").forEach((item) => item.setAttribute("aria-expanded", "false"));
     if (event.target?.closest?.("[data-client-projects-close]")) {
       closeClientProjectsPanel();
       return;
@@ -603,10 +637,11 @@ export function renderClientProjectsLoading() {
   const panel = ensureClientProjectsPanel();
   panel.innerHTML = `
     <div class="client-projects-card">
+      <div class="client-projects-brand"><img src="/assets/nixie_idle.png" alt=""><strong>KREATON</strong><span>LYRA</span></div>
       <div class="client-projects-head">
         <span>${escapeHtml(t("myPages"))}</span>
-        <h2>${escapeHtml(langText({ en: "Loading your saved pages", es: "Cargando tus páginas", fr: "Chargement de vos pages", pt: "Carregando suas páginas" }))}</h2>
-        <p>${escapeHtml(langText({ en: "LYRA is checking the projects saved under your account.", es: "LYRA está revisando los proyectos guardados en tu cuenta.", fr: "LYRA vérifie les projets enregistrés sur votre compte.", pt: "LYRA está verificando os projetos salvos na sua conta." }))}</p>
+        <h2>${escapeHtml(langText({ en: "Loading your pages", es: "Cargando tus páginas", fr: "Chargement de vos pages", pt: "Carregando suas páginas" }))}</h2>
+        <p>${escapeHtml(langText({ en: "LYRA is bringing your workspace up to date.", es: "LYRA está poniendo tu espacio al día.", fr: "LYRA met votre espace à jour.", pt: "LYRA está atualizando seu espaço." }))}</p>
       </div>
       <div class="client-projects-skeleton"></div>
     </div>
@@ -615,8 +650,80 @@ export function renderClientProjectsLoading() {
   document.body.classList.add("client-projects-open");
 }
 
-export function renderClientProjectsPanel(projects = []) {
+function clientProjectCardMarkup(project) {
+  const businessName = project.business_name || "Untitled page";
+  const status = String(project.status || "draft").trim().toLowerCase();
+  const statusLabel = status === "published"
+    ? langText({ en: "Published", es: "Publicada", fr: "Publiée", pt: "Publicada" })
+    : langText({ en: "Draft", es: "Borrador", fr: "Brouillon", pt: "Rascunho" });
+  const previewPath = clientProjectPreviewPath(project.id);
+  const domain = clientProjectDomain(project.public_url);
+  const hue = clientProjectVisualHue(project);
+  return `
+    <article class="client-project-card" style="--client-project-hue: ${hue}">
+      <div class="client-project-preview" aria-label="${escapeAttribute(langText({
+        en: `Preview of ${businessName}`,
+        es: `Vista previa de ${businessName}`,
+        fr: `Aperçu de ${businessName}`,
+        pt: `Prévia de ${businessName}`,
+      }))}">
+        <div class="client-project-preview-fallback" aria-hidden="true"><span></span><span></span><span></span><div><i></i><i></i><i></i></div></div>
+        ${previewPath ? `<iframe src="${escapeAttribute(previewPath)}" title="${escapeAttribute(businessName)}" loading="lazy" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>` : ""}
+        <span class="client-project-status ${clientProjectStatusClass(status)}">${escapeHtml(statusLabel)}</span>
+      </div>
+      <div class="client-project-content">
+        <div class="client-project-card-head">
+          <span class="client-project-template">${escapeHtml(project.template_name || "Generated website")}</span>
+          <div class="client-project-menu-wrap">
+            <button class="client-project-menu-button" type="button" data-client-project-menu aria-expanded="false" aria-label="${escapeAttribute(langText({ en: `Actions for ${businessName}`, es: `Acciones para ${businessName}`, fr: `Actions pour ${businessName}`, pt: `Ações para ${businessName}` }))}">⋯</button>
+            <div class="client-project-actions-menu" role="menu">
+              <button type="button" role="menuitem" data-client-project-delete="${escapeAttribute(project.id)}">${escapeHtml(langText({ en: "Delete", es: "Eliminar", fr: "Supprimer", pt: "Excluir" }))}</button>
+            </div>
+          </div>
+        </div>
+        <div class="client-project-copy">
+          <h3>${escapeHtml(businessName)}</h3>
+          <div class="client-project-meta-line">
+            <p>${escapeHtml(formatProjectUpdatedAt(project.updated_at))}</p>
+            <small>${escapeHtml(statusLabel)}</small>
+          </div>
+          ${domain ? `<span class="client-project-domain" title="${escapeAttribute(project.public_url)}">${escapeHtml(domain)}</span>` : ""}
+        </div>
+      </div>
+      <button class="client-project-open-surface" type="button" data-client-project-id="${escapeAttribute(project.id)}" aria-label="${escapeAttribute(`${t("openProject")}: ${businessName}`)}"></button>
+    </article>
+  `;
+}
+
+function clientProjectResumeBannerMarkup(project) {
+  if (!project?.id) return "";
+  const projectName = savedProjectName(project);
+  const status = String(project.status || "draft").trim().toLowerCase();
+  const statusLabel = status === "published"
+    ? langText({ en: "Published", es: "Publicada", fr: "Publiée", pt: "Publicada" })
+    : langText({ en: "Draft", es: "Borrador", fr: "Brouillon", pt: "Rascunho" });
+  return `
+    <section class="client-project-resume-banner" aria-labelledby="clientProjectResumeTitle">
+      <div class="client-project-resume-thumb" style="--client-project-hue: ${clientProjectVisualHue(project)}">
+        ${clientProjectPreviewPath(project.id) ? `<iframe src="${escapeAttribute(clientProjectPreviewPath(project.id))}" title="${escapeAttribute(projectName)}" loading="lazy" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>` : ""}
+      </div>
+      <div class="client-project-resume-details">
+        <div class="client-project-resume-copy">
+          <span>${escapeHtml(langText({ en: "Continue where you left off", es: "Continúa donde lo dejaste", fr: "Reprenez là où vous étiez", pt: "Continue de onde parou" }))}</span>
+          <h3 id="clientProjectResumeTitle">${escapeHtml(projectName)}</h3>
+          <p>${escapeHtml(project.template_name || langText({ en: "Saved website", es: "Sitio guardado", fr: "Site sauvegardé", pt: "Site salvo" }))} · ${escapeHtml(statusLabel)}</p>
+          <small>${escapeHtml(langText({ en: "Last edited", es: "Última edición", fr: "Dernière modification", pt: "Última edição" }))} ${escapeHtml(formatProjectUpdatedAt(project.updated_at))}</small>
+        </div>
+        <button type="button" data-client-resume-project="${escapeAttribute(project.id)}">${escapeHtml(langText({ en: "Open", es: "Abrir", fr: "Ouvrir", pt: "Abrir" }))}<span aria-hidden="true">→</span></button>
+      </div>
+    </section>
+  `;
+}
+
+export function renderClientProjectsPanel(projects = [], options = {}) {
   const panel = ensureClientProjectsPanel();
+  const savedProjects = Array.isArray(projects) ? projects.filter((project) => project?.id) : [];
+  const resumeProject = unfinishedClientProject(savedProjects, options.resumeProject);
   const newPageLabel = t("startNewProject");
   const emptyState = `
     <div class="client-projects-empty">
@@ -636,56 +743,46 @@ export function renderClientProjectsPanel(projects = []) {
       }))}</small>
     </button>
   `;
-  const rows = projects.map((project) => {
-    const businessName = project.business_name || "Untitled page";
-    const status = String(project.status || "draft").trim().toLowerCase();
-    const statusLabel = status === "published"
-      ? langText({ en: "Published", es: "Publicada", fr: "Publiée", pt: "Publicada" })
-      : langText({ en: "Draft", es: "Borrador", fr: "Brouillon", pt: "Rascunho" });
-    const previewPath = clientProjectPreviewPath(project.id);
-    const domain = clientProjectDomain(project.public_url);
-    const hue = clientProjectVisualHue(project);
-    return `
-      <article class="client-project-card" style="--client-project-hue: ${hue}">
-        <div class="client-project-preview" aria-label="${escapeAttribute(langText({
-          en: `Preview of ${businessName}`,
-          es: `Vista previa de ${businessName}`,
-          fr: `Aperçu de ${businessName}`,
-          pt: `Prévia de ${businessName}`,
-        }))}">
-          <div class="client-project-preview-fallback" aria-hidden="true">
-            <span></span><span></span><span></span>
-            <div><i></i><i></i><i></i></div>
-          </div>
-          ${previewPath ? `<iframe src="${escapeAttribute(previewPath)}" title="${escapeAttribute(businessName)}" loading="lazy" sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>` : ""}
-          <span class="client-project-status ${clientProjectStatusClass(status)}">${escapeHtml(statusLabel)}</span>
-        </div>
-        <div class="client-project-content">
-          <div class="client-project-copy">
-            <span class="client-project-template">${escapeHtml(project.template_name || "Generated website")}</span>
-            <h3>${escapeHtml(businessName)}</h3>
-            <p>${escapeHtml(langText({ en: "Last edited", es: "Última edición", fr: "Dernière modification", pt: "Última edição" }))} · ${escapeHtml(formatProjectUpdatedAt(project.updated_at))}</p>
-            ${domain ? `<small title="${escapeAttribute(project.public_url)}">${escapeHtml(domain)}</small>` : ""}
-          </div>
-          <button class="client-project-open" type="button" data-client-project-id="${escapeAttribute(project.id)}">${escapeHtml(t("openProject"))}</button>
-        </div>
-      </article>
-    `;
-  }).join("");
+  const libraryProjects = resumeProject?.id
+    ? savedProjects.filter((project) => project.id !== resumeProject.id)
+    : savedProjects;
+  const rows = libraryProjects.map(clientProjectCardMarkup).join("");
+  const accountEmail = builderState.clientIntakeSession?.clientEmail || localStorage.getItem("lumaPendingClientEmail") || "";
   panel.innerHTML = `
     <div class="client-projects-card">
       <button class="client-projects-close" type="button" data-client-projects-close aria-label="Close">×</button>
+      <div class="client-projects-topbar">
+        <div class="client-projects-brand"><img src="/assets/nixie_idle.png" alt=""><strong>KREATON</strong><span>LYRA</span></div>
+        ${accountEmail ? `<span class="client-projects-account">${escapeHtml(compactEmailLabel(accountEmail))}</span>` : ""}
+      </div>
       <div class="client-projects-head">
-        <span>${escapeHtml(langText({ en: "Your workspace", es: "Tu espacio", fr: "Votre espace", pt: "Seu espaço" }))}</span>
-        <h2>${escapeHtml(langText({ en: "Choose a page to continue", es: "Elige una página para continuar", fr: "Choisissez une page à continuer", pt: "Escolha uma página para continuar" }))}</h2>
+        <div class="client-projects-heading-copy">
+          <span>${escapeHtml(langText({ en: "Your workspace", es: "Tu espacio", fr: "Votre espace", pt: "Seu espaço" }))}</span>
+          <h2>${escapeHtml(langText({ en: "Your pages", es: "Tus páginas", fr: "Vos pages", pt: "Suas páginas" }))}</h2>
+        </div>
         <p>${escapeHtml(langText({
-          en: "Each page stays separate under your account.",
-          es: "Cada página queda separada dentro de tu cuenta.",
+          en: "Continue building, open a published site, or start something new.",
+          es: "Sigue construyendo, abre un sitio publicado o empieza algo nuevo.",
           fr: "Chaque page reste séparée dans votre compte.",
           pt: "Cada página fica separada dentro da sua conta.",
         }))}</p>
       </div>
+      ${clientProjectResumeBannerMarkup(resumeProject)}
+      <div class="client-projects-section-head"><strong>${escapeHtml(langText({ en: "All pages", es: "Todas las páginas", fr: "Toutes les pages", pt: "Todas as páginas" }))}</strong><span>${escapeHtml(langText({ en: `${savedProjects.length} projects`, es: `${savedProjects.length} proyectos`, fr: `${savedProjects.length} projets`, pt: `${savedProjects.length} projetos` }))}</span></div>
       <div class="client-projects-list">${newProjectCard}${rows || emptyState}</div>
+    </div>
+    <div class="client-project-delete-layer" data-client-project-delete-layer hidden>
+      <div class="client-project-delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="clientProjectDeleteTitle" aria-describedby="clientProjectDeleteDescription">
+        <div class="client-project-delete-icon" aria-hidden="true">!</div>
+        <span>${escapeHtml(langText({ en: "Delete project", es: "Eliminar proyecto", fr: "Supprimer le projet", pt: "Excluir projeto" }))}</span>
+        <h2 id="clientProjectDeleteTitle"></h2>
+        <p id="clientProjectDeleteDescription">${escapeHtml(langText({ en: "This permanently removes the website, its saved draft, and uploaded assets. This action cannot be undone.", es: "Esto elimina permanentemente el sitio, su borrador guardado y los archivos subidos. Esta acción no se puede deshacer.", fr: "Cette action supprime définitivement le site, son brouillon et ses fichiers. Elle est irréversible.", pt: "Isto remove permanentemente o site, o rascunho e os arquivos enviados. Esta ação não pode ser desfeita." }))}</p>
+        <div class="client-project-delete-error" data-client-project-delete-error hidden></div>
+        <div class="client-project-delete-actions">
+          <button type="button" data-client-project-delete-cancel>${escapeHtml(langText({ en: "Cancel", es: "Cancelar", fr: "Annuler", pt: "Cancelar" }))}</button>
+          <button type="button" data-client-project-delete-confirm>${escapeHtml(langText({ en: "Delete permanently", es: "Eliminar definitivamente", fr: "Supprimer définitivement", pt: "Excluir definitivamente" }))}</button>
+        </div>
+      </div>
     </div>
   `;
   panel.hidden = false;
@@ -693,52 +790,71 @@ export function renderClientProjectsPanel(projects = []) {
 }
 
 export function renderClientProjectResumePrompt(project, session = null) {
-  const panel = ensureClientProjectsPanel();
-  const projectName = savedProjectName(project);
   pendingClientProjectSession = session;
-  panel.innerHTML = `
-    <div class="client-projects-card client-project-resume-card" role="dialog" aria-modal="true" aria-labelledby="clientProjectResumeTitle">
-      <div class="client-project-resume-brand" aria-hidden="true">
-        <span><img src="/assets/nixie_idle.png" alt=""></span>
-        <strong>LYRA</strong>
-      </div>
-      <div class="client-projects-head">
-        <span>${escapeHtml(langText({ en: "Saved progress", es: "Progreso guardado", fr: "Progression sauvegardée", pt: "Progresso salvo" }))}</span>
-        <h2 id="clientProjectResumeTitle">${escapeHtml(langText({
-          en: "You have an unfinished project",
-          es: "Tienes un proyecto sin terminar",
-          fr: "Vous avez un projet inachevé",
-          pt: "Você tem um projeto inacabado",
-        }))}</h2>
-      </div>
-      <div class="client-project-resume-project">
-        <span aria-hidden="true"></span>
-        <div>
-          <strong>${escapeHtml(projectName)}</strong>
-          <small>${escapeHtml(project.template_name || langText({ en: "Saved website", es: "Sitio guardado", fr: "Site sauvegardé", pt: "Site salvo" }))}</small>
-        </div>
-      </div>
-      <p class="client-project-resume-question">${escapeHtml(langText({
-          en: "Would you like to continue it or start a new one?",
-          es: "¿Quieres continuarlo o empezar uno nuevo?",
-          fr: "Souhaitez-vous le continuer ou en commencer un nouveau ?",
-          pt: "Quer continuar ou começar um novo?",
-        }))}</p>
-      <div class="client-project-resume-actions">
-        <button class="client-project-resume-primary" type="button" data-client-resume-project="${escapeAttribute(project.id)}">${escapeHtml(langText({ en: "Continue project", es: "Continuar proyecto", fr: "Continuer le projet", pt: "Continuar projeto" }))}</button>
-        <button class="client-project-resume-secondary" type="button" data-client-new-project>${escapeHtml(langText({ en: "Start a new one", es: "Empezar uno nuevo", fr: "En commencer un nouveau", pt: "Começar um novo" }))}</button>
-      </div>
-    </div>
-  `;
-  panel.hidden = false;
-  document.body.classList.add("client-projects-open");
+  renderClientProjectsPanel(builderState.clientProjects, { resumeProject: project });
   guidedStatusText.textContent = langText({
     en: "Choose whether to continue your saved project or begin a new one.",
     es: "Elige si quieres continuar tu proyecto guardado o comenzar uno nuevo.",
     fr: "Choisissez de continuer votre projet sauvegardé ou d'en commencer un nouveau.",
     pt: "Escolha entre continuar seu projeto salvo ou começar um novo.",
   });
-  panel.querySelector("[data-client-resume-project]")?.focus();
+  builderState.clientProjectsPanel?.querySelector("[data-client-resume-project]")?.focus();
+}
+
+function openClientProjectDeleteDialog(project) {
+  const payload = clientProjectDeletePayload(project);
+  const layer = builderState.clientProjectsPanel?.querySelector("[data-client-project-delete-layer]");
+  if (!payload || !layer) return;
+  layer.hidden = false;
+  layer.querySelector("#clientProjectDeleteTitle").textContent = payload.businessName;
+  const confirmButton = layer.querySelector("[data-client-project-delete-confirm]");
+  confirmButton.dataset.clientProjectDeleteConfirm = payload.projectId;
+  confirmButton.dataset.clientProjectBusinessName = payload.businessName;
+  confirmButton.disabled = false;
+  layer.querySelector("[data-client-project-delete-error]").hidden = true;
+  confirmButton.focus();
+}
+
+function closeClientProjectDeleteDialog() {
+  const layer = builderState.clientProjectsPanel?.querySelector("[data-client-project-delete-layer]");
+  if (layer) layer.hidden = true;
+}
+
+export async function deleteClientProject(projectId) {
+  const project = builderState.clientProjects.find((item) => item.id === projectId);
+  const payload = clientProjectDeletePayload(project);
+  const layer = builderState.clientProjectsPanel?.querySelector("[data-client-project-delete-layer]");
+  const confirmButton = layer?.querySelector("[data-client-project-delete-confirm]");
+  const errorBox = layer?.querySelector("[data-client-project-delete-error]");
+  if (!payload || !confirmButton) return;
+
+  confirmButton.disabled = true;
+  confirmButton.textContent = langText({ en: "Deleting...", es: "Eliminando...", fr: "Suppression...", pt: "Excluindo..." });
+  if (errorBox) errorBox.hidden = true;
+  const response = await fetchWithTimeout(`${CLIENT_PROJECTS_URL}/${encodeURIComponent(payload.projectId)}`, {
+    method: "DELETE",
+    headers: clientAuthHeaders({ "content-type": "application/json" }),
+    credentials: "include",
+    body: JSON.stringify({ businessName: payload.businessName }),
+  }, 20000);
+  if (!response.ok) {
+    if (response.status === 401) handleExpiredClientAuth();
+    const message = await readErrorMessage(response);
+    confirmButton.disabled = false;
+    confirmButton.textContent = langText({ en: "Delete permanently", es: "Eliminar definitivamente", fr: "Supprimer définitivement", pt: "Excluir definitivamente" });
+    if (errorBox) {
+      errorBox.textContent = message;
+      errorBox.hidden = false;
+    }
+    throw new Error(message);
+  }
+
+  const deletedCurrentProject = builderState.currentSiteId === payload.projectId;
+  builderState.clientProjects = removeClientProject(builderState.clientProjects, payload.projectId);
+  if (deletedCurrentProject) resetGuidedStateForNewAccount({ preserveAuth: true });
+  pendingClientProjectSession = null;
+  renderClientProjectsPanel(builderState.clientProjects);
+  if (storageStatus) storageStatus.textContent = langText({ en: "Project deleted.", es: "Proyecto eliminado.", fr: "Projet supprimé.", pt: "Projeto excluído." });
 }
 
 export function closeClientProjectsPanel() {

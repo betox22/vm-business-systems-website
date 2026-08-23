@@ -21,7 +21,7 @@ from .agents import semantic_seed_catalog, split_items, state_is_commerce_seed_t
 from .client_auth import fetch_supabase_user, supabase_auth_configured
 from .commerce import router as commerce_router
 from .db import get_session, init_db
-from .db_models import GeneratedSite, Store
+from .db_models import DomainReservation, GeneratedSite, Store
 from .domains import router as domains_router
 from .models import (
     AssetUploadRequest,
@@ -31,6 +31,7 @@ from .models import (
     LyraEditRequest,
     LyraEditResponse,
     CatalogSource,
+    ClientProjectDeleteRequest,
     ColorProvenance,
     WebsiteGenerationRequest,
     WebsiteGenerationResponse,
@@ -46,7 +47,7 @@ from .orchestrator import (
     site_plan_from_state,
 )
 from .taxonomy import infer_seed_profile
-from .storage import StorageError, parse_data_url, supabase_storage_configured, upload_asset_to_supabase, validate_upload
+from .storage import StorageError, delete_site_assets_from_supabase, parse_data_url, supabase_storage_configured, upload_asset_to_supabase, validate_upload
 
 
 logger = logging.getLogger("kreaton")
@@ -874,6 +875,28 @@ def _intake_session_key(email: str, project_id: str = "", request_id: str = "") 
     return f"{email}:{identity}"
 
 
+def _intake_session_keys_for_project(owner_email: str, project_id: str) -> list[str]:
+    clean_email = str(owner_email or "").strip().lower()
+    clean_project_id = str(project_id or "").strip()
+    keys: list[str] = []
+    for key, value in client_intake_sessions.items():
+        session_email = str(value.get("clientEmail") or value.get("client_email") or "").strip().lower()
+        draft = value.get("draft") if isinstance(value.get("draft"), dict) else {}
+        session_project_ids = {
+            str(value.get(field) or "").strip()
+            for field in ("projectId", "generatedSiteId", "siteId")
+        }
+        session_project_ids.update(
+            str(draft.get(field) or "").strip()
+            for field in ("projectId", "generatedSiteId", "siteId")
+        )
+        key_matches = key == _intake_session_key(clean_email, clean_project_id, "")
+        owner_matches = not clean_email or session_email == clean_email or key.startswith(f"{clean_email}:")
+        if (clean_project_id in session_project_ids or key_matches) and owner_matches:
+            keys.append(key)
+    return keys
+
+
 @app.get("/api/client/projects")
 async def client_projects(
     authorization: str = Header(default=""),
@@ -920,6 +943,65 @@ async def client_project_detail(
         "site_id": site.id,
         "generatedSiteId": site.id,
         "storage_status": site.status,
+    }
+
+
+@app.delete("/api/client/projects/{project_id}")
+async def delete_client_project(
+    project_id: str,
+    payload: ClientProjectDeleteRequest,
+    authorization: str = Header(default=""),
+    luma_client_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    user = authenticated_client_user(authorization, luma_client_session)
+    owner_user_id = str(user.get("id") or user.get("sub") or "").strip()
+    owner_email = str(user.get("email") or "").strip().lower()
+    site = session.execute(
+        select(GeneratedSite).where(
+            GeneratedSite.id == project_id,
+            _project_owner_filter(owner_user_id, owner_email),
+        )
+    ).scalar_one_or_none()
+    if not site:
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    confirmed_name = " ".join(payload.businessName.split()).casefold()
+    actual_name = " ".join(str(site.business_name or "").split()).casefold()
+    if confirmed_name != actual_name:
+        raise HTTPException(status_code=409, detail="Business name does not match this project.")
+
+    try:
+        deleted_assets = delete_site_assets_from_supabase(
+            business_id=site.store_id,
+            site_id=site.id,
+        )
+    except StorageError as error:
+        logger.exception("Could not delete assets for client project %s", site.id)
+        raise HTTPException(status_code=502, detail="Could not remove the project's stored assets.") from error
+
+    intake_session_keys = _intake_session_keys_for_project(owner_email, site.id)
+    reservations = session.execute(
+        select(DomainReservation).where(DomainReservation.generated_site_id == site.id)
+    ).scalars().all()
+    for reservation in reservations:
+        reservation.generated_site_id = None
+    business_name = site.business_name
+    session.delete(site)
+    try:
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+
+    for key in intake_session_keys:
+        client_intake_sessions.pop(key, None)
+    return {
+        "deleted": True,
+        "project_id": project_id,
+        "business_name": business_name,
+        "deleted_assets": deleted_assets,
+        "deleted_intake_sessions": len(intake_session_keys),
     }
 
 

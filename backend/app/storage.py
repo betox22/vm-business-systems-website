@@ -4,7 +4,7 @@ import base64
 import os
 import re
 import uuid
-from typing import Tuple
+from typing import Any, Dict, List, Tuple
 
 import httpx
 
@@ -137,3 +137,103 @@ def upload_asset_to_supabase(
         )
 
     return f"{supabase_url.rstrip('/')}/storage/v1/object/public/{bucket}/{object_path}"
+
+
+def _supabase_storage_headers(service_key: str) -> Dict[str, str]:
+    return {
+        "Authorization": f"Bearer {service_key}",
+        "apikey": service_key,
+        "Content-Type": "application/json",
+    }
+
+
+def _list_supabase_objects(
+    *,
+    supabase_url: str,
+    service_key: str,
+    bucket: str,
+    prefix: str,
+) -> List[str]:
+    """Return every concrete object path below a storage prefix."""
+
+    list_url = f"{supabase_url.rstrip('/')}/storage/v1/object/list/{bucket}"
+    headers = _supabase_storage_headers(service_key)
+    object_paths: List[str] = []
+    pending_prefixes = [prefix.rstrip("/")]
+
+    while pending_prefixes:
+        current_prefix = pending_prefixes.pop()
+        offset = 0
+        while True:
+            try:
+                response = httpx.post(
+                    list_url,
+                    headers=headers,
+                    json={"prefix": current_prefix, "limit": 1000, "offset": offset},
+                    timeout=20.0,
+                )
+            except httpx.HTTPError as error:
+                raise StorageError(f"Could not list Supabase storage objects: {error}") from error
+
+            if response.status_code >= 400:
+                raise StorageError(
+                    f"Supabase storage listing failed ({response.status_code}): {response.text[:300]}"
+                )
+            payload = response.json()
+            rows: List[Dict[str, Any]] = payload if isinstance(payload, list) else []
+            for row in rows:
+                name = str(row.get("name") or "").strip("/")
+                if not name:
+                    continue
+                path = name if name.startswith(f"{current_prefix}/") else f"{current_prefix}/{name}"
+                if row.get("id") or row.get("metadata"):
+                    object_paths.append(path)
+                else:
+                    pending_prefixes.append(path)
+            if len(rows) < 1000:
+                break
+            offset += len(rows)
+
+    return list(dict.fromkeys(object_paths))
+
+
+def delete_site_assets_from_supabase(*, business_id: str, site_id: str) -> int:
+    """Delete all stored assets for exactly one business/site pair."""
+
+    supabase_url = os.getenv("SUPABASE_URL")
+    service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    if not supabase_url or not service_key:
+        return 0
+
+    bucket = _supabase_bucket()
+    business_segment = _safe_segment(business_id, "no-business")
+    site_segment = _safe_segment(site_id, "no-site")
+    prefix = f"{business_segment}/{site_segment}"
+    object_paths = _list_supabase_objects(
+        supabase_url=supabase_url,
+        service_key=service_key,
+        bucket=bucket,
+        prefix=prefix,
+    )
+    if not object_paths:
+        return 0
+
+    delete_url = f"{supabase_url.rstrip('/')}/storage/v1/object/{bucket}"
+    headers = _supabase_storage_headers(service_key)
+    for start in range(0, len(object_paths), 1000):
+        chunk = object_paths[start:start + 1000]
+        try:
+            response = httpx.request(
+                "DELETE",
+                delete_url,
+                headers=headers,
+                json={"prefixes": chunk},
+                timeout=20.0,
+            )
+        except httpx.HTTPError as error:
+            raise StorageError(f"Could not delete Supabase storage objects: {error}") from error
+        if response.status_code >= 400:
+            raise StorageError(
+                f"Supabase storage deletion failed ({response.status_code}): {response.text[:300]}"
+            )
+    return len(object_paths)

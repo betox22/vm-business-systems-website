@@ -1892,7 +1892,8 @@ export function storedClientAccessToken() {
 
 export function formatProjectUpdatedAt(value) {
   if (!value) return langText({ en: "No recent edits", es: "Sin ediciones recientes", fr: "Aucune édition récente", pt: "Sem edições recentes" });
-  const date = new Date(value);
+  const numericValue = typeof value === "number" || /^\d+$/.test(String(value)) ? Number(value) : null;
+  const date = new Date(numericValue !== null && numericValue < 1_000_000_000_000 ? numericValue * 1000 : value);
   if (Number.isNaN(date.getTime())) return String(value);
   try {
     return new Intl.DateTimeFormat(builderState.selectedLanguage || "en", {
