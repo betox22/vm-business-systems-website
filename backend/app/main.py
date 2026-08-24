@@ -17,6 +17,11 @@ from pydantic import BaseModel
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from .admin_auth import (
+    admin_identity_from_user,
+    clear_admin_session_cookie,
+    set_admin_session_cookie,
+)
 from .agents import semantic_seed_catalog, split_items, state_is_commerce_seed_target
 from .client_auth import fetch_supabase_user, supabase_auth_configured
 from .commerce import router as commerce_router
@@ -521,6 +526,10 @@ class ClientAuthSessionRequest(BaseModel):
     refresh_token: str = ""
 
 
+class AdminAuthSessionRequest(BaseModel):
+    access_token: str
+
+
 @app.post("/api/client/auth/session")
 async def client_auth_session(
     payload: ClientAuthSessionRequest,
@@ -598,6 +607,51 @@ async def client_auth_logout(response: Response) -> Dict[str, str]:
         secure=True,
         samesite="none",
     )
+    return {"status": "logged_out"}
+
+
+def _authenticated_admin_identity(
+    authorization: str = "", admin_session: str = ""
+) -> Dict[str, Any]:
+    token = _bearer_token(authorization, admin_session)
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing admin access token.")
+    if not supabase_auth_configured():
+        raise HTTPException(status_code=503, detail="Admin login is not configured on the server yet.")
+    user = fetch_supabase_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired admin session.")
+    identity = admin_identity_from_user(user)
+    if not identity:
+        raise HTTPException(status_code=403, detail="This account does not have KREATON admin access.")
+    return identity
+
+
+@app.post("/api/admin/auth/session")
+async def admin_auth_session(
+    payload: AdminAuthSessionRequest,
+    request: Request,
+    response: Response,
+) -> Dict[str, Any]:
+    _enforce_rate_limit(request, "admin_auth_session", limit=10)
+    identity = _authenticated_admin_identity(f"Bearer {payload.access_token}")
+    set_admin_session_cookie(response, payload.access_token)
+    return identity
+
+
+@app.get("/api/admin/auth/me")
+async def admin_auth_me(
+    request: Request,
+    authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""),
+) -> Dict[str, Any]:
+    _enforce_rate_limit(request, "admin_auth_me")
+    return _authenticated_admin_identity(authorization, kreaton_admin_session)
+
+
+@app.post("/api/admin/auth/logout")
+async def admin_auth_logout(response: Response) -> Dict[str, str]:
+    clear_admin_session_cookie(response)
     return {"status": "logged_out"}
 
 
