@@ -3,16 +3,19 @@ from __future__ import annotations
 import json
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, select
 from sqlalchemy.exc import DatabaseError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
+from app import main
 from app.admin_audit import (
     ensure_admin_audit_append_only,
     record_admin_audit_event,
     sanitize_admin_audit_metadata,
 )
-from app.db import Base
+from app.db import Base, get_session
 from app.db_models import AdminAuditEvent
 
 
@@ -106,3 +109,56 @@ def test_admin_audit_event_survives_database_engine_restart(tmp_path):
                 (event_id,),
             )
     restarted_engine.dispose()
+
+
+def test_support_can_read_paginated_audit_without_exposing_credentials():
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    session_factory = sessionmaker(bind=engine)
+    with session_factory() as session:
+        record_admin_audit_event(
+            session,
+            actor=ACTOR,
+            action="admin.project.deleted",
+            target_type="generated_site",
+            target_id="site-1",
+            outcome="success",
+            request_id="req-original",
+            metadata={"businessName": "Bath All Day", "accessToken": "secret"},
+        )
+
+    def override_get_session():
+        with session_factory() as session:
+            yield session
+
+    support_user = {
+        "id": "support-1",
+        "email": "support@kreaton.test",
+        "app_metadata": {"kreaton_role": "support"},
+    }
+    main.app.dependency_overrides[get_session] = override_get_session
+    try:
+        with (
+            pytest.MonkeyPatch.context() as monkeypatch,
+            TestClient(main.app, base_url="https://api.vmbusinesssystems.com") as client,
+        ):
+            monkeypatch.setattr(main, "supabase_auth_configured", lambda: True)
+            monkeypatch.setattr(main, "fetch_supabase_user", lambda _token: support_user)
+            response = client.get(
+                "/api/admin/audit?action=admin.project.deleted&outcome=success",
+                headers={"Authorization": "Bearer support-token", "X-Request-ID": "req-audit-list"},
+            )
+    finally:
+        main.app.dependency_overrides.pop(get_session, None)
+        engine.dispose()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["pagination"]["total"] == 1
+    assert body["events"][0]["action"] == "admin.project.deleted"
+    assert body["events"][0]["metadata"] == {"businessName": "Bath All Day"}
+    assert "secret" not in response.text

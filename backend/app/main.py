@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from .admin_audit import record_admin_audit_event
+from .admin_audit import list_admin_audit_events, record_admin_audit_event
 from .admin_auth import (
     admin_identity_from_user,
     clear_admin_session_cookie,
@@ -785,6 +785,60 @@ async def admin_clients_directory(
             "status": status,
             "templateId": template_id,
         },
+    }
+
+
+@app.get("/api/admin/audit")
+async def admin_audit_directory(
+    request: Request,
+    q: str = Query(default="", max_length=120),
+    action: str = Query(default="", max_length=120),
+    outcome: str = Query(default="", max_length=40),
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=50, ge=1, le=100),
+    authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    _enforce_rate_limit(request, "admin_audit_directory", limit=120)
+    identity = _authenticated_admin_identity(authorization, kreaton_admin_session)
+    require_admin_permission(identity, "audit:read")
+    events, total = list_admin_audit_events(
+        session,
+        query=q,
+        action=action,
+        outcome=outcome,
+        page=page,
+        per_page=per_page,
+    )
+    record_admin_audit_event(
+        session,
+        actor=identity,
+        action="admin.audit.queried",
+        target_type="admin_audit_events",
+        target_id="all",
+        outcome="success",
+        request_id=request.state.request_id,
+        metadata={
+            "queryPresent": bool(q.strip()),
+            "actionFilter": action,
+            "outcomeFilter": outcome,
+            "page": page,
+            "perPage": per_page,
+            "resultCount": len(events),
+            "total": total,
+        },
+    )
+    start = (page - 1) * per_page
+    return {
+        "events": events,
+        "pagination": {
+            "page": page,
+            "perPage": per_page,
+            "total": total,
+            "hasNext": start + len(events) < total,
+        },
+        "filters": {"query": q, "action": action, "outcome": outcome},
     }
 
 
