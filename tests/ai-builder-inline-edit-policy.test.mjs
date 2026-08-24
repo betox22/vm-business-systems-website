@@ -132,10 +132,7 @@ test("shared renderers carry persistent paths while the next dedicated families 
   assert.match(renderer, /function renderQuoteRequestForm[\s\S]*"fields", index, "label"[\s\S]*inlineEditAttrs\(schema, section, "primary_button"\)/);
   assert.match(renderer, /function renderPortfolioGallery[\s\S]*inlineCatalogEditAttrs[\s\S]*inlineSectionItemEditAttrs/);
   for (const functionName of [
-    "renderClinicHero",
-    "renderProfessionalHero",
     "renderIndustrialHero",
-    "renderFashionHero",
     "renderCorporateHero",
     "renderDigitalHero",
     "renderListingHero",
@@ -146,6 +143,39 @@ test("shared renderers carry persistent paths while the next dedicated families 
     const source = renderer.match(new RegExp(`function ${functionName}\\b[\\s\\S]*?(?=\\nfunction )`))?.[0] || "";
     assert.doesNotMatch(source, /inlineEdit(?:Attrs|SectionItemEditAttrs|CatalogEditAttrs)/, functionName);
   }
+});
+
+test("Clinic, Professional, and Fashion dedicated renderers expose persistent inline paths centrally", () => {
+  const renderer = readFileSync(new URL("../src/ai-builder/renderers.js", import.meta.url), "utf8");
+  const dedicatedFunctions = [
+    "renderClinicHero",
+    "renderClinicServices",
+    "renderClinicTreatmentPath",
+    "renderClinicTrust",
+    "renderClinicResults",
+    "renderClinicTeam",
+    "renderClinicBooking",
+    "renderProfessionalHero",
+    "renderProfessionalPracticeAreas",
+    "renderProfessionalProcess",
+    "renderProfessionalProof",
+    "renderProfessionalTeam",
+    "renderProfessionalFAQ",
+    "renderProfessionalConsultation",
+    "renderFashionHero",
+    "renderFashionCollectionRail",
+    "renderFashionDropStory",
+    "renderFashionLookbook",
+    "renderFashionFitGuide",
+  ];
+  dedicatedFunctions.forEach((functionName) => {
+    const source = renderer.match(new RegExp(`function ${functionName}\\b[\\s\\S]*?(?=\\nfunction )`))?.[0] || "";
+    assert.match(source, /inlineEdit(?:Attrs|SectionItemEditAttrs|CatalogEditAttrs)/, functionName);
+    assert.match(source, /sectionAttrs\(section\)/, functionName);
+  });
+  assert.match(renderer, /function renderMedicalWellnessCatalog[\s\S]*"category"[\s\S]*"button_label"/);
+  assert.match(renderer, /function renderLegalProfessionalCatalog[\s\S]*"category"[\s\S]*"button_label"/);
+  assert.match(renderer, /function renderFashionLookbookCatalog[\s\S]*"category"[\s\S]*"product_description"/);
 });
 
 test("Luxury, Academy, and Restaurant dedicated renderers expose persistent inline paths centrally", () => {
@@ -302,6 +332,9 @@ test("inline editing inherits the owning card radius instead of forcing one gene
   assert.match(css, /\.catalog-luxury-high-ticket article\s*\{\s*--inline-edit-radius:\s*6px;/);
   assert.match(css, /\.academy-path-grid article,[\s\S]*\.catalog-education-course article\s*\{\s*--inline-edit-radius:\s*22px;/);
   assert.match(css, /\.restaurant-category-rail article\s*\{\s*--inline-edit-radius:\s*var\(--brand-radius\);/);
+  assert.match(css, /\.clinic-path-list article,[\s\S]*--inline-edit-radius:\s*24px;/);
+  assert.match(css, /\.catalog-legal-professional article\s*\{\s*--inline-edit-radius:\s*20px;/);
+  assert.match(css, /\.fashion-lookbook-strip article\s*\{\s*--inline-edit-radius:\s*8px;/);
 });
 
 test("editorial elevation is scoped to Premium showcase and B2B solution cards", () => {

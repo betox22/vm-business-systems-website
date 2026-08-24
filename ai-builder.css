@@ -6371,6 +6371,8 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 }
 
 .fashion-collection-rail article {
+  --inline-edit-radius: 8px;
+  --inline-edit-background: color-mix(in srgb, currentColor 6%, transparent);
   min-height: 180px;
   border-radius: 8px;
   padding: 16px;
@@ -6435,6 +6437,7 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 }
 
 .fashion-lookbook-strip article {
+  --inline-edit-radius: 8px;
   min-height: 320px;
   border-radius: 8px;
   padding: 16px;
@@ -6464,6 +6467,8 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 }
 
 .fashion-fit-guide {
+  --inline-edit-radius: 8px;
+  --inline-edit-background: color-mix(in srgb, var(--site-surface) 9%, transparent);
   margin: clamp(32px, 5vw, 64px) clamp(18px, 6vw, 88px) clamp(56px, 8vw, 110px);
   padding: clamp(28px, 5vw, 54px);
   border-radius: 8px;
@@ -10539,6 +10544,7 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 }
 
 .clinic-floating-card {
+  --inline-edit-radius: 22px;
   position: absolute;
   left: -18px;
   bottom: 26px;
@@ -10589,6 +10595,7 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 .clinic-path-list article,
 .clinic-results-board article,
 .catalog-medical-wellness article {
+  --inline-edit-radius: 24px;
   border: 1px solid rgba(8, 47, 73, 0.08);
   border-radius: 24px;
   background: #ffffff;
@@ -10696,6 +10703,7 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 }
 
 .clinic-booking-section {
+  --inline-edit-radius: 30px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 24px;
@@ -10801,6 +10809,7 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 }
 
 .professional-case-card {
+  --inline-edit-radius: 24px;
   border-radius: 24px;
   padding: 18px;
 }
@@ -10888,6 +10897,7 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 }
 
 .professional-floating-card {
+  --inline-edit-radius: 18px;
   position: absolute;
   left: -18px;
   bottom: 26px;
@@ -10936,6 +10946,7 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 
 .professional-process-list article,
 .professional-faq-list article {
+  --inline-edit-radius: 18px;
   border-radius: 18px;
   padding: 24px;
 }
@@ -10959,6 +10970,7 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 }
 
 .catalog-legal-professional article {
+  --inline-edit-radius: 20px;
   border-radius: 20px;
 }
 
@@ -11004,6 +11016,8 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
 }
 
 .professional-consultation-section {
+  --inline-edit-radius: 24px;
+  --inline-edit-background: color-mix(in srgb, #ffffff 10%, transparent);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 24px;

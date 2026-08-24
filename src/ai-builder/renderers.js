@@ -451,15 +451,15 @@ function renderFashionHero(section, schema) {
   return `<section class="fashion-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="fashion-hero-copy">
       <span class="rendered-kicker">${escapeHtml(schema.business?.industry || catalogLocaleLabels(schema).newDrop || "New drop")}</span>
-      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
-      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <h1 ${inlineEditAttrs(schema, section, "headline")}>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p ${inlineEditAttrs(schema, section, "subtitle")}>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || "Shop")}</a>
-        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || catalogLocaleLabels(schema).lookbook || "Lookbook")}</a>
+        <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || "Shop")}</a>
+        <a class="rendered-button secondary" href="#" ${inlineEditAttrs(schema, section, "secondary_button")}>${escapeHtml(editable.secondary_button || catalogLocaleLabels(schema).lookbook || "Lookbook")}</a>
       </div>
     </div>
     <div class="fashion-hero-visual">${image ? `<img src="${escapeAttribute(image)}" alt="">` : fashionVisualPlaceholder(schema)}</div>
-    <div class="fashion-hero-strip">${items.slice(0, 3).map((item) => `<span>${escapeHtml(item.name)}</span>`).join("")}</div>
+    <div class="fashion-hero-strip">${items.slice(0, 3).map((item) => `<span ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</span>`).join("")}</div>
   </section>`;
 }
 
@@ -468,7 +468,7 @@ function renderFashionCollectionRail(section, schema) {
   const labels = catalogLocaleLabels(schema);
   const collections = fashionCollections(schema);
   return `<section class="fashion-collection-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.newDrop)}</span><h2>${escapeHtml(editable.title || labels.collections)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.newDrop)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.collections)}</h2>${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}</div>
     <div class="fashion-collection-rail">${collections.map((collection, index) => `<article><small>0${index + 1}</small><strong>${escapeHtml(collection)}</strong><span>${escapeHtml(index % 2 ? labels.fit : labels.drop)}</span></article>`).join("")}</div>
   </section>`;
 }
@@ -478,15 +478,15 @@ function renderFashionDropStory(section, schema) {
   const image = editable.image_url || marketplaceItems(schema).find((item) => item.image_url)?.image_url || "";
   return `<section class="fashion-drop-story ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="fashion-story-image">${image ? `<img src="${escapeAttribute(image)}" alt="">` : fashionVisualPlaceholder(schema)}</div>
-    <div><span class="rendered-kicker">${escapeHtml(schema.business?.tone || "")}</span><h2>${escapeHtml(editable.title || "")}</h2><p>${escapeHtml(editable.text || "")}</p></div>
+    <div><span class="rendered-kicker">${escapeHtml(schema.business?.tone || "")}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || "")}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || "")}</p></div>
   </section>`;
 }
 
 function renderFashionLookbook(section, schema) {
   const editable = section.editable || {};
   return `<section class="fashion-lookbook-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).lookbook)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
-    <div class="fashion-lookbook-strip">${marketplaceItems(schema).slice(0, 5).map((item, index) => `<article class="${index === 1 ? "tall" : ""}">${renderCatalogImage(item)}<strong>${escapeHtml(item.name)}</strong></article>`).join("")}</div>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).lookbook)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || "")}</h2>${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="fashion-lookbook-strip">${marketplaceItems(schema).slice(0, 5).map((item, index) => `<article class="${index === 1 ? "tall" : ""}">${renderCatalogImage(item)}<strong ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</strong></article>`).join("")}</div>
   </section>`;
 }
 
@@ -495,8 +495,8 @@ function renderFashionFitGuide(section, schema) {
   const labels = catalogLocaleLabels(schema);
   const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.fitGuideItems;
   return `<section class="fashion-fit-guide ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
-    <div>${items.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    <div><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || "")}</h2>${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div>${items.map((item, index) => `<span ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</span>`).join("")}</div>
   </section>`;
 }
 
@@ -966,12 +966,12 @@ function renderClinicHero(section, schema) {
   const image = editable.image_url || heroItem?.image_url || "";
   return `<section class="clinic-pro-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="clinic-pro-copy">
-      <span class="rendered-kicker">${escapeHtml(editable.badge || labels.clinicCare)}</span>
-      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
-      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <span class="rendered-kicker" ${inlineEditAttrs(schema, section, "badge")}>${escapeHtml(editable.badge || labels.clinicCare)}</span>
+      <h1 ${inlineEditAttrs(schema, section, "headline")}>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p ${inlineEditAttrs(schema, section, "subtitle")}>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.bookConsultation)}</a>
-        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewTreatments)}</a>
+        <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(editable.primary_button || labels.bookConsultation)}</a>
+        <a class="rendered-button secondary" href="#" ${inlineEditAttrs(schema, section, "secondary_button")}>${escapeHtml(editable.secondary_button || labels.viewTreatments)}</a>
       </div>
       <div class="clinic-proof-strip">${(labels.clinicTrustItems || []).slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
     </div>
@@ -981,7 +981,7 @@ function renderClinicHero(section, schema) {
         <div class="clinic-appointment-media">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(heroItem?.name || schema.business?.name || "")}">` : clinicVisualPlaceholder(schema)}</div>
         <div class="clinic-slots">${(labels.clinicDurations || []).slice(0, 3).map((item, index) => `<span class="${index === 1 ? "active" : ""}">${escapeHtml(item)}</span>`).join("")}</div>
       </div>
-      <div class="clinic-floating-card"><small>${escapeHtml(labels.popularTreatment)}</small><strong>${escapeHtml(heroItem?.name || labels.treatmentsTitle)}</strong><span>${escapeHtml(heroItem?.shipping_label || labels.clinicDurations?.[0] || "")}</span></div>
+      <div class="clinic-floating-card"><small>${escapeHtml(labels.popularTreatment)}</small><strong ${inlineCatalogEditAttrs(schema, heroItem, "name", "product_name")}>${escapeHtml(heroItem?.name || labels.treatmentsTitle)}</strong><span>${escapeHtml(heroItem?.shipping_label || labels.clinicDurations?.[0] || "")}</span></div>
     </div>
   </section>`;
 }
@@ -989,7 +989,7 @@ function renderClinicHero(section, schema) {
 function renderClinicServices(section, schema) {
   const editable = section.editable || {};
   return `<section class="clinic-services-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).treatments)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).treatments)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || "")}</h2>${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}</div>
     ${renderMedicalWellnessCatalog(marketplaceItems(schema), schema)}
   </section>`;
 }
@@ -999,8 +999,8 @@ function renderClinicTreatmentPath(section, schema) {
   const labels = catalogLocaleLabels(schema);
   const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.carePathItems;
   return `<section class="clinic-path-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div><span class="rendered-kicker">${escapeHtml(labels.clinicCare)}</span><h2>${escapeHtml(editable.title || labels.carePathTitle)}</h2><p>${escapeHtml(editable.text || labels.carePathText)}</p></div>
-    <div class="clinic-path-list">${items.slice(0, 6).map((item, index) => `<article><span>0${index + 1}</span><strong>${escapeHtml(item)}</strong><p>${escapeHtml(index % 2 ? labels.personalizedPlan : labels.specialistLed)}</p></article>`).join("")}</div>
+    <div><span class="rendered-kicker">${escapeHtml(labels.clinicCare)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.carePathTitle)}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.carePathText)}</p></div>
+    <div class="clinic-path-list">${items.slice(0, 6).map((item, index) => `<article><span>0${index + 1}</span><strong ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</strong><p>${escapeHtml(index % 2 ? labels.personalizedPlan : labels.specialistLed)}</p></article>`).join("")}</div>
   </section>`;
 }
 
@@ -1009,8 +1009,8 @@ function renderClinicTrust(section, schema) {
   const labels = catalogLocaleLabels(schema);
   const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.clinicTrustItems;
   return `<section class="clinic-trust-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div><span class="rendered-kicker">${escapeHtml(labels.clinicCare)}</span><h2>${escapeHtml(editable.title || labels.clinicTrustTitle)}</h2><p>${escapeHtml(editable.text || labels.clinicTrustText)}</p></div>
-    <div class="clinic-trust-grid">${items.slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    <div><span class="rendered-kicker">${escapeHtml(labels.clinicCare)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.clinicTrustTitle)}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.clinicTrustText)}</p></div>
+    <div class="clinic-trust-grid">${items.slice(0, 6).map((item, index) => `<span ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</span>`).join("")}</div>
   </section>`;
 }
 
@@ -1019,8 +1019,8 @@ function renderClinicResults(section, schema) {
   const labels = catalogLocaleLabels(schema);
   const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.resultItems;
   return `<section class="clinic-results-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div class="clinic-results-copy"><span class="rendered-kicker">${escapeHtml(labels.results)}</span><h2>${escapeHtml(editable.title || labels.resultsTitle)}</h2><p>${escapeHtml(editable.text || labels.resultsText)}</p></div>
-    <div class="clinic-results-board">${items.slice(0, 4).map((item, index) => `<article><b>${index === 0 ? "01" : `0${index + 1}`}</b><strong>${escapeHtml(item)}</strong><span>${escapeHtml(index % 2 ? labels.clinicCare : labels.consultationBased)}</span></article>`).join("")}</div>
+    <div class="clinic-results-copy"><span class="rendered-kicker">${escapeHtml(labels.results)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.resultsTitle)}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.resultsText)}</p></div>
+    <div class="clinic-results-board">${items.slice(0, 4).map((item, index) => `<article><b>${index === 0 ? "01" : `0${index + 1}`}</b><strong ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</strong><span>${escapeHtml(index % 2 ? labels.clinicCare : labels.consultationBased)}</span></article>`).join("")}</div>
   </section>`;
 }
 
@@ -1030,7 +1030,7 @@ function renderClinicTeam(section, schema) {
   const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.clinicTeamItems;
   return `<section class="clinic-team-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="clinic-team-media">${editable.image_url ? `<img src="${escapeAttribute(editable.image_url)}" alt="${escapeAttribute(editable.title || "")}">` : clinicVisualPlaceholder(schema)}</div>
-    <div><span class="rendered-kicker">${escapeHtml(labels.specialistLed)}</span><h2>${escapeHtml(editable.title || labels.clinicTeamTitle)}</h2><p>${escapeHtml(editable.text || labels.clinicTeamText)}</p><div class="clinic-mini-proof">${items.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div>
+    <div><span class="rendered-kicker">${escapeHtml(labels.specialistLed)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.clinicTeamTitle)}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.clinicTeamText)}</p><div class="clinic-mini-proof">${items.slice(0, 4).map((item, index) => `<span ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</span>`).join("")}</div></div>
   </section>`;
 }
 
@@ -1038,8 +1038,8 @@ function renderClinicBooking(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
   return `<section class="clinic-booking-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div><span class="rendered-kicker">${escapeHtml(labels.bookConsultation)}</span><h2>${escapeHtml(editable.title || labels.clinicBookingTitle)}</h2><p>${escapeHtml(editable.text || labels.clinicBookingText)}</p></div>
-    <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.bookConsultation)}</a>
+    <div><span class="rendered-kicker">${escapeHtml(labels.bookConsultation)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.clinicBookingTitle)}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.clinicBookingText)}</p></div>
+    <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(editable.primary_button || labels.bookConsultation)}</a>
   </section>`;
 }
 
@@ -1056,12 +1056,12 @@ function renderProfessionalHero(section, schema) {
   const image = editable.image_url || heroItem?.image_url || "";
   return `<section class="professional-hero ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="professional-hero-copy">
-      <span class="rendered-kicker">${escapeHtml(editable.badge || labels.professionalFirm)}</span>
-      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
-      <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
+      <span class="rendered-kicker" ${inlineEditAttrs(schema, section, "badge")}>${escapeHtml(editable.badge || labels.professionalFirm)}</span>
+      <h1 ${inlineEditAttrs(schema, section, "headline")}>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <p ${inlineEditAttrs(schema, section, "subtitle")}>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
       <div class="rendered-actions">
-        <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.scheduleConsultation)}</a>
-        <a class="rendered-button secondary" href="#">${escapeHtml(editable.secondary_button || labels.viewServices)}</a>
+        <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(editable.primary_button || labels.scheduleConsultation)}</a>
+        <a class="rendered-button secondary" href="#" ${inlineEditAttrs(schema, section, "secondary_button")}>${escapeHtml(editable.secondary_button || labels.viewServices)}</a>
       </div>
       <div class="professional-proof-strip">${(labels.professionalProofItems || []).slice(0, 3).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
     </div>
@@ -1071,7 +1071,7 @@ function renderProfessionalHero(section, schema) {
         <div class="professional-case-visual">${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(heroItem?.name || schema.business?.name || "")}">` : professionalVisualPlaceholder(schema)}</div>
         <div class="professional-document-list">${(labels.professionalProcessItems || []).slice(0, 4).map((item, index) => `<span><b>0${index + 1}</b>${escapeHtml(item)}</span>`).join("")}</div>
       </div>
-      <div class="professional-floating-card"><small>${escapeHtml(labels.caseReview)}</small><strong>${escapeHtml(heroItem?.name || labels.practiceAreasTitle)}</strong><span>${escapeHtml(heroItem?.shipping_label || labels.professionalEngagements?.[0] || "")}</span></div>
+      <div class="professional-floating-card"><small>${escapeHtml(labels.caseReview)}</small><strong ${inlineCatalogEditAttrs(schema, heroItem, "name", "product_name")}>${escapeHtml(heroItem?.name || labels.practiceAreasTitle)}</strong><span>${escapeHtml(heroItem?.shipping_label || labels.professionalEngagements?.[0] || "")}</span></div>
     </div>
   </section>`;
 }
@@ -1079,7 +1079,7 @@ function renderProfessionalHero(section, schema) {
 function renderProfessionalPracticeAreas(section, schema) {
   const editable = section.editable || {};
   return `<section class="professional-services-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).services)}</span><h2>${escapeHtml(editable.title || "")}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(catalogLocaleLabels(schema).services)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || "")}</h2>${Object.prototype.hasOwnProperty.call(editable, "text") ? `<p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text)}</p>` : ""}</div>
     ${renderLegalProfessionalCatalog(marketplaceItems(schema), schema)}
   </section>`;
 }
@@ -1089,8 +1089,8 @@ function renderProfessionalProcess(section, schema) {
   const labels = catalogLocaleLabels(schema);
   const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.professionalProcessItems;
   return `<section class="professional-process-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div><span class="rendered-kicker">${escapeHtml(labels.process)}</span><h2>${escapeHtml(editable.title || labels.professionalProcessTitle)}</h2><p>${escapeHtml(editable.text || labels.professionalProcessText)}</p></div>
-    <div class="professional-process-list">${items.slice(0, 6).map((item, index) => `<article><span>0${index + 1}</span><strong>${escapeHtml(item)}</strong><p>${escapeHtml(index % 2 ? labels.businessReady : labels.confidential)}</p></article>`).join("")}</div>
+    <div><span class="rendered-kicker">${escapeHtml(labels.process)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.professionalProcessTitle)}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.professionalProcessText)}</p></div>
+    <div class="professional-process-list">${items.slice(0, 6).map((item, index) => `<article><span>0${index + 1}</span><strong ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</strong><p>${escapeHtml(index % 2 ? labels.businessReady : labels.confidential)}</p></article>`).join("")}</div>
   </section>`;
 }
 
@@ -1099,8 +1099,8 @@ function renderProfessionalProof(section, schema) {
   const labels = catalogLocaleLabels(schema);
   const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.professionalProofItems;
   return `<section class="professional-proof-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div><span class="rendered-kicker">${escapeHtml(labels.proof)}</span><h2>${escapeHtml(editable.title || labels.professionalProofTitle)}</h2><p>${escapeHtml(editable.text || labels.professionalProofText)}</p></div>
-    <div class="professional-proof-grid">${items.slice(0, 6).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>
+    <div><span class="rendered-kicker">${escapeHtml(labels.proof)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.professionalProofTitle)}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.professionalProofText)}</p></div>
+    <div class="professional-proof-grid">${items.slice(0, 6).map((item, index) => `<span ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</span>`).join("")}</div>
   </section>`;
 }
 
@@ -1110,7 +1110,7 @@ function renderProfessionalTeam(section, schema) {
   const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.professionalTeamItems;
   return `<section class="professional-team-section ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="professional-team-media">${editable.image_url ? `<img src="${escapeAttribute(editable.image_url)}" alt="${escapeAttribute(editable.title || "")}">` : professionalVisualPlaceholder(schema)}</div>
-    <div><span class="rendered-kicker">${escapeHtml(labels.seniorAdvisor)}</span><h2>${escapeHtml(editable.title || labels.professionalTeamTitle)}</h2><p>${escapeHtml(editable.text || labels.professionalTeamText)}</p><div class="professional-mini-proof">${items.slice(0, 4).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div>
+    <div><span class="rendered-kicker">${escapeHtml(labels.seniorAdvisor)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.professionalTeamTitle)}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.professionalTeamText)}</p><div class="professional-mini-proof">${items.slice(0, 4).map((item, index) => `<span ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "item_title") : ""}>${escapeHtml(item)}</span>`).join("")}</div></div>
   </section>`;
 }
 
@@ -1119,8 +1119,8 @@ function renderProfessionalFAQ(section, schema) {
   const labels = catalogLocaleLabels(schema);
   const items = Array.isArray(editable.items) && editable.items.length ? editable.items : labels.professionalFaqItems;
   return `<section class="professional-faq-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.faq)}</span><h2>${escapeHtml(editable.title || labels.professionalFaqTitle)}</h2></div>
-    <div class="professional-faq-list">${items.slice(0, 5).map((item) => `<article><strong>${escapeHtml(item)}</strong><p>${escapeHtml(labels.professionalConsultationText)}</p></article>`).join("")}</div>
+    <div class="section-heading"><span class="rendered-kicker">${escapeHtml(labels.faq)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.professionalFaqTitle)}</h2></div>
+    <div class="professional-faq-list">${items.slice(0, 5).map((item, index) => `<article><strong ${Array.isArray(editable.items) ? inlineSectionItemEditAttrs(schema, section, index, "", "faq_question") : ""}>${escapeHtml(item)}</strong><p>${escapeHtml(labels.professionalConsultationText)}</p></article>`).join("")}</div>
   </section>`;
 }
 
@@ -1128,8 +1128,8 @@ function renderProfessionalConsultation(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
   return `<section class="professional-consultation-section ${sectionClass(section)}" ${sectionAttrs(section)}>
-    <div><span class="rendered-kicker">${escapeHtml(labels.scheduleConsultation)}</span><h2>${escapeHtml(editable.title || labels.professionalConsultationTitle)}</h2><p>${escapeHtml(editable.text || labels.professionalConsultationText)}</p></div>
-    <a class="rendered-button" href="#">${escapeHtml(editable.primary_button || labels.scheduleConsultation)}</a>
+    <div><span class="rendered-kicker">${escapeHtml(labels.scheduleConsultation)}</span><h2 ${inlineEditAttrs(schema, section, "title")}>${escapeHtml(editable.title || labels.professionalConsultationTitle)}</h2><p ${inlineEditAttrs(schema, section, "text")}>${escapeHtml(editable.text || labels.professionalConsultationText)}</p></div>
+    <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(editable.primary_button || labels.scheduleConsultation)}</a>
   </section>`;
 }
 
@@ -1949,10 +1949,11 @@ function renderMinimalProductGrid(items) {
 }
 
 function renderFashionLookbookCatalog(items) {
-  const labels = catalogLocaleLabels(arguments[1]);
+  const schema = arguments[1];
+  const labels = catalogLocaleLabels(schema);
   return `<div class="catalog-lookbook">${items.map((item, index) => `<article class="lookbook-card ${index === 0 ? "wide" : ""}">
     ${renderCatalogImage(item)}
-    <span>${labels.newDrop}</span><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
+    <span ${inlineCatalogEditAttrs(schema, item, "category", "category")}>${escapeHtml(item.category || labels.newDrop)}</span><h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</h3><p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p><b>${escapeHtml(item.price_label)}</b>
   </article>`).join("")}</div>`;
 }
 
@@ -2045,15 +2046,15 @@ function renderMedicalWellnessCatalog(items, schema) {
     </div>
     <div class="clinic-card-visual">${renderCatalogImage(item)}</div>
     <div class="clinic-card-body">
-      <small>${escapeHtml(item.category || labels.treatments)}</small>
-      <h3>${escapeHtml(item.name)}</h3>
-      <p>${escapeHtml(item.description)}</p>
+      <small ${inlineCatalogEditAttrs(schema, item, "category", "category")}>${escapeHtml(item.category || labels.treatments)}</small>
+      <h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</h3>
+      <p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p>
       <ul>
         <li>${escapeHtml(labels.specialistLed)}</li>
         <li>${escapeHtml(labels.personalizedPlan)}</li>
         <li>${escapeHtml(labels.clinicCare)}</li>
       </ul>
-      <div><strong>${escapeHtml(productPriceLabel(item, schema) || labels.consultationBased)}</strong><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.bookConsultation)}</a></div>
+      <div><strong>${escapeHtml(productPriceLabel(item, schema) || labels.consultationBased)}</strong><a class="rendered-button" href="#" ${inlineCatalogEditAttrs(schema, item, "button_label", "primary_button")}>${escapeHtml(item.button_label || labels.bookConsultation)}</a></div>
     </div>
   </article>`).join("")}</div>`;
 }
@@ -2066,15 +2067,15 @@ function renderLegalProfessionalCatalog(items, schema) {
       <span>${escapeHtml(item.shipping_label || labels.professionalEngagements?.[index % (labels.professionalEngagements?.length || 1)] || "")}</span>
     </div>
     <div class="professional-card-body">
-      <small>${escapeHtml(item.category || labels.professionalFirm)}</small>
-      <h3>${escapeHtml(item.name)}</h3>
-      <p>${escapeHtml(item.description)}</p>
+      <small ${inlineCatalogEditAttrs(schema, item, "category", "category")}>${escapeHtml(item.category || labels.professionalFirm)}</small>
+      <h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</h3>
+      <p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p>
       <ul>
         <li>${escapeHtml(labels.caseReview)}</li>
         <li>${escapeHtml(labels.confidential)}</li>
         <li>${escapeHtml(labels.businessReady)}</li>
       </ul>
-      <div><strong>${escapeHtml(productPriceLabel(item, schema) || labels.consultationBased)}</strong><a class="rendered-button" href="#">${escapeHtml(item.button_label || labels.scheduleConsultation)}</a></div>
+      <div><strong>${escapeHtml(productPriceLabel(item, schema) || labels.consultationBased)}</strong><a class="rendered-button" href="#" ${inlineCatalogEditAttrs(schema, item, "button_label", "primary_button")}>${escapeHtml(item.button_label || labels.scheduleConsultation)}</a></div>
     </div>
   </article>`).join("")}</div>`;
 }
