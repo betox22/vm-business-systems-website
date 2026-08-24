@@ -111,3 +111,13 @@ test("the static admin shell targets only real stage endpoints", async () => {
   assert.match(script, /from "\.\/kreaton-admin-policy\.js\?v=2"/);
   assert.match(html, /kreaton-admin\.js\?v=3/);
 });
+
+test("every internal entry point routes to the real KREATON admin", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const landing = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const legacyAdmin = await readFile(new URL("../admin.html", import.meta.url), "utf8");
+  assert.match(landing, /href="\/admin\/"/);
+  assert.doesNotMatch(landing, /href="admin\.html"/);
+  assert.match(legacyAdmin, /window\.location\.replace\("\/admin\/"\)/);
+  assert.match(legacyAdmin, /http-equiv="refresh" content="0;url=\/admin\/"/);
+});
