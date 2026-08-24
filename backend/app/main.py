@@ -10,7 +10,7 @@ from copy import deepcopy
 from collections import defaultdict, deque
 from typing import Any, Dict, Optional
 
-from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Request, Response
+from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -21,7 +21,13 @@ from .admin_audit import record_admin_audit_event
 from .admin_auth import (
     admin_identity_from_user,
     clear_admin_session_cookie,
+    require_admin_permission,
     set_admin_session_cookie,
+)
+from .admin_directory import (
+    SupabaseAdminDirectoryError,
+    build_admin_client_directory,
+    fetch_supabase_admin_users,
 )
 from .agents import semantic_seed_catalog, split_items, state_is_commerce_seed_target
 from .client_auth import fetch_supabase_user, supabase_auth_configured
@@ -691,6 +697,83 @@ async def admin_auth_logout(
         )
     clear_admin_session_cookie(response)
     return {"status": "logged_out"}
+
+
+@app.get("/api/admin/clients")
+async def admin_clients_directory(
+    request: Request,
+    q: str = Query(default="", max_length=120),
+    status: str = Query(default="", max_length=40),
+    template_id: str = Query(default="", max_length=120),
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=50, ge=1, le=100),
+    authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    _enforce_rate_limit(request, "admin_clients_directory", limit=120)
+    identity = _authenticated_admin_identity(authorization, kreaton_admin_session)
+    require_admin_permission(identity, "clients:read")
+    audit_metadata = {
+        "queryPresent": bool(q.strip()),
+        "queryLength": len(q.strip()),
+        "statusFilter": status,
+        "templateFilter": template_id,
+        "page": page,
+        "perPage": per_page,
+    }
+    try:
+        users = fetch_supabase_admin_users()
+        stores = session.scalars(select(Store)).all()
+        sites = session.scalars(select(GeneratedSite)).all()
+        clients = build_admin_client_directory(
+            users,
+            stores,
+            sites,
+            query=q,
+            status=status,
+            template_id=template_id,
+        )
+    except SupabaseAdminDirectoryError as exc:
+        record_admin_audit_event(
+            session,
+            actor=identity,
+            action="admin.clients.queried",
+            target_type="client_directory",
+            target_id="all",
+            outcome="failure",
+            request_id=request.state.request_id,
+            metadata={**audit_metadata, "errorType": type(exc).__name__},
+        )
+        raise HTTPException(status_code=502, detail="Client directory is temporarily unavailable.") from exc
+
+    total = len(clients)
+    start = (page - 1) * per_page
+    paged_clients = clients[start : start + per_page]
+    record_admin_audit_event(
+        session,
+        actor=identity,
+        action="admin.clients.queried",
+        target_type="client_directory",
+        target_id="all",
+        outcome="success",
+        request_id=request.state.request_id,
+        metadata={**audit_metadata, "resultCount": len(paged_clients), "total": total},
+    )
+    return {
+        "clients": paged_clients,
+        "pagination": {
+            "page": page,
+            "perPage": per_page,
+            "total": total,
+            "hasNext": start + len(paged_clients) < total,
+        },
+        "filters": {
+            "query": q,
+            "status": status,
+            "templateId": template_id,
+        },
+    }
 
 
 # --- Client session cookie -------------------------------------------------

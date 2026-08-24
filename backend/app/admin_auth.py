@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, Optional
 
-from fastapi import Response
+from fastapi import HTTPException, Response
 
 
 ADMIN_SESSION_COOKIE_NAME = "kreaton_admin_session"
@@ -48,6 +48,12 @@ def admin_identity_from_user(user: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         "role": role,
         "permissions": list(ADMIN_ROLE_PERMISSIONS[role]),
     }
+
+
+def require_admin_permission(identity: Dict[str, Any], permission: str) -> None:
+    permissions = identity.get("permissions")
+    if not isinstance(permissions, list) or permission not in permissions:
+        raise HTTPException(status_code=403, detail="Admin permission denied.")
 
 
 def set_admin_session_cookie(response: Response, access_token: str) -> None:
