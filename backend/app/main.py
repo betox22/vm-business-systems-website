@@ -35,6 +35,7 @@ from .commerce import router as commerce_router
 from .db import get_session, init_db
 from .db_models import GeneratedSite, Store
 from .domains import router as domains_router
+from .operations import router as operations_router
 from .models import (
     AssetUploadRequest,
     AssetUploadResponse,
@@ -399,6 +400,7 @@ async def add_security_headers(request: Request, call_next):
 
 app.include_router(commerce_router)
 app.include_router(domains_router)
+app.include_router(operations_router)
 
 
 @app.on_event("startup")

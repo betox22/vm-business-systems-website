@@ -6,6 +6,11 @@ import {
   templateProfilePayload,
   templateUpdatePayload,
 } from "./kreaton-admin-policy.js?v=2";
+import {
+  captureInternalAuthRedirect,
+  clearInternalAccessToken,
+  internalAuthHeaders,
+} from "./internal-session-policy.js?v=1";
 
 const API_BASE = String(window.LUMA_API_BASE_URL || "").replace(/\/$/, "");
 const SUPABASE_URL = "https://rzdidqclbvnqqlcaueoh.supabase.co";
@@ -77,7 +82,7 @@ async function api(path, options = {}) {
   const response = await fetch(apiUrl(path), {
     credentials: "include",
     ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    headers: internalAuthHeaders(sessionStorage, { "Content-Type": "application/json", ...(options.headers || {}) }),
   });
   let body = {};
   try { body = await response.json(); } catch {}
@@ -90,10 +95,9 @@ async function api(path, options = {}) {
 }
 
 function callbackToken() {
-  const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  const token = params.get("access_token") || "";
-  if (token) history.replaceState({}, document.title, window.location.pathname + window.location.search);
-  return token;
+  const result = captureInternalAuthRedirect(window.location, sessionStorage);
+  if (result.token || result.error) history.replaceState({}, document.title, window.location.pathname + window.location.search);
+  return result;
 }
 
 async function exchangeAdminSession(token) {
@@ -134,12 +138,16 @@ function startGoogleLogin() {
 
 async function boot() {
   hydrateIcons();
-  const token = callbackToken();
+  const { token, error: redirectError } = callbackToken();
+  if (redirectError) {
+    showLogin(decodeURIComponent(redirectError.replaceAll("+", " ")));
+    return;
+  }
   try {
     state.identity = token ? await exchangeAdminSession(token) : await api("/api/admin/auth/me", { method: "GET" });
     showApp();
   } catch (error) {
-    showLogin(error.status === 403 ? error.message : "");
+    showLogin(error.message || "No se pudo completar el acceso.");
   }
 }
 
@@ -527,7 +535,12 @@ document.querySelector("#loginForm").addEventListener("submit", async (event) =>
 
 document.querySelector("#googleLoginButton").addEventListener("click", startGoogleLogin);
 document.querySelector("#logoutButton").addEventListener("click", async () => {
-  try { await api("/api/admin/auth/logout", { method: "POST" }); } finally { showLogin("Sesión cerrada."); }
+  try {
+    await api("/api/admin/auth/logout", { method: "POST" });
+  } finally {
+    clearInternalAccessToken(sessionStorage);
+    showLogin("Sesión cerrada.");
+  }
 });
 document.querySelector("#refreshButton").addEventListener("click", () => loadView());
 document.querySelector("#mainNav").addEventListener("click", (event) => {

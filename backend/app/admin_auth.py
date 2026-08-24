@@ -40,6 +40,8 @@ def admin_identity_from_user(user: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     if not isinstance(app_metadata, dict):
         return None
     role = str(app_metadata.get("kreaton_role") or "").strip().lower()
+    if not role and str(app_metadata.get("vm_role") or "").strip().lower() == "vm_super_admin":
+        role = "super_admin"
     if role not in ADMIN_ROLES:
         return None
     return {

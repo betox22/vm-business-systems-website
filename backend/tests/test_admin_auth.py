@@ -113,6 +113,21 @@ def test_user_metadata_cannot_grant_admin_access():
     assert "kreaton_admin_session=" not in response.headers.get("set-cookie", "")
 
 
+def test_vm_super_admin_can_manage_integrated_kreaton_modules():
+    user = _supabase_user(None)
+    user["app_metadata"]["vm_role"] = "vm_super_admin"
+    with (
+        patch.object(main, "supabase_auth_configured", return_value=True),
+        patch.object(main, "fetch_supabase_user", return_value=user),
+        TestClient(main.app, base_url="https://api.vmbusinesssystems.com") as client,
+    ):
+        response = client.get("/api/admin/auth/me", headers={"Authorization": "Bearer vm-token"})
+
+    assert response.status_code == 200
+    assert response.json()["role"] == "super_admin"
+    assert "templates:write" in response.json()["permissions"]
+
+
 def test_admin_me_rejects_client_without_admin_role():
     with (
         patch.object(main, "supabase_auth_configured", return_value=True),

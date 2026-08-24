@@ -66,6 +66,7 @@ const PUBLIC_TOP_LEVEL_FILES = [
 // Copied recursively, in full.
 const PUBLIC_TOP_LEVEL_DIRECTORIES = [
   "admin",
+  "operations",
   "assets",
   "client",
   "css",

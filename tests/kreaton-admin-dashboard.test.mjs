@@ -96,11 +96,11 @@ test("template gallery uses a real renderer preview and validates editable metad
   }), /HTTPS/);
 });
 
-test("the static admin shell targets only real stage endpoints", async () => {
+test("the legacy KREATON module retains its real management contracts", async () => {
   const { readFile } = await import("node:fs/promises");
   const html = await readFile(new URL("../admin/index.html", import.meta.url), "utf8");
   const script = await readFile(new URL("../admin/kreaton-admin.js", import.meta.url), "utf8");
-  assert.match(html, /KREATON Operations/);
+  assert.match(html, /VM Operations/);
   assert.doesNotMatch(html, /url=\/admin\.html/);
   for (const endpoint of ["/api/admin/clients", "/api/admin/templates", "/api/admin/audit"]) {
     assert.ok(script.includes(endpoint), endpoint);
@@ -109,7 +109,11 @@ test("the static admin shell targets only real stage endpoints", async () => {
   assert.match(script, /api\/admin\/templates\/\$\{encodeURIComponent\(data\.templateId\)\}\/profile/);
   assert.match(script, /template-visual/);
   assert.match(script, /from "\.\/kreaton-admin-policy\.js\?v=2"/);
-  assert.match(html, /kreaton-admin\.js\?v=3/);
+  assert.match(script, /internalAuthHeaders\(sessionStorage/);
+  assert.match(script, /clearInternalAccessToken\(sessionStorage\)/);
+  assert.match(html, /operations\/operations\.js\?v=3/);
+  assert.match(html, /data-view="templates"/);
+  assert.match(html, /data-view="payments"/);
 });
 
 test("every internal entry point routes to the real KREATON admin", async () => {
