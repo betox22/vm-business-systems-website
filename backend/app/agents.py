@@ -138,6 +138,18 @@ TEMPLATE_CATALOG: Dict[str, Dict[str, str]] = {
     },
 }
 
+
+def template_catalog_for_state(state: ProjectState) -> Dict[str, Dict[str, str]]:
+    available_ids = state.runtimeAvailableTemplateIds
+    if available_ids is None:
+        return TEMPLATE_CATALOG
+    allowed = set(available_ids)
+    return {
+        template_id: definition
+        for template_id, definition in TEMPLATE_CATALOG.items()
+        if template_id in allowed
+    }
+
 FLAGSHIP_TEMPLATE_IDS = frozenset({
     "mega-marketplace",
     "listing-marketplace-pro",
@@ -635,6 +647,13 @@ class StrategyAgent(BaseAgent):
     name = "strategist"
 
     async def run(self, state: ProjectState, user_input: str) -> AgentResult:
+        template_catalog = template_catalog_for_state(state)
+        if not template_catalog:
+            return AgentResult(
+                agentName=self.name,
+                warnings=["No runtime-enabled templates are available."],
+                confidence=0.0,
+            )
         text = normalize_text(" ".join([
             user_input,
             state.websiteIntent or "",
@@ -647,11 +666,16 @@ class StrategyAgent(BaseAgent):
         ]))
 
         ai_template_id = normalize_template_id(state.primaryOfferingCategory)
-        if ai_template_id in TEMPLATE_CATALOG:
+        if ai_template_id in template_catalog:
             template_id = ai_template_id
             reason = "AI planner primary offering category"
         else:
-            template_id, reason = self._select_template_id(text, len(state.servicesProducts), state.selectedTemplateId)
+            template_id, reason = self._select_template_id(
+                text,
+                len(state.servicesProducts),
+                state.selectedTemplateId,
+                template_catalog,
+            )
         template = TEMPLATE_CATALOG[template_id]
         website_type = template["websiteType"]
         template_name = template["name"]
@@ -671,19 +695,26 @@ class StrategyAgent(BaseAgent):
             confidence=0.88,
         )
 
-    def _select_template_id(self, text: str, product_count: int, existing_template_id: str | None) -> tuple[str, str]:
-        scores = {template_id: 0 for template_id in TEMPLATE_CATALOG}
-        reasons: Dict[str, List[str]] = {template_id: [] for template_id in TEMPLATE_CATALOG}
+    def _select_template_id(
+        self,
+        text: str,
+        product_count: int,
+        existing_template_id: str | None,
+        template_catalog: Dict[str, Dict[str, str]] | None = None,
+    ) -> tuple[str, str]:
+        template_catalog = template_catalog or TEMPLATE_CATALOG
+        scores = {template_id: 0 for template_id in template_catalog}
+        reasons: Dict[str, List[str]] = {template_id: [] for template_id in template_catalog}
 
         def add(template_id: str, points: int, reason: str) -> None:
             template_id = normalize_template_id(template_id)
-            if template_id not in TEMPLATE_CATALOG:
+            if template_id not in template_catalog:
                 return
             scores[template_id] += points
             reasons[template_id].append(reason)
 
         existing_template_id = normalize_template_id(existing_template_id)
-        if existing_template_id in TEMPLATE_CATALOG:
+        if existing_template_id in template_catalog:
             add(existing_template_id, 18, "existing valid template signal")
 
         multi_vendor_marketplace = suggests_multi_vendor_marketplace(text)
@@ -715,7 +746,7 @@ class StrategyAgent(BaseAgent):
             r"\b(un producto|solo un producto|una linea|linea de|linea premium|producto premium|flagship|high ticket|exclusivo|parachoques|modelo)\b",
             text,
         )
-        if focused_product and scores["mega-marketplace"] < 100:
+        if focused_product and scores.get("mega-marketplace", 0) < 100:
             add("premium-product-store", 118, "focused premium product line")
 
         if re.search(r"\b(lujo|luxury|joyeria|jewelry|reloj|watch|arte|coleccionable|carro de lujo|private viewing)\b", text):
@@ -765,7 +796,11 @@ class StrategyAgent(BaseAgent):
             add("lead-funnel-pro", 95, "single-offer lead capture")
 
         if max(scores.values()) <= 0:
-            return "corporate-company-pro", "not enough commerce-specific context, using a professional company structure"
+            fallback = next(
+                (template_id for template_id in ("corporate-company-pro", "premium-product-store") if template_id in template_catalog),
+                next(iter(template_catalog)),
+            )
+            return fallback, "not enough commerce-specific context, using an enabled professional structure"
 
         winner = max(scores, key=lambda template_id: scores[template_id])
         return winner, "; ".join(reasons[winner][:3]) or "best scoring strategy"

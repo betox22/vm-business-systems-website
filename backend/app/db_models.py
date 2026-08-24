@@ -171,6 +171,18 @@ event.listen(AdminAuditEvent, "before_update", _reject_admin_audit_mutation)
 event.listen(AdminAuditEvent, "before_delete", _reject_admin_audit_mutation)
 
 
+class TemplateRuntimeOverride(Base):
+    __tablename__ = "template_runtime_overrides"
+
+    template_id: Mapped[str] = mapped_column(primary_key=True)
+    enabled: Mapped[bool] = mapped_column(default=True)
+    reason: Mapped[str] = mapped_column(Text, default="")
+    actor_user_id: Mapped[str]
+    actor_email: Mapped[str] = mapped_column(default="")
+    created_at: Mapped[int] = mapped_column(default=_now)
+    updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
+
+
 class GeneratedSite(Base):
     __tablename__ = "generated_sites"
     __table_args__ = (

@@ -17,6 +17,7 @@ from .agents import (
     ReviewerAgent,
     StrategyAgent,
     TEMPLATE_CATALOG,
+    template_catalog_for_state,
     ValidationAgent,
     split_items,
 )
@@ -127,7 +128,12 @@ class LyraOrchestrator:
             await self._run_and_merge(manager, self.strategist, user_input)
         else:
             snapshot = await manager.snapshot()
-            if not snapshot.selectedTemplateId or not snapshot.websiteType:
+            runtime_catalog = template_catalog_for_state(snapshot)
+            if (
+                not snapshot.selectedTemplateId
+                or snapshot.selectedTemplateId not in runtime_catalog
+                or not snapshot.websiteType
+            ):
                 await self._run_and_merge(manager, self.strategist, user_input)
 
         # 3. Independent workers run concurrently after strategy.
@@ -217,7 +223,7 @@ class LyraOrchestrator:
                     issue_details_by_agent[agent_name].append(detail)
                 if agent_name == "strategist" and not suggested_strategy_template_id:
                     suggested = str(issue.get("suggested_template_id") or issue.get("suggestedTemplateId") or "").strip()
-                    if suggested in TEMPLATE_CATALOG:
+                    if suggested in template_catalog_for_state(snapshot):
                         suggested_strategy_template_id = suggested
 
         if issue_details_by_agent["strategist"]:

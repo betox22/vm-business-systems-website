@@ -29,7 +29,7 @@ from .admin_directory import (
     build_admin_client_directory,
     fetch_supabase_admin_users,
 )
-from .agents import semantic_seed_catalog, split_items, state_is_commerce_seed_target
+from .agents import TEMPLATE_CATALOG, semantic_seed_catalog, split_items, state_is_commerce_seed_target
 from .client_auth import fetch_supabase_user, supabase_auth_configured
 from .commerce import router as commerce_router
 from .db import get_session, init_db
@@ -38,6 +38,7 @@ from .domains import router as domains_router
 from .models import (
     AssetUploadRequest,
     AssetUploadResponse,
+    AdminTemplateOverrideRequest,
     LumaChatRequest,
     LumaChatResponse,
     LyraEditRequest,
@@ -64,6 +65,12 @@ from .project_deletion import (
     delete_generated_project,
 )
 from .taxonomy import infer_seed_profile
+from .template_runtime import (
+    TemplateRuntimeError,
+    apply_template_override,
+    runtime_template_records,
+    template_ids_for_generation,
+)
 from .storage import StorageError, delete_site_assets_from_supabase, parse_data_url, supabase_storage_configured, upload_asset_to_supabase, validate_upload
 
 
@@ -781,6 +788,125 @@ async def admin_clients_directory(
     }
 
 
+def _require_super_admin_template_access(
+    session: Session,
+    *,
+    identity: Dict[str, Any],
+    request: Request,
+    action: str,
+    template_id: str = "all",
+) -> None:
+    if identity.get("role") == "super_admin":
+        return
+    record_admin_audit_event(
+        session,
+        actor=identity,
+        action=action,
+        target_type="template_runtime_override",
+        target_id=template_id,
+        outcome="denied",
+        request_id=request.state.request_id,
+        metadata={"reason": "role_not_allowed"},
+    )
+    raise HTTPException(status_code=403, detail="Only a super admin can manage template availability.")
+
+
+@app.get("/api/admin/templates")
+async def admin_runtime_templates(
+    request: Request,
+    authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    _enforce_rate_limit(request, "admin_templates", limit=120)
+    identity = _authenticated_admin_identity(authorization, kreaton_admin_session)
+    _require_super_admin_template_access(
+        session,
+        identity=identity,
+        request=request,
+        action="admin.templates.queried",
+    )
+    templates = runtime_template_records(session)
+    record_admin_audit_event(
+        session,
+        actor=identity,
+        action="admin.templates.queried",
+        target_type="template_runtime_override",
+        target_id="all",
+        outcome="success",
+        request_id=request.state.request_id,
+        metadata={"resultCount": len(templates), "enabledCount": sum(item["enabled"] for item in templates)},
+    )
+    return {"templates": templates}
+
+
+@app.patch("/api/admin/templates/{template_id}")
+async def update_admin_runtime_template(
+    template_id: str,
+    payload: AdminTemplateOverrideRequest,
+    request: Request,
+    authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    _enforce_rate_limit(request, "admin_template_update", limit=60)
+    identity = _authenticated_admin_identity(authorization, kreaton_admin_session)
+    action = "admin.template.enabled" if payload.enabled else "admin.template.disabled"
+    _require_super_admin_template_access(
+        session,
+        identity=identity,
+        request=request,
+        action=action,
+        template_id=template_id,
+    )
+    try:
+        apply_template_override(
+            session,
+            template_id=template_id,
+            enabled=payload.enabled,
+            reason=payload.reason,
+            actor=identity,
+        )
+    except TemplateRuntimeError as error:
+        record_admin_audit_event(
+            session,
+            actor=identity,
+            action=action,
+            target_type="template_runtime_override",
+            target_id=template_id,
+            outcome="failure",
+            request_id=request.state.request_id,
+            metadata={"reason": str(error)},
+        )
+        status_code = 404 if template_id not in TEMPLATE_CATALOG else 409
+        raise HTTPException(status_code=status_code, detail=str(error)) from error
+
+    record_admin_audit_event(
+        session,
+        actor=identity,
+        action=action,
+        target_type="template_runtime_override",
+        target_id=template_id,
+        outcome="success",
+        request_id=request.state.request_id,
+        metadata={"enabled": payload.enabled, "reason": payload.reason},
+    )
+    record = next(item for item in runtime_template_records(session) if item["templateId"] == template_id)
+    return {"template": record}
+
+
+@app.get("/api/templates/availability")
+async def public_template_availability(
+    response: Response,
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    response.headers["Cache-Control"] = "no-store"
+    records = runtime_template_records(session)
+    return {
+        "enabledTemplateIds": [item["templateId"] for item in records if item["enabled"]],
+    }
+
+
 # --- Client session cookie -------------------------------------------------
 #
 # The frontend used to keep the Supabase access token only in localStorage
@@ -1306,7 +1432,11 @@ async def public_resolve_site(
 
 @app.post("/api/luma/chat", response_model=LumaChatResponse)
 @app.post("/api/ai/intake-assistant", response_model=LumaChatResponse)
-async def luma_chat(request: LumaChatRequest, http_request: Request) -> LumaChatResponse:
+async def luma_chat(
+    request: LumaChatRequest,
+    http_request: Request,
+    session: Session = Depends(get_session),
+) -> LumaChatResponse:
     # This is the public guided-intake funnel -- prospects use it before
     # creating any real account (see /api/client/intake-session, which is
     # also unauthenticated by design), so it intentionally does not require
@@ -1314,6 +1444,7 @@ async def luma_chat(request: LumaChatRequest, http_request: Request) -> LumaChat
     # cost from scripted abuse instead. See _enforce_rate_limit.
     _enforce_rate_limit(http_request, "luma_chat", limit=40, window_seconds=60)
     state = normalize_state_payload(request.current)
+    state.runtimeAvailableTemplateIds = template_ids_for_generation(session)
     if request.selectedTemplateId and not state.selectedTemplateId:
         state.selectedTemplateId = request.selectedTemplateId
     apply_current_step_hint(state, request)
@@ -1634,6 +1765,28 @@ async def website_builder(
     # much tighter limit than the chat/edit endpoints above.
     _enforce_rate_limit(http_request, "website_builder", limit=6, window_seconds=300)
     payload = request.model_dump()
+    auth_user = authenticated_client_user(authorization, luma_client_session, required=False)
+    existing_site_ids = {
+        value
+        for value in (
+            request.generatedSiteId,
+            request.generated_site_id,
+            request.projectId,
+            request.project_id,
+        )
+        if value
+    }
+    existing_site = None
+    if auth_user and existing_site_ids:
+        existing_site = session.scalar(
+            select(GeneratedSite).where(
+                GeneratedSite.id.in_(existing_site_ids),
+                or_(
+                    GeneratedSite.owner_user_id == str(auth_user.get("id") or ""),
+                    GeneratedSite.owner_email == str(auth_user.get("email") or "").strip().lower(),
+                ),
+            )
+        )
     field_meta = build_generation_field_meta(request)
     sales_flow, sales_flow_meta = infer_generation_sales_flow_with_meta(request)
     if sales_flow_meta:
@@ -1664,6 +1817,10 @@ async def website_builder(
         "salesFlow": sales_flow,
         "fieldMeta": field_meta,
     })
+    state.runtimeAvailableTemplateIds = template_ids_for_generation(
+        session,
+        preserve_template_ids=[existing_site.template_id] if existing_site else [],
+    )
     missing_fields = intake_engine.missing_fields_from_state(state, {}, field_meta)
     if missing_fields:
         return WebsiteGenerationResponse(
@@ -1706,7 +1863,6 @@ async def website_builder(
             site_id=logo_site_id,
         )
     schema = build_schema_from_state(final_state, catalog_items=catalog_items, catalog_source=catalog_source)
-    auth_user = authenticated_client_user(authorization, luma_client_session, required=False)
     db_site = persist_generated_site(session, user=auth_user, request=request, schema=schema) if auth_user else None
     if not auth_user and (request.generatedSiteId or request.generated_site_id or request.projectId or request.project_id):
         raise HTTPException(status_code=401, detail="Login is required to update a saved project.")

@@ -11,6 +11,7 @@ import {
   CLIENT_AUTH_LOGOUT_URL,
   CLIENT_PROJECTS_URL,
   CLIENT_LOGO_GENERATION_URL,
+  TEMPLATE_AVAILABILITY_URL,
   ASSET_UPLOAD_URL,
   SUPABASE_AUTH_URL,
   SUPPORTED_LANGUAGES,
@@ -54,6 +55,10 @@ import { mergeSemanticSeedCatalog } from './catalog-seed-policy.js';
 import { isMegaRetailTemplate, megaRetailFeatureFlags } from './mega-retail-policy.js';
 import { hasDecidedTemplateSelection, isConcreteTemplateId } from './template-carousel-policy.js';
 import { constructionPreviewModel } from './construction-preview-policy.js';
+import {
+  isTemplateAvailableForNewProject,
+  setRuntimeTemplateAvailability,
+} from './template-runtime-policy.js';
 import { logoRequestUpdate, wantsAiGeneratedLogo } from './logo-intent-policy.js';
 import {
   applyGeneratedLogoToState,
@@ -605,6 +610,7 @@ function bootLegacyBuilderPage() {
   safeBootStep("client-session", initClientIntakeSessionGate);
   safeBootStep("client-account-control", renderClientAccountControl);
   safeBootStep("client-workspace-security", initClientWorkspaceSecurity);
+  loadRuntimeTemplateAvailability();
 
 function safeBootStep(label, callback) {
   try {
@@ -820,6 +826,18 @@ export function setSelectedLanguage(value) {
   if (previousLanguage !== builderState.selectedLanguage) {
     renderGuidedSummary();
     resetAssistantConversation();
+  }
+}
+
+async function loadRuntimeTemplateAvailability() {
+  try {
+    const response = await fetch(TEMPLATE_AVAILABILITY_URL, { credentials: "omit" });
+    if (!response.ok) return;
+    const payload = await response.json();
+    setRuntimeTemplateAvailability(payload.enabledTemplateIds);
+    renderGuidedCoachCard();
+  } catch (error) {
+    console.warn("LYRA could not load runtime template availability; using the built-in catalog.", error);
   }
 }
 
@@ -1216,6 +1234,7 @@ function canvasTemplateChoices(selectedTemplateId = "") {
   const ordered = [];
   const usedImages = new Set();
   const add = (templateId, options = {}) => {
+    if (!builderState.currentSchema && !isTemplateAvailableForNewProject(templateId)) return;
     const choice = templatePreviewMeta(templateId);
     if (!choice || ordered.some((item) => item.templateId === choice.templateId)) return;
     if (usedImages.has(choice.image) && !options.allowDuplicateImage) return;
@@ -3395,6 +3414,7 @@ async function chooseTemplatePreview(choice, options = {}) {
 window.Lyra = {
   ...(window.Lyra || {}),
   async selectTemplate(templateId) {
+    if (!builderState.currentSchema && !isTemplateAvailableForNewProject(templateId)) return null;
     const choice = templatePreviewMeta(templateId);
     if (!choice) return null;
     await chooseTemplatePreview(choice, { hideCarousel: true, fadeCanvas: true });

@@ -28,6 +28,7 @@
   var CLIENT_AUTH_LOGOUT_URL = `${API_BASE_URL}/api/client/auth/logout`;
   var CLIENT_PROJECTS_URL = `${API_BASE_URL}/api/client/projects`;
   var CLIENT_LOGO_GENERATION_URL = `${API_BASE_URL}/api/client/logo/generate`;
+  var TEMPLATE_AVAILABILITY_URL = `${API_BASE_URL}/api/templates/availability`;
   var ASSET_UPLOAD_URL = `${API_BASE_URL}/api/admin/assets/upload`;
   var SUPABASE_PROJECT_URL = "https://rzdidqclbvnqqlcaueoh.supabase.co";
   var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6ZGlkcWNsYnZucXFsY2F1ZW9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxOTY3NzUsImV4cCI6MjA5Mzc3Mjc3NX0.R6gl2jmRRaXDzOzh_QdsAlzdzvdSyfp0muCEJGnJku0";
@@ -1662,6 +1663,23 @@
         { id: "ready", complete: ready, active: (mediaReady || isGenerating) && !ready }
       ]
     };
+  }
+
+  // src/ai-builder/template-runtime-policy.js
+  var enabledTemplateIds = null;
+  function setRuntimeTemplateAvailability(templateIds) {
+    if (!Array.isArray(templateIds)) {
+      enabledTemplateIds = null;
+      return;
+    }
+    enabledTemplateIds = new Set(
+      templateIds.map((value) => String(value || "").trim()).filter(Boolean)
+    );
+  }
+  function isTemplateAvailableForNewProject(templateId) {
+    const normalized3 = String(templateId || "").trim();
+    if (!normalized3) return false;
+    return enabledTemplateIds === null || enabledTemplateIds.has(normalized3);
   }
 
   // src/ai-builder/logo-intent-policy.js
@@ -9395,6 +9413,7 @@ ${cleanQuestion}`;
     safeBootStep("client-session", initClientIntakeSessionGate);
     safeBootStep("client-account-control", renderClientAccountControl);
     safeBootStep("client-workspace-security", initClientWorkspaceSecurity);
+    loadRuntimeTemplateAvailability();
     function safeBootStep(label, callback) {
       try {
         callback();
@@ -9599,6 +9618,17 @@ ${cleanQuestion}`;
     if (previousLanguage !== builderState.selectedLanguage) {
       renderGuidedSummary();
       resetAssistantConversation();
+    }
+  }
+  async function loadRuntimeTemplateAvailability() {
+    try {
+      const response = await fetch(TEMPLATE_AVAILABILITY_URL, { credentials: "omit" });
+      if (!response.ok) return;
+      const payload = await response.json();
+      setRuntimeTemplateAvailability(payload.enabledTemplateIds);
+      renderGuidedCoachCard();
+    } catch (error) {
+      console.warn("LYRA could not load runtime template availability; using the built-in catalog.", error);
     }
   }
   function t(key) {
@@ -11344,6 +11374,7 @@ ${langText({
   window.Lyra = {
     ...window.Lyra || {},
     async selectTemplate(templateId) {
+      if (!builderState.currentSchema && !isTemplateAvailableForNewProject(templateId)) return null;
       const choice = templatePreviewMeta(templateId);
       if (!choice) return null;
       await chooseTemplatePreview(choice, { hideCarousel: true, fadeCanvas: true });
