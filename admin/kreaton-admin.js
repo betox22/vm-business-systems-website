@@ -5,7 +5,7 @@ import {
   templatePreviewUrl,
   templateProfilePayload,
   templateUpdatePayload,
-} from "./kreaton-admin-policy.js";
+} from "./kreaton-admin-policy.js?v=2";
 
 const API_BASE = String(window.LUMA_API_BASE_URL || "").replace(/\/$/, "");
 const SUPABASE_URL = "https://rzdidqclbvnqqlcaueoh.supabase.co";

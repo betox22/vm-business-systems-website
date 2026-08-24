@@ -108,4 +108,6 @@ test("the static admin shell targets only real stage endpoints", async () => {
   assert.match(script, /api\/admin\/clients/);
   assert.match(script, /api\/admin\/templates\/\$\{encodeURIComponent\(data\.templateId\)\}\/profile/);
   assert.match(script, /template-visual/);
+  assert.match(script, /from "\.\/kreaton-admin-policy\.js\?v=2"/);
+  assert.match(html, /kreaton-admin\.js\?v=3/);
 });
