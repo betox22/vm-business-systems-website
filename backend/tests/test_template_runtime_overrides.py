@@ -12,9 +12,21 @@ from app import main
 from app.agents import StrategyAgent, TEMPLATE_CATALOG, template_catalog_for_state
 from app.ai_site_planner import AIWebGenerationResponse, resolve_planner_template
 from app.db import Base, get_session
-from app.db_models import AdminAuditEvent, GeneratedSite, Store, TemplateRuntimeOverride
+from app.db_models import (
+    AdminAuditEvent,
+    GeneratedSite,
+    Store,
+    TemplateRuntimeOverride,
+    TemplateRuntimeProfile,
+)
 from app.models import ProjectState
-from app.template_runtime import apply_template_override, enabled_template_ids
+from app.template_runtime import (
+    apply_template_override,
+    enabled_template_ids,
+    replacement_template_for_new_project,
+    runtime_template_records,
+    runtime_template_replacements,
+)
 
 
 def _admin_user(role: str):
@@ -279,3 +291,101 @@ def test_template_override_survives_database_reconnect(tmp_path):
     assert override is not None
     assert override.reason == "Persist across application restart"
     assert "premium-product-store" not in available
+
+
+def test_template_gallery_returns_real_preview_for_every_registered_template(runtime_database):
+    with runtime_database() as session:
+        records = runtime_template_records(session)
+
+    assert len(records) == len(TEMPLATE_CATALOG)
+    assert all(record["previewUrl"].startswith("/templates-preview/screenshots/") for record in records)
+    assert all(record["interactivePreviewUrl"].startswith("/templates-preview/live-preview.html?template=") for record in records)
+    assert all(record["name"] and record["audience"] for record in records)
+
+
+def test_super_admin_can_edit_template_profile_and_assign_enabled_replacement(runtime_database):
+    with TestClient(main.app, base_url="https://api.vmbusinesssystems.com") as client:
+        response = _request(
+            client,
+            "PATCH",
+            "/api/admin/templates/premium-product-store/profile",
+            role="super_admin",
+            json={
+                "name": "Premium Product Editorial",
+                "audience": "Focused product brands with strong visual storytelling.",
+                "previewUrl": "/templates-preview/live-preview.html?template=premium-product-store",
+                "replacementTemplateId": "mega-retail-store",
+                "reason": "Refresh gallery identity and define operational replacement",
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.json()["template"]["name"] == "Premium Product Editorial"
+    assert response.json()["template"]["replacementTemplateId"] == "mega-retail-store"
+    with runtime_database() as session:
+        profile = session.get(TemplateRuntimeProfile, "premium-product-store")
+        audit = session.scalar(select(AdminAuditEvent))
+    assert profile is not None
+    assert profile.actor_user_id == "admin-super_admin"
+    assert audit is not None
+    assert audit.action == "admin.template.profile_updated"
+    assert audit.outcome == "success"
+
+
+def test_disabled_template_replacement_applies_to_new_projects_only(runtime_database):
+    with runtime_database() as session:
+        session.add_all([
+            TemplateRuntimeOverride(
+                template_id="premium-product-store",
+                enabled=False,
+                reason="Replaced after quality review",
+                actor_user_id="admin-1",
+                actor_email="admin@kreaton.test",
+            ),
+            TemplateRuntimeProfile(
+                template_id="premium-product-store",
+                display_name="Premium Product",
+                audience="Focused product brands",
+                preview_url="/templates-preview/screenshots/premium-product.png",
+                replacement_template_id="mega-retail-store",
+                actor_user_id="admin-1",
+                actor_email="admin@kreaton.test",
+            ),
+        ])
+        session.commit()
+        replacements = runtime_template_replacements(session)
+        replacement = replacement_template_for_new_project(session, "premium-product-store")
+
+    assert replacements == {"premium-product-store": "mega-retail-store"}
+    assert replacement == "mega-retail-store"
+
+
+@pytest.mark.parametrize(
+    ("preview_url", "replacement_id"),
+    [
+        ("javascript:alert(1)", None),
+        ("https://safe.example/preview", "premium-product-store"),
+        ("https://safe.example/preview", "missing-template"),
+    ],
+)
+def test_template_profile_rejects_unsafe_preview_and_invalid_replacements(
+    runtime_database,
+    preview_url,
+    replacement_id,
+):
+    with TestClient(main.app, base_url="https://api.vmbusinesssystems.com") as client:
+        response = _request(
+            client,
+            "PATCH",
+            "/api/admin/templates/premium-product-store/profile",
+            role="super_admin",
+            json={
+                "name": "Premium Product",
+                "audience": "Focused commerce brands",
+                "previewUrl": preview_url,
+                "replacementTemplateId": replacement_id,
+                "reason": "Validation test",
+            },
+        )
+
+    assert response.status_code == 409

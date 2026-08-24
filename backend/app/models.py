@@ -224,6 +224,16 @@ class AdminTemplateOverrideRequest(BaseModel):
     reason: str = Field(min_length=1, max_length=500)
 
 
+class AdminTemplateProfileRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=2, max_length=120)
+    audience: str = Field(min_length=2, max_length=500)
+    previewUrl: str = Field(default="", max_length=500)
+    replacementTemplateId: Optional[str] = Field(default=None, max_length=120)
+    reason: str = Field(min_length=2, max_length=500)
+
+
 class LyraEditRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 

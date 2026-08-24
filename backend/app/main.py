@@ -38,6 +38,7 @@ from .domains import router as domains_router
 from .models import (
     AssetUploadRequest,
     AssetUploadResponse,
+    AdminTemplateProfileRequest,
     AdminTemplateOverrideRequest,
     LumaChatRequest,
     LumaChatResponse,
@@ -68,8 +69,11 @@ from .taxonomy import infer_seed_profile
 from .template_runtime import (
     TemplateRuntimeError,
     apply_template_override,
+    replacement_template_for_new_project,
     runtime_template_records,
+    runtime_template_replacements,
     template_ids_for_generation,
+    update_template_profile,
 )
 from .storage import StorageError, delete_site_assets_from_supabase, parse_data_url, supabase_storage_configured, upload_asset_to_supabase, validate_upload
 
@@ -949,6 +953,67 @@ async def update_admin_runtime_template(
     return {"template": record}
 
 
+@app.patch("/api/admin/templates/{template_id}/profile")
+async def update_admin_template_profile(
+    template_id: str,
+    payload: AdminTemplateProfileRequest,
+    request: Request,
+    authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    _enforce_rate_limit(request, "admin_template_profile_update", limit=60)
+    identity = _authenticated_admin_identity(authorization, kreaton_admin_session)
+    action = "admin.template.profile_updated"
+    _require_super_admin_template_access(
+        session,
+        identity=identity,
+        request=request,
+        action=action,
+        template_id=template_id,
+    )
+    try:
+        update_template_profile(
+            session,
+            template_id=template_id,
+            name=payload.name,
+            audience=payload.audience,
+            preview_url=payload.previewUrl,
+            replacement_template_id=payload.replacementTemplateId,
+            actor=identity,
+        )
+    except TemplateRuntimeError as error:
+        record_admin_audit_event(
+            session,
+            actor=identity,
+            action=action,
+            target_type="template_runtime_profile",
+            target_id=template_id,
+            outcome="failure",
+            request_id=request.state.request_id,
+            metadata={"reason": str(error)},
+        )
+        status_code = 404 if template_id not in TEMPLATE_CATALOG else 409
+        raise HTTPException(status_code=status_code, detail=str(error)) from error
+
+    record_admin_audit_event(
+        session,
+        actor=identity,
+        action=action,
+        target_type="template_runtime_profile",
+        target_id=template_id,
+        outcome="success",
+        request_id=request.state.request_id,
+        metadata={
+            "changedFields": ["name", "audience", "previewUrl", "replacementTemplateId"],
+            "reason": payload.reason,
+            "replacementTemplateId": payload.replacementTemplateId,
+        },
+    )
+    record = next(item for item in runtime_template_records(session) if item["templateId"] == template_id)
+    return {"template": record}
+
+
 @app.get("/api/templates/availability")
 async def public_template_availability(
     response: Response,
@@ -958,6 +1023,7 @@ async def public_template_availability(
     records = runtime_template_records(session)
     return {
         "enabledTemplateIds": [item["templateId"] for item in records if item["enabled"]],
+        "replacementTemplateIds": runtime_template_replacements(session),
     }
 
 
@@ -1501,6 +1567,15 @@ async def luma_chat(
     state.runtimeAvailableTemplateIds = template_ids_for_generation(session)
     if request.selectedTemplateId and not state.selectedTemplateId:
         state.selectedTemplateId = request.selectedTemplateId
+    replacement_template_id = replacement_template_for_new_project(session, state.selectedTemplateId)
+    if replacement_template_id:
+        logger.warning(
+            "KREATON runtime template replacement original=%s replacement=%s request_id=%s",
+            state.selectedTemplateId,
+            replacement_template_id,
+            http_request.state.request_id,
+        )
+        state.selectedTemplateId = replacement_template_id
     apply_current_step_hint(state, request)
 
     intake_decision = await intake_engine.run(
@@ -1875,6 +1950,16 @@ async def website_builder(
         session,
         preserve_template_ids=[existing_site.template_id] if existing_site else [],
     )
+    if not existing_site:
+        replacement_template_id = replacement_template_for_new_project(session, state.selectedTemplateId)
+        if replacement_template_id:
+            logger.warning(
+                "KREATON generation template replacement original=%s replacement=%s request_id=%s",
+                state.selectedTemplateId,
+                replacement_template_id,
+                http_request.state.request_id,
+            )
+            state.selectedTemplateId = replacement_template_id
     missing_fields = intake_engine.missing_fields_from_state(state, {}, field_meta)
     if missing_fields:
         return WebsiteGenerationResponse(

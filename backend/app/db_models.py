@@ -183,6 +183,20 @@ class TemplateRuntimeOverride(Base):
     updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
 
 
+class TemplateRuntimeProfile(Base):
+    __tablename__ = "template_runtime_profiles"
+
+    template_id: Mapped[str] = mapped_column(primary_key=True)
+    display_name: Mapped[str] = mapped_column(default="")
+    audience: Mapped[str] = mapped_column(Text, default="")
+    preview_url: Mapped[str] = mapped_column(default="")
+    replacement_template_id: Mapped[Optional[str]] = mapped_column(default=None)
+    actor_user_id: Mapped[str] = mapped_column(default="")
+    actor_email: Mapped[str] = mapped_column(default="")
+    created_at: Mapped[int] = mapped_column(default=_now)
+    updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
+
+
 class GeneratedSite(Base):
     __tablename__ = "generated_sites"
     __table_args__ = (

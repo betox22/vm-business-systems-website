@@ -41,3 +41,26 @@ export function templateUpdatePayload(enabled, reason) {
   if (!cleanReason) throw new Error("Escribe el motivo del cambio.");
   return { enabled: Boolean(enabled), reason: cleanReason };
 }
+
+export function templateProfilePayload(values = {}) {
+  const name = String(values.name || "").trim();
+  const audience = String(values.audience || "").trim();
+  const previewUrl = String(values.previewUrl || "").trim();
+  const replacementTemplateId = String(values.replacementTemplateId || "").trim() || null;
+  const reason = String(values.reason || "").trim();
+  if (name.length < 2) throw new Error("Escribe un nombre reconocible para la plantilla.");
+  if (audience.length < 2) throw new Error("Describe brevemente para quién funciona esta plantilla.");
+  if (previewUrl && !previewUrl.startsWith("/") && !/^https:\/\//i.test(previewUrl)) {
+    throw new Error("La miniatura debe usar una ruta del sitio o una URL HTTPS.");
+  }
+  if (!reason) throw new Error("Escribe el motivo de la edición.");
+  return { name, audience, previewUrl, replacementTemplateId, reason };
+}
+
+export function templatePreviewUrl(template = {}) {
+  const configured = String(template.previewUrl || "").trim();
+  if (configured.startsWith("/") && !configured.startsWith("//")) return configured;
+  if (/^https:\/\//i.test(configured)) return configured;
+  const id = encodeURIComponent(String(template.templateId || ""));
+  return `/templates-preview/live-preview.html?template=${id}`;
+}

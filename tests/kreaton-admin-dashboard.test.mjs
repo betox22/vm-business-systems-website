@@ -5,6 +5,8 @@ import {
   adminCapabilities,
   dashboardStats,
   flattenClientProjects,
+  templatePreviewUrl,
+  templateProfilePayload,
   templateUpdatePayload,
 } from "../admin/kreaton-admin-policy.js";
 
@@ -68,6 +70,32 @@ test("template availability changes require a human-readable reason", () => {
   });
 });
 
+test("template gallery uses a real renderer preview and validates editable metadata", () => {
+  assert.equal(
+    templatePreviewUrl({ templateId: "premium-product-store" }),
+    "/templates-preview/live-preview.html?template=premium-product-store",
+  );
+  assert.deepEqual(templateProfilePayload({
+    name: "Premium Product Editorial",
+    audience: "Focused product brands",
+    previewUrl: "/templates-preview/live-preview.html?template=premium-product-store",
+    replacementTemplateId: "mega-retail-store",
+    reason: "Visual refresh",
+  }), {
+    name: "Premium Product Editorial",
+    audience: "Focused product brands",
+    previewUrl: "/templates-preview/live-preview.html?template=premium-product-store",
+    replacementTemplateId: "mega-retail-store",
+    reason: "Visual refresh",
+  });
+  assert.throws(() => templateProfilePayload({
+    name: "Premium",
+    audience: "Brands",
+    previewUrl: "javascript:alert(1)",
+    reason: "Unsafe",
+  }), /HTTPS/);
+});
+
 test("the static admin shell targets only real stage endpoints", async () => {
   const { readFile } = await import("node:fs/promises");
   const html = await readFile(new URL("../admin/index.html", import.meta.url), "utf8");
@@ -78,4 +106,6 @@ test("the static admin shell targets only real stage endpoints", async () => {
     assert.ok(script.includes(endpoint), endpoint);
   }
   assert.match(script, /api\/admin\/clients/);
+  assert.match(script, /api\/admin\/templates\/\$\{encodeURIComponent\(data\.templateId\)\}\/profile/);
+  assert.match(script, /template-visual/);
 });

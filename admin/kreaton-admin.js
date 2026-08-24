@@ -2,6 +2,8 @@ import {
   adminCapabilities,
   dashboardStats,
   flattenClientProjects,
+  templatePreviewUrl,
+  templateProfilePayload,
   templateUpdatePayload,
 } from "./kreaton-admin-policy.js";
 
@@ -39,6 +41,8 @@ const iconPaths = {
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
   search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
   external: '<path d="M15 3h6v6M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/>',
+  close: '<path d="m18 6-12 12M6 6l12 12"/>',
   trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5"/>',
   lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   alert: '<path d="M10.3 2.9 1.8 17a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 2.9a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/>',
@@ -350,15 +354,46 @@ function renderTemplates() {
     return;
   }
   const cards = state.templates.map((template) => `<article class="template-card ${template.enabled ? "" : "disabled"}">
-    <div class="template-card-header"><div><h3>${escapeHtml(template.name)}</h3><p>${escapeHtml(template.templateId)}</p></div>${statusBadge(template.enabled ? "active" : "suspended")}</div>
-    <div class="template-meta"><span class="template-tag">${escapeHtml(template.websiteType)}</span><span class="template-tag">${escapeHtml(template.catalogType)}</span><span class="template-tag">${escapeHtml(template.designMaturity)}</span></div>
-    <p>${escapeHtml(template.audience || "Audiencia general")}</p>
-    <footer><small>${template.reason ? escapeHtml(template.reason) : "Sin override activo"}</small><label class="switch" title="${template.enabled ? "Desactivar" : "Activar"}"><input data-template-toggle="${escapeHtml(template.templateId)}" type="checkbox" ${template.enabled ? "checked" : ""}><span></span></label></footer>
+    <div class="template-visual">
+      <img loading="lazy" src="${escapeHtml(templatePreviewUrl(template))}" alt="Miniatura de ${escapeHtml(template.name)}">
+      <div class="template-visual-shade"></div>
+      <div class="template-visual-top">${statusBadge(template.enabled ? "active" : "suspended")}<span class="template-maturity">${escapeHtml(template.designMaturity)}</span></div>
+      <a class="template-preview-link" href="${escapeHtml(template.interactivePreviewUrl || templatePreviewUrl(template))}" target="_blank" rel="noopener">${icon("external")}<span>Ver preview</span></a>
+    </div>
+    <div class="template-card-body">
+      <div class="template-card-header"><div><h3>${escapeHtml(template.name)}</h3><p>${escapeHtml(template.templateId)}</p></div><button class="icon-button template-edit-button" data-edit-template="${escapeHtml(template.templateId)}" type="button" title="Editar plantilla" aria-label="Editar ${escapeHtml(template.name)}">${icon("edit")}</button></div>
+      <div class="template-meta"><span class="template-tag">${escapeHtml(template.websiteType)}</span><span class="template-tag">${escapeHtml(template.catalogType)}</span></div>
+      <p class="template-audience">${escapeHtml(template.audience || "Audiencia general")}</p>
+      ${template.replacementTemplateId ? `<p class="template-replacement">Reemplazo: <strong>${escapeHtml(template.replacementTemplateId)}</strong></p>` : ""}
+      <footer><small>${template.reason ? escapeHtml(template.reason) : "Configuración original"}</small><label class="switch" title="${template.enabled ? "Desactivar" : "Activar"}"><input data-template-toggle="${escapeHtml(template.templateId)}" type="checkbox" ${template.enabled ? "checked" : ""}><span></span></label></footer>
+    </div>
   </article>`).join("");
   document.querySelector("#viewContent").innerHTML = `<section class="surface">
     <header class="surface-header"><div><h2>Disponibilidad de plantillas</h2><p>Los sitios existentes siguen funcionando aunque una plantilla se pause.</p></div><span class="surface-count">${state.templates.filter((item) => item.enabled).length} activas</span></header>
     <div class="template-grid">${cards}</div>
   </section>`;
+}
+
+function openTemplateEditor(template) {
+  const modal = document.querySelector("#templateEditorModal");
+  const form = document.querySelector("#templateEditorForm");
+  form.elements.templateId.value = template.templateId;
+  form.elements.name.value = template.name || "";
+  form.elements.audience.value = template.audience || "";
+  form.elements.previewUrl.value = template.previewUrl || "";
+  form.elements.reason.value = "";
+  form.elements.replacementTemplateId.innerHTML = `<option value="">Sin reemplazo</option>${state.templates
+    .filter((candidate) => candidate.templateId !== template.templateId && candidate.enabled)
+    .map((candidate) => `<option value="${escapeHtml(candidate.templateId)}">${escapeHtml(candidate.name)}</option>`).join("")}`;
+  form.elements.replacementTemplateId.value = template.replacementTemplateId || "";
+  document.querySelector("#templateEditorTitle").textContent = template.name;
+  document.querySelector("#templateEditorStatus").textContent = "";
+  modal.classList.remove("hidden");
+  setTimeout(() => form.elements.name.focus(), 0);
+}
+
+function closeTemplateEditor() {
+  document.querySelector("#templateEditorModal").classList.add("hidden");
 }
 
 function renderAudit() {
@@ -385,6 +420,7 @@ function actionLabel(action) {
     "admin.templates.queried": "Consulta de plantillas",
     "admin.template.enabled": "Plantilla activada",
     "admin.template.disabled": "Plantilla pausada",
+    "admin.template.profile_updated": "Plantilla editada",
     "admin.audit.queried": "Consulta de auditoría",
   };
   return labels[action] || action;
@@ -506,6 +542,11 @@ document.querySelector("#viewContent").addEventListener("click", (event) => {
     const project = flattenClientProjects(state.clients).find((item) => item.id === deleteButton.dataset.deleteProject);
     if (project) openDeleteModal(project);
   }
+  const editButton = event.target.closest("[data-edit-template]");
+  if (editButton) {
+    const template = state.templates.find((item) => item.templateId === editButton.dataset.editTemplate);
+    if (template) openTemplateEditor(template);
+  }
 });
 
 document.querySelector("#viewContent").addEventListener("change", (event) => {
@@ -554,8 +595,38 @@ document.querySelector("#acceptConfirmButton").addEventListener("click", async (
     button.disabled = false;
   }
 });
+document.querySelector("#templateEditorForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector('[type="submit"]');
+  const status = document.querySelector("#templateEditorStatus");
+  button.disabled = true;
+  status.textContent = "";
+  try {
+    const data = Object.fromEntries(new FormData(form));
+    const payload = templateProfilePayload(data);
+    const body = await api(`/api/admin/templates/${encodeURIComponent(data.templateId)}/profile`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    state.templates = state.templates.map((item) => item.templateId === body.template.templateId ? body.template : item);
+    closeTemplateEditor();
+    renderView();
+    toast(`${body.template.name} fue actualizada.`);
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+document.querySelector("#cancelTemplateEditorButton").addEventListener("click", closeTemplateEditor);
+document.querySelector("#closeTemplateEditorButton").addEventListener("click", closeTemplateEditor);
+document.querySelector("#templateEditorModal").addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) closeTemplateEditor();
+});
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !document.querySelector("#confirmModal").classList.contains("hidden")) closeModal(true);
+  if (event.key === "Escape" && !document.querySelector("#templateEditorModal").classList.contains("hidden")) closeTemplateEditor();
 });
 
 boot();
