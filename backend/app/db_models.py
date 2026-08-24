@@ -4,7 +4,7 @@ import time
 import uuid
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Index, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, Text, UniqueConstraint, event
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -138,6 +138,37 @@ class Setting(Base):
     key: Mapped[str]
     value: Mapped[str]
     updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
+
+
+class AdminAuditEvent(Base):
+    __tablename__ = "admin_audit_events"
+    __table_args__ = (
+        Index("admin_audit_events_created_at_idx", "created_at"),
+        Index("admin_audit_events_actor_user_id_idx", "actor_user_id"),
+        Index("admin_audit_events_action_idx", "action"),
+        Index("admin_audit_events_target_idx", "target_type", "target_id"),
+        Index("admin_audit_events_request_id_idx", "request_id"),
+    )
+
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: _id("audit"))
+    actor_user_id: Mapped[str]
+    actor_email: Mapped[str] = mapped_column(default="")
+    actor_role: Mapped[str]
+    action: Mapped[str]
+    target_type: Mapped[str]
+    target_id: Mapped[str]
+    outcome: Mapped[str]
+    request_id: Mapped[str] = mapped_column(default="")
+    metadata_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[int] = mapped_column(default=_now)
+
+
+def _reject_admin_audit_mutation(*_args, **_kwargs) -> None:
+    raise ValueError("Admin audit events are append-only and cannot be changed or deleted.")
+
+
+event.listen(AdminAuditEvent, "before_update", _reject_admin_audit_mutation)
+event.listen(AdminAuditEvent, "before_delete", _reject_admin_audit_mutation)
 
 
 class GeneratedSite(Base):

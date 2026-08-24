@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from .admin_audit import record_admin_audit_event
 from .admin_auth import (
     admin_identity_from_user,
     clear_admin_session_cookie,
@@ -359,7 +360,13 @@ async def add_security_headers(request: Request, call_next):
     added at the Cloudflare edge in front of that domain instead.
     """
 
+    incoming_request_id = str(request.headers.get("X-Request-ID") or "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9._:-]{1,96}", incoming_request_id):
+        incoming_request_id = f"req_{uuid.uuid4().hex[:20]}"
+    request.state.request_id = incoming_request_id
+
     response = await call_next(request)
+    response.headers["X-Request-ID"] = incoming_request_id
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
@@ -632,9 +639,20 @@ async def admin_auth_session(
     payload: AdminAuthSessionRequest,
     request: Request,
     response: Response,
+    session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
     _enforce_rate_limit(request, "admin_auth_session", limit=10)
     identity = _authenticated_admin_identity(f"Bearer {payload.access_token}")
+    record_admin_audit_event(
+        session,
+        actor=identity,
+        action="admin.auth.session_started",
+        target_type="admin_account",
+        target_id=identity["id"],
+        outcome="success",
+        request_id=request.state.request_id,
+        metadata={"authProvider": "supabase"},
+    )
     set_admin_session_cookie(response, payload.access_token)
     return identity
 
@@ -650,7 +668,27 @@ async def admin_auth_me(
 
 
 @app.post("/api/admin/auth/logout")
-async def admin_auth_logout(response: Response) -> Dict[str, str]:
+async def admin_auth_logout(
+    request: Request,
+    response: Response,
+    authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, str]:
+    try:
+        identity = _authenticated_admin_identity(authorization, kreaton_admin_session)
+    except HTTPException:
+        identity = None
+    if identity:
+        record_admin_audit_event(
+            session,
+            actor=identity,
+            action="admin.auth.session_ended",
+            target_type="admin_account",
+            target_id=identity["id"],
+            outcome="success",
+            request_id=request.state.request_id,
+        )
     clear_admin_session_cookie(response)
     return {"status": "logged_out"}
 
