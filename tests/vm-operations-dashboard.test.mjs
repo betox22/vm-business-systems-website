@@ -29,6 +29,17 @@ test("VM Operations does not ship the legacy fake customer records", () => {
 test("Listo remains an external isolated product", () => {
   assert.match(js, /https:\/\/listo\.vmbusinesssystems\.com\/admin\//);
   assert.match(js, /Administración aislada/);
+  assert.match(html, /class="product-nav-link"[^>]+href="https:\/\/listo\.vmbusinesssystems\.com\/admin\/"/);
+  assert.match(html, /Administrar Listo/);
+  assert.match(html, /target="_blank" rel="noopener noreferrer"/);
+});
+
+test("Google login keeps the recognizable provider identity", () => {
+  assert.match(html, /id="googleLoginButton"[^>]*class="google-button"/);
+  assert.match(html, /class="google-mark"/);
+  for (const color of ["#4285F4", "#34A853", "#FBBC05", "#EA4335"]) {
+    assert.match(html, new RegExp(color));
+  }
 });
 
 test("Google session can continue with a bearer token when the cross-site cookie is blocked", () => {
@@ -45,4 +56,7 @@ test("/admin uses the same general operations shell instead of the four-view leg
   assert.match(adminHtml, /data-view="payments"/);
   assert.match(adminHtml, /data-view="templates"/);
   assert.match(adminHtml, /operations\/operations\.js\?v=3/);
+  assert.match(adminHtml, /operations\/operations\.css\?v=3/);
+  assert.match(adminHtml, /Administrar Listo/);
+  assert.match(adminHtml, /class="google-mark"/);
 });
