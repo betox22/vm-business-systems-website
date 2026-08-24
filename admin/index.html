@@ -3,12 +3,82 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>GNU Dev Admin</title>
-    <meta http-equiv="refresh" content="0; url=/admin.html">
+    <meta name="robots" content="noindex,nofollow">
+    <title>KREATON Operations</title>
+    <link rel="stylesheet" href="/admin/kreaton-admin.css?v=1">
   </head>
   <body>
-    <main>
-      Abriendo panel interno... <a href="/admin.html">Entrar al admin</a>
-    </main>
+    <section id="loginScreen" class="login-screen" aria-labelledby="loginTitle">
+      <div class="login-visual" aria-hidden="true">
+        <div class="login-brand"><span class="brand-mark">K</span><span>KREATON</span></div>
+        <div class="login-visual-copy">
+          <span class="eyebrow">OPERACIONES INTERNAS</span>
+          <h1>Control claro para cuidar cada sitio.</h1>
+          <p>Clientes, proyectos, plantillas y actividad administrativa en un solo lugar.</p>
+        </div>
+        <div class="login-signal"><span></span> Acceso protegido por rol</div>
+      </div>
+      <div class="login-panel">
+        <form id="loginForm" class="login-card">
+          <div class="mobile-brand"><span class="brand-mark">K</span><strong>KREATON</strong></div>
+          <span class="eyebrow">PANEL INTERNO</span>
+          <h2 id="loginTitle">Bienvenido de nuevo</h2>
+          <p>Entra con una cuenta autorizada de administración o soporte.</p>
+          <button id="googleLoginButton" class="google-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285f4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.7 4.7 0 0 1-2 3v2.5h3.2c1.9-1.8 3-4.3 3-7.3Z"/><path fill="#34a853" d="M12 22c2.7 0 5-.9 6.7-2.4l-3.2-2.5c-.9.6-2 1-3.5 1a5.9 5.9 0 0 1-5.5-4.1H3.2v2.6A10 10 0 0 0 12 22Z"/><path fill="#fbbc05" d="M6.5 14a6 6 0 0 1 0-3.9V7.4H3.2a10 10 0 0 0 0 9.2L6.5 14Z"/><path fill="#ea4335" d="M12 5.9c1.6 0 3 .5 4.1 1.6l3-3A10 10 0 0 0 3.2 7.4l3.3 2.7A5.9 5.9 0 0 1 12 6Z"/></svg>
+            Continuar con Google
+          </button>
+          <div class="login-divider"><span>o por correo</span></div>
+          <label for="adminEmail">Correo de trabajo</label>
+          <input id="adminEmail" name="email" type="email" autocomplete="email" placeholder="nombre@empresa.com" required>
+          <button class="primary-button" type="submit">Enviar enlace seguro</button>
+          <p id="loginStatus" class="login-status" role="status" aria-live="polite"></p>
+          <small>Solo las cuentas con rol <strong>super_admin</strong> o <strong>support</strong> pueden entrar.</small>
+        </form>
+      </div>
+    </section>
+
+    <div id="appShell" class="app-shell hidden">
+      <aside class="sidebar">
+        <div class="sidebar-brand"><span class="brand-mark">K</span><div><strong>KREATON</strong><small>Operations</small></div></div>
+        <nav id="mainNav" class="main-nav" aria-label="Navegación administrativa">
+          <button class="active" data-view="clients" type="button"><span data-icon="users"></span><span>Clientes</span></button>
+          <button data-view="projects" type="button"><span data-icon="pages"></span><span>Proyectos</span></button>
+          <button data-view="templates" type="button"><span data-icon="layout"></span><span>Plantillas</span></button>
+          <button data-view="audit" type="button"><span data-icon="activity"></span><span>Auditoría</span></button>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="session-avatar" id="sessionAvatar">K</div>
+          <div><strong id="sessionEmail">Cuenta</strong><small id="sessionRole">Rol</small></div>
+          <button id="logoutButton" class="icon-button" type="button" aria-label="Cerrar sesión" title="Cerrar sesión"><span data-icon="logout"></span></button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="workspace-header">
+          <button id="mobileNavButton" class="icon-button mobile-nav-button" type="button" aria-label="Abrir navegación"><span data-icon="menu"></span></button>
+          <div><span id="viewEyebrow" class="eyebrow">OPERACIÓN</span><h1 id="viewTitle">Clientes</h1><p id="viewSubtitle">Cuentas y actividad de KREATON.</p></div>
+          <div class="header-actions"><span id="roleBadge" class="role-badge">support</span><button id="refreshButton" class="icon-button" type="button" aria-label="Actualizar" title="Actualizar"><span data-icon="refresh"></span></button></div>
+        </header>
+        <section id="statsBar" class="stats-bar" aria-label="Resumen operativo"></section>
+        <section id="viewContent" class="view-content" aria-live="polite"></section>
+      </main>
+    </div>
+
+    <div id="confirmModal" class="modal-backdrop hidden" role="presentation">
+      <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+        <div id="confirmIcon" class="confirm-icon"></div>
+        <h2 id="confirmTitle">Confirmar acción</h2>
+        <p id="confirmDescription"></p>
+        <label id="confirmInputLabel" for="confirmInput">Confirmación</label>
+        <input id="confirmInput" autocomplete="off">
+        <p id="confirmStatus" class="modal-status" role="status"></p>
+        <div class="modal-actions"><button id="cancelConfirmButton" class="secondary-button" type="button">Cancelar</button><button id="acceptConfirmButton" class="danger-button" type="button">Confirmar</button></div>
+      </section>
+    </div>
+
+    <div id="toastRegion" class="toast-region" aria-live="polite"></div>
+    <script src="/luma-config.js"></script>
+    <script type="module" src="/admin/kreaton-admin.js?v=1"></script>
   </body>
 </html>

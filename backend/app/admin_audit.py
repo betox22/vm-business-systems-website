@@ -4,6 +4,7 @@ import json
 import logging
 from typing import Any, Dict, Mapping, Optional
 
+from sqlalchemy import func, or_, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -156,3 +157,67 @@ def record_admin_audit_event(
         event.request_id,
     )
     return event
+
+
+def list_admin_audit_events(
+    session: Session,
+    *,
+    query: str = "",
+    action: str = "",
+    outcome: str = "",
+    page: int = 1,
+    per_page: int = 50,
+) -> tuple[list[Dict[str, Any]], int]:
+    """Return a bounded newest-first audit view for the internal dashboard."""
+
+    filters = []
+    search = str(query or "").strip().lower()
+    if search:
+        like = f"%{search}%"
+        filters.append(or_(
+            func.lower(AdminAuditEvent.actor_email).like(like),
+            func.lower(AdminAuditEvent.action).like(like),
+            func.lower(AdminAuditEvent.target_type).like(like),
+            func.lower(AdminAuditEvent.target_id).like(like),
+            func.lower(AdminAuditEvent.request_id).like(like),
+        ))
+    normalized_action = str(action or "").strip().lower()
+    if normalized_action:
+        filters.append(func.lower(AdminAuditEvent.action) == normalized_action)
+    normalized_outcome = str(outcome or "").strip().lower()
+    if normalized_outcome:
+        filters.append(func.lower(AdminAuditEvent.outcome) == normalized_outcome)
+
+    count_statement = select(func.count()).select_from(AdminAuditEvent)
+    statement = select(AdminAuditEvent)
+    if filters:
+        count_statement = count_statement.where(*filters)
+        statement = statement.where(*filters)
+    total = int(session.scalar(count_statement) or 0)
+    rows = session.scalars(
+        statement
+        .order_by(AdminAuditEvent.created_at.desc(), AdminAuditEvent.id.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+    ).all()
+    events = []
+    for row in rows:
+        try:
+            metadata = json.loads(row.metadata_json or "{}")
+        except (TypeError, ValueError):
+            metadata = {}
+        events.append({
+            "id": row.id,
+            "actor": {
+                "id": row.actor_user_id,
+                "email": row.actor_email,
+                "role": row.actor_role,
+            },
+            "action": row.action,
+            "target": {"type": row.target_type, "id": row.target_id},
+            "outcome": row.outcome,
+            "requestId": row.request_id,
+            "metadata": metadata if isinstance(metadata, dict) else {},
+            "createdAt": row.created_at,
+        })
+    return events, total
