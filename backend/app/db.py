@@ -40,8 +40,10 @@ class Base(DeclarativeBase):
 def init_db() -> None:
     """Create all tables that do not exist yet. Safe to call on every startup."""
     from . import db_models  # noqa: F401  (ensures models are registered on Base)
+    from .admin_audit import ensure_admin_audit_append_only
 
     Base.metadata.create_all(bind=engine)
+    ensure_admin_audit_append_only(engine)
     _ensure_additive_columns()
 
 

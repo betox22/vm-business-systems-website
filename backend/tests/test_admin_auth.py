@@ -2,9 +2,37 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app import main
+from app.db import Base, get_session
+from app.db_models import AdminAuditEvent
+
+
+@pytest.fixture(autouse=True)
+def isolated_admin_database():
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    session_factory = sessionmaker(bind=engine)
+
+    def override_get_session():
+        with session_factory() as session:
+            yield session
+
+    main.app.dependency_overrides[get_session] = override_get_session
+    try:
+        yield session_factory
+    finally:
+        main.app.dependency_overrides.pop(get_session, None)
+        engine.dispose()
 
 
 def _supabase_user(role: str | None, *, user_metadata_role: str | None = None):
@@ -22,13 +50,17 @@ def _supabase_user(role: str | None, *, user_metadata_role: str | None = None):
     }
 
 
-def test_super_admin_session_sets_separate_secure_cookie_and_permissions():
+def test_super_admin_session_sets_separate_secure_cookie_and_permissions(isolated_admin_database):
     with (
         patch.object(main, "supabase_auth_configured", return_value=True),
         patch.object(main, "fetch_supabase_user", return_value=_supabase_user("super_admin")),
         TestClient(main.app, base_url="https://api.vmbusinesssystems.com") as client,
     ):
-        response = client.post("/api/admin/auth/session", json={"access_token": "valid-token"})
+        response = client.post(
+            "/api/admin/auth/session",
+            json={"access_token": "valid-token"},
+            headers={"X-Request-ID": "req-admin-login-1"},
+        )
 
     assert response.status_code == 200
     assert response.json()["role"] == "super_admin"
@@ -41,6 +73,13 @@ def test_super_admin_session_sets_separate_secure_cookie_and_permissions():
     assert "Secure" in cookie
     assert "SameSite=none" in cookie
     assert "Path=/api/admin" in cookie
+    assert response.headers["X-Request-ID"] == "req-admin-login-1"
+    with isolated_admin_database() as session:
+        event = session.scalar(select(AdminAuditEvent))
+    assert event is not None
+    assert event.action == "admin.auth.session_started"
+    assert event.actor_role == "super_admin"
+    assert event.request_id == "req-admin-login-1"
 
 
 def test_support_session_is_read_only_and_me_accepts_admin_cookie():
