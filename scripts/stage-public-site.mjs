@@ -58,6 +58,7 @@ const PUBLIC_TOP_LEVEL_FILES = [
   "seller-portal.js",
   "services.html",
   "site-viewer.js",
+  "shared-commerce-cart.js",
   "site.html",
   "solutions.html",
   "template-router.js",
