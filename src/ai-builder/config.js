@@ -27,6 +27,7 @@ export const CLIENT_AUTH_SESSION_URL = `${API_BASE_URL}/api/client/auth/session`
 export const CLIENT_AUTH_LOGOUT_URL = `${API_BASE_URL}/api/client/auth/logout`;
 export const CLIENT_PROJECTS_URL = `${API_BASE_URL}/api/client/projects`;
 export const CLIENT_LOGO_GENERATION_URL = `${API_BASE_URL}/api/client/logo/generate`;
+export const TEMPLATE_AVAILABILITY_URL = `${API_BASE_URL}/api/templates/availability`;
 export const ASSET_UPLOAD_URL = `${API_BASE_URL}/api/admin/assets/upload`;
 // Public Supabase project ref used for the Google/Apple OAuth redirect (2026-07-19).
 // Not a secret -- the anon key below uses the public "anon" role (never

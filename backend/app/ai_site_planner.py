@@ -10,7 +10,14 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, field_validator, model_validator
 
-from .agents import TEMPLATE_CATALOG, normalize_template_id, semantic_seed_catalog, state_is_commerce_seed_target, unsplash_seed_url
+from .agents import (
+    TEMPLATE_CATALOG,
+    normalize_template_id,
+    semantic_seed_catalog,
+    state_is_commerce_seed_target,
+    template_catalog_for_state,
+    unsplash_seed_url,
+)
 from .color_theory import build_palette
 from .typography_theory import build_typography_scale
 from .image_assets import attach_image_asset
@@ -492,7 +499,9 @@ def site_plan_json_schema() -> Dict[str, Any]:
     return schema
 
 
-def compact_template_catalog() -> List[Dict[str, Any]]:
+def compact_template_catalog(
+    template_catalog: Dict[str, Dict[str, str]] | None = None,
+) -> List[Dict[str, Any]]:
     """Small catalog for prompts. Avoid sending full frontend templates."""
 
     return [
@@ -504,7 +513,7 @@ def compact_template_catalog() -> List[Dict[str, Any]]:
             "design_maturity": data["design_maturity"],
             "bestFor": data["audience"],
         }
-        for template_id, data in TEMPLATE_CATALOG.items()
+        for template_id, data in (template_catalog or TEMPLATE_CATALOG).items()
     ]
 
 
@@ -514,16 +523,24 @@ PLANNER_LOW_CONFIDENCE_THRESHOLD = 0.58
 def resolve_planner_template(
     plan: AIWebGenerationResponse,
     business_context: str,
+    template_catalog: Dict[str, Dict[str, str]] | None = None,
 ) -> AIWebGenerationResponse:
     """Resolve the AI's catalog intent to one stable template decision."""
 
+    template_catalog = TEMPLATE_CATALOG if template_catalog is None else template_catalog
+    if not template_catalog:
+        raise ValueError("No runtime-enabled templates are available.")
     compact_context = re.sub(r"\s+", " ", str(business_context or "").strip())
     meaningful_words = re.findall(r"[\wÀ-ÿ]+", compact_context, flags=re.UNICODE)
     is_very_short = len(compact_context) < 32 or len(meaningful_words) < 5
     confidence = plan.confidenceScore
 
+    fallback_template_id = next(
+        (template_id for template_id in ("premium-product-store", "corporate-company-pro") if template_id in template_catalog),
+        next(iter(template_catalog)),
+    )
     if is_very_short or confidence < PLANNER_LOW_CONFIDENCE_THRESHOLD:
-        selected_template_id = "premium-product-store"
+        selected_template_id = fallback_template_id
     else:
         catalog_types = [
             plan.primaryCatalogType or plan.catalogStrategy,
@@ -531,29 +548,29 @@ def resolve_planner_template(
         ]
         candidates: List[str] = []
         for catalog_type in catalog_types:
-            for template_id, template in TEMPLATE_CATALOG.items():
+            for template_id, template in template_catalog.items():
                 if template["catalogType"] == catalog_type and template_id not in candidates:
                     candidates.append(template_id)
 
         flagship_candidates = [
             template_id
             for template_id in candidates
-            if TEMPLATE_CATALOG[template_id]["design_maturity"] == "flagship"
+            if template_catalog[template_id]["design_maturity"] == "flagship"
         ]
         selected_template_id = (
             flagship_candidates[0]
             if flagship_candidates
             else candidates[0] if candidates
-            else "premium-product-store"
+            else fallback_template_id
         )
 
-    selected = TEMPLATE_CATALOG[selected_template_id]
+    selected = template_catalog[selected_template_id]
     secondary_templates: List[str] = []
     for catalog_type in plan.alternativeCatalogTypes:
         template_id = next(
             (
                 candidate_id
-                for candidate_id, template in TEMPLATE_CATALOG.items()
+                for candidate_id, template in template_catalog.items()
                 if template["catalogType"] == catalog_type
             ),
             None,
@@ -1267,10 +1284,20 @@ class OpenAISitePlanAgent:
                 confidence=0.0,
             )
 
+        template_catalog = template_catalog_for_state(state)
+        if not template_catalog:
+            return AgentResult(
+                agentName=self.name,
+                updates={},
+                reasoningSummary="OpenAI planner skipped because no runtime-enabled templates are available.",
+                warnings=["No runtime-enabled templates are available."],
+                confidence=0.0,
+            )
+
         system_prompt = self._system_prompt()
         user_payload = {
             "clientSummary": state_to_client_summary(state, user_input),
-            "allowedTemplates": compact_template_catalog(),
+            "allowedTemplates": compact_template_catalog(template_catalog),
             "allowedComponentTypes": sorted(ALLOWED_SECTION_COMPONENT_TYPES),
             "requiredOutput": {
                 "websiteType": "one allowed WebsiteType",
@@ -1400,6 +1427,7 @@ class OpenAISitePlanAgent:
                     state.industry or "",
                     " ".join(state.servicesProducts),
                 ])),
+                template_catalog,
             )
             updates = site_plan_to_updates(plan, state)
             if updates.get("catalogSource") == "seed_fallback":

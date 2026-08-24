@@ -107,6 +107,7 @@ class ProjectState(BaseModel):
     missingImportantFields: List[str] = Field(default_factory=list)
     confidence: float = 0.0
     notes: List[str] = Field(default_factory=list)
+    runtimeAvailableTemplateIds: Optional[List[str]] = Field(default=None, exclude=True)
 
     def update_safe(self, updates: Dict[str, Any]) -> None:
         valid_fields = set(self.model_fields.keys())
@@ -214,6 +215,13 @@ class ClientProjectDeleteRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     businessName: str = Field(min_length=1, max_length=220)
+
+
+class AdminTemplateOverrideRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool
+    reason: str = Field(min_length=1, max_length=500)
 
 
 class LyraEditRequest(BaseModel):

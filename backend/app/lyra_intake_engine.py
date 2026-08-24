@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .agents import TEMPLATE_CATALOG, normalize_template_id, split_items
+from .agents import TEMPLATE_CATALOG, normalize_template_id, split_items, template_catalog_for_state
 from .models import ProjectState, SupportedLanguage
 from .taxonomy import NICHE_TAXONOMY_LIST, normalize_niche
 
@@ -239,7 +239,7 @@ class LyraIntakeEngine:
             "currentState": self._state_payload(state),
             "conversationHistory": self._compact_history(conversation_history or []),
             "selectedLanguage": selected_language,
-            "availableTemplates": self._template_catalog_payload(),
+            "availableTemplates": self._template_catalog_payload(state),
             "nicheTaxonomyList": list(NICHE_TAXONOMY_LIST),
             "businessIntakeForm": self._business_intake_payload(state),
             "criticalFieldPolicy": {
@@ -263,7 +263,7 @@ class LyraIntakeEngine:
                 model=self.model,
                 temperature=0.1,
                 messages=[
-                    {"role": "system", "content": self._system_prompt()},
+                    {"role": "system", "content": self._system_prompt(state)},
                     {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
                 ],
                 tools=[self._update_intake_tool()],
@@ -286,7 +286,7 @@ class LyraIntakeEngine:
         ai_confidence = max(decision.detectedIntent.confidence or 0.0, 0.75)
         recommendation = decision.templateRecommendation
         if recommendation and recommendation.templateId:
-            template = TEMPLATE_CATALOG.get(recommendation.templateId)
+            template = template_catalog_for_state(state).get(recommendation.templateId)
             if template:
                 can_replace_template = self._can_replace_ai_derived(state, "selectedTemplateId")
                 if can_replace_template:
@@ -834,7 +834,8 @@ class LyraIntakeEngine:
                 compact.append({"role": role, "content": content})
         return compact
 
-    def _template_catalog_payload(self) -> List[Dict[str, Any]]:
+    def _template_catalog_payload(self, state: ProjectState | None = None) -> List[Dict[str, Any]]:
+        template_catalog = template_catalog_for_state(state) if state else TEMPLATE_CATALOG
         return [
             {
                 "templateId": template_id,
@@ -843,7 +844,7 @@ class LyraIntakeEngine:
                 "catalogType": data["catalogType"],
                 "bestFor": data["audience"],
             }
-            for template_id, data in TEMPLATE_CATALOG.items()
+            for template_id, data in template_catalog.items()
         ]
 
     def _missing_fields_from_state(
@@ -1122,9 +1123,10 @@ class LyraIntakeEngine:
         }
 
     @staticmethod
-    def _system_prompt() -> str:
+    def _system_prompt(state: ProjectState | None = None) -> str:
         niche_list = ", ".join(NICHE_TAXONOMY_LIST)
-        template_ids = ", ".join(TEMPLATE_CATALOG.keys())
+        template_catalog = template_catalog_for_state(state) if state else TEMPLATE_CATALOG
+        template_ids = ", ".join(template_catalog.keys())
         return f"""
 Eres Lyra, directora de diseño e intake senior de KREATON. Tu único trabajo en este
 paso es llenar un formulario estructurado de intención de negocio (BusinessIntakeForm)
