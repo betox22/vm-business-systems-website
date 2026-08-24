@@ -33,7 +33,7 @@ from .agents import semantic_seed_catalog, split_items, state_is_commerce_seed_t
 from .client_auth import fetch_supabase_user, supabase_auth_configured
 from .commerce import router as commerce_router
 from .db import get_session, init_db
-from .db_models import DomainReservation, GeneratedSite, Store
+from .db_models import GeneratedSite, Store
 from .domains import router as domains_router
 from .models import (
     AssetUploadRequest,
@@ -57,6 +57,11 @@ from .orchestrator import (
     next_question_for_state,
     normalize_state_payload,
     site_plan_from_state,
+)
+from .project_deletion import (
+    ProjectAssetDeletionError,
+    ProjectNameMismatchError,
+    delete_generated_project,
 )
 from .taxonomy import infer_seed_profile
 from .storage import StorageError, delete_site_assets_from_supabase, parse_data_url, supabase_storage_configured, upload_asset_to_supabase, validate_upload
@@ -1050,28 +1055,6 @@ def _intake_session_key(email: str, project_id: str = "", request_id: str = "") 
     return f"{email}:{identity}"
 
 
-def _intake_session_keys_for_project(owner_email: str, project_id: str) -> list[str]:
-    clean_email = str(owner_email or "").strip().lower()
-    clean_project_id = str(project_id or "").strip()
-    keys: list[str] = []
-    for key, value in client_intake_sessions.items():
-        session_email = str(value.get("clientEmail") or value.get("client_email") or "").strip().lower()
-        draft = value.get("draft") if isinstance(value.get("draft"), dict) else {}
-        session_project_ids = {
-            str(value.get(field) or "").strip()
-            for field in ("projectId", "generatedSiteId", "siteId")
-        }
-        session_project_ids.update(
-            str(draft.get(field) or "").strip()
-            for field in ("projectId", "generatedSiteId", "siteId")
-        )
-        key_matches = key == _intake_session_key(clean_email, clean_project_id, "")
-        owner_matches = not clean_email or session_email == clean_email or key.startswith(f"{clean_email}:")
-        if (clean_project_id in session_project_ids or key_matches) and owner_matches:
-            keys.append(key)
-    return keys
-
-
 @app.get("/api/client/projects")
 async def client_projects(
     authorization: str = Header(default=""),
@@ -1141,43 +1124,109 @@ async def delete_client_project(
     if not site:
         raise HTTPException(status_code=404, detail="Project not found.")
 
-    confirmed_name = " ".join(payload.businessName.split()).casefold()
-    actual_name = " ".join(str(site.business_name or "").split()).casefold()
-    if confirmed_name != actual_name:
-        raise HTTPException(status_code=409, detail="Business name does not match this project.")
-
     try:
-        deleted_assets = delete_site_assets_from_supabase(
-            business_id=site.store_id,
-            site_id=site.id,
+        result = delete_generated_project(
+            session,
+            site=site,
+            confirmed_business_name=payload.businessName,
+            intake_sessions=client_intake_sessions,
+            asset_deleter=delete_site_assets_from_supabase,
         )
-    except StorageError as error:
+    except ProjectNameMismatchError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except ProjectAssetDeletionError as error:
         logger.exception("Could not delete assets for client project %s", site.id)
-        raise HTTPException(status_code=502, detail="Could not remove the project's stored assets.") from error
+        raise HTTPException(status_code=502, detail=str(error)) from error
+    return result.as_response()
 
-    intake_session_keys = _intake_session_keys_for_project(owner_email, site.id)
-    reservations = session.execute(
-        select(DomainReservation).where(DomainReservation.generated_site_id == site.id)
-    ).scalars().all()
-    for reservation in reservations:
-        reservation.generated_site_id = None
-    business_name = site.business_name
-    session.delete(site)
+
+@app.delete("/api/admin/clients/{project_id}")
+async def delete_admin_client_project(
+    project_id: str,
+    payload: ClientProjectDeleteRequest,
+    request: Request,
+    authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    _enforce_rate_limit(request, "admin_project_delete", limit=30)
+    identity = _authenticated_admin_identity(authorization, kreaton_admin_session)
+
+    if identity.get("role") != "super_admin":
+        record_admin_audit_event(
+            session,
+            actor=identity,
+            action="admin.project.deleted",
+            target_type="generated_site",
+            target_id=project_id,
+            outcome="denied",
+            request_id=request.state.request_id,
+            metadata={"reason": "role_not_allowed"},
+        )
+        raise HTTPException(status_code=403, detail="Only a super admin can delete client projects.")
+
+    site = session.scalar(select(GeneratedSite).where(GeneratedSite.id == project_id))
+    if not site:
+        record_admin_audit_event(
+            session,
+            actor=identity,
+            action="admin.project.deleted",
+            target_type="generated_site",
+            target_id=project_id,
+            outcome="failure",
+            request_id=request.state.request_id,
+            metadata={"reason": "not_found"},
+        )
+        raise HTTPException(status_code=404, detail="Project not found.")
+
     try:
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
+        result = delete_generated_project(
+            session,
+            site=site,
+            confirmed_business_name=payload.businessName,
+            intake_sessions=client_intake_sessions,
+            asset_deleter=delete_site_assets_from_supabase,
+        )
+    except ProjectNameMismatchError as error:
+        record_admin_audit_event(
+            session,
+            actor=identity,
+            action="admin.project.deleted",
+            target_type="generated_site",
+            target_id=project_id,
+            outcome="failure",
+            request_id=request.state.request_id,
+            metadata={"reason": "business_name_mismatch"},
+        )
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except ProjectAssetDeletionError as error:
+        logger.exception("Could not delete assets for admin project deletion %s", project_id)
+        record_admin_audit_event(
+            session,
+            actor=identity,
+            action="admin.project.deleted",
+            target_type="generated_site",
+            target_id=project_id,
+            outcome="failure",
+            request_id=request.state.request_id,
+            metadata={"reason": "asset_deletion_failed"},
+        )
+        raise HTTPException(status_code=502, detail=str(error)) from error
 
-    for key in intake_session_keys:
-        client_intake_sessions.pop(key, None)
-    return {
-        "deleted": True,
-        "project_id": project_id,
-        "business_name": business_name,
-        "deleted_assets": deleted_assets,
-        "deleted_intake_sessions": len(intake_session_keys),
-    }
+    record_admin_audit_event(
+        session,
+        actor=identity,
+        action="admin.project.deleted",
+        target_type="generated_site",
+        target_id=project_id,
+        outcome="success",
+        request_id=request.state.request_id,
+        metadata={
+            "deletedAssets": result.deleted_assets,
+            "deletedIntakeSessions": result.deleted_intake_sessions,
+        },
+    )
+    return result.as_response()
 
 
 def _public_site_payload(site: GeneratedSite) -> Dict[str, Any]:
