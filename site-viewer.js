@@ -1,4 +1,5 @@
 import { createSharedCommerceCart } from "./shared-commerce-cart.js?v=1";
+import { createSharedSiteMotion, motionDataAttributes } from "./shared-site-motion.js?v=1";
 
 const API_BASE_URL = resolveApiBaseUrl();
 const publicSite = document.querySelector("#publicSite");
@@ -8,6 +9,7 @@ let currentPublicSite = null;
 let currentPublicSchema = null;
 let currentPublicPageKey = "home";
 let sharedCart = null;
+let sharedMotion = null;
 
 loadPublicSite();
 
@@ -52,8 +54,17 @@ function notifyProjectCardPreview(status) {
 
 function renderCurrentPublicPage() {
   if (!currentPublicSchema) return;
+  sharedMotion?.destroy();
   publicSite.innerHTML = renderWebsite(currentPublicSchema, currentPublicPageKey);
   bindPublicSiteActions();
+  sharedMotion = isProjectCardPreview ? null : createSharedSiteMotion({
+    root: publicSite,
+    templateId: publicTemplateId(currentPublicSchema),
+  });
+}
+
+function publicTemplateId(schema = {}) {
+  return schema.active_template?.id || schema.selected_template?.id || "standard";
 }
 
 function applyGeneratedFavicon(schema) {
@@ -81,7 +92,7 @@ function renderWebsite(schema, pageKey = "home") {
   const theme = schema.theme || {};
   const logo = schema.brand?.logoUrl || schema.global_components?.logo_url;
   const layoutId = schema.layout_mode?.id || "standard";
-  const templateId = schema.active_template?.id || schema.selected_template?.id || "standard";
+  const templateId = publicTemplateId(schema);
   if (templateId === "mega-retail-store") {
     return renderMegaRetailPublicWebsite(schema, page, { logo, layoutId, templateId, theme });
   }
@@ -115,10 +126,13 @@ function renderB2BSaasPublicWebsite(schema, page, { logo, layoutId, templateId, 
   const absorbed = new Set(["EnterpriseHero", "EnterpriseSolutions", "EnterpriseUseCases", "EnterpriseIntegrations", "EnterpriseProof", "EnterprisePricing", "EnterpriseDemo"]);
   const remaining = isHome ? sections.filter((section) => !absorbed.has(section.type)) : sections;
   const hero = sections.find((section) => section.type === "EnterpriseHero") || sections.find((section) => /Hero$/.test(section.type)) || {};
+  const pricingSection = sections.find((section) => section.type === "EnterprisePricing")
+    || sections.find((section) => ["ProductGrid", "FeaturedProducts", "CTA"].includes(section.type) && /pric|plan|subscription|precio|suscrip/i.test(`${section.purpose || ""} ${section.editable?.title || ""}`))
+    || {};
   const themeBrand = { ...(schema.brand || {}), colors: { ...(schema.brand?.colors || {}), ...(theme.colors || {}) }, fontPairing: theme.fonts || schema.brand?.fontPairing };
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, themeBrand)}">
     ${renderB2BSaasPublicHeader(schema, page, pages, logo, labels, plans)}
-    ${isHome ? `${renderB2BSaasPublicHero(schema, hero, pages, items, labels, plans)}${renderB2BSaasPublicLogoRow(labels)}${renderB2BSaasPublicFeatures(schema, sections, items, labels)}${renderB2BSaasPublicPricing(plans, labels)}` : ""}
+    ${isHome ? `${renderB2BSaasPublicHero(schema, hero, pages, items, labels, plans)}${renderB2BSaasPublicLogoRow(labels)}${renderB2BSaasPublicFeatures(schema, sections, items, labels)}${renderB2BSaasPublicPricing(pricingSection, plans, labels)}` : ""}
     ${remaining.map((section) => renderSection(section, schema)).join("")}
     <footer class="b2b-saas-footer"><div>${renderB2BSaasPublicBrand(schema, logo)}</div><span>${escapeHtml(schema.global_components?.footer_text || `© ${new Date().getFullYear()} ${schema.business?.name || ""}`)}</span></footer>
   </div>`;
@@ -147,7 +161,7 @@ function renderB2BSaasPublicHero(schema, section, pages, items, labels, plans) {
   const contactPage = b2bSaasPublicFindPage(pages, /contact|demo|consulta/i);
   const primaryPage = (plans.length ? navigation.find((item) => item.key === "pricing")?.page : null) || contactPage || navigation[0]?.page || pages[0];
   const secondaryPage = navigation.find((item) => item.key === "product")?.page || contactPage || pages[0];
-  return `<main class="b2b-saas-hero"><div class="b2b-saas-hero-copy"><span class="b2b-saas-eyebrow">${escapeHtml(editable.badge || labels.eyebrow)}</span><h1>${escapeHtml(lead)}${highlight ? ` <span>${escapeHtml(highlight)}</span>` : ""}</h1><p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p><div class="b2b-saas-hero-actions"><button class="b2b-saas-primary" type="button" data-page-link="${escapeAttribute(primaryPage?.page_key || "")}">${escapeHtml(editable.primary_button || labels.start)}</button><button class="b2b-saas-secondary" type="button" data-page-link="${escapeAttribute(secondaryPage?.page_key || "")}">${escapeHtml(editable.secondary_button || labels.demo)}</button></div></div>${renderB2BSaasPublicDashboard(schema, items, labels)}</main>`;
+  return `<main class="b2b-saas-hero" ${motionDataAttributes(section.motion)}><div class="b2b-saas-hero-copy"><span class="b2b-saas-eyebrow">${escapeHtml(editable.badge || labels.eyebrow)}</span><h1 data-motion-headline>${escapeHtml(lead)}${highlight ? ` <span>${escapeHtml(highlight)}</span>` : ""}</h1><p data-motion-copy>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p><div class="b2b-saas-hero-actions" data-motion-cta><button class="b2b-saas-primary" type="button" data-page-link="${escapeAttribute(primaryPage?.page_key || "")}">${escapeHtml(editable.primary_button || labels.start)}</button><button class="b2b-saas-secondary" type="button" data-page-link="${escapeAttribute(secondaryPage?.page_key || "")}">${escapeHtml(editable.secondary_button || labels.demo)}</button></div></div>${renderB2BSaasPublicDashboard(schema, items, labels)}</main>`;
 }
 
 function renderB2BSaasPublicDashboard(schema, items, labels) {
@@ -163,17 +177,20 @@ function renderB2BSaasPublicLogoRow(labels) {
 }
 
 function renderB2BSaasPublicFeatures(schema, sections, items, labels) {
+  const motionSection = ["EnterpriseSolutions", "EnterpriseUseCases", "EnterpriseIntegrations", "FeatureSpotlight", "ProofPanel", "StoryBlock"]
+    .map((type) => sections.find((section) => section.type === type))
+    .find((section) => section?.motion?.animate) || {};
   const features = items.slice(0, 3).map((item) => ({ title: item.name, description: item.description }));
   ["EnterpriseSolutions", "EnterpriseUseCases", "EnterpriseIntegrations"].map((type) => sections.find((section) => section.type === type)?.editable || {}).filter((item) => item.title || item.text).forEach((item) => {
     if (features.length < 3) features.push({ title: item.title, description: item.text });
   });
   if (!features.length && schema.business?.description) features.push({ title: schema.business?.name || labels.product, description: schema.business.description });
-  return `<section class="b2b-saas-features"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.product)}</span><h2>${escapeHtml(labels.featuresTitle)}</h2></div><div>${features.map((feature, index) => `<article><span>${b2bSaasPublicIcon(index)}</span><h3>${escapeHtml(feature.title || schema.business?.name || "")}</h3><p>${escapeHtml(feature.description || schema.business?.description || "")}</p></article>`).join("")}</div></section>`;
+  return `<section class="b2b-saas-features" ${motionDataAttributes(motionSection.motion)}><div class="b2b-saas-section-heading" data-motion-content><span>${escapeHtml(labels.product)}</span><h2>${escapeHtml(labels.featuresTitle)}</h2></div><div>${features.map((feature, index) => `<article data-motion-item><span>${b2bSaasPublicIcon(index)}</span><h3>${escapeHtml(feature.title || schema.business?.name || "")}</h3><p>${escapeHtml(feature.description || schema.business?.description || "")}</p></article>`).join("")}</div></section>`;
 }
 
-function renderB2BSaasPublicPricing(plans, labels) {
+function renderB2BSaasPublicPricing(section, plans, labels) {
   if (plans.length !== 3) return "";
-  return `<section class="b2b-saas-pricing" id="pricing"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.pricing)}</span><h2>${escapeHtml(labels.pricingTitle)}</h2></div><div class="b2b-saas-plans">${plans.map((plan, index) => `<article class="${index === 1 ? "featured" : ""}">${index === 1 ? `<span class="b2b-saas-plan-badge">${escapeHtml(labels.popular)}</span>` : ""}<small>${escapeHtml(plan.category || labels.plan)}</small><h3>${escapeHtml(plan.name || "")}</h3><strong>${escapeHtml(plan.price_label || plan.price || "")}</strong>${plan.description ? `<p>${escapeHtml(plan.description)}</p>` : ""}<button type="button" data-open-lead data-item-id="${escapeAttribute(plan.id || "")}" data-item-name="${escapeAttribute(plan.name || "")}">${escapeHtml(plan.button_label || labels.choose)}</button></article>`).join("")}</div></section>`;
+  return `<section class="b2b-saas-pricing" id="pricing" ${motionDataAttributes(section.motion)}><div class="b2b-saas-section-heading" data-motion-content><span>${escapeHtml(labels.pricing)}</span><h2>${escapeHtml(labels.pricingTitle)}</h2></div><div class="b2b-saas-plans">${plans.map((plan, index) => `<article class="${index === 1 ? "featured" : ""}" data-motion-item>${index === 1 ? `<span class="b2b-saas-plan-badge">${escapeHtml(labels.popular)}</span>` : ""}<small>${escapeHtml(plan.category || labels.plan)}</small><h3>${escapeHtml(plan.name || "")}</h3><strong>${escapeHtml(plan.price_label || plan.price || "")}</strong>${plan.description ? `<p>${escapeHtml(plan.description)}</p>` : ""}<button type="button" data-open-lead data-item-id="${escapeAttribute(plan.id || "")}" data-item-name="${escapeAttribute(plan.name || "")}">${escapeHtml(plan.button_label || labels.choose)}</button></article>`).join("")}</div></section>`;
 }
 
 function b2bSaasPublicNavigationPages(pages = []) {
@@ -244,7 +261,7 @@ function renderMegaRetailPublicWebsite(schema, page, { logo, layoutId, templateI
 
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)};--mega-tile-tint:${escapeAttribute(brandTint)}">
     ${renderMegaRetailPublicHeader(schema, logo, categories, labels)}
-    ${isHome ? `${renderMegaRetailPublicBento(schema, hero.editable || {}, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailPublicDeals(schema, items, labels)}${renderMegaRetailPublicTrust(labels)}` : ""}
+    ${isHome ? `${renderMegaRetailPublicBento(schema, hero, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailPublicDeals(schema, sections, items, labels)}${renderMegaRetailPublicTrust(sections, labels)}` : ""}
     ${remainingSections.map((section) => renderSection(section, schema)).join("")}
     ${renderMegaRetailPublicFooter(schema, pages, logo, labels, features)}
     ${features.whatsapp && whatsappUrl ? `<a class="mega-retail-whatsapp" href="${escapeAttribute(whatsappUrl)}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">${megaRetailPublicIcon("whatsapp")}</a>` : ""}
@@ -256,21 +273,23 @@ function renderMegaRetailPublicHeader(schema, logo, categories, labels) {
   return `<header class="mega-retail-header"><div class="mega-retail-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business?.name || "")}">` : renderLogoMark(schema)}</div><nav class="mega-retail-departments" aria-label="${escapeAttribute(labels.departments)}">${departmentButtons}</nav><form class="mega-retail-search" data-catalog-search-form><input type="search" name="catalog-search" aria-label="${escapeAttribute(labels.search)}" placeholder="${escapeAttribute(labels.search)}"><button type="submit" aria-label="${escapeAttribute(labels.search)}">${megaRetailPublicIcon("search")}</button></form><div class="mega-retail-actions"><button type="button" data-account-open>${escapeHtml(labels.account)}</button><button class="mega-retail-icon-button" type="button" aria-label="${escapeAttribute(labels.favorites)}">${megaRetailPublicIcon("heart")}</button><button class="mega-retail-icon-button" type="button" data-cart-open aria-label="${escapeAttribute(labels.cart)}">${megaRetailPublicIcon("bag")}<span data-cart-count>${sharedCart?.count() || 0}</span></button></div><details class="mega-retail-mobile-departments"><summary>${megaRetailPublicIcon("grid")}<span>${escapeHtml(labels.departments)}</span><span class="mega-retail-menu-chevron" aria-hidden="true"></span></summary><div>${departmentButtons}</div></details></header>`;
 }
 
-function renderMegaRetailPublicBento(schema, heroCopy, categories, items, clientPhotos, hasBrandVisual, labels) {
+function renderMegaRetailPublicBento(schema, heroSection, categories, items, clientPhotos, hasBrandVisual, labels) {
+  const heroCopy = heroSection.editable || {};
   const tileCategories = categories.length ? categories : labels.fallbackCategories;
-  return `<main class="mega-retail-bento">${Array.from({ length: 5 }, (_, index) => {
+  return `<main class="mega-retail-bento" ${motionDataAttributes(heroSection.motion)}>${Array.from({ length: 5 }, (_, index) => {
     const category = tileCategories[index % tileCategories.length];
     const item = items.find((entry) => String(entry.category || "").toLowerCase() === String(category).toLowerCase()) || items[index];
     const media = resolveMegaRetailPublicTileMedia({ clientPhotoUrls: clientPhotos, tileIndex: index, category, categoryImage: item?.image_url || item?.imageUrl, hasBrandVisual });
     const title = index === 0 ? (heroCopy.headline || schema.business?.name || labels.featured) : category;
     const detail = index === 0 ? (heroCopy.subtitle || schema.business?.description || labels.heroText) : (item?.description || labels.discover);
-    return `<article class="mega-retail-tile ${index === 0 ? "is-primary" : index === 1 ? "is-medium" : "is-small"} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}"><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p>${escapeHtml(detail)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}">${escapeHtml(labels.explore)} ${megaRetailPublicIcon("arrow")}</button></div></article>`;
+    return `<article class="mega-retail-tile ${index === 0 ? "is-primary" : index === 1 ? "is-medium" : "is-small"} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}" data-motion-item><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"} ${index === 0 ? "data-motion-headline" : ""}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p ${index === 0 ? "data-motion-copy" : ""}>${escapeHtml(detail)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}" ${index === 0 ? "data-motion-cta" : ""}>${escapeHtml(labels.explore)} ${megaRetailPublicIcon("arrow")}</button></div></article>`;
   }).join("")}</main>`;
 }
 
-function renderMegaRetailPublicDeals(schema, items, labels) {
+function renderMegaRetailPublicDeals(schema, sections, items, labels) {
   const commerce = commerceLabels(schema);
-  return `<section class="mega-retail-deals"><div class="mega-retail-section-heading"><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailPublicIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => `<article class="mega-retail-product" ${catalogSearchAttributes(item)}><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailPublicDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${cartTriggerAttributes(item)}>${escapeHtml(commerce.addToCart)}</button></div></article>`).join("")}</div></section>`;
+  const source = sections.find((section) => ["DealRow", "ProductGrid"].includes(section.type)) || {};
+  return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailPublicIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailPublicDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${cartTriggerAttributes(item)}>${escapeHtml(commerce.addToCart)}</button></div></article>`).join("")}</div></section>`;
 }
 
 function megaRetailPublicDiscountBadge(item = {}) {
@@ -278,8 +297,9 @@ function megaRetailPublicDiscountBadge(item = {}) {
   return badge ? `<span class="mega-retail-discount">${escapeHtml(badge)}</span>` : "";
 }
 
-function renderMegaRetailPublicTrust(labels) {
-  return `<section class="mega-retail-trust">${labels.trust.map((item, index) => `<article>${megaRetailPublicIcon(["truck", "return", "grid", "lock"][index])}<div><strong>${escapeHtml(item[0])}</strong><span>${escapeHtml(item[1])}</span></div></article>`).join("")}</section>`;
+function renderMegaRetailPublicTrust(sections, labels) {
+  const source = sections.find((section) => section.type === "TrustStrip") || {};
+  return `<section class="mega-retail-trust" ${motionDataAttributes(source.motion)}>${labels.trust.map((item, index) => `<article data-motion-item>${megaRetailPublicIcon(["truck", "return", "grid", "lock"][index])}<div><strong>${escapeHtml(item[0])}</strong><span>${escapeHtml(item[1])}</span></div></article>`).join("")}</section>`;
 }
 
 function renderMegaRetailPublicFooter(schema, pages, logo, labels, features) {

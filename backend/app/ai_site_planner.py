@@ -346,6 +346,31 @@ DATA_BINDING_SCHEMAS = {
 }
 
 
+class SectionMotionPlan(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    animate: bool = False
+    conversionGoal: str = Field(default="none", max_length=120)
+    trigger: Literal["load", "scroll", "interaction", "none"] = "none"
+    target: Literal["headline_and_cta", "section_content", "primary_cta", "none"] = "none"
+    treatment: Literal["hero_enter", "reveal_up", "stagger_cards", "cta_emphasis", "static"] = "static"
+
+    @model_validator(mode="after")
+    def motion_plan_must_be_purposeful(self) -> "SectionMotionPlan":
+        goal = self.conversionGoal.strip()
+        if not self.animate:
+            if self.trigger != "none" or self.target != "none" or self.treatment != "static":
+                raise ValueError("Static sections cannot declare an animation trigger, target, or treatment")
+            self.conversionGoal = "none"
+            return self
+        if not goal or goal.lower() == "none":
+            raise ValueError("Animated sections require one concrete conversionGoal")
+        if self.trigger == "none" or self.target == "none" or self.treatment == "static":
+            raise ValueError("Animated sections require a trigger, target, and non-static treatment")
+        self.conversionGoal = goal
+        return self
+
+
 class SectionBlock(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
@@ -353,6 +378,7 @@ class SectionBlock(BaseModel):
     componentType: str
     variant: str = "default"
     purpose: str = ""
+    motion: SectionMotionPlan = Field(default_factory=SectionMotionPlan)
     copyProps: CopyProps = Field(default_factory=CopyProps, alias="copy")
     media: Optional[MediaProps] = None
     dataBinding: Dict[str, Any] = Field(default_factory=dict)
@@ -379,6 +405,12 @@ class PageSchema(BaseModel):
     title: str
     slug: str
     sections: List[SectionBlock] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def page_motion_budget_must_stay_focused(self) -> "PageSchema":
+        if sum(1 for section in self.sections if section.motion.animate) > 3:
+            raise ValueError("A page may animate at most 3 conversion-focused sections")
+        return self
 
 
 class AIWebGenerationResponse(BaseModel):
@@ -823,6 +855,7 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
                 "componentType": section.componentType,
                 "variant": section.variant,
                 "purpose": section.purpose,
+                "motion": section.motion.model_dump(),
                 "dataBinding": section.dataBinding,
                 "editable": {
                     **section_copy,
@@ -1328,6 +1361,13 @@ class OpenAISitePlanAgent:
                         "componentType": "hero_split_conversion",
                         "variant": "template-aware variant",
                         "purpose": "why this section exists",
+                        "motion": {
+                            "animate": True,
+                            "conversionGoal": "Focus attention on the primary offer and CTA",
+                            "trigger": "load",
+                            "target": "headline_and_cta",
+                            "treatment": "hero_enter",
+                        },
                         "copy": {
                             "badge": "public copy",
                             "headline": "public copy",
@@ -1518,6 +1558,9 @@ Hard rules:
 - When the offer solves a clear operational or emotional pain, PAS may guide the hero or problem section: identify the real problem, make its consequence tangible without fearmongering, then present the client's verified offer as the solution. Never print "AIDA", "PAS", "Problem", "Agitate", or "Solution" as public labels.
 - CTA labels must describe a specific action or outcome, such as exploring the named collection, booking the named service, requesting a tailored quote, or seeing the product in action. Never use vague buttons such as "Learn more", "Discover more", "Get started", or "Submit".
 - Give every section one distinct conversion job: hero = differentiated promise; offer/catalog = concrete choice; story = credible reason to believe; proof = evidence; FAQ = remove objections; final CTA = decisive next step. Do not repeat the hero claim with different adjectives in every section.
+- Every section MUST include a motion decision. Motion is a conversion tool, never decoration: set motion.animate=true only when movement helps the section's single conversion job, otherwise return the static motion object with animate=false, conversionGoal="none", trigger="none", target="none", treatment="static".
+- Animate at most 3 sections on a page. Prefer hero_enter for the primary hero promise and CTA, reveal_up or stagger_cards for one high-value features/testimonials/pricing section, and cta_emphasis only for a decisive final action. Keep repeated, decorative, informational, or low-priority sections static.
+- Each animated section gets exactly one short conversionGoal. Never request loops, parallax, autoplay decoration, continuous motion, or animation of every element. Motion targets must be headline_and_cta, section_content, or primary_cta and treatments must be hero_enter, reveal_up, stagger_cards, or cta_emphasis.
 - Product and service descriptions must connect concrete features to buyer value. Prefer specific materials, process, fit, use case, deliverable, or operational outcome that the client actually supplied over empty superlatives.
 - Never invent awards, customer counts, percentages, guarantees, certifications, scarcity, testimonials, performance claims, or competitive superiority. Persuasion must come from verified specificity, not fabricated proof.
 - Never describe products as natural, organic, sustainable, eco-friendly, non-toxic, clinically proven, award-winning, fastest, safest, or best unless that exact attribute is supported by clientSummary.

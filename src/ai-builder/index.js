@@ -83,6 +83,7 @@ import {
   MIN_GUIDED_BUILD_PHASE_VISIBLE_MS,
   remainingBuildPhaseVisibilityMs,
 } from './build-phase-policy.js';
+import { createSharedSiteMotion } from './shared-site-motion.js';
 import {
   renderWebsite as renderWebsiteMarkup,
   marketplaceItems,
@@ -12497,6 +12498,15 @@ export function renderEditor() {
 
 let activeInlineEdit = null;
 let selectedInlineEditPath = "";
+const sharedPreviewMotionControllers = new WeakMap();
+
+function bindSharedPreviewMotion(root, schema) {
+  if (!root || !schema) return;
+  sharedPreviewMotionControllers.get(root)?.destroy();
+  const templateId = schema.active_template?.id || schema.selected_template?.id || "standard";
+  const controller = createSharedSiteMotion({ root, templateId });
+  sharedPreviewMotionControllers.set(root, controller);
+}
 
 function inlineEditConfigFromElement(element) {
   return {
@@ -12763,6 +12773,7 @@ export function renderPreview() {
     });
   });
   bindInlineEditing(previewFrame);
+  bindSharedPreviewMotion(previewFrame, builderState.currentSchema);
   const selectedSection = previewFrame.querySelector(`[data-studio-section="${cssEscape(builderState.selectedStudioSectionId)}"]`);
   selectedSection?.classList.add("is-selected");
   if (studioSelectionToolbar) studioSelectionToolbar.hidden = !selectedSection;
@@ -12821,6 +12832,7 @@ function renderSchemaPreviewInto(schema, containerElement, payload = {}, templat
       });
     });
     bindCatalogSearchInteractions(containerElement);
+    bindSharedPreviewMotion(containerElement, preparedSchema);
   };
 
   renderPage(defaultPageKey);

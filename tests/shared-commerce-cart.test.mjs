@@ -53,7 +53,7 @@ test("premium, mega retail, and fashion catalogs all emit the shared cart contra
 });
 
 test("the shared module is published and loaded before the public renderer", () => {
-  assert.match(siteHtml, /type="module" src="site-viewer\.js\?v=33"/);
+  assert.match(siteHtml, /type="module" src="site-viewer\.js\?v=34"/);
   assert.match(viewer, /from "\.\/shared-commerce-cart\.js\?v=1"/);
   assert.match(stageScript, /"shared-commerce-cart\.js"/);
 });

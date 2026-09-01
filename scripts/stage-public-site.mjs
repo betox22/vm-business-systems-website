@@ -102,6 +102,11 @@ const TEMPLATES_ALLOWLIST = [
   "templates/retail/premium-product-store/phase-5/visual-prototype/prototype.js",
 ];
 
+const VENDOR_ASSETS = [
+  ["src/ai-builder/shared-site-motion.js", "shared-site-motion.js"],
+  ["node_modules/gsap/dist/gsap.min.js", "vendor/gsap.min.js"],
+];
+
 // Defense in depth: even within the allowlisted set above, refuse to stage
 // anything with an extension that has no business being served statically.
 const FORBIDDEN_EXTENSIONS = new Set([
@@ -149,6 +154,17 @@ async function main() {
     await mkdir(path.dirname(dest), { recursive: true });
     await cp(relPath, dest);
     copied.push(relPath);
+  }
+
+  for (const [source, destination] of VENDOR_ASSETS) {
+    if (!existsSync(source)) {
+      missing.push(source);
+      continue;
+    }
+    const dest = `${OUT_DIR}/${destination}`;
+    await mkdir(path.dirname(dest), { recursive: true });
+    await cp(source, dest);
+    copied.push(destination);
   }
 
   console.log(`Staged ${copied.length} public entries into ${OUT_DIR}/:`);
