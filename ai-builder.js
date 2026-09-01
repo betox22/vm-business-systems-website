@@ -2010,6 +2010,162 @@
     return Math.max(0, Number(minimumMs) - elapsed);
   }
 
+  // src/ai-builder/shared-site-motion.js
+  var PILOT_TEMPLATES = /* @__PURE__ */ new Set([
+    "mega-retail-store",
+    "b2b-saas-enterprise-pro"
+  ]);
+  var DEFAULT_GSAP_URL = "/vendor/gsap.min.js?v=3.13.0";
+  var gsapLoadPromise = null;
+  function supportsSharedSiteMotion(templateId = "") {
+    return PILOT_TEMPLATES.has(String(templateId || "").trim().toLowerCase());
+  }
+  function normalizeSectionMotion(motion = {}) {
+    const animate = motion?.animate === true;
+    const conversionGoal = String(motion?.conversionGoal || "").trim();
+    const trigger = String(motion?.trigger || "none");
+    const target = String(motion?.target || "none");
+    const treatment = String(motion?.treatment || "static");
+    const valid = animate && conversionGoal && conversionGoal.toLowerCase() !== "none" && ["load", "scroll", "interaction"].includes(trigger) && ["headline_and_cta", "section_content", "primary_cta"].includes(target) && ["hero_enter", "reveal_up", "stagger_cards", "cta_emphasis"].includes(treatment);
+    return valid ? { animate: true, conversionGoal, trigger, target, treatment } : { animate: false, conversionGoal: "none", trigger: "none", target: "none", treatment: "static" };
+  }
+  function motionDataAttributes(motion = {}) {
+    const plan = normalizeSectionMotion(motion);
+    if (!plan.animate) return "";
+    return [
+      'data-motion-enabled="true"',
+      `data-motion-trigger="${escapeAttribute2(plan.trigger)}"`,
+      `data-motion-target="${escapeAttribute2(plan.target)}"`,
+      `data-motion-treatment="${escapeAttribute2(plan.treatment)}"`,
+      `data-motion-goal="${escapeAttribute2(plan.conversionGoal)}"`
+    ].join(" ");
+  }
+  function isMotionInteractionBlocked(element) {
+    return Boolean(element?.isContentEditable || element?.closest?.('[contenteditable="true"], .is-inline-editing'));
+  }
+  function createSharedSiteMotion({
+    root,
+    templateId,
+    assetUrl = DEFAULT_GSAP_URL,
+    windowRef = window,
+    documentRef = document
+  } = {}) {
+    const cleanup = [];
+    let destroyed = false;
+    const controller = {
+      active: false,
+      ready: Promise.resolve(false),
+      destroy() {
+        destroyed = true;
+        cleanup.splice(0).forEach((dispose) => dispose());
+        controller.active = false;
+      }
+    };
+    const reducedMotion = windowRef.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+    const hasMotion = Boolean(root?.querySelector?.('[data-motion-enabled="true"]'));
+    if (!root || !supportsSharedSiteMotion(templateId) || reducedMotion || !hasMotion) return controller;
+    controller.ready = loadGsap({ assetUrl, windowRef, documentRef }).then((gsap) => {
+      if (destroyed || !gsap) return false;
+      controller.active = true;
+      bindSectionAnimations({ root, gsap, windowRef, cleanup });
+      bindInteractionFeedback({ root, gsap, windowRef, cleanup });
+      return true;
+    }).catch((error) => {
+      console.warn("KREATON motion stayed static because GSAP could not load", error);
+      return false;
+    });
+    return controller;
+  }
+  function loadGsap({ assetUrl, windowRef, documentRef }) {
+    if (windowRef.gsap) return Promise.resolve(windowRef.gsap);
+    if (gsapLoadPromise) return gsapLoadPromise;
+    gsapLoadPromise = new Promise((resolve, reject) => {
+      const existing = documentRef.querySelector?.('script[data-kreaton-gsap="true"]');
+      const script = existing || documentRef.createElement("script");
+      const onLoad = () => windowRef.gsap ? resolve(windowRef.gsap) : reject(new Error("GSAP loaded without a global API"));
+      const onError = () => reject(new Error(`Could not load ${assetUrl}`));
+      script.addEventListener("load", onLoad, { once: true });
+      script.addEventListener("error", onError, { once: true });
+      if (!existing) {
+        script.src = assetUrl;
+        script.async = true;
+        script.dataset.kreatonGsap = "true";
+        documentRef.head.appendChild(script);
+      }
+    }).catch((error) => {
+      gsapLoadPromise = null;
+      throw error;
+    });
+    return gsapLoadPromise;
+  }
+  function bindSectionAnimations({ root, gsap, windowRef, cleanup }) {
+    root.querySelectorAll('[data-motion-enabled="true"]').forEach((section) => {
+      const treatment = section.dataset.motionTreatment;
+      const trigger = section.dataset.motionTrigger;
+      if (trigger === "load" && treatment === "hero_enter") {
+        animateHero(section, gsap);
+        return;
+      }
+      if (trigger === "scroll") observeSection(section, treatment, { gsap, windowRef, cleanup });
+      if (trigger === "interaction" && treatment === "cta_emphasis") {
+        const cta = section.querySelector("[data-motion-cta]");
+        if (cta) bindElementFeedback(cta, { gsap, cleanup, emphasize: true });
+      }
+    });
+  }
+  function animateHero(section, gsap) {
+    const targets = [
+      ...section.querySelectorAll("[data-motion-headline], [data-motion-copy], [data-motion-cta]")
+    ];
+    if (!targets.length) return;
+    gsap.fromTo(
+      targets,
+      { autoAlpha: 0, y: 22 },
+      { autoAlpha: 1, y: 0, duration: 0.66, stagger: 0.09, ease: "power3.out", force3D: true, clearProps: "transform" }
+    );
+  }
+  function observeSection(section, treatment, { gsap, windowRef, cleanup }) {
+    const reveal = () => {
+      const items = treatment === "stagger_cards" ? [...section.querySelectorAll("[data-motion-item]")] : [section.querySelector("[data-motion-content]") || section];
+      gsap.fromTo(
+        items.filter(Boolean),
+        { autoAlpha: 0, y: 26 },
+        { autoAlpha: 1, y: 0, duration: 0.58, stagger: treatment === "stagger_cards" ? 0.08 : 0, ease: "power2.out", force3D: true, clearProps: "transform" }
+      );
+    };
+    if (!windowRef.IntersectionObserver) {
+      reveal();
+      return;
+    }
+    const observer = new windowRef.IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      reveal();
+    }, { threshold: 0.18, rootMargin: "0px 0px -8%" });
+    observer.observe(section);
+    cleanup.push(() => observer.disconnect());
+  }
+  function bindInteractionFeedback({ root, gsap, cleanup }) {
+    root.querySelectorAll("button, a, input, textarea, select").forEach((element) => {
+      bindElementFeedback(element, { gsap, cleanup });
+    });
+  }
+  function bindElementFeedback(element, { gsap, cleanup, emphasize = false }) {
+    const isField = element.matches("input, textarea, select");
+    const animate = (vars) => {
+      if (!isMotionInteractionBlocked(element)) gsap.to(element, { duration: 0.16, ease: "power2.out", overwrite: "auto", force3D: true, ...vars });
+    };
+    const handlers = isField ? [["focus", () => animate({ scale: 1.01, boxShadow: "0 0 0 3px color-mix(in srgb, var(--site-primary, #0e7c66) 20%, transparent)" })], ["blur", () => animate({ scale: 1, boxShadow: "none" })]] : [["pointerenter", () => animate({ y: emphasize ? -3 : -2, scale: emphasize ? 1.025 : 1.015 })], ["pointerleave", () => animate({ y: 0, scale: 1 })], ["pointerdown", () => animate({ y: 0, scale: 0.98 })], ["pointerup", () => animate({ y: emphasize ? -3 : -2, scale: emphasize ? 1.025 : 1.015 })], ["focus", () => animate({ y: -2, scale: 1.015 })], ["blur", () => animate({ y: 0, scale: 1 })]];
+    handlers.forEach(([eventName, handler]) => element.addEventListener(eventName, handler));
+    cleanup.push(() => {
+      handlers.forEach(([eventName, handler]) => element.removeEventListener(eventName, handler));
+      gsap.killTweensOf(element);
+    });
+  }
+  function escapeAttribute2(value = "") {
+    return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
   // src/ai-builder/b2b-saas-policy.js
   var NAV_TARGETS = [
     { key: "product", patterns: [/\bproduct/i, /\bproducto/i, /\bcatalog/i, /\bsolution/i, /\bsoluci/i] },
@@ -2079,7 +2235,7 @@
     ${renderStudioFloatingCatalog2(schema, context)}
     <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => pageLink(item, item.page_key === page?.page_key)).join("")}</div></div>
     ${renderHeader(schema, page, pages, logo, labels, plans, inlineEditAttrsForPath2)}
-    ${isHome ? `${renderHero(schema, hero, pages, items, labels, plans, { inlineEditAttrs: inlineEditAttrs2, sectionAttrs: sectionAttrs2 })}${renderLogoRow(labels)}${renderFeatures(schema, sections, items, labels, inlineEditAttrsForPath2)}${renderPricing(schema, plans, labels, inlineEditAttrsForPath2)}${renderCallToAction(schema, sections, labels, inlineEditAttrsForPath2, sectionAttrs2)}` : ""}
+    ${isHome ? `${renderHero(schema, hero, pages, items, labels, plans, { inlineEditAttrs: inlineEditAttrs2, sectionAttrs: sectionAttrs2 })}${renderLogoRow(labels)}${renderFeatures(schema, sections, items, labels, inlineEditAttrsForPath2)}${renderPricing(schema, sections, plans, labels, inlineEditAttrsForPath2)}${renderCallToAction(schema, sections, labels, inlineEditAttrsForPath2, sectionAttrs2)}` : ""}
     ${remaining.map((section) => renderSection2(section, schema)).join("")}
     <footer class="b2b-saas-footer"><div>${renderBrand(schema, logo)}</div><span ${inlineEditAttrsForPath2(schema, "global_components.footer_text", "footer_text")}>${escapeHtml(schema.global_components?.footer_text || `\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} ${schema.business?.name || ""}`)}</span></footer>
   </div>`;
@@ -2110,7 +2266,7 @@
     const contactPage = findPage(pages, /contact|demo|consulta/i);
     const primaryPage = (plans.length ? navigation.find((item) => item.key === "pricing")?.page : null) || contactPage || navigation[0]?.page || pages[0];
     const secondaryPage = navigation.find((item) => item.key === "product")?.page || contactPage || pages[0];
-    return `<main class="b2b-saas-hero" ${sectionAttrs2(section)}><div class="b2b-saas-hero-copy"><span class="b2b-saas-eyebrow" ${inlineEditAttrs2(schema, section, "badge")}>${escapeHtml(inlineEditableValue(editable, "badge", labels.eyebrow))}</span><h1 ${inlineEditAttrs2(schema, section, "headline")}>${escapeHtml(lead)}${highlight ? ` <span>${escapeHtml(highlight)}</span>` : ""}</h1><p ${inlineEditAttrs2(schema, section, "subtitle")}>${escapeHtml(inlineEditableValue(editable, "subtitle", schema.business?.description || ""))}</p><div class="b2b-saas-hero-actions"><button class="b2b-saas-primary" type="button" data-page-link="${escapeAttribute(primaryPage?.page_key || "")}" ${inlineEditAttrs2(schema, section, "primary_button")}>${escapeHtml(inlineEditableValue(editable, "primary_button", labels.start))}</button><button class="b2b-saas-secondary" type="button" data-page-link="${escapeAttribute(secondaryPage?.page_key || "")}" ${inlineEditAttrs2(schema, section, "secondary_button")}>${escapeHtml(inlineEditableValue(editable, "secondary_button", labels.demo))}</button></div></div>${renderDashboard(schema, items, labels)}</main>`;
+    return `<main class="b2b-saas-hero" ${sectionAttrs2(section)} ${motionDataAttributes(section.motion)}><div class="b2b-saas-hero-copy"><span class="b2b-saas-eyebrow" ${inlineEditAttrs2(schema, section, "badge")}>${escapeHtml(inlineEditableValue(editable, "badge", labels.eyebrow))}</span><h1 data-motion-headline ${inlineEditAttrs2(schema, section, "headline")}>${escapeHtml(lead)}${highlight ? ` <span>${escapeHtml(highlight)}</span>` : ""}</h1><p data-motion-copy ${inlineEditAttrs2(schema, section, "subtitle")}>${escapeHtml(inlineEditableValue(editable, "subtitle", schema.business?.description || ""))}</p><div class="b2b-saas-hero-actions" data-motion-cta><button class="b2b-saas-primary" type="button" data-page-link="${escapeAttribute(primaryPage?.page_key || "")}" ${inlineEditAttrs2(schema, section, "primary_button")}>${escapeHtml(inlineEditableValue(editable, "primary_button", labels.start))}</button><button class="b2b-saas-secondary" type="button" data-page-link="${escapeAttribute(secondaryPage?.page_key || "")}" ${inlineEditAttrs2(schema, section, "secondary_button")}>${escapeHtml(inlineEditableValue(editable, "secondary_button", labels.demo))}</button></div></div>${renderDashboard(schema, items, labels)}</main>`;
   }
   function inlineEditableValue(editable, field, fallback = "") {
     return Object.prototype.hasOwnProperty.call(editable || {}, field) ? editable[field] : fallback;
@@ -2127,6 +2283,7 @@
   }
   function renderFeatures(schema, sections, items, labels, inlineEditAttrsForPath2) {
     const headingSection = sections.find((section) => section.type === "EnterpriseSolutions") || {};
+    const motionSection = ["EnterpriseSolutions", "EnterpriseUseCases", "EnterpriseIntegrations", "FeatureSpotlight", "ProofPanel", "StoryBlock"].map((type) => sections.find((section) => section.type === type)).find((section) => section?.motion?.animate) || {};
     const heading = headingSection.editable || {};
     const features = items.slice(0, 3).map((item) => ({
       title: item.name,
@@ -2144,17 +2301,18 @@
       });
     });
     if (!features.length && schema.business?.description) features.push({ title: schema.business?.name || labels.product, description: schema.business.description });
-    return `<section class="b2b-saas-features"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.product)}</span><h2 ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, headingSection, "title"), "title")}>${escapeHtml(heading.title || labels.featuresTitle)}</h2>${Object.prototype.hasOwnProperty.call(heading, "text") ? `<p ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, headingSection, "text"), "text")}>${escapeHtml(heading.text)}</p>` : ""}</div><div>${features.map((feature, index) => `<article><span>${icon(index)}</span><h3 ${inlineEditAttrsForPath2(schema, feature.titlePath, "product_name")}>${escapeHtml(feature.title || schema.business?.name || "")}</h3><p ${inlineEditAttrsForPath2(schema, feature.descriptionPath, "product_description")}>${escapeHtml(feature.description || schema.business?.description || "")}</p></article>`).join("")}</div></section>`;
+    return `<section class="b2b-saas-features" ${motionDataAttributes(motionSection.motion)}><div class="b2b-saas-section-heading" data-motion-content><span>${escapeHtml(labels.product)}</span><h2 ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, headingSection, "title"), "title")}>${escapeHtml(heading.title || labels.featuresTitle)}</h2>${Object.prototype.hasOwnProperty.call(heading, "text") ? `<p ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, headingSection, "text"), "text")}>${escapeHtml(heading.text)}</p>` : ""}</div><div>${features.map((feature, index) => `<article data-motion-item><span>${icon(index)}</span><h3 ${inlineEditAttrsForPath2(schema, feature.titlePath, "product_name")}>${escapeHtml(feature.title || schema.business?.name || "")}</h3><p ${inlineEditAttrsForPath2(schema, feature.descriptionPath, "product_description")}>${escapeHtml(feature.description || schema.business?.description || "")}</p></article>`).join("")}</div></section>`;
   }
-  function renderPricing(schema, plans, labels, inlineEditAttrsForPath2) {
+  function renderPricing(schema, sections, plans, labels, inlineEditAttrsForPath2) {
     if (plans.length !== 3) return "";
-    return `<section class="b2b-saas-pricing" id="pricing"><div class="b2b-saas-section-heading"><span>${escapeHtml(labels.pricing)}</span><h2>${escapeHtml(labels.pricingTitle)}</h2></div><div class="b2b-saas-plans">${plans.map((plan, index) => `<article class="${index === 1 ? "featured" : ""}">${index === 1 ? `<span class="b2b-saas-plan-badge">${escapeHtml(labels.popular)}</span>` : ""}<small>${escapeHtml(plan.category || labels.plan)}</small><h3 ${inlineEditAttrsForPath2(schema, inlineEditCatalogPath(schema, plan, "name"), "product_name")}>${escapeHtml(plan.name || "")}</h3><strong>${escapeHtml(plan.price_label || plan.price || "")}</strong>${plan.description ? `<p ${inlineEditAttrsForPath2(schema, inlineEditCatalogPath(schema, plan, "description"), "product_description")}>${escapeHtml(plan.description)}</p>` : ""}<button type="button" data-item-id="${escapeAttribute(plan.id || "")}" data-item-name="${escapeAttribute(plan.name || "")}">${escapeHtml(plan.button_label || labels.choose)}</button></article>`).join("")}</div></section>`;
+    const motionSection = sections.find((section) => section.type === "EnterprisePricing") || sections.find((section) => ["ProductGrid", "FeaturedProducts", "CTA"].includes(section.type) && /pric|plan|subscription|precio|suscrip/i.test(`${section.purpose || ""} ${section.editable?.title || ""}`)) || {};
+    return `<section class="b2b-saas-pricing" id="pricing" ${motionDataAttributes(motionSection.motion)}><div class="b2b-saas-section-heading" data-motion-content><span>${escapeHtml(labels.pricing)}</span><h2>${escapeHtml(labels.pricingTitle)}</h2></div><div class="b2b-saas-plans">${plans.map((plan, index) => `<article class="${index === 1 ? "featured" : ""}" data-motion-item>${index === 1 ? `<span class="b2b-saas-plan-badge">${escapeHtml(labels.popular)}</span>` : ""}<small>${escapeHtml(plan.category || labels.plan)}</small><h3 ${inlineEditAttrsForPath2(schema, inlineEditCatalogPath(schema, plan, "name"), "product_name")}>${escapeHtml(plan.name || "")}</h3><strong>${escapeHtml(plan.price_label || plan.price || "")}</strong>${plan.description ? `<p ${inlineEditAttrsForPath2(schema, inlineEditCatalogPath(schema, plan, "description"), "product_description")}>${escapeHtml(plan.description)}</p>` : ""}<button type="button" data-item-id="${escapeAttribute(plan.id || "")}" data-item-name="${escapeAttribute(plan.name || "")}">${escapeHtml(plan.button_label || labels.choose)}</button></article>`).join("")}</div></section>`;
   }
   function renderCallToAction(schema, sections, labels, inlineEditAttrsForPath2, sectionAttrs2) {
     const section = sections.find((item) => item.type === "EnterpriseDemo");
     if (!section) return "";
     const editable = section.editable || {};
-    return `<section class="enterprise-demo-section b2b-saas-final-cta" ${sectionAttrs2(section)}><div><span class="rendered-kicker">${escapeHtml(labels.demo)}</span><h2 ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, section, "title"), "title")}>${escapeHtml(editable.title || "")}</h2><p ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, section, "text"), "text")}>${escapeHtml(editable.text || "")}</p></div><button class="rendered-button" type="button" ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, section, "primary_button"), "primary_button")}>${escapeHtml(editable.primary_button || labels.demo)}</button></section>`;
+    return `<section class="enterprise-demo-section b2b-saas-final-cta" ${sectionAttrs2(section)} ${motionDataAttributes(section.motion)}><div data-motion-content><span class="rendered-kicker">${escapeHtml(labels.demo)}</span><h2 ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, section, "title"), "title")}>${escapeHtml(editable.title || "")}</h2><p ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, section, "text"), "text")}>${escapeHtml(editable.text || "")}</p></div><button class="rendered-button" type="button" data-motion-cta ${inlineEditAttrsForPath2(schema, inlineEditPath(schema, section, "primary_button"), "primary_button")}>${escapeHtml(editable.primary_button || labels.demo)}</button></section>`;
   }
   function pageLink(page, active) {
     return `<a class="${active ? "active" : ""}" href="#" data-page-link="${escapeAttribute(page.page_key)}">${escapeHtml(page.title || page.page_key)}</a>`;
@@ -5532,7 +5690,6 @@
     const categories = marketplaceCategories(schema).slice(0, 5);
     const labels = megaRetailLabels(schema);
     const hero = sections.find((section) => ["MarketplaceHero", "Hero"].includes(section.type)) || {};
-    const heroCopy = hero.editable || {};
     const clientPhotos = arrayValue(schema.client_media?.photoUrls || schema.photoUrls);
     const provenance = schema.brand?.colorProvenance || schema.colorProvenance || {};
     const hasBrandVisual = Boolean(logo || provenance.anchorColor || arrayValue(schema.brand?.preferredColors).length);
@@ -5545,7 +5702,7 @@
     ${renderStudioFloatingCatalog(schema, context)}
     <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div></div>
     ${renderMegaRetailHeader(schema, page, logo, categories, labels, false)}
-    ${page?.page_key === "home" || page === pages[0] ? `${renderMegaRetailBento(schema, heroCopy, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailDeals(schema, items, labels, false)}${renderMegaRetailTrust(labels)}` : ""}
+    ${page?.page_key === "home" || page === pages[0] ? `${renderMegaRetailBento(schema, hero, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailDeals(schema, sections, items, labels, false)}${renderMegaRetailTrust(sections, labels)}` : ""}
     ${remainingSections.map((section) => renderSection(section, schema)).join("")}
     ${renderMegaRetailFooter(schema, pages, logo, labels, features)}
     ${features.whatsapp && whatsappUrl ? `<a class="mega-retail-whatsapp" href="${escapeAttribute(whatsappUrl)}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">${megaRetailIcon("whatsapp")}</a>` : ""}
@@ -5561,7 +5718,8 @@
     <details class="mega-retail-mobile-departments"><summary>${megaRetailIcon("grid")}<span>${escapeHtml(labels.departments)}</span><span class="mega-retail-menu-chevron" aria-hidden="true"></span></summary><div>${departmentButtons}</div></details>
   </header>`;
   }
-  function renderMegaRetailBento(schema, heroCopy, categories, items, clientPhotos, hasBrandVisual, labels) {
+  function renderMegaRetailBento(schema, heroSection, categories, items, clientPhotos, hasBrandVisual, labels) {
+    const heroCopy = heroSection.editable || {};
     const tileCategories = categories.length ? categories : labels.fallbackCategories;
     const tiles = Array.from({ length: 5 }, (_, index) => {
       const category = tileCategories[index % tileCategories.length];
@@ -5570,20 +5728,22 @@
       const title = index === 0 ? heroCopy.headline || schema.business?.name || labels.featured : category;
       const text = index === 0 ? heroCopy.subtitle || schema.business?.description || labels.heroText : item?.description || labels.discover;
       const className = index === 0 ? "is-primary" : index === 1 ? "is-medium" : "is-small";
-      return `<article class="mega-retail-tile ${className} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}"><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p>${escapeHtml(text)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}">${escapeHtml(labels.explore)} ${megaRetailIcon("arrow")}</button></div></article>`;
+      return `<article class="mega-retail-tile ${className} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}" data-motion-item><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"} ${index === 0 ? "data-motion-headline" : ""}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p ${index === 0 ? "data-motion-copy" : ""}>${escapeHtml(text)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}" ${index === 0 ? "data-motion-cta" : ""}>${escapeHtml(labels.explore)} ${megaRetailIcon("arrow")}</button></div></article>`;
     });
-    return `<main class="mega-retail-bento">${tiles.join("")}</main>`;
+    return `<main class="mega-retail-bento" ${motionDataAttributes(heroSection.motion)}>${tiles.join("")}</main>`;
   }
-  function renderMegaRetailDeals(schema, items, labels, interactive) {
+  function renderMegaRetailDeals(schema, sections, items, labels, interactive) {
     const commerce = commerceLabels(schema);
-    return `<section class="mega-retail-deals"><div class="mega-retail-section-heading"><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => `<article class="mega-retail-product" ${catalogSearchAttributes(item)}><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${interactive ? `data-cart-add data-item-id="${escapeAttribute(item.id || item.name || "")}" data-item-name="${escapeAttribute(item.name || "")}" data-item-price="${escapeAttribute(item.price_label || "")}"` : ""}>${escapeHtml(commerce.addToCart)}</button></div></article>`).join("")}</div></section>`;
+    const source = sections.find((section) => ["DealRow", "ProductGrid"].includes(section.type)) || {};
+    return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${interactive ? `data-cart-add data-item-id="${escapeAttribute(item.id || item.name || "")}" data-item-name="${escapeAttribute(item.name || "")}" data-item-price="${escapeAttribute(item.price_label || "")}"` : ""}>${escapeHtml(commerce.addToCart)}</button></div></article>`).join("")}</div></section>`;
   }
   function megaRetailDiscountBadge(item = {}) {
     const badge = item.badge || item.deal_label || item.discount_label || "";
     return badge ? `<span class="mega-retail-discount">${escapeHtml(badge)}</span>` : "";
   }
-  function renderMegaRetailTrust(labels) {
-    return `<section class="mega-retail-trust">${labels.trust.map((item, index) => `<article>${megaRetailIcon(["truck", "return", "grid", "lock"][index])}<div><strong>${escapeHtml(item[0])}</strong><span>${escapeHtml(item[1])}</span></div></article>`).join("")}</section>`;
+  function renderMegaRetailTrust(sections, labels) {
+    const source = sections.find((section) => section.type === "TrustStrip") || {};
+    return `<section class="mega-retail-trust" ${motionDataAttributes(source.motion)}>${labels.trust.map((item, index) => `<article data-motion-item>${megaRetailIcon(["truck", "return", "grid", "lock"][index])}<div><strong>${escapeHtml(item[0])}</strong><span>${escapeHtml(item[1])}</span></div></article>`).join("")}</section>`;
   }
   function renderMegaRetailFooter(schema, pages, logo, labels, features) {
     const socials = megaRetailSocialLinks(schema.contact || {});
@@ -19704,6 +19864,14 @@ Site ID: ${builderState.currentSiteId}`
   }
   var activeInlineEdit = null;
   var selectedInlineEditPath = "";
+  var sharedPreviewMotionControllers = /* @__PURE__ */ new WeakMap();
+  function bindSharedPreviewMotion(root, schema) {
+    if (!root || !schema) return;
+    sharedPreviewMotionControllers.get(root)?.destroy();
+    const templateId = schema.active_template?.id || schema.selected_template?.id || "standard";
+    const controller = createSharedSiteMotion({ root, templateId });
+    sharedPreviewMotionControllers.set(root, controller);
+  }
   function inlineEditConfigFromElement(element) {
     return {
       mode: element?.dataset.inlineEditMode === "multiline" ? "multiline" : "single",
@@ -19957,6 +20125,7 @@ ${content}` : content;
       });
     });
     bindInlineEditing(previewFrame2);
+    bindSharedPreviewMotion(previewFrame2, builderState.currentSchema);
     const selectedSection = previewFrame2.querySelector(`[data-studio-section="${cssEscape(builderState.selectedStudioSectionId)}"]`);
     selectedSection?.classList.add("is-selected");
     if (studioSelectionToolbar) studioSelectionToolbar.hidden = !selectedSection;
@@ -20010,6 +20179,7 @@ ${content}` : content;
         });
       });
       bindCatalogSearchInteractions(containerElement);
+      bindSharedPreviewMotion(containerElement, preparedSchema);
     };
     renderPage(defaultPageKey);
     return preparedSchema;

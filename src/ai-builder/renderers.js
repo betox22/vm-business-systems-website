@@ -5,6 +5,7 @@ import { isMegaRetailTemplate, megaRetailFeatureFlags, megaRetailWhatsAppUrl, re
 import { isB2BSaasTemplate } from './b2b-saas-policy.js';
 import { renderB2BSaasWebsite } from './b2b-saas-renderer.js';
 import { bathBodyStockImageUrl } from './catalog-preview-policy.js';
+import { motionDataAttributes } from './shared-site-motion.js';
 import {
   inlineEditCatalogPath,
   inlineEditConfig,
@@ -2566,7 +2567,6 @@ function renderMegaRetailWebsite(schema, page, context, { logo, layoutId, templa
   const categories = marketplaceCategories(schema).slice(0, 5);
   const labels = megaRetailLabels(schema);
   const hero = sections.find((section) => ["MarketplaceHero", "Hero"].includes(section.type)) || {};
-  const heroCopy = hero.editable || {};
   const clientPhotos = arrayValue(schema.client_media?.photoUrls || schema.photoUrls);
   const provenance = schema.brand?.colorProvenance || schema.colorProvenance || {};
   const hasBrandVisual = Boolean(logo || provenance.anchorColor || arrayValue(schema.brand?.preferredColors).length);
@@ -2580,7 +2580,7 @@ function renderMegaRetailWebsite(schema, page, context, { logo, layoutId, templa
     ${renderStudioFloatingCatalog(schema, context)}
     <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div></div>
     ${renderMegaRetailHeader(schema, page, logo, categories, labels, false)}
-    ${page?.page_key === "home" || page === pages[0] ? `${renderMegaRetailBento(schema, heroCopy, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailDeals(schema, items, labels, false)}${renderMegaRetailTrust(labels)}` : ""}
+    ${page?.page_key === "home" || page === pages[0] ? `${renderMegaRetailBento(schema, hero, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailDeals(schema, sections, items, labels, false)}${renderMegaRetailTrust(sections, labels)}` : ""}
     ${remainingSections.map((section) => renderSection(section, schema)).join("")}
     ${renderMegaRetailFooter(schema, pages, logo, labels, features)}
     ${features.whatsapp && whatsappUrl ? `<a class="mega-retail-whatsapp" href="${escapeAttribute(whatsappUrl)}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">${megaRetailIcon("whatsapp")}</a>` : ""}
@@ -2598,7 +2598,8 @@ function renderMegaRetailHeader(schema, page, logo, categories, labels, interact
   </header>`;
 }
 
-function renderMegaRetailBento(schema, heroCopy, categories, items, clientPhotos, hasBrandVisual, labels) {
+function renderMegaRetailBento(schema, heroSection, categories, items, clientPhotos, hasBrandVisual, labels) {
+  const heroCopy = heroSection.editable || {};
   const tileCategories = categories.length ? categories : labels.fallbackCategories;
   const tiles = Array.from({ length: 5 }, (_, index) => {
     const category = tileCategories[index % tileCategories.length];
@@ -2607,14 +2608,15 @@ function renderMegaRetailBento(schema, heroCopy, categories, items, clientPhotos
     const title = index === 0 ? (heroCopy.headline || schema.business?.name || labels.featured) : category;
     const text = index === 0 ? (heroCopy.subtitle || schema.business?.description || labels.heroText) : (item?.description || labels.discover);
     const className = index === 0 ? "is-primary" : index === 1 ? "is-medium" : "is-small";
-    return `<article class="mega-retail-tile ${className} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}"><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p>${escapeHtml(text)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}">${escapeHtml(labels.explore)} ${megaRetailIcon("arrow")}</button></div></article>`;
+    return `<article class="mega-retail-tile ${className} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}" data-motion-item><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"} ${index === 0 ? "data-motion-headline" : ""}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p ${index === 0 ? "data-motion-copy" : ""}>${escapeHtml(text)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}" ${index === 0 ? "data-motion-cta" : ""}>${escapeHtml(labels.explore)} ${megaRetailIcon("arrow")}</button></div></article>`;
   });
-  return `<main class="mega-retail-bento">${tiles.join("")}</main>`;
+  return `<main class="mega-retail-bento" ${motionDataAttributes(heroSection.motion)}>${tiles.join("")}</main>`;
 }
 
-function renderMegaRetailDeals(schema, items, labels, interactive) {
+function renderMegaRetailDeals(schema, sections, items, labels, interactive) {
   const commerce = commerceLabels(schema);
-  return `<section class="mega-retail-deals"><div class="mega-retail-section-heading"><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => `<article class="mega-retail-product" ${catalogSearchAttributes(item)}><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${interactive ? `data-cart-add data-item-id="${escapeAttribute(item.id || item.name || "")}" data-item-name="${escapeAttribute(item.name || "")}" data-item-price="${escapeAttribute(item.price_label || "")}"` : ""}>${escapeHtml(commerce.addToCart)}</button></div></article>`).join("")}</div></section>`;
+  const source = sections.find((section) => ["DealRow", "ProductGrid"].includes(section.type)) || {};
+  return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${interactive ? `data-cart-add data-item-id="${escapeAttribute(item.id || item.name || "")}" data-item-name="${escapeAttribute(item.name || "")}" data-item-price="${escapeAttribute(item.price_label || "")}"` : ""}>${escapeHtml(commerce.addToCart)}</button></div></article>`).join("")}</div></section>`;
 }
 
 function megaRetailDiscountBadge(item = {}) {
@@ -2622,8 +2624,9 @@ function megaRetailDiscountBadge(item = {}) {
   return badge ? `<span class="mega-retail-discount">${escapeHtml(badge)}</span>` : "";
 }
 
-function renderMegaRetailTrust(labels) {
-  return `<section class="mega-retail-trust">${labels.trust.map((item, index) => `<article>${megaRetailIcon(["truck", "return", "grid", "lock"][index])}<div><strong>${escapeHtml(item[0])}</strong><span>${escapeHtml(item[1])}</span></div></article>`).join("")}</section>`;
+function renderMegaRetailTrust(sections, labels) {
+  const source = sections.find((section) => section.type === "TrustStrip") || {};
+  return `<section class="mega-retail-trust" ${motionDataAttributes(source.motion)}>${labels.trust.map((item, index) => `<article data-motion-item>${megaRetailIcon(["truck", "return", "grid", "lock"][index])}<div><strong>${escapeHtml(item[0])}</strong><span>${escapeHtml(item[1])}</span></div></article>`).join("")}</section>`;
 }
 
 function renderMegaRetailFooter(schema, pages, logo, labels, features) {

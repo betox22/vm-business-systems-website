@@ -58,6 +58,7 @@ const PUBLIC_TOP_LEVEL_FILES = [
   "seller-portal.js",
   "services.html",
   "site-viewer.js",
+  "shared-commerce-cart.js",
   "site.html",
   "solutions.html",
   "template-router.js",
@@ -99,6 +100,11 @@ const TEMPLATES_ALLOWLIST = [
   "templates/retail/premium-product-store/phase-5/visual-prototype/preview.html",
   "templates/retail/premium-product-store/phase-5/visual-prototype/styles.css",
   "templates/retail/premium-product-store/phase-5/visual-prototype/prototype.js",
+];
+
+const VENDOR_ASSETS = [
+  ["src/ai-builder/shared-site-motion.js", "shared-site-motion.js"],
+  ["node_modules/gsap/dist/gsap.min.js", "vendor/gsap.min.js"],
 ];
 
 // Defense in depth: even within the allowlisted set above, refuse to stage
@@ -148,6 +154,17 @@ async function main() {
     await mkdir(path.dirname(dest), { recursive: true });
     await cp(relPath, dest);
     copied.push(relPath);
+  }
+
+  for (const [source, destination] of VENDOR_ASSETS) {
+    if (!existsSync(source)) {
+      missing.push(source);
+      continue;
+    }
+    const dest = `${OUT_DIR}/${destination}`;
+    await mkdir(path.dirname(dest), { recursive: true });
+    await cp(source, dest);
+    copied.push(destination);
   }
 
   console.log(`Staged ${copied.length} public entries into ${OUT_DIR}/:`);
