@@ -4,6 +4,7 @@ import test from "node:test";
 
 const gallery = fs.readFileSync(new URL("../templates-preview/index.html", import.meta.url), "utf8");
 const demos = fs.readFileSync(new URL("../templates-preview/template-demo-data.js", import.meta.url), "utf8");
+const livePreview = fs.readFileSync(new URL("../templates-preview/live-preview.html", import.meta.url), "utf8");
 
 test("B2B SaaS and Mega Retail use dedicated responsive captures and interactive previews", () => {
   for (const template of ["b2b-saas-enterprise-pro", "mega-retail-store"]) {
@@ -13,4 +14,8 @@ test("B2B SaaS and Mega Retail use dedicated responsive captures and interactive
     assert.match(gallery, new RegExp(`live-preview\\.html\\?template=${template}`));
     assert.match(demos, new RegExp(`"${template}"`));
   }
+});
+
+test("interactive template previews load the public viewer as an ES module", () => {
+  assert.match(livePreview, /<script type="module" src="\/site-viewer\.js\?v=34"><\/script>/);
 });
