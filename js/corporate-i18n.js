@@ -8,7 +8,7 @@
       exploreProducts: "Explorar productos", discoverVm: "Conocer VM Business Systems",
       listoBody: "La app insignia para ventas, inventario y operación comercial.",
       discoverListo: "Conocer Listo", kreatonBody: "Crea y administra páginas web con inteligencia artificial.",
-      visitKreaton: "Ir a Kreaton", accessTitle: "Un acceso claro<br>para cada persona.",
+      visitKreaton: "Ir a Kreaton", listokdsBody: "Mesas, pedidos, cocina y caja conectados en una sola operación para restaurantes.", discoverListokds: "Conocer ListoKDS", accessTitle: "Un acceso claro<br>para cada persona.",
       imClient: "Soy cliente", clientBody: "Ver mis proyectos, avances y entregas.",
       enterClient: "Entrar como cliente", imVm: "Soy parte de VM",
       vmBody: "Administrar solicitudes, páginas y clientes.", enterInternal: "Entrar al panel interno"
@@ -21,7 +21,7 @@
       exploreProducts: "Explore products", discoverVm: "Discover VM Business Systems",
       listoBody: "Our flagship app for sales, inventory and business operations.",
       discoverListo: "Discover Listo", kreatonBody: "Create and manage websites with artificial intelligence.",
-      visitKreaton: "Go to Kreaton", accessTitle: "A clear access path<br>for every person.",
+      visitKreaton: "Go to Kreaton", listokdsBody: "Tables, orders, kitchen and checkout connected in one restaurant operation.", discoverListokds: "Discover ListoKDS", accessTitle: "A clear access path<br>for every person.",
       imClient: "I am a client", clientBody: "View my projects, progress and deliveries.",
       enterClient: "Enter as a client", imVm: "I am part of VM",
       vmBody: "Manage requests, websites and clients.", enterInternal: "Enter the internal panel"
