@@ -7127,6 +7127,7 @@
           reason: "oauth-resume",
           deferHydration: true
         });
+        if (!session) return null;
         if (storageStatus) {
           storageStatus.textContent = session.restored ? langText({
             en: "Session restored. LYRA will keep saving your progress.",
@@ -7204,7 +7205,6 @@
     }
   }
   async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false, deferHydration = false } = {}) {
-    const requestEpoch = builderState.clientIntakeSessionEpoch;
     const cleanEmail = String(email || "").trim().toLowerCase();
     if (!cleanEmail) throw new Error("Email is required.");
     const storedSession = readClientIntakeSession();
@@ -7214,6 +7214,7 @@
     if (lastKnownEmail && lastKnownEmail !== cleanEmail) {
       resetGuidedStateForNewAccount({ preserveAuth: Boolean(storedClientAccessToken()) });
     }
+    const requestEpoch = builderState.clientIntakeSessionEpoch;
     const draft = sanitizeClientSessionDraft(immediateDraft || guidedSessionDraftForApi());
     draft.contactInfo = {
       ...draft.contactInfo || {},
@@ -11127,7 +11128,7 @@ ${langText({
     "booking-appointment-pro": { paper: "#faf5fc", ink: "#2b2134", accent: "#a579db" }
   });
   function templateAccentPalette(catalogType, templateId = "") {
-    const override = TEMPLATE_PREVIEW_PALETTES[normalizeTemplateId(templateId)];
+    const override = TEMPLATE_PREVIEW_PALETTES?.[normalizeTemplateId(templateId)];
     if (override) return override;
     const type = String(catalogType || "").toLowerCase();
     if (/premium|luxury/.test(type)) return { paper: "#f7f6ff", ink: "#10101a", accent: "#6d5dfc" };

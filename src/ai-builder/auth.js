@@ -1049,6 +1049,7 @@ export async function resumeClientSessionFromAuthToken() {
       reason: "oauth-resume",
       deferHydration: true,
     });
+    if (!session) return null;
     if (storageStatus) {
       storageStatus.textContent = session.restored
         ? langText({
@@ -1130,7 +1131,6 @@ export function hydrateClientIntakeSession(session, options = {}) {
 }
 
 export async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false, deferHydration = false } = {}) {
-  const requestEpoch = builderState.clientIntakeSessionEpoch;
   const cleanEmail = String(email || "").trim().toLowerCase();
   if (!cleanEmail) throw new Error("Email is required.");
   const storedSession = readClientIntakeSession();
@@ -1145,6 +1145,9 @@ export async function createOrResumeClientIntakeSession({ email, name = "", reas
   if (lastKnownEmail && lastKnownEmail !== cleanEmail) {
     resetGuidedStateForNewAccount({ preserveAuth: Boolean(storedClientAccessToken()) });
   }
+  // Account switching advances the epoch. Capture it after that intentional
+  // reset so this request does not reject its own response as stale.
+  const requestEpoch = builderState.clientIntakeSessionEpoch;
   const draft = sanitizeClientSessionDraft(immediateDraft || guidedSessionDraftForApi());
   draft.contactInfo = {
     ...(draft.contactInfo || {}),

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 
 import {
   advanceClientProjectSessionEpoch,
@@ -50,4 +51,23 @@ test("saved draft -> start new -> unrelated business leaves no prior-project res
   assert.equal(JSON.stringify(state).includes("Bath All Day"), false);
   assert.equal(JSON.stringify(state).includes("Jabones"), false);
   assert.equal(state.guidedState.businessName, "Turbo Parts VE");
+});
+
+test("OAuth account switch keeps the request created after its reset", () => {
+  const authSource = readFileSync(new URL("../src/ai-builder/auth.js", import.meta.url), "utf8");
+  const functionStart = authSource.indexOf("export async function createOrResumeClientIntakeSession");
+  const functionEnd = authSource.indexOf("export function syncClientIntakeSession", functionStart);
+  const source = authSource.slice(functionStart, functionEnd);
+
+  assert.ok(source.indexOf("resetGuidedStateForNewAccount") >= 0);
+  assert.ok(
+    source.indexOf("const requestEpoch = builderState.clientIntakeSessionEpoch")
+      > source.indexOf("resetGuidedStateForNewAccount"),
+  );
+  assert.match(authSource, /if \(!session\) return null;\s+if \(storageStatus\)/);
+});
+
+test("template preview palette lookup cannot abort OAuth resume during mixed cache loads", () => {
+  const indexSource = readFileSync(new URL("../src/ai-builder/index.js", import.meta.url), "utf8");
+  assert.match(indexSource, /TEMPLATE_PREVIEW_PALETTES\?\.\[normalizeTemplateId\(templateId\)\]/);
 });

@@ -2838,7 +2838,7 @@ const TEMPLATE_PREVIEW_PALETTES = Object.freeze({
 // the final result. It keeps related templates visually distinct without
 // depending on a small shared stock-image pool.
 function templateAccentPalette(catalogType, templateId = "") {
-  const override = TEMPLATE_PREVIEW_PALETTES[normalizeTemplateId(templateId)];
+  const override = TEMPLATE_PREVIEW_PALETTES?.[normalizeTemplateId(templateId)];
   if (override) return override;
   const type = String(catalogType || "").toLowerCase();
   if (/premium|luxury/.test(type)) return { paper: "#f7f6ff", ink: "#10101a", accent: "#6d5dfc" };
