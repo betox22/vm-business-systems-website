@@ -310,6 +310,18 @@ test("B2B full-content renderer exposes real paths but leaves decorative dashboa
   assert.doesNotMatch(html, /data-inline-edit-path="labels\./);
 });
 
+test("Mega Retail dedicated renderer exposes persistent hero, catalog, navigation, and footer paths", () => {
+  const renderer = readFileSync(new URL("../src/ai-builder/renderers.js", import.meta.url), "utf8");
+  const block = renderer.match(/function renderMegaRetailWebsite[\s\S]*?function megaRetailSocialLinks/)?.[0] || "";
+
+  assert.match(block, /inlineEditAttrs\(schema, heroSection, "headline"\)/);
+  assert.match(block, /inlineEditAttrs\(schema, heroSection, "subtitle"\)/);
+  assert.match(block, /inlineCatalogEditAttrs\(schema, item, "name", "product_name"\)/);
+  assert.match(block, /inlineCatalogEditAttrs\(schema, item, "description", "product_description"\)/);
+  assert.match(block, /inlineEditPageTitlePath\(schema, item\)/);
+  assert.match(block, /"global_components\.footer_text", "footer_text"/);
+});
+
 test("inline editing reserves outline space without reflow and preserves the native CTA background", () => {
   const css = readFileSync(new URL("../ai-builder.css", import.meta.url), "utf8");
   assert.match(css, /h1\[data-inline-edit-path\],[\s\S]*p\[data-inline-edit-path\][\s\S]*padding:\s*0;[\s\S]*outline-offset:\s*4px/);

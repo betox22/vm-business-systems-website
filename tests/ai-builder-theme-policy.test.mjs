@@ -91,6 +91,7 @@ test("guided color reply becomes the explicit client anchor in the final provena
   });
   assert.equal(result.anchorColor, "morado");
   assert.equal(result.anchorSource, "explicit_client");
+  assert.equal(result.secondaryColor, "azul");
   assert.deepEqual(result.colors.slice(0, 2), [
     { color: "morado", source: "explicit_client" },
     { color: "azul", source: "explicit_client" },

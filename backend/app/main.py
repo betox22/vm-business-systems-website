@@ -30,6 +30,7 @@ from .admin_directory import (
     fetch_supabase_admin_users,
 )
 from .agents import TEMPLATE_CATALOG, semantic_seed_catalog, split_items, state_is_commerce_seed_target
+from .ai_site_planner import enforce_client_declared_catalog_facts
 from .client_auth import fetch_supabase_user, supabase_auth_configured
 from .commerce import router as commerce_router
 from .db import get_session, init_db
@@ -47,12 +48,13 @@ from .models import (
     LyraEditResponse,
     CatalogSource,
     ClientProjectDeleteRequest,
+    ClientSiteUpdateRequest,
     ColorProvenance,
     WebsiteGenerationRequest,
     WebsiteGenerationResponse,
 )
 from .lyra_edit_engine import LyraEditEngine
-from .lyra_intake_engine import LyraIntakeDecision, LyraIntakeEngine
+from .lyra_intake_engine import LyraIntakeDecision, LyraIntakeEngine, classify_logo_intent_text
 from .logo_generation import generate_and_store_ai_logo
 from .orchestrator import (
     LyraOrchestrator,
@@ -1125,6 +1127,27 @@ def _schema_json(schema: Dict[str, Any]) -> str:
     return json.dumps(schema or {}, ensure_ascii=False, separators=(",", ":"))
 
 
+MAX_GENERATED_SCHEMA_BYTES = 2 * 1024 * 1024
+
+
+def validate_generated_site_schema(schema: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate the persisted schema shape used by both client and admin saves."""
+
+    if not isinstance(schema, dict) or not schema:
+        raise HTTPException(status_code=422, detail="A non-empty website schema is required.")
+    if "pages" in schema and not isinstance(schema.get("pages"), list):
+        raise HTTPException(status_code=422, detail="Website schema pages must be a list.")
+    if "catalog_items" in schema and not isinstance(schema.get("catalog_items"), list):
+        raise HTTPException(status_code=422, detail="Website schema catalog_items must be a list.")
+    try:
+        encoded = _schema_json(schema).encode("utf-8")
+    except (TypeError, ValueError) as error:
+        raise HTTPException(status_code=422, detail="Website schema must be JSON serializable.") from error
+    if len(encoded) > MAX_GENERATED_SCHEMA_BYTES:
+        raise HTTPException(status_code=413, detail="Website schema is too large to save.")
+    return deepcopy(schema)
+
+
 def _schema_summary(schema: Dict[str, Any]) -> Dict[str, str]:
     business = schema.get("business") if isinstance(schema.get("business"), dict) else {}
     selected_template = schema.get("selected_template") if isinstance(schema.get("selected_template"), dict) else {}
@@ -1349,6 +1372,66 @@ async def client_project_detail(
         "site_id": site.id,
         "generatedSiteId": site.id,
         "storage_status": site.status,
+    }
+
+
+@app.put("/api/client/sites/{site_id}")
+async def update_client_site(
+    site_id: str,
+    payload: ClientSiteUpdateRequest,
+    authorization: str = Header(default=""),
+    luma_client_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    user = authenticated_client_user(authorization, luma_client_session)
+    owner_user_id = str(user.get("id") or user.get("sub") or "").strip()
+    owner_email = str(user.get("email") or "").strip().lower()
+    site = session.execute(
+        select(GeneratedSite).where(GeneratedSite.id == site_id)
+    ).scalar_one_or_none()
+    if not site:
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    # New records are owned by the immutable Supabase user id. Email matching
+    # is retained only for legacy rows that predate owner_user_id, and those
+    # rows are claimed by the confirmed identity on their first real save.
+    if site.owner_user_id:
+        owns_site = bool(owner_user_id and site.owner_user_id == owner_user_id)
+    else:
+        owns_site = bool(owner_email and site.owner_email.lower() == owner_email)
+    if not owns_site:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    if payload.businessId and payload.businessId != site.store_id:
+        raise HTTPException(status_code=409, detail="Project business id does not match this site.")
+
+    schema = validate_generated_site_schema(payload.website_schema)
+    summary = _schema_summary(schema)
+    site.owner_user_id = owner_user_id or site.owner_user_id
+    site.owner_email = owner_email or site.owner_email
+    site.business_name = summary["business_name"]
+    site.business_type = summary["business_type"]
+    site.template_id = summary["template_id"]
+    site.template_name = summary["template_name"]
+    site.template_mode = summary["template_mode"]
+    site.description = summary["description"]
+    site.hero_title = summary["hero_title"]
+    site.hero_body = summary["hero_body"]
+    site.announcement = summary["announcement"]
+    site.accent_color = summary["accent_color"]
+    site.generated_config = _schema_json(schema)
+    try:
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    session.refresh(site)
+    return {
+        "storage_status": "stored",
+        "site_id": site.id,
+        "projectId": site.id,
+        "business_id": site.store_id,
+        "schema": schema,
+        "updated_at": site.updated_at,
     }
 
 
@@ -1592,7 +1675,12 @@ async def luma_chat(
         message=request.message,
     )
     state = intake_engine.apply_decision(state, intake_decision)
-    if state.logoBrief and str(request.message or "").strip() == str(state.logoBrief).strip() and not direct_user_question_response(intake_decision):
+    if (
+        state.logoBrief
+        and str(request.message or "").strip() == str(state.logoBrief).strip()
+        and logo_initials_requested(request.message)
+        and not direct_user_question_response(intake_decision)
+    ):
         intake_decision.userQuestionResponse = {
             "es": "Anoté el logo con las iniciales que pediste y usaré esa dirección al generarlo.",
             "fr": "J'ai noté le logo avec les initiales demandées et je suivrai cette direction pour le générer.",
@@ -1696,6 +1784,13 @@ def direct_user_question_response(decision: LyraIntakeDecision) -> str:
     return ""
 
 
+def logo_initials_requested(value: Any) -> bool:
+    return bool(re.search(
+        r"\b(?:iniciales|siglas|initials)\b\s*(?:son|sean|:|-)?\s*[A-ZÁÉÍÓÚÑ]{2,6}\b",
+        str(value or ""),
+    ))
+
+
 def apply_current_step_hint(state: Any, request: LumaChatRequest) -> None:
     """Use the active guided step as a deterministic hint before AI extraction.
 
@@ -1707,12 +1802,15 @@ def apply_current_step_hint(state: Any, request: LumaChatRequest) -> None:
     if not message:
         return
 
-    logo_request = bool(re.search(
-        r"(?:no tengo|sin) logo|(?:quiero|quisiera|necesito|me gustaria|me gustaría|podrias|podrías|puedes|quiero que).{0,32}\blogo\b|crea(?:r)?(?:me)?(?: un)? logo|haz(?:me)?(?: un)? logo|diseñ(?:a|ar)(?: un)? logo|gen[eé]rame(?: un)? logo",
-        message,
-        re.I,
-    ))
-    if logo_request:
+    logo_intent = classify_logo_intent_text(message)
+    if logo_intent == "explicit_skip":
+        state.logoPreference = "text_only"
+        state.logoBrief = None
+        state.logoGenerationStatus = None
+        mark_field_meta(state, "logo", "explicit", 0.98)
+        mark_field_meta(state, "logoPreference", "explicit", 0.98)
+        return
+    if logo_intent == "wants_generated":
         state.logoPreference = "generate_ai_logo"
         state.logoBrief = message
         mark_field_meta(state, "logo", "explicit", 0.98)
@@ -1759,12 +1857,8 @@ async def client_intake_session(
     authorization: str = Header(default=""),
     luma_client_session: str = Cookie(default=""),
 ) -> Dict[str, Any]:
-    email = str(payload.get("email") or "").strip().lower()
-    auth_user = authenticated_client_user(authorization, luma_client_session, required=False)
-    if auth_user:
-        auth_email = str(auth_user.get("email") or "").strip().lower()
-        if auth_email:
-            email = auth_email
+    auth_user = authenticated_client_user(authorization, luma_client_session)
+    email = str(auth_user.get("email") or "").strip().lower()
     if "@" not in email or "." not in email.rsplit("@", 1)[-1]:
         raise HTTPException(status_code=400, detail="A complete email is required.")
 
@@ -2028,9 +2122,12 @@ def resolve_catalog_items_and_source(state) -> tuple[list[Dict[str, Any]], Catal
         " ".join(state.servicesProducts),
     ])
     if state.catalogItems:
-        return state.catalogItems, getattr(state, "catalogSource", None) or "seed_fallback"
+        return enforce_client_declared_catalog_facts(state.catalogItems, state), getattr(state, "catalogSource", None) or "seed_fallback"
     if state_is_commerce_seed_target(state, fallback_context):
-        return semantic_seed_catalog(state, fallback_context, count=6), "seed_fallback"
+        return enforce_client_declared_catalog_facts(
+            semantic_seed_catalog(state, fallback_context, count=6),
+            state,
+        ), "seed_fallback"
     return [], getattr(state, "catalogSource", None) or "seed_fallback"
 
 

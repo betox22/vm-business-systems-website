@@ -56,6 +56,7 @@ class ColorProvenance(BaseModel):
 
     anchorColor: Optional[str] = None
     anchorSource: ColorSource = "unknown"
+    secondaryColor: Optional[str] = None
     colors: List[ColorEvidence] = Field(default_factory=list)
 
 
@@ -215,6 +216,13 @@ class ClientProjectDeleteRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     businessName: str = Field(min_length=1, max_length=220)
+
+
+class ClientSiteUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    website_schema: Dict[str, Any] = Field(alias="schema")
+    businessId: Optional[str] = Field(default=None, max_length=120)
 
 
 class AdminTemplateOverrideRequest(BaseModel):

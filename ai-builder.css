@@ -2798,6 +2798,10 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   display: none;
 }
 
+#studioAuthCloseButton[hidden] {
+  display: none !important;
+}
+
 .studio-auth-card {
   position: relative;
   width: min(460px, 100%);

@@ -18,7 +18,7 @@ from .agents import (
     template_catalog_for_state,
     unsplash_seed_url,
 )
-from .color_theory import build_palette
+from .color_theory import build_palette, resolve_color
 from .typography_theory import build_typography_scale
 from .image_assets import attach_image_asset
 from .models import AgentResult, ProjectState, WebsiteType
@@ -328,9 +328,11 @@ class PlannerCatalogItem(BaseModel):
     name: str
     description: str
     category: str
-    price: float
-    price_amount: float
-    price_label: str
+    price: Optional[float] = None
+    price_amount: Optional[float] = None
+    price_label: Optional[str] = None
+    price_type: Literal["fixed", "starting_at", "quote_only"] = "quote_only"
+    content_origin: Literal["client_declared", "ai_enriched", "seed_added"] = "ai_enriched"
     imageSearchQuery: str
 
 
@@ -823,6 +825,7 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             "price_amount": price_value if price_value is not None else "",
             "currency": str(item.get("currency") or "USD"),
             "price_label": str(item.get("price_label") or (f"USD {price_value:.2f}" if price_value is not None else "")),
+            "content_origin": str(item.get("content_origin") or "ai_enriched"),
             "rating": item.get("rating") or 4.7,
             "badge": str(item.get("badge") or "Featured"),
             "imageSearchQuery": image_query,
@@ -835,6 +838,7 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
     catalog_source = "ai_generated"
     if state:
         catalog_items, catalog_source = ensure_plan_seed_catalog_with_source(catalog_items, state, plan)
+    catalog_items = enforce_client_declared_catalog_facts(catalog_items, state)
     _mark_course_catalog_items(catalog_items, state)
 
     pages = []
@@ -887,6 +891,9 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
         plan.targetAudience,
     ]))
     palette = build_palette(anchor_color, plan.brand_identity.palette_style, niche_hint)
+    explicit_secondary = resolve_color(state.colorProvenance.secondaryColor) if state else None
+    if explicit_secondary:
+        palette["secondary"] = explicit_secondary
     typography_scale = build_typography_scale(plan.brand_identity.palette_style)
     brand_identity = {
         **plan.brand_identity.model_dump(),
@@ -935,6 +942,134 @@ def parse_price_amount(value: Any, fallback: Optional[float] = None) -> Optional
     if match:
         return round(float(match.group(0).replace(",", ".")), 2)
     return fallback
+
+
+DECLARED_PRICE_RE = re.compile(
+    r"(?:\b(?:usd|eur|dolares?|dólares?|euros?|bs\.?|ves)\b|[$€])\s*(\d+(?:[.,]\d{1,2})?)"
+    r"|(\d+(?:[.,]\d{1,2})?)\s*(?:\b(?:usd|eur|dolares?|dólares?|euros?|bs\.?|ves)\b|[$€])",
+    re.IGNORECASE,
+)
+
+
+def _declared_price_for_item(name: str, state: Optional[ProjectState]) -> Optional[float]:
+    if not state:
+        return None
+    name_tokens = _offering_match_tokens(name)
+    sources = [*state.servicesProducts, state.businessDescription or ""]
+    for source in sources:
+        source_text = str(source or "")
+        if name_tokens and not (name_tokens & _offering_match_tokens(source_text)):
+            continue
+        match = DECLARED_PRICE_RE.search(source_text)
+        if match:
+            return parse_price_amount(match.group(1) or match.group(2), None)
+    return None
+
+
+def _pending_price_label(language: str) -> str:
+    return {
+        "es": "Precio por confirmar",
+        "fr": "Prix a confirmer",
+        "pt": "Preco a confirmar",
+    }.get(language, "Price to confirm")
+
+
+def _client_declared_description(name: str, language: str) -> str:
+    return {
+        "es": f"Consulta disponibilidad, opciones y detalles de {name} directamente con el negocio.",
+        "fr": f"Consultez la disponibilite, les options et les details de {name} directement aupres de l'entreprise.",
+        "pt": f"Consulte disponibilidade, opcoes e detalhes de {name} diretamente com a empresa.",
+    }.get(language, f"Ask the business about availability, options, and details for {name}.")
+
+
+def _declared_catalog_name(name: object, client_names: List[str]) -> Optional[str]:
+    normalized = _normalized_offering_name(name)
+    exact = next((candidate for candidate in client_names if _normalized_offering_name(candidate) == normalized), None)
+    if exact:
+        return exact
+    item_tokens = _offering_match_tokens(name)
+    candidates = [
+        candidate
+        for candidate in client_names
+        if item_tokens
+        and item_tokens <= _offering_match_tokens(candidate)
+        and len(item_tokens) >= 1
+    ]
+    return min(candidates, key=len) if candidates else None
+
+
+CATALOG_MODEL_TOKEN_RE = re.compile(r"\b(?=[A-Za-z0-9-]*[A-Za-z])(?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]{1,}\b")
+CATALOG_BRAND_TOKEN_RE = re.compile(r"\b(?:[A-Z]{2,}|[A-Z][a-z]+[A-Z][A-Za-z]*)\b")
+CATALOG_LEADING_IDENTITY_RE = re.compile(
+    r"^([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ-]*(?:\s+[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ-]*){1,5})"
+    r"\s+(?:offers?|combines?|features?|delivers?|provides?|is|ofrece|combina|incluye|brinda|es)\b"
+)
+
+
+def _description_introduces_undeclared_identity(description: object, state: Optional[ProjectState]) -> bool:
+    text = str(description or "").strip()
+    if not text or not state:
+        return False
+    client_context = " ".join([
+        state.businessDescription or "",
+        *state.servicesProducts,
+        *getattr(state, "brandsCarried", []),
+    ])
+    normalized_context = _normalized_offering_name(client_context)
+    suspect_tokens = [
+        *CATALOG_MODEL_TOKEN_RE.findall(text),
+        *CATALOG_BRAND_TOKEN_RE.findall(text),
+    ]
+    leading_identity = CATALOG_LEADING_IDENTITY_RE.search(text)
+    if leading_identity:
+        suspect_tokens.append(leading_identity.group(1))
+    return any(_normalized_offering_name(token) not in normalized_context for token in suspect_tokens)
+
+
+def enforce_client_declared_catalog_facts(
+    catalog_items: List[Dict[str, Any]],
+    state: Optional[ProjectState],
+) -> List[Dict[str, Any]]:
+    """Remove prices and product claims that were not supplied by the client."""
+
+    language = state.selectedLanguage if state else "en"
+    client_names = _client_offering_names(state) if state else []
+    normalized: List[Dict[str, Any]] = []
+    for source in catalog_items:
+        item = dict(source)
+        declared_name = _declared_catalog_name(item.get("name"), client_names)
+        if declared_name:
+            item["name"] = declared_name
+            trusted_origin = item.get("content_origin") in {"client_declared", "ai_enriched"}
+            if not trusted_origin or _description_introduces_undeclared_identity(item.get("description"), state):
+                item["description"] = _client_declared_description(declared_name, language)
+                item["content_origin"] = "client_declared"
+            else:
+                item["content_origin"] = item.get("content_origin") or "ai_enriched"
+        else:
+            item["content_origin"] = item.get("content_origin") or "seed_added"
+
+        declared_price = _declared_price_for_item(str(item.get("name") or ""), state)
+        if declared_price is None:
+            item.update({
+                "price_type": "quote_only",
+                "price": None,
+                "price_value": None,
+                "price_amount": None,
+                "price_label": _pending_price_label(language),
+                "inventory_quantity": None,
+                "track_inventory": False,
+            })
+        else:
+            item.update({
+                "price_type": "fixed",
+                "price": declared_price,
+                "price_value": declared_price,
+                "price_amount": declared_price,
+                "price_label": f"USD {declared_price:.2f}",
+            })
+        normalized.append(item)
+    return normalized
 
 
 def ensure_plan_seed_catalog(catalog_items: List[Dict[str, Any]], state: ProjectState, plan: AISitePlan) -> List[Dict[str, Any]]:
@@ -1388,9 +1523,11 @@ class OpenAISitePlanAgent:
                     "name": "specific commercial product name",
                     "description": "2 to 3 lines of persuasive public product copy",
                     "category": "specific category",
-                    "price": 39.99,
-                    "price_amount": 39.99,
-                    "price_label": "USD 39.99",
+                    "price": None,
+                    "price_amount": None,
+                    "price_label": None,
+                    "price_type": "quote_only",
+                    "content_origin": "client_declared",
                     "imageSearchQuery": "english-search-keyword"
                 }],
                 "reasoningSummary": "short internal reason",
@@ -1547,7 +1684,8 @@ Hard rules:
 - clientSummary.contactInfo contains verified public contact details supplied by the client. Contact sections must use those exact values when present; never invent a phone number, email, social handle, WhatsApp number, or address.
 - clientSummary.photoUrls contains client-owned photos. Prefer those exact URLs in section media.imageUrl, starting with the hero or strongest primary visual, instead of replacing them with generic stock imagery. Never alter or invent a client photo URL.
 - clientSummary.videoUrls contains client-provided videos. Use only those exact URLs for relevant VideoShowcase sections; never invent a video URL.
-- Each catalogItems object must include id, name, description, category, numeric price, price_amount, price_label, and imageSearchQuery.
+- Never invent a price, model number, brand, technical specification, capacity, rating, inventory quantity, discount, or shipping promise. Only use those facts when clientSummary explicitly contains them.
+- Each catalogItems object must include id, name, description, category, imageSearchQuery, price, price_amount, price_label, price_type and content_origin. When no client-provided price exists, return null for all price values, price_type="quote_only", and a localized equivalent of "Price to confirm".
 - Do not generate image_url, imageUrl, stock image URLs, Unsplash URLs, CDN URLs, or any other image URL in catalogItems. KREATON resolves product imagery server-side from imageSearchQuery.
 - If a client sells a focused product family such as jewelry, handmade accessories, fashion, candles, beauty, or crafts, choose a focused store/showroom template, not a broad marketplace.
 - Choose a broad marketplace only for explicit Amazon/general-store intent or unrelated multi-category catalogs.

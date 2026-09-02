@@ -15,6 +15,11 @@ import {
 } from './config.js';
 import { escapeHtml, escapeAttribute } from './utils.js';
 import { hasValidPersistedCredential } from './auth-session-policy.js';
+import {
+  CLIENT_AUTH_VALIDATION_TIMEOUT_MS,
+  canDismissClientAuthGate,
+  visibleClientAccountEmail,
+} from './client-auth-validation-policy.js';
 import { resolveWebsiteIntentBackfill } from './guided-intent-policy.js';
 import {
   clientProjectEntryDecision,
@@ -244,10 +249,12 @@ function resetStudioAuthLoading() {
 
 function showStudioAuthLoading() {
   if (!studioAuthGate) return;
+  builderState.clientAuthStatus = "validating";
   const { content, loading, title, message } = authLoadingElements();
   clearTimeout(clientAuthSlowNoticeTimer);
   studioAuthGate.hidden = false;
   studioAuthGate.setAttribute("aria-busy", "true");
+  if (studioAuthCloseButton) studioAuthCloseButton.hidden = true;
   document.body.classList.add("studio-auth-open", "client-auth-required");
   if (content) content.hidden = true;
   if (loading) loading.hidden = false;
@@ -282,38 +289,16 @@ export function initClientIntakeSessionGate() {
     resumeClientSessionFromAuthToken();
     return;
   }
-  if (!isClientWorkspaceUnlocked()) {
-    openStudioAuthGate("start");
-    if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
-    if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
-    if (studioAuthEmail) {
-      studioAuthEmail.value = builderState.guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
-      setTimeout(() => studioAuthEmail.focus(), 80);
-    }
-    if (guidedStatusText) {
-      guidedStatusText.textContent = langText({
-        en: "Sign in first so LYRA can protect and save this workspace.",
-        es: "Inicia sesión primero para que LYRA proteja y guarde este espacio.",
-        fr: "Connectez-vous d'abord pour que LYRA protège et sauvegarde cet espace.",
-        pt: "Entre primeiro para a LYRA proteger e salvar este espaço.",
-      });
-    }
-    return;
-  }
-  const stored = readClientIntakeSession();
-  if (stored?.clientEmail) {
-    builderState.clientIntakeSession = stored;
-    hydrateClientIntakeSession(stored, { silent: true });
-    syncClientIntakeSession({ immediate: true, reason: "resume" });
-    return;
-  }
+  builderState.clientAuthStatus = "rejected";
+  builderState.authenticatedClientEmail = "";
+  clearClientWorkspaceUnlock();
   openStudioAuthGate("start");
   if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
   if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
   if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
   revealStudioAuthProviderButtons();
   if (studioAuthEmail) {
-    studioAuthEmail.value = builderState.guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
+    studioAuthEmail.value = "";
     setTimeout(() => studioAuthEmail.focus(), 80);
   }
   if (guidedStatusText) {
@@ -432,7 +417,10 @@ export function renderClientAccountControl() {
     guidedHeaderActions.insertBefore(builderState.clientProjectsButton, builderState.clientAccountButton.nextSibling);
   }
   const session = builderState.clientIntakeSession || readClientIntakeSession();
-  const email = session?.clientEmail || localStorage.getItem("lumaPendingClientEmail") || "";
+  const email = visibleClientAccountEmail(
+    builderState.clientAuthStatus,
+    builderState.authenticatedClientEmail || session?.clientEmail,
+  );
   builderState.clientAccountButton.textContent = email
     ? langText({
         en: `Account: ${compactEmailLabel(email)}`,
@@ -457,6 +445,8 @@ export function switchClientAccount() {
     if (!ok) return;
   }
   builderState.clientIntakeSession = null;
+  builderState.clientAuthStatus = "unknown";
+  builderState.authenticatedClientEmail = "";
   localStorage.removeItem(CLIENT_INTAKE_SESSION_STORAGE_KEY);
   localStorage.removeItem("lumaClientAccessToken");
   localStorage.removeItem("lumaClientRefreshToken");
@@ -488,6 +478,8 @@ export function captureClientAuthResetIntent() {
   });
   if (!shouldReset) return;
   builderState.clientIntakeSession = null;
+  builderState.clientAuthStatus = "unknown";
+  builderState.authenticatedClientEmail = "";
   clearClientWorkspaceUnlock();
   localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
   localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
@@ -522,6 +514,9 @@ export function handleExpiredClientAuth(reason = "unknown", detail = null) {
   localStorage.removeItem("lumaClientRefreshToken");
   sessionStorage.removeItem("lumaClientAccessToken");
   sessionStorage.removeItem("lumaClientRefreshToken");
+  builderState.clientAuthStatus = "rejected";
+  builderState.authenticatedClientEmail = "";
+  clearClientWorkspaceUnlock();
   fetch(CLIENT_AUTH_LOGOUT_URL, { method: "POST", credentials: "include" }).catch(() => {});
   closeClientProjectsPanel();
   renderClientAccountControl();
@@ -534,10 +529,10 @@ export async function fetchClientAuthUser() {
     console.error("Cannot validate client auth: no stored access token.");
     return null;
   }
-  const response = await fetch(CLIENT_AUTH_ME_URL, {
+  const response = await fetchWithTimeout(CLIENT_AUTH_ME_URL, {
     headers: clientAuthHeaders(),
     credentials: "include",
-  });
+  }, CLIENT_AUTH_VALIDATION_TIMEOUT_MS);
   if (!response.ok) {
     const message = await readErrorMessage(response);
     console.error("Client auth /me validation failed", {
@@ -1050,6 +1045,8 @@ export async function resumeClientSessionFromAuthToken() {
       deferHydration: true,
     });
     if (!session) return null;
+    builderState.clientAuthStatus = "authenticated";
+    builderState.authenticatedClientEmail = email;
     if (storageStatus) {
       storageStatus.textContent = session.restored
         ? langText({
@@ -1066,17 +1063,23 @@ export async function resumeClientSessionFromAuthToken() {
           });
     }
     markClientWorkspaceUnlocked();
+    restorePendingStudioAfterAuth();
     closeStudioAuthGate();
     await handleClientProjectsAfterAuth(user, session);
     return session;
   } catch (error) {
+    builderState.clientAuthStatus = "rejected";
+    builderState.authenticatedClientEmail = "";
+    clearClientWorkspaceUnlock();
     console.error("Could not resume client OAuth session", {
       message: error?.message || String(error),
       tokenPresent: Boolean(storedClientAccessToken()),
       clientIntakeSessionPresent: Boolean(builderState.clientIntakeSession),
     }, error);
     openStudioAuthGate("start");
+    renderClientAccountControl();
     if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+    if (studioAuthEmail) studioAuthEmail.value = "";
     if (storageStatus) {
       storageStatus.textContent = langText({
         en: "Could not restore the login session. Continue with email.",
@@ -1186,7 +1189,11 @@ export async function createOrResumeClientIntakeSession({ email, name = "", reas
 }
 
 export function syncClientIntakeSession({ immediate = false, reason = "autosave" } = {}) {
-  if (!isPublicClientSetup || !builderState.clientIntakeSession?.clientEmail) return;
+  if (
+    !isPublicClientSetup
+    || builderState.clientAuthStatus !== "authenticated"
+    || !builderState.clientIntakeSession?.clientEmail
+  ) return;
   const currentSnapshot = JSON.stringify(guidedStateForApi());
   if (currentSnapshot === builderState.clientIntakeLastSyncedSnapshot) return;
   clearTimeout(builderState.clientIntakeSyncTimer);
@@ -1302,8 +1309,6 @@ export function captureStudioAuthRedirect() {
     // third-party-cookie block in some browser), login still works exactly
     // as it did before via the header.
     establishServerSession(accessToken, refreshToken);
-    markClientWorkspaceUnlocked();
-    restorePendingStudioAfterAuth();
     if (isPublicClientSetup) {
       setTimeout(() => resumeClientSessionFromAuthToken(), 0);
     }
@@ -1429,6 +1434,7 @@ export function sanitizeClientSessionDraft(raw = {}) {
     colorProvenance: colorProvenance ? {
       anchorColor: trimmed(colorProvenance.anchorColor, 80) || null,
       anchorSource: trimmed(colorProvenance.anchorSource, 40) || "unknown",
+      secondaryColor: trimmed(colorProvenance.secondaryColor, 80) || null,
       colors: arrayValue(colorProvenance.colors).slice(0, 20).map((item) => ({
         color: trimmed(item?.color, 80),
         source: trimmed(item?.source, 40) || "unknown",
@@ -1456,7 +1462,9 @@ export function sanitizeClientSessionDraft(raw = {}) {
 
 export function hasStudioAccountSession() {
   return hasValidPersistedCredential({
-    clientEmails: [builderState.clientIntakeSession?.clientEmail],
+    clientEmails: builderState.clientAuthStatus === "authenticated"
+      ? [builderState.authenticatedClientEmail || builderState.clientIntakeSession?.clientEmail]
+      : [],
     accessTokens: [
       localStorage.getItem("lumaClientAccessToken"),
       sessionStorage.getItem("lumaClientAccessToken"),
@@ -1503,6 +1511,13 @@ export function openStudioAuthGate(action = "continue") {
 
 export function closeStudioAuthGate() {
   if (!studioAuthGate) return;
+  if (isPublicClientSetup && !canDismissClientAuthGate({
+    status: builderState.clientAuthStatus,
+    hasPreviewSession: Boolean(
+      localStorage.getItem("vm_portal_preview_token")
+      || sessionStorage.getItem("vm_portal_preview_token")
+    ),
+  })) return;
   resetStudioAuthLoading();
   resetMagicLinkView();
   studioAuthGate.hidden = true;
@@ -1513,6 +1528,7 @@ export function closeStudioAuthGate() {
 export async function continueWithDemoSession() {
   const pendingAction = localStorage.getItem("lumaPendingAuthAction") || "";
   sessionStorage.setItem("vm_portal_preview_token", `demo-${Date.now()}`);
+  builderState.clientAuthStatus = "demo";
   closeStudioAuthGate();
   if (pendingAction === "generate") {
     localStorage.removeItem("lumaPendingAuthAction");

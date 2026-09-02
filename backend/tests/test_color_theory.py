@@ -9,6 +9,7 @@ from app.color_theory import (
     contrast_ratio,
     generate_harmony,
     hex_to_hsl,
+    resolve_color,
 )
 from app.main import build_schema_from_state
 from app.models import ProjectState
@@ -162,6 +163,30 @@ class ColorTheoryTests(unittest.TestCase):
         schema = build_schema_from_state(state, catalog_items=[], catalog_source="seed_fallback")
 
         self.assertEqual(schema["theme"]["colors"], colors)
+
+    def test_second_explicit_named_color_is_preserved_as_secondary(self) -> None:
+        state = ProjectState(
+            businessName="ElectroHub",
+            businessDescription="Venta de telefonos y accesorios.",
+            industry="technology",
+            servicesProducts=["Telefonos", "Accesorios"],
+            colorProvenance={
+                "anchorColor": "azul electrico",
+                "anchorSource": "explicit_client",
+                "secondaryColor": "gris",
+                "colors": [
+                    {"color": "azul electrico", "source": "explicit_client"},
+                    {"color": "gris", "source": "explicit_client"},
+                ],
+            },
+        )
+
+        updates = site_plan_to_updates(_minimal_plan(), state)
+
+        self.assertEqual(resolve_color("azul electrico"), "#0066FF")
+        self.assertEqual(resolve_color("gris"), "#64748B")
+        self.assertEqual(updates["colors"]["primary"], "#0066FF")
+        self.assertEqual(updates["colors"]["secondary"], "#64748B")
 
 
 if __name__ == "__main__":

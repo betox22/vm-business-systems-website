@@ -64,7 +64,7 @@ test("OAuth account switch keeps the request created after its reset", () => {
     source.indexOf("const requestEpoch = builderState.clientIntakeSessionEpoch")
       > source.indexOf("resetGuidedStateForNewAccount"),
   );
-  assert.match(authSource, /if \(!session\) return null;\s+if \(storageStatus\)/);
+  assert.match(authSource, /if \(!session\) return null;[\s\S]*?if \(storageStatus\)/);
 });
 
 test("template preview palette lookup cannot abort OAuth resume during mixed cache loads", () => {

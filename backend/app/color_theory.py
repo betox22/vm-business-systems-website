@@ -47,6 +47,30 @@ NICHE_HUES = (
     (("real estate", "property", "inmobiliaria"), 198.0),
 )
 
+NAMED_COLORS = {
+    "rojo": "#DC2626", "red": "#DC2626",
+    "verde": "#16A34A", "green": "#16A34A",
+    "azul": "#2563EB", "blue": "#2563EB",
+    "morado": "#7C3AED", "purpura": "#7C3AED", "violeta": "#7C3AED", "purple": "#7C3AED",
+    "amarillo": "#EAB308", "yellow": "#EAB308",
+    "naranja": "#EA580C", "orange": "#EA580C",
+    "rosa": "#EC4899", "rosado": "#EC4899", "pink": "#EC4899",
+    "negro": "#111111", "black": "#111111",
+    "blanco": "#FFFFFF", "white": "#FFFFFF",
+    "gris": "#64748B", "gray": "#64748B", "grey": "#64748B",
+    "dorado": "#C89B3C", "oro": "#C89B3C", "gold": "#C89B3C",
+    "plateado": "#94A3B8", "plata": "#94A3B8", "silver": "#94A3B8",
+    "turquesa": "#0D9488", "teal": "#0D9488",
+    "cian": "#0891B2", "cyan": "#0891B2",
+    "beige": "#D6C7A1", "crema": "#F1E5C9", "cream": "#F1E5C9",
+    "marino": "#1E3A8A", "navy": "#1E3A8A",
+}
+
+NAMED_COLOR_PHRASES = {
+    "azul electrico": "#0066FF",
+    "electric blue": "#0066FF",
+}
+
 
 def _clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:
     return max(minimum, min(maximum, value))
@@ -59,6 +83,34 @@ def normalize_hex(value: object) -> Optional[str]:
     if not re.fullmatch(r"#[0-9A-Fa-f]{6}", text):
         return None
     return text.upper()
+
+
+def resolve_color(value: object) -> Optional[str]:
+    normalized_hex = normalize_hex(value)
+    if normalized_hex:
+        return normalized_hex
+    text = unicodedata.normalize("NFKD", str(value or "").lower())
+    text = "".join(character for character in text if not unicodedata.combining(character))
+    phrase_color = next((hex_value for phrase, hex_value in NAMED_COLOR_PHRASES.items() if phrase in text), None)
+    if phrase_color:
+        return phrase_color
+    base = next((
+        hex_value
+        for name, hex_value in NAMED_COLORS.items()
+        if re.search(rf"\b{re.escape(name)}\b", text)
+    ), None)
+    if not base:
+        return None
+    hue, saturation, lightness = hex_to_hsl(base)
+    if re.search(r"\b(?:electrico|electric|neon)\b", text):
+        saturation = max(saturation, 0.95)
+        lightness = min(max(lightness, 0.50), 0.56)
+    elif re.search(r"\b(?:oscuro|dark|profundo|deep)\b", text):
+        lightness = min(lightness, 0.28)
+    elif re.search(r"\b(?:claro|light|pastel|suave|soft)\b", text):
+        saturation = min(saturation, 0.62)
+        lightness = max(lightness, 0.72)
+    return hsl_to_hex((hue, saturation, lightness))
 
 
 def hex_to_hsl(value: str) -> HSL:
@@ -193,7 +245,7 @@ def build_palette(
 ) -> Dict[str, str]:
     style = _normalize_style(palette_style)
     rule = STYLE_RULES[style]
-    normalized_anchor = normalize_hex(anchor_hex_or_none)
+    normalized_anchor = resolve_color(anchor_hex_or_none)
     if normalized_anchor:
         anchor_hsl = hex_to_hsl(normalized_anchor)
     else:

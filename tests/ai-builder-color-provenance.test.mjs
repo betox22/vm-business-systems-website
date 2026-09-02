@@ -13,5 +13,6 @@ test("default preview brand does not become an authoritative color anchor", () =
 
   assert.equal(result.anchorColor, null);
   assert.equal(result.anchorSource, "unknown");
+  assert.equal(result.secondaryColor, null);
   assert.deepEqual(result.colors, []);
 });

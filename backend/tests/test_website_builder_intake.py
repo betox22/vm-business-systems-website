@@ -179,7 +179,10 @@ class WebsiteBuilderIntakeTests(unittest.TestCase):
 
         retry.assert_awaited_once()
         self.assertEqual(response.catalog_source, "ai_generated")
-        self.assertEqual(response.website_schema["catalog_items"][0]["name"], "3D Printer")
+        first_item = response.website_schema["catalog_items"][0]
+        self.assertEqual(first_item["name"], "3D printers")
+        self.assertEqual(first_item["price_type"], "quote_only")
+        self.assertIsNone(first_item["price_amount"])
 
     def test_seed_fallback_stops_after_one_planner_retry(self) -> None:
         request = WebsiteGenerationRequest(

@@ -61,6 +61,33 @@ SLOT_FIELD_ALIASES = {
 
 VALID_BRAND_STYLE_PATHS = {"explicit_preference", "explicit_delegation"}
 VALID_LOGO_PATHS = {"has_logo", "wants_generated", "explicit_skip"}
+
+LOGO_EXPLICIT_SKIP_RE = re.compile(
+    r"\b(?:continuar|seguir|prefiero|quiero|vamos a seguir|proceed|continue)\b.{0,36}\b(?:sin|without)\s+(?:un\s+|a\s+)?logo\b"
+    r"|\b(?:sin|without)\s+(?:un\s+|a\s+)?logo\b.{0,36}\b(?:por ahora|for now|de momento|ahora)\b",
+    re.IGNORECASE,
+)
+LOGO_GENERATION_REQUEST_RE = re.compile(
+    r"(?:quiero|quisiera|necesito|me gustaria|me gustaría|podrias|podrías|puedes|quiero que|we need|i want|i need|could you|can you).{0,40}\b(?:crear|crees|diseñ(?:a|ar|es)|disen(?:a|ar|es)|generar|hacer|make|create|design|generate)(?:me)?\b.{0,24}\blogo\b"
+    r"|\b(?:crea(?:r)?(?:me)?|haz(?:me)?|diseñ(?:a|ar)|disena(?:r)?|gen[eé]rame|generate|make|design)(?:\s+(?:un|a))?\s+logo\b",
+    re.IGNORECASE,
+)
+
+
+def classify_logo_intent_text(value: Any) -> str:
+    text = str(value or "").strip()
+    compact = text.lower().replace(" ", "_").replace("-", "_")
+    if compact in VALID_LOGO_PATHS:
+        return compact
+    if LOGO_EXPLICIT_SKIP_RE.search(text) or any(
+        phrase in compact for phrase in ("skip_logo", "no_logo", "sin_logo_por_ahora", "continue_without_logo")
+    ):
+        return "explicit_skip"
+    if LOGO_GENERATION_REQUEST_RE.search(text):
+        return "wants_generated"
+    if any(phrase in compact for phrase in ("upload_logo", "subir_logo", "tengo_logo", "has_logo")):
+        return "has_logo"
+    return ""
 VALID_SALES_FLOWS = {"online_sales", "quote_request", "booking", "lead_capture", "informational"}
 CATALOG_DEPTH_SALES_FLOWS = {"online_sales", "quote_request", "booking"}
 MIN_CONCRETE_OFFERINGS = 2
@@ -669,6 +696,12 @@ class LyraIntakeEngine:
             if logo_path not in VALID_LOGO_PATHS or tracked.source not in {"explicit", "explicit_delegation"}:
                 return
             field_meta["logo"] = FieldMeta(source="explicit", confidence=max(tracked.confidence, 0.82))
+            if logo_path == "wants_generated":
+                updated_state["logoPreference"] = "generate_ai_logo"
+            elif logo_path == "explicit_skip":
+                updated_state["logoPreference"] = "text_only"
+                updated_state["logoBrief"] = ""
+                updated_state["logoGenerationStatus"] = ""
             if logo_path == "has_logo" and isinstance(tracked.value, dict) and tracked.value.get("url"):
                 updated_state["logoUrl"] = tracked.value.get("url")
                 field_meta["logoUrl"] = FieldMeta(source="explicit", confidence=max(tracked.confidence, 0.9))
@@ -705,12 +738,9 @@ class LyraIntakeEngine:
             return compact
         if any(phrase in compact for phrase in ("tu_decide", "tú_decide", "sorprendeme", "sorpréndeme", "lyra_decides", "you_decide")):
             return "explicit_delegation"
-        if any(phrase in compact for phrase in ("generate", "generar", "crear", "design_one", "diseñar", "disenar")):
-            return "wants_generated"
-        if any(phrase in compact for phrase in ("upload", "subir", "tengo_logo", "has_logo")):
-            return "has_logo"
-        if any(phrase in compact for phrase in ("skip", "despues", "después", "later", "no_logo", "sin_logo")):
-            return "explicit_skip"
+        logo_intent = classify_logo_intent_text(text)
+        if logo_intent:
+            return logo_intent
         return compact
 
     @staticmethod

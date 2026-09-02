@@ -52,6 +52,7 @@ import {
   resolveWebsiteIntentBackfill,
 } from './guided-intent-policy.js';
 import { mergeSemanticSeedCatalog } from './catalog-seed-policy.js';
+import { truthfulCatalogPricing } from './catalog-pricing-policy.js';
 import { isMegaRetailTemplate, megaRetailFeatureFlags } from './mega-retail-policy.js';
 import { hasDecidedTemplateSelection, isConcreteTemplateId } from './template-carousel-policy.js';
 import { constructionPreviewModel } from './construction-preview-policy.js';
@@ -2387,6 +2388,57 @@ function formatDraftSavedAt(value) {
   }
 }
 
+let pendingClientSiteSave = null;
+let clientSiteSaveInFlight = null;
+
+async function drainClientSiteSaveQueue() {
+  while (pendingClientSiteSave) {
+    const payload = pendingClientSiteSave;
+    pendingClientSiteSave = null;
+    const response = await fetch(`${API_BASE_URL}/api/client/sites/${encodeURIComponent(payload.siteId)}`, {
+      method: "PUT",
+      headers: clientAuthHeaders({ "content-type": "application/json" }),
+      credentials: "include",
+      body: JSON.stringify({
+        schema: payload.schema,
+        businessId: payload.businessId || undefined,
+      }),
+    });
+    if (!response.ok) {
+      const detail = await readErrorMessage(response);
+      if (response.status === 401) handleExpiredClientAuth("site-save-401", { status: response.status, detail });
+      throw new Error(detail || "Could not save the website to your account.");
+    }
+    const saved = await response.json();
+    if (storageStatus) storageStatus.textContent = saved.storage_status === "stored" ? "Saved to database" : saved.storage_status;
+  }
+}
+
+export function persistGeneratedSiteForClient(result = {}) {
+  if (!isPublicClientSetup || builderState.clientAuthStatus !== "authenticated") return Promise.resolve(null);
+  const siteId = result.generatedSiteId || result.projectId || result.site_id || builderState.currentSiteId;
+  const schema = result.schema || builderState.currentSchema;
+  if (!siteId || !schema) return Promise.resolve(null);
+  pendingClientSiteSave = {
+    siteId,
+    businessId: result.business_id || builderState.currentBusinessId || "",
+    schema: structuredClone(schema),
+  };
+  if (!clientSiteSaveInFlight) {
+    clientSiteSaveInFlight = drainClientSiteSaveQueue()
+      .catch((error) => {
+        console.error("Could not persist client website changes", error);
+        if (storageStatus) storageStatus.textContent = "Changes are saved in this browser, but not yet in your account.";
+        return null;
+      })
+      .finally(() => {
+        clientSiteSaveInFlight = null;
+        if (pendingClientSiteSave) persistGeneratedSiteForClient();
+      });
+  }
+  return clientSiteSaveInFlight;
+}
+
 export function saveGeneratedSite(result) {
   if (!isPublicClientSetup) return;
   try {
@@ -2402,6 +2454,7 @@ export function saveGeneratedSite(result) {
   } catch {
     // Generated previews can be large; if storage is full, keep the live preview only.
   }
+  return persistGeneratedSiteForClient(result);
 }
 
 function restoreGeneratedSite() {
@@ -8097,17 +8150,15 @@ function buildInstantTemplateSchema(payload, templateSelection) {
     name: item,
     description: copy.itemDescription(name),
     category: marketplaceCategoryForIndex(index, copy, categoryContext, language, item),
-    rating: (4.3 + ((index % 5) * 0.12)).toFixed(1),
-    review_count: 42 + index * 31,
-    shipping_label: index % 2 === 0 ? copy.fastDelivery : copy.freeShipping,
-    deal_label: index % 3 === 0 ? copy.todayDeal : "",
-    price_type: isOnlineShop ? "fixed" : "quote_only",
-    price_amount: (isMarketplaceTemplate || isMegaRetailTemplate) ? marketplacePriceForIndex(index) : "",
+    rating: null,
+    review_count: null,
+    shipping_label: "",
+    deal_label: "",
+    ...truthfulCatalogPricing(item, language),
     currency: "USD",
-    price_label: (isMarketplaceTemplate || isMegaRetailTemplate) ? `USD ${marketplacePriceForIndex(index).toFixed(2)}` : (isOnlineShop ? copy.priceNotSet : copy.askPrice),
-    button_label: isOnlineShop ? copy.viewProduct : copy.request,
-    inventory_quantity: (isMarketplaceTemplate || isMegaRetailTemplate) ? 24 + index * 3 : "",
-    track_inventory: isOnlineShop,
+    button_label: copy.request,
+    inventory_quantity: null,
+    content_origin: "client_declared",
     image_url: bathBodyStockImageUrl(item),
     is_active: true,
     is_featured: index < 3,
@@ -12628,6 +12679,11 @@ function finishInlineEdit(commit) {
       const catalogPath = path.replace(/^products_services\./, "catalog_items.");
       setPath({ catalog_items: builderState.currentCatalogItems }, catalogPath, nextText);
     }
+    saveGeneratedSite({
+      business_id: builderState.currentBusinessId,
+      site_id: builderState.currentSiteId,
+      schema: builderState.currentSchema,
+    });
   }
   if (sectionId) builderState.selectedStudioSectionId = sectionId;
   renderEditor();

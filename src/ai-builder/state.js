@@ -107,6 +107,8 @@ export const builderState = {
   clientProjects: [],
   clientWorkspaceIdleTimer: null,
   clientWorkspaceUnlocked: false,
+  clientAuthStatus: 'unknown',
+  authenticatedClientEmail: '',
   clientAuthResumePromise: null,
   studioAuthRedirectCaptureComplete: false,
   guidedState: createEmptyGuidedState(initialSelectedLanguage),

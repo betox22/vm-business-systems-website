@@ -1036,9 +1036,11 @@
     append(explicitPreferred, "explicit_client");
     append(logoColors, "logo_extracted");
     const anchor = entries[0] || null;
+    const explicitColors = entries.filter((entry) => entry.source === "explicit_client");
     return {
       anchorColor: anchor?.color || null,
       anchorSource: anchor?.source || "unknown",
+      secondaryColor: explicitColors[1]?.color || null,
       colors: entries
     };
   }
@@ -1503,6 +1505,37 @@
     return merged.slice(0, 6);
   }
 
+  // src/ai-builder/catalog-pricing-policy.js
+  var DECLARED_PRICE_RE = /(?:\b(?:usd|eur|dolares?|dólares?|euros?|bs\.?|ves)\b|[$€])\s*(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*(?:\b(?:usd|eur|dolares?|dólares?|euros?|bs\.?|ves)\b|[$€])/i;
+  function declaredCatalogPrice(value = "") {
+    const match = String(value || "").match(DECLARED_PRICE_RE);
+    if (!match) return null;
+    const amount = Number(String(match[1] || match[2]).replace(",", "."));
+    return Number.isFinite(amount) && amount > 0 ? amount : null;
+  }
+  function truthfulCatalogPricing(value = "", language = "en") {
+    const amount = declaredCatalogPrice(value);
+    if (amount !== null) {
+      return {
+        price_type: "fixed",
+        price_amount: amount,
+        price_label: `USD ${amount.toFixed(2)}`,
+        track_inventory: false
+      };
+    }
+    const label = {
+      es: "Precio por confirmar",
+      fr: "Prix a confirmer",
+      pt: "Preco a confirmar"
+    }[language] || "Price to confirm";
+    return {
+      price_type: "quote_only",
+      price_amount: null,
+      price_label: label,
+      track_inventory: false
+    };
+  }
+
   // src/ai-builder/catalog-preview-policy.js
   function normalized(value) {
     return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -1684,15 +1717,25 @@
 
   // src/ai-builder/logo-intent-policy.js
   var LOGO_CONTEXT_RE = /logo|brand mark|marca visual|identidad visual|brand identity/i;
-  var DIRECT_LOGO_REQUEST_RE = /(?:no tengo|sin) logo|(?:quiero|quisiera|necesito|me gustaria|me gustaría|podrias|podrías|puedes|quiero que|we need|i want|i need|could you|can you).{0,32}\blogo\b|crea(?:r)?(?:me)?(?: un)? logo|crear(?: un)? logo|generate(?: a)? logo|make(?: a)? logo|haz(?:me)?(?: un)? logo|diseñ(?:a|ar)(?: un)? logo|disena(?:r)?(?: un)? logo|gen[eé]rame(?: un)? logo/i;
+  var EXPLICIT_LOGO_SKIP_RE = /\b(?:continuar|seguir|prefiero|quiero|vamos a seguir|proceed|continue)\b.{0,36}\b(?:sin|without)\s+(?:un\s+|a\s+)?logo\b|\b(?:sin|without)\s+(?:un\s+|a\s+)?logo\b.{0,36}\b(?:por ahora|for now|de momento|ahora)\b/i;
+  var DIRECT_LOGO_REQUEST_RE = /(?:quiero|quisiera|necesito|me gustaria|me gustaría|podrias|podrías|puedes|quiero que|we need|i want|i need|could you|can you).{0,40}\b(?:crear|crees|diseñ(?:a|ar|es)|disen(?:a|ar|es)|generar|hacer|make|create|design|generate)(?:me)?\b.{0,24}\blogo\b|\b(?:crea(?:r)?(?:me)?|haz(?:me)?|diseñ(?:a|ar)|disena(?:r)?|gen[eé]rame|generate|make|design)(?:\s+(?:un|a))?\s+logo\b/i;
   var DELEGATED_LOGO_RE = /(?:lyra|ia|ai|tu|t[uú]|you)\s+(?:decide|elige|choose|hazlo|create it)|(?:decide|elige|hazlo|crealo|créalo|generalo|gen[eé]ralo)\s+(?:tu|t[uú]|lyra|ia|ai|you)|sorpr[eé]ndeme|surprise me|you decide/i;
   function wantsAiGeneratedLogo(value, options = {}) {
     const text = String(value || "").trim();
+    if (EXPLICIT_LOGO_SKIP_RE.test(text)) return false;
     const logoContext = Boolean(options.assumeLogoContext) || LOGO_CONTEXT_RE.test(text);
     return DIRECT_LOGO_REQUEST_RE.test(text) || logoContext && DELEGATED_LOGO_RE.test(text);
   }
   function logoRequestUpdate(value, options = {}) {
     const text = String(value || "").trim();
+    if (EXPLICIT_LOGO_SKIP_RE.test(text)) {
+      return {
+        hasLogoPhotos: text,
+        logoBrief: "",
+        aiGeneratedLogoRequested: false,
+        logoPreference: "text_only"
+      };
+    }
     if (!wantsAiGeneratedLogo(text, options)) return null;
     return {
       hasLogoPhotos: text,
@@ -1955,7 +1998,7 @@
     const index = items.findIndex((candidate) => candidate === item || candidate?.page_key && item?.page_key && candidate.page_key === item.page_key);
     return index >= 0 ? `navigation.${index}.label` : "";
   }
-  function inlineEditPageTitlePath(schema, page) {
+  function inlineEditPageTitlePath2(schema, page) {
     const pages = Array.isArray(schema?.pages) ? schema.pages : [];
     const index = pages.findIndex((candidate) => candidate === page || candidate?.page_key && page?.page_key && candidate.page_key === page.page_key);
     return index >= 0 ? `pages.${index}.title` : "";
@@ -2248,7 +2291,7 @@
     const startPage = (plans.length ? pricingPage : null) || contactPage || navigation[0]?.page || pages[0];
     return `<header class="b2b-saas-header">
     <a class="b2b-saas-brand" href="#" data-page-link="${escapeAttribute(pages[0]?.page_key || "home")}">${renderBrand(schema, logo)}</a>
-    <nav aria-label="${escapeAttribute(labels.navigation)}">${navigation.map(({ key, page: target }) => `<a class="${target.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(target.page_key)}" ${inlineEditAttrsForPath2(schema, inlineEditPageTitlePath(schema, target), "nav_label")}>${escapeHtml(target.title || labels.nav[key])}</a>`).join("")}</nav>
+    <nav aria-label="${escapeAttribute(labels.navigation)}">${navigation.map(({ key, page: target }) => `<a class="${target.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(target.page_key)}" ${inlineEditAttrsForPath2(schema, inlineEditPageTitlePath2(schema, target), "nav_label")}>${escapeHtml(target.title || labels.nav[key])}</a>`).join("")}</nav>
     <div class="b2b-saas-header-actions">${loginPage ? `<a class="b2b-saas-login" href="#" data-page-link="${escapeAttribute(loginPage.page_key)}">${escapeHtml(labels.login)}</a>` : ""}<button class="b2b-saas-start" type="button" data-page-link="${escapeAttribute(startPage?.page_key || "")}">${escapeHtml(labels.start)}</button></div>
   </header>`;
   }
@@ -5678,7 +5721,7 @@
   }
   function supportsExpandedInlineEditing(schema = {}) {
     const templateId = schema.active_template?.id || schema.selected_template?.id || "";
-    return templateId === "b2b-saas-enterprise-pro" || supportsSharedShellInlineEditing(templateId);
+    return templateId === "b2b-saas-enterprise-pro" || templateId === "mega-retail-store" || supportsSharedShellInlineEditing(templateId);
   }
   function inlineEditableValue2(editable, field, fallback = "") {
     return Object.prototype.hasOwnProperty.call(editable || {}, field) ? editable[field] : fallback;
@@ -5700,7 +5743,7 @@
     const remainingSections = sections.filter((section) => !absorbedTypes.has(section.type));
     return `<div class="rendered-site layout-${escapeAttribute(slugify2(layoutId))} template-${escapeAttribute(slugify2(templateId))}" style="${themeVars(theme, schema.brand)};--mega-tile-tint:${escapeAttribute(brandTint)}">
     ${renderStudioFloatingCatalog(schema, context)}
-    <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div></div>
+    <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditPageTitlePath(schema, item), "nav_label")}>${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div></div>
     ${renderMegaRetailHeader(schema, page, logo, categories, labels, false)}
     ${page?.page_key === "home" || page === pages[0] ? `${renderMegaRetailBento(schema, hero, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailDeals(schema, sections, items, labels, false)}${renderMegaRetailTrust(sections, labels)}` : ""}
     ${remainingSections.map((section) => renderSection(section, schema)).join("")}
@@ -5728,14 +5771,17 @@
       const title = index === 0 ? heroCopy.headline || schema.business?.name || labels.featured : category;
       const text = index === 0 ? heroCopy.subtitle || schema.business?.description || labels.heroText : item?.description || labels.discover;
       const className = index === 0 ? "is-primary" : index === 1 ? "is-medium" : "is-small";
-      return `<article class="mega-retail-tile ${className} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}" data-motion-item><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"} ${index === 0 ? "data-motion-headline" : ""}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p ${index === 0 ? "data-motion-copy" : ""}>${escapeHtml(text)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}" ${index === 0 ? "data-motion-cta" : ""}>${escapeHtml(labels.explore)} ${megaRetailIcon("arrow")}</button></div></article>`;
+      const titleAttrs = index === 0 ? inlineEditAttrs(schema, heroSection, "headline") : inlineCatalogEditAttrs(schema, item, "category", "product_name");
+      const textAttrs = index === 0 ? inlineEditAttrs(schema, heroSection, "subtitle") : inlineCatalogEditAttrs(schema, item, "description", "product_description");
+      const buttonAttrs = index === 0 ? inlineEditAttrs(schema, heroSection, "primary_button") : "";
+      return `<article class="mega-retail-tile ${className} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}" data-motion-item><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"} ${index === 0 ? "data-motion-headline" : ""} ${titleAttrs}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p ${index === 0 ? "data-motion-copy" : ""} ${textAttrs}>${escapeHtml(text)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}" ${index === 0 ? "data-motion-cta" : ""} ${buttonAttrs}>${escapeHtml(labels.explore)} ${megaRetailIcon("arrow")}</button></div></article>`;
     });
     return `<main class="mega-retail-bento" ${motionDataAttributes(heroSection.motion)}>${tiles.join("")}</main>`;
   }
   function renderMegaRetailDeals(schema, sections, items, labels, interactive) {
     const commerce = commerceLabels(schema);
     const source = sections.find((section) => ["DealRow", "ProductGrid"].includes(section.type)) || {};
-    return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${interactive ? `data-cart-add data-item-id="${escapeAttribute(item.id || item.name || "")}" data-item-name="${escapeAttribute(item.name || "")}" data-item-price="${escapeAttribute(item.price_label || "")}"` : ""}>${escapeHtml(commerce.addToCart)}</button></div></article>`).join("")}</div></section>`;
+    return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small ${inlineCatalogEditAttrs(schema, item, "category", "product_name")}>${escapeHtml(item.category || labels.department)}</small><h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name || "")}</h3><p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${interactive ? `data-cart-add data-item-id="${escapeAttribute(item.id || item.name || "")}" data-item-name="${escapeAttribute(item.name || "")}" data-item-price="${escapeAttribute(item.price_label || "")}"` : ""}>${escapeHtml(commerce.addToCart)}</button></div></article>`).join("")}</div></section>`;
   }
   function megaRetailDiscountBadge(item = {}) {
     const badge = item.badge || item.deal_label || item.discount_label || "";
@@ -5748,7 +5794,7 @@
   function renderMegaRetailFooter(schema, pages, logo, labels, features) {
     const socials = megaRetailSocialLinks(schema.contact || {});
     const newsletter = features.newsletter ? `<div><strong>${escapeHtml(labels.newsletter)}</strong><p>${escapeHtml(labels.newsletterText)}</p><div class="mega-retail-newsletter"><input type="email" aria-label="Email" placeholder="email@example.com"><button type="button" data-open-lead aria-label="${escapeAttribute(labels.subscribe)}">${megaRetailIcon("arrow")}</button></div></div>` : "";
-    return `<footer class="mega-retail-footer"><div class="mega-retail-footer-grid ${features.newsletter ? "" : "is-three-column"}"><div><div class="mega-retail-footer-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="">` : renderLogoMark(schema)}</div><p>${escapeHtml(schema.business?.description || labels.tagline)}</p>${features.socials && socials ? `<div class="mega-retail-socials">${socials}</div>` : ""}</div><div><strong>${escapeHtml(labels.help)}</strong>${labels.helpLinks.map((label) => `<a href="#contact" data-page-link="${escapeAttribute(pages.find((item) => /contact/i.test(item.page_key || item.title))?.page_key || pages[0]?.page_key || "home")}">${escapeHtml(label)}</a>`).join("")}</div><div><strong>${escapeHtml(labels.company)}</strong>${pages.slice(0, 4).map((item) => `<a href="#${escapeAttribute(item.page_key)}" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div>${newsletter}</div><div class="mega-retail-footer-bottom"><span>${escapeHtml(schema.global_components?.footer_text || `\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} ${schema.business?.name || ""}`)}</span><div class="mega-retail-payments"><span>VISA</span><span>MC</span><span>AMEX</span><span>Pay</span></div></div></footer>`;
+    return `<footer class="mega-retail-footer"><div class="mega-retail-footer-grid ${features.newsletter ? "" : "is-three-column"}"><div><div class="mega-retail-footer-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="">` : renderLogoMark(schema)}</div><p>${escapeHtml(schema.business?.description || labels.tagline)}</p>${features.socials && socials ? `<div class="mega-retail-socials">${socials}</div>` : ""}</div><div><strong>${escapeHtml(labels.help)}</strong>${labels.helpLinks.map((label) => `<a href="#contact" data-page-link="${escapeAttribute(pages.find((item) => /contact/i.test(item.page_key || item.title))?.page_key || pages[0]?.page_key || "home")}">${escapeHtml(label)}</a>`).join("")}</div><div><strong>${escapeHtml(labels.company)}</strong>${pages.slice(0, 4).map((item) => `<a href="#${escapeAttribute(item.page_key)}" data-page-link="${escapeAttribute(item.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditPageTitlePath(schema, item), "nav_label")}>${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div>${newsletter}</div><div class="mega-retail-footer-bottom"><span ${inlineEditAttrsForPath(schema, "global_components.footer_text", "footer_text")}>${escapeHtml(schema.global_components?.footer_text || `\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} ${schema.business?.name || ""}`)}</span><div class="mega-retail-payments"><span>VISA</span><span>MC</span><span>AMEX</span><span>Pay</span></div></div></footer>`;
   }
   function megaRetailSocialLinks(contact = {}) {
     return [["instagram", "Instagram"], ["facebook", "Facebook"], ["tiktok", "TikTok"], ["twitter", "Twitter"]].map(([key, label]) => {
@@ -6006,6 +6052,8 @@
     clientProjects: [],
     clientWorkspaceIdleTimer: null,
     clientWorkspaceUnlocked: false,
+    clientAuthStatus: "unknown",
+    authenticatedClientEmail: "",
     clientAuthResumePromise: null,
     studioAuthRedirectCaptureComplete: false,
     guidedState: createEmptyGuidedState(initialSelectedLanguage),
@@ -6086,6 +6134,19 @@
   var guidedHeaderActions = document.querySelector(".guided-header-actions");
   var builderAvatarRoot = document.querySelector("#builderAvatarAssistant");
   var builderAvatarManager = window.AvatarStateManager ? new window.AvatarStateManager("idle") : null;
+
+  // src/ai-builder/client-auth-validation-policy.js
+  var CLIENT_AUTH_VALIDATION_TIMEOUT_MS = 12e3;
+  function isConfirmedClientAuthStatus(status) {
+    return status === "authenticated" || status === "demo";
+  }
+  function visibleClientAccountEmail(status, email) {
+    if (status !== "authenticated") return "";
+    return String(email || "").trim();
+  }
+  function canDismissClientAuthGate({ status, hasPreviewSession = false } = {}) {
+    return isConfirmedClientAuthStatus(status) || Boolean(hasPreviewSession);
+  }
 
   // src/ai-builder/client-project-resume-policy.js
   function clientProjectEntryDecision({ projects = [], hasCurrentSchema = false } = {}) {
@@ -6369,10 +6430,12 @@
   }
   function showStudioAuthLoading() {
     if (!studioAuthGate) return;
+    builderState.clientAuthStatus = "validating";
     const { content, loading, title, message } = authLoadingElements();
     clearTimeout(clientAuthSlowNoticeTimer);
     studioAuthGate.hidden = false;
     studioAuthGate.setAttribute("aria-busy", "true");
+    if (studioAuthCloseButton) studioAuthCloseButton.hidden = true;
     document.body.classList.add("studio-auth-open", "client-auth-required");
     if (content) content.hidden = true;
     if (loading) loading.hidden = false;
@@ -6406,38 +6469,16 @@
       resumeClientSessionFromAuthToken();
       return;
     }
-    if (!isClientWorkspaceUnlocked()) {
-      openStudioAuthGate("start");
-      if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
-      if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
-      if (studioAuthEmail) {
-        studioAuthEmail.value = builderState.guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
-        setTimeout(() => studioAuthEmail.focus(), 80);
-      }
-      if (guidedStatusText) {
-        guidedStatusText.textContent = langText({
-          en: "Sign in first so LYRA can protect and save this workspace.",
-          es: "Inicia sesi\xF3n primero para que LYRA proteja y guarde este espacio.",
-          fr: "Connectez-vous d'abord pour que LYRA prot\xE8ge et sauvegarde cet espace.",
-          pt: "Entre primeiro para a LYRA proteger e salvar este espa\xE7o."
-        });
-      }
-      return;
-    }
-    const stored = readClientIntakeSession();
-    if (stored?.clientEmail) {
-      builderState.clientIntakeSession = stored;
-      hydrateClientIntakeSession(stored, { silent: true });
-      syncClientIntakeSession({ immediate: true, reason: "resume" });
-      return;
-    }
+    builderState.clientAuthStatus = "rejected";
+    builderState.authenticatedClientEmail = "";
+    clearClientWorkspaceUnlock();
     openStudioAuthGate("start");
     if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
     if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
     if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
     revealStudioAuthProviderButtons();
     if (studioAuthEmail) {
-      studioAuthEmail.value = builderState.guidedState.contactInfo?.email || localStorage.getItem("lumaPendingClientEmail") || "";
+      studioAuthEmail.value = "";
       setTimeout(() => studioAuthEmail.focus(), 80);
     }
     if (guidedStatusText) {
@@ -6544,7 +6585,10 @@
       guidedHeaderActions.insertBefore(builderState.clientProjectsButton, builderState.clientAccountButton.nextSibling);
     }
     const session = builderState.clientIntakeSession || readClientIntakeSession();
-    const email = session?.clientEmail || localStorage.getItem("lumaPendingClientEmail") || "";
+    const email = visibleClientAccountEmail(
+      builderState.clientAuthStatus,
+      builderState.authenticatedClientEmail || session?.clientEmail
+    );
     builderState.clientAccountButton.textContent = email ? langText({
       en: `Account: ${compactEmailLabel(email)}`,
       es: `Cuenta: ${compactEmailLabel(email)}`,
@@ -6566,6 +6610,8 @@
       if (!ok) return;
     }
     builderState.clientIntakeSession = null;
+    builderState.clientAuthStatus = "unknown";
+    builderState.authenticatedClientEmail = "";
     localStorage.removeItem(CLIENT_INTAKE_SESSION_STORAGE_KEY);
     localStorage.removeItem("lumaClientAccessToken");
     localStorage.removeItem("lumaClientRefreshToken");
@@ -6596,6 +6642,8 @@
     });
     if (!shouldReset) return;
     builderState.clientIntakeSession = null;
+    builderState.clientAuthStatus = "unknown";
+    builderState.authenticatedClientEmail = "";
     clearClientWorkspaceUnlock();
     localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
     localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
@@ -6628,6 +6676,9 @@
     localStorage.removeItem("lumaClientRefreshToken");
     sessionStorage.removeItem("lumaClientAccessToken");
     sessionStorage.removeItem("lumaClientRefreshToken");
+    builderState.clientAuthStatus = "rejected";
+    builderState.authenticatedClientEmail = "";
+    clearClientWorkspaceUnlock();
     fetch(CLIENT_AUTH_LOGOUT_URL, { method: "POST", credentials: "include" }).catch(() => {
     });
     closeClientProjectsPanel();
@@ -6640,10 +6691,10 @@
       console.error("Cannot validate client auth: no stored access token.");
       return null;
     }
-    const response = await fetch(CLIENT_AUTH_ME_URL, {
+    const response = await fetchWithTimeout(CLIENT_AUTH_ME_URL, {
       headers: clientAuthHeaders(),
       credentials: "include"
-    });
+    }, CLIENT_AUTH_VALIDATION_TIMEOUT_MS);
     if (!response.ok) {
       const message = await readErrorMessage(response);
       console.error("Client auth /me validation failed", {
@@ -7128,6 +7179,8 @@
           deferHydration: true
         });
         if (!session) return null;
+        builderState.clientAuthStatus = "authenticated";
+        builderState.authenticatedClientEmail = email;
         if (storageStatus) {
           storageStatus.textContent = session.restored ? langText({
             en: "Session restored. LYRA will keep saving your progress.",
@@ -7142,17 +7195,23 @@
           });
         }
         markClientWorkspaceUnlocked();
+        restorePendingStudioAfterAuth();
         closeStudioAuthGate();
         await handleClientProjectsAfterAuth(user, session);
         return session;
       } catch (error) {
+        builderState.clientAuthStatus = "rejected";
+        builderState.authenticatedClientEmail = "";
+        clearClientWorkspaceUnlock();
         console.error("Could not resume client OAuth session", {
           message: error?.message || String(error),
           tokenPresent: Boolean(storedClientAccessToken()),
           clientIntakeSessionPresent: Boolean(builderState.clientIntakeSession)
         }, error);
         openStudioAuthGate("start");
+        renderClientAccountControl();
         if (studioEmailAuthForm) studioEmailAuthForm.hidden = false;
+        if (studioAuthEmail) studioAuthEmail.value = "";
         if (storageStatus) {
           storageStatus.textContent = langText({
             en: "Could not restore the login session. Continue with email.",
@@ -7252,7 +7311,7 @@
     return session;
   }
   function syncClientIntakeSession({ immediate = false, reason = "autosave" } = {}) {
-    if (!isPublicClientSetup || !builderState.clientIntakeSession?.clientEmail) return;
+    if (!isPublicClientSetup || builderState.clientAuthStatus !== "authenticated" || !builderState.clientIntakeSession?.clientEmail) return;
     const currentSnapshot = JSON.stringify(guidedStateForApi());
     if (currentSnapshot === builderState.clientIntakeLastSyncedSnapshot) return;
     clearTimeout(builderState.clientIntakeSyncTimer);
@@ -7357,8 +7416,6 @@
       localStorage.setItem("lumaClientAccessToken", accessToken);
       if (refreshToken) localStorage.setItem("lumaClientRefreshToken", refreshToken);
       establishServerSession(accessToken, refreshToken);
-      markClientWorkspaceUnlocked();
-      restorePendingStudioAfterAuth();
       if (isPublicClientSetup) {
         setTimeout(() => resumeClientSessionFromAuthToken(), 0);
       }
@@ -7479,6 +7536,7 @@
       colorProvenance: colorProvenance ? {
         anchorColor: trimmed(colorProvenance.anchorColor, 80) || null,
         anchorSource: trimmed(colorProvenance.anchorSource, 40) || "unknown",
+        secondaryColor: trimmed(colorProvenance.secondaryColor, 80) || null,
         colors: arrayValue2(colorProvenance.colors).slice(0, 20).map((item) => ({
           color: trimmed(item?.color, 80),
           source: trimmed(item?.source, 40) || "unknown"
@@ -7505,7 +7563,7 @@
   }
   function hasStudioAccountSession() {
     return hasValidPersistedCredential({
-      clientEmails: [builderState.clientIntakeSession?.clientEmail],
+      clientEmails: builderState.clientAuthStatus === "authenticated" ? [builderState.authenticatedClientEmail || builderState.clientIntakeSession?.clientEmail] : [],
       accessTokens: [
         localStorage.getItem("lumaClientAccessToken"),
         sessionStorage.getItem("lumaClientAccessToken")
@@ -7549,6 +7607,12 @@
   }
   function closeStudioAuthGate() {
     if (!studioAuthGate) return;
+    if (isPublicClientSetup && !canDismissClientAuthGate({
+      status: builderState.clientAuthStatus,
+      hasPreviewSession: Boolean(
+        localStorage.getItem("vm_portal_preview_token") || sessionStorage.getItem("vm_portal_preview_token")
+      )
+    })) return;
     resetStudioAuthLoading();
     resetMagicLinkView();
     studioAuthGate.hidden = true;
@@ -7558,6 +7622,7 @@
   async function continueWithDemoSession() {
     const pendingAction = localStorage.getItem("lumaPendingAuthAction") || "";
     sessionStorage.setItem("vm_portal_preview_token", `demo-${Date.now()}`);
+    builderState.clientAuthStatus = "demo";
     closeStudioAuthGate();
     if (pendingAction === "generate") {
       localStorage.removeItem("lumaPendingAuthAction");
@@ -8242,7 +8307,7 @@ ${cleanQuestion}`;
         builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
         builderState.selectedPageKey = builderState.currentSchema.pages?.[0]?.page_key || "home";
         builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || builderState.selectedVariantId || "";
-        saveGeneratedSite({
+        await saveGeneratedSite({
           business_id: builderState.currentBusinessId,
           site_id: builderState.currentSiteId,
           generation_id: builderState.currentGenerationId,
@@ -8275,7 +8340,7 @@ ${cleanQuestion}`;
       builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
       builderState.selectedPageKey = builderState.currentSchema.pages?.[0]?.page_key || "home";
       builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || builderState.selectedVariantId || "";
-      saveGeneratedSite({
+      await saveGeneratedSite({
         business_id: builderState.currentBusinessId,
         site_id: builderState.currentSiteId,
         generation_id: builderState.currentGenerationId,
@@ -10982,6 +11047,52 @@ ${langText({
       return "";
     }
   }
+  var pendingClientSiteSave = null;
+  var clientSiteSaveInFlight = null;
+  async function drainClientSiteSaveQueue() {
+    while (pendingClientSiteSave) {
+      const payload = pendingClientSiteSave;
+      pendingClientSiteSave = null;
+      const response = await fetch(`${API_BASE_URL}/api/client/sites/${encodeURIComponent(payload.siteId)}`, {
+        method: "PUT",
+        headers: clientAuthHeaders({ "content-type": "application/json" }),
+        credentials: "include",
+        body: JSON.stringify({
+          schema: payload.schema,
+          businessId: payload.businessId || void 0
+        })
+      });
+      if (!response.ok) {
+        const detail = await readErrorMessage(response);
+        if (response.status === 401) handleExpiredClientAuth("site-save-401", { status: response.status, detail });
+        throw new Error(detail || "Could not save the website to your account.");
+      }
+      const saved = await response.json();
+      if (storageStatus2) storageStatus2.textContent = saved.storage_status === "stored" ? "Saved to database" : saved.storage_status;
+    }
+  }
+  function persistGeneratedSiteForClient(result = {}) {
+    if (!isPublicClientSetup || builderState.clientAuthStatus !== "authenticated") return Promise.resolve(null);
+    const siteId = result.generatedSiteId || result.projectId || result.site_id || builderState.currentSiteId;
+    const schema = result.schema || builderState.currentSchema;
+    if (!siteId || !schema) return Promise.resolve(null);
+    pendingClientSiteSave = {
+      siteId,
+      businessId: result.business_id || builderState.currentBusinessId || "",
+      schema: structuredClone(schema)
+    };
+    if (!clientSiteSaveInFlight) {
+      clientSiteSaveInFlight = drainClientSiteSaveQueue().catch((error) => {
+        console.error("Could not persist client website changes", error);
+        if (storageStatus2) storageStatus2.textContent = "Changes are saved in this browser, but not yet in your account.";
+        return null;
+      }).finally(() => {
+        clientSiteSaveInFlight = null;
+        if (pendingClientSiteSave) persistGeneratedSiteForClient();
+      });
+    }
+    return clientSiteSaveInFlight;
+  }
   function saveGeneratedSite(result) {
     if (!isPublicClientSetup) return;
     try {
@@ -10996,6 +11107,7 @@ ${langText({
       );
     } catch {
     }
+    return persistGeneratedSiteForClient(result);
   }
   function restoreGeneratedSite() {
     if (!isPublicClientSetup) return;
@@ -15505,10 +15617,6 @@ ${guidedQuestion(nextMissing)}`
     if (/carro|auto|automotriz|camioneta|anime|gadget|juguete|regalo|raro|curioso|hogar|home|toy|gift|collectible/.test(lower)) return set.variety;
     return set.default;
   }
-  function marketplacePriceForIndex(index) {
-    const prices = [19.99, 24.5, 34.99, 49, 12.5, 79, 9.99, 59, 129, 17.99, 89, 39.99];
-    return prices[index % prices.length];
-  }
   function cleanPublicItemLabel(value) {
     const text = String(value || "").replace(/\s+/g, " ").trim();
     if (!text) return "";
@@ -15654,17 +15762,15 @@ ${guidedQuestion(nextMissing)}`
       name: item,
       description: copy.itemDescription(name),
       category: marketplaceCategoryForIndex(index, copy, categoryContext, language, item),
-      rating: (4.3 + index % 5 * 0.12).toFixed(1),
-      review_count: 42 + index * 31,
-      shipping_label: index % 2 === 0 ? copy.fastDelivery : copy.freeShipping,
-      deal_label: index % 3 === 0 ? copy.todayDeal : "",
-      price_type: isOnlineShop ? "fixed" : "quote_only",
-      price_amount: isMarketplaceTemplate || isMegaRetailTemplate2 ? marketplacePriceForIndex(index) : "",
+      rating: null,
+      review_count: null,
+      shipping_label: "",
+      deal_label: "",
+      ...truthfulCatalogPricing(item, language),
       currency: "USD",
-      price_label: isMarketplaceTemplate || isMegaRetailTemplate2 ? `USD ${marketplacePriceForIndex(index).toFixed(2)}` : isOnlineShop ? copy.priceNotSet : copy.askPrice,
-      button_label: isOnlineShop ? copy.viewProduct : copy.request,
-      inventory_quantity: isMarketplaceTemplate || isMegaRetailTemplate2 ? 24 + index * 3 : "",
-      track_inventory: isOnlineShop,
+      button_label: copy.request,
+      inventory_quantity: null,
+      content_origin: "client_declared",
       image_url: bathBodyStockImageUrl(item),
       is_active: true,
       is_featured: index < 3,
@@ -19984,6 +20090,11 @@ ${content}` : content;
         const catalogPath = path.replace(/^products_services\./, "catalog_items.");
         setPath({ catalog_items: builderState.currentCatalogItems }, catalogPath, nextText);
       }
+      saveGeneratedSite({
+        business_id: builderState.currentBusinessId,
+        site_id: builderState.currentSiteId,
+        schema: builderState.currentSchema
+      });
     }
     if (sectionId) builderState.selectedStudioSectionId = sectionId;
     renderEditor();

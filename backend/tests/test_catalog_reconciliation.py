@@ -1,4 +1,9 @@
-from app.ai_site_planner import _matching_catalog_item, _reconcile_client_catalog
+from app.ai_site_planner import (
+    _matching_catalog_item,
+    _reconcile_client_catalog,
+    enforce_client_declared_catalog_facts,
+)
+from app.models import ProjectState
 
 
 def _model_item(name: str, category: str, description: str, price: float, query: str) -> dict:
@@ -275,3 +280,86 @@ def test_equipment_offering_does_not_reuse_course_just_for_printing_word() -> No
 
     assert matched is None
     assert matched_index is None
+
+
+def test_mega_retail_removes_undeclared_prices_models_and_inventory() -> None:
+    state = ProjectState(
+        businessName="ElectroHub Market",
+        businessDescription="Vendemos telefonos, laptops, audifonos y cargadores en linea.",
+        servicesProducts=[
+            "telefonos", "laptops", "tablets", "audifonos", "cargadores", "componentes y accesorios",
+        ],
+        selectedLanguage="es",
+        selectedTemplateId="mega-retail-store",
+    )
+    generated = [
+        {
+            "name": "telefonos",
+            "description": "Latest Samsung Galaxy S23 with 128GB storage and 5G.",
+            "category": "Smartphones",
+            "price_type": "fixed",
+            "price": 799.99,
+            "price_amount": 799.99,
+            "price_label": "USD 799.99",
+            "inventory_quantity": 24,
+            "track_inventory": True,
+        },
+        {
+            "name": "laptops",
+            "description": "Ultra Laptop Pro offers unmatched speed and efficiency.",
+            "category": "Laptops",
+            "price_type": "fixed",
+            "price": 1299.99,
+            "price_amount": 1299.99,
+            "price_label": "USD 1299.99",
+        },
+        {
+            "name": "tablets",
+            "description": "Tablet Z combines portability with power.",
+            "category": "Tablets",
+            "price_type": "fixed",
+            "price": 499.99,
+            "price_amount": 499.99,
+            "price_label": "USD 499.99",
+        },
+        {
+            "name": "audifonos",
+            "description": "Sony WH-1000XM4 headphones with premium noise cancellation.",
+            "category": "Headphones",
+            "price_type": "fixed",
+            "price": 349.99,
+            "price_amount": 349.99,
+            "price_label": "USD 349.99",
+        },
+        {
+            "name": "cargadores",
+            "description": "Anker PowerPort III Nano 20W USB-C charger.",
+            "category": "Chargers",
+            "price_type": "fixed",
+            "price": 19.99,
+            "price_amount": 19.99,
+            "price_label": "USD 19.99",
+        },
+        {
+            "name": "componentes y accesorios",
+            "description": "Gaming Pro Kit delivers elite performance for every setup.",
+            "category": "Components",
+            "price_type": "fixed",
+            "price": 299.99,
+            "price_amount": 299.99,
+            "price_label": "USD 299.99",
+        },
+    ]
+
+    sanitized = enforce_client_declared_catalog_facts(generated, state)
+
+    assert [item["name"] for item in sanitized] == [
+        "telefonos", "laptops", "tablets", "audifonos", "cargadores", "componentes y accesorios",
+    ]
+    assert all(item["price_type"] == "quote_only" for item in sanitized)
+    assert all(item["price_amount"] is None for item in sanitized)
+    assert all(item["price_label"] == "Precio por confirmar" for item in sanitized)
+    assert all(item["content_origin"] == "client_declared" for item in sanitized)
+    forbidden = ("Galaxy", "Ultra Laptop Pro", "Tablet Z", "Sony", "WH-1000XM4", "Anker", "Gaming Pro Kit")
+    assert all(not any(value in item["description"] for value in forbidden) for item in sanitized)
+    assert all(item["track_inventory"] is False for item in sanitized)

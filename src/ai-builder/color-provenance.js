@@ -53,9 +53,11 @@ export function buildColorProvenance({
   append(logoColors, "logo_extracted");
   // Editor preview defaults are visual placeholders, not client color evidence.
   const anchor = entries[0] || null;
+  const explicitColors = entries.filter((entry) => entry.source === "explicit_client");
   return {
     anchorColor: anchor?.color || null,
     anchorSource: anchor?.source || "unknown",
+    secondaryColor: explicitColors[1]?.color || null,
     colors: entries,
   };
 }

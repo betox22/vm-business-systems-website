@@ -826,7 +826,7 @@ export async function applyDraftAdjustmentFromChat(message, localContextUpdates 
       builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
       builderState.selectedPageKey = builderState.currentSchema.pages?.[0]?.page_key || "home";
       builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || builderState.selectedVariantId || "";
-      saveGeneratedSite({
+      await saveGeneratedSite({
         business_id: builderState.currentBusinessId,
         site_id: builderState.currentSiteId,
         generation_id: builderState.currentGenerationId,
@@ -862,7 +862,7 @@ export async function applyDraftAdjustmentFromChat(message, localContextUpdates 
     builderState.currentCatalogItems = catalogItemsFromSchema(builderState.currentSchema);
     builderState.selectedPageKey = builderState.currentSchema.pages?.[0]?.page_key || "home";
     builderState.selectedVariantId = builderState.currentSchema.design_variants?.[0]?.id || builderState.selectedVariantId || "";
-    saveGeneratedSite({
+    await saveGeneratedSite({
       business_id: builderState.currentBusinessId,
       site_id: builderState.currentSiteId,
       generation_id: builderState.currentGenerationId,
