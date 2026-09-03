@@ -10,6 +10,7 @@ import {
   inlineEditCatalogPath,
   inlineEditConfig,
   inlineEditNavigationPath,
+  inlineEditPageTitlePath,
   inlineEditPath,
   inlineEditPersistentPath,
   inlineEditPlaceholder,

@@ -1998,7 +1998,7 @@
     const index = items.findIndex((candidate) => candidate === item || candidate?.page_key && item?.page_key && candidate.page_key === item.page_key);
     return index >= 0 ? `navigation.${index}.label` : "";
   }
-  function inlineEditPageTitlePath2(schema, page) {
+  function inlineEditPageTitlePath(schema, page) {
     const pages = Array.isArray(schema?.pages) ? schema.pages : [];
     const index = pages.findIndex((candidate) => candidate === page || candidate?.page_key && page?.page_key && candidate.page_key === page.page_key);
     return index >= 0 ? `pages.${index}.title` : "";
@@ -2291,7 +2291,7 @@
     const startPage = (plans.length ? pricingPage : null) || contactPage || navigation[0]?.page || pages[0];
     return `<header class="b2b-saas-header">
     <a class="b2b-saas-brand" href="#" data-page-link="${escapeAttribute(pages[0]?.page_key || "home")}">${renderBrand(schema, logo)}</a>
-    <nav aria-label="${escapeAttribute(labels.navigation)}">${navigation.map(({ key, page: target }) => `<a class="${target.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(target.page_key)}" ${inlineEditAttrsForPath2(schema, inlineEditPageTitlePath2(schema, target), "nav_label")}>${escapeHtml(target.title || labels.nav[key])}</a>`).join("")}</nav>
+    <nav aria-label="${escapeAttribute(labels.navigation)}">${navigation.map(({ key, page: target }) => `<a class="${target.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(target.page_key)}" ${inlineEditAttrsForPath2(schema, inlineEditPageTitlePath(schema, target), "nav_label")}>${escapeHtml(target.title || labels.nav[key])}</a>`).join("")}</nav>
     <div class="b2b-saas-header-actions">${loginPage ? `<a class="b2b-saas-login" href="#" data-page-link="${escapeAttribute(loginPage.page_key)}">${escapeHtml(labels.login)}</a>` : ""}<button class="b2b-saas-start" type="button" data-page-link="${escapeAttribute(startPage?.page_key || "")}">${escapeHtml(labels.start)}</button></div>
   </header>`;
   }
