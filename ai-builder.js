@@ -6136,7 +6136,12 @@
   var builderAvatarManager = window.AvatarStateManager ? new window.AvatarStateManager("idle") : null;
 
   // src/ai-builder/client-auth-validation-policy.js
-  var CLIENT_AUTH_VALIDATION_TIMEOUT_MS = 12e3;
+  var CLIENT_AUTH_VALIDATION_TIMEOUT_MS = 2e4;
+  var CLIENT_AUTH_VALIDATION_ATTEMPTS = 2;
+  function shouldRetryClientAuthValidation({ attempt = 1, status = 0 } = {}) {
+    if (attempt >= CLIENT_AUTH_VALIDATION_ATTEMPTS) return false;
+    return status === 0 || status === 408 || status === 429 || status >= 500;
+  }
   function isConfirmedClientAuthStatus(status) {
     return status === "authenticated" || status === "demo";
   }
@@ -6691,23 +6696,44 @@
       console.error("Cannot validate client auth: no stored access token.");
       return null;
     }
-    const response = await fetchWithTimeout(CLIENT_AUTH_ME_URL, {
-      headers: clientAuthHeaders(),
-      credentials: "include"
-    }, CLIENT_AUTH_VALIDATION_TIMEOUT_MS);
-    if (!response.ok) {
-      const message = await readErrorMessage(response);
-      console.error("Client auth /me validation failed", {
-        status: response.status,
-        message,
-        tokenPresent: Boolean(token)
-      });
-      if (response.status === 401) {
-        handleExpiredClientAuth("auth-me-401", { status: response.status, message });
+    let lastError = null;
+    for (let attempt = 1; attempt <= CLIENT_AUTH_VALIDATION_ATTEMPTS; attempt += 1) {
+      try {
+        const response = await fetchWithTimeout(CLIENT_AUTH_ME_URL, {
+          headers: clientAuthHeaders(),
+          credentials: "include"
+        }, CLIENT_AUTH_VALIDATION_TIMEOUT_MS);
+        if (response.ok) return response.json();
+        const message = await readErrorMessage(response);
+        console.error("Client auth /me validation failed", {
+          status: response.status,
+          message,
+          attempt,
+          tokenPresent: Boolean(token)
+        });
+        if (response.status === 401) {
+          handleExpiredClientAuth("auth-me-401", { status: response.status, message });
+          const rejectedError = new Error(message);
+          rejectedError.authValidationStatus = response.status;
+          throw rejectedError;
+        }
+        lastError = new Error(message);
+        lastError.authValidationStatus = response.status;
+        if (!shouldRetryClientAuthValidation({ attempt, status: response.status })) {
+          throw lastError;
+        }
+      } catch (error) {
+        if (!storedClientAccessToken()) throw error;
+        lastError = error;
+        const status = Number(error?.authValidationStatus) || 0;
+        if (!shouldRetryClientAuthValidation({ attempt, status })) throw error;
+        console.warn("Client auth validation will retry after a transient failure", {
+          attempt,
+          message: error?.message || String(error)
+        });
       }
-      throw new Error(message);
     }
-    return response.json();
+    throw lastError || new Error("Could not validate the client session.");
   }
   async function fetchClientProjects() {
     if (!storedClientAccessToken()) return [];

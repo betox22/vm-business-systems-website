@@ -3,8 +3,10 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 
 import {
+  CLIENT_AUTH_VALIDATION_ATTEMPTS,
   CLIENT_AUTH_VALIDATION_TIMEOUT_MS,
   canDismissClientAuthGate,
+  shouldRetryClientAuthValidation,
   visibleClientAccountEmail,
 } from "../src/ai-builder/client-auth-validation-policy.js";
 
@@ -38,9 +40,11 @@ test("OAuth resume validates with a deadline before restoring pending project co
     source.indexOf("export function hydrateClientIntakeSession"),
   );
 
-  assert.equal(CLIENT_AUTH_VALIDATION_TIMEOUT_MS, 12000);
+  assert.equal(CLIENT_AUTH_VALIDATION_TIMEOUT_MS, 20000);
+  assert.equal(CLIENT_AUTH_VALIDATION_ATTEMPTS, 2);
   assert.match(fetchUser, /fetchWithTimeout\(CLIENT_AUTH_ME_URL/);
   assert.match(fetchUser, /CLIENT_AUTH_VALIDATION_TIMEOUT_MS/);
+  assert.match(fetchUser, /shouldRetryClientAuthValidation/);
   assert.doesNotMatch(captureRedirect, /restorePendingStudioAfterAuth\(\)/);
   assert.doesNotMatch(captureRedirect, /markClientWorkspaceUnlocked\(\)/);
   assert.ok(
@@ -48,6 +52,13 @@ test("OAuth resume validates with a deadline before restoring pending project co
       < resume.indexOf("restorePendingStudioAfterAuth()"),
   );
   assert.match(css, /#studioAuthCloseButton\[hidden\]\s*\{\s*display:\s*none\s*!important;/);
+});
+
+test("auth validation retries transient backend failures but never retries a rejected token", () => {
+  assert.equal(shouldRetryClientAuthValidation({ attempt: 1, status: 0 }), true);
+  assert.equal(shouldRetryClientAuthValidation({ attempt: 1, status: 503 }), true);
+  assert.equal(shouldRetryClientAuthValidation({ attempt: 1, status: 401 }), false);
+  assert.equal(shouldRetryClientAuthValidation({ attempt: 2, status: 503 }), false);
 });
 
 test("client intake autosave cannot run while auth is pending or rejected", () => {
