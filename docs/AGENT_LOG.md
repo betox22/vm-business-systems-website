@@ -16,6 +16,53 @@ Formato de entrada:
 
 ---
 
+## 2026-09-11 — Codex — Documentos legales bilingües y consentimiento KREATON
+
+**Hecho:** se publicaron Términos, Privacidad y Descargos en seis rutas HTML
+planas EN/ES, generadas desde los Markdown legales sin reescribir su contenido.
+Cada página incluye selector de idioma, `hreflang`, tabla de contenidos con anclas,
+aviso legal destacado y diseño responsive. Un footer legal compartido añade los
+tres enlaces, en el idioma activo, a las 18 superficies públicas y operativas del
+repo. `stage-public-site.mjs` incluye explícitamente las seis páginas en
+`public-dist`. La fecha efectiva y `Last updated` conservan sus placeholders porque
+el usuario todavía no indicó una fecha de publicación.
+
+**Consentimiento:** el alta KREATON de Google/magic link ahora muestra un checkbox
+no premarcado y mantiene ambos métodos deshabilitados hasta aceptarlo. El alta es
+100% Supabase en cliente y no pasa por un endpoint propio, por lo que esa aceptación
+inicial no puede persistirse server-side sin añadir un callback/backend de Auth.
+Como control servidor disponible, el checkout KREATON rechaza solicitudes sin
+`legalConsent` y `legalConsentVersion`, y guarda versión, idioma y timestamp en
+`platform_subscriptions`; `init_db()` añade las columnas nullable también a una
+tabla existente. Listo POS/ListoKDS no fueron modificados.
+
+**Validación:** `node --test tests/legal-pages.test.mjs`: 6/6; confirmó igualdad
+completa del texto renderizado con cada Markdown, ambos `hreflang` y el aviso.
+Playwright abrió las seis rutas, validó escritorio 1440×1000 y móvil 390×844, y
+comprobó que Google/email están deshabilitados antes del checkbox y habilitados
+después. El build público contiene las seis páginas. La suite backend completa
+terminó con 127 tests, OK.
+
+**Archivos tocados:** seis Markdown en `docs/legal/`, seis HTML legales,
+`css/legal-pages.css`, `css/legal-footer.css`, `js/legal-footer.js`,
+`js/legal-consent.js`, las 18 páginas que cargan el footer, `ai-builder.css`,
+`backend/app/billing.py`, `backend/app/db.py`, `backend/app/db_models.py`,
+`backend/tests/test_stripe_billing.py`, `scripts/build-legal-pages.mjs`,
+`scripts/inject-legal-footer.mjs`, `scripts/stage-public-site.mjs`,
+`tests/legal-pages.test.mjs` y esta bitácora.
+
+**Pendiente / abierto:** revisión por abogado admitido en Delaware y abogado
+venezolano para las secciones indicadas; después, completar fecha efectiva/última
+actualización y regenerar las páginas. Para auditar aceptación en el instante exacto
+del alta Supabase falta incorporar un callback servidor o trigger de Auth.
+
+**Notas para el siguiente agente:** no editar directamente el texto de los seis
+HTML: actualizar únicamente los Markdown aprobados y ejecutar
+`node scripts/build-legal-pages.mjs`. Mantener el aviso visible hasta aprobación
+legal expresa.
+
+---
+
 **2026-09-11 — Stripe revisado y aprobado:** `feature/stripe-billing-connect` quedó integrada por fast-forward en `main` mediante el commit `8eab2a81e645c6c6fba2d9a1b1e4d754a528e986`.
 
 ## 2026-09-11 — Codex — Stripe Billing, Connect y suscripciones internacionales de Listo

@@ -25,7 +25,8 @@ class StripeBillingTests(unittest.TestCase):
 
     def test_kreaton_subscription_uses_checkout_subscription_mode(self) -> None:
         payload = billing.SubscriptionCheckoutRequest(
-            product="kreaton", businessRef="store_1", successUrl="https://example.test/success", cancelUrl="https://example.test/cancel"
+            product="kreaton", businessRef="store_1", successUrl="https://example.test/success", cancelUrl="https://example.test/cancel",
+            legalConsent=True, legalConsentVersion="en:2026-09-11", legalConsentLanguage="en",
         )
         with (
             patch.object(billing, "_user", return_value={"id": "user_1", "email": "owner@example.com"}),
@@ -36,6 +37,18 @@ class StripeBillingTests(unittest.TestCase):
         self.assertEqual(result["status"], "checkout_pending")
         self.assertEqual(checkout.call_args.kwargs["mode"], "subscription")
         self.assertEqual(checkout.call_args.kwargs["line_items"], [{"price": "price_kreaton_test", "quantity": 1}])
+        record = self.session.query(PlatformSubscription).filter_by(product="kreaton", business_ref="store_1").one()
+        self.assertEqual(record.legal_consent_version, "en:2026-09-11")
+        self.assertEqual(record.legal_consent_language, "en")
+        self.assertIsNotNone(record.legal_accepted_at)
+
+    def test_kreaton_subscription_rejects_missing_legal_consent(self) -> None:
+        payload = billing.SubscriptionCheckoutRequest(
+            product="kreaton", businessRef="store_1", successUrl="https://example.test/success", cancelUrl="https://example.test/cancel"
+        )
+        with patch.object(billing, "_user", return_value={"id": "user_1", "email": "owner@example.com"}):
+            with self.assertRaisesRegex(Exception, "acceptance is required"):
+                asyncio.run(billing.subscription_checkout(payload, session=self.session))
 
     def test_listo_manual_method_is_explicit_and_does_not_call_stripe(self) -> None:
         payload = billing.SubscriptionCheckoutRequest(

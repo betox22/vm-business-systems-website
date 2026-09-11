@@ -2976,6 +2976,11 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   font-weight: 950;
 }
 
+.studio-legal-consent { display: flex; align-items: flex-start; gap: .65rem; margin: 1rem 0; color: var(--muted, #5d6875); font-size: .86rem; line-height: 1.45; }
+.studio-legal-consent input { width: 1.05rem; height: 1.05rem; margin-top: .15rem; accent-color: #157f6c; flex: 0 0 auto; }
+.studio-legal-consent a { color: inherit; font-weight: 700; text-underline-offset: 2px; }
+.studio-legal-consent.is-accepted { color: #157f6c; }
+
 .studio-email-auth button:disabled,
 .studio-magic-link-confirmation button:disabled {
   cursor: wait;

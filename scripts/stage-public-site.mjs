@@ -50,10 +50,14 @@ const PUBLIC_TOP_LEVEL_FILES = [
   "client-start.js",
   "client.css",
   "contact.html",
+  "descargos-de-responsabilidad.html",
+  "disclaimers.html",
   "index.html",
   "landing.html",
   "luma-config.js",
   "plans.html",
+  "politica-de-privacidad.html",
+  "privacy-policy.html",
   "seller-portal.css",
   "seller-portal.js",
   "services.html",
@@ -61,6 +65,8 @@ const PUBLIC_TOP_LEVEL_FILES = [
   "shared-commerce-cart.js",
   "site.html",
   "solutions.html",
+  "terminos-de-servicio.html",
+  "terms-of-service.html",
   "template-router.js",
 ];
 

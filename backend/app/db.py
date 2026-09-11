@@ -48,34 +48,34 @@ def init_db() -> None:
 
 
 def _ensure_additive_columns() -> None:
-    """Apply tiny additive migrations for existing SQLite/Render demo DBs.
+    """Apply tiny additive migrations for existing application databases.
 
     This project does not have Alembic wired yet. `create_all()` will not add
     columns to tables that already exist, so we handle the small nullable columns
-    introduced while the prototype is still on SQLite. Managed Postgres should
-    use a real migration before production.
+    introduced while the prototype still has no Alembic migration pipeline.
     """
-
-    if not DATABASE_URL.startswith("sqlite"):
-        return
 
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
     migrations = {
-        "stores": {
-            "owner_user_id": "owner_user_id TEXT",
-        },
-        "generated_sites": {
-            "owner_user_id": "owner_user_id TEXT",
-        },
-        "orders": {
-            "items_json": "items_json TEXT DEFAULT '[]'",
-            "shipping_address_json": "shipping_address_json TEXT DEFAULT '{}'",
-            "customer_snapshot_json": "customer_snapshot_json TEXT DEFAULT '{}'",
-            "payment_json": "payment_json TEXT DEFAULT '{}'",
-            "inventory_restocked": "inventory_restocked BOOLEAN DEFAULT 0",
+        "platform_subscriptions": {
+            "legal_consent_version": "legal_consent_version VARCHAR",
+            "legal_consent_language": "legal_consent_language VARCHAR",
+            "legal_accepted_at": "legal_accepted_at BIGINT",
         },
     }
+    if DATABASE_URL.startswith("sqlite"):
+        migrations.update({
+            "stores": {"owner_user_id": "owner_user_id TEXT"},
+            "generated_sites": {"owner_user_id": "owner_user_id TEXT"},
+            "orders": {
+                "items_json": "items_json TEXT DEFAULT '[]'",
+                "shipping_address_json": "shipping_address_json TEXT DEFAULT '{}'",
+                "customer_snapshot_json": "customer_snapshot_json TEXT DEFAULT '{}'",
+                "payment_json": "payment_json TEXT DEFAULT '{}'",
+                "inventory_restocked": "inventory_restocked BOOLEAN DEFAULT 0",
+            },
+        })
 
     with engine.begin() as connection:
         for table_name, columns in migrations.items():

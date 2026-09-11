@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from typing import Any, Dict, Literal, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
@@ -35,6 +36,9 @@ class SubscriptionCheckoutRequest(BaseModel):
     ownerEmail: str = Field(default="", max_length=200)
     successUrl: str
     cancelUrl: str
+    legalConsent: bool = False
+    legalConsentVersion: str = Field(default="", max_length=120)
+    legalConsentLanguage: Literal["en", "es"] = "en"
 
 
 class BillingPortalRequest(BaseModel):
@@ -63,11 +67,19 @@ def _record(session: Session, payload: SubscriptionCheckoutRequest, email: str) 
     record.owner_email = email
     record.country_code = payload.countryCode.upper()
     record.payment_method = payload.paymentMethod
+    if payload.product == "kreaton":
+        record.legal_consent_version = payload.legalConsentVersion.strip()
+        record.legal_consent_language = payload.legalConsentLanguage
+        record.legal_accepted_at = int(time.time())
     return record
 
 
 def _authorize_product(session: Session, payload: SubscriptionCheckoutRequest, user: Dict[str, Any], listo_billing_key: str) -> None:
     if payload.product == "kreaton":
+        if not payload.legalConsent:
+            raise HTTPException(status_code=400, detail="Terms of Service and Privacy Policy acceptance is required.")
+        if not payload.legalConsentVersion.strip():
+            raise HTTPException(status_code=400, detail="Legal consent version is required.")
         store = session.get(Store, payload.businessRef)
         user_id = str(user.get("id") or "").strip()
         user_email = str(user.get("email") or "").strip().lower()

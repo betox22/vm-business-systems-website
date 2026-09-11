@@ -168,6 +168,9 @@ class PlatformSubscription(Base):
     stripe_price_id: Mapped[Optional[str]] = mapped_column(nullable=True)
     status: Mapped[str] = mapped_column(default="not_started")
     current_period_end: Mapped[Optional[int]] = mapped_column(nullable=True)
+    legal_consent_version: Mapped[Optional[str]] = mapped_column(nullable=True)
+    legal_consent_language: Mapped[Optional[str]] = mapped_column(nullable=True)
+    legal_accepted_at: Mapped[Optional[int]] = mapped_column(nullable=True)
     created_at: Mapped[int] = mapped_column(default=_now)
     updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
 
