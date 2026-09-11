@@ -22,43 +22,44 @@ const inline = (value) => escapeHtml(value)
 const slug = (value) => value.toLowerCase().normalize("NFD")
   .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-function renderMarkdown(source) {
-  const lines = source.replaceAll("\r\n", "\n").split("\n");
+export function renderMarkdown(source) {
+  const logicalBlocks = source.replaceAll("\r\n", "\n").trim().split(/\n\s*\n/);
   const sections = [];
   const blocks = [];
-  let paragraph = [];
   let list = [];
 
-  const flushParagraph = () => {
-    if (!paragraph.length) return;
-    const text = paragraph.join(" ");
-    const notice = /IMPORTANT NOTICE|AVISO IMPORTANTE/.test(text);
-    blocks.push(`<p${notice ? ' class="legal-notice-title"' : ""}>${inline(text)}</p>`);
-    paragraph = [];
-  };
   const flushList = () => {
     if (!list.length) return;
     blocks.push(`<ul>${list.map((item) => `<li>${inline(item)}</li>`).join("")}</ul>`);
     list = [];
   };
 
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line) { flushParagraph(); flushList(); continue; }
-    const heading = line.match(/^\*\*(\d+(?:\.\d+)*\.?\s+.+)\*\*$/);
+  for (const rawBlock of logicalBlocks) {
+    const lines = rawBlock.split("\n").map((line) => line.trim()).filter(Boolean);
+    if (!lines.length) continue;
+
+    if (lines[0].startsWith("- ")) {
+      for (const line of lines) {
+        if (line.startsWith("- ")) list.push(line.slice(2));
+        else if (list.length) list[list.length - 1] += ` ${line}`;
+      }
+      continue;
+    }
+
+    flushList();
+    const text = lines.join(" ").replace(/\s{2,}/g, " ");
+    const heading = text.match(/^\*\*(\d+(?:\.\d+)*\.?\s+.+)\*\*$/);
     if (heading) {
-      flushParagraph(); flushList();
       const id = `section-${slug(heading[1])}`;
       const level = heading[1].match(/^\d+\.\d+/) ? 3 : 2;
-      if (level === 2) sections.push({ id, label: heading[1] });
+      sections.push({ id, label: heading[1], level });
       blocks.push(`<h${level} id="${id}">${inline(heading[1])}</h${level}>`);
       continue;
     }
-    if (line.startsWith("- ")) { flushParagraph(); list.push(line.slice(2)); continue; }
-    flushList();
-    paragraph.push(line);
+    const notice = /IMPORTANT NOTICE|AVISO IMPORTANTE/.test(text);
+    blocks.push(`<p${notice ? ' class="legal-notice-title"' : ""}>${inline(text)}</p>`);
   }
-  flushParagraph(); flushList();
+  flushList();
 
   const noticeIndex = blocks.findIndex((block) => block.includes("legal-notice-title"));
   if (noticeIndex >= 0) {
@@ -72,7 +73,7 @@ for (const [sourceName, outputName, alternateName, language] of documents) {
   const { body, sections } = renderMarkdown(source);
   const isEnglish = language === "en";
   const title = source.match(/^\*\*(.+?)\*\*/m)?.[1] || (isEnglish ? "Legal document" : "Documento legal");
-  const toc = sections.map(({ id, label }) => `<li><a href="#${id}">${inline(label)}</a></li>`).join("");
+  const toc = sections.map(({ id, label, level }) => `<li${level === 3 ? ' class="is-subsection"' : ""}><a href="#${id}">${inline(label)}</a></li>`).join("");
   const html = `<!doctype html>
 <html lang="${language}">
 <head>

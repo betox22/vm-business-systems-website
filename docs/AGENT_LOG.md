@@ -16,6 +16,45 @@ Formato de entrada:
 
 ---
 
+## 2026-09-11 — Codex — Corrección estructural del conversor legal
+
+**Hecho:** se regeneraron los seis HTML con los Markdown entregados nuevamente
+mediante Pandoc `--wrap=none` y se corrigió `build-legal-pages.mjs` para no depender
+de ese formato: ahora reconstruye bloques lógicos antes de clasificar encabezados,
+listas o párrafos, une continuaciones físicas de encabezados y viñetas, y mantiene
+una sola lista mientras continúan los bloques de viñetas. El TOC incluye todos los
+encabezados numerados `h2` y `h3`. No se cambió texto legal ni la implementación ya
+aprobada de consentimiento, Billing, modelos, migración o footer.
+
+**Causa raíz:** el conversor anterior interpretaba cada línea física como una unidad
+Markdown. El ajuste a ~80 columnas de Pandoc partía encabezados largos y viñetas;
+la segunda línea terminaba convertida en párrafo y el encabezado dejaba de coincidir
+con la expresión regular.
+
+**Validación estructural:** `terms-of-service.html` 37 encabezados/37 TOC y 31
+viñetas/31 `li`, secciones 1–17; `terminos-de-servicio.html` 37/37 y 31/31,
+secciones 1–17; `privacy-policy.html` 20/20 y 28/28, secciones 1–13;
+`politica-de-privacidad.html` 20/20 y 28/28, secciones 1–13;
+`disclaimers.html` 11/11 y 6/6, secciones 1–11;
+`descargos-de-responsabilidad.html` 11/11 y 6/6, secciones 1–11.
+`node --test tests/legal-pages.test.mjs` pasó 8/8 e incluye una regresión sintética
+con encabezados y viñetas envueltos en varias líneas.
+
+**Archivos tocados:** los seis Markdown en `docs/legal/`, los seis HTML legales,
+`scripts/build-legal-pages.mjs`, `tests/legal-pages.test.mjs`,
+`css/legal-pages.css` y esta bitácora.
+
+**Validación final:** Playwright abrió las seis rutas en 1440×1000 y 390×844 sin
+regresiones visuales; la única consola fue el `favicon.ico` ausente ya conocido del
+servidor estático. La suite backend terminó con 127 tests, OK. Los placeholders de
+fechas siguen intactos hasta que el usuario indique la fecha de publicación.
+
+**Notas para el siguiente agente:** mantener las comparaciones automáticas de
+encabezados↔TOC, viñetas↔`li`, secuencia de secciones y texto fuente completo; no
+volver a un parser basado en líneas físicas.
+
+---
+
 ## 2026-09-11 — Codex — Documentos legales bilingües y consentimiento KREATON
 
 **Hecho:** se publicaron Términos, Privacidad y Descargos en seis rutas HTML

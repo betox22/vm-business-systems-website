@@ -12,6 +12,7 @@ a { color: #0a6a59; text-underline-offset: 3px; }
 .legal-toc { position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow: auto; padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); }
 .legal-toc ol { margin: 12px 0 0; padding-left: 0; list-style: none; }
 .legal-toc li { margin: 7px 0; }
+.legal-toc li.is-subsection { padding-left: 16px; font-size: .92em; }
 .legal-document { min-width: 0; padding: clamp(24px, 5vw, 58px); border: 1px solid var(--line); border-radius: 22px; background: var(--paper); box-shadow: 0 20px 60px rgb(17 31 43 / 8%); }
 .legal-document p, .legal-document li { max-width: 72ch; }
 .legal-document h2, .legal-document h3 { scroll-margin-top: 24px; line-height: 1.25; }

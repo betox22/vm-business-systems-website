@@ -13,149 +13,67 @@ Effective date: (to be completed upon publication)
 *Last updated: (fill in upon publication)*
 
 **IMPORTANT NOTICE — READ BEFORE PUBLISHING**  
-This document was prepared with the assistance of artificial
-intelligence as a professional working draft. It does NOT replace review
-by an attorney licensed in Delaware and, in particular for the
-Venezuelan tax and foreign-exchange sections, by a Venezuelan-licensed
-attorney or accountant with current knowledge of the IGTF and
-exchange-control regime in effect at the time of publication.
+This document was prepared with the assistance of artificial intelligence as a professional working draft. It does NOT replace review by an attorney licensed in Delaware and, in particular for the Venezuelan tax and foreign-exchange sections, by a Venezuelan-licensed attorney or accountant with current knowledge of the IGTF and exchange-control regime in effect at the time of publication.
 
-This Disclaimers document ("Disclaimers") supplements, and must be read
-together with, the Terms of Service and Privacy Policy of V&M Global LLC
-(dba V&M Business Systems, "V&M"), applicable to KREATON, Listo POS, and
-ListoKDS (the "Services"). In the event of a conflict, the Terms of
-Service will control.
+This Disclaimers document ("Disclaimers") supplements, and must be read together with, the Terms of Service and Privacy Policy of V&M Global LLC (dba V&M Business Systems, "V&M"), applicable to KREATON, Listo POS, and ListoKDS (the "Services"). In the event of a conflict, the Terms of Service will control.
 
 **1. Purpose of this Document**
 
-The Services are software tools. Their correct use, configuration, and
-compliance with the legal, tax, and business obligations of the business
-that uses them are the User's sole responsibility. This document
-consolidates, in an accessible and easy-to-reference format, the
-disclaimers most relevant to the operating context of our Users,
-including those operating in Venezuela.
+The Services are software tools. Their correct use, configuration, and compliance with the legal, tax, and business obligations of the business that uses them are the User's sole responsibility. This document consolidates, in an accessible and easy-to-reference format, the disclaimers most relevant to the operating context of our Users, including those operating in Venezuela.
 
 **2. General Availability and Fitness of the Service**
 
-**THE SERVICES ARE OFFERED "AS IS" AND "AS AVAILABLE."** V&M does not
-warrant that the Services will operate uninterrupted or error-free, or
-that they will be compatible with any particular hardware or
-connectivity configuration. The User acknowledges that factors beyond
-V&M's control, including power outages, internet connectivity failures,
-or limitations of the User's device, may affect the availability of the
-Service.
+**THE SERVICES ARE OFFERED "AS IS" AND "AS AVAILABLE."** V&M does not warrant that the Services will operate uninterrupted or error-free, or that they will be compatible with any particular hardware or connectivity configuration. The User acknowledges that factors beyond V&M's control, including power outages, internet connectivity failures, or limitations of the User's device, may affect the availability of the Service.
 
 **3. Exchange Rate Configuration (Listo POS)**
 
-*Listo POS* includes a feature that allows a manual exchange rate to be
-configured for calculating prices in different currencies. **This
-feature is a calculation tool, not an official or verified source of
-exchange rates.**
+*Listo POS* includes a feature that allows a manual exchange rate to be configured for calculating prices in different currencies. **This feature is a calculation tool, not an official or verified source of exchange rates.**
 
-- The User is solely responsible for entering and updating the exchange
-  rate as frequently as its business requires.
+- The User is solely responsible for entering and updating the exchange rate as frequently as its business requires.
 
-- V&M does not monitor the Venezuelan foreign-exchange market or that of
-  any other country, and does not automatically update this rate unless
-  the User expressly configures an integration for that purpose.
+- V&M does not monitor the Venezuelan foreign-exchange market or that of any other country, and does not automatically update this rate unless the User expressly configures an integration for that purpose.
 
-- V&M will not be liable for economic losses, price discrepancies with
-  end consumers, or claims arising from an outdated or misconfigured
-  exchange rate.
+- V&M will not be liable for economic losses, price discrepancies with end consumers, or claims arising from an outdated or misconfigured exchange rate.
 
 **4. Local Taxes and Tax Compliance, Including IGTF (Venezuela)**
 
-**The User is solely responsible** for determining which taxes apply to
-its operations, configuring them correctly in the system, calculating
-them, withholding them where applicable, and filing and remitting them
-to the competent tax authority. This includes, without limitation:
+**The User is solely responsible** for determining which taxes apply to its operations, configuring them correctly in the system, calculating them, withholding them where applicable, and filing and remitting them to the competent tax authority. This includes, without limitation:
 
 - Value Added Tax (VAT).
 
-- The Large Financial Transactions Tax (Impuesto a las Grandes
-  Transacciones Financieras, "IGTF"), applicable in Venezuela to
-  payments made in foreign currency or in crypto-assets other than the
-  petro, including transfers, card payments, and platforms such as
-  Zelle, when the User qualifies as a special taxpayer or another
-  obligated party under applicable regulations.
+- The Large Financial Transactions Tax (Impuesto a las Grandes Transacciones Financieras, "IGTF"), applicable in Venezuela to payments made in foreign currency or in crypto-assets other than the petro, including transfers, card payments, and platforms such as Zelle, when the User qualifies as a special taxpayer or another obligated party under applicable regulations.
 
-- Any other municipal, state, or national tax applicable to the User's
-  business activity.
+- Any other municipal, state, or national tax applicable to the User's business activity.
 
-Listo POS's tax-parameterization features are configuration tools
-provided to facilitate calculation; they do not constitute tax advice
-and do not guarantee regulatory compliance. V&M recommends that every
-User validate its tax configuration with a licensed accountant or tax
-advisor in its jurisdiction before operating in production.
+Listo POS's tax-parameterization features are configuration tools provided to facilitate calculation; they do not constitute tax advice and do not guarantee regulatory compliance. V&M recommends that every User validate its tax configuration with a licensed accountant or tax advisor in its jurisdiction before operating in production.
 
 **5. We Are Not Legal, Tax, or Financial Advisors**
 
-Nothing in the Services, their documentation, or communications from
-V&M's or its Representatives' support staff constitutes legal, tax,
-accounting, or financial advice. The User should consult qualified,
-licensed professionals in its jurisdiction for decisions relating to
-taxes, currency exchange, business structuring, or regulatory
-compliance.
+Nothing in the Services, their documentation, or communications from V&M's or its Representatives' support staff constitutes legal, tax, accounting, or financial advice. The User should consult qualified, licensed professionals in its jurisdiction for decisions relating to taxes, currency exchange, business structuring, or regulatory compliance.
 
 **6. AI-Generated Content (KREATON)**
 
-Content generated by the artificial intelligence models integrated into
-KREATON (text, descriptions, images, and design elements) is produced
-automatically and may contain inaccuracies, factual errors, or
-unintended similarities to third-party works. The User is responsible
-for reviewing and validating such content before publishing it,
-including verifying that it does not infringe copyrights, trademarks, or
-other third-party rights. V&M does not warrant the accuracy,
-originality, or non-infringement of AI-generated content.
+Content generated by the artificial intelligence models integrated into KREATON (text, descriptions, images, and design elements) is produced automatically and may contain inaccuracies, factual errors, or unintended similarities to third-party works. The User is responsible for reviewing and validating such content before publishing it, including verifying that it does not infringe copyrights, trademarks, or other third-party rights. V&M does not warrant the accuracy, originality, or non-infringement of AI-generated content.
 
 **7. Limitation of Financial Liability for POS/KDS Failure**
 
-**As set out in Section 10 of the Terms of Service, V&M's total
-financial liability to the User for failures, interruptions, or
-malfunctions of Listo POS or ListoKDS is limited, to the maximum extent
-permitted by law, to the total amount paid by the User in subscription
-fees during the six (6) months immediately preceding the event giving
-rise to the claim.** This limit reflects the fact that the Services are
-an operational tool supporting the User's business, not a substitute for
-the User's own internal controls, data backups, or a contingency plan
-against technological disruptions.
+**As set out in Section 10 of the Terms of Service, V&M's total financial liability to the User for failures, interruptions, or malfunctions of Listo POS or ListoKDS is limited, to the maximum extent permitted by law, to the total amount paid by the User in subscription fees during the six (6) months immediately preceding the event giving rise to the claim.** This limit reflects the fact that the Services are an operational tool supporting the User's business, not a substitute for the User's own internal controls, data backups, or a contingency plan against technological disruptions.
 
-V&M recommends that every User maintain manual backup procedures (for
-example, physical sales logs) to continue operating during prolonged
-Service interruptions.
+V&M recommends that every User maintain manual backup procedures (for example, physical sales logs) to continue operating during prolonged Service interruptions.
 
 **8. Connectivity and Offline Operation**
 
-Listo POS is designed to operate with a limited tolerance window without
-an internet connection, after which it will require an online license
-validation to continue functioning. This window is designed to balance
-business continuity in the face of prolonged connectivity outages
-(common in some regions) against V&M's legitimate protection against
-unauthorized use of the software. The User will be notified within the
-application as the expiration of this window approaches. V&M will not be
-liable for Service interruption resulting from the User's lack of
-internet connectivity beyond the tolerance window then in effect, which
-is disclosed in the product documentation and may be adjusted over time.
+Listo POS is designed to operate with a limited tolerance window without an internet connection, after which it will require an online license validation to continue functioning. This window is designed to balance business continuity in the face of prolonged connectivity outages (common in some regions) against V&M's legitimate protection against unauthorized use of the software. The User will be notified within the application as the expiration of this window approaches. V&M will not be liable for Service interruption resulting from the User's lack of internet connectivity beyond the tolerance window then in effect, which is disclosed in the product documentation and may be adjusted over time.
 
 **9. International Sanctions Compliance**
 
-As set out in Section 8 of the Terms of Service, use of the Services is
-conditioned on the User not being subject to the sanctions restrictions
-of the U.S. Department of the Treasury's Office of Foreign Assets
-Control (OFAC). This condition applies to persons and entities
-specifically designated on sanctions lists, and does not constitute a
-general restriction on users located in Venezuela or other countries
-subject to selective (non-comprehensive) sanctions.
+As set out in Section 8 of the Terms of Service, use of the Services is conditioned on the User not being subject to the sanctions restrictions of the U.S. Department of the Treasury's Office of Foreign Assets Control (OFAC). This condition applies to persons and entities specifically designated on sanctions lists, and does not constitute a general restriction on users located in Venezuela or other countries subject to selective (non-comprehensive) sanctions.
 
 **10. Effectiveness and Relationship to the Other Legal Documents**
 
-These Disclaimers form an integral part of the Terms of Service and must
-be interpreted together with them and with the Privacy Policy. In the
-event of any inconsistency, the Terms of Service will control.
+These Disclaimers form an integral part of the Terms of Service and must be interpreted together with them and with the Privacy Policy. In the event of any inconsistency, the Terms of Service will control.
 
-This document is the original, controlling document. Where a
-Spanish-language version is provided as a courtesy translation, this
-English version will prevail in the event of any discrepancy.
+This document is the original, controlling document. Where a Spanish-language version is provided as a courtesy translation, this English version will prevail in the event of any discrepancy.
 
 **11. Contact**
 
