@@ -76,7 +76,7 @@
     </section>
 
     <!-- REQUEST OPTIONS -->
-    <section class="section" id="request-info">
+    <section class="section" id="request-options">
       <div class="container">
         <div class="section-heading compact-heading">
           <span class="eyebrow">Solicitudes</span>
@@ -343,62 +343,76 @@
       </div>
     </section>
 
-    <!-- REQUEST FORM MOCKUP -->
-    <section class="section">
+    <!-- REQUEST FORM -->
+    <section class="section" id="request-info">
       <div class="container split-grid">
         <div>
           <span class="eyebrow">Solicitud inicial</span>
-          <h2>Datos que deben recopilarse antes de evaluar un cliente.</h2>
+          <h2>Cuéntanos qué necesita tu negocio.</h2>
           <p>
-            Más adelante este formulario podrá ser real. Por ahora sirve como estructura
-            para definir qué información debe pedirse antes de enviar una propuesta o
-            canalizar la solicitud a un representante.
+            Completa la información inicial para que podamos evaluar el caso y asignar
+            la atención adecuada. Los campos marcados con * son obligatorios.
           </p>
         </div>
 
-        <div class="form-preview-card">
-          <span class="preview-label">Formulario futuro</span>
-
-          <div class="form-preview-row">
-            <strong>Nombre del negocio</strong>
-            <span>Requerido</span>
+        <form class="lead-request-form" id="leadRequestForm" novalidate>
+          <div class="lead-form-grid">
+            <label class="lead-field lead-field-wide">
+              <span>Nombre del negocio *</span>
+              <input name="businessName" type="text" autocomplete="organization" minlength="2" maxlength="160" required />
+            </label>
+            <label class="lead-field">
+              <span>RIF / identificación fiscal <small>Opcional</small></span>
+              <input name="taxId" type="text" maxlength="80" />
+            </label>
+            <label class="lead-field">
+              <span>Persona de contacto *</span>
+              <input name="contactName" type="text" autocomplete="name" minlength="2" maxlength="160" required />
+            </label>
+            <label class="lead-field">
+              <span>Email de contacto <small>Opcional</small></span>
+              <input name="contactEmail" type="email" autocomplete="email" maxlength="200" />
+            </label>
+            <label class="lead-field">
+              <span>Teléfono / WhatsApp *</span>
+              <input name="phone" type="tel" autocomplete="tel" minlength="7" maxlength="40" pattern="[+()0-9.\-\s]{7,40}" required />
+            </label>
+            <label class="lead-field">
+              <span>Solución requerida *</span>
+              <select name="solutionType" required>
+                <option value="">Selecciona una opción</option>
+                <option value="solution">Solución para el negocio</option>
+                <option value="app">Aplicación</option>
+                <option value="custom">Sistema personalizado</option>
+              </select>
+            </label>
+            <label class="lead-field">
+              <span>País / ciudad *</span>
+              <input name="location" type="text" autocomplete="address-level2" minlength="2" maxlength="160" required />
+            </label>
+            <label class="lead-field">
+              <span>Representante asignado <small>Opcional</small></span>
+              <input name="assignedRepresentative" type="text" maxlength="160" />
+            </label>
+            <label class="lead-field lead-field-wide">
+              <span>Comentario inicial <small>Opcional</small></span>
+              <textarea name="comment" rows="5" maxlength="2000" placeholder="Describe brevemente lo que deseas resolver."></textarea>
+            </label>
+            <label class="lead-honeypot" aria-hidden="true">
+              Sitio web
+              <input name="website" type="text" tabindex="-1" autocomplete="off" />
+            </label>
           </div>
-
-          <div class="form-preview-row">
-            <strong>RIF / identificación fiscal</strong>
-            <span>Si aplica</span>
+          <div class="lead-form-actions">
+            <button class="btn btn-primary" type="submit" id="leadSubmitButton">Enviar solicitud</button>
+            <span class="lead-form-status" id="leadFormStatus" role="status" aria-live="polite"></span>
           </div>
-
-          <div class="form-preview-row">
-            <strong>Persona de contacto</strong>
-            <span>Requerido</span>
+          <div class="lead-form-fallback" id="leadFormFallback" hidden>
+            No pudimos registrar la solicitud. Puedes
+            <a href="mailto:info@vmbusinesssystems.com?subject=Solicitud%20de%20informaci%C3%B3n">abrir tu correo</a>
+            para enviarla directamente.
           </div>
-
-          <div class="form-preview-row">
-            <strong>Teléfono / WhatsApp</strong>
-            <span>Requerido</span>
-          </div>
-
-          <div class="form-preview-row">
-            <strong>Solución requerida</strong>
-            <span>Solución / app / personalizado</span>
-          </div>
-
-          <div class="form-preview-row">
-            <strong>País / ciudad</strong>
-            <span>Requerido</span>
-          </div>
-
-          <div class="form-preview-row">
-            <strong>Representante asignado</strong>
-            <span>Si aplica</span>
-          </div>
-
-          <div class="form-preview-row">
-            <strong>Comentario inicial</strong>
-            <span>Opcional</span>
-          </div>
-        </div>
+        </form>
       </div>
     </section>
 
@@ -462,7 +476,7 @@
           </p>
         </div>
 
-        <a href="mailto:info@vmbusinesssystems.com" class="btn btn-light">Enviar solicitud</a>
+        <a href="#request-info" class="btn btn-light">Enviar solicitud</a>
       </div>
     </section>
   </main>
@@ -509,6 +523,8 @@
     </div>
   </footer>
 
+  <script src="luma-config.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/contact-leads.js"></script>
 </body>
 </html>

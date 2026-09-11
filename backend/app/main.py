@@ -33,6 +33,8 @@ from .agents import TEMPLATE_CATALOG, semantic_seed_catalog, split_items, state_
 from .ai_site_planner import enforce_client_declared_catalog_facts
 from .client_auth import fetch_supabase_user, supabase_auth_configured
 from .commerce import router as commerce_router
+from .billing import router as billing_router
+from .leads import router as leads_router
 from .db import get_session, init_db
 from .db_models import GeneratedSite, Store
 from .domains import router as domains_router
@@ -401,6 +403,8 @@ async def add_security_headers(request: Request, call_next):
 
 
 app.include_router(commerce_router)
+app.include_router(billing_router)
+app.include_router(leads_router)
 app.include_router(domains_router)
 app.include_router(operations_router)
 

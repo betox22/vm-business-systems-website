@@ -2068,6 +2068,96 @@ a {
   text-align: right;
 }
 
+.lead-request-form {
+  padding: clamp(22px, 4vw, 34px);
+  border-radius: 30px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.lead-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.lead-field {
+  display: grid;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.lead-field-wide {
+  grid-column: 1 / -1;
+}
+
+.lead-field small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.lead-field input,
+.lead-field select,
+.lead-field textarea {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fbfdff;
+  color: var(--text);
+  font: inherit;
+  font-weight: 500;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.lead-field textarea {
+  resize: vertical;
+  min-height: 126px;
+}
+
+.lead-field input:focus,
+.lead-field select:focus,
+.lead-field textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--white);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 13%, transparent);
+}
+
+.lead-field input[aria-invalid="true"],
+.lead-field select[aria-invalid="true"] {
+  border-color: #b42318;
+}
+
+.lead-honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.lead-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.lead-form-status {
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.lead-form-status[data-state="success"] { color: #087443; }
+.lead-form-status[data-state="error"] { color: #b42318; }
+.lead-form-fallback { margin-top: 14px; color: #7a271a; }
+.lead-form-fallback a { color: var(--primary); font-weight: 800; }
+
 @media (max-width: 1040px) {
   .contact-hero-grid,
   .contact-options-grid {
@@ -2097,6 +2187,11 @@ a {
   .form-preview-row span {
     text-align: left;
   }
+
+  .lead-form-grid { grid-template-columns: 1fr; }
+  .lead-field-wide { grid-column: auto; }
+  .lead-form-actions { align-items: stretch; flex-direction: column; }
+  .lead-form-actions .btn { width: 100%; }
 }
 .client-dashboard-preview {
   padding: 30px;

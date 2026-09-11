@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import hashlib
-import hmac
 import json
 import os
 import time
 import uuid
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List, Literal, Optional
-from urllib import parse, request as urllib_request
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
@@ -21,6 +18,9 @@ from .db_models import Customer as DbCustomer
 from .db_models import Order as DbOrder
 from .db_models import Product as DbProduct
 from .db_models import Store
+from .db_models import StripeConnectAccount
+from .stripe_gateway import checkout_session as create_stripe_session
+from .stripe_gateway import construct_event, create_account_link, create_connected_account
 
 router = APIRouter(prefix="/api/v1", tags=["commerce"])
 
@@ -151,6 +151,10 @@ class PaymentMethodPatch(BaseModel):
     currency: str = "USD"
     captureMode: Literal["automatic", "manual"] = "automatic"
     manualInstructions: Optional[str] = None
+
+
+class StripeConnectOnboardingRequest(BaseModel):
+    countryCode: str = Field(default="US", min_length=2, max_length=2)
 
 
 class OrderStatusPatch(BaseModel):
@@ -620,7 +624,13 @@ def restock_order_inventory(session: Session, order: DbOrder, business_id: str) 
     return movements
 
 
-def stripe_checkout_session(order: Dict[str, Any], success_url: str, cancel_url: str) -> Dict[str, Any]:
+def stripe_checkout_session(
+    order: Dict[str, Any],
+    success_url: str,
+    cancel_url: str,
+    *,
+    connected_account_id: Optional[str] = None,
+) -> Dict[str, Any]:
     secret_key = os.getenv("STRIPE_SECRET_KEY")
     if not secret_key:
         return {
@@ -629,54 +639,36 @@ def stripe_checkout_session(order: Dict[str, Any], success_url: str, cancel_url:
             "message": "STRIPE_SECRET_KEY is not configured. Store admin must connect payments before live checkout.",
         }
 
-    fields: Dict[str, Any] = {
-        "mode": "payment",
-        "success_url": success_url,
-        "cancel_url": cancel_url,
-        "metadata[order_id]": order["id"],
-        "metadata[order_number]": order["orderNumber"],
-    }
-    for index, item in enumerate(order["items"]):
-        unit_amount = int(money(item["unitPrice"]) * 100)
-        fields[f"line_items[{index}][price_data][currency]"] = "usd"
-        fields[f"line_items[{index}][price_data][product_data][name]"] = item["name"]
-        fields[f"line_items[{index}][price_data][unit_amount]"] = str(unit_amount)
-        fields[f"line_items[{index}][quantity]"] = str(item["quantity"])
-
-    encoded = parse.urlencode(fields).encode("utf-8")
-    req = urllib_request.Request(
-        "https://api.stripe.com/v1/checkout/sessions",
-        data=encoded,
-        headers={
-            "Authorization": f"Bearer {secret_key}",
-            "Stripe-Version": "2026-02-25.clover",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        method="POST",
+    line_items = [
+        {
+            "price_data": {
+                "currency": "usd",
+                "product_data": {"name": item["name"]},
+                "unit_amount": int(money(item["unitPrice"]) * 100),
+            },
+            "quantity": int(item["quantity"]),
+        }
+        for item in order["items"]
+    ]
+    fee_bps = max(0, min(int(os.getenv("STRIPE_CONNECT_APPLICATION_FEE_BPS", "0") or 0), 10000))
+    fee_amount = int(order["total"] * 100 * fee_bps / 10000) if connected_account_id and fee_bps else None
+    payload = create_stripe_session(
+        mode="payment",
+        line_items=line_items,
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={"ledger": "store_commerce", "order_id": order["id"], "order_number": order["orderNumber"]},
+        stripe_account=connected_account_id,
+        application_fee_amount=fee_amount,
     )
-    try:
-        with urllib_request.urlopen(req, timeout=12) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except Exception as exc:  # pragma: no cover - depends on live provider/network
-        raise HTTPException(status_code=502, detail=f"Stripe checkout session failed: {exc}") from exc
 
     return {
         "provider": "stripe",
         "providerStatus": "session_created",
         "sessionId": payload.get("id"),
         "checkoutUrl": payload.get("url"),
+        "connectedAccountId": connected_account_id,
     }
-
-
-def verify_stripe_signature(raw_body: bytes, signature_header: str, secret: str) -> bool:
-    parts = dict(part.split("=", 1) for part in signature_header.split(",") if "=" in part)
-    timestamp = parts.get("t")
-    signature = parts.get("v1")
-    if not timestamp or not signature:
-        return False
-    signed_payload = f"{timestamp}.{raw_body.decode('utf-8')}".encode("utf-8")
-    expected = hmac.new(secret.encode("utf-8"), signed_payload, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(expected, signature)
 
 
 @router.get("/storefront/{business_id}/home")
@@ -836,6 +828,10 @@ async def create_checkout_session(
         api_order = order_to_api(order)
         return {"order": api_order, "payment": api_order["payment"], "idempotentReplay": True}
 
+    connect = session.get(StripeConnectAccount, payload.businessId)
+    if os.getenv("STRIPE_SECRET_KEY") and (not connect or not connect.charges_enabled):
+        raise HTTPException(status_code=409, detail="This store must finish Stripe onboarding before card checkout.")
+
     order = create_order_from_cart(
         session,
         payload.cartId,
@@ -846,7 +842,12 @@ async def create_checkout_session(
         {"provider": "stripe", "providerStatus": "creating_session"},
     )
     api_order = order_to_api(order)
-    payment = stripe_checkout_session(api_order, payload.successUrl, payload.cancelUrl)
+    payment = stripe_checkout_session(
+        api_order,
+        payload.successUrl,
+        payload.cancelUrl,
+        connected_account_id=connect.stripe_account_id if connect else None,
+    )
     if payment.get("providerStatus") == "not_configured":
         order.status = "pending_payment"
     order.payment_json = json.dumps(payment)
@@ -881,14 +882,11 @@ async def stripe_webhook(
     stripe_signature: Optional[str] = Header(default=None, alias="Stripe-Signature"),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+    webhook_secret = os.getenv("STRIPE_STORE_WEBHOOK_SECRET") or os.getenv("STRIPE_WEBHOOK_SECRET")
     raw = await request.body()
     if not webhook_secret:
-        raise HTTPException(status_code=503, detail="STRIPE_WEBHOOK_SECRET is not configured.")
-    if not stripe_signature or not verify_stripe_signature(raw, stripe_signature, webhook_secret):
-        raise HTTPException(status_code=400, detail="Invalid Stripe signature.")
-
-    event = json.loads(raw.decode("utf-8"))
+        raise HTTPException(status_code=503, detail="STRIPE_STORE_WEBHOOK_SECRET is not configured.")
+    event = construct_event(raw, stripe_signature or "", webhook_secret)
     event_type = event.get("type")
     stripe_session = event.get("data", {}).get("object", {})
     order_id = stripe_session.get("metadata", {}).get("order_id")
@@ -902,6 +900,75 @@ async def stripe_webhook(
             session.commit()
             audit("stripe_webhook", "order_paid", order.store_id, {"orderId": order_id})
     return {"received": True}
+
+
+@router.post("/payments/stripe/connect-webhook")
+async def stripe_connect_webhook(
+    request: Request,
+    stripe_signature: Optional[str] = Header(default=None, alias="Stripe-Signature"),
+    session: Session = Depends(get_session),
+) -> Dict[str, bool]:
+    secret = os.getenv("STRIPE_CONNECT_WEBHOOK_SECRET", "").strip()
+    if not secret:
+        raise HTTPException(status_code=503, detail="STRIPE_CONNECT_WEBHOOK_SECRET is not configured.")
+    event = construct_event(await request.body(), stripe_signature or "", secret)
+    obj = event.get("data", {}).get("object", {})
+    account_id = str(obj.get("id") or event.get("account") or "")
+    account = session.scalar(select(StripeConnectAccount).where(StripeConnectAccount.stripe_account_id == account_id)) if account_id else None
+    if account and str(event.get("type") or "") in {"account.updated", "v2.core.account[requirements].updated"}:
+        capabilities = obj.get("capabilities") or {}
+        merchant = (obj.get("configuration") or {}).get("merchant") or {}
+        merchant_card = (merchant.get("capabilities") or {}).get("card_payments") or {}
+        account.charges_enabled = bool(
+            obj.get("charges_enabled")
+            or capabilities.get("card_payments") == "active"
+            or merchant_card.get("status") == "active"
+        )
+        account.payouts_enabled = bool(obj.get("payouts_enabled"))
+        requirements = obj.get("requirements") or {}
+        account.details_submitted = bool(obj.get("details_submitted") or (account.charges_enabled and not requirements.get("currently_due")))
+        account.onboarding_status = "complete" if account.charges_enabled else "requirements_due"
+        session.commit()
+    return {"received": True}
+
+
+@router.get("/store-owner/{business_id}/stripe-connect")
+async def owner_stripe_connect_status(business_id: str, authorization: str = Header(default=""), session: Session = Depends(get_session)) -> Dict[str, Any]:
+    require_store_owner(session, business_id, authorization)
+    account = session.get(StripeConnectAccount, business_id)
+    return {
+        "businessId": business_id,
+        "connected": bool(account),
+        "accountId": account.stripe_account_id if account else None,
+        "onboardingStatus": account.onboarding_status if account else "not_started",
+        "chargesEnabled": account.charges_enabled if account else False,
+        "payoutsEnabled": account.payouts_enabled if account else False,
+    }
+
+
+@router.post("/store-owner/{business_id}/stripe-connect/onboarding")
+async def owner_stripe_connect_onboarding(
+    business_id: str,
+    payload: StripeConnectOnboardingRequest,
+    authorization: str = Header(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    store, user = require_store_owner(session, business_id, authorization)
+    account = session.get(StripeConnectAccount, business_id)
+    if not account:
+        account = StripeConnectAccount(
+            store_id=business_id,
+            stripe_account_id=create_connected_account(email=str(user.get("email") or store.owner_email), display_name=store.name, country=payload.countryCode),
+        )
+        session.add(account)
+        session.commit()
+    refresh_url = os.getenv("STRIPE_CONNECT_REFRESH_URL", "").strip()
+    return_url = os.getenv("STRIPE_CONNECT_RETURN_URL", "").strip()
+    if not refresh_url or not return_url:
+        raise HTTPException(status_code=503, detail="Stripe Connect return URLs are not configured.")
+    url = create_account_link(account_id=account.stripe_account_id, refresh_url=refresh_url, return_url=return_url)
+    audit(str(user.get("id") or user.get("email") or "store-owner"), "stripe_connect_onboarding_started", business_id, {"stripeAccountId": account.stripe_account_id})
+    return {"businessId": business_id, "accountId": account.stripe_account_id, "onboardingUrl": url, "onboardingStatus": account.onboarding_status}
 
 
 @router.get("/customer/me")
