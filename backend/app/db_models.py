@@ -140,6 +140,47 @@ class Setting(Base):
     updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
 
 
+class StripeConnectAccount(Base):
+    __tablename__ = "stripe_connect_accounts"
+
+    store_id: Mapped[str] = mapped_column(ForeignKey("stores.id"), primary_key=True)
+    stripe_account_id: Mapped[str] = mapped_column(unique=True, index=True)
+    onboarding_status: Mapped[str] = mapped_column(default="pending")
+    charges_enabled: Mapped[bool] = mapped_column(default=False)
+    payouts_enabled: Mapped[bool] = mapped_column(default=False)
+    details_submitted: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[int] = mapped_column(default=_now)
+    updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
+
+
+class PlatformSubscription(Base):
+    __tablename__ = "platform_subscriptions"
+    __table_args__ = (UniqueConstraint("product", "business_ref", name="platform_subscription_product_business_key"),)
+
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: _id("sub"))
+    product: Mapped[str] = mapped_column(index=True)  # kreaton, listo_pos, listo_kds
+    business_ref: Mapped[str] = mapped_column(index=True)
+    owner_email: Mapped[str] = mapped_column(default="")
+    country_code: Mapped[str] = mapped_column(default="US")
+    payment_method: Mapped[str] = mapped_column(default="stripe")  # stripe or manual
+    stripe_customer_id: Mapped[Optional[str]] = mapped_column(nullable=True)
+    stripe_subscription_id: Mapped[Optional[str]] = mapped_column(nullable=True, unique=True)
+    stripe_price_id: Mapped[Optional[str]] = mapped_column(nullable=True)
+    status: Mapped[str] = mapped_column(default="not_started")
+    current_period_end: Mapped[Optional[int]] = mapped_column(nullable=True)
+    created_at: Mapped[int] = mapped_column(default=_now)
+    updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
+
+
+class StripeEvent(Base):
+    __tablename__ = "stripe_events"
+
+    event_id: Mapped[str] = mapped_column(primary_key=True)
+    event_type: Mapped[str] = mapped_column(index=True)
+    livemode: Mapped[bool] = mapped_column(default=False)
+    processed_at: Mapped[int] = mapped_column(default=_now)
+
+
 class AdminAuditEvent(Base):
     __tablename__ = "admin_audit_events"
     __table_args__ = (

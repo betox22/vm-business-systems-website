@@ -16,6 +16,55 @@ Formato de entrada:
 
 ---
 
+## 2026-09-11 — Codex — Stripe Billing, Connect y suscripciones internacionales de Listo
+
+**Hecho:** se migró la llamada manual con `urllib` al SDK oficial de Stripe
+(`stripe>=14,<15`, API `2026-02-25.clover`) y se conservaron Checkout + webhook
+como fuente de verdad. Se separaron tres carriles persistentes: (1) KREATON usa
+Stripe Billing/Checkout `mode=subscription`; (2) Listo POS y ListoKDS usan el
+mismo ciclo recurrente fuera de Venezuela y admiten `paymentMethod=stripe|manual`
+por negocio; (3) cada tienda KREATON crea una cuenta Connect Accounts v2 con
+dashboard completo, responsabilidades de fees/losses en Stripe y cargos directos
+en su propia cuenta. Se agregaron onboarding autenticado, estado Connect,
+webhooks separados, deduplicación de eventos Billing, Customer Portal y un
+`backend/.env.example` completo para test mode. Listo se integra por credencial
+server-to-server y no se tocó su auth ni su fingerprinting/licenciamiento.
+
+**Decisión técnica:** el cargo directo calza con “el cliente vende en su propia
+página”: la venta, fees, reembolsos, disputas y balance viven en la cuenta del
+merchant, no en VM. Para cobros mensuales no se construyó un loop manual de
+PaymentIntents; Stripe Billing maneja renovaciones, reintentos y dunning, y los
+eventos `invoice.paid` / `invoice.payment_failed` actualizan el espejo local.
+
+**Validación:** SDK Stripe 14.4.1 inspeccionado localmente (Accounts v2 y Account
+Links v2 disponibles); `python -m unittest discover -s tests` desde `backend/`:
+126 tests, OK. Las pruebas nuevas cubren Checkout recurrente de KREATON, selección
+manual de Listo y deduplicación/actualización de webhooks. No hubo llamadas reales
+a Stripe ni QA de Dashboard porque todavía no existe la cuenta/claves.
+
+**Pendiente / abierto:** Beto debe crear y habilitar la cuenta Stripe/Connect en
+test mode, crear los tres Prices mensuales, configurar Customer Portal y registrar
+los tres destinos webhook con sus eventos. Luego cargar las variables del ejemplo
+directamente en Render/Stripe (no enviarlas por chat) y ejecutar un ciclo E2E con
+tarjetas de prueba. Falta decidir precios reales, fee opcional de Connect y si el
+espejo Billing de Listo debe permanecer aquí o migrarse junto a su fuente de verdad;
+no se tomó esa decisión de arquitectura unilateralmente. La rama `feature/logo-paywall`
+no se fusionó: su pago único sigue siendo un producto distinto del plan mensual.
+
+**Archivos tocados:** `backend/app/stripe_gateway.py`, `backend/app/billing.py`,
+`backend/app/commerce.py`, `backend/app/db_models.py`, `backend/app/main.py`,
+`backend/requirements.txt`, `backend/.env.example`,
+`backend/tests/test_stripe_billing.py`, `docs/commerce-engine-architecture.md`,
+`docs/AGENT_LOG.md`.
+
+**Notas para el siguiente agente:** no publicar ni cargar claves live antes del
+E2E test. Los Account Links son de un solo uso y solo deben mostrarse dentro de la
+sesión autenticada del dueño. Mantener separados los secretos y ledgers de Store,
+Connect y Billing. Para producción Postgres, convertir estas tablas nuevas en una
+migración formal antes del deploy; `create_all()` solo cubre tablas nuevas.
+
+---
+
 ## 2026-08-15 — Codex — Navegación bilingüe y accesos semánticos
 
 **Hecho:** La portada corporativa queda en español por defecto con selector

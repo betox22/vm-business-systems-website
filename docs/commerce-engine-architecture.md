@@ -253,3 +253,39 @@ Vendor dashboard, only for marketplace templates:
 - Never trust payment success only from the browser redirect.
 - Always reconcile payment and shipment changes through server-side events or verified admin actions.
 - Every admin change that affects money, orders, inventory, or provider settings must create an audit log.
+
+## Stripe implementation (2026-09-11)
+
+The backend uses the official Stripe Python SDK and pins API requests to
+`2026-02-25.clover`. All initial validation is test-mode-only.
+
+- **KREATON Billing:** Stripe Billing + hosted Checkout in `subscription` mode.
+  The Stripe Price is configured with `STRIPE_KREATON_MONTHLY_PRICE_ID` and
+  subscription state is persisted in `platform_subscriptions`.
+- **Listo POS / ListoKDS:** the same recurring Billing flow uses separate Price
+  IDs. Each business explicitly selects `stripe` or `manual`; manual records stay
+  `pending_manual_confirmation`. The Listo service calls this boundary using a
+  server-to-server credential. This does not move or replace Listo's license data.
+- **Generated stores:** Accounts v2 with a full Stripe Dashboard, Stripe-owned
+  fee/loss responsibility, hosted onboarding, and direct Checkout charges. The
+  connected merchant receives the sale and owns provider fees, refunds, disputes,
+  and payouts. Optional platform fees use
+  `STRIPE_CONNECT_APPLICATION_FEE_BPS` and never enter KREATON Billing records.
+- **Webhooks:** store, Connect, and platform Billing have separate secrets and
+  endpoints. Billing events are idempotent in `stripe_events`; browser redirects
+  never grant paid status.
+
+Operational endpoints:
+
+- `POST /api/v1/billing/subscriptions/checkout`
+- `POST /api/v1/billing/subscriptions/portal`
+- `POST /api/v1/billing/stripe/webhook`
+- `POST /api/v1/store-owner/{business_id}/stripe-connect/onboarding`
+- `GET /api/v1/store-owner/{business_id}/stripe-connect`
+- `POST /api/v1/payments/stripe/connect-webhook`
+- `POST /api/v1/payments/stripe/webhook`
+
+Architecture boundary still requiring Beto's decision: Listo remains the source
+of truth for license/subscription entitlement. KREATON stores only the Stripe
+billing mirror required to create Checkout and reconcile Stripe events; do not
+consolidate Listo licensing into this commerce database without approval.
