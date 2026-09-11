@@ -16,6 +16,8 @@ Formato de entrada:
 
 ---
 
+**2026-09-11 — Stripe revisado y aprobado:** `feature/stripe-billing-connect` quedó integrada por fast-forward en `main` mediante el commit `8eab2a81e645c6c6fba2d9a1b1e4d754a528e986`.
+
 ## 2026-09-11 — Codex — Stripe Billing, Connect y suscripciones internacionales de Listo
 
 **Hecho:** se migró la llamada manual con `urllib` al SDK oficial de Stripe
