@@ -16,6 +16,26 @@ Formato de entrada:
 
 ---
 
+## 2026-08-31 — Codex — Integración de ListoKDS en la familia VM
+
+**Hecho:** se agregó ListoKDS como tercer producto real en la portada
+corporativa, junto a Listo y Kreaton + Lyra. La tarjeta usa una captura real
+del dashboard operativo, copy bilingüe y enlace al dominio propio de
+ListoKDS. También se añadió el acceso correspondiente al footer.
+
+**Validación:** render local inspeccionado en navegador con la tarjeta completa,
+imagen, textos y destinos de navegación. La landing de ListoKDS se validó por
+separado en escritorio y móvil antes de publicar.
+
+**Archivos tocados:** `index.html`, `css/corporate-premium.css`,
+`js/corporate-i18n.js`, `images/listokds-product-dashboard.png`,
+`docs/AGENT_LOG.md`.
+
+**Pendiente / abierto:** no se publicó ni desplegó esta integración en esta
+sesión; espera revisión visual y autorización del usuario.
+
+---
+
 ## 2026-08-15 — Codex — Navegación bilingüe y accesos semánticos
 
 **Hecho:** La portada corporativa queda en español por defecto con selector

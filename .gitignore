@@ -17,6 +17,8 @@ backend/*.db
 *.out.log
 .codex_tmp*
 .pytest_cache/
+public-dist*.discard*/
+output/
 
 # One-time context packages prepared for other AI assistants (Claude/Gemini)
 # when they couldn't reach a live prototype URL. Kept on disk for reference,
