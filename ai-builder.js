@@ -6232,6 +6232,10 @@
       type: hashParams.get("type") || queryParams.get("type") || ""
     };
   }
+  function clientSetupAuthRedirect(locationLike = globalThis.location) {
+    const currentUrl = new URL(String(locationLike?.href || locationLike || "https://usekreaton.com/"));
+    return new URL("/client/setup/", currentUrl.origin).toString();
+  }
   async function requestSupabaseMagicLink({
     email,
     redirectTo,
@@ -6240,7 +6244,9 @@
     fetchImpl = globalThis.fetch
   }) {
     try {
-      const response = await fetchImpl(`${String(projectUrl || "").replace(/\/$/, "")}/auth/v1/otp`, {
+      const endpoint = new URL(`${String(projectUrl || "").replace(/\/$/, "")}/auth/v1/otp`);
+      endpoint.searchParams.set("redirect_to", redirectTo);
+      const response = await fetchImpl(endpoint.toString(), {
         method: "POST",
         headers: {
           apikey: anonKey,
@@ -6248,10 +6254,7 @@
         },
         body: JSON.stringify({
           email,
-          options: {
-            emailRedirectTo: redirectTo,
-            shouldCreateUser: true
-          }
+          create_user: true
         })
       });
       const payload = await response.json().catch(() => ({}));
@@ -6391,7 +6394,7 @@
     }
     const result = await requestSupabaseMagicLink({
       email,
-      redirectTo: window.location.href,
+      redirectTo: clientSetupAuthRedirect(window.location),
       projectUrl: SUPABASE_PROJECT_URL,
       anonKey: SUPABASE_ANON_KEY
     });
@@ -7663,7 +7666,7 @@
   }
   function continueWithStudioAuth(provider) {
     persistPendingStudioAccountAction(provider);
-    const returnTo = encodeURIComponent(window.location.href);
+    const returnTo = encodeURIComponent(clientSetupAuthRedirect(window.location));
     const supabaseProvider = provider === "apple" ? "apple" : "google";
     window.location.href = `${SUPABASE_AUTH_URL}?provider=${supabaseProvider}&redirect_to=${returnTo}`;
   }
