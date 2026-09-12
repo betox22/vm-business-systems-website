@@ -9,9 +9,11 @@ const i18n = await readFile(new URL('../js/corporate-i18n.js', import.meta.url),
 test('la página principal presenta ListoKDS como producto real', async () => {
   assert.match(html, /vm-product-listokds/);
   assert.match(html, /https:\/\/listokds\.vmbusinesssystems\.com\//);
-  assert.match(html, /images\/listokds-product-dashboard\.png/);
+  assert.match(html, /images\/listokds-glass-tag-product\.png/);
+  assert.doesNotMatch(html, /images\/listokds-product-dashboard\.png/);
   assert.match(css, /\.vm-product-listokds/);
-  await access(new URL('../images/listokds-product-dashboard.png', import.meta.url));
+  assert.doesNotMatch(css, /border:\s*8px solid #15191f/);
+  await access(new URL('../images/listokds-glass-tag-product.png', import.meta.url));
 });
 
 test('la tarjeta ListoKDS tiene contenido español e inglés', () => {
@@ -19,4 +21,3 @@ test('la tarjeta ListoKDS tiene contenido español e inglés', () => {
   assert.match(i18n, /listokdsBody: "Tables, orders, kitchen and checkout/);
   assert.match(i18n, /discoverListokds: "Discover ListoKDS"/);
 });
-
