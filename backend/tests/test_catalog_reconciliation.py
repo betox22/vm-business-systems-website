@@ -90,6 +90,7 @@ def test_mi_mundo_3d_fused_planner_item_remains_ai_generated() -> None:
 
     assert used_seed_fallback is False
     assert [item["name"] for item in reconciled] == client_names
+    assert all(item["content_origin"] == "ai_enriched" for item in reconciled)
     assert all(not item["category"].startswith("Seed category") for item in reconciled)
     assert all(not item["description"].startswith("Seed description") for item in reconciled)
     assert all(float(item["price"]) not in {10.0, 11.0, 12.0, 13.0, 14.0, 15.0} for item in reconciled)
@@ -233,7 +234,40 @@ def test_unrelated_model_catalog_still_reports_seed_fallback() -> None:
     )
 
     assert used_seed_fallback is True
-    assert reconciled[0]["category"] == "Seed category 0"
+    assert reconciled[0]["name"] == "Reparación de bicicletas"
+    assert reconciled[0]["category"] == "Reparación de bicicletas"
+    assert reconciled[0]["description"] == ""
+    assert reconciled[0]["price"] is None
+    assert reconciled[0]["content_origin"] == "client_declared"
+    assert reconciled[1]["content_origin"] == "seed_added"
+
+
+def test_unmatched_phone_does_not_inherit_magnetic_stand_metadata() -> None:
+    unrelated = _model_item(
+        "Soporte magnético de escritorio",
+        "Accesorios de escritorio",
+        "Base magnética para mantener el móvil visible en el escritorio.",
+        49.99,
+        "magnetic phone desk stand",
+    )
+
+    reconciled, used_seed_fallback = _reconcile_client_catalog(
+        [unrelated],
+        [_seed_item(0, "CyberLamp")],
+        ["Teléfonos"],
+        "PhoneHub vende teléfonos y accesorios de Apple Samsung Xiaomi y Oppo",
+        "PhoneHub",
+    )
+
+    assert used_seed_fallback is True
+    phone = reconciled[0]
+    assert phone["name"] == "Teléfonos"
+    assert phone["category"] == "Teléfonos"
+    assert phone["description"] == ""
+    assert phone["price"] is None
+    assert phone["price_type"] == "quote_only"
+    assert phone["content_origin"] == "client_declared"
+    assert "magn" not in phone["description"].lower()
 
 
 def test_ambiguous_single_token_does_not_match_unrelated_office_materials() -> None:

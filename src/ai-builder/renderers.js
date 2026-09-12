@@ -6,6 +6,9 @@ import { isB2BSaasTemplate } from './b2b-saas-policy.js';
 import { renderB2BSaasWebsite } from './b2b-saas-renderer.js';
 import { bathBodyStockImageUrl } from './catalog-preview-policy.js';
 import { motionDataAttributes } from './shared-site-motion.js';
+import { resolveCatalogAction } from '@kreaton/shared-commerce-cart';
+import { limitPremiumHeadline, premiumSectionImage, PREMIUM_IMAGE_ROLES } from './premium-product-policy.js';
+import { resolveColorValue } from './color-value-policy.js';
 import {
   inlineEditCatalogPath,
   inlineEditConfig,
@@ -142,7 +145,8 @@ export function renderWebsite(schema, pageKey, context = {}) {
       themeVars,
     });
   }
-  const commerceActions = isCommerceSite(schema) ? renderCommerceNavActions(schema) : "";
+  const isPremiumProductStore = templateId === "premium-product-store";
+  const commerceActions = isCommerceSite(schema) ? renderCommerceNavActions(schema, { showSearch: isPremiumProductStore }) : "";
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)}">
     ${renderStudioFloatingCatalog(schema, context)}
     <div class="rendered-page-switcher">
@@ -152,7 +156,7 @@ export function renderWebsite(schema, pageKey, context = {}) {
         .map((item) => `<a class="${item.page_key === page.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`)
         .join("")}</div>
     </div>
-    <header class="rendered-nav ${schema.layout_mode?.navigation?.sticky_header ? "sticky" : ""}">
+    <header class="rendered-nav ${isPremiumProductStore ? "premium-commerce-header" : ""} ${schema.layout_mode?.navigation?.sticky_header ? "sticky" : ""}">
       <div class="rendered-nav-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business.name)}">` : renderLogoMark(schema)}</div>
       <nav>${schema.navigation
         .map((item) => `<a class="${item.page_key === page.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditNavigationPath(schema, item), "nav_label")}>${escapeHtml(item.label)}</a>`)
@@ -182,20 +186,37 @@ function isCommerceSite(schema = {}) {
 function commerceLabels(schema = {}) {
   const language = schema?.business?.selectedLanguage || schema?.business?.selected_language || schema?.selectedLanguage || schema?.selected_language || "en";
   const labels = {
-    en: { account: "Account", cart: "Cart", addToCart: "Add to cart" },
-    es: { account: "Cuenta", cart: "Carrito", addToCart: "Agregar al carrito" },
-    fr: { account: "Compte", cart: "Panier", addToCart: "Ajouter au panier" },
-    pt: { account: "Conta", cart: "Carrinho", addToCart: "Adicionar ao carrinho" },
+    en: { account: "Account", cart: "Cart", search: "Search products", addToCart: "Add to cart" },
+    es: { account: "Cuenta", cart: "Carrito", search: "Buscar productos", addToCart: "Agregar al carrito" },
+    fr: { account: "Compte", cart: "Panier", search: "Rechercher", addToCart: "Ajouter au panier" },
+    pt: { account: "Conta", cart: "Carrinho", search: "Buscar produtos", addToCart: "Adicionar ao carrinho" },
   };
   return labels[language] || labels.en;
 }
 
-function renderCommerceNavActions(schema) {
+function catalogAction(schema, item = {}, fallbackLabel = "View details", commerceOverride) {
+  const language = schema?.business?.selectedLanguage || schema?.business?.selected_language || schema?.selectedLanguage || schema?.selected_language || "en";
+  return resolveCatalogAction(item, {
+    language,
+    commerce: commerceOverride ?? isCommerceSite(schema),
+    fallbackLabel,
+    cartLabel: commerceLabels(schema).addToCart,
+  });
+}
+
+function renderCommerceNavActions(schema, { showSearch = false } = {}) {
   const labels = commerceLabels(schema);
   return `<div class="commerce-actions">
-    <button class="commerce-action" type="button">${escapeHtml(labels.account)}</button>
-    <button class="commerce-action cart-button" type="button">${escapeHtml(labels.cart)} <span>0</span></button>
+    ${showSearch ? `<form class="premium-nav-search" data-catalog-search-form><label><span class="sr-only">${escapeHtml(labels.search)}</span><input type="search" name="catalog-search" placeholder="${escapeAttribute(labels.search)}"></label><button type="submit" aria-label="${escapeAttribute(labels.search)}">${premiumNavIcon("search")}</button></form>` : ""}
+    <button class="commerce-action premium-account-action" type="button" data-account-open aria-label="${escapeAttribute(labels.account)}">${premiumNavIcon("user")}<span>${escapeHtml(labels.account)}</span></button>
+    <button class="commerce-action cart-button" type="button" data-cart-open aria-label="${escapeAttribute(labels.cart)}">${premiumNavIcon("bag")}<span class="commerce-action-label">${escapeHtml(labels.cart)}</span> <span data-cart-count>0</span></button>
   </div>`;
+}
+
+function premiumNavIcon(name) {
+  if (name === "search") return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>';
+  if (name === "user") return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>';
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 13H7L6 8Z"></path><path d="M9 8a3 3 0 0 1 6 0"></path></svg>';
 }
 
 function renderStudioFloatingCatalog(schema, context = {}) {
@@ -361,14 +382,13 @@ function renderHero(section, schema) {
 function renderPremiumHero(section, schema) {
   const editable = section.editable || {};
   const items = marketplaceItems(schema);
-  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url);
-  const image = editable.image_url || heroItem?.image_url || "";
+  const image = premiumSectionImage(section, PREMIUM_IMAGE_ROLES.hero);
   const firstItem = items[0];
   const variant = section.variant || section.settings?.layout || "split_showcase";
   return `<section class="premium-hero premium-hero-${escapeAttribute(slugify(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="premium-hero-copy">
       <span class="rendered-kicker" ${inlineEditAttrs(schema, section, "badge")}>${escapeHtml(inlineEditableValue(editable, "badge", schema.business?.industry || schema.business?.tone || ""))}</span>
-      <h1 ${inlineEditAttrs(schema, section, "headline")}>${escapeHtml(inlineEditableValue(editable, "headline", schema.business?.name || ""))}</h1>
+      <h1 ${inlineEditAttrs(schema, section, "headline")}>${escapeHtml(limitPremiumHeadline(inlineEditableValue(editable, "headline", schema.business?.name || "")))}</h1>
       <p ${inlineEditAttrs(schema, section, "subtitle")}>${escapeHtml(inlineEditableValue(editable, "subtitle", schema.business?.description || ""))}</p>
       <div class="rendered-actions">
         <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(inlineEditableValue(editable, "primary_button", schema.theme?.buttons?.primary_label || "Explore"))}</a>
@@ -384,7 +404,7 @@ function renderPremiumHero(section, schema) {
 
 function renderProductStory(section, schema) {
   const editable = section.editable || {};
-  const image = editable.image_url || marketplaceItems(schema).find((item) => item.image_url)?.image_url || "";
+  const image = premiumSectionImage(section, PREMIUM_IMAGE_ROLES.detail);
   return `<section class="premium-story ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div>
       <span class="rendered-kicker">${escapeHtml(schema.business?.tone || "")}</span>
@@ -1764,7 +1784,9 @@ function renderDealRow(section, schema) {
 function renderTrustStrip(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
-  const trust = [labels.secureCheckout, labels.fastShip, labels.support, labels.easyReturns];
+  const trust = arrayValue(editable.items).length
+    ? arrayValue(editable.items).slice(0, 4)
+    : [labels.secureCheckout, labels.fastShip, labels.support, labels.easyReturns];
   return `<section class="marketplace-trust-strip ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div>
       <h2>${escapeHtml(editable.title || labels.trustTitle)}</h2>
@@ -1791,16 +1813,16 @@ function renderProductGrid(section, schema) {
     ${customCatalog || `<div class="rendered-grid columns-${columns}">
       ${catalogItems
         .map(
-          (item) => `<article class="rendered-card">
+          (item) => { const action = catalogAction(schema, item); return `<article class="rendered-card">
             ${renderCatalogImage(item)}
             <div>
               <h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</h3>
               <p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p>
               <strong>${escapeHtml(productPriceLabel(item, schema))}</strong>
               ${productStockBadge(item)}
-              <br><a class="rendered-button" href="#">${escapeHtml(item.button_label)}</a>
+              <br><button class="rendered-button" ${action.attributes} type="button">${escapeHtml(action.label)}</button>
             </div>
-          </article>`,
+          </article>`; },
         )
         .join("")}
     </div>`}
@@ -2108,7 +2130,7 @@ function renderIndustrialSupplierCatalog(items, schema) {
 
 function renderDigitalOfferCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
-  return `<div class="catalog-digital-pro catalog-count-${Math.min(items.length, 9)}">${items.map((item) => `<article ${catalogSearchAttributes(item)}>
+  return `<div class="catalog-digital-pro catalog-count-${Math.min(items.length, 9)}">${items.map((item) => { const action = catalogAction(schema, item, labels.getAccess); return `<article ${catalogSearchAttributes(item)}>
     <div class="digital-card-top">
       <small>${escapeHtml(item.category || labels.digitalProducts)}</small>
       <span>${escapeHtml(labels.instantAccess)}</span>
@@ -2119,9 +2141,9 @@ function renderDigitalOfferCatalog(items, schema) {
     <ul><li>${escapeHtml(labels.downloadable)}</li><li>${escapeHtml(labels.bonus)}</li><li>${escapeHtml(labels.lifetime)}</li></ul>
     <div class="digital-card-bottom">
       <strong>${escapeHtml(productPriceLabel(item, schema))}</strong>
-      <a class="rendered-button" href="#" data-page-link="contact">${escapeHtml(item.button_label || labels.getAccess)}</a>
+      <button class="rendered-button" ${action.attributes} type="button">${escapeHtml(action.label)}</button>
     </div>
-  </article>`).join("")}</div>`;
+  </article>`; }).join("")}</div>`;
 }
 
 function renderRestaurantMenuCatalog(items, schema) {
@@ -2184,8 +2206,8 @@ function renderPersonalBrandServicesCatalog(items) {
 
 function renderCatalogCard(item, className, badge, schema) {
   const labels = catalogLocaleLabels(schema);
-  const commerce = commerceLabels(schema);
   const isMarket = String(className || "").includes("market-card");
+  const action = catalogAction(schema, item, labels.view, isMarket);
   return `<article class="${className}" ${catalogSearchAttributes(item)}>
     ${renderCatalogImage(item)}
     ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
@@ -2195,7 +2217,7 @@ function renderCatalogCard(item, className, badge, schema) {
     ${isMarket ? `<div class="market-meta"><span>${"★".repeat(Math.max(1, Math.min(5, Math.round(Number(item.rating) || 4))))} ${escapeHtml(item.rating || "4.6")}</span><span>${escapeHtml(item.shipping_label || labels.fastShip)}</span></div>` : ""}
     <b>${escapeHtml(productPriceLabel(item, schema))}</b>
     ${productStockBadge(item)}
-    <button class="rendered-button" type="button">${escapeHtml(isMarket ? commerce.addToCart : (item.button_label || labels.view))}</button>
+    <button class="rendered-button" ${action.attributes} type="button">${escapeHtml(action.label)}</button>
   </article>`;
 }
 
@@ -2553,7 +2575,9 @@ function inlineEditAttrsForPath(schema, candidatePath, field) {
 
 function supportsExpandedInlineEditing(schema = {}) {
   const templateId = schema.active_template?.id || schema.selected_template?.id || "";
-  return templateId === "b2b-saas-enterprise-pro" || supportsSharedShellInlineEditing(templateId);
+  return templateId === "b2b-saas-enterprise-pro"
+    || templateId === "mega-retail-store"
+    || supportsSharedShellInlineEditing(templateId);
 }
 
 function inlineEditableValue(editable, field, fallback = "") {
@@ -2578,7 +2602,7 @@ function renderMegaRetailWebsite(schema, page, context, { logo, layoutId, templa
 
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)};--mega-tile-tint:${escapeAttribute(brandTint)}">
     ${renderStudioFloatingCatalog(schema, context)}
-    <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div></div>
+    <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditPageTitlePath(schema, item), "nav_label")}>${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div></div>
     ${renderMegaRetailHeader(schema, page, logo, categories, labels, false)}
     ${page?.page_key === "home" || page === pages[0] ? `${renderMegaRetailBento(schema, hero, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailDeals(schema, sections, items, labels, false)}${renderMegaRetailTrust(sections, labels)}` : ""}
     ${remainingSections.map((section) => renderSection(section, schema)).join("")}
@@ -2608,15 +2632,21 @@ function renderMegaRetailBento(schema, heroSection, categories, items, clientPho
     const title = index === 0 ? (heroCopy.headline || schema.business?.name || labels.featured) : category;
     const text = index === 0 ? (heroCopy.subtitle || schema.business?.description || labels.heroText) : (item?.description || labels.discover);
     const className = index === 0 ? "is-primary" : index === 1 ? "is-medium" : "is-small";
-    return `<article class="mega-retail-tile ${className} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}" data-motion-item><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"} ${index === 0 ? "data-motion-headline" : ""}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p ${index === 0 ? "data-motion-copy" : ""}>${escapeHtml(text)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}" ${index === 0 ? "data-motion-cta" : ""}>${escapeHtml(labels.explore)} ${megaRetailIcon("arrow")}</button></div></article>`;
+    const titleEditAttrs = index === 0
+      ? inlineEditAttrs(schema, heroSection, "headline")
+      : inlineCatalogEditAttrs(schema, item, "category", "item_title");
+    const textEditAttrs = index === 0
+      ? inlineEditAttrs(schema, heroSection, "subtitle")
+      : inlineCatalogEditAttrs(schema, item, "description", "item_description");
+    const ctaEditAttrs = index === 0 ? inlineEditAttrs(schema, heroSection, "primary_button") : "";
+    return `<article class="mega-retail-tile ${className} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}" data-motion-item><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"} ${index === 0 ? "data-motion-headline" : ""} ${titleEditAttrs}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p ${index === 0 ? "data-motion-copy" : ""} ${textEditAttrs}>${escapeHtml(text)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}" ${index === 0 ? "data-motion-cta" : ""} ${ctaEditAttrs}>${escapeHtml(index === 0 ? (heroCopy.primary_button || labels.explore) : labels.explore)} ${megaRetailIcon("arrow")}</button></div></article>`;
   });
   return `<main class="mega-retail-bento" ${motionDataAttributes(heroSection.motion)}>${tiles.join("")}</main>`;
 }
 
 function renderMegaRetailDeals(schema, sections, items, labels, interactive) {
-  const commerce = commerceLabels(schema);
   const source = sections.find((section) => ["DealRow", "ProductGrid"].includes(section.type)) || {};
-  return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${interactive ? `data-cart-add data-item-id="${escapeAttribute(item.id || item.name || "")}" data-item-name="${escapeAttribute(item.name || "")}" data-item-price="${escapeAttribute(item.price_label || "")}"` : ""}>${escapeHtml(commerce.addToCart)}</button></div></article>`).join("")}</div></section>`;
+  return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2 ${inlineEditAttrs(schema, source, "title")}>${escapeHtml(source.editable?.title || labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => { const action = catalogAction(schema, item); return `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small ${inlineCatalogEditAttrs(schema, item, "category", "item_title")}>${escapeHtml(item.category || labels.department)}</small><h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name || "")}</h3><p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${interactive ? action.attributes : ""}>${escapeHtml(action.label)}</button></div></article>`; }).join("")}</div></section>`;
 }
 
 function megaRetailDiscountBadge(item = {}) {
@@ -2632,7 +2662,7 @@ function renderMegaRetailTrust(sections, labels) {
 function renderMegaRetailFooter(schema, pages, logo, labels, features) {
   const socials = megaRetailSocialLinks(schema.contact || {});
   const newsletter = features.newsletter ? `<div><strong>${escapeHtml(labels.newsletter)}</strong><p>${escapeHtml(labels.newsletterText)}</p><div class="mega-retail-newsletter"><input type="email" aria-label="Email" placeholder="email@example.com"><button type="button" data-open-lead aria-label="${escapeAttribute(labels.subscribe)}">${megaRetailIcon("arrow")}</button></div></div>` : "";
-  return `<footer class="mega-retail-footer"><div class="mega-retail-footer-grid ${features.newsletter ? "" : "is-three-column"}"><div><div class="mega-retail-footer-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="">` : renderLogoMark(schema)}</div><p>${escapeHtml(schema.business?.description || labels.tagline)}</p>${features.socials && socials ? `<div class="mega-retail-socials">${socials}</div>` : ""}</div><div><strong>${escapeHtml(labels.help)}</strong>${labels.helpLinks.map((label) => `<a href="#contact" data-page-link="${escapeAttribute(pages.find((item) => /contact/i.test(item.page_key || item.title))?.page_key || pages[0]?.page_key || "home")}">${escapeHtml(label)}</a>`).join("")}</div><div><strong>${escapeHtml(labels.company)}</strong>${pages.slice(0, 4).map((item) => `<a href="#${escapeAttribute(item.page_key)}" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div>${newsletter}</div><div class="mega-retail-footer-bottom"><span>${escapeHtml(schema.global_components?.footer_text || `© ${new Date().getFullYear()} ${schema.business?.name || ""}`)}</span><div class="mega-retail-payments"><span>VISA</span><span>MC</span><span>AMEX</span><span>Pay</span></div></div></footer>`;
+  return `<footer class="mega-retail-footer"><div class="mega-retail-footer-grid ${features.newsletter ? "" : "is-three-column"}"><div><div class="mega-retail-footer-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="">` : renderLogoMark(schema)}</div><p>${escapeHtml(schema.business?.description || labels.tagline)}</p>${features.socials && socials ? `<div class="mega-retail-socials">${socials}</div>` : ""}</div><div><strong>${escapeHtml(labels.help)}</strong>${labels.helpLinks.map((label) => `<a href="#contact" data-page-link="${escapeAttribute(pages.find((item) => /contact/i.test(item.page_key || item.title))?.page_key || pages[0]?.page_key || "home")}">${escapeHtml(label)}</a>`).join("")}</div><div><strong>${escapeHtml(labels.company)}</strong>${pages.slice(0, 4).map((item) => `<a href="#${escapeAttribute(item.page_key)}" data-page-link="${escapeAttribute(item.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditPageTitlePath(schema, item), "nav_label")}>${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div>${newsletter}</div><div class="mega-retail-footer-bottom"><span ${inlineEditAttrsForPath(schema, "global_components.footer_text", "footer_text")}>${escapeHtml(schema.global_components?.footer_text || `© ${new Date().getFullYear()} ${schema.business?.name || ""}`)}</span><div class="mega-retail-payments"><span>VISA</span><span>MC</span><span>AMEX</span><span>Pay</span></div></div></footer>`;
 }
 
 function megaRetailSocialLinks(contact = {}) {
@@ -2774,35 +2804,5 @@ export function themeVars(theme = {}, brandInput = null) {
 
 
 export function resolveColor(value, fallback) {
-  const raw = String(value || "").trim();
-  if (!raw) return fallback;
-  if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(raw)) return raw;
-  if (/^(rgb|hsl)a?\(/i.test(raw)) return raw;
-
-  const normalized = raw
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-
-  const palettes = [
-    [["negro", "black", "oscuro", "noir"], "#111111"],
-    [["dorado", "gold", "oro"], "#C89B3C"],
-    [["marfil", "ivory", "crema", "cream"], "#F7F1E7"],
-    [["beige", "arena", "sand"], "#E8D9C5"],
-    [["verde profundo", "verde elegante", "emerald", "esmeralda"], "#0F5E46"],
-    [["verde", "natural", "botanico", "organico"], "#2F6F4E"],
-    [["azul confianza", "azul corporativo", "navy", "marino"], "#163B73"],
-    [["azul", "blue"], "#2563EB"],
-    [["rosa pastel", "pastel rosa", "rose", "rosado"], "#E8A7B8"],
-    [["pastel", "soft"], "#F5D7E3"],
-    [["rojo", "red"], "#B42318"],
-    [["vino", "burgundy", "burdeos"], "#7A263A"],
-    [["neon", "electrico"], "#39FF88"],
-    [["morado", "purple", "lila"], "#6D4AFF"],
-    [["minimalista", "minimal", "limpio"], "#F8FAFC"],
-    [["lujo", "luxury", "premium"], "#14110F"],
-  ];
-
-  const match = palettes.find(([words]) => words.some((word) => normalized.includes(word)));
-  return match ? match[1] : fallback;
+  return resolveColorValue(value, fallback);
 }

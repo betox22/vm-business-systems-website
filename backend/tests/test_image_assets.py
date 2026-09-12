@@ -80,6 +80,31 @@ class ImageAssetTests(unittest.TestCase):
         )
         self.assertEqual(len(catalog), 4)
 
+    def test_client_without_price_gets_quote_only_instead_of_model_price(self) -> None:
+        state = ProjectState(
+            businessName="PhoneHub",
+            businessDescription="Vendemos telefonos y accesorios en linea.",
+            industry="technology",
+            servicesProducts=["Telefonos", "Accesorios"],
+            salesFlow="online_sales",
+            selectedLanguage="es",
+        )
+        plan = _catalog_plan([
+            _catalog_item("Telefonos", 1),
+            _catalog_item("Accesorios", 2),
+        ])
+
+        catalog = site_plan_to_updates(plan, state)["catalogItems"]
+
+        self.assertTrue(catalog)
+        for item in catalog:
+            self.assertIsNone(item["price"])
+            self.assertIsNone(item["price_amount"])
+            self.assertEqual(item["price_type"], "quote_only")
+            self.assertEqual(item["price_label"], "Precio por confirmar")
+            self.assertNotIn("rating", item)
+            self.assertNotIn("inventory_quantity", item)
+
     def test_single_client_product_is_preserved_and_seed_catalog_fills_to_four(self) -> None:
         state = ProjectState(
             businessName="Bath All Day",
@@ -213,10 +238,111 @@ class ImageAssetTests(unittest.TestCase):
 
         mocked_get.side_effect = httpx.ConnectError("offline")
         with patch.dict("os.environ", {"UNSPLASH_ACCESS_KEY": "test-key"}):
-            asset = build_image_asset({"name": "Lavender Soap", "imageSearchQuery": "lavender soap"})
+            with self.assertLogs("app.image_assets", level="WARNING") as logs:
+                asset = build_image_asset({"name": "Lavender Soap", "imageSearchQuery": "lavender soap"})
 
         self.assertEqual(asset["source"], "seed_bank")
         self.assertIn("images.unsplash.com/photo-", asset["url"])
+        self.assertIn("Unsplash search failed", "\n".join(logs.output))
+
+    @patch("app.image_assets.httpx.get")
+    def test_transient_unsplash_failure_is_not_cached(self, mocked_get) -> None:
+        import httpx
+
+        search_response = Mock()
+        search_response.raise_for_status.return_value = None
+        search_response.json.return_value = {
+            "results": [{
+                "id": "photo-retry",
+                "urls": {"regular": "https://images.unsplash.com/photo-retry"},
+                "links": {},
+                "user": {"name": "Retry Photo", "links": {}},
+            }]
+        }
+        mocked_get.side_effect = [httpx.ConnectError("temporary"), search_response]
+
+        with patch.dict("os.environ", {"UNSPLASH_ACCESS_KEY": "test-key"}):
+            first = build_image_asset({"name": "Lavender Soap", "imageSearchQuery": "lavender soap"})
+            second = build_image_asset({"name": "Lavender Soap", "imageSearchQuery": "lavender soap"})
+
+        self.assertEqual(first["source"], "seed_bank")
+        self.assertEqual(second["source"], "unsplash_api")
+        self.assertEqual(mocked_get.call_count, 2)
+
+    @patch("app.image_assets.httpx.get")
+    def test_image_roles_use_independent_queries_and_orientations(self, mocked_get) -> None:
+        mocked_get.side_effect = RuntimeError("stop after request inspection")
+
+        with patch.dict("os.environ", {"UNSPLASH_ACCESS_KEY": "test-key"}):
+            with self.assertRaises(RuntimeError):
+                build_image_asset({
+                    "name": "PhoneHub",
+                    "imageSearchQuery": "smartphone store",
+                    "imageRole": "hero_editorial",
+                })
+
+        call = mocked_get.call_args
+        self.assertEqual(call.kwargs["params"]["orientation"], "landscape")
+        self.assertIn("editorial lifestyle", call.kwargs["params"]["query"])
+
+        mocked_get.reset_mock()
+        mocked_get.side_effect = RuntimeError("stop after request inspection")
+        with patch.dict("os.environ", {"UNSPLASH_ACCESS_KEY": "test-key"}):
+            with self.assertRaises(RuntimeError):
+                build_image_asset({
+                    "name": "Phone",
+                    "imageSearchQuery": "smartphone",
+                    "imageRole": "product_packshot",
+                })
+
+        call = mocked_get.call_args
+        self.assertEqual(call.kwargs["params"]["orientation"], "squarish")
+        self.assertIn("product packshot", call.kwargs["params"]["query"])
+
+    def test_premium_hero_and_story_receive_distinct_image_roles(self) -> None:
+        plan_payload = _catalog_plan([]).model_dump(by_alias=True)
+        plan_payload["templateId"] = "premium-product-store"
+        plan_payload["primaryOfferingCategory"] = "premium-product-store"
+        plan_payload["catalogStrategy"] = "premium_editorial_catalog"
+        plan_payload["pages"] = [{
+            "pageId": "home",
+            "title": "Home",
+            "slug": "/",
+            "sections": [
+                {
+                    "sectionId": "hero",
+                    "componentType": "hero_editorial_product",
+                    "copy": {"headline": "Phones selected for the way you live"},
+                    "media": {"imageSearchQuery": "premium smartphone store"},
+                },
+                {
+                    "sectionId": "story",
+                    "componentType": "story_block",
+                    "copy": {"headline": "Built around daily technology"},
+                    "media": {"imageSearchQuery": "premium smartphone store"},
+                },
+            ],
+        }]
+        plan = AIWebGenerationResponse.model_validate(plan_payload)
+        state = ProjectState(
+            businessName="PhoneHub",
+            businessDescription="Telefonos y accesorios de marcas reconocidas.",
+            industry="technology",
+            servicesProducts=["Telefonos", "Accesorios"],
+            salesFlow="online_sales",
+        )
+
+        sections = site_plan_to_updates(plan, state)["generatedCopy"]["pages"][0]["sections"]
+
+        self.assertEqual(
+            [section["type"] for section in sections],
+            ["PremiumHero", "TrustStrip", "ProductGrid", "ProductStory", "FeatureShowcase", "CTA"],
+        )
+        hero_media = next(section for section in sections if section["type"] == "PremiumHero")["editable"]["media"]
+        story_media = next(section for section in sections if section["type"] == "ProductStory")["editable"]["media"]
+        self.assertEqual(hero_media["imageRole"], "hero_editorial")
+        self.assertEqual(story_media["imageRole"], "detail_texture")
+        self.assertNotEqual(hero_media["imageAsset"]["query"], story_media["imageAsset"]["query"])
 
     @patch("app.image_assets.httpx.get")
     def test_unsplash_result_keeps_attribution_tracks_download_and_is_cached(self, mocked_get) -> None:

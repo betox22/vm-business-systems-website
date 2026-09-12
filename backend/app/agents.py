@@ -842,6 +842,12 @@ class ArtDirectorAgent(BaseAgent):
             state.colorProvenance.anchorColor,
             palette_style,
             niche_hint,
+            supporting_colors=[
+                evidence.color
+                for evidence in state.colorProvenance.colors
+                if evidence.source == "explicit_client"
+                and evidence.color != state.colorProvenance.anchorColor
+            ],
         )
         typography_scale = build_typography_scale(palette_style)
 

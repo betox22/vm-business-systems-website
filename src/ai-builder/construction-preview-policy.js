@@ -12,6 +12,37 @@ const GENERIC_VALUES = new Set([
   "sitio web",
 ]);
 
+const PROVISIONAL_TEMPLATE_INTENTS = new Set([
+  "",
+  "default_pending",
+  "default_minimal",
+  "provisional_needs_catalog_context",
+  "guided_context_template",
+  "ai_studio_plan",
+  "ai_studio_plan_override",
+  "luma_agent_collecting_context",
+  "live_preview_template",
+]);
+
+export function isAuthoritativeTemplateSelection(selection = {}) {
+  const candidate = selection || {};
+  return Boolean(
+    String(candidate.templateId || "").trim()
+    && !PROVISIONAL_TEMPLATE_INTENTS.has(String(candidate.intent || "").trim())
+  );
+}
+
+export function resolveConstructionPreviewTemplateId({
+  selection = {},
+  aiTemplateId = "",
+  localTemplateId = "",
+  fallbackTemplateId = "mega-retail-store",
+} = {}) {
+  const candidate = selection || {};
+  if (isAuthoritativeTemplateSelection(candidate)) return candidate.templateId;
+  return String(aiTemplateId || localTemplateId || candidate.templateId || fallbackTemplateId).trim();
+}
+
 function cleanList(value) {
   const items = Array.isArray(value) ? value : String(value || "").split(/[,;\n]/);
   return items

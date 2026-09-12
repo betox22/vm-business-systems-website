@@ -994,6 +994,99 @@
     return /\b(otro\s+diseno|otro\s+diseño|redisen[oa]|rediseñ[oa]|cambia\s+el\s+diseno|cambia\s+el\s+diseño|different\s+design|another\s+design|redesign)\b/i.test(String(value || ""));
   }
 
+  // src/ai-builder/color-value-policy.js
+  var NAMED_COLOR_ENTRIES = Object.freeze([
+    [["azul electrico", "electric blue"], "#0066FF"],
+    [["azul oscuro", "dark blue"], "#1E3A8A"],
+    [["azul claro", "light blue"], "#60A5FA"],
+    [["verde electrico", "electric green"], "#22C55E"],
+    [["verde oscuro", "dark green"], "#166534"],
+    [["verde claro", "light green"], "#86EFAC"],
+    [["rojo electrico", "electric red"], "#EF233C"],
+    [["rojo oscuro", "dark red"], "#991B1B"],
+    [["rojo claro", "light red"], "#F87171"],
+    [["morado electrico", "purpura electrico", "electric purple"], "#7C3AED"],
+    [["morado oscuro", "purpura oscuro", "dark purple"], "#581C87"],
+    [["morado claro", "purpura claro", "light purple"], "#C084FC"],
+    [["amarillo electrico", "electric yellow"], "#FDE047"],
+    [["amarillo oscuro", "dark yellow"], "#A16207"],
+    [["amarillo claro", "light yellow"], "#FEF08A"],
+    [["naranja electrico", "electric orange"], "#FF6B00"],
+    [["naranja oscuro", "dark orange"], "#C2410C"],
+    [["naranja claro", "light orange"], "#FDBA74"],
+    [["rosa electrico", "rosado electrico", "electric pink", "hot pink"], "#EC4899"],
+    [["rosa oscuro", "rosado oscuro", "dark pink"], "#9D174D"],
+    [["rosa claro", "rosado claro", "light pink"], "#F9A8D4"],
+    [["gris oscuro", "dark gray", "dark grey"], "#334155"],
+    [["gris claro", "light gray", "light grey"], "#CBD5E1"],
+    [["verde profundo", "verde elegante", "emerald", "esmeralda"], "#0F5E46"],
+    [["azul confianza", "azul corporativo", "navy", "marino"], "#163B73"],
+    [["rosa pastel", "pastel rosa", "rose", "rosado"], "#E8A7B8"],
+    [["negro", "black", "oscuro", "noir"], "#111111"],
+    [["blanco", "white"], "#FFFFFF"],
+    [["dorado", "gold", "oro"], "#C89B3C"],
+    [["plateado", "silver"], "#A8B0BA"],
+    [["marfil", "ivory", "crema", "cream"], "#F7F1E7"],
+    [["beige", "arena", "sand"], "#E8D9C5"],
+    [["gris", "gray", "grey"], "#64748B"],
+    [["marron", "cafe", "brown"], "#795548"],
+    [["turquesa", "turquoise"], "#14B8A6"],
+    [["cian", "cyan"], "#06B6D4"],
+    [["magenta", "fucsia", "fuchsia"], "#D946EF"],
+    [["coral"], "#F9736A"],
+    [["verde", "natural", "botanico", "organico"], "#2F6F4E"],
+    [["azul", "blue"], "#2563EB"],
+    [["pastel", "soft"], "#F5D7E3"],
+    [["rojo", "red"], "#B42318"],
+    [["amarillo", "yellow"], "#EAB308"],
+    [["naranja", "orange"], "#F97316"],
+    [["rosa", "pink"], "#EC4899"],
+    [["vino", "burgundy", "burdeos"], "#7A263A"],
+    [["neon", "electrico"], "#39FF88"],
+    [["morado", "purpura", "purple", "lila", "violeta", "violet"], "#6D4AFF"],
+    [["minimalista", "minimal", "limpio"], "#F8FAFC"],
+    [["lujo", "luxury", "premium"], "#14110F"]
+  ]);
+  function normalizedColorText(value) {
+    return String(value || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+  function resolveColorValue(value, fallback = "") {
+    const raw = String(value || "").trim();
+    if (!raw) return fallback;
+    if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(raw)) return raw;
+    if (/^(rgb|hsl)a?\(/i.test(raw)) return raw;
+    const normalized3 = normalizedColorText(raw);
+    const match = NAMED_COLOR_ENTRIES.find(([names]) => names.some((name) => normalized3.includes(name)));
+    return match?.[1] || fallback;
+  }
+  function resolveColorValues(values) {
+    const source = Array.isArray(values) ? values : values ? [values] : [];
+    const resolved = [];
+    const seen = /* @__PURE__ */ new Set();
+    source.forEach((value) => {
+      const raw = String(value || "").trim();
+      if (!raw) return;
+      if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw)) {
+        const key = raw.toLowerCase();
+        if (!seen.has(key)) resolved.push(raw);
+        seen.add(key);
+        return;
+      }
+      const normalized3 = normalizedColorText(raw);
+      const matches = NAMED_COLOR_ENTRIES.flatMap(([names, color]) => names.map((name) => ({ name, color, index: normalized3.indexOf(name) }))).filter((match) => match.index >= 0).sort((first, second) => second.name.length - first.name.length);
+      const occupiedRanges = [];
+      matches.forEach(({ name, color, index }) => {
+        const end = index + name.length;
+        if (occupiedRanges.some(([start, occupiedEnd]) => index < occupiedEnd && end > start)) return;
+        occupiedRanges.push([index, end]);
+        const key = color.toLowerCase();
+        if (!seen.has(key)) resolved.push(color);
+        seen.add(key);
+      });
+    });
+    return resolved;
+  }
+
   // src/ai-builder/color-provenance.js
   var EXPLICIT_META_SOURCES = /* @__PURE__ */ new Set(["explicit", "explicit_user_choice"]);
   function normalizedColorValues(values) {
@@ -1021,8 +1114,8 @@
     preferredColorMeta = {},
     structuredFormInput = false
   } = {}) {
-    const explicitPreferred = structuredFormInput || EXPLICIT_META_SOURCES.has(preferredColorMeta?.source) ? normalizedColorValues(preferredColors) : [];
-    const logoColors = normalizedColorValues(logoPalette);
+    const explicitPreferred = structuredFormInput || EXPLICIT_META_SOURCES.has(preferredColorMeta?.source) ? resolveColorValues(preferredColors) : [];
+    const logoColors = resolveColorValues(logoPalette);
     const entries = [];
     const seen = /* @__PURE__ */ new Set();
     const append = (colors, source) => {
@@ -1458,10 +1551,10 @@
       const source = typeof item === "string" ? { name: item } : { ...item };
       const hasRealIdentity = hasRealCatalogIdentity(source);
       const useSeedIdentity = shouldUseSemanticSeedIdentity(source, options.catalogSource);
-      const protectRealMetadata = options.catalogSource === "seed_fallback" && hasRealIdentity;
+      const protectRealMetadata = source.content_origin === "client_declared" || options.catalogSource === "seed_fallback" && hasRealIdentity;
       const name = useSeedIdentity ? cleanCatalogText(seed.name || seed.title, 90) : cleanCatalogText(source.name || source.title, 90);
       const pendingCopy = pendingCatalogCopy(name, language);
-      const rawPrice = protectRealMetadata ? Number.NaN : Number(source.price_amount ?? source.price_value ?? source.price ?? seed.price);
+      const rawPrice = useSeedIdentity || protectRealMetadata ? Number.NaN : Number(source.price_amount ?? source.price_value ?? source.price);
       const hasPrice = Number.isFinite(rawPrice) && rawPrice > 0;
       const query = cleanCatalogText(
         source.imageSearchQuery || source.image_search_query || (useSeedIdentity ? seed.imageSearchQuery : name),
@@ -1477,19 +1570,19 @@
         description: protectRealMetadata ? pendingCopy.description : useSeedIdentity ? seed.description : source.description,
         category: protectRealMetadata ? name : useSeedIdentity ? seed.category : source.category,
         price: hasPrice ? rawPrice : null,
-        price_type: protectRealMetadata ? "quote_only" : source.price_type && source.price_type !== "quote_only" ? source.price_type : "fixed",
+        price_type: hasPrice && source.price_type !== "quote_only" ? "fixed" : "quote_only",
         price_value: hasPrice ? rawPrice : null,
         price_amount: hasPrice ? rawPrice : null,
         currency: source.currency || "USD",
-        price_label: protectRealMetadata ? pendingCopy.priceLabel : source.price_label && !/price editable|precio editable|price to be set|consultar/i.test(source.price_label) ? source.price_label : hasPrice ? `USD ${rawPrice.toFixed(2)}` : "",
-        rating: protectRealMetadata ? source.rating : Number(source.rating || seed.rating || 4.7),
-        review_count: protectRealMetadata ? source.review_count : source.review_count || seed.review_count,
-        badge: protectRealMetadata ? source.badge : source.badge || seed.badge,
-        deal_label: protectRealMetadata ? source.deal_label || "" : source.deal_label || seed.deal_label || "",
-        shipping_label: protectRealMetadata ? source.shipping_label : source.shipping_label || seed.shipping_label,
+        price_label: hasPrice ? source.price_label && !/price editable|precio editable|price to be set|consultar/i.test(source.price_label) ? source.price_label : `USD ${rawPrice.toFixed(2)}` : pendingCopy.priceLabel,
+        rating: useSeedIdentity ? null : source.rating ?? null,
+        review_count: useSeedIdentity ? null : source.review_count ?? null,
+        badge: useSeedIdentity ? "" : source.badge || "",
+        deal_label: useSeedIdentity ? "" : source.deal_label || "",
+        shipping_label: useSeedIdentity ? "" : source.shipping_label || "",
         button_label: source.button_label || seed.button_label,
-        inventory_quantity: protectRealMetadata ? source.inventory_quantity : source.inventory_quantity ?? seed.inventory_quantity,
-        track_inventory: protectRealMetadata ? source.track_inventory : source.track_inventory ?? seed.track_inventory,
+        inventory_quantity: useSeedIdentity ? null : source.inventory_quantity ?? null,
+        track_inventory: useSeedIdentity ? false : source.track_inventory ?? false,
         imageSearchQuery: query,
         image_url: useSeedIdentity ? seed.image_url : resolvedImage,
         is_active: source.is_active !== false,
@@ -1498,9 +1591,124 @@
       };
     });
     while (!preserveAiGeneratedIdentity && merged.length < 4 && seeds[merged.length]) {
-      merged.push({ ...seeds[merged.length], sort_order: merged.length });
+      const seed = seeds[merged.length];
+      const pendingCopy = pendingCatalogCopy(cleanCatalogText(seed.name || seed.title, 90), language);
+      merged.push({
+        ...seed,
+        price: null,
+        price_value: null,
+        price_amount: null,
+        price_type: "quote_only",
+        price_label: pendingCopy.priceLabel,
+        rating: null,
+        review_count: null,
+        badge: "",
+        deal_label: "",
+        shipping_label: "",
+        inventory_quantity: null,
+        track_inventory: false,
+        content_origin: "seed_added",
+        sort_order: merged.length
+      });
     }
     return merged.slice(0, 6);
+  }
+
+  // src/ai-builder/catalog-fidelity-policy.js
+  var PRICE_LABELS = {
+    en: "Price to confirm",
+    es: "Precio por confirmar",
+    fr: "Prix a confirmer",
+    pt: "Preco a confirmar"
+  };
+  function priceConfirmationLabel(language = "en") {
+    return PRICE_LABELS[language] || PRICE_LABELS.en;
+  }
+  function withoutInventedCommerceMetadata(item = {}, language = "en") {
+    const {
+      rating: _rating,
+      review_count: _reviewCount,
+      inventory_quantity: _inventoryQuantity,
+      stock: _stock,
+      ...cleaned
+    } = item || {};
+    return {
+      ...cleaned,
+      price: null,
+      price_value: null,
+      price_amount: null,
+      price_type: "quote_only",
+      price_label: priceConfirmationLabel(language),
+      track_inventory: false
+    };
+  }
+
+  // src/ai-builder/contact-info-policy.js
+  var EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
+  function normalizeInstagramHandle(value) {
+    const handle = String(value || "").replace(/^@/, "").trim();
+    return /^[a-z0-9._]{2,30}$/i.test(handle) ? `@${handle}` : "";
+  }
+  function extractContactInfo(text) {
+    const source = String(text || "");
+    const contact = {};
+    const email = source.match(EMAIL_RE)?.[0] || "";
+    if (email) contact.email = email;
+    const phone = source.match(/(?:\+?\d[\d\s().-]{7,}\d)/)?.[0];
+    if (phone) contact.phone = phone.trim();
+    const textWithoutEmail = email ? source.replace(email, " ") : source;
+    const explicitInstagram = textWithoutEmail.match(
+      /\b(?:instagram|ig)\b\s*(?:es|is|:|-)?\s*@?([a-z0-9._]{2,30})\b/i
+    )?.[1];
+    const standaloneHandle = textWithoutEmail.match(/(?:^|[\s(])@([a-z0-9._]{2,30})\b/i)?.[1];
+    const instagram = normalizeInstagramHandle(explicitInstagram || standaloneHandle);
+    if (instagram) contact.instagram = instagram;
+    const whatsapp = source.match(/\b(?:whatsapp|wasap|wsp)\b\s*(?:es|:|-)?\s*([+\d][\d\s().-]{7,}\d)/i)?.[1];
+    if (whatsapp) contact.whatsapp = whatsapp.trim();
+    return contact;
+  }
+
+  // src/ai-builder/brand-offer-policy.js
+  var BRAND_CLAUSE_RE = /\b(?:las?\s+)?marcas?\s*(?:que\s+(?:vendo|vendemos|manejo|manejamos|trabajo|trabajamos)\s+(?:son|incluyen)?|van\s+a\s+ser|ser[aá]n|son|incluyen|:|-)?\s*/i;
+  var ENGLISH_BRAND_CLAUSE_RE = /\bbrands?\s*(?:we\s+(?:sell|carry|stock)\s*(?:are|include)?|are|include|:|-)?\s*/i;
+  function cleanBrand(value) {
+    return String(value || "").replace(/^(?:de|la|el|los|las|marca)\s+/i, "").replace(/\s+/g, " ").trim().slice(0, 60);
+  }
+  function splitBrandClause(value) {
+    const source = String(value || "");
+    const match = BRAND_CLAUSE_RE.exec(source) || ENGLISH_BRAND_CLAUSE_RE.exec(source);
+    if (!match) return { offerText: source.trim(), brandsCarried: [] };
+    const brandText = source.slice(match.index + match[0].length).split(/[.;\n]|\b(?:el\s+negocio|la\s+tienda|se\s+llama|vendo\s+(?:en|todo)|vendemos\s+(?:en|todo)|env[ií]o|shipping|the\s+business|the\s+store|called)\b/i)[0];
+    const brandsCarried = brandText.replace(/\s+(?:y|and)\s+/gi, ",").split(",").map(cleanBrand).filter((brand) => brand.length >= 2 && brand.length <= 60);
+    return {
+      offerText: source.slice(0, match.index).replace(/[\s,;:-]+$/, "").trim(),
+      brandsCarried: [...new Set(brandsCarried)]
+    };
+  }
+  function extractBrandsCarried(text) {
+    return splitBrandClause(text).brandsCarried;
+  }
+
+  // src/ai-builder/language-policy.js
+  var SPANISH_WORDS = /\b(?:quiero|vendo|vendemos|vender|tienda|negocio|productos|accesorios|marcas|envio|envío|domicilio|linea|línea|se\s+llama|tambien|también|para|con|las|los|una|uno)\b/gi;
+  var ENGLISH_WORDS = /\b(?:want|sell|selling|store|business|products|accessories|brands|shipping|delivery|online|called|also|for|with|the|and)\b/gi;
+  var FRENCH_WORDS = /\b(?:veux|vendre|boutique|entreprise|produits|marques|livraison|ligne|appelée|pour|avec|les|des|et)\b/gi;
+  var PORTUGUESE_WORDS = /\b(?:quero|vender|loja|negócio|negocio|produtos|marcas|entrega|online|chama|para|com|os|as|uma|e)\b/gi;
+  function countMatches(text, pattern) {
+    return (String(text || "").match(pattern) || []).length;
+  }
+  function detectSubstantialBriefLanguage(brief) {
+    const text = String(brief || "").trim();
+    if (text.length < 60) return "";
+    const scores = {
+      es: countMatches(text, SPANISH_WORDS),
+      en: countMatches(text, ENGLISH_WORDS),
+      fr: countMatches(text, FRENCH_WORDS),
+      pt: countMatches(text, PORTUGUESE_WORDS)
+    };
+    const [winner, score] = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
+    const runnerUp = Math.max(...Object.entries(scores).filter(([key]) => key !== winner).map(([, value]) => value));
+    return score >= 3 && score >= runnerUp + 2 ? winner : "";
   }
 
   // src/ai-builder/catalog-preview-policy.js
@@ -1623,6 +1831,33 @@
     "website",
     "sitio web"
   ]);
+  var PROVISIONAL_TEMPLATE_INTENTS = /* @__PURE__ */ new Set([
+    "",
+    "default_pending",
+    "default_minimal",
+    "provisional_needs_catalog_context",
+    "guided_context_template",
+    "ai_studio_plan",
+    "ai_studio_plan_override",
+    "luma_agent_collecting_context",
+    "live_preview_template"
+  ]);
+  function isAuthoritativeTemplateSelection(selection = {}) {
+    const candidate = selection || {};
+    return Boolean(
+      String(candidate.templateId || "").trim() && !PROVISIONAL_TEMPLATE_INTENTS.has(String(candidate.intent || "").trim())
+    );
+  }
+  function resolveConstructionPreviewTemplateId({
+    selection = {},
+    aiTemplateId = "",
+    localTemplateId = "",
+    fallbackTemplateId = "mega-retail-store"
+  } = {}) {
+    const candidate = selection || {};
+    if (isAuthoritativeTemplateSelection(candidate)) return candidate.templateId;
+    return String(aiTemplateId || localTemplateId || candidate.templateId || fallbackTemplateId).trim();
+  }
   function cleanList(value) {
     const items = Array.isArray(value) ? value : String(value || "").split(/[,;\n]/);
     return items.map((item) => String(item || "").trim()).filter((item) => item && !GENERIC_VALUES.has(item.toLowerCase()));
@@ -1684,16 +1919,32 @@
 
   // src/ai-builder/logo-intent-policy.js
   var LOGO_CONTEXT_RE = /logo|brand mark|marca visual|identidad visual|brand identity/i;
-  var DIRECT_LOGO_REQUEST_RE = /(?:no tengo|sin) logo|(?:quiero|quisiera|necesito|me gustaria|me gustaría|podrias|podrías|puedes|quiero que|we need|i want|i need|could you|can you).{0,32}\blogo\b|crea(?:r)?(?:me)?(?: un)? logo|crear(?: un)? logo|generate(?: a)? logo|make(?: a)? logo|haz(?:me)?(?: un)? logo|diseñ(?:a|ar)(?: un)? logo|disena(?:r)?(?: un)? logo|gen[eé]rame(?: un)? logo/i;
+  var LOGO_SKIP_RE = /(?:continuar|seguir|continua|sigue|continue|proceed).{0,28}(?:sin|without)\s+(?:un\s+|a\s+)?logo|(?:sin|without)\s+(?:un\s+|a\s+)?logo.{0,28}(?:por ahora|for now|de momento|later)|(?:no tengo|i do not have|i don't have)\s+(?:un\s+|a\s+)?logo(?!.*(?:crea|crear|diseña|diseñar|genera|generar|make|create|design|generate))/i;
+  var DIRECT_LOGO_REQUEST_RE = /(?:quiero|quisiera|necesito|me gustaria|me gustaría|podrias|podrías|puedes|quiero que|we need|i want|i need|could you|can you).{0,40}\blogo\b|\blogo\b.{0,40}(?:crea|crear|diseña|diseñar|genera|generar|make|create|design|generate)|crea(?:r)?(?:me)?(?: un)? logo|crear(?: un)? logo|generate(?: a)? logo|make(?: a)? logo|haz(?:me)?(?: un)? logo|diseñ(?:a|ar)(?: un)? logo|disena(?:r)?(?: un)? logo|gen[eé]rame(?: un)? logo/i;
   var DELEGATED_LOGO_RE = /(?:lyra|ia|ai|tu|t[uú]|you)\s+(?:decide|elige|choose|hazlo|create it)|(?:decide|elige|hazlo|crealo|créalo|generalo|gen[eé]ralo)\s+(?:tu|t[uú]|lyra|ia|ai|you)|sorpr[eé]ndeme|surprise me|you decide/i;
-  function wantsAiGeneratedLogo(value, options = {}) {
+  function logoIntentPath(value, options = {}) {
     const text = String(value || "").trim();
+    if (!text) return "";
+    if (LOGO_SKIP_RE.test(text)) return "explicit_skip";
     const logoContext = Boolean(options.assumeLogoContext) || LOGO_CONTEXT_RE.test(text);
-    return DIRECT_LOGO_REQUEST_RE.test(text) || logoContext && DELEGATED_LOGO_RE.test(text);
+    if (DIRECT_LOGO_REQUEST_RE.test(text) || logoContext && DELEGATED_LOGO_RE.test(text)) return "wants_generated";
+    return "";
+  }
+  function wantsAiGeneratedLogo(value, options = {}) {
+    return logoIntentPath(value, options) === "wants_generated";
   }
   function logoRequestUpdate(value, options = {}) {
     const text = String(value || "").trim();
-    if (!wantsAiGeneratedLogo(text, options)) return null;
+    const intent = logoIntentPath(text, options);
+    if (!intent) return null;
+    if (intent === "explicit_skip") {
+      return {
+        hasLogoPhotos: text,
+        logoBrief: "",
+        aiGeneratedLogoRequested: false,
+        logoPreference: "explicit_skip"
+      };
+    }
     return {
       hasLogoPhotos: text,
       logoBrief: text,
@@ -1773,6 +2024,53 @@
     };
   }
 
+  // src/ai-builder/premium-product-policy.js
+  var PREMIUM_IMAGE_ROLES = Object.freeze({
+    hero: "hero_editorial",
+    product: "product_packshot",
+    category: "category_lifestyle",
+    detail: "detail_texture"
+  });
+  function objectValue(value) {
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  }
+  function premiumSectionImage(section = {}, expectedRole = "") {
+    const editable = objectValue(section.editable);
+    const media = objectValue(editable.media || section.media);
+    const assets = [
+      objectValue(editable.imageAsset),
+      objectValue(media.imageAsset),
+      objectValue(section.imageAsset)
+    ];
+    const role = String(editable.imageRole || media.imageRole || assets.find((asset) => asset.role)?.role || "");
+    const exactAsset = assets.find((asset) => asset.url && (!expectedRole || asset.role === expectedRole));
+    if (exactAsset) return String(exactAsset.url);
+    if (expectedRole && role && role !== expectedRole) return "";
+    return String(
+      editable.image_url || editable.imageUrl || media.image_url || media.imageUrl || ""
+    ).trim();
+  }
+  function limitPremiumHeadline(value, maximumWords = 12) {
+    const words = String(value || "").trim().split(/\s+/).filter(Boolean);
+    return words.length > maximumWords ? words.slice(0, maximumWords).join(" ").replace(/[.,;:]+$/, "") : words.join(" ");
+  }
+  function premiumHomeSectionRank(type) {
+    return {
+      PremiumHero: 0,
+      TrustStrip: 1,
+      ProductGrid: 2,
+      FeaturedProducts: 2,
+      ProductStory: 3,
+      FeatureShowcase: 4,
+      ProofPanel: 5,
+      Testimonials: 5,
+      CTA: 6
+    }[String(type || "")] ?? 4;
+  }
+  function orderPremiumHomeSections(sections = []) {
+    return [...sections].map((section, index) => ({ section, index })).sort((a, b) => premiumHomeSectionRank(a.section?.type) - premiumHomeSectionRank(b.section?.type) || a.index - b.index).map(({ section }, index) => ({ ...section, order: index + 1 }));
+  }
+
   // src/ai-builder/client-project-start-policy.js
   var CLIENT_PROJECT_RUNTIME_DEFAULTS = Object.freeze({
     currentSchema: null,
@@ -1832,6 +2130,40 @@
     if (!String(guidedStep || "").trim()) return false;
     if (!String(lastAssistantText || "").trim()) return true;
     return String(lastAssistantStep || "").trim() !== String(guidedStep || "").trim();
+  }
+
+  // src/ai-builder/guided-draft-storage-policy.js
+  function normalizeDraftOwnerIdentity(value = "") {
+    return String(value || "").trim().toLowerCase();
+  }
+  function scopedGuidedDraftKey(baseKey, ownerIdentity) {
+    const owner = normalizeDraftOwnerIdentity(ownerIdentity);
+    if (!owner) return "";
+    return `${String(baseKey || "lumaGuidedDraft")}::${encodeURIComponent(owner)}`;
+  }
+  function writeScopedGuidedDraft(storage, baseKey, ownerIdentity, draft) {
+    const owner = normalizeDraftOwnerIdentity(ownerIdentity);
+    const key = scopedGuidedDraftKey(baseKey, owner);
+    if (!storage || !key) return false;
+    storage.setItem(key, JSON.stringify({ ...draft, ownerIdentity: owner }));
+    return true;
+  }
+  function readScopedGuidedDraft(storage, baseKey, ownerIdentity) {
+    const owner = normalizeDraftOwnerIdentity(ownerIdentity);
+    const key = scopedGuidedDraftKey(baseKey, owner);
+    if (!storage || !key) return null;
+    const raw = storage.getItem(key);
+    if (!raw) return null;
+    try {
+      const draft = JSON.parse(raw);
+      return normalizeDraftOwnerIdentity(draft?.ownerIdentity) === owner ? draft : null;
+    } catch {
+      return null;
+    }
+  }
+  function removeScopedGuidedDraft(storage, baseKey, ownerIdentity) {
+    const key = scopedGuidedDraftKey(baseKey, ownerIdentity);
+    if (storage && key) storage.removeItem(key);
   }
 
   // src/ai-builder/inline-edit-policy.js
@@ -1955,7 +2287,7 @@
     const index = items.findIndex((candidate) => candidate === item || candidate?.page_key && item?.page_key && candidate.page_key === item.page_key);
     return index >= 0 ? `navigation.${index}.label` : "";
   }
-  function inlineEditPageTitlePath(schema, page) {
+  function inlineEditPageTitlePath2(schema, page) {
     const pages = Array.isArray(schema?.pages) ? schema.pages : [];
     const index = pages.findIndex((candidate) => candidate === page || candidate?.page_key && page?.page_key && candidate.page_key === page.page_key);
     return index >= 0 ? `pages.${index}.title` : "";
@@ -2248,7 +2580,7 @@
     const startPage = (plans.length ? pricingPage : null) || contactPage || navigation[0]?.page || pages[0];
     return `<header class="b2b-saas-header">
     <a class="b2b-saas-brand" href="#" data-page-link="${escapeAttribute(pages[0]?.page_key || "home")}">${renderBrand(schema, logo)}</a>
-    <nav aria-label="${escapeAttribute(labels.navigation)}">${navigation.map(({ key, page: target }) => `<a class="${target.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(target.page_key)}" ${inlineEditAttrsForPath2(schema, inlineEditPageTitlePath(schema, target), "nav_label")}>${escapeHtml(target.title || labels.nav[key])}</a>`).join("")}</nav>
+    <nav aria-label="${escapeAttribute(labels.navigation)}">${navigation.map(({ key, page: target }) => `<a class="${target.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(target.page_key)}" ${inlineEditAttrsForPath2(schema, inlineEditPageTitlePath2(schema, target), "nav_label")}>${escapeHtml(target.title || labels.nav[key])}</a>`).join("")}</nav>
     <div class="b2b-saas-header-actions">${loginPage ? `<a class="b2b-saas-login" href="#" data-page-link="${escapeAttribute(loginPage.page_key)}">${escapeHtml(labels.login)}</a>` : ""}<button class="b2b-saas-start" type="button" data-page-link="${escapeAttribute(startPage?.page_key || "")}">${escapeHtml(labels.start)}</button></div>
   </header>`;
   }
@@ -2349,6 +2681,41 @@
       pt: { navigation: "Navega\xE7\xE3o principal", nav: { product: "Produto", pricing: "Pre\xE7os", customers: "Clientes", docs: "Docs" }, login: "Entrar", start: "Come\xE7ar gr\xE1tis", demo: "Ver demo", eyebrow: "Criado para equipes modernas", dashboard: "Painel do produto", teams: "Criado para equipes que fazem o trabalho avan\xE7ar", exampleLogos: "Nomes de clientes de exemplo", product: "Produto", featuresTitle: "Uma forma mais clara de gerir o trabalho importante", pricing: "Pre\xE7os", pricingTitle: "Planos simples, sem surpresas", popular: "Mais popular", plan: "Plano", choose: "Escolher plano", metrics: { solutions: "Solu\xE7\xF5es", pages: "P\xE1ginas", workflows: "Fluxos" } }
     };
     return all[language] || all.en;
+  }
+
+  // shared-commerce-cart.js
+  var CATALOG_ACTION_COPY = {
+    en: { addToCart: "Add to cart", request: "Check availability", view: "View details" },
+    es: { addToCart: "Agregar al carrito", request: "Consultar disponibilidad", view: "Ver detalles" },
+    fr: { addToCart: "Ajouter au panier", request: "V\xE9rifier la disponibilit\xE9", view: "Voir les d\xE9tails" },
+    pt: { addToCart: "Adicionar ao carrinho", request: "Consultar disponibilidade", view: "Ver detalhes" }
+  };
+  function resolveCatalogAction(item = {}, {
+    language = "en",
+    commerce = true,
+    fallbackLabel = "",
+    cartLabel = "",
+    quoteLabel = ""
+  } = {}) {
+    const copy = CATALOG_ACTION_COPY[language] || CATALOG_ACTION_COPY.en;
+    const id = escapeMarkup(item.id || item.itemId || item.name || item.title || "");
+    const name = escapeMarkup(item.name || item.title || "Item");
+    const quoteOnly = String(item.price_type || item.priceType || "").toLowerCase() === "quote_only";
+    if (quoteOnly || !commerce) {
+      return {
+        mode: "inquiry",
+        label: quoteOnly ? quoteLabel || copy.request : item.button_label || fallbackLabel || copy.view,
+        attributes: `data-open-lead data-item-id="${id}" data-item-name="${name}"`
+      };
+    }
+    return {
+      mode: "cart",
+      label: cartLabel || copy.addToCart,
+      attributes: `data-cart-add data-item-id="${id}" data-item-name="${name}" data-item-price="${escapeMarkup(item.price_label || item.priceLabel || item.price || "")}" data-item-image="${escapeMarkup(item.image_url || item.imageUrl || "")}"`
+    };
+  }
+  function escapeMarkup(value) {
+    return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
   }
 
   // src/ai-builder/renderers.js
@@ -2463,14 +2830,15 @@
         themeVars
       });
     }
-    const commerceActions = isCommerceSite(schema) ? renderCommerceNavActions(schema) : "";
+    const isPremiumProductStore = templateId === "premium-product-store";
+    const commerceActions = isCommerceSite(schema) ? renderCommerceNavActions(schema, { showSearch: isPremiumProductStore }) : "";
     return `<div class="rendered-site layout-${escapeAttribute(slugify2(layoutId))} template-${escapeAttribute(slugify2(templateId))}" style="${themeVars(theme, schema.brand)}">
     ${renderStudioFloatingCatalog(schema, context)}
     <div class="rendered-page-switcher">
       <span>${escapeHtml(schema.business.name || "Website")}</span>
       <div>${schema.pages.sort((a, b) => a.order - b.order).map((item) => `<a class="${item.page_key === page.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div>
     </div>
-    <header class="rendered-nav ${schema.layout_mode?.navigation?.sticky_header ? "sticky" : ""}">
+    <header class="rendered-nav ${isPremiumProductStore ? "premium-commerce-header" : ""} ${schema.layout_mode?.navigation?.sticky_header ? "sticky" : ""}">
       <div class="rendered-nav-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business.name)}">` : renderLogoMark(schema)}</div>
       <nav>${schema.navigation.map((item) => `<a class="${item.page_key === page.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditNavigationPath(schema, item), "nav_label")}>${escapeHtml(item.label)}</a>`).join("")}</nav>
       ${commerceActions}
@@ -2493,19 +2861,34 @@
   function commerceLabels(schema = {}) {
     const language = schema?.business?.selectedLanguage || schema?.business?.selected_language || schema?.selectedLanguage || schema?.selected_language || "en";
     const labels = {
-      en: { account: "Account", cart: "Cart", addToCart: "Add to cart" },
-      es: { account: "Cuenta", cart: "Carrito", addToCart: "Agregar al carrito" },
-      fr: { account: "Compte", cart: "Panier", addToCart: "Ajouter au panier" },
-      pt: { account: "Conta", cart: "Carrinho", addToCart: "Adicionar ao carrinho" }
+      en: { account: "Account", cart: "Cart", search: "Search products", addToCart: "Add to cart" },
+      es: { account: "Cuenta", cart: "Carrito", search: "Buscar productos", addToCart: "Agregar al carrito" },
+      fr: { account: "Compte", cart: "Panier", search: "Rechercher", addToCart: "Ajouter au panier" },
+      pt: { account: "Conta", cart: "Carrinho", search: "Buscar produtos", addToCart: "Adicionar ao carrinho" }
     };
     return labels[language] || labels.en;
   }
-  function renderCommerceNavActions(schema) {
+  function catalogAction(schema, item = {}, fallbackLabel = "View details", commerceOverride) {
+    const language = schema?.business?.selectedLanguage || schema?.business?.selected_language || schema?.selectedLanguage || schema?.selected_language || "en";
+    return resolveCatalogAction(item, {
+      language,
+      commerce: commerceOverride ?? isCommerceSite(schema),
+      fallbackLabel,
+      cartLabel: commerceLabels(schema).addToCart
+    });
+  }
+  function renderCommerceNavActions(schema, { showSearch = false } = {}) {
     const labels = commerceLabels(schema);
     return `<div class="commerce-actions">
-    <button class="commerce-action" type="button">${escapeHtml(labels.account)}</button>
-    <button class="commerce-action cart-button" type="button">${escapeHtml(labels.cart)} <span>0</span></button>
+    ${showSearch ? `<form class="premium-nav-search" data-catalog-search-form><label><span class="sr-only">${escapeHtml(labels.search)}</span><input type="search" name="catalog-search" placeholder="${escapeAttribute(labels.search)}"></label><button type="submit" aria-label="${escapeAttribute(labels.search)}">${premiumNavIcon("search")}</button></form>` : ""}
+    <button class="commerce-action premium-account-action" type="button" data-account-open aria-label="${escapeAttribute(labels.account)}">${premiumNavIcon("user")}<span>${escapeHtml(labels.account)}</span></button>
+    <button class="commerce-action cart-button" type="button" data-cart-open aria-label="${escapeAttribute(labels.cart)}">${premiumNavIcon("bag")}<span class="commerce-action-label">${escapeHtml(labels.cart)}</span> <span data-cart-count>0</span></button>
   </div>`;
+  }
+  function premiumNavIcon(name) {
+    if (name === "search") return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>';
+    if (name === "user") return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>';
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 13H7L6 8Z"></path><path d="M9 8a3 3 0 0 1 6 0"></path></svg>';
   }
   function renderStudioFloatingCatalog(schema, context = {}) {
     if (context.isClientPreviewMode) return "";
@@ -2663,14 +3046,13 @@
   function renderPremiumHero(section, schema) {
     const editable = section.editable || {};
     const items = marketplaceItems(schema);
-    const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url);
-    const image = editable.image_url || heroItem?.image_url || "";
+    const image = premiumSectionImage(section, PREMIUM_IMAGE_ROLES.hero);
     const firstItem = items[0];
     const variant = section.variant || section.settings?.layout || "split_showcase";
     return `<section class="premium-hero premium-hero-${escapeAttribute(slugify2(variant))} ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div class="premium-hero-copy">
       <span class="rendered-kicker" ${inlineEditAttrs(schema, section, "badge")}>${escapeHtml(inlineEditableValue2(editable, "badge", schema.business?.industry || schema.business?.tone || ""))}</span>
-      <h1 ${inlineEditAttrs(schema, section, "headline")}>${escapeHtml(inlineEditableValue2(editable, "headline", schema.business?.name || ""))}</h1>
+      <h1 ${inlineEditAttrs(schema, section, "headline")}>${escapeHtml(limitPremiumHeadline(inlineEditableValue2(editable, "headline", schema.business?.name || "")))}</h1>
       <p ${inlineEditAttrs(schema, section, "subtitle")}>${escapeHtml(inlineEditableValue2(editable, "subtitle", schema.business?.description || ""))}</p>
       <div class="rendered-actions">
         <a class="rendered-button" href="#" ${inlineEditAttrs(schema, section, "primary_button")}>${escapeHtml(inlineEditableValue2(editable, "primary_button", schema.theme?.buttons?.primary_label || "Explore"))}</a>
@@ -2685,7 +3067,7 @@
   }
   function renderProductStory(section, schema) {
     const editable = section.editable || {};
-    const image = editable.image_url || marketplaceItems(schema).find((item) => item.image_url)?.image_url || "";
+    const image = premiumSectionImage(section, PREMIUM_IMAGE_ROLES.detail);
     return `<section class="premium-story ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div>
       <span class="rendered-kicker">${escapeHtml(schema.business?.tone || "")}</span>
@@ -3929,7 +4311,7 @@
   function renderTrustStrip(section, schema) {
     const editable = section.editable || {};
     const labels = catalogLocaleLabels(schema);
-    const trust = [labels.secureCheckout, labels.fastShip, labels.support, labels.easyReturns];
+    const trust = arrayValue(editable.items).length ? arrayValue(editable.items).slice(0, 4) : [labels.secureCheckout, labels.fastShip, labels.support, labels.easyReturns];
     return `<section class="marketplace-trust-strip ${sectionClass(section)}" ${sectionAttrs(section)}>
     <div>
       <h2>${escapeHtml(editable.title || labels.trustTitle)}</h2>
@@ -3952,16 +4334,19 @@
     </div>
     ${customCatalog || `<div class="rendered-grid columns-${columns}">
       ${catalogItems.map(
-      (item) => `<article class="rendered-card">
+      (item) => {
+        const action = catalogAction(schema, item);
+        return `<article class="rendered-card">
             ${renderCatalogImage(item)}
             <div>
               <h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name)}</h3>
               <p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description)}</p>
               <strong>${escapeHtml(productPriceLabel(item, schema))}</strong>
               ${productStockBadge(item)}
-              <br><a class="rendered-button" href="#">${escapeHtml(item.button_label)}</a>
+              <br><button class="rendered-button" ${action.attributes} type="button">${escapeHtml(action.label)}</button>
             </div>
-          </article>`
+          </article>`;
+      }
     ).join("")}
     </div>`}
   </section>`;
@@ -4248,7 +4633,9 @@
   }
   function renderDigitalOfferCatalog(items, schema) {
     const labels = catalogLocaleLabels(schema);
-    return `<div class="catalog-digital-pro catalog-count-${Math.min(items.length, 9)}">${items.map((item) => `<article ${catalogSearchAttributes(item)}>
+    return `<div class="catalog-digital-pro catalog-count-${Math.min(items.length, 9)}">${items.map((item) => {
+      const action = catalogAction(schema, item, labels.getAccess);
+      return `<article ${catalogSearchAttributes(item)}>
     <div class="digital-card-top">
       <small>${escapeHtml(item.category || labels.digitalProducts)}</small>
       <span>${escapeHtml(labels.instantAccess)}</span>
@@ -4259,9 +4646,10 @@
     <ul><li>${escapeHtml(labels.downloadable)}</li><li>${escapeHtml(labels.bonus)}</li><li>${escapeHtml(labels.lifetime)}</li></ul>
     <div class="digital-card-bottom">
       <strong>${escapeHtml(productPriceLabel(item, schema))}</strong>
-      <a class="rendered-button" href="#" data-page-link="contact">${escapeHtml(item.button_label || labels.getAccess)}</a>
+      <button class="rendered-button" ${action.attributes} type="button">${escapeHtml(action.label)}</button>
     </div>
-  </article>`).join("")}</div>`;
+  </article>`;
+    }).join("")}</div>`;
   }
   function renderRestaurantMenuCatalog(items, schema) {
     const labels = catalogLocaleLabels(schema);
@@ -4315,8 +4703,8 @@
   }
   function renderCatalogCard(item, className, badge, schema) {
     const labels = catalogLocaleLabels(schema);
-    const commerce = commerceLabels(schema);
     const isMarket = String(className || "").includes("market-card");
+    const action = catalogAction(schema, item, labels.view, isMarket);
     return `<article class="${className}" ${catalogSearchAttributes(item)}>
     ${renderCatalogImage(item)}
     ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
@@ -4326,7 +4714,7 @@
     ${isMarket ? `<div class="market-meta"><span>${"\u2605".repeat(Math.max(1, Math.min(5, Math.round(Number(item.rating) || 4))))} ${escapeHtml(item.rating || "4.6")}</span><span>${escapeHtml(item.shipping_label || labels.fastShip)}</span></div>` : ""}
     <b>${escapeHtml(productPriceLabel(item, schema))}</b>
     ${productStockBadge(item)}
-    <button class="rendered-button" type="button">${escapeHtml(isMarket ? commerce.addToCart : item.button_label || labels.view)}</button>
+    <button class="rendered-button" ${action.attributes} type="button">${escapeHtml(action.label)}</button>
   </article>`;
   }
   function renderCatalogImage(item = {}) {
@@ -5678,7 +6066,7 @@
   }
   function supportsExpandedInlineEditing(schema = {}) {
     const templateId = schema.active_template?.id || schema.selected_template?.id || "";
-    return templateId === "b2b-saas-enterprise-pro" || supportsSharedShellInlineEditing(templateId);
+    return templateId === "b2b-saas-enterprise-pro" || templateId === "mega-retail-store" || supportsSharedShellInlineEditing(templateId);
   }
   function inlineEditableValue2(editable, field, fallback = "") {
     return Object.prototype.hasOwnProperty.call(editable || {}, field) ? editable[field] : fallback;
@@ -5700,7 +6088,7 @@
     const remainingSections = sections.filter((section) => !absorbedTypes.has(section.type));
     return `<div class="rendered-site layout-${escapeAttribute(slugify2(layoutId))} template-${escapeAttribute(slugify2(templateId))}" style="${themeVars(theme, schema.brand)};--mega-tile-tint:${escapeAttribute(brandTint)}">
     ${renderStudioFloatingCatalog(schema, context)}
-    <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div></div>
+    <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditPageTitlePath(schema, item), "nav_label")}>${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div></div>
     ${renderMegaRetailHeader(schema, page, logo, categories, labels, false)}
     ${page?.page_key === "home" || page === pages[0] ? `${renderMegaRetailBento(schema, hero, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailDeals(schema, sections, items, labels, false)}${renderMegaRetailTrust(sections, labels)}` : ""}
     ${remainingSections.map((section) => renderSection(section, schema)).join("")}
@@ -5728,14 +6116,19 @@
       const title = index === 0 ? heroCopy.headline || schema.business?.name || labels.featured : category;
       const text = index === 0 ? heroCopy.subtitle || schema.business?.description || labels.heroText : item?.description || labels.discover;
       const className = index === 0 ? "is-primary" : index === 1 ? "is-medium" : "is-small";
-      return `<article class="mega-retail-tile ${className} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}" data-motion-item><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"} ${index === 0 ? "data-motion-headline" : ""}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p ${index === 0 ? "data-motion-copy" : ""}>${escapeHtml(text)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}" ${index === 0 ? "data-motion-cta" : ""}>${escapeHtml(labels.explore)} ${megaRetailIcon("arrow")}</button></div></article>`;
+      const titleEditAttrs = index === 0 ? inlineEditAttrs(schema, heroSection, "headline") : inlineCatalogEditAttrs(schema, item, "category", "item_title");
+      const textEditAttrs = index === 0 ? inlineEditAttrs(schema, heroSection, "subtitle") : inlineCatalogEditAttrs(schema, item, "description", "item_description");
+      const ctaEditAttrs = index === 0 ? inlineEditAttrs(schema, heroSection, "primary_button") : "";
+      return `<article class="mega-retail-tile ${className} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}" data-motion-item><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"} ${index === 0 ? "data-motion-headline" : ""} ${titleEditAttrs}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p ${index === 0 ? "data-motion-copy" : ""} ${textEditAttrs}>${escapeHtml(text)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}" ${index === 0 ? "data-motion-cta" : ""} ${ctaEditAttrs}>${escapeHtml(index === 0 ? heroCopy.primary_button || labels.explore : labels.explore)} ${megaRetailIcon("arrow")}</button></div></article>`;
     });
     return `<main class="mega-retail-bento" ${motionDataAttributes(heroSection.motion)}>${tiles.join("")}</main>`;
   }
   function renderMegaRetailDeals(schema, sections, items, labels, interactive) {
-    const commerce = commerceLabels(schema);
     const source = sections.find((section) => ["DealRow", "ProductGrid"].includes(section.type)) || {};
-    return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${interactive ? `data-cart-add data-item-id="${escapeAttribute(item.id || item.name || "")}" data-item-name="${escapeAttribute(item.name || "")}" data-item-price="${escapeAttribute(item.price_label || "")}"` : ""}>${escapeHtml(commerce.addToCart)}</button></div></article>`).join("")}</div></section>`;
+    return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2 ${inlineEditAttrs(schema, source, "title")}>${escapeHtml(source.editable?.title || labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => {
+      const action = catalogAction(schema, item);
+      return `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small ${inlineCatalogEditAttrs(schema, item, "category", "item_title")}>${escapeHtml(item.category || labels.department)}</small><h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name || "")}</h3><p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${interactive ? action.attributes : ""}>${escapeHtml(action.label)}</button></div></article>`;
+    }).join("")}</div></section>`;
   }
   function megaRetailDiscountBadge(item = {}) {
     const badge = item.badge || item.deal_label || item.discount_label || "";
@@ -5748,7 +6141,7 @@
   function renderMegaRetailFooter(schema, pages, logo, labels, features) {
     const socials = megaRetailSocialLinks(schema.contact || {});
     const newsletter = features.newsletter ? `<div><strong>${escapeHtml(labels.newsletter)}</strong><p>${escapeHtml(labels.newsletterText)}</p><div class="mega-retail-newsletter"><input type="email" aria-label="Email" placeholder="email@example.com"><button type="button" data-open-lead aria-label="${escapeAttribute(labels.subscribe)}">${megaRetailIcon("arrow")}</button></div></div>` : "";
-    return `<footer class="mega-retail-footer"><div class="mega-retail-footer-grid ${features.newsletter ? "" : "is-three-column"}"><div><div class="mega-retail-footer-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="">` : renderLogoMark(schema)}</div><p>${escapeHtml(schema.business?.description || labels.tagline)}</p>${features.socials && socials ? `<div class="mega-retail-socials">${socials}</div>` : ""}</div><div><strong>${escapeHtml(labels.help)}</strong>${labels.helpLinks.map((label) => `<a href="#contact" data-page-link="${escapeAttribute(pages.find((item) => /contact/i.test(item.page_key || item.title))?.page_key || pages[0]?.page_key || "home")}">${escapeHtml(label)}</a>`).join("")}</div><div><strong>${escapeHtml(labels.company)}</strong>${pages.slice(0, 4).map((item) => `<a href="#${escapeAttribute(item.page_key)}" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div>${newsletter}</div><div class="mega-retail-footer-bottom"><span>${escapeHtml(schema.global_components?.footer_text || `\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} ${schema.business?.name || ""}`)}</span><div class="mega-retail-payments"><span>VISA</span><span>MC</span><span>AMEX</span><span>Pay</span></div></div></footer>`;
+    return `<footer class="mega-retail-footer"><div class="mega-retail-footer-grid ${features.newsletter ? "" : "is-three-column"}"><div><div class="mega-retail-footer-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="">` : renderLogoMark(schema)}</div><p>${escapeHtml(schema.business?.description || labels.tagline)}</p>${features.socials && socials ? `<div class="mega-retail-socials">${socials}</div>` : ""}</div><div><strong>${escapeHtml(labels.help)}</strong>${labels.helpLinks.map((label) => `<a href="#contact" data-page-link="${escapeAttribute(pages.find((item) => /contact/i.test(item.page_key || item.title))?.page_key || pages[0]?.page_key || "home")}">${escapeHtml(label)}</a>`).join("")}</div><div><strong>${escapeHtml(labels.company)}</strong>${pages.slice(0, 4).map((item) => `<a href="#${escapeAttribute(item.page_key)}" data-page-link="${escapeAttribute(item.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditPageTitlePath(schema, item), "nav_label")}>${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div>${newsletter}</div><div class="mega-retail-footer-bottom"><span ${inlineEditAttrsForPath(schema, "global_components.footer_text", "footer_text")}>${escapeHtml(schema.global_components?.footer_text || `\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} ${schema.business?.name || ""}`)}</span><div class="mega-retail-payments"><span>VISA</span><span>MC</span><span>AMEX</span><span>Pay</span></div></div></footer>`;
   }
   function megaRetailSocialLinks(contact = {}) {
     return [["instagram", "Instagram"], ["facebook", "Facebook"], ["tiktok", "TikTok"], ["twitter", "Twitter"]].map(([key, label]) => {
@@ -5875,31 +6268,7 @@
     ].join(";");
   }
   function resolveColor(value, fallback) {
-    const raw = String(value || "").trim();
-    if (!raw) return fallback;
-    if (/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(raw)) return raw;
-    if (/^(rgb|hsl)a?\(/i.test(raw)) return raw;
-    const normalized3 = raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const palettes = [
-      [["negro", "black", "oscuro", "noir"], "#111111"],
-      [["dorado", "gold", "oro"], "#C89B3C"],
-      [["marfil", "ivory", "crema", "cream"], "#F7F1E7"],
-      [["beige", "arena", "sand"], "#E8D9C5"],
-      [["verde profundo", "verde elegante", "emerald", "esmeralda"], "#0F5E46"],
-      [["verde", "natural", "botanico", "organico"], "#2F6F4E"],
-      [["azul confianza", "azul corporativo", "navy", "marino"], "#163B73"],
-      [["azul", "blue"], "#2563EB"],
-      [["rosa pastel", "pastel rosa", "rose", "rosado"], "#E8A7B8"],
-      [["pastel", "soft"], "#F5D7E3"],
-      [["rojo", "red"], "#B42318"],
-      [["vino", "burgundy", "burdeos"], "#7A263A"],
-      [["neon", "electrico"], "#39FF88"],
-      [["morado", "purple", "lila"], "#6D4AFF"],
-      [["minimalista", "minimal", "limpio"], "#F8FAFC"],
-      [["lujo", "luxury", "premium"], "#14110F"]
-    ];
-    const match = palettes.find(([words]) => words.some((word) => normalized3.includes(word)));
-    return match ? match[1] : fallback;
+    return resolveColorValue(value, fallback);
   }
 
   // src/ai-builder/state.js
@@ -5920,6 +6289,7 @@
       industry: "",
       location: "",
       servicesProducts: [],
+      brandsCarried: [],
       targetAudience: "",
       preferredTone: "",
       preferredColors: [],
@@ -5931,6 +6301,7 @@
       colorProvenance: null,
       brand: null,
       selectedLanguage: language,
+      selectedLanguageSource: "browser",
       hasLogo: false,
       hasPhotos: false,
       salesMode: "",
@@ -5958,6 +6329,7 @@
   var initialSelectedLanguage = detectBrowserLanguage();
   var builderState = {
     selectedLanguage: initialSelectedLanguage,
+    selectedLanguageSource: "browser",
     currentSchema: null,
     selectedPageKey: "home",
     selectedVariantId: "",
@@ -7127,6 +7499,7 @@
           reason: "oauth-resume",
           deferHydration: true
         });
+        if (!session) return null;
         if (storageStatus) {
           storageStatus.textContent = session.restored ? langText({
             en: "Session restored. LYRA will keep saving your progress.",
@@ -7180,10 +7553,14 @@
       };
     }
     const draft = sanitizeClientSessionDraft(session.draft || {});
-    if (draft.selectedLanguage) setSelectedLanguage(draft.selectedLanguage);
+    if (draft.selectedLanguage) setSelectedLanguage(draft.selectedLanguage, {
+      source: draft.selectedLanguageSource || "browser",
+      resetConversation: false
+    });
     const normalizedDraft = {
       ...draft,
       servicesProducts: arrayValue2(draft.servicesProducts),
+      brandsCarried: arrayValue2(draft.brandsCarried),
       preferredColors: arrayValue2(draft.preferredColors),
       photoUrls: arrayValue2(draft.photoUrls),
       videoUrls: arrayValue2(draft.videoUrls),
@@ -7204,7 +7581,6 @@
     }
   }
   async function createOrResumeClientIntakeSession({ email, name = "", reason = "start", immediateDraft = null, forceNew = false, deferHydration = false } = {}) {
-    const requestEpoch = builderState.clientIntakeSessionEpoch;
     const cleanEmail = String(email || "").trim().toLowerCase();
     if (!cleanEmail) throw new Error("Email is required.");
     const storedSession = readClientIntakeSession();
@@ -7214,6 +7590,7 @@
     if (lastKnownEmail && lastKnownEmail !== cleanEmail) {
       resetGuidedStateForNewAccount({ preserveAuth: Boolean(storedClientAccessToken()) });
     }
+    const requestEpoch = builderState.clientIntakeSessionEpoch;
     const draft = sanitizeClientSessionDraft(immediateDraft || guidedSessionDraftForApi());
     draft.contactInfo = {
       ...draft.contactInfo || {},
@@ -7413,6 +7790,7 @@
       industry: builderState.guidedState.industry,
       location: builderState.guidedState.location,
       servicesProducts: arrayValue2(builderState.guidedState.servicesProducts),
+      brandsCarried: arrayValue2(builderState.guidedState.brandsCarried),
       targetAudience: builderState.guidedState.targetAudience,
       preferredTone: builderState.guidedState.preferredTone,
       preferredColors: arrayValue2(builderState.guidedState.preferredColors),
@@ -7429,6 +7807,7 @@
       logoApprovalStatus: builderState.guidedState.logoApprovalStatus || "",
       fieldMeta,
       selectedLanguage: builderState.selectedLanguage,
+      selectedLanguageSource: builderState.selectedLanguageSource,
       hasLogo: Boolean(builderState.guidedState.hasLogo || builderState.guidedState.logoUrl),
       hasPhotos: Boolean(builderState.guidedState.hasPhotos || arrayValue2(builderState.guidedState.photoUrls).length || arrayValue2(builderState.guidedState.videoUrls).length),
       salesMode: builderState.guidedState.salesMode,
@@ -7458,6 +7837,7 @@
       industry: trimmed(source.industry, 220),
       location: trimmed(source.location, 220),
       servicesProducts: cleanList2(source.servicesProducts),
+      brandsCarried: cleanList2(source.brandsCarried, 30),
       targetAudience: trimmed(source.targetAudience, 500),
       preferredTone: trimmed(source.preferredTone, 240),
       preferredColors: cleanList2(source.preferredColors, 10),
@@ -7485,6 +7865,7 @@
       } : null,
       fieldMeta,
       selectedLanguage: SUPPORTED_LANGUAGES.includes(source.selectedLanguage) ? source.selectedLanguage : builderState.selectedLanguage,
+      selectedLanguageSource: source.selectedLanguageSource === "manual" ? "manual" : source.selectedLanguageSource === "detected" ? "detected" : "browser",
       hasLogo: Boolean(source.hasLogo || source.logoUrl),
       hasPhotos: Boolean(source.hasPhotos || cleanList2(source.photoUrls).length || cleanList2(source.videoUrls).length),
       salesMode: trimmed(source.salesMode, 160),
@@ -7797,6 +8178,7 @@
         pt: "Comecei um espa\xE7o limpo para este novo projeto."
       }), "success");
     }
+    applyDetectedBriefLanguage(message);
     const attributionStep = builderState.lastAskedGuidedField || builderState.guidedStep;
     const broadLocalUpdates = inferGuidedUpdatesFromAnyMessage(message, attributionStep);
     const stepUpdates = inferGuidedUpdates(attributionStep, message);
@@ -9736,8 +10118,8 @@ ${cleanQuestion}`;
     summaryPhotoUploadButton?.addEventListener("click", () => guidedPhotoUpload.click());
     editDetailsButton?.addEventListener("click", openReviewDetails);
     guidedMicButton.addEventListener("click", startVoiceInput);
-    languageSelector.addEventListener("change", () => setSelectedLanguage(languageSelector.value));
-    summaryLanguageSelector.addEventListener("change", () => setSelectedLanguage(summaryLanguageSelector.value));
+    languageSelector.addEventListener("change", () => setSelectedLanguage(languageSelector.value, { source: "manual" }));
+    summaryLanguageSelector.addEventListener("change", () => setSelectedLanguage(summaryLanguageSelector.value, { source: "manual" }));
     window.addEventListener("load", () => {
       const params = new URLSearchParams(window.location.search);
       if (isPublicClientSetup || params.get("guided") !== "0") {
@@ -9759,26 +10141,44 @@ ${cleanQuestion}`;
   }
   function initLanguageControls() {
     const params = new URLSearchParams(window.location.search);
+    builderState.selectedLanguageSource = params.get("lang") ? "manual" : "browser";
     builderState.selectedLanguage = normalizeBrowserLanguage(
       params.get("lang") || (navigator.languages || [navigator.language || "en"])[0]
     );
     builderState.guidedState.selectedLanguage = builderState.selectedLanguage;
+    builderState.guidedState.selectedLanguageSource = builderState.selectedLanguageSource;
     languageSelector.value = builderState.selectedLanguage;
     summaryLanguageSelector.value = builderState.selectedLanguage;
     applyI18n();
   }
-  function setSelectedLanguage(value) {
+  function setSelectedLanguage(value, { source = "manual", resetConversation = true } = {}) {
     const previousLanguage = builderState.selectedLanguage;
     builderState.selectedLanguage = normalizeBrowserLanguage(value);
+    builderState.selectedLanguageSource = source;
     builderState.guidedState.selectedLanguage = builderState.selectedLanguage;
+    builderState.guidedState.selectedLanguageSource = source;
     languageSelector.value = builderState.selectedLanguage;
     summaryLanguageSelector.value = builderState.selectedLanguage;
     applyI18n();
     updateBuilderAvatarLabels();
     if (previousLanguage !== builderState.selectedLanguage) {
       renderGuidedSummary();
-      resetAssistantConversation();
+      if (resetConversation) resetAssistantConversation();
     }
+  }
+  function applyDetectedBriefLanguage(message) {
+    if (["manual", "detected"].includes(builderState.selectedLanguageSource)) {
+      return builderState.selectedLanguage;
+    }
+    const detected = detectSubstantialBriefLanguage(message);
+    if (!detected) return builderState.selectedLanguage;
+    if (detected !== builderState.selectedLanguage) {
+      setSelectedLanguage(detected, { source: "detected", resetConversation: false });
+    } else {
+      builderState.selectedLanguageSource = "detected";
+      builderState.guidedState.selectedLanguageSource = "detected";
+    }
+    return builderState.selectedLanguage;
   }
   async function loadRuntimeTemplateAvailability() {
     try {
@@ -10317,12 +10717,11 @@ ${cleanQuestion}`;
   }
   function inferLivePreviewTemplateId() {
     const text = guidedTemplateContextText();
-    const inferred = inferTemplateIdFromText(text);
-    if (inferred) return inferred;
-    const aiSelectedTemplateId = resolvedAiTemplateId();
-    if (aiSelectedTemplateId) return aiSelectedTemplateId;
-    if (builderState.forcedTemplateSelection?.templateId) return builderState.forcedTemplateSelection.templateId;
-    return "mega-retail-store";
+    return resolveConstructionPreviewTemplateId({
+      selection: builderState.forcedTemplateSelection,
+      aiTemplateId: resolvedAiTemplateId(),
+      localTemplateId: inferTemplateIdFromText(text)
+    });
   }
   function resolvedAiTemplateId() {
     if (builderState.forcedTemplateSelection?.intent === "client_visual_template_choice" && isConcreteTemplateId(builderState.forcedTemplateSelection.templateId)) {
@@ -10620,8 +11019,15 @@ ${cleanQuestion}`;
       return date.toLocaleString();
     }
   }
+  function currentGuidedDraftOwnerIdentity() {
+    const storedSession = readClientIntakeSession() || {};
+    return String(
+      builderState.clientIntakeSession?.clientEmail || builderState.clientIntakeSession?.client_email || storedSession.clientEmail || storedSession.client_email || localStorage.getItem("lumaPendingClientEmail") || ""
+    ).trim().toLowerCase();
+  }
   function resetGuidedStateForNewAccount(options = {}) {
     const preserveAuth = Boolean(options.preserveAuth);
+    const draftOwnerIdentity = currentGuidedDraftOwnerIdentity();
     const restoredDraftNoticeCard = builderState.restoredDraftNoticeCard;
     advanceClientProjectSessionEpoch(builderState);
     clearTimeout(builderState.clientIntakeSyncTimer);
@@ -10634,6 +11040,7 @@ ${cleanQuestion}`;
     removeGuidedBuildStatusCard();
     try {
       localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
+      removeScopedGuidedDraft(localStorage, GUIDED_DRAFT_STORAGE_KEY, draftOwnerIdentity);
       localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
       localStorage.removeItem(CLIENT_INTAKE_SESSION_STORAGE_KEY);
       localStorage.removeItem("lumaPendingGeneratedSite");
@@ -10759,16 +11166,18 @@ ${langText({
   function saveGuidedDraft() {
     if (!isPublicClientSetup) return;
     try {
-      localStorage.setItem(
+      writeScopedGuidedDraft(
+        localStorage,
         GUIDED_DRAFT_STORAGE_KEY,
-        JSON.stringify({
+        currentGuidedDraftOwnerIdentity(),
+        {
           guidedState: guidedStateForApi(),
           guidedStep: builderState.guidedStep,
           selectedLanguage: builderState.selectedLanguage,
           completionPercent: guidedCompletionPercent(),
           missingSteps: missingGuidedSteps(),
           savedAt: (/* @__PURE__ */ new Date()).toISOString()
-        })
+        }
       );
     } catch {
     }
@@ -10777,9 +11186,12 @@ ${langText({
   function restoreGuidedDraft() {
     if (!isPublicClientSetup) return;
     try {
-      const raw = localStorage.getItem(GUIDED_DRAFT_STORAGE_KEY);
-      if (!raw) return;
-      const draft = JSON.parse(raw);
+      const draft = readScopedGuidedDraft(
+        localStorage,
+        GUIDED_DRAFT_STORAGE_KEY,
+        currentGuidedDraftOwnerIdentity()
+      );
+      if (!draft) return;
       if (draft.selectedLanguage) setSelectedLanguage(draft.selectedLanguage);
       if (draft.guidedState) {
         builderState.guidedState = {
@@ -11060,7 +11472,8 @@ ${langText({
       builderState.forcedTemplateSelection = {
         templateId: effectiveTemplateId,
         template,
-        intent: shouldPreferLocalStudioTemplate(selectedTemplateId, localPlan) ? "ai_studio_plan_override" : result.intent || "luma_agent_template",
+        intent: shouldPreferLocalStudioTemplate(selectedTemplateId, localPlan) ? "ai_studio_plan_override" : "backend_ai_selected_template",
+        sourceIntent: result.intent || "luma_agent_template",
         catalogType: shouldPreferLocalStudioTemplate(selectedTemplateId, localPlan) ? localPlan.recommendedCatalogType : result.catalogType || result.catalog_type || template?.catalogModel?.catalogType || "",
         reason: shouldPreferLocalStudioTemplate(selectedTemplateId, localPlan) ? localPlan.reasoningSummary : result.selectedTemplateReason || result.selected_template_reason || "Selected by LYRA from the conversation"
       };
@@ -11127,7 +11540,7 @@ ${langText({
     "booking-appointment-pro": { paper: "#faf5fc", ink: "#2b2134", accent: "#a579db" }
   });
   function templateAccentPalette(catalogType, templateId = "") {
-    const override = TEMPLATE_PREVIEW_PALETTES[normalizeTemplateId(templateId)];
+    const override = TEMPLATE_PREVIEW_PALETTES?.[normalizeTemplateId(templateId)];
     if (override) return override;
     const type = String(catalogType || "").toLowerCase();
     if (/premium|luxury/.test(type)) return { paper: "#f7f6ff", ink: "#10101a", accent: "#6d5dfc" };
@@ -11211,17 +11624,19 @@ ${langText({
   }
   function refreshAiStudioPlanFromContext(extra = "") {
     const plan = buildAiStudioPlanFromGuidedState(extra);
+    const preserveSelection = isAuthoritativeTemplateSelection(builderState.forcedTemplateSelection);
+    const selectedTemplateId = preserveSelection ? builderState.forcedTemplateSelection.templateId : plan.recommendedTemplateId;
     builderState.guidedState.aiStudioPlan = plan;
     builderState.guidedState.designStrategy = {
       ...builderState.guidedState.designStrategy || {},
       diagnosis: plan,
-      selectedTemplateId: plan.recommendedTemplateId,
-      selectedTemplateReason: plan.reasoningSummary,
-      selectedCatalogType: plan.recommendedCatalogType,
+      selectedTemplateId,
+      selectedTemplateReason: preserveSelection ? builderState.forcedTemplateSelection.reason : plan.reasoningSummary,
+      selectedCatalogType: preserveSelection ? builderState.forcedTemplateSelection.catalogType : plan.recommendedCatalogType,
       designerRole: "senior ecommerce strategist, UX architect and brand designer",
       templateUsePolicy: "Choose the closest proven template as architecture, then adapt copy, colors, sections, catalog and CTAs to the client's business."
     };
-    if (plan.recommendedTemplateId && builderState.forcedTemplateSelection?.templateId !== plan.recommendedTemplateId) {
+    if (!preserveSelection && plan.recommendedTemplateId && builderState.forcedTemplateSelection?.templateId !== plan.recommendedTemplateId) {
       builderState.forcedTemplateSelection = {
         templateId: plan.recommendedTemplateId,
         template: null,
@@ -11644,7 +12059,8 @@ ${langText({
     updateAssetPromptVisibility();
   }
   function logoPreferenceFromText(value, options = {}) {
-    return wantsAiGeneratedLogo(value, options) ? "generate_ai_logo" : "";
+    const intent = logoIntentPath(value, options);
+    return intent === "wants_generated" ? "generate_ai_logo" : intent;
   }
   function contactInfoCompactLabel(value) {
     const keys = Object.keys(value || {}).filter((key) => value[key]);
@@ -12690,7 +13106,7 @@ ${guidedQuestion(nextMissing)}`
     document.querySelectorAll("[data-summary-field]").forEach((field) => {
       const key = field.dataset.summaryField;
       if (key === "selectedLanguage") {
-        setSelectedLanguage(field.value);
+        setSelectedLanguage(field.value, { source: "manual" });
       } else if (key === "preferredColors") {
         const colors = splitCommaOrLines(field.value);
         if (colors.length) {
@@ -12701,7 +13117,7 @@ ${guidedQuestion(nextMissing)}`
           delete fieldMeta.preferredColors;
           builderState.guidedState.fieldMeta = fieldMeta;
         }
-      } else if (["servicesProducts", "photoUrls", "videoUrls"].includes(key)) {
+      } else if (["servicesProducts", "brandsCarried", "photoUrls", "videoUrls"].includes(key)) {
         builderState.guidedState[key] = splitCommaOrLines(field.value);
       } else if (key === "contactInfo") {
         builderState.guidedState[key] = parseKeyValueLines(field.value);
@@ -12733,6 +13149,11 @@ ${guidedQuestion(nextMissing)}`
         const existing = meaningfulOfferItems(builderState.guidedState.servicesProducts);
         if (!incoming.length && existing.length) return;
         builderState.guidedState.servicesProducts = [.../* @__PURE__ */ new Set([...existing, ...incoming])];
+      } else if (key === "brandsCarried") {
+        builderState.guidedState.brandsCarried = [.../* @__PURE__ */ new Set([
+          ...arrayValue2(builderState.guidedState.brandsCarried),
+          ...arrayValue2(value)
+        ])];
       } else if (["logoUrl", "logoBrief", "logoPreference", "logoGenerationStatus", "logoApprovalStatus"].includes(key)) {
         builderState.guidedState[key] = value ?? "";
       } else if (key === "aiGeneratedLogoRequested" || key === "hasLogo") {
@@ -12784,6 +13205,7 @@ ${guidedQuestion(nextMissing)}`
       industry: builderState.guidedState.industry,
       location: builderState.guidedState.location,
       servicesProducts: arrayValue2(builderState.guidedState.servicesProducts),
+      brandsCarried: arrayValue2(builderState.guidedState.brandsCarried),
       targetAudience: builderState.guidedState.targetAudience,
       preferredTone: builderState.guidedState.preferredTone,
       preferredColors: arrayValue2(builderState.guidedState.preferredColors),
@@ -12948,9 +13370,8 @@ ${guidedQuestion(nextMissing)}`
     if (!arrayValue2(merged.preferredColors).length && briefRequestsCyberpunk(text)) {
       Object.assign(updates, colorPreferenceUpdate(["cyberpunk", "neon cyan", "magenta", "deep black"]));
     }
-    if (wantsAiGeneratedLogo(text)) {
-      Object.assign(updates, logoRequestUpdate(text));
-    }
+    const logoUpdate = logoRequestUpdate(text);
+    if (logoUpdate) Object.assign(updates, logoUpdate);
     return updates;
   }
   var BACKEND_SLOT_TO_GUIDED_FIELD = {
@@ -12986,8 +13407,9 @@ ${guidedQuestion(nextMissing)}`
     if (step === "contactInfo") {
       return hasExistingGuidedValue("contactInfo") ? {} : { contactInfo: parseKeyValueLines(message.includes(":") ? message : `notes: ${message}`) };
     }
-    if (step === "hasLogoPhotos" && wantsAiGeneratedLogo(message, { assumeLogoContext: true })) {
-      return logoRequestUpdate(message, { assumeLogoContext: true }) || {};
+    if (step === "hasLogoPhotos") {
+      const logoUpdate = logoRequestUpdate(message, { assumeLogoContext: true });
+      if (logoUpdate) return logoUpdate;
     }
     if (step === "businessName" && isRichIntakeMessage(message) && !extractBusinessName(message)) {
       return {};
@@ -13031,6 +13453,8 @@ ${guidedQuestion(nextMissing)}`
     if (services.length && !arrayValue2(builderState.guidedState.servicesProducts).length) {
       updates.servicesProducts = services;
     }
+    const brandsCarried = isSalesModeAnswer ? [] : extractBrandsCarried(text);
+    if (brandsCarried.length) updates.brandsCarried = brandsCarried;
     const audience = extractTargetAudience(text);
     if (audience && !builderState.guidedState.targetAudience) updates.targetAudience = audience;
     const tone = extractToneFromText(text);
@@ -13210,18 +13634,6 @@ ${guidedQuestion(nextMissing)}`
     });
     return [...new Set([...hexColors, ...phraseTokens, ...colorNames].map((item) => cleanExtractedPhrase(item.replace(/neón/i, "neon"), 32).toLowerCase()).filter(Boolean))].slice(0, 8);
   }
-  function extractContactInfo(text) {
-    const contact = {};
-    const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
-    if (email) contact.email = email;
-    const phone = text.match(/(?:\+?\d[\d\s().-]{7,}\d)/)?.[0];
-    if (phone) contact.phone = phone.trim();
-    const instagram = text.match(/(?:instagram|ig)\s*(?:es|:|-)?\s*(@?[a-z0-9._]+)/i)?.[1] || text.match(/@[a-z0-9._]{3,}/i)?.[0];
-    if (instagram) contact.instagram = instagram.startsWith("@") ? instagram : `@${instagram}`;
-    const whatsapp = text.match(/(?:whatsapp|wasap|wsp)\s*(?:es|:|-)?\s*([+\d][\d\s().-]{7,}\d)/i)?.[1];
-    if (whatsapp) contact.whatsapp = whatsapp.trim();
-    return contact;
-  }
   function extractSalesMode(lower) {
     const modes = [];
     if (hasOnlineSalesSignal(lower)) modes.push(langText({ en: "online sales", es: "ventas online", fr: "vente en ligne", pt: "vendas online" }));
@@ -13235,7 +13647,8 @@ ${guidedQuestion(nextMissing)}`
     return String(value || "").split(/\b(?:se\s+llam(?:a|ara|ará)|la\s+marca|el\s+negocio|no\s+tengo|sin\s+logo|colores?|colors?|paleta|palette|vendo\s+online|vender\s+online|venta\s+online|desde|ubicad[ao]|despacho|env[ií]o|contacto|whatsapp|direcci[oó]n|pedidos?|men[uú]\s+online|necesitamos?|quiero\s+estilo|quiero\s+que|quiero\s+captar|captar\s+clientes|agendar\s+consultas|agenda\s+consultas|debe\s+ser|should\s+be|located|shipping)\b/i)[0].replace(/\b(categor[ií]as|categorias)\s+desde\b/i, "").replace(/\b(de todo tipo|todo tipo|varios tipos|muchos tipos)\b/gi, "").replace(/\s+/g, " ").trim();
   }
   function splitOfferItems(value) {
-    const segment = cleanOfferSegment(value);
+    const { offerText } = splitBrandClause(value);
+    const segment = cleanOfferSegment(offerText);
     if (!segment) return [];
     const lower = normalizeTemplateIntentText(segment);
     const knownGroups = [
@@ -13870,13 +14283,13 @@ ${guidedQuestion(nextMissing)}`
       name,
       description: labels.itemDescription(payload.business_name || builderState.guidedState.businessName || labels.newStore),
       category: marketplaceCategoryForIndex(existing.length + index, labels, categoryContext, payload.selectedLanguage || builderState.selectedLanguage || "en"),
-      price_type: "fixed",
+      price_type: "quote_only",
       price_amount: "",
       currency: "USD",
-      price_label: labels.priceNotSet,
+      price_label: priceConfirmationLabel(payload.selectedLanguage || builderState.selectedLanguage || "en"),
       button_label: labels.viewProduct,
       inventory_quantity: "",
-      track_inventory: true,
+      track_inventory: false,
       image_url: "",
       is_active: true,
       is_featured: existing.length + index < 3,
@@ -14055,20 +14468,17 @@ ${guidedQuestion(nextMissing)}`
         name,
         description,
         category,
-        price: Number(product.price),
-        price_type: "fixed",
-        price_value: Number(product.price),
-        price_amount: Number(product.price),
+        price: null,
+        price_type: "quote_only",
+        price_value: null,
+        price_amount: null,
         currency: "USD",
-        price_label: `USD ${Number(product.price).toFixed(2)}`,
-        rating: Number((4.5 + index % 4 * 0.1).toFixed(1)),
-        review_count: 36 + index * 29,
+        price_label: priceConfirmationLabel(language),
         badge: index === 0 ? "Best Seller" : index === 1 ? "New" : index === 2 ? "Fast Ship" : "Featured",
         deal_label: index === 0 ? "Best Seller" : index % 2 === 0 ? "Featured" : "",
         shipping_label: index % 2 === 0 ? "Fast ship" : "Ready to ship",
         button_label: language === "es" ? "Agregar al carrito" : language === "fr" ? "Ajouter" : language === "pt" ? "Adicionar" : "Add to cart",
-        inventory_quantity: 18 + index * 7,
-        track_inventory: true,
+        track_inventory: false,
         imageSearchQuery: product.keyword,
         image_url: unsplashSeedUrl(product.keyword),
         is_active: true,
@@ -14095,20 +14505,17 @@ ${guidedQuestion(nextMissing)}`
           pt: `Uma oferta em destaque de ${businessName || "este negocio"}. Edite com os detalhes reais.`
         }, language),
         category: langText({ en: "Featured", es: "Destacado", fr: "En vedette", pt: "Destaque" }, language),
-        price: 29,
-        price_type: "fixed",
-        price_value: 29,
-        price_amount: 29,
+        price: null,
+        price_type: "quote_only",
+        price_value: null,
+        price_amount: null,
         currency: "USD",
-        price_label: "USD 29.00",
-        rating: Number((4.5 + index % 4 * 0.1).toFixed(1)),
-        review_count: 36 + index * 29,
+        price_label: priceConfirmationLabel(language),
         badge: index === 0 ? "Best Seller" : index === 1 ? "New" : index === 2 ? "Fast Ship" : "Featured",
         deal_label: index === 0 ? "Best Seller" : "",
         shipping_label: index % 2 === 0 ? "Fast ship" : "Ready to ship",
         button_label: addLabel,
-        inventory_quantity: 18 + index * 7,
-        track_inventory: true,
+        track_inventory: false,
         imageSearchQuery: name,
         image_url: unsplashSeedUrl(name),
         is_active: true,
@@ -15504,10 +15911,6 @@ ${guidedQuestion(nextMissing)}`
     if (/carro|auto|automotriz|camioneta|anime|gadget|juguete|regalo|raro|curioso|hogar|home|toy|gift|collectible/.test(lower)) return set.variety;
     return set.default;
   }
-  function marketplacePriceForIndex(index) {
-    const prices = [19.99, 24.5, 34.99, 49, 12.5, 79, 9.99, 59, 129, 17.99, 89, 39.99];
-    return prices[index % prices.length];
-  }
   function cleanPublicItemLabel(value) {
     const text = String(value || "").replace(/\s+/g, " ").trim();
     if (!text) return "";
@@ -15647,30 +16050,27 @@ ${guidedQuestion(nextMissing)}`
     const previewPalette = semanticInstantPreviewPalette(payload.preferred_colors);
     const brand = applyInstantPreviewPaletteToBrand(baseBrand, previewPalette);
     const colors = brandToThemeColors(brand);
-    const catalogItems = products.map((item, index) => ({
+    const catalogItems = products.map((item, index) => withoutInventedCommerceMetadata({
       id: `instant_${index + 1}`,
       sku: `SKU-${index + 1}`,
       name: item,
       description: copy.itemDescription(name),
       category: marketplaceCategoryForIndex(index, copy, categoryContext, language, item),
-      rating: (4.3 + index % 5 * 0.12).toFixed(1),
-      review_count: 42 + index * 31,
       shipping_label: index % 2 === 0 ? copy.fastDelivery : copy.freeShipping,
       deal_label: index % 3 === 0 ? copy.todayDeal : "",
-      price_type: isOnlineShop ? "fixed" : "quote_only",
-      price_amount: isMarketplaceTemplate || isMegaRetailTemplate2 ? marketplacePriceForIndex(index) : "",
+      price_type: "quote_only",
+      price_amount: null,
       currency: "USD",
-      price_label: isMarketplaceTemplate || isMegaRetailTemplate2 ? `USD ${marketplacePriceForIndex(index).toFixed(2)}` : isOnlineShop ? copy.priceNotSet : copy.askPrice,
+      price_label: priceConfirmationLabel(language),
       button_label: isOnlineShop ? copy.viewProduct : copy.request,
-      inventory_quantity: isMarketplaceTemplate || isMegaRetailTemplate2 ? 24 + index * 3 : "",
-      track_inventory: isOnlineShop,
+      track_inventory: false,
       image_url: bathBodyStockImageUrl(item),
       is_active: true,
       is_featured: index < 3,
       offer_type: textSuggestsCourseOffering(item) ? "course" : "product",
       display_in_catalog: !textSuggestsCourseOffering(item),
       sort_order: index
-    }));
+    }, language));
     const isPremiumTemplate = catalogType === "premium_editorial_catalog" || /premium-product-store|apple-premium-product/i.test(template.id || "");
     const isFashionTemplate = catalogType === "lookbook_collection_catalog" || /fashion-drop-pro/i.test(template.id || "");
     const isCorporateTemplate = catalogType === "company_services_catalog" || /corporate-company-pro/i.test(template.id || "");
@@ -15957,8 +16357,8 @@ ${guidedQuestion(nextMissing)}`
           product_layout: catalogType
         }
       ],
-      products_services: catalogItems,
-      catalog_items: catalogItems,
+      products_services: catalogItems.map((item) => withoutInventedCommerceMetadata(item, language)),
+      catalog_items: catalogItems.map((item) => withoutInventedCommerceMetadata(item, language)),
       contact: payload.contact_info || {},
       editable_fields: ["headline", "subtitle", "title", "text", "primary_button", "secondary_button", "image_url", "images"]
     };
@@ -16045,12 +16445,17 @@ ${guidedQuestion(nextMissing)}`
     ];
   }
   function buildPremiumProductInstantPages(copy, name, description, payload = {}) {
-    const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+    const uploadedPhotos = [
+      ...(payload.assets || []).filter((asset) => asset.asset_type === "photo").map((asset) => asset.url),
+      ...payload.photoUrls || []
+    ].filter((url, index, all) => url && all.indexOf(url) === index);
+    const heroImage = uploadedPhotos[0] || "";
+    const storyImage = uploadedPhotos[1] || "";
     const composition = runtimeCompositionIndex(name, payload);
     const recipes = [
-      { hero: "split_showcase", order: ["premium_hero", "premium_story", "premium_feature", "premium_gallery", "premium_specs"] },
-      { hero: "centered_bold", order: ["premium_hero", "premium_gallery", "premium_feature", "premium_story", "premium_specs"] },
-      { hero: "asymmetric_grid", order: ["premium_hero", "premium_specs", "premium_story", "premium_gallery", "premium_feature"] }
+      { hero: "split_showcase" },
+      { hero: "centered_bold" },
+      { hero: "asymmetric_grid" }
     ];
     const recipe = recipes[composition];
     const pages = [
@@ -16065,24 +16470,44 @@ ${guidedQuestion(nextMissing)}`
             type: "PremiumHero",
             order: 1,
             editable: {
-              headline: copy.premiumHeadline(name),
+              headline: limitPremiumHeadline(copy.premiumHeadline(name)),
               subtitle: copy.premiumSubheadline(description),
               primary_button: copy.premiumPrimary,
               secondary_button: copy.premiumSecondary,
               image_url: heroImage,
+              imageRole: PREMIUM_IMAGE_ROLES.hero,
+              imageSearchQuery: `${name} ${description} editorial product lifestyle`,
+              media: { imageUrl: heroImage, imageRole: PREMIUM_IMAGE_ROLES.hero, imageSearchQuery: `${name} ${description} editorial product lifestyle` },
               images: []
             },
             variant: recipe.hero,
             settings: { layout: recipe.hero, spacing: "cinematic", container_width: "wide" }
           },
           {
+            id: "premium_trust",
+            type: "TrustStrip",
+            order: 2,
+            editable: { title: copy.whyBuyHere, text: copy.trustText, items: [copy.premiumPrimary, copy.contact, copy.products] },
+            settings: { layout: "compact", spacing: "compact", container_width: "wide" }
+          },
+          {
+            id: "premium_products",
+            type: "ProductGrid",
+            order: 3,
+            editable: { title: copy.premiumGalleryTitle, text: copy.premiumGalleryText, images: [] },
+            settings: { layout: "premium_editorial", columns: 3, spacing: "spacious", container_width: "wide" }
+          },
+          {
             id: "premium_story",
             type: "ProductStory",
-            order: 2,
+            order: 4,
             editable: {
               title: copy.premiumStoryTitle,
               text: copy.premiumStoryText,
-              image_url: heroImage,
+              image_url: storyImage,
+              imageRole: PREMIUM_IMAGE_ROLES.detail,
+              imageSearchQuery: `${name} product materials detail texture close up`,
+              media: { imageUrl: storyImage, imageRole: PREMIUM_IMAGE_ROLES.detail, imageSearchQuery: `${name} product materials detail texture close up` },
               images: []
             },
             variant: composition === 2 ? "image_left" : "feature_band",
@@ -16091,7 +16516,7 @@ ${guidedQuestion(nextMissing)}`
           {
             id: "premium_feature",
             type: "FeatureShowcase",
-            order: 3,
+            order: 5,
             editable: {
               title: copy.premiumFeatureTitle,
               text: copy.premiumFeatureText,
@@ -16101,26 +16526,22 @@ ${guidedQuestion(nextMissing)}`
             settings: { layout: "feature_focus", spacing: "spacious", container_width: "wide" }
           },
           {
-            id: "premium_gallery",
-            type: "PortfolioGallery",
-            order: 4,
-            editable: {
-              title: copy.premiumGalleryTitle,
-              text: copy.premiumGalleryText,
-              images: []
-            },
-            settings: { layout: "premium_cards", columns: 3, spacing: "balanced", container_width: "wide" }
-          },
-          {
             id: "premium_specs",
             type: "SpecStrip",
-            order: 5,
+            order: 6,
             editable: {
               title: copy.premiumSpecsTitle,
               text: copy.premiumSpecsText,
               items: copy.premiumSpecItems
             },
             settings: { layout: "quiet_specs", spacing: "balanced", container_width: "wide" }
+          },
+          {
+            id: "premium_cta",
+            type: "CTA",
+            order: 7,
+            editable: { title: copy.premiumStoryTitle, text: copy.premiumStoryText, primary_button: copy.premiumPrimary },
+            settings: { layout: "centered", spacing: "balanced", container_width: "wide" }
           }
         ]
       },
@@ -16144,7 +16565,7 @@ ${guidedQuestion(nextMissing)}`
         title: copy.story,
         slug: copy.aboutSlug,
         order: 3,
-        sections: [{ id: "about", type: "ProductStory", order: 1, editable: { title: copy.aboutBrand, text: description, image_url: heroImage }, settings: { layout: "editorial_split", container_width: "wide" } }]
+        sections: [{ id: "about", type: "ProductStory", order: 1, editable: { title: copy.aboutBrand, text: description, image_url: storyImage, imageRole: PREMIUM_IMAGE_ROLES.detail, media: { imageUrl: storyImage, imageRole: PREMIUM_IMAGE_ROLES.detail } }, settings: { layout: "editorial_split", container_width: "wide" } }]
       },
       {
         page_key: "contact",
@@ -16155,8 +16576,7 @@ ${guidedQuestion(nextMissing)}`
       }
     ];
     const home = pages.find((page) => page.page_key === "home");
-    const byId = new Map(home.sections.map((section) => [section.id, section]));
-    home.sections = resequenceSections(recipe.order.map((id) => byId.get(id)).filter(Boolean));
+    home.sections = orderPremiumHomeSections(home.sections);
     return pages;
   }
   function buildLuxuryHighTicketInstantPages(copy, name, description, payload = {}) {
@@ -19504,6 +19924,7 @@ Site ID: ${builderState.currentSiteId}`
       industry: generationIndustry,
       location: generationLocation,
       services_products: generationServicesProducts,
+      brands_carried: arrayValue2(validatedGuidedPayload?.brandsCarried || builderState.guidedState.brandsCarried),
       target_audience: generationTargetAudience,
       preferred_tone: generationPreferredTone,
       preferred_colors: preferredColorsValue.length ? preferredColorsValue : arrayValue2(builderState.guidedState.logoPalette),

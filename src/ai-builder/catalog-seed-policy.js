@@ -57,14 +57,15 @@ export function mergeSemanticSeedCatalog(
     const source = typeof item === "string" ? { name: item } : { ...item };
     const hasRealIdentity = hasRealCatalogIdentity(source);
     const useSeedIdentity = shouldUseSemanticSeedIdentity(source, options.catalogSource);
-    const protectRealMetadata = options.catalogSource === "seed_fallback" && hasRealIdentity;
+    const protectRealMetadata = source.content_origin === "client_declared"
+      || (options.catalogSource === "seed_fallback" && hasRealIdentity);
     const name = useSeedIdentity
       ? cleanCatalogText(seed.name || seed.title, 90)
       : cleanCatalogText(source.name || source.title, 90);
     const pendingCopy = pendingCatalogCopy(name, language);
-    const rawPrice = protectRealMetadata
+    const rawPrice = useSeedIdentity || protectRealMetadata
       ? Number.NaN
-      : Number(source.price_amount ?? source.price_value ?? source.price ?? seed.price);
+      : Number(source.price_amount ?? source.price_value ?? source.price);
     const hasPrice = Number.isFinite(rawPrice) && rawPrice > 0;
     const query = cleanCatalogText(
       source.imageSearchQuery
@@ -93,29 +94,23 @@ export function mergeSemanticSeedCatalog(
           ? seed.category
           : source.category,
       price: hasPrice ? rawPrice : null,
-      price_type: protectRealMetadata
-        ? "quote_only"
-        : source.price_type && source.price_type !== "quote_only"
-          ? source.price_type
-          : "fixed",
+      price_type: hasPrice && source.price_type !== "quote_only" ? "fixed" : "quote_only",
       price_value: hasPrice ? rawPrice : null,
       price_amount: hasPrice ? rawPrice : null,
       currency: source.currency || "USD",
-      price_label: protectRealMetadata
-        ? pendingCopy.priceLabel
-        : source.price_label && !/price editable|precio editable|price to be set|consultar/i.test(source.price_label)
+      price_label: hasPrice
+        ? source.price_label && !/price editable|precio editable|price to be set|consultar/i.test(source.price_label)
           ? source.price_label
-          : hasPrice
-            ? `USD ${rawPrice.toFixed(2)}`
-            : "",
-      rating: protectRealMetadata ? source.rating : Number(source.rating || seed.rating || 4.7),
-      review_count: protectRealMetadata ? source.review_count : source.review_count || seed.review_count,
-      badge: protectRealMetadata ? source.badge : source.badge || seed.badge,
-      deal_label: protectRealMetadata ? source.deal_label || "" : source.deal_label || seed.deal_label || "",
-      shipping_label: protectRealMetadata ? source.shipping_label : source.shipping_label || seed.shipping_label,
+          : `USD ${rawPrice.toFixed(2)}`
+        : pendingCopy.priceLabel,
+      rating: useSeedIdentity ? null : source.rating ?? null,
+      review_count: useSeedIdentity ? null : source.review_count ?? null,
+      badge: useSeedIdentity ? "" : source.badge || "",
+      deal_label: useSeedIdentity ? "" : source.deal_label || "",
+      shipping_label: useSeedIdentity ? "" : source.shipping_label || "",
       button_label: source.button_label || seed.button_label,
-      inventory_quantity: protectRealMetadata ? source.inventory_quantity : source.inventory_quantity ?? seed.inventory_quantity,
-      track_inventory: protectRealMetadata ? source.track_inventory : source.track_inventory ?? seed.track_inventory,
+      inventory_quantity: useSeedIdentity ? null : source.inventory_quantity ?? null,
+      track_inventory: useSeedIdentity ? false : source.track_inventory ?? false,
       imageSearchQuery: query,
       image_url: useSeedIdentity ? seed.image_url : resolvedImage,
       is_active: source.is_active !== false,
@@ -125,7 +120,25 @@ export function mergeSemanticSeedCatalog(
   });
 
   while (!preserveAiGeneratedIdentity && merged.length < 4 && seeds[merged.length]) {
-    merged.push({ ...seeds[merged.length], sort_order: merged.length });
+    const seed = seeds[merged.length];
+    const pendingCopy = pendingCatalogCopy(cleanCatalogText(seed.name || seed.title, 90), language);
+    merged.push({
+      ...seed,
+      price: null,
+      price_value: null,
+      price_amount: null,
+      price_type: "quote_only",
+      price_label: pendingCopy.priceLabel,
+      rating: null,
+      review_count: null,
+      badge: "",
+      deal_label: "",
+      shipping_label: "",
+      inventory_quantity: null,
+      track_inventory: false,
+      content_origin: "seed_added",
+      sort_order: merged.length,
+    });
   }
   return merged.slice(0, 6);
 }

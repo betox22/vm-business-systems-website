@@ -1,5 +1,37 @@
 export const SHARED_CART_COMPONENT = "kreaton-shared-cart";
 
+const CATALOG_ACTION_COPY = {
+  en: { addToCart: "Add to cart", request: "Check availability", view: "View details" },
+  es: { addToCart: "Agregar al carrito", request: "Consultar disponibilidad", view: "Ver detalles" },
+  fr: { addToCart: "Ajouter au panier", request: "Vérifier la disponibilité", view: "Voir les détails" },
+  pt: { addToCart: "Adicionar ao carrinho", request: "Consultar disponibilidade", view: "Ver detalhes" },
+};
+
+export function resolveCatalogAction(item = {}, {
+  language = "en",
+  commerce = true,
+  fallbackLabel = "",
+  cartLabel = "",
+  quoteLabel = "",
+} = {}) {
+  const copy = CATALOG_ACTION_COPY[language] || CATALOG_ACTION_COPY.en;
+  const id = escapeMarkup(item.id || item.itemId || item.name || item.title || "");
+  const name = escapeMarkup(item.name || item.title || "Item");
+  const quoteOnly = String(item.price_type || item.priceType || "").toLowerCase() === "quote_only";
+  if (quoteOnly || !commerce) {
+    return {
+      mode: "inquiry",
+      label: quoteOnly ? (quoteLabel || copy.request) : (item.button_label || fallbackLabel || copy.view),
+      attributes: `data-open-lead data-item-id="${id}" data-item-name="${name}"`,
+    };
+  }
+  return {
+    mode: "cart",
+    label: cartLabel || copy.addToCart,
+    attributes: `data-cart-add data-item-id="${id}" data-item-name="${name}" data-item-price="${escapeMarkup(item.price_label || item.priceLabel || item.price || "")}" data-item-image="${escapeMarkup(item.image_url || item.imageUrl || "")}"`,
+  };
+}
+
 export function cartStorageKey({ businessId = "", siteId = "" } = {}) {
   const scope = [businessId, siteId].map((value) => String(value || "").trim()).filter(Boolean).join(":") || "preview";
   return `kreaton:cart:${scope}`;

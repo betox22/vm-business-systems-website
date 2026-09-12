@@ -5,7 +5,10 @@ const rootDir = process.cwd();
 
 await build({
   absWorkingDir: rootDir,
-  entryPoints: ["./src/ai-builder/index.js"],
+  alias: {
+    "@kreaton/shared-commerce-cart": resolve(rootDir, "shared-commerce-cart.js"),
+  },
+  entryPoints: [resolve(rootDir, "src/ai-builder/index.js")],
   outfile: resolve(rootDir, "dist/ai-builder.js"),
   bundle: true,
   minify: false,

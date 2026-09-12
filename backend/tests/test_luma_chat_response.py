@@ -96,6 +96,30 @@ def _current_state(*, include_style: bool = False):
 
 
 class LumaChatResponseTests(unittest.TestCase):
+    def test_continue_without_logo_is_explicit_skip_without_initials_claim(self):
+        message = "No tengo logo y prefiero continuar sin logo por ahora."
+        current = _current_state(include_style=True)
+        current["selectedLanguage"] = "es"
+        request = LumaChatRequest(
+            current=current,
+            message=message,
+            currentStep="logo",
+        )
+
+        async def keep_ready_state(_message, state, **_kwargs):
+            return state
+
+        with (
+            patch.object(main.intake_engine, "client", _FakeOpenAIClient(_ready_tool_payload(None))),
+            patch.object(main.orchestrator, "run", side_effect=keep_ready_state),
+        ):
+            response = asyncio.run(main.luma_chat(request, _request(49198)))
+
+        self.assertEqual(response.updatedFields["logoPreference"], "explicit_skip")
+        self.assertFalse(response.updatedFields["logoBrief"])
+        self.assertNotIn("iniciales", response.assistantMessage.lower())
+        self.assertNotIn("initials", response.assistantMessage.lower())
+
     def test_ready_response_answers_user_question_before_generation_summary(self):
         direct_response = "Yes. I can help you add a stronger logo after the first draft is ready."
         request = LumaChatRequest(

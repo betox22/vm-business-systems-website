@@ -19,6 +19,7 @@ export function createEmptyGuidedState(language = detectBrowserLanguage()) {
     industry: "",
     location: "",
     servicesProducts: [],
+    brandsCarried: [],
     targetAudience: "",
     preferredTone: "",
     preferredColors: [],
@@ -30,6 +31,7 @@ export function createEmptyGuidedState(language = detectBrowserLanguage()) {
     colorProvenance: null,
     brand: null,
     selectedLanguage: language,
+    selectedLanguageSource: "browser",
     hasLogo: false,
     hasPhotos: false,
     salesMode: "",
@@ -59,6 +61,7 @@ const initialSelectedLanguage = detectBrowserLanguage();
 
 export const builderState = {
   selectedLanguage: initialSelectedLanguage,
+  selectedLanguageSource: 'browser',
   currentSchema: null,
   selectedPageKey: 'home',
   selectedVariantId: '',

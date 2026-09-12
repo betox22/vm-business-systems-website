@@ -55,6 +55,7 @@ SLOT_FIELD_ALIASES = {
     "business_name": "businessName",
     "business_description": "businessDescription",
     "services_products": "servicesProducts",
+    "brands_carried": "brandsCarried",
     "sales_flow": "salesFlow",
     "target_audience": "targetAudience",
 }
@@ -65,6 +66,40 @@ VALID_SALES_FLOWS = {"online_sales", "quote_request", "booking", "lead_capture",
 CATALOG_DEPTH_SALES_FLOWS = {"online_sales", "quote_request", "booking"}
 MIN_CONCRETE_OFFERINGS = 2
 MAX_OFFERING_NAME_LENGTH = 50
+
+LOGO_SKIP_RE = re.compile(
+    r"(?:continuar|seguir|continua|sigue|continue|proceed).{0,28}(?:sin|without)\s+(?:un\s+|a\s+)?logo|"
+    r"(?:sin|without)\s+(?:un\s+|a\s+)?logo.{0,28}(?:por ahora|for now|de momento|later)|"
+    r"(?:no tengo|i do not have|i don't have)\s+(?:un\s+|a\s+)?logo(?!.*(?:crea|crear|diseña|diseñar|genera|generar|make|create|design|generate))",
+    re.I,
+)
+LOGO_GENERATE_RE = re.compile(
+    r"(?:quiero|quisiera|necesito|me gustaria|me gustaría|podrias|podrías|puedes|we need|i want|i need|could you|can you).{0,40}\blogo\b|"
+    r"\blogo\b.{0,40}(?:crea|crear|diseña|diseñar|genera|generar|make|create|design|generate)|"
+    r"crea(?:r)?(?:me)?(?: un)? logo|generate(?: a)? logo|make(?: a)? logo|haz(?:me)?(?: un)? logo|"
+    r"diseñ(?:a|ar)(?: un)? logo|disena(?:r)?(?: un)? logo|gen[eé]rame(?: un)? logo",
+    re.I,
+)
+LOGO_INITIALS_RE = re.compile(r"\b(?:initials?|iniciales?)\s*[\"':-]*\s*([A-Z0-9]{2,6})\b", re.I)
+
+
+def classify_logo_intent(value: Any) -> str:
+    text = str(value or "").strip()
+    compact = text.lower().replace(" ", "_").replace("-", "_")
+    if compact in VALID_LOGO_PATHS:
+        return compact
+    if LOGO_SKIP_RE.search(text) or any(phrase in compact for phrase in ("skip_logo", "no_logo", "sin_logo")):
+        return "explicit_skip"
+    if LOGO_GENERATE_RE.search(text):
+        return "wants_generated"
+    if any(phrase in compact for phrase in ("upload_logo", "subir_logo", "tengo_logo", "has_logo")):
+        return "has_logo"
+    return ""
+
+
+def requested_logo_initials(value: Any) -> str:
+    match = LOGO_INITIALS_RE.search(str(value or ""))
+    return match.group(1).upper() if match else ""
 
 GENERIC_OFFERING_VALUES = {
     "catalog",
@@ -177,6 +212,7 @@ INTAKE_STATE_FIELDS = {
     "industry",
     "location",
     "servicesProducts",
+    "brandsCarried",
     "targetAudience",
     "preferredTone",
     "preferredColors",
@@ -191,6 +227,7 @@ INTAKE_STATE_FIELDS = {
     "business_name",
     "business_description",
     "services_products",
+    "brands_carried",
     "niche",
     "sales_flow",
     "target_audience",
@@ -688,6 +725,8 @@ class LyraIntakeEngine:
             field_meta["business_description"] = FieldMeta(source=tracked.source, confidence=tracked.confidence)
         elif canonical_key == "servicesProducts":
             field_meta["services_products"] = FieldMeta(source=tracked.source, confidence=tracked.confidence)
+        elif canonical_key == "brandsCarried":
+            field_meta["brands_carried"] = FieldMeta(source=tracked.source, confidence=tracked.confidence)
 
     @staticmethod
     def _extract_choice_path(value: Any) -> str:
@@ -703,14 +742,11 @@ class LyraIntakeEngine:
         compact = text.strip().lower().replace(" ", "_").replace("-", "_")
         if compact in VALID_BRAND_STYLE_PATHS or compact in VALID_LOGO_PATHS:
             return compact
+        logo_intent = classify_logo_intent(text)
+        if logo_intent:
+            return logo_intent
         if any(phrase in compact for phrase in ("tu_decide", "tú_decide", "sorprendeme", "sorpréndeme", "lyra_decides", "you_decide")):
             return "explicit_delegation"
-        if any(phrase in compact for phrase in ("generate", "generar", "crear", "design_one", "diseñar", "disenar")):
-            return "wants_generated"
-        if any(phrase in compact for phrase in ("upload", "subir", "tengo_logo", "has_logo")):
-            return "has_logo"
-        if any(phrase in compact for phrase in ("skip", "despues", "después", "later", "no_logo", "sin_logo")):
-            return "explicit_skip"
         return compact
 
     @staticmethod
@@ -731,6 +767,8 @@ class LyraIntakeEngine:
         normalized = dict(updates)
         if "servicesProducts" in normalized:
             normalized["servicesProducts"] = self._normalize_services_products(normalized["servicesProducts"])
+        if "brandsCarried" in normalized:
+            normalized["brandsCarried"] = [item[:60] for item in split_items(normalized["brandsCarried"]) if item.strip()][:20]
         if "preferredColors" in normalized and isinstance(normalized["preferredColors"], list):
             normalized["preferredColors"] = ", ".join(str(item).strip() for item in normalized["preferredColors"] if str(item).strip())
         if "photoUrls" in normalized and not isinstance(normalized["photoUrls"], list):
@@ -774,6 +812,7 @@ class LyraIntakeEngine:
             "industry": state.industry,
             "location": state.location,
             "servicesProducts": state.servicesProducts,
+            "brandsCarried": state.brandsCarried,
             "targetAudience": state.targetAudience,
             "preferredTone": state.preferredTone,
             "preferredColors": state.preferredColors,
@@ -800,6 +839,10 @@ class LyraIntakeEngine:
             "services_products": self._slot_snapshot(
                 state.servicesProducts,
                 meta.get("services_products") or meta.get("servicesProducts"),
+            ),
+            "brands_carried": self._slot_snapshot(
+                state.brandsCarried,
+                meta.get("brands_carried") or meta.get("brandsCarried"),
             ),
             "niche": self._slot_snapshot(normalize_niche(state.industry), meta.get("niche") or meta.get("industry")),
             "sales_flow": self._slot_snapshot(state.salesFlow, meta.get("sales_flow") or meta.get("salesFlow")),
@@ -1035,8 +1078,8 @@ class LyraIntakeEngine:
                             "type": "object",
                             "description": (
                                 "Only include a key when this turn's message actually supports it. "
-                                "Valid keys are EXACTLY these 10 slots: business_name, business_description, "
-                                "services_products, niche, sales_flow, target_audience, brand_style, logo, location, contact_info. "
+                                "Valid keys are EXACTLY these 11 slots: business_name, business_description, "
+                                "services_products, brands_carried, niche, sales_flow, target_audience, brand_style, logo, location, contact_info. "
                                 "Never invent other keys (e.g. servicesProducts, preferredColors, colors, "
                                 "products) - those are not part of this form and are derived elsewhere. "
                                 "Never copy the same raw reply into more than one key."
@@ -1045,6 +1088,7 @@ class LyraIntakeEngine:
                                 "business_name": tracked_field_schema,
                                 "business_description": tracked_field_schema,
                                 "services_products": tracked_field_schema,
+                                "brands_carried": tracked_field_schema,
                                 "niche": tracked_field_schema,
                                 "sales_flow": tracked_field_schema,
                                 "target_audience": tracked_field_schema,
@@ -1141,6 +1185,11 @@ FORMULARIO A COMPLETAR (slots):
   Separa productos distintos aunque el cliente los escriba sin comas. Ejemplo:
   "fabrico jabones velas y bombas de baño" -> ["Jabones", "Velas", "Bombas de baño"].
   Nunca inventes entradas para completar este slot)
+- brands_carried (array opcional: marcas que el negocio vende o distribuye. Son
+  contexto comercial, nunca productos individuales. Si el cliente dice "vendo
+  telefonos y accesorios; las marcas son Xiaomi, Apple, Samsung y Oppo",
+  services_products=["telefonos", "accesorios"] y brands_carried contiene las
+  cuatro marcas)
 - niche (debe ser EXACTAMENTE uno de: {niche_list} — nunca inventes uno nuevo;
   si no calza claramente con ninguno, usa "general" y baja tu confidence)
 - sales_flow (uno de: online_sales, quote_request, booking, lead_capture, informational)

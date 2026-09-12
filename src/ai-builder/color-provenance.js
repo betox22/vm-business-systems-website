@@ -1,3 +1,5 @@
+import { resolveColorValues } from "./color-value-policy.js";
+
 const EXPLICIT_META_SOURCES = new Set(["explicit", "explicit_user_choice"]);
 
 function normalizedColorValues(values) {
@@ -35,9 +37,9 @@ export function buildColorProvenance({
   structuredFormInput = false,
 } = {}) {
   const explicitPreferred = structuredFormInput || EXPLICIT_META_SOURCES.has(preferredColorMeta?.source)
-    ? normalizedColorValues(preferredColors)
+    ? resolveColorValues(preferredColors)
     : [];
-  const logoColors = normalizedColorValues(logoPalette);
+  const logoColors = resolveColorValues(logoPalette);
   const entries = [];
   const seen = new Set();
   const append = (colors, source) => {

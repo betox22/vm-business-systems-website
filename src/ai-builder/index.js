@@ -52,14 +52,22 @@ import {
   resolveWebsiteIntentBackfill,
 } from './guided-intent-policy.js';
 import { mergeSemanticSeedCatalog } from './catalog-seed-policy.js';
+import { priceConfirmationLabel, withoutInventedCommerceMetadata } from './catalog-fidelity-policy.js';
+import { extractContactInfo } from './contact-info-policy.js';
+import { extractBrandsCarried, splitBrandClause } from './brand-offer-policy.js';
+import { detectSubstantialBriefLanguage } from './language-policy.js';
 import { isMegaRetailTemplate, megaRetailFeatureFlags } from './mega-retail-policy.js';
 import { hasDecidedTemplateSelection, isConcreteTemplateId } from './template-carousel-policy.js';
-import { constructionPreviewModel } from './construction-preview-policy.js';
+import {
+  constructionPreviewModel,
+  isAuthoritativeTemplateSelection,
+  resolveConstructionPreviewTemplateId,
+} from './construction-preview-policy.js';
 import {
   isTemplateAvailableForNewProject,
   setRuntimeTemplateAvailability,
 } from './template-runtime-policy.js';
-import { logoRequestUpdate, wantsAiGeneratedLogo } from './logo-intent-policy.js';
+import { logoIntentPath, logoRequestUpdate, wantsAiGeneratedLogo } from './logo-intent-policy.js';
 import {
   applyGeneratedLogoToState,
   approveGeneratedLogo,
@@ -69,11 +77,17 @@ import {
 } from './logo-review-policy.js';
 import { bathBodyCategoryLabel, bathBodyStockImageUrl, isBathBodyCatalogContext, shouldExpandInstantCatalog } from './catalog-preview-policy.js';
 import { applyInstantPreviewPaletteToBrand, semanticInstantPreviewPalette } from './instant-preview-theme-policy.js';
+import { limitPremiumHeadline, orderPremiumHomeSections, PREMIUM_IMAGE_ROLES } from './premium-product-policy.js';
 import {
   advanceClientProjectSessionEpoch,
   clearClientProjectRuntimeState,
 } from './client-project-start-policy.js';
 import { quickChipsNeedAssistantPrompt } from './quick-chip-context-policy.js';
+import {
+  readScopedGuidedDraft,
+  removeScopedGuidedDraft,
+  writeScopedGuidedDraft,
+} from './guided-draft-storage-policy.js';
 import {
   constrainInlinePaste,
   inlineEditEnterAction,
@@ -782,8 +796,8 @@ summaryLogoUploadButton?.addEventListener("click", () => guidedLogoUpload.click(
 summaryPhotoUploadButton?.addEventListener("click", () => guidedPhotoUpload.click());
 editDetailsButton?.addEventListener("click", openReviewDetails);
 guidedMicButton.addEventListener("click", startVoiceInput);
-languageSelector.addEventListener("change", () => setSelectedLanguage(languageSelector.value));
-summaryLanguageSelector.addEventListener("change", () => setSelectedLanguage(summaryLanguageSelector.value));
+languageSelector.addEventListener("change", () => setSelectedLanguage(languageSelector.value, { source: "manual" }));
+summaryLanguageSelector.addEventListener("change", () => setSelectedLanguage(summaryLanguageSelector.value, { source: "manual" }));
 window.addEventListener("load", () => {
   const params = new URLSearchParams(window.location.search);
   if (isPublicClientSetup || params.get("guided") !== "0") {
@@ -807,27 +821,46 @@ if (isLegacyBuilderPage) {
 
 function initLanguageControls() {
   const params = new URLSearchParams(window.location.search);
+  builderState.selectedLanguageSource = params.get("lang") ? "manual" : "browser";
   builderState.selectedLanguage = normalizeBrowserLanguage(
     params.get("lang") || (navigator.languages || [navigator.language || "en"])[0]
   );
   builderState.guidedState.selectedLanguage = builderState.selectedLanguage;
+  builderState.guidedState.selectedLanguageSource = builderState.selectedLanguageSource;
   languageSelector.value = builderState.selectedLanguage;
   summaryLanguageSelector.value = builderState.selectedLanguage;
   applyI18n();
 }
 
-export function setSelectedLanguage(value) {
+export function setSelectedLanguage(value, { source = "manual", resetConversation = true } = {}) {
   const previousLanguage = builderState.selectedLanguage;
   builderState.selectedLanguage = normalizeBrowserLanguage(value);
+  builderState.selectedLanguageSource = source;
   builderState.guidedState.selectedLanguage = builderState.selectedLanguage;
+  builderState.guidedState.selectedLanguageSource = source;
   languageSelector.value = builderState.selectedLanguage;
   summaryLanguageSelector.value = builderState.selectedLanguage;
   applyI18n();
   updateBuilderAvatarLabels();
   if (previousLanguage !== builderState.selectedLanguage) {
     renderGuidedSummary();
-    resetAssistantConversation();
+    if (resetConversation) resetAssistantConversation();
   }
+}
+
+export function applyDetectedBriefLanguage(message) {
+  if (["manual", "detected"].includes(builderState.selectedLanguageSource)) {
+    return builderState.selectedLanguage;
+  }
+  const detected = detectSubstantialBriefLanguage(message);
+  if (!detected) return builderState.selectedLanguage;
+  if (detected !== builderState.selectedLanguage) {
+    setSelectedLanguage(detected, { source: "detected", resetConversation: false });
+  } else {
+    builderState.selectedLanguageSource = "detected";
+    builderState.guidedState.selectedLanguageSource = "detected";
+  }
+  return builderState.selectedLanguage;
 }
 
 async function loadRuntimeTemplateAvailability() {
@@ -1487,12 +1520,11 @@ function livePreviewTemplateProfile() {
 
 function inferLivePreviewTemplateId() {
   const text = guidedTemplateContextText();
-  const inferred = inferTemplateIdFromText(text);
-  if (inferred) return inferred;
-  const aiSelectedTemplateId = resolvedAiTemplateId();
-  if (aiSelectedTemplateId) return aiSelectedTemplateId;
-  if (builderState.forcedTemplateSelection?.templateId) return builderState.forcedTemplateSelection.templateId;
-  return "mega-retail-store";
+  return resolveConstructionPreviewTemplateId({
+    selection: builderState.forcedTemplateSelection,
+    aiTemplateId: resolvedAiTemplateId(),
+    localTemplateId: inferTemplateIdFromText(text),
+  });
 }
 
 function resolvedAiTemplateId() {
@@ -1965,8 +1997,21 @@ export function formatProjectUpdatedAt(value) {
 // account looked like it already "knew" the previous person's business, and
 // its saved language silently overrode the language of the live
 // conversation. See docs/AGENT_LOG.md for the full trace.
+function currentGuidedDraftOwnerIdentity() {
+  const storedSession = readClientIntakeSession() || {};
+  return String(
+    builderState.clientIntakeSession?.clientEmail
+      || builderState.clientIntakeSession?.client_email
+      || storedSession.clientEmail
+      || storedSession.client_email
+      || localStorage.getItem("lumaPendingClientEmail")
+      || "",
+  ).trim().toLowerCase();
+}
+
 export function resetGuidedStateForNewAccount(options = {}) {
   const preserveAuth = Boolean(options.preserveAuth);
+  const draftOwnerIdentity = currentGuidedDraftOwnerIdentity();
   const restoredDraftNoticeCard = builderState.restoredDraftNoticeCard;
   advanceClientProjectSessionEpoch(builderState);
   clearTimeout(builderState.clientIntakeSyncTimer);
@@ -1979,6 +2024,7 @@ export function resetGuidedStateForNewAccount(options = {}) {
   removeGuidedBuildStatusCard();
   try {
     localStorage.removeItem(GUIDED_DRAFT_STORAGE_KEY);
+    removeScopedGuidedDraft(localStorage, GUIDED_DRAFT_STORAGE_KEY, draftOwnerIdentity);
     localStorage.removeItem(GENERATED_SITE_STORAGE_KEY);
     localStorage.removeItem(CLIENT_INTAKE_SESSION_STORAGE_KEY);
     localStorage.removeItem("lumaPendingGeneratedSite");
@@ -2134,16 +2180,18 @@ function switchToManualForm() {
 function saveGuidedDraft() {
   if (!isPublicClientSetup) return;
   try {
-    localStorage.setItem(
+    writeScopedGuidedDraft(
+      localStorage,
       GUIDED_DRAFT_STORAGE_KEY,
-      JSON.stringify({
+      currentGuidedDraftOwnerIdentity(),
+      {
         guidedState: guidedStateForApi(),
         guidedStep: builderState.guidedStep,
         selectedLanguage: builderState.selectedLanguage,
         completionPercent: guidedCompletionPercent(),
         missingSteps: missingGuidedSteps(),
         savedAt: new Date().toISOString(),
-      }),
+      },
     );
   } catch {
     // Draft autosave should never block the user flow.
@@ -2154,9 +2202,12 @@ function saveGuidedDraft() {
 function restoreGuidedDraft() {
   if (!isPublicClientSetup) return;
   try {
-    const raw = localStorage.getItem(GUIDED_DRAFT_STORAGE_KEY);
-    if (!raw) return;
-    const draft = JSON.parse(raw);
+    const draft = readScopedGuidedDraft(
+      localStorage,
+      GUIDED_DRAFT_STORAGE_KEY,
+      currentGuidedDraftOwnerIdentity(),
+    );
+    if (!draft) return;
     if (draft.selectedLanguage) setSelectedLanguage(draft.selectedLanguage);
     if (draft.guidedState) {
       builderState.guidedState = {
@@ -2483,7 +2534,10 @@ async function applyLumaAgentDecision(result = {}) {
     builderState.forcedTemplateSelection = {
       templateId: effectiveTemplateId,
       template,
-      intent: shouldPreferLocalStudioTemplate(selectedTemplateId, localPlan) ? "ai_studio_plan_override" : (result.intent || "luma_agent_template"),
+      intent: shouldPreferLocalStudioTemplate(selectedTemplateId, localPlan)
+        ? "ai_studio_plan_override"
+        : "backend_ai_selected_template",
+      sourceIntent: result.intent || "luma_agent_template",
       catalogType: shouldPreferLocalStudioTemplate(selectedTemplateId, localPlan)
         ? localPlan.recommendedCatalogType
         : result.catalogType || result.catalog_type || template?.catalogModel?.catalogType || "",
@@ -2838,7 +2892,7 @@ const TEMPLATE_PREVIEW_PALETTES = Object.freeze({
 // the final result. It keeps related templates visually distinct without
 // depending on a small shared stock-image pool.
 function templateAccentPalette(catalogType, templateId = "") {
-  const override = TEMPLATE_PREVIEW_PALETTES[normalizeTemplateId(templateId)];
+  const override = TEMPLATE_PREVIEW_PALETTES?.[normalizeTemplateId(templateId)];
   if (override) return override;
   const type = String(catalogType || "").toLowerCase();
   if (/premium|luxury/.test(type)) return { paper: "#f7f6ff", ink: "#10101a", accent: "#6d5dfc" };
@@ -2929,17 +2983,25 @@ function guidedStatePayloadForPlanning() {
 
 function refreshAiStudioPlanFromContext(extra = "") {
   const plan = buildAiStudioPlanFromGuidedState(extra);
+  const preserveSelection = isAuthoritativeTemplateSelection(builderState.forcedTemplateSelection);
+  const selectedTemplateId = preserveSelection
+    ? builderState.forcedTemplateSelection.templateId
+    : plan.recommendedTemplateId;
   builderState.guidedState.aiStudioPlan = plan;
   builderState.guidedState.designStrategy = {
     ...(builderState.guidedState.designStrategy || {}),
     diagnosis: plan,
-    selectedTemplateId: plan.recommendedTemplateId,
-    selectedTemplateReason: plan.reasoningSummary,
-    selectedCatalogType: plan.recommendedCatalogType,
+    selectedTemplateId,
+    selectedTemplateReason: preserveSelection
+      ? builderState.forcedTemplateSelection.reason
+      : plan.reasoningSummary,
+    selectedCatalogType: preserveSelection
+      ? builderState.forcedTemplateSelection.catalogType
+      : plan.recommendedCatalogType,
     designerRole: "senior ecommerce strategist, UX architect and brand designer",
     templateUsePolicy: "Choose the closest proven template as architecture, then adapt copy, colors, sections, catalog and CTAs to the client's business.",
   };
-  if (plan.recommendedTemplateId && builderState.forcedTemplateSelection?.templateId !== plan.recommendedTemplateId) {
+  if (!preserveSelection && plan.recommendedTemplateId && builderState.forcedTemplateSelection?.templateId !== plan.recommendedTemplateId) {
     builderState.forcedTemplateSelection = {
       templateId: plan.recommendedTemplateId,
       template: null,
@@ -3537,7 +3599,8 @@ export function refreshQuickChips() {
 
 
 function logoPreferenceFromText(value, options = {}) {
-  return wantsAiGeneratedLogo(value, options) ? "generate_ai_logo" : "";
+  const intent = logoIntentPath(value, options);
+  return intent === "wants_generated" ? "generate_ai_logo" : intent;
 }
 
 
@@ -4734,7 +4797,7 @@ function syncGuidedStateFromSummary() {
   document.querySelectorAll("[data-summary-field]").forEach((field) => {
     const key = field.dataset.summaryField;
     if (key === "selectedLanguage") {
-      setSelectedLanguage(field.value);
+    setSelectedLanguage(field.value, { source: "manual" });
     } else if (key === "preferredColors") {
       const colors = splitCommaOrLines(field.value);
       if (colors.length) {
@@ -4745,7 +4808,7 @@ function syncGuidedStateFromSummary() {
         delete fieldMeta.preferredColors;
         builderState.guidedState.fieldMeta = fieldMeta;
       }
-    } else if (["servicesProducts", "photoUrls", "videoUrls"].includes(key)) {
+    } else if (["servicesProducts", "brandsCarried", "photoUrls", "videoUrls"].includes(key)) {
       builderState.guidedState[key] = splitCommaOrLines(field.value);
     } else if (key === "contactInfo") {
       builderState.guidedState[key] = parseKeyValueLines(field.value);
@@ -4779,6 +4842,11 @@ export function mergeGuidedUpdates(updates) {
       const existing = meaningfulOfferItems(builderState.guidedState.servicesProducts);
       if (!incoming.length && existing.length) return;
       builderState.guidedState.servicesProducts = [...new Set([...existing, ...incoming])];
+    } else if (key === "brandsCarried") {
+      builderState.guidedState.brandsCarried = [...new Set([
+        ...arrayValue(builderState.guidedState.brandsCarried),
+        ...arrayValue(value),
+      ])];
     } else if (["logoUrl", "logoBrief", "logoPreference", "logoGenerationStatus", "logoApprovalStatus"].includes(key)) {
       builderState.guidedState[key] = value ?? "";
     } else if (key === "aiGeneratedLogoRequested" || key === "hasLogo") {
@@ -4833,6 +4901,7 @@ export function guidedStateForApi() {
     industry: builderState.guidedState.industry,
     location: builderState.guidedState.location,
     servicesProducts: arrayValue(builderState.guidedState.servicesProducts),
+    brandsCarried: arrayValue(builderState.guidedState.brandsCarried),
     targetAudience: builderState.guidedState.targetAudience,
     preferredTone: builderState.guidedState.preferredTone,
     preferredColors: arrayValue(builderState.guidedState.preferredColors),
@@ -5052,9 +5121,8 @@ function completeGuidedBriefFromMessage(message, pendingUpdates = {}) {
     Object.assign(updates, colorPreferenceUpdate(["cyberpunk", "neon cyan", "magenta", "deep black"]));
   }
 
-  if (wantsAiGeneratedLogo(text)) {
-    Object.assign(updates, logoRequestUpdate(text));
-  }
+  const logoUpdate = logoRequestUpdate(text);
+  if (logoUpdate) Object.assign(updates, logoUpdate);
 
   return updates;
 }
@@ -5131,8 +5199,9 @@ function inferGuidedUpdates(step, message) {
   if (step === "contactInfo") {
     return hasExistingGuidedValue("contactInfo") ? {} : { contactInfo: parseKeyValueLines(message.includes(":") ? message : `notes: ${message}`) };
   }
-  if (step === "hasLogoPhotos" && wantsAiGeneratedLogo(message, { assumeLogoContext: true })) {
-    return logoRequestUpdate(message, { assumeLogoContext: true }) || {};
+  if (step === "hasLogoPhotos") {
+    const logoUpdate = logoRequestUpdate(message, { assumeLogoContext: true });
+    if (logoUpdate) return logoUpdate;
   }
   if (step === "businessName" && isRichIntakeMessage(message) && !extractBusinessName(message)) {
     return {};
@@ -5196,6 +5265,8 @@ function inferGuidedUpdatesFromAnyMessage(message, attributionStep = "") {
   if (services.length && !arrayValue(builderState.guidedState.servicesProducts).length) {
     updates.servicesProducts = services;
   }
+  const brandsCarried = isSalesModeAnswer ? [] : extractBrandsCarried(text);
+  if (brandsCarried.length) updates.brandsCarried = brandsCarried;
 
   const audience = extractTargetAudience(text);
   if (audience && !builderState.guidedState.targetAudience) updates.targetAudience = audience;
@@ -5366,19 +5437,6 @@ function extractColorsFromText(text) {
   return [...new Set([...hexColors, ...phraseTokens, ...colorNames].map((item) => cleanExtractedPhrase(item.replace(/neón/i, "neon"), 32).toLowerCase()).filter(Boolean))].slice(0, 8);
 }
 
-function extractContactInfo(text) {
-  const contact = {};
-  const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
-  if (email) contact.email = email;
-  const phone = text.match(/(?:\+?\d[\d\s().-]{7,}\d)/)?.[0];
-  if (phone) contact.phone = phone.trim();
-  const instagram = text.match(/(?:instagram|ig)\s*(?:es|:|-)?\s*(@?[a-z0-9._]+)/i)?.[1] || text.match(/@[a-z0-9._]{3,}/i)?.[0];
-  if (instagram) contact.instagram = instagram.startsWith("@") ? instagram : `@${instagram}`;
-  const whatsapp = text.match(/(?:whatsapp|wasap|wsp)\s*(?:es|:|-)?\s*([+\d][\d\s().-]{7,}\d)/i)?.[1];
-  if (whatsapp) contact.whatsapp = whatsapp.trim();
-  return contact;
-}
-
 function extractSalesMode(lower) {
   const modes = [];
   if (hasOnlineSalesSignal(lower)) modes.push(langText({ en: "online sales", es: "ventas online", fr: "vente en ligne", pt: "vendas online" }));
@@ -5399,7 +5457,8 @@ function cleanOfferSegment(value) {
 }
 
 function splitOfferItems(value) {
-  const segment = cleanOfferSegment(value);
+  const { offerText } = splitBrandClause(value);
+  const segment = cleanOfferSegment(offerText);
   if (!segment) return [];
   const lower = normalizeTemplateIntentText(segment);
   const knownGroups = [
@@ -6117,13 +6176,13 @@ function mergeCatalogFromOfferItems(existingItems = [], offerItems = [], payload
       name,
       description: labels.itemDescription(payload.business_name || builderState.guidedState.businessName || labels.newStore),
       category: marketplaceCategoryForIndex(existing.length + index, labels, categoryContext, payload.selectedLanguage || builderState.selectedLanguage || "en"),
-      price_type: "fixed",
+      price_type: "quote_only",
       price_amount: "",
       currency: "USD",
-      price_label: labels.priceNotSet,
+      price_label: priceConfirmationLabel(payload.selectedLanguage || builderState.selectedLanguage || "en"),
       button_label: labels.viewProduct,
       inventory_quantity: "",
-      track_inventory: true,
+      track_inventory: false,
       image_url: "",
       is_active: true,
       is_featured: existing.length + index < 3,
@@ -6325,20 +6384,17 @@ function buildSemanticSeedProducts(profileKey = "default", language = builderSta
       name,
       description,
       category,
-      price: Number(product.price),
-      price_type: "fixed",
-      price_value: Number(product.price),
-      price_amount: Number(product.price),
+      price: null,
+      price_type: "quote_only",
+      price_value: null,
+      price_amount: null,
       currency: "USD",
-      price_label: `USD ${Number(product.price).toFixed(2)}`,
-      rating: Number((4.5 + (index % 4) * 0.1).toFixed(1)),
-      review_count: 36 + index * 29,
+      price_label: priceConfirmationLabel(language),
       badge: index === 0 ? "Best Seller" : index === 1 ? "New" : index === 2 ? "Fast Ship" : "Featured",
       deal_label: index === 0 ? "Best Seller" : index % 2 === 0 ? "Featured" : "",
       shipping_label: index % 2 === 0 ? "Fast ship" : "Ready to ship",
       button_label: language === "es" ? "Agregar al carrito" : language === "fr" ? "Ajouter" : language === "pt" ? "Adicionar" : "Add to cart",
-      inventory_quantity: 18 + index * 7,
-      track_inventory: true,
+      track_inventory: false,
       imageSearchQuery: product.keyword,
       image_url: unsplashSeedUrl(product.keyword),
       is_active: true,
@@ -6366,20 +6422,17 @@ function buildContextDerivedSeedProducts(contextText = "", language = builderSta
         pt: `Uma oferta em destaque de ${businessName || "este negocio"}. Edite com os detalhes reais.`,
       }, language),
       category: langText({ en: "Featured", es: "Destacado", fr: "En vedette", pt: "Destaque" }, language),
-      price: 29,
-      price_type: "fixed",
-      price_value: 29,
-      price_amount: 29,
+      price: null,
+      price_type: "quote_only",
+      price_value: null,
+      price_amount: null,
       currency: "USD",
-      price_label: "USD 29.00",
-      rating: Number((4.5 + (index % 4) * 0.1).toFixed(1)),
-      review_count: 36 + index * 29,
+      price_label: priceConfirmationLabel(language),
       badge: index === 0 ? "Best Seller" : index === 1 ? "New" : index === 2 ? "Fast Ship" : "Featured",
       deal_label: index === 0 ? "Best Seller" : "",
       shipping_label: index % 2 === 0 ? "Fast ship" : "Ready to ship",
       button_label: addLabel,
-      inventory_quantity: 18 + index * 7,
-      track_inventory: true,
+      track_inventory: false,
       imageSearchQuery: name,
       image_url: unsplashSeedUrl(name),
       is_active: true,
@@ -8091,30 +8144,27 @@ function buildInstantTemplateSchema(payload, templateSelection) {
   const previewPalette = semanticInstantPreviewPalette(payload.preferred_colors);
   const brand = applyInstantPreviewPaletteToBrand(baseBrand, previewPalette);
   const colors = brandToThemeColors(brand);
-  const catalogItems = products.map((item, index) => ({
+  const catalogItems = products.map((item, index) => withoutInventedCommerceMetadata({
     id: `instant_${index + 1}`,
     sku: `SKU-${index + 1}`,
     name: item,
     description: copy.itemDescription(name),
     category: marketplaceCategoryForIndex(index, copy, categoryContext, language, item),
-    rating: (4.3 + ((index % 5) * 0.12)).toFixed(1),
-    review_count: 42 + index * 31,
     shipping_label: index % 2 === 0 ? copy.fastDelivery : copy.freeShipping,
     deal_label: index % 3 === 0 ? copy.todayDeal : "",
-    price_type: isOnlineShop ? "fixed" : "quote_only",
-    price_amount: (isMarketplaceTemplate || isMegaRetailTemplate) ? marketplacePriceForIndex(index) : "",
+    price_type: "quote_only",
+    price_amount: null,
     currency: "USD",
-    price_label: (isMarketplaceTemplate || isMegaRetailTemplate) ? `USD ${marketplacePriceForIndex(index).toFixed(2)}` : (isOnlineShop ? copy.priceNotSet : copy.askPrice),
+    price_label: priceConfirmationLabel(language),
     button_label: isOnlineShop ? copy.viewProduct : copy.request,
-    inventory_quantity: (isMarketplaceTemplate || isMegaRetailTemplate) ? 24 + index * 3 : "",
-    track_inventory: isOnlineShop,
+    track_inventory: false,
     image_url: bathBodyStockImageUrl(item),
     is_active: true,
     is_featured: index < 3,
     offer_type: textSuggestsCourseOffering(item) ? "course" : "product",
     display_in_catalog: !textSuggestsCourseOffering(item),
     sort_order: index,
-  }));
+  }, language));
   const isPremiumTemplate = catalogType === "premium_editorial_catalog" || /premium-product-store|apple-premium-product/i.test(template.id || "");
   const isFashionTemplate = catalogType === "lookbook_collection_catalog" || /fashion-drop-pro/i.test(template.id || "");
   const isCorporateTemplate = catalogType === "company_services_catalog" || /corporate-company-pro/i.test(template.id || "");
@@ -8435,8 +8485,8 @@ function buildInstantTemplateSchema(payload, templateSelection) {
         product_layout: catalogType,
       },
     ],
-    products_services: catalogItems,
-    catalog_items: catalogItems,
+    products_services: catalogItems.map((item) => withoutInventedCommerceMetadata(item, language)),
+    catalog_items: catalogItems.map((item) => withoutInventedCommerceMetadata(item, language)),
     contact: payload.contact_info || {},
     editable_fields: ["headline", "subtitle", "title", "text", "primary_button", "secondary_button", "image_url", "images"],
   };
@@ -8525,12 +8575,17 @@ function buildDefaultInstantPages(copy, name, description, payload = {}) {
 }
 
 function buildPremiumProductInstantPages(copy, name, description, payload = {}) {
-  const heroImage = payload.assets?.find((asset) => asset.asset_type === "photo")?.url || "";
+  const uploadedPhotos = [
+    ...(payload.assets || []).filter((asset) => asset.asset_type === "photo").map((asset) => asset.url),
+    ...(payload.photoUrls || []),
+  ].filter((url, index, all) => url && all.indexOf(url) === index);
+  const heroImage = uploadedPhotos[0] || "";
+  const storyImage = uploadedPhotos[1] || "";
   const composition = runtimeCompositionIndex(name, payload);
   const recipes = [
-    { hero: "split_showcase", order: ["premium_hero", "premium_story", "premium_feature", "premium_gallery", "premium_specs"] },
-    { hero: "centered_bold", order: ["premium_hero", "premium_gallery", "premium_feature", "premium_story", "premium_specs"] },
-    { hero: "asymmetric_grid", order: ["premium_hero", "premium_specs", "premium_story", "premium_gallery", "premium_feature"] },
+    { hero: "split_showcase" },
+    { hero: "centered_bold" },
+    { hero: "asymmetric_grid" },
   ];
   const recipe = recipes[composition];
   const pages = [
@@ -8545,24 +8600,44 @@ function buildPremiumProductInstantPages(copy, name, description, payload = {}) 
           type: "PremiumHero",
           order: 1,
           editable: {
-            headline: copy.premiumHeadline(name),
+            headline: limitPremiumHeadline(copy.premiumHeadline(name)),
             subtitle: copy.premiumSubheadline(description),
             primary_button: copy.premiumPrimary,
             secondary_button: copy.premiumSecondary,
             image_url: heroImage,
+            imageRole: PREMIUM_IMAGE_ROLES.hero,
+            imageSearchQuery: `${name} ${description} editorial product lifestyle`,
+            media: { imageUrl: heroImage, imageRole: PREMIUM_IMAGE_ROLES.hero, imageSearchQuery: `${name} ${description} editorial product lifestyle` },
             images: [],
           },
           variant: recipe.hero,
           settings: { layout: recipe.hero, spacing: "cinematic", container_width: "wide" },
         },
         {
+          id: "premium_trust",
+          type: "TrustStrip",
+          order: 2,
+          editable: { title: copy.whyBuyHere, text: copy.trustText, items: [copy.premiumPrimary, copy.contact, copy.products] },
+          settings: { layout: "compact", spacing: "compact", container_width: "wide" },
+        },
+        {
+          id: "premium_products",
+          type: "ProductGrid",
+          order: 3,
+          editable: { title: copy.premiumGalleryTitle, text: copy.premiumGalleryText, images: [] },
+          settings: { layout: "premium_editorial", columns: 3, spacing: "spacious", container_width: "wide" },
+        },
+        {
           id: "premium_story",
           type: "ProductStory",
-          order: 2,
+          order: 4,
           editable: {
             title: copy.premiumStoryTitle,
             text: copy.premiumStoryText,
-            image_url: heroImage,
+            image_url: storyImage,
+            imageRole: PREMIUM_IMAGE_ROLES.detail,
+            imageSearchQuery: `${name} product materials detail texture close up`,
+            media: { imageUrl: storyImage, imageRole: PREMIUM_IMAGE_ROLES.detail, imageSearchQuery: `${name} product materials detail texture close up` },
             images: [],
           },
           variant: composition === 2 ? "image_left" : "feature_band",
@@ -8571,7 +8646,7 @@ function buildPremiumProductInstantPages(copy, name, description, payload = {}) 
         {
           id: "premium_feature",
           type: "FeatureShowcase",
-          order: 3,
+          order: 5,
           editable: {
             title: copy.premiumFeatureTitle,
             text: copy.premiumFeatureText,
@@ -8581,26 +8656,22 @@ function buildPremiumProductInstantPages(copy, name, description, payload = {}) 
           settings: { layout: "feature_focus", spacing: "spacious", container_width: "wide" },
         },
         {
-          id: "premium_gallery",
-          type: "PortfolioGallery",
-          order: 4,
-          editable: {
-            title: copy.premiumGalleryTitle,
-            text: copy.premiumGalleryText,
-            images: [],
-          },
-          settings: { layout: "premium_cards", columns: 3, spacing: "balanced", container_width: "wide" },
-        },
-        {
           id: "premium_specs",
           type: "SpecStrip",
-          order: 5,
+          order: 6,
           editable: {
             title: copy.premiumSpecsTitle,
             text: copy.premiumSpecsText,
             items: copy.premiumSpecItems,
           },
           settings: { layout: "quiet_specs", spacing: "balanced", container_width: "wide" },
+        },
+        {
+          id: "premium_cta",
+          type: "CTA",
+          order: 7,
+          editable: { title: copy.premiumStoryTitle, text: copy.premiumStoryText, primary_button: copy.premiumPrimary },
+          settings: { layout: "centered", spacing: "balanced", container_width: "wide" },
         },
       ],
     },
@@ -8624,7 +8695,7 @@ function buildPremiumProductInstantPages(copy, name, description, payload = {}) 
       title: copy.story,
       slug: copy.aboutSlug,
       order: 3,
-      sections: [{ id: "about", type: "ProductStory", order: 1, editable: { title: copy.aboutBrand, text: description, image_url: heroImage }, settings: { layout: "editorial_split", container_width: "wide" } }],
+      sections: [{ id: "about", type: "ProductStory", order: 1, editable: { title: copy.aboutBrand, text: description, image_url: storyImage, imageRole: PREMIUM_IMAGE_ROLES.detail, media: { imageUrl: storyImage, imageRole: PREMIUM_IMAGE_ROLES.detail } }, settings: { layout: "editorial_split", container_width: "wide" } }],
     },
     {
       page_key: "contact",
@@ -8635,8 +8706,7 @@ function buildPremiumProductInstantPages(copy, name, description, payload = {}) 
     },
   ];
   const home = pages.find((page) => page.page_key === "home");
-  const byId = new Map(home.sections.map((section) => [section.id, section]));
-  home.sections = resequenceSections(recipe.order.map((id) => byId.get(id)).filter(Boolean));
+  home.sections = orderPremiumHomeSections(home.sections);
   return pages;
 }
 
@@ -12104,6 +12174,7 @@ async function collectPayload() {
     industry: generationIndustry,
     location: generationLocation,
     services_products: generationServicesProducts,
+    brands_carried: arrayValue(validatedGuidedPayload?.brandsCarried || builderState.guidedState.brandsCarried),
     target_audience: generationTargetAudience,
     preferred_tone: generationPreferredTone,
     preferred_colors: preferredColorsValue.length

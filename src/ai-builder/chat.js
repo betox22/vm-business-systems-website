@@ -20,6 +20,7 @@ import {
   chooseNextQuestionText,
   collectPayload,
   completeGuidedBriefFromMessage,
+  applyDetectedBriefLanguage,
   contactInfoCompactLabel,
   draftAdjustmentReply,
   explicitlyRequestsTemplateSwitch,
@@ -318,6 +319,7 @@ export async function sendGuidedReply() {
   // Prefer the field the backend actually just asked about (captured from the
   // previous turn's response) over the local progress-UI step tracker, which
   // runs on its own fixed sequence and does not reflect the real conversation.
+  applyDetectedBriefLanguage(message);
   const attributionStep = builderState.lastAskedGuidedField || builderState.guidedStep;
   // Computed before the broad matcher (not after, as before) so it can tell
   // the matcher when this message is specifically answering "how do you want
