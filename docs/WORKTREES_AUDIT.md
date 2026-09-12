@@ -367,3 +367,27 @@ Comparación `git rev-list --left-right --count HEAD...origin/main`:
 ```
 
 Interpretación: esta copia independiente está 2 commits adelante y 0 detrás de la referencia `origin/main` que conoce localmente. No se ejecutó `fetch`, por lo que esa referencia conserva la antigüedad que ya tenía la copia.
+
+---
+
+# Fase de rescate
+
+Fecha: 2026-09-12. No se fusionó ninguna rama, no se abrió ningún PR y la referencia local `main` permaneció en `621400ecb6a442c13024667c9eaf99f67a4dd346`.
+
+| carpeta | rama de destino | resultado | commit |
+|---|---|---|---|
+| `vm-business-systems-website-main-merge` | `rescue/ai-builder-uncommitted-20260912` | Rama nueva creada y empujada a GitHub. Se rescataron las políticas de AI Builder, cambios de backend/orchestrator, pruebas y configuración; dependencias y `output/` quedaron ignorados. | `baf73bc4da3999f78edb24d19fd561619b7dae4a` |
+| `vm-business-systems-website` | `rescue/website-root-uncommitted-20260912` | Rama nueva creada y empujada a GitHub. Se rescataron la integración ListoKDS, prueba de intención de logo, conceptos visuales, auditoría Lyra, activos y este mapa. Las copias legales antiguas se retiraron tras verificar que todo su texto está cubierto por `origin/main`; la captura rastreada `output/playwright/mega-retail-store-desktop.png` quedó intacta y sin incluir. | `c02d353` (rescate inicial; este anexo se registra en un commit posterior) |
+| `vm-business-systems-website-google-hotfix` | `fix/magic-link-client-setup-redirect` | Se añadió `.pytest-tmp-auth-merge/` al ignore, se comitearon los seis archivos reales y se empujó la rama a GitHub. | `7b32b73` |
+| `vm-business-systems-website-listokds-home` | `fix/listokds-home` | Se comitearon los tres archivos modificados y los dos nuevos, y se empujó la rama a GitHub. | `2dafffd` |
+| `vm-business-systems-website-auth-validation-build` | `fix/client-auth-validation-limbo` | No se creó commit ni se empujó. Se preservó `origin` y se agregó `github=https://github.com/betox22/vm-business-systems-website.git`; tras obtener `github/main`, se comprobó que los dos commits de la rama ya son ancestros de `main` y que `main` contiene una implementación posterior y más completa. | No aplica |
+
+## Revisión de los cambios ambiguos de la carpeta principal
+
+`css/corporate-premium.css`, `index.html`, `js/corporate-i18n.js` y la entrada correspondiente de `docs/AGENT_LOG.md` forman un conjunto coherente: agregan ListoKDS como tercer producto de VM, sus estilos responsivos, textos ES/EN, enlace al dominio y documentación de la sesión. Se incluyeron como trabajo real. `backend/tests/test_luma_chat_response.py` añade dos pruebas sobre solicitudes de logo durante el paso de color y también se preservó.
+
+Los tres documentos legales en inglés eran textualmente idénticos a `origin/main` después de normalizar formato Markdown. Cada documento español completo era una subsecuencia textual de su versión en `origin/main`, que contenía además la cláusula de idioma controlante; también se confirmaron las seis páginas HTML publicadas. Por ello se retiraron las seis copias Markdown sin rastrear y `CODEX-PROMPT-legal-pages.md`, conforme a la instrucción de rescate.
+
+## Copia independiente de validación de autenticación
+
+La comparación con `github/main` mostró que `src/ai-builder/state.js` ya coincide con `main`. El policy local tiene timeout de 12 segundos y no incluye reintentos; `main` tiene timeout de 20 segundos, dos intentos y lógica para fallos transitorios. Los demás cambios locales revertirían elementos posteriores de `main`, incluidos consentimiento legal, scripts del footer, dependencias de `package.json` y parte de la validación robusta. En consecuencia, no representan trabajo único pendiente de rescate.
