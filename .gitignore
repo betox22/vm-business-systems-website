@@ -20,6 +20,7 @@ backend/*.db
 backend/deps/
 backend/.test-deps/
 backend/test_deps/
+public-dist*.discard*/
 output/
 
 # One-time context packages prepared for other AI assistants (Claude/Gemini)

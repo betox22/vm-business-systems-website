@@ -96,6 +96,45 @@ def _current_state(*, include_style: bool = False):
 
 
 class LumaChatResponseTests(unittest.TestCase):
+    def test_logo_request_during_color_step_is_not_saved_as_a_color(self):
+        state = main.normalize_state_payload(_current_state(include_style=True))
+        request = LumaChatRequest(
+            current=_current_state(include_style=True),
+            currentStep="preferredColors",
+            message="Quiero un logo con las iniciales BAD para Bath All Day.",
+        )
+
+        main.apply_current_step_hint(state, request)
+
+        self.assertIsNone(state.preferredColors)
+        self.assertEqual(state.logoPreference, "generate_ai_logo")
+        self.assertEqual(state.logoBrief, request.message)
+        self.assertEqual(state.fieldMeta["logoBrief"]["source"], "explicit")
+
+    def test_logo_initials_are_acknowledged_and_returned_to_the_client(self):
+        payload = _ready_tool_payload(None)
+        payload["updatedFields"]["logo"]["value"]["path"] = "wants_generated"
+        request = LumaChatRequest(
+            current=_current_state(include_style=True),
+            currentStep="preferredColors",
+            message="Quiero un logo con las iniciales BAD para Bath All Day.",
+        )
+
+        async def keep_ready_state(_message, state, **_kwargs):
+            return state
+
+        with (
+            patch.object(main.intake_engine, "client", _FakeOpenAIClient(payload)),
+            patch.object(main.orchestrator, "run", side_effect=keep_ready_state),
+        ):
+            response = asyncio.run(main.luma_chat(request, _request(49204)))
+
+        self.assertTrue(response.readyToGenerate)
+        self.assertIn("logo initials", response.assistantMessage)
+        self.assertEqual(response.updatedFields["logoBrief"], request.message)
+        self.assertEqual(response.updatedFields["logoPreference"], "generate_ai_logo")
+        self.assertIsNone(response.updatedFields["preferredColors"])
+
     def test_continue_without_logo_is_explicit_skip_without_initials_claim(self):
         message = "No tengo logo y prefiero continuar sin logo por ahora."
         current = _current_state(include_style=True)

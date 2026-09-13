@@ -1,0 +1,492 @@
+/*
+ * KREATON LYRA conversation redesign, phase 1.
+ *
+ * This layer is intentionally opt-in through /client/setup/?ui=v2. It only
+ * changes presentation while preserving the existing DOM ids, data actions,
+ * event handlers, state, authentication, generation, and editor behavior.
+ */
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) {
+  min-height: 100dvh;
+  overflow: auto;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .ai-shell,
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .intake-panel {
+  width: 100%;
+  min-height: 100dvh;
+  overflow: visible;
+  background: #f8fafc;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-panel.active {
+  position: relative !important;
+  inset: auto !important;
+  z-index: auto !important;
+  width: 100%;
+  min-height: 100dvh;
+  overflow: visible;
+  background: #f8fafc;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-shell {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  width: 100%;
+  min-height: 100dvh;
+  overflow: visible;
+  background: #f8fafc;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  min-height: 72px;
+  padding: 10px clamp(18px, 4vw, 64px);
+  border-bottom: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(14px);
+  box-shadow: none;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .assistant-identity {
+  gap: 12px;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .assistant-avatar.large {
+  width: 46px;
+  height: 46px;
+  filter: drop-shadow(0 8px 14px rgba(13, 148, 136, 0.18));
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .assistant-identity strong {
+  color: #0f172a;
+  font-size: 17px;
+  line-height: 1.15;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .assistant-identity > div > span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .assistant-identity em {
+  color: #0f766e;
+  font-size: 10px;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-header-actions {
+  gap: 8px;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-header-actions button,
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .compact-language select {
+  min-height: 38px;
+  border-color: #dbe3ec;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1e293b;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .compact-language {
+  color: #64748b;
+  font-size: 10px;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-progress {
+  width: min(100% - 40px, 860px);
+  margin: 0 auto;
+  padding: 26px 0 12px;
+  background: transparent;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-progress span {
+  display: block;
+  margin-bottom: 9px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-progress div {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-progress i {
+  border-radius: inherit;
+  background: #0d9488;
+  box-shadow: none;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-layout {
+  display: block !important;
+  width: 100% !important;
+  min-height: 0;
+  overflow: visible;
+  padding: 12px 20px 48px;
+  background: transparent;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-live-stage,
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .lyra-agent-status,
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .summary-panel,
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .template-carousel-panel,
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .template-board-panel,
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .site-plan-card,
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .brief-ready-card {
+  display: none !important;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-chat-card {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 860px) !important;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  margin: 0 auto;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-chat {
+  flex: 0 1 auto;
+  width: 100%;
+  min-height: 160px;
+  max-height: min(42vh, 390px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 12px 4px 18px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-message {
+  max-width: 100%;
+  margin-bottom: 14px;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-message.assistant,
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-message.system {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  width: min(100%, 720px);
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-message .assistant-avatar.tiny {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  filter: drop-shadow(0 7px 11px rgba(13, 148, 136, 0.18));
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-message.assistant span,
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-message.system span {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  padding: 17px 19px;
+  border: 1px solid #dbe3ec !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #1e293b;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.055) !important;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-message.user {
+  width: fit-content;
+  max-width: min(78%, 620px);
+  margin-left: auto;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-message.user span {
+  display: block;
+  padding: 14px 17px;
+  border-radius: 8px;
+  background: #0f766e;
+  color: #ffffff;
+  box-shadow: none;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-thinking {
+  width: min(100%, 720px);
+  margin: 0 0 12px 54px;
+  color: #64748b;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-status-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin: 2px 0 12px;
+  padding: 14px 0;
+  border: 0 !important;
+  border-top: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-status-card > div {
+  display: grid !important;
+  gap: 3px;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-status-card strong {
+  overflow: hidden;
+  color: #1e293b;
+  font-size: 13px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-status-card span {
+  display: none;
+  color: #64748b;
+  font-size: 12px;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) #reviewDetailsButton {
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .quick-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  margin: 0 0 14px;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .quick-chip-row button {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .quick-chip-row button:hover,
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .quick-chip-row button:focus-visible {
+  border-color: #0d9488;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-asset-prompt {
+  width: 100%;
+  margin: 0 0 14px;
+  border: 1px solid #dbe3ec;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-input-label input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.04);
+  font-size: 16px;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-input-label input:focus {
+  border-color: #0d9488;
+  outline: 3px solid rgba(13, 148, 136, 0.12);
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-actions {
+  display: grid;
+  grid-template-columns: 44px 82px;
+  gap: 8px;
+  align-items: start;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-actions .icon-only {
+  width: auto;
+  min-width: 44px;
+  min-height: 52px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-actions .mic-toggle {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-actions .send-toggle {
+  border: 1px solid #0d9488;
+  background: #0d9488;
+  color: #ffffff;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-actions .text-action {
+  grid-column: auto;
+  min-height: 24px;
+  padding: 3px 2px;
+  color: #64748b;
+  font-size: 11px;
+  text-align: center;
+}
+
+body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .mini-note {
+  width: 100%;
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-header {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 64px;
+    padding: 8px 12px;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .assistant-avatar.large {
+    width: 36px;
+    height: 36px;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .assistant-identity {
+    gap: 8px;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .assistant-identity > div > span,
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .assistant-identity em,
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .compact-language,
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) #assistantAudioToggle {
+    display: none;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-header-actions {
+    margin-left: auto;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-header-actions .compact-action {
+    max-width: 92px;
+    padding: 7px 9px;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-progress {
+    width: calc(100% - 28px);
+    padding-top: 18px;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-layout {
+    min-height: 0;
+    padding: 8px 14px 28px;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-chat {
+    min-height: 130px;
+    max-height: 44vh;
+    padding-top: 8px;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-thinking {
+    width: auto;
+    margin-left: 42px;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-message.assistant,
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-message.system {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-message .assistant-avatar.tiny {
+    width: 32px;
+    height: 32px;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-message.assistant span,
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-message.system span {
+    padding: 14px;
+    font-size: 15px;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-status-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-status-card strong {
+    max-width: 54vw;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .chat-composer {
+    grid-template-columns: 1fr;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-actions {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+  }
+
+  body.public-client-setup.lyra-ui-v2.lyra-conversation-mode:not(.client-auth-required):not(.generated-preview-open):not(.review-details-open):not(.final-review-mode) .guided-actions .text-action {
+    padding-inline: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.public-client-setup.lyra-ui-v2 * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

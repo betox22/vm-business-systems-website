@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Mega Retail Store — 3 conceptos de rediseño</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600;700&family=Bebas+Neue&family=Cormorant+Garamond:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:#111; }
+  .label { text-align:center; padding:28px 0 10px; color:#fff; font-size:13px; letter-spacing:2px; text-transform:uppercase; opacity:.55; }
+  section.concept { position:relative; overflow:hidden; }
+
+  /* ---------- CONCEPT A: Editorial retail ---------- */
+  .a-wrap { background:#F5F1EA; }
+  .a-hero { display:grid; grid-template-columns:1fr 1fr; min-height:600px; }
+  .a-copy { display:flex; flex-direction:column; justify-content:center; padding:70px 60px; }
+  .a-eyebrow { font-size:13px; letter-spacing:3px; text-transform:uppercase; color:#8a7a5c; margin-bottom:18px; }
+  .a-title { font-family:'Fraunces',serif; font-size:58px; line-height:1.05; color:#211d17; font-weight:600; margin-bottom:22px; }
+  .a-sub { font-size:16px; color:#5c5546; line-height:1.6; max-width:400px; margin-bottom:32px; }
+  .a-btn { align-self:flex-start; background:#211d17; color:#F5F1EA; padding:15px 32px; font-size:14px; letter-spacing:1px; text-transform:uppercase; border:none; cursor:pointer; transition:transform .25s ease, background .25s ease; }
+  .a-btn:hover { background:#4a4230; transform:translateY(-2px); }
+  .a-img { position:relative; background:linear-gradient(135deg,#d8cfba,#a99d7c); }
+  .a-img::after { content:"Foto del producto\A(sangrado a borde)"; white-space:pre; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; color:#fff; font-size:14px; letter-spacing:1px; opacity:.75; }
+  .a-strip { display:flex; gap:0; }
+  .a-card { flex:1; padding:40px 32px; border-right:1px solid #ddd4c2; }
+  .a-card:last-child{ border-right:none; }
+  .a-card-num { font-family:'Fraunces',serif; font-size:22px; color:#8a7a5c; margin-bottom:10px; }
+  .a-card-name { font-size:15px; font-weight:600; color:#211d17; margin-bottom:6px; }
+  .a-card-price { font-size:14px; color:#5c5546; }
+
+  /* ---------- CONCEPT B: Bold commerce ---------- */
+  .b-wrap { background:#0E0E10; }
+  .b-hero { position:relative; min-height:560px; display:flex; align-items:flex-end; background:
+      linear-gradient(180deg, rgba(14,14,16,.15) 0%, rgba(14,14,16,.92) 88%),
+      linear-gradient(120deg,#3a2a5c,#7a2e46 55%,#c2532c); }
+  .b-nav { position:absolute; top:0; left:0; right:0; display:flex; gap:10px; padding:22px 40px; }
+  .b-chip { font-size:12px; letter-spacing:.5px; color:#fff; background:rgba(255,255,255,.12); padding:8px 16px; border-radius:999px; }
+  .b-content { padding:0 44px 52px; max-width:640px; }
+  .b-tag { display:inline-block; background:#F2C84B; color:#211a05; font-size:12px; font-weight:700; letter-spacing:1px; padding:6px 14px; margin-bottom:18px; text-transform:uppercase; }
+  .b-title { font-family:'Bebas Neue',sans-serif; font-size:76px; line-height:.95; color:#fff; letter-spacing:1px; margin-bottom:16px; }
+  .b-sub { color:#d8d5df; font-size:16px; margin-bottom:28px; max-width:460px; }
+  .b-btn { background:#fff; color:#0E0E10; padding:16px 34px; font-weight:700; font-size:14px; border:none; cursor:pointer; transition:transform .2s ease; }
+  .b-btn:hover { transform:scale(1.04); }
+  .b-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:2px; background:#0E0E10; }
+  .b-item { position:relative; aspect-ratio:3/4; background:linear-gradient(145deg,#2a2230,#181418); overflow:hidden; }
+  .b-item img-label { }
+  .b-item::after { content:"Producto"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#71697e; font-size:13px; transition:transform .35s ease; }
+  .b-item:hover::after { transform:scale(1.12); color:#a89bc2; }
+  .b-price-tag { position:absolute; bottom:10px; left:10px; color:#fff; font-size:13px; font-weight:600; z-index:2; }
+
+  /* ---------- CONCEPT C: Minimal boutique ---------- */
+  .c-wrap { background:#FFFFFF; }
+  .c-marquee { overflow:hidden; border-bottom:1px solid #eee; padding:10px 0; }
+  .c-marquee-track { display:flex; gap:60px; white-space:nowrap; animation:scroll 18s linear infinite; }
+  @keyframes scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  .c-marquee span { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#999; }
+  .c-hero { text-align:center; padding:90px 40px 60px; }
+  .c-eyebrow { font-size:13px; letter-spacing:4px; text-transform:uppercase; color:#9a8f7d; margin-bottom:24px; }
+  .c-title { font-family:'Cormorant Garamond',serif; font-size:64px; color:#1a1a1a; font-weight:500; line-height:1.1; max-width:680px; margin:0 auto 26px; }
+  .c-sub { color:#666; font-size:15px; max-width:420px; margin:0 auto 34px; line-height:1.7; }
+  .c-btn { border:1px solid #1a1a1a; background:none; color:#1a1a1a; padding:14px 36px; font-size:13px; letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:background .25s ease,color .25s ease; }
+  .c-btn:hover { background:#1a1a1a; color:#fff; }
+  .c-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:#eee; max-width:1100px; margin:0 auto; }
+  .c-item { background:#fafafa; aspect-ratio:4/5; display:flex; align-items:center; justify-content:center; position:relative; }
+  .c-item span { font-size:12px; color:#bbb; letter-spacing:1px; }
+  .c-swatch { position:absolute; bottom:14px; left:14px; width:16px; height:16px; border-radius:50%; background:#8a6a52; }
+
+  footer { text-align:center; padding:40px; color:#555; font-size:12px; background:#111; }
+
+  /* ---------- CONCEPT D3: Mega department store, completa ---------- */
+  .d-wrap { background:#F6F4EF; padding:28px 32px 0; position:relative; }
+  .d-nav { display:flex; align-items:center; gap:16px; background:#fff; border-radius:999px; padding:10px 10px 10px 22px; box-shadow:0 12px 30px -14px rgba(20,20,20,.18); margin-bottom:22px; }
+  .d-logo { font-weight:700; font-size:18px; color:#181818; margin-right:8px; display:flex; align-items:center; gap:8px; }
+  .d-logo-mark { width:26px; height:26px; border-radius:8px; background:linear-gradient(140deg,#2b2360,#c2532c); }
+  .d-deptlinks { display:flex; gap:20px; flex:1; }
+  .d-deptlinks span { font-size:13px; color:#555; cursor:pointer; font-weight:500; }
+  .d-search { background:#F1EFE9; border-radius:999px; padding:10px 18px; font-size:13px; color:#8a8a8a; flex:0 0 220px; display:flex; align-items:center; gap:8px; }
+  .d-icon-btn { width:38px; height:38px; border-radius:50%; background:#F1EFE9; display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; position:relative; }
+  .d-icon-btn svg { width:18px; height:18px; stroke:#333; }
+  .d-account { display:flex; align-items:center; gap:8px; padding:8px 16px 8px 8px; border-radius:999px; background:#F1EFE9; cursor:pointer; }
+  .d-account span { font-size:13px; font-weight:500; color:#222; }
+  .d-badge-count { position:absolute; top:-3px; right:-3px; background:#c2532c; color:#fff; font-size:9px; font-weight:700; width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .d-bento { display:grid; grid-template-columns:repeat(6,1fr); grid-template-rows:190px 190px; gap:14px; margin-bottom:16px; }
+  .d-tile { position:relative; border-radius:22px; overflow:hidden; padding:22px; display:flex; flex-direction:column; justify-content:flex-end; color:#fff; box-shadow:0 18px 34px -18px rgba(20,20,20,.28); transition:transform .22s ease, box-shadow .22s ease; cursor:pointer; background-size:cover; background-position:center; }
+  .d-tile::before { content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,.65) 100%); }
+  .d-tile-eyebrow, .d-tile-name, .d-tile-sub { position:relative; z-index:1; }
+  .d-tile:hover { transform:translateY(-4px); box-shadow:0 24px 40px -16px rgba(20,20,20,.32); }
+  .d-tile-eyebrow { font-size:11px; letter-spacing:1.5px; text-transform:uppercase; opacity:.9; margin-bottom:6px; }
+  .d-tile-name { font-size:22px; font-weight:700; }
+  .d-tile-sub { font-size:12px; opacity:.9; margin-top:4px; font-weight:400; }
+  .d-hero-tile { grid-column:span 3; grid-row:span 2; background-image:linear-gradient(150deg, rgba(43,35,96,.55), rgba(194,83,44,.45)), url('https://images.unsplash.com/photo-1483985988355-763728e1935b?w=900&q=70'); }
+  .d-hero-tile .d-tile-name { font-size:34px; line-height:1.05; }
+  .d-t2 { grid-column:span 3; grid-row:span 1; background-image:linear-gradient(140deg, rgba(18,58,84,.55), rgba(31,110,140,.45)), url('https://images.unsplash.com/photo-1498049794561-7780e7231661?w=700&q=70'); }
+  .d-t3 { grid-column:span 1; grid-row:span 1; background-image:linear-gradient(140deg, rgba(106,58,30,.55), rgba(193,122,62,.45)), url('https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&q=70'); }
+  .d-t4 { grid-column:span 1; grid-row:span 1; background-image:linear-gradient(140deg, rgba(30,90,58,.55), rgba(62,156,110,.45)), url('https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=70'); }
+  .d-t5 { grid-column:span 1; grid-row:span 1; background-image:linear-gradient(140deg, rgba(90,30,58,.55), rgba(156,62,110,.45)), url('https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&q=70'); }
+  .d-deals { background:#fff; border-radius:26px; padding:28px 28px 8px; box-shadow:0 12px 30px -18px rgba(20,20,20,.15); margin-bottom:16px; }
+  .d-depts-title { font-size:15px; font-weight:700; color:#181818; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; }
+  .d-depts-title span:last-child { font-size:12px; font-weight:500; color:#8a8a8a; }
+  .d-deals-row { display:flex; gap:16px; overflow-x:auto; padding-bottom:20px; }
+  .d-deal-card { min-width:180px; border-radius:18px; padding:14px; background:#F6F4EF; transition:transform .2s ease; }
+  .d-deal-card:hover { transform:translateY(-3px); }
+  .d-deal-img { aspect-ratio:1; border-radius:14px; margin-bottom:12px; background-size:cover; background-position:center; }
+  .d-deal-name { font-size:13px; color:#222; margin-bottom:6px; font-weight:500; }
+  .d-deal-price { font-size:14px; font-weight:700; color:#181818; }
+  .d-deal-was { font-size:11px; color:#aaa; text-decoration:line-through; margin-left:6px; font-weight:400; }
+  .d-badge { display:inline-block; background:#181818; color:#fff; font-size:10px; font-weight:700; padding:3px 8px; border-radius:999px; margin-bottom:8px; }
+  .d-trust { display:flex; gap:12px; margin-bottom:16px; }
+  .d-trust-item { flex:1; background:#fff; border-radius:18px; padding:18px 20px; box-shadow:0 12px 26px -18px rgba(20,20,20,.15); font-size:12px; color:#666; }
+  .d-trust-item b { display:block; font-size:13px; color:#181818; margin-bottom:4px; font-weight:700; }
+
+  .d-footer { background:#181818; color:#bdbdbd; border-radius:26px 26px 0 0; padding:40px 40px 24px; margin-top:24px; }
+  .d-footer-top { display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:28px; margin-bottom:28px; }
+  .d-footer-brand { font-size:18px; font-weight:700; color:#fff; margin-bottom:10px; }
+  .d-footer-tag { font-size:12px; line-height:1.6; color:#8f8f8f; margin-bottom:18px; max-width:220px; }
+  .d-social { display:flex; gap:10px; }
+  .d-social a { width:34px; height:34px; border-radius:50%; background:#2a2a2a; display:flex; align-items:center; justify-content:center; }
+  .d-social svg { width:15px; height:15px; stroke:#e5e5e5; fill:none; }
+  .d-footer-col-title { font-size:12px; font-weight:700; color:#fff; margin-bottom:14px; text-transform:uppercase; letter-spacing:1px; }
+  .d-footer-col a { display:block; font-size:13px; color:#9a9a9a; margin-bottom:9px; text-decoration:none; }
+  .d-newsletter { display:flex; gap:8px; margin-top:8px; }
+  .d-newsletter input { flex:1; border-radius:999px; border:none; padding:11px 16px; font-size:13px; background:#2a2a2a; color:#eee; }
+  .d-newsletter button { border-radius:999px; border:none; background:#fff; color:#181818; font-weight:700; font-size:13px; padding:11px 20px; cursor:pointer; }
+  .d-footer-bottom { display:flex; justify-content:space-between; align-items:center; border-top:1px solid #2a2a2a; padding-top:20px; font-size:12px; color:#7a7a7a; }
+  .d-pay-icons { display:flex; gap:8px; }
+  .d-pay-icons span { background:#2a2a2a; border-radius:6px; padding:4px 8px; font-size:10px; color:#ccc; }
+  .d-whatsapp { position:absolute; right:32px; bottom:-24px; width:52px; height:52px; border-radius:50%; background:#25D366; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 24px -6px rgba(37,211,102,.6); z-index:2; }
+  .d-whatsapp svg { width:26px; height:26px; fill:#fff; }
+</style>
+</head>
+<body>
+
+<div class="label">Concepto D3 — Mega department store completo (login, carrito, fotos reales, redes, footer)</div>
+<section class="concept d-wrap">
+  <div class="d-nav">
+    <div class="d-logo"><div class="d-logo-mark"></div>MegaStore</div>
+    <div class="d-deptlinks">
+      <span>Electronica</span><span>Hogar</span><span>Moda</span><span>Deportes</span><span>Belleza</span>
+    </div>
+    <div class="d-search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Buscar en todo el catalogo...
+    </div>
+    <div class="d-account">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+      <span>Ingresar</span>
+    </div>
+    <div class="d-icon-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+    </div>
+    <div class="d-icon-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
+      <div class="d-badge-count">3</div>
+    </div>
+  </div>
+  <div class="d-bento">
+    <div class="d-tile d-hero-tile">
+      <div class="d-tile-eyebrow">Venta de temporada</div>
+      <div class="d-tile-name">Hasta 35% off en moda y hogar</div>
+      <div class="d-tile-sub">Termina el domingo — miles de productos</div>
+    </div>
+    <div class="d-tile d-t2">
+      <div class="d-tile-eyebrow">Departamento</div>
+      <div class="d-tile-name">Electronica</div>
+      <div class="d-tile-sub">Audio, computo, smart home</div>
+    </div>
+    <div class="d-tile d-t3">
+      <div class="d-tile-name" style="font-size:16px">Hogar</div>
+    </div>
+    <div class="d-tile d-t4">
+      <div class="d-tile-name" style="font-size:16px">Deportes</div>
+    </div>
+    <div class="d-tile d-t5">
+      <div class="d-tile-name" style="font-size:16px">Belleza</div>
+    </div>
+  </div>
+  <div class="d-deals">
+    <div class="d-depts-title"><span>Ofertas de hoy</span><span>Ver todas</span></div>
+    <div class="d-deals-row">
+      <div class="d-deal-card"><div class="d-badge">-35%</div><div class="d-deal-img" style="background-image:url('https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&q=70')"></div><div class="d-deal-name">Audifonos inalambricos</div><div class="d-deal-price">$29.99<span class="d-deal-was">$45</span></div></div>
+      <div class="d-deal-card"><div class="d-badge">-30%</div><div class="d-deal-img" style="background-image:url('https://images.unsplash.com/photo-1584990347449-a5d9f800a783?w=300&q=70')"></div><div class="d-deal-name">Set de sartenes</div><div class="d-deal-price">$54.99<span class="d-deal-was">$80</span></div></div>
+      <div class="d-deal-card"><div class="d-badge">-33%</div><div class="d-deal-img" style="background-image:url('https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=300&q=70')"></div><div class="d-deal-name">Zapatillas running</div><div class="d-deal-price">$39.99<span class="d-deal-was">$60</span></div></div>
+      <div class="d-deal-card"><div class="d-badge">-35%</div><div class="d-deal-img" style="background-image:url('https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=300&q=70')"></div><div class="d-deal-name">Cama para mascota</div><div class="d-deal-price">$22.99<span class="d-deal-was">$35</span></div></div>
+    </div>
+  </div>
+  <div class="d-trust">
+    <div class="d-trust-item"><b>Envio rapido</b>A todo el pais en 2-4 dias</div>
+    <div class="d-trust-item"><b>Devoluciones faciles</b>30 dias para cambios</div>
+    <div class="d-trust-item"><b>Miles de productos</b>5 departamentos, un solo lugar</div>
+    <div class="d-trust-item"><b>Pago seguro</b>Todas las tarjetas aceptadas</div>
+  </div>
+
+  <div class="d-footer">
+    <div class="d-footer-top">
+      <div>
+        <div class="d-footer-brand">MegaStore</div>
+        <div class="d-footer-tag">Todo lo que buscas en un solo lugar. Envios a todo el pais, pago seguro, devoluciones sin complicaciones.</div>
+        <div class="d-social">
+          <a href="#"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
+          <a href="#"><svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>
+          <a href="#"><svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>
+          <a href="#"><svg viewBox="0 0 24 24"><path d="M9 19V5l12 7z"/></svg></a>
+        </div>
+      </div>
+      <div class="d-footer-col">
+        <div class="d-footer-col-title">Ayuda</div>
+        <a href="#">Rastrear pedido</a>
+        <a href="#">Devoluciones</a>
+        <a href="#">Envios</a>
+        <a href="#">Contacto</a>
+      </div>
+      <div class="d-footer-col">
+        <div class="d-footer-col-title">Empresa</div>
+        <a href="#">Sobre nosotros</a>
+        <a href="#">Trabaja con nosotros</a>
+        <a href="#">Terminos</a>
+        <a href="#">Privacidad</a>
+      </div>
+      <div>
+        <div class="d-footer-col-title">Recibe ofertas</div>
+        <div class="d-newsletter">
+          <input placeholder="tu@email.com">
+          <button>Unirme</button>
+        </div>
+      </div>
+    </div>
+    <div class="d-footer-bottom">
+      <span>© 2026 MegaStore. Todos los derechos reservados.</span>
+      <div class="d-pay-icons">
+        <span>Visa</span><span>Mastercard</span><span>Pago Movil</span><span>Zelle</span>
+      </div>
+    </div>
+  </div>
+  <div class="d-whatsapp">
+    <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zM17 14.5c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.1-.8 1-.9 1.2-.3.2-.6.1a8 8 0 0 1-2.4-1.5 9 9 0 0 1-1.6-2c-.2-.3 0-.5.1-.6l.4-.5c.1-.1.2-.3.3-.4a.5.5 0 0 0 0-.5c-.1-.2-.7-1.7-1-2.3s-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.8.4A3.6 3.6 0 0 0 5.3 10a6.3 6.3 0 0 0 1.3 3.3A14 14 0 0 0 12 18c1.9.7 2.5.6 3 .5s1.8-.7 2-1.4.2-1.2.2-1.3-.2-.2-.5-.3z"/></svg>
+  </div>
+</section>
+
+<div class="label">Concepto A — reasignado a premium-product-store (cálido, revista, DTC premium)</div>
+<section class="concept a-wrap">
+  <div class="a-hero">
+    <div class="a-copy">
+      <div class="a-eyebrow">Nueva colección — otoño</div>
+      <div class="a-title">Objetos hechos<br>para durar</div>
+      <p class="a-sub">Piezas seleccionadas para el hogar, con materiales reales y producción a pequeña escala.</p>
+      <button class="a-btn">Ver colección</button>
+    </div>
+    <div class="a-img"></div>
+  </div>
+  <div class="a-strip">
+    <div class="a-card"><div class="a-card-num">01</div><div class="a-card-name">Jarra de cerámica</div><div class="a-card-price">$38</div></div>
+    <div class="a-card"><div class="a-card-num">02</div><div class="a-card-name">Manta de lana</div><div class="a-card-price">$64</div></div>
+    <div class="a-card"><div class="a-card-num">03</div><div class="a-card-name">Set de velas</div><div class="a-card-price">$29</div></div>
+  </div>
+</section>
+
+<div class="label">Concepto B — reasignado a fashion-drop-pro (energico, drop de temporada)</div>
+<section class="concept b-wrap">
+  <div class="b-hero">
+    <div class="b-nav">
+      <div class="b-chip">Nuevo</div>
+      <div class="b-chip">Mas vendido</div>
+      <div class="b-chip">Ofertas</div>
+    </div>
+    <div class="b-content">
+      <span class="b-tag">Envio gratis hoy</span>
+      <div class="b-title">TEMPORADA<br>DE DESCUENTOS</div>
+      <p class="b-sub">Hasta 40% en cientos de productos. Stock limitado, se renueva cada semana.</p>
+      <button class="b-btn">Comprar ahora</button>
+    </div>
+  </div>
+  <div class="b-grid">
+    <div class="b-item"><div class="b-price-tag">$19.99</div></div>
+    <div class="b-item"><div class="b-price-tag">$24.99</div></div>
+    <div class="b-item"><div class="b-price-tag">$14.99</div></div>
+    <div class="b-item"><div class="b-price-tag">$32.99</div></div>
+  </div>
+</section>
+
+<div class="label">Concepto C — reasignado a tienda boutique enfocada (calmo, monocromo, marca chica)</div>
+<section class="concept c-wrap">
+  <div class="c-marquee"><div class="c-marquee-track">
+    <span>Envio gratis desde $50</span><span>Devoluciones en 30 dias</span><span>Hecho a mano</span><span>Envio gratis desde $50</span><span>Devoluciones en 30 dias</span><span>Hecho a mano</span>
+  </div></div>
+  <div class="c-hero">
+    <div class="c-eyebrow">Coleccion capsula</div>
+    <div class="c-title">Menos piezas. Mejor hechas.</div>
+    <p class="c-sub">Una seleccion curada, pensada para durar temporadas, no semanas.</p>
+    <button class="c-btn">Explorar</button>
+  </div>
+  <div class="c-grid">
+    <div class="c-item"><span>Producto</span><div class="c-swatch"></div></div>
+    <div class="c-item"><span>Producto</span><div class="c-swatch" style="background:#4a5a4a"></div></div>
+    <div class="c-item"><span>Producto</span><div class="c-swatch" style="background:#5a4a5a"></div></div>
+  </div>
+</section>
+
+<footer>D es el concepto real para mega-retail-store (navegacion por departamentos, catalogo amplio). A, B y C quedan reasignados a categorias mas enfocadas donde su curaduria si tiene sentido.</footer>
+
+</body>
+</html>
