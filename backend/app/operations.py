@@ -200,7 +200,7 @@ def operations_products(request: Request, authorization: str = Header(default=""
     require_operations_permission(identity, "products:read")
     stores = {row.id: row.name for row in session.scalars(select(Store)).all()}
     rows = session.scalars(select(Product).order_by(Product.created_at.desc()).limit(500)).all()
-    items = [{"id": row.id, "name": row.name, "business": stores.get(row.store_id, row.store_id), "category": row.category, "priceCents": row.price_cents, "inventory": row.inventory, "status": row.status} for row in rows]
+    items = [{"id": row.id, "name": row.name, "business": stores.get(row.store_id, row.store_id), "category": row.category, "priceCents": None if row.quote_only else row.price_cents, "quoteOnly": row.quote_only, "inventory": row.inventory, "status": row.status} for row in rows]
     _audit_query(session, request, identity, "operations.products.queried", len(items))
     return {"items": items}
 

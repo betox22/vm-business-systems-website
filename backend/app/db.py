@@ -4,7 +4,8 @@ import os
 from pathlib import Path
 from typing import Iterator
 
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import MetaData, Table, create_engine, inspect
+from sqlalchemy.schema import CreateTable
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 """Shared SQLAlchemy engine/session setup.
@@ -58,13 +59,19 @@ def _ensure_additive_columns() -> None:
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
     migrations = {
+        "products": {
+            "description": "description TEXT",
+            "image_url": "image_url VARCHAR",
+            "sku": "sku VARCHAR",
+            "quote_only": "quote_only BOOLEAN NOT NULL DEFAULT FALSE",
+        },
         "platform_subscriptions": {
             "legal_consent_version": "legal_consent_version VARCHAR",
             "legal_consent_language": "legal_consent_language VARCHAR",
             "legal_accepted_at": "legal_accepted_at BIGINT",
         },
     }
-    if DATABASE_URL.startswith("sqlite"):
+    if engine.dialect.name == "sqlite":
         migrations.update({
             "stores": {"owner_user_id": "owner_user_id TEXT"},
             "generated_sites": {"owner_user_id": "owner_user_id TEXT"},
@@ -78,6 +85,11 @@ def _ensure_additive_columns() -> None:
         })
 
     with engine.begin() as connection:
+        if engine.dialect.name == "postgresql":
+            connection.exec_driver_sql("SET LOCAL lock_timeout = '5s'")
+            # Serialize concurrent startup migrations, then inspect fresh state.
+            connection.exec_driver_sql("SELECT pg_advisory_xact_lock(827361902)")
+            inspector = inspect(connection)
         for table_name, columns in migrations.items():
             if table_name not in existing_tables:
                 continue
@@ -85,6 +97,56 @@ def _ensure_additive_columns() -> None:
             for column_name, ddl in columns.items():
                 if column_name not in existing_columns:
                     connection.exec_driver_sql(f"ALTER TABLE {table_name} ADD COLUMN {ddl}")
+        if "products" in existing_tables and engine.dialect.name == "postgresql":
+            price = next(c for c in inspect(connection).get_columns("products") if c["name"] == "price_cents")
+            if not price["nullable"]:
+                connection.exec_driver_sql("ALTER TABLE products ALTER COLUMN price_cents DROP NOT NULL")
+
+    if "products" in existing_tables and engine.dialect.name == "sqlite":
+        _ensure_sqlite_product_price_nullable()
+
+
+def _ensure_sqlite_product_price_nullable() -> None:
+    """SQLite cannot drop a column's NOT NULL constraint with ALTER COLUMN."""
+    with engine.connect() as connection:
+        price = next(c for c in inspect(connection).get_columns("products") if c["name"] == "price_cents")
+        if price["nullable"]:
+            return
+        foreign_keys = connection.exec_driver_sql("PRAGMA foreign_keys").scalar()
+        connection.commit()
+        connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+        connection.commit()
+        try:
+            connection.exec_driver_sql("BEGIN IMMEDIATE")
+            columns = inspect(connection).get_columns("products")
+            if next(c for c in columns if c["name"] == "price_cents")["nullable"]:
+                connection.commit()
+                return
+            metadata = MetaData()
+            original = Table("products", metadata, autoload_with=connection)
+            replacement = original.to_metadata(metadata, name="products__nullable_price")
+            replacement.c.price_cents.nullable = True
+            # Preserve user-created indexes/triggers, including ones outside the ORM.
+            auxiliary_sql = connection.exec_driver_sql(
+                "SELECT sql FROM sqlite_master WHERE tbl_name='products' "
+                "AND type IN ('index','trigger') AND sql IS NOT NULL"
+            ).scalars().all()
+            connection.execute(CreateTable(replacement))
+            names = ", ".join(connection.dialect.identifier_preparer.quote(c.name) for c in original.columns)
+            connection.exec_driver_sql(f"INSERT INTO products__nullable_price ({names}) SELECT {names} FROM products")
+            connection.exec_driver_sql("DROP TABLE products")
+            connection.exec_driver_sql("ALTER TABLE products__nullable_price RENAME TO products")
+            for sql in auxiliary_sql:
+                connection.exec_driver_sql(sql)
+            if connection.exec_driver_sql("PRAGMA foreign_key_check").first():
+                raise RuntimeError("Foreign key validation failed during products migration.")
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        finally:
+            connection.exec_driver_sql(f"PRAGMA foreign_keys={int(foreign_keys)}")
+            connection.commit()
 
 
 def get_session() -> Iterator[Session]:

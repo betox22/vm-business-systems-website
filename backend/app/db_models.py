@@ -4,7 +4,7 @@ import time
 import uuid
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Index, Text, UniqueConstraint, event
+from sqlalchemy import ForeignKey, Index, Text, UniqueConstraint, event, false
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -60,7 +60,11 @@ class Product(Base):
     store_id: Mapped[str] = mapped_column(ForeignKey("stores.id"), index=True)
     name: Mapped[str]
     category: Mapped[str]
-    price_cents: Mapped[int]
+    description: Mapped[Optional[str]] = mapped_column(Text, default=None)
+    image_url: Mapped[Optional[str]] = mapped_column(default=None)
+    sku: Mapped[Optional[str]] = mapped_column(default=lambda: f"SKU-{uuid.uuid4().hex[:12].upper()}")
+    quote_only: Mapped[bool] = mapped_column(default=False, server_default=false(), nullable=False)
+    price_cents: Mapped[Optional[int]]
     inventory: Mapped[int] = mapped_column(default=0)
     status: Mapped[str] = mapped_column(default="Published")
     created_at: Mapped[int] = mapped_column(default=_now)

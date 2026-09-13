@@ -46,7 +46,7 @@ test("Google session can continue with a bearer token when the cross-site cookie
   assert.match(js, /internalAuthHeaders\(sessionStorage/);
   assert.match(js, /captureInternalAuthRedirect\(location,sessionStorage\)/);
   assert.match(js, /clearInternalAccessToken\(sessionStorage\)/);
-  assert.match(html, /operations\.js\?v=3/);
+  assert.match(html, /operations\.js\?v=4/);
 });
 
 test("/admin uses the same general operations shell instead of the four-view legacy panel", async () => {
@@ -55,7 +55,7 @@ test("/admin uses the same general operations shell instead of the four-view leg
   assert.match(adminHtml, /VM Operations/);
   assert.match(adminHtml, /data-view="payments"/);
   assert.match(adminHtml, /data-view="templates"/);
-  assert.match(adminHtml, /operations\/operations\.js\?v=3/);
+  assert.match(adminHtml, /operations\/operations\.js\?v=4/);
   assert.match(adminHtml, /operations\/operations\.css\?v=3/);
   assert.match(adminHtml, /Administrar Listo/);
   assert.match(adminHtml, /class="google-mark"/);

@@ -8,7 +8,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -62,9 +62,10 @@ class Product(BaseModel):
     name: str
     categoryId: str
     description: str
-    price: float
+    price: Optional[float]
+    quoteOnly: bool = False
     currency: str = "USD"
-    sku: str
+    sku: Optional[str]
     stock: int
     active: bool = True
     published: bool = True
@@ -75,12 +76,14 @@ class Product(BaseModel):
 
 
 class ProductCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     name: str = Field(min_length=2, max_length=160)
     categoryId: str
     description: str = Field(default="", max_length=1200)
-    price: float = Field(gt=0)
+    price: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
+    quoteOnly: bool = Field(default=False, validation_alias=AliasChoices("quoteOnly", "quote_only"))
     currency: str = "USD"
-    sku: str = Field(min_length=2, max_length=80)
+    sku: Optional[str] = Field(default=None, min_length=2, max_length=80)
     stock: int = Field(ge=0)
     active: bool = True
     published: bool = True
@@ -89,11 +92,24 @@ class ProductCreate(BaseModel):
     imageUrl: Optional[str] = None
 
 
+    @model_validator(mode="after")
+    def validate_price_mode(self):
+        if self.quoteOnly and self.price is not None:
+            raise ValueError("A quote-only product must not have a price.")
+        if not self.quoteOnly and self.price is None:
+            raise ValueError("A fixed-price product requires a positive price.")
+        if self.price is not None and price_to_cents(self.price) <= 0:
+            raise ValueError("Price must be positive when expressed in cents.")
+        return self
+
+
 class ProductUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     name: Optional[str] = Field(default=None, min_length=2, max_length=160)
     categoryId: Optional[str] = None
     description: Optional[str] = Field(default=None, max_length=1200)
-    price: Optional[float] = Field(default=None, gt=0)
+    price: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
+    quoteOnly: Optional[bool] = Field(default=None, validation_alias=AliasChoices("quoteOnly", "quote_only"))
     currency: Optional[str] = None
     sku: Optional[str] = Field(default=None, min_length=2, max_length=80)
     stock: Optional[int] = Field(default=None, ge=0)
@@ -310,7 +326,24 @@ def db_product_for_cart(session: Session, business_id: str, product_id: str) -> 
     product = session.get(DbProduct, product_id)
     if not product or product.store_id != business_id or product.status != "Published":
         raise HTTPException(status_code=404, detail="Product not found.")
+    require_purchasable_price(product.quote_only, product.price_cents, product.id)
     return product
+
+
+def require_purchasable_price(quote_only: bool, price: Any, product_id: str = "") -> None:
+    """Shared boundary for live products and immutable Stripe order lines."""
+    if quote_only or price is None:
+        raise HTTPException(status_code=409, detail={
+            "code": "product_requires_quote", "productId": product_id,
+            "message": "Este producto requiere cotizacion, no se puede agregar al carrito.",
+        })
+    try:
+        amount = Decimal(str(price))
+        valid = amount.is_finite() and amount > 0
+    except (ValueError, ArithmeticError):
+        valid = False
+    if not valid:
+        raise HTTPException(status_code=409, detail="Product has no valid purchase price.")
 
 
 def cart_response(cart_id: str, session: Session, business_id: Optional[str] = None) -> Dict[str, Any]:
@@ -328,6 +361,7 @@ def cart_response(cart_id: str, session: Session, business_id: Optional[str] = N
         db_product = session.get(DbProduct, line["productId"])
         if not db_product or db_product.store_id != store_id or db_product.status != "Published":
             continue
+        require_purchasable_price(db_product.quote_only, db_product.price_cents, db_product.id)
         product = db_product_to_api(db_product)
         stock_available = max(0, int(db_product.inventory or 0))
 
@@ -411,9 +445,11 @@ def db_product_to_api(product: DbProduct) -> Product:
         slug=product_slug(product.name),
         name=product.name,
         categoryId=product.category,
-        description="",
-        price=cents_to_price(product.price_cents),
-        sku=product.id,
+        description=product.description or "",
+        imageUrl=product.image_url,
+        price=None if product.quote_only or product.price_cents is None else cents_to_price(product.price_cents),
+        quoteOnly=product.quote_only,
+        sku=product.sku,
         stock=int(product.inventory or 0),
         active=status != "Archived",
         published=status == "Published",
@@ -615,6 +651,11 @@ def stripe_checkout_session(
     *,
     connected_account_id: Optional[str] = None,
 ) -> Dict[str, Any]:
+    for item in order["items"]:
+        require_purchasable_price(
+            bool(item.get("quoteOnly") or item.get("quote_only")),
+            item.get("unitPrice"), str(item.get("productId") or ""),
+        )
     secret_key = os.getenv("STRIPE_SECRET_KEY")
     if not secret_key:
         return {
@@ -1109,7 +1150,11 @@ async def owner_create_product(
         store_id=business_id,
         name=payload.name,
         category=payload.categoryId,
-        price_cents=price_to_cents(payload.price),
+        description=payload.description,
+        image_url=payload.imageUrl,
+        sku=payload.sku or f"SKU-{uuid.uuid4().hex[:12].upper()}",
+        quote_only=payload.quoteOnly,
+        price_cents=None if payload.quoteOnly else price_to_cents(payload.price),
         inventory=payload.stock,
         status=product_status(active=payload.active, published=payload.published),
     )
@@ -1133,12 +1178,23 @@ async def owner_update_product(
     if not product or product.store_id != business_id:
         raise HTTPException(status_code=404, detail="Product not found.")
     updates = payload.model_dump(exclude_unset=True)
+    quote_only = updates.get("quoteOnly", product.quote_only)
+    final_price = updates.get("price", None if product.price_cents is None else cents_to_price(product.price_cents))
+    if quote_only is None or (quote_only and final_price is not None) or (not quote_only and (final_price is None or price_to_cents(final_price) <= 0)):
+        raise HTTPException(status_code=422, detail="Quote-only requires price=null; fixed-price requires a positive price.")
+    product.quote_only = quote_only
+    for field, attribute in [("description", "description"), ("imageUrl", "image_url"), ("sku", "sku")]:
+        if field in updates:
+            value = updates[field]
+            if field == "sku" and not value:
+                value = f"SKU-{uuid.uuid4().hex[:12].upper()}"
+            setattr(product, attribute, value)
     if "name" in updates:
         product.name = updates["name"]
     if "categoryId" in updates:
         product.category = updates["categoryId"]
     if "price" in updates:
-        product.price_cents = price_to_cents(updates["price"])
+        product.price_cents = None if updates["price"] is None else price_to_cents(updates["price"])
     if "stock" in updates:
         product.inventory = updates["stock"]
     if "active" in updates or "published" in updates:
