@@ -227,19 +227,20 @@ a {
   grid-template-columns: minmax(300px, .72fr) minmax(520px, 1.28fr);
   border-top: 1px solid var(--line);
   border-left: 0 !important;
-  background: linear-gradient(105deg, #f8fffb, #eef9f5 44%, #f3f1ff);
+  background: linear-gradient(105deg, #f8fffb, #edf9f3);
 }
-.vm-product-listokds a { color: #6d63e8; }
+.vm-product-listokds a { color: var(--green); }
 .vm-product-kds-visual {
-  padding: 34px clamp(32px, 6vw, 110px);
-  background: radial-gradient(circle at center, rgba(117,108,245,.16), transparent 70%);
+  box-sizing: border-box;
+  padding: 18px clamp(24px, 4vw, 64px);
+  background: transparent;
 }
 .vm-product-kds-visual img {
+  height: 100%;
   object-fit: contain;
-  mix-blend-mode: normal;
-  border: 8px solid #15191f;
-  border-radius: 10px;
-  box-shadow: 0 24px 55px rgba(7,27,58,.2);
+  object-position: center;
+  mix-blend-mode: multiply;
+  transform: scale(.88);
 }
 .vm-product h2 {
   font-size: 38px;
@@ -603,6 +604,8 @@ a {
     padding: 34px 0 0 26px;
   }
   .vm-product-listokds { grid-template-columns: 1fr; }
+  .vm-product-kds-visual { padding: 0; }
+  .vm-product-kds-visual img { transform: none; }
   .vm-product h2 {
     font-size: 31px;
   }
