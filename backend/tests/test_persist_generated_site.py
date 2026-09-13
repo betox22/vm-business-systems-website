@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.db import Base
 from app.db_models import GeneratedSite, Store
-from app.main import persist_generated_site
+from app.main import _get_or_create_store, persist_generated_site
 from app.models import WebsiteGenerationRequest
 
 
@@ -26,6 +26,18 @@ class PersistGeneratedSiteTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.session.close()
         self.engine.dispose()
+
+    def test_multiple_stores_selects_most_recent_for_owner(self) -> None:
+        self.session.add_all([
+            Store(id="old", owner_user_id="owner", owner_email="owner@example.com", name="Old", business_type="retail", public_url="old.example.com", updated_at=1),
+            Store(id="new", owner_user_id="owner", owner_email="owner@example.com", name="New", business_type="retail", public_url="new.example.com", updated_at=2),
+        ])
+        self.session.commit()
+        store = _get_or_create_store(
+            self.session, owner_user_id="owner", owner_email="owner@example.com",
+            business_name="Updated", business_type="retail",
+        )
+        self.assertEqual(store.id, "new")
 
     def test_first_generated_site_persists_new_store_before_foreign_key_reference(self) -> None:
         self.assertIsNone(self.session.execute(select(Store)).scalar_one_or_none())

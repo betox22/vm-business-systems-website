@@ -1183,6 +1183,8 @@ async def owner_update_product(
     if quote_only is None or (quote_only and final_price is not None) or (not quote_only and (final_price is None or price_to_cents(final_price) <= 0)):
         raise HTTPException(status_code=422, detail="Quote-only requires price=null; fixed-price requires a positive price.")
     product.quote_only = quote_only
+    if updates and product.source == "ai_generated":
+        product.source = "owner_edited"
     for field, attribute in [("description", "description"), ("imageUrl", "image_url"), ("sku", "sku")]:
         if field in updates:
             value = updates[field]

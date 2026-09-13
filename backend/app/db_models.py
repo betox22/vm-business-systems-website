@@ -64,6 +64,9 @@ class Product(Base):
     image_url: Mapped[Optional[str]] = mapped_column(default=None)
     sku: Mapped[Optional[str]] = mapped_column(default=lambda: f"SKU-{uuid.uuid4().hex[:12].upper()}")
     quote_only: Mapped[bool] = mapped_column(default=False, server_default=false(), nullable=False)
+    source: Mapped[str] = mapped_column(default="owner_edited", server_default="owner_edited", nullable=False)
+    site_id: Mapped[Optional[str]] = mapped_column(ForeignKey("generated_sites.id", ondelete="SET NULL"), default=None)
+    price_is_approximate: Mapped[bool] = mapped_column(default=False, server_default=false(), nullable=False)
     price_cents: Mapped[Optional[int]]
     inventory: Mapped[int] = mapped_column(default=0)
     status: Mapped[str] = mapped_column(default="Published")

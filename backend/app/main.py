@@ -33,6 +33,7 @@ from .agents import TEMPLATE_CATALOG, semantic_seed_catalog, split_items, state_
 from .ai_site_planner import enforce_client_declared_catalog_facts
 from .client_auth import authenticated_client_user, fetch_supabase_user, supabase_auth_configured
 from .commerce import router as commerce_router
+from .catalog_sync import sync_site_catalog_to_commerce
 from .billing import router as billing_router
 from .db import get_session, init_db
 from .db_models import GeneratedSite, Store
@@ -1192,7 +1193,7 @@ def _get_or_create_store(
         query = query.where(Store.owner_user_id == owner_user_id)
     else:
         query = query.where(Store.owner_email == owner_email)
-    store = session.execute(query.order_by(Store.updated_at.desc())).scalar_one_or_none()
+    store = session.execute(query.order_by(Store.updated_at.desc()).limit(1)).scalar_one_or_none()
     if store:
         store.owner_user_id = owner_user_id or store.owner_user_id
         store.owner_email = owner_email or store.owner_email
@@ -1292,6 +1293,8 @@ def persist_generated_site(
     site.status = "draft"
     site.generated_config = _schema_json(schema)
     try:
+        session.flush()
+        sync_site_catalog_to_commerce(session, site)
         session.commit()
     except Exception:
         session.rollback()
@@ -1410,6 +1413,8 @@ async def update_client_site(
     site.accent_color = summary["accent_color"]
     site.generated_config = _schema_json(schema)
     try:
+        session.flush()
+        sync_site_catalog_to_commerce(session, site)
         session.commit()
     except Exception:
         session.rollback()

@@ -64,6 +64,9 @@ def _ensure_additive_columns() -> None:
             "image_url": "image_url VARCHAR",
             "sku": "sku VARCHAR",
             "quote_only": "quote_only BOOLEAN NOT NULL DEFAULT FALSE",
+            "source": "source VARCHAR NOT NULL DEFAULT 'owner_edited'",
+            "site_id": "site_id VARCHAR REFERENCES generated_sites(id) ON DELETE SET NULL",
+            "price_is_approximate": "price_is_approximate BOOLEAN NOT NULL DEFAULT FALSE",
         },
         "platform_subscriptions": {
             "legal_consent_version": "legal_consent_version VARCHAR",
