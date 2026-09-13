@@ -31,7 +31,7 @@ from .admin_directory import (
 )
 from .agents import TEMPLATE_CATALOG, semantic_seed_catalog, split_items, state_is_commerce_seed_target
 from .ai_site_planner import enforce_client_declared_catalog_facts
-from .client_auth import fetch_supabase_user, supabase_auth_configured
+from .client_auth import authenticated_client_user, fetch_supabase_user, supabase_auth_configured
 from .commerce import router as commerce_router
 from .billing import router as billing_router
 from .db import get_session, init_db
@@ -1106,24 +1106,6 @@ def _bearer_token(authorization: str, session_cookie: str = "") -> str:
     return token or (session_cookie or "").strip()
 
 
-def authenticated_client_user(
-    authorization: str, session_cookie: str = "", *, required: bool = True
-) -> Optional[Dict[str, Any]]:
-    token = _bearer_token(authorization, session_cookie)
-    if not token:
-        if required:
-            raise HTTPException(status_code=401, detail="Missing access token.")
-        return None
-    if not supabase_auth_configured():
-        if required:
-            raise HTTPException(status_code=503, detail="Account login is not configured on the server yet.")
-        return None
-    user = fetch_supabase_user(token)
-    if not user:
-        if required:
-            raise HTTPException(status_code=401, detail="Invalid or expired session.")
-        return None
-    return user
 
 
 def _slugify(value: str) -> str:

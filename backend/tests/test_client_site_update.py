@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app import main
+from app import client_auth, main
 from app.db import Base, get_session
 from app.db_models import GeneratedSite, Store
 
@@ -76,8 +76,8 @@ def test_authenticated_owner_edit_survives_database_reload():
     updated = _schema("A headline saved by the owner")
     try:
         with (
-            patch.object(main, "supabase_auth_configured", return_value=True),
-            patch.object(main, "fetch_supabase_user", return_value=OWNER),
+            patch.object(client_auth, "supabase_auth_configured", return_value=True),
+            patch.object(client_auth, "fetch_supabase_user", return_value=OWNER),
             client,
         ):
             response = client.put(
@@ -106,8 +106,8 @@ def test_authenticated_owner_cannot_edit_another_owners_site():
     engine, _session_factory, client = _client_and_session()
     try:
         with (
-            patch.object(main, "supabase_auth_configured", return_value=True),
-            patch.object(main, "fetch_supabase_user", return_value=OTHER_OWNER),
+            patch.object(client_auth, "supabase_auth_configured", return_value=True),
+            patch.object(client_auth, "fetch_supabase_user", return_value=OTHER_OWNER),
             client,
         ):
             response = client.put(
@@ -125,8 +125,8 @@ def test_owner_save_rejects_mismatched_business_id():
     engine, _session_factory, client = _client_and_session()
     try:
         with (
-            patch.object(main, "supabase_auth_configured", return_value=True),
-            patch.object(main, "fetch_supabase_user", return_value=OWNER),
+            patch.object(client_auth, "supabase_auth_configured", return_value=True),
+            patch.object(client_auth, "fetch_supabase_user", return_value=OWNER),
             client,
         ):
             response = client.put(

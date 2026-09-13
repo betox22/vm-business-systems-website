@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from app import main
+from app import client_auth, main
 
 
 def _payload(email: str = "forged@example.com") -> dict:
@@ -28,8 +28,8 @@ def test_client_intake_session_rejects_cached_email_without_confirmed_auth():
 def test_client_intake_session_rejects_invalid_token_without_mutating_cached_account():
     main.client_intake_sessions.clear()
     with (
-        patch.object(main, "supabase_auth_configured", return_value=True),
-        patch.object(main, "fetch_supabase_user", return_value=None),
+        patch.object(client_auth, "supabase_auth_configured", return_value=True),
+        patch.object(client_auth, "fetch_supabase_user", return_value=None),
         TestClient(main.app) as client,
     ):
         response = client.post(
@@ -47,8 +47,8 @@ def test_client_intake_session_uses_confirmed_identity_not_payload_email():
     main.client_intake_sessions.clear()
     user = {"id": "user-1", "email": "owner@example.com"}
     with (
-        patch.object(main, "supabase_auth_configured", return_value=True),
-        patch.object(main, "fetch_supabase_user", return_value=user),
+        patch.object(client_auth, "supabase_auth_configured", return_value=True),
+        patch.object(client_auth, "fetch_supabase_user", return_value=user),
         TestClient(main.app) as client,
     ):
         response = client.post(

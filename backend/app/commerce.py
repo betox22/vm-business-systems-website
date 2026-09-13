@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from .client_auth import fetch_supabase_user, supabase_auth_configured
+from .client_auth import require_client_user
 from .db import get_session
 from .db_models import Customer as DbCustomer
 from .db_models import Order as DbOrder
@@ -365,24 +365,7 @@ def require_store_role(role: Optional[str]) -> None:
         raise HTTPException(status_code=403, detail="Store owner or manager role required.")
 
 
-def _bearer_token(authorization: str) -> str:
-    return authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
-
-
-def authenticated_store_user(authorization: str) -> Dict[str, Any]:
-    token = _bearer_token(authorization)
-    if not token:
-        raise HTTPException(status_code=401, detail="Missing access token.")
-    if not supabase_auth_configured():
-        raise HTTPException(status_code=503, detail="Account login is not configured on the server yet.")
-    user = fetch_supabase_user(token)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid or expired session.")
-    return user
-
-
-def require_store_owner(session: Session, business_id: str, authorization: str) -> tuple[Store, Dict[str, Any]]:
-    user = authenticated_store_user(authorization)
+def require_store_owner(session: Session, business_id: str, user: Dict[str, Any]) -> tuple[Store, Dict[str, Any]]:
     store = session.get(Store, business_id)
     if not store:
         raise HTTPException(status_code=404, detail="Business not found.")
@@ -394,7 +377,8 @@ def require_store_owner(session: Session, business_id: str, authorization: str) 
 
     owns_by_user_id = bool(owner_user_id and store_owner_user_id and owner_user_id == store_owner_user_id)
     owns_by_email = bool(owner_email and store_owner_email and owner_email == store_owner_email)
-    if not owns_by_user_id and not owns_by_email:
+    owns_store = owns_by_user_id if store_owner_user_id else owns_by_email
+    if not owns_store:
         raise HTTPException(status_code=403, detail="Store does not belong to this account.")
     return store, user
 
@@ -933,8 +917,8 @@ async def stripe_connect_webhook(
 
 
 @router.get("/store-owner/{business_id}/stripe-connect")
-async def owner_stripe_connect_status(business_id: str, authorization: str = Header(default=""), session: Session = Depends(get_session)) -> Dict[str, Any]:
-    require_store_owner(session, business_id, authorization)
+async def owner_stripe_connect_status(business_id: str, user: Dict[str, Any] = Depends(require_client_user), session: Session = Depends(get_session)) -> Dict[str, Any]:
+    require_store_owner(session, business_id, user)
     account = session.get(StripeConnectAccount, business_id)
     return {
         "businessId": business_id,
@@ -950,10 +934,10 @@ async def owner_stripe_connect_status(business_id: str, authorization: str = Hea
 async def owner_stripe_connect_onboarding(
     business_id: str,
     payload: StripeConnectOnboardingRequest,
-    authorization: str = Header(default=""),
+    user: Dict[str, Any] = Depends(require_client_user),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    store, user = require_store_owner(session, business_id, authorization)
+    store, user = require_store_owner(session, business_id, user)
     account = session.get(StripeConnectAccount, business_id)
     if not account:
         account = StripeConnectAccount(
@@ -1068,10 +1052,10 @@ async def create_customer_support(payload: SupportRequest, x_user_id: str = Head
 @router.get("/store-owner/{business_id}/dashboard")
 async def owner_dashboard(
     business_id: str,
-    authorization: str = Header(default=""),
+    user: Dict[str, Any] = Depends(require_client_user),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    require_store_owner(session, business_id, authorization)
+    require_store_owner(session, business_id, user)
     low_stock = session.scalar(
         select(func.count())
         .select_from(DbProduct)
@@ -1096,10 +1080,10 @@ async def owner_dashboard(
 @router.get("/store-owner/{business_id}/products")
 async def owner_products(
     business_id: str,
-    authorization: str = Header(default=""),
+    user: Dict[str, Any] = Depends(require_client_user),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    require_store_owner(session, business_id, authorization)
+    require_store_owner(session, business_id, user)
     products = [
         db_product_to_api(product).model_dump()
         for product in session.execute(
@@ -1115,10 +1099,10 @@ async def owner_products(
 async def owner_create_product(
     business_id: str,
     payload: ProductCreate,
-    authorization: str = Header(default=""),
+    user: Dict[str, Any] = Depends(require_client_user),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    _, user = require_store_owner(session, business_id, authorization)
+    _, user = require_store_owner(session, business_id, user)
     product_id = f"prod_{uuid.uuid4().hex[:10]}"
     product = DbProduct(
         id=product_id,
@@ -1141,10 +1125,10 @@ async def owner_update_product(
     business_id: str,
     product_id: str,
     payload: ProductUpdate,
-    authorization: str = Header(default=""),
+    user: Dict[str, Any] = Depends(require_client_user),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    _, user = require_store_owner(session, business_id, authorization)
+    _, user = require_store_owner(session, business_id, user)
     product = session.get(DbProduct, product_id)
     if not product or product.store_id != business_id:
         raise HTTPException(status_code=404, detail="Product not found.")
@@ -1170,10 +1154,10 @@ async def owner_update_product(
 @router.get("/store-owner/{business_id}/orders")
 async def owner_orders(
     business_id: str,
-    authorization: str = Header(default=""),
+    user: Dict[str, Any] = Depends(require_client_user),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    require_store_owner(session, business_id, authorization)
+    require_store_owner(session, business_id, user)
     orders = [
         order_to_api(order)
         for order in session.execute(
@@ -1190,10 +1174,10 @@ async def owner_update_order_status(
     business_id: str,
     order_id: str,
     payload: OrderStatusPatch,
-    authorization: str = Header(default=""),
+    user: Dict[str, Any] = Depends(require_client_user),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    _, user = require_store_owner(session, business_id, authorization)
+    _, user = require_store_owner(session, business_id, user)
     order = session.get(DbOrder, order_id)
     if not order or order.store_id != business_id:
         raise HTTPException(status_code=404, detail="Order not found.")
@@ -1217,10 +1201,10 @@ async def owner_update_order_status(
 @router.get("/store-owner/{business_id}/payments")
 async def owner_payments(
     business_id: str,
-    authorization: str = Header(default=""),
+    user: Dict[str, Any] = Depends(require_client_user),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    require_store_owner(session, business_id, authorization)
+    require_store_owner(session, business_id, user)
     methods = payment_methods_for_business(business_id)
     payment_events = [
         {
@@ -1242,10 +1226,10 @@ async def owner_payments(
 async def owner_update_payment_methods(
     business_id: str,
     payload: PaymentMethodPatch,
-    authorization: str = Header(default=""),
+    user: Dict[str, Any] = Depends(require_client_user),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    _, user = require_store_owner(session, business_id, authorization)
+    _, user = require_store_owner(session, business_id, user)
     methods = payment_methods_for_business(business_id)
     methods.update(payload.model_dump())
     methods["providerConfigured"] = bool(os.getenv("STRIPE_SECRET_KEY"))
@@ -1256,10 +1240,10 @@ async def owner_update_payment_methods(
 @router.get("/store-owner/{business_id}/shipping")
 async def owner_shipping(
     business_id: str,
-    authorization: str = Header(default=""),
+    user: Dict[str, Any] = Depends(require_client_user),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    require_store_owner(session, business_id, authorization)
+    require_store_owner(session, business_id, user)
     return {
         "businessId": business_id,
         "providerStrategy": "adapter",
@@ -1280,10 +1264,10 @@ async def owner_update_shipping(
     business_id: str,
     order_id: str,
     payload: ShippingPatch,
-    authorization: str = Header(default=""),
+    user: Dict[str, Any] = Depends(require_client_user),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    _, user = require_store_owner(session, business_id, authorization)
+    _, user = require_store_owner(session, business_id, user)
     order = session.get(DbOrder, order_id)
     if not order or order.store_id != business_id:
         raise HTTPException(status_code=404, detail="Order not found.")
@@ -1302,10 +1286,10 @@ async def owner_update_shipping(
 @router.get("/store-owner/{business_id}/audit-log")
 async def owner_audit_log(
     business_id: str,
-    authorization: str = Header(default=""),
+    user: Dict[str, Any] = Depends(require_client_user),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    require_store_owner(session, business_id, authorization)
+    require_store_owner(session, business_id, user)
     return {"businessId": business_id, "events": [event for event in AUDIT_LOG if event["businessId"] == business_id]}
 
 

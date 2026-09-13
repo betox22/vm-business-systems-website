@@ -4,6 +4,35 @@ import os
 from typing import Any, Dict, Optional
 
 import httpx
+from fastapi import Cookie, Header, HTTPException
+
+
+def authenticated_client_user(
+    authorization: str, session_cookie: str = "", *, required: bool = True
+) -> Optional[Dict[str, Any]]:
+    token = authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
+    token = token or (session_cookie or "").strip()
+    if not token:
+        if required:
+            raise HTTPException(status_code=401, detail="Missing access token.")
+        return None
+    if not supabase_auth_configured():
+        if required:
+            raise HTTPException(status_code=503, detail="Account login is not configured on the server yet.")
+        return None
+    user = fetch_supabase_user(token)
+    if not user:
+        if required:
+            raise HTTPException(status_code=401, detail="Invalid or expired session.")
+        return None
+    return user
+
+
+def require_client_user(
+    authorization: str = Header(default=""),
+    luma_client_session: str = Cookie(default=""),
+) -> Dict[str, Any]:
+    return authenticated_client_user(authorization, luma_client_session)
 
 
 def supabase_auth_configured() -> bool:

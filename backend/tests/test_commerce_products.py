@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
-from app import commerce
+from app import client_auth, commerce
 from app.db import Base
 from app.db_models import Customer as DbCustomer
 from app.db_models import Order as DbOrder
@@ -66,7 +66,7 @@ class StoreOwnerProductTests(unittest.TestCase):
 
     def _owner_auth(self):
         return patch.multiple(
-            commerce,
+            client_auth,
             supabase_auth_configured=lambda: True,
             fetch_supabase_user=lambda token: {"id": "user_owner", "email": "owner@example.com"},
         )
@@ -109,14 +109,14 @@ class StoreOwnerProductTests(unittest.TestCase):
                         active=True,
                         published=True,
                     ),
-                    authorization="Bearer token",
+                    user=client_auth.authenticated_client_user("Bearer token"),
                     session=self.session,
                 )
             )
             listed = asyncio.run(
                 commerce.owner_products(
                     "store_owner",
-                    authorization="Bearer token",
+                    user=client_auth.authenticated_client_user("Bearer token"),
                     session=self.session,
                 )
             )
@@ -132,7 +132,7 @@ class StoreOwnerProductTests(unittest.TestCase):
 
     def test_owner_products_rejects_non_owner(self) -> None:
         with patch.multiple(
-            commerce,
+            client_auth,
             supabase_auth_configured=lambda: True,
             fetch_supabase_user=lambda token: {"id": "intruder", "email": "intruder@example.com"},
         ):
@@ -140,7 +140,7 @@ class StoreOwnerProductTests(unittest.TestCase):
                 asyncio.run(
                     commerce.owner_products(
                         "store_owner",
-                        authorization="Bearer token",
+                        user=client_auth.authenticated_client_user("Bearer token"),
                         session=self.session,
                     )
                 )
@@ -234,17 +234,17 @@ class StoreOwnerProductTests(unittest.TestCase):
 
         with self._owner_auth():
             owner_orders = asyncio.run(
-                commerce.owner_orders("store_owner", authorization="Bearer token", session=self.session)
+                commerce.owner_orders("store_owner", user=client_auth.authenticated_client_user("Bearer token"), session=self.session)
             )
             payments = asyncio.run(
-                commerce.owner_payments("store_owner", authorization="Bearer token", session=self.session)
+                commerce.owner_payments("store_owner", user=client_auth.authenticated_client_user("Bearer token"), session=self.session)
             )
             shipping = asyncio.run(
                 commerce.owner_update_shipping(
                     "store_owner",
                     order_id,
                     commerce.ShippingPatch(carrier="UPS", trackingNumber="1Z88942", status="partially_fulfilled"),
-                    authorization="Bearer token",
+                    user=client_auth.authenticated_client_user("Bearer token"),
                     session=self.session,
                 )
             )
@@ -293,7 +293,7 @@ class StoreOwnerProductTests(unittest.TestCase):
                     "store_owner",
                     order_id,
                     commerce.OrderStatusPatch(status="cancelled"),
-                    authorization="Bearer token",
+                    user=client_auth.authenticated_client_user("Bearer token"),
                     session=self.session,
                 )
             )
@@ -308,7 +308,7 @@ class StoreOwnerProductTests(unittest.TestCase):
                     "store_owner",
                     order_id,
                     commerce.OrderStatusPatch(status="cancelled"),
-                    authorization="Bearer token",
+                    user=client_auth.authenticated_client_user("Bearer token"),
                     session=self.session,
                 )
             )
