@@ -16,6 +16,36 @@ Formato de entrada:
 
 ---
 
+## 2026-09-13 — Codex — Producto persistente y cotizacion (Fase 2, sin publicar)
+
+**Hecho:** Product agrega description/image_url/sku nullable, quote_only NOT NULL
+con default false, y price_cents nullable. CRUD guarda metadatos reales y genera
+un SKU independiente si falta. PATCH valida estado final, preserva campos omitidos
+y exige price=null explicito para pasar un precio fijo a quoteOnly=true.
+El serializador devuelve price=null para cotizacion. Un guard compartido protege
+altas/recalculo de carrito, orden y lineas Stripe. Operations muestra cotizacion
+en vez de cero; cache-bust JS v4 en ambas entradas del panel.
+
+**Migracion:** usa el mecanismo de arranque existente. PostgreSQL agrega columnas
+y DROP NOT NULL solo cuando falta; lock_timeout=5s y advisory lock transaccional
+serializan este mecanismo entre arranques. No hay rename/drop de tabla en PG.
+SQLite antiguo SI requiere reconstruccion transaccional: prueba real conserva
+datos, indice, trigger y FK. Segunda ejecucion no emite DDL ni copia filas.
+SQLite nuevo ya crea precio nullable. SQL de PostgreSQL verificado con mock,
+no ejecutado en PostgreSQL/produccion. PG requiere lock exclusivo: una transaccion
+larga puede impedir arrancar al vencer el timeout, aunque los ALTER sean de metadata.
+SQLite reconstruye O(n), requiere espacio adicional y bloquea escritores.
+
+**Validacion:** suite completa Python 255 passed + 40 subtests passed; Node
+186 passed / 0 failed. Se conserva el workaround de temporales de Windows.
+Pruebas HTTP nuevas de metadatos, quoteOnly, validacion 422, rechazo 409, PATCH
+sin perdida, cambio de precio en carrito y bloqueo de orden/Stripe sin efectos.
+
+**Fuera de alcance:** sin importacion LYRA, sin cambio de fuente del sitio publico,
+sin seller-portal ni prototype.js, sin checkout end-to-end ni operaciones remotas.
+No se aplico migracion de produccion; pendiente revision y decision de despliegue.
+Sin commit/push de Fase 2.
+
 ## 2026-09-13 — Codex — Sesion compartida para store-owner (Fase 1)
 
 **Hecho:** resolutor `authenticated_client_user` extraido a `client_auth.py`.
