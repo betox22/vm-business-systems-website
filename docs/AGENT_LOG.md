@@ -16,6 +16,47 @@ Formato de entrada:
 
 ---
 
+## 2026-09-13 — Codex — Overlay publico reducido (Fase 4, sin publicar)
+
+**Hecho:** Product.catalog_index nullable se asigna durante sync segun indice
+del catalog_items de origen. apply_commerce_overlay consulta Published del sitio
+y Store correctos, conserva copia del JSON y sobrescribe SOLO name, description,
+image_url, price/price_amount/price_value, price_type/price_label e inventory_quantity.
+Precios desde centavos actuales; quote_only sin numero; starting_at con prefijo
+localizado. No modifica rating/badges/specs/recurrencia/creditos/orden/flags/CTA.
+Ambas rutas publicas pasan session al payload; catalog_items superior y el de
+schema coinciden. No hay escritura de la proyeccion en generated_config.
+
+**Seguridad de correlacion:** conteo Published distinto al JSON omite todo overlay
+con warning; con conteo igual, indice nulo/fuera de rango/duplicado o item no-dict
+se omite con warning. Un precio fijo invalido tampoco pisa el JSON. Sin Published
+se devuelve el catalogo legacy intacto, incluidos casos catalog_items ausente/null.
+Filas anteriores con catalog_index=null NO se correlacionan retroactivamente.
+
+**Limitaciones expresamente aceptadas:** manuales site_id=None no aparecen en
+este catalogo publico, solo en commerce storefront. Builder, preview y edicion
+quirurgica siguen leyendo JSON; guardados obsoletos pueden rearchivar/recrear
+versiones IA y coexistir con manuales. Con cero Published se conserva JSON aunque
+el owner haya archivado productos; con conteo distinto tambien puede verse el
+valor anterior. No hay marcador de sincronizacion en esta version reducida.
+Mantener image_asset/CTA/track_inventory exactamente como JSON puede conservar
+credito de imagen anterior o impedir mostrar cantidad si el renderer no la pinta;
+esta fase actualiza inventory_quantity del payload, NO modifica los renderers.
+
+**Migracion:** un ADD COLUMN catalog_index INTEGER nullable en el arranque
+existente. No requiere reconstruccion en SQLite ni PostgreSQL. Prueba SQLite
+real desde Fase 3 conserva fila y agrega SOLO esa columna; segunda corrida sin
+DDL. PostgreSQL mismo SQL e idempotencia verificados con mock, no contra servidor.
+Locks/timeout de arranque existentes siguen aplicando. No migracion remota ejecutada.
+
+**Validacion:** Python completo 287 passed, 0 failed, 40 subtests passed;
+2 warnings existentes FastAPI. Node completo 186 passed, 0 failed.
+Tests incluyen PATCH owner via HTTP seguido de las dos rutas publicas,
+comparacion de todos los campos no permitidos, JSON persistido intacto,
+precios quote/starting_at, respaldo legacy byte a byte y desalineaciones.
+Evidencia: C:/Users/alber/Projects/kreaton-evidence/catalog-phase4/.
+Sin commit/push. Fase 3 ya publicada: f3e4cd1 funcional y 830a595 documentacion.
+
 ## 2026-09-13 — Codex — Importacion de catalogo por sitio (Fase 3, sin publicar)
 
 **Hecho:** _get_or_create_store limita a la Store mas reciente del owner.
