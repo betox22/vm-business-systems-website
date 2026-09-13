@@ -166,6 +166,40 @@ La referencia compartida muestra el tipo de resultado que KREATON quiere vender:
 
 **Criterio de salida:** evidencia SQL actual, prueba negativa entre tenants, restauracion demostrada y alertas operativas activas.
 
+## Pendientes nuevos por definir
+
+### Idioma del sitio generado vs. idioma de la conversacion con LYRA
+
+**Prioridad:** alta. Afecta a clientes reales cuyo mercado objetivo usa un idioma distinto al de la conversacion; no es solo un detalle de interfaz.
+
+**Estado:** pendiente de auditoria, sin implementar. No esta confirmado si el intake pregunta explicitamente el idioma del contenido del sitio o lo infiere del idioma del chat. Existe `business.selectedLanguage` en el JSON, usado por el overlay de comercio de Fase 4, pero falta confirmar donde y como se decide durante el intake.
+
+**Problema:** un cliente en Venezuela puede conversar con LYRA en espanol y necesitar una pagina en ingles para vender en Estados Unidos u otro mercado angloparlante. El idioma del chat no debe asumirse como la eleccion del idioma del sitio.
+
+**Alcance al retomar:**
+
+1. Auditar los archivos de intake/conversacion inicial en `src/ai-builder` y documentar con archivo:linea si se pregunta el idioma del sitio o se infiere del chat, incluyendo el origen de `selectedLanguage`.
+2. Si se infiere sin preguntar, disenar una pregunta explicita y obligatoria: "En que idioma quieres que se vea tu pagina para tus clientes?". La respuesta debe ser independiente del idioma de la conversacion con LYRA.
+3. Confirmar por separado el comportamiento de la interfaz/conversacion de LYRA: debe iniciar en ingles y mostrar espanol solo si el usuario escribe en espanol. Documentar si ya funciona asi o si requiere trabajo adicional; no confundir esta regla con el idioma del sitio generado.
+
+**Criterio de salida:** evidencia del flujo actual y, tras aprobar el diseno correspondiente, un cliente puede conversar en espanol y elegir contenido publico en ingles sin que la deteccion del chat sobrescriba esa eleccion.
+
+### Busqueda de dominios con precio final asistida por IA
+
+**Prioridad:** a definir cuando se retome.
+
+**Estado:** idea de producto aun no disenada ni implementada. Segun el estado aportado por el dueno, hoy no existe un buscador operativo de disponibilidad/precio de dominios en el producto; lo existente son pruebas y no hay paginas de clientes reales en linea mediante este mecanismo. Las rutas o pruebas previas no equivalen a un flujo comercial disponible.
+
+**Dependencia:** elegir primero un registrador y su API de dominios antes de disenar el flujo.
+
+**Alcance al retomar:**
+
+1. Incorporar al flujo de creacion de pagina una busqueda asistida por IA que consulte disponibilidad y costo real del dominio contra el registrador elegido.
+2. Mostrar al cliente solo el precio final: costo real del registrador mas el margen de vmbusiness. El margen no se revela al cliente.
+3. Si el precio resulta alto, por ejemplo para un dominio premium, ofrecer alternativas reales mas economicas, verificando tambien disponibilidad y precio con el registrador. No inventar disponibilidad, alternativas disponibles ni importes.
+
+**Criterio de salida:** tras elegir proveedor y aprobar el alcance, demostrar consultas reales de disponibilidad/precio, calculo del precio final y alternativas verificadas, sin exponer el margen al cliente. Documentar este pendiente no autoriza implementar ni contratar servicios.
+
 ## Orden de inversion recomendado
 
 No invertir ahora en mas plantillas ni mas efectos. El orden correcto es: integridad del catalogo, imagenes, edicion del dueno, checkout real, uniformidad visual y seguridad operativa. La razon es directa: un sitio visualmente atractivo con productos falsos o irrelevantes destruye confianza mas rapido que un sitio sencillo pero fiel.
