@@ -33,7 +33,7 @@ from .agents import TEMPLATE_CATALOG, semantic_seed_catalog, split_items, state_
 from .ai_site_planner import enforce_client_declared_catalog_facts
 from .client_auth import authenticated_client_user, fetch_supabase_user, supabase_auth_configured
 from .commerce import router as commerce_router
-from .catalog_sync import sync_site_catalog_to_commerce
+from .catalog_sync import apply_commerce_overlay, sync_site_catalog_to_commerce
 from .billing import router as billing_router
 from .db import get_session, init_db
 from .db_models import GeneratedSite, Store
@@ -1555,7 +1555,7 @@ async def delete_admin_client_project(
     return result.as_response()
 
 
-def _public_site_payload(site: GeneratedSite) -> Dict[str, Any]:
+def _public_site_payload(site: GeneratedSite, session: Session | None = None) -> Dict[str, Any]:
     """Shape a GeneratedSite row for the unauthenticated public viewer.
 
     Deliberately narrower than _project_item / client_project_detail's
@@ -1569,13 +1569,18 @@ def _public_site_payload(site: GeneratedSite) -> Dict[str, Any]:
         schema = json.loads(site.generated_config or "{}")
     except json.JSONDecodeError:
         schema = {}
+    catalog_items = (schema.get("catalog_items") if isinstance(schema, dict) else None) or []
+    if session is not None and isinstance(catalog_items, list):
+        catalog_items = apply_commerce_overlay(catalog_items, site, session)
+        if isinstance(schema, dict) and isinstance(schema.get("catalog_items"), list):
+            schema["catalog_items"] = catalog_items
     return {
         "site_id": site.id,
         "business_name": site.business_name,
         "template_name": site.template_name,
         "public_url": site.public_url,
         "schema": schema,
-        "catalog_items": (schema.get("catalog_items") if isinstance(schema, dict) else None) or [],
+        "catalog_items": catalog_items,
     }
 
 
@@ -1597,7 +1602,7 @@ async def public_site_by_id(
     site = session.execute(select(GeneratedSite).where(GeneratedSite.id == site_id)).scalar_one_or_none()
     if not site:
         raise HTTPException(status_code=404, detail="Site not found.")
-    return _public_site_payload(site)
+    return _public_site_payload(site, session)
 
 
 @app.get("/public/resolve-site")
@@ -1627,7 +1632,7 @@ async def public_resolve_site(
     ).scalar_one_or_none()
     if not site:
         raise HTTPException(status_code=404, detail="No site found for this host.")
-    return _public_site_payload(site)
+    return _public_site_payload(site, session)
 
 
 @app.post("/api/luma/chat", response_model=LumaChatResponse)

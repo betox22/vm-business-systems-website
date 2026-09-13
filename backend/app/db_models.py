@@ -67,6 +67,7 @@ class Product(Base):
     source: Mapped[str] = mapped_column(default="owner_edited", server_default="owner_edited", nullable=False)
     site_id: Mapped[Optional[str]] = mapped_column(ForeignKey("generated_sites.id", ondelete="SET NULL"), default=None)
     price_is_approximate: Mapped[bool] = mapped_column(default=False, server_default=false(), nullable=False)
+    catalog_index: Mapped[Optional[int]] = mapped_column(default=None)
     price_cents: Mapped[Optional[int]]
     inventory: Mapped[int] = mapped_column(default=0)
     status: Mapped[str] = mapped_column(default="Published")

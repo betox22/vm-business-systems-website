@@ -67,6 +67,7 @@ def _ensure_additive_columns() -> None:
             "source": "source VARCHAR NOT NULL DEFAULT 'owner_edited'",
             "site_id": "site_id VARCHAR REFERENCES generated_sites(id) ON DELETE SET NULL",
             "price_is_approximate": "price_is_approximate BOOLEAN NOT NULL DEFAULT FALSE",
+            "catalog_index": "catalog_index INTEGER",
         },
         "platform_subscriptions": {
             "legal_consent_version": "legal_consent_version VARCHAR",
