@@ -16,6 +16,26 @@ Formato de entrada:
 
 ---
 
+## 2026-09-13 — Codex — Sesion compartida para store-owner (Fase 1)
+
+**Hecho:** resolutor `authenticated_client_user` extraido a `client_auth.py`.
+Las 13 rutas store-owner usan `require_client_user` como dependencia de
+FastAPI, aceptando cookie HttpOnly existente o Bearer. Store.owner_user_id
+es autoridad; correo solo permite acceso en filas legacy sin ID.
+
+**Validacion:** 22 casos HTTP nuevos (Supabase simulado, rutas reales), incluidos
+cookie owner 200, ajeno 403, Bearer owner 200, sin/invalidas credenciales 401,
+legacy por correo 200 e ID ajeno con mismo correo 403. Suite completa:
+Python 240 passed + 40 subtests passed, Node 185 passed / 0 failed.
+Windows requirio --basetemp nuevo y -p no:cacheprovider por permisos en temporales.
+Se ajustaron tres tests existentes al modulo nuevo y a la dependencia de usuario.
+
+**Pendiente:** el formulario del seller portal llama a /api/client/auth/login,
+que no existe; su callback de token si llama a /session. Host/cookie Domain
+y conexion del catalogo siguen pendientes deliberadamente. No se tocaron
+Product, storefront, checkout, seller-portal.js ni infraestructura.
+Sin commit ni push en esta fase.
+
 ## 2026-09-13 — Codex — Catálogo IA primero para todos los perfiles
 
 **Hecho:** `semantic_seed_catalog()` intenta `generate_ai_seed_catalog()` con

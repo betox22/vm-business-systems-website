@@ -1,47 +1,173 @@
-# KREATON / LYRA — Estado y hoja de ruta
+# KREATON / LYRA: estado real y hoja de ruta
 
-Última actualización: 2026-08-06
+Ultima actualizacion: 2026-09-13
 
-Este documento existe para que siempre sepas qué está resuelto, qué sigue, y en qué orden — sin tener que recordar toda la conversación con Claude o Codex.
+## Veredicto ejecutivo
 
-## Completado
+KREATON no es un prototipo vacio. Tiene autenticacion, persistencia, generacion con OpenAI, almacenamiento de imagenes, plantillas, edicion de texto, administracion, carrito y APIs comerciales reales. El backend de produccion esta activo en el commit `f93bd52c2ce6f5450f42bfd63edc8c8d88eb0692`; `/healthz` responde correctamente y `/api/ai-status` confirma OpenAI, planner, almacenamiento y Unsplash configurados.
 
-- **Login con Google** — el loop que devolvía a la pantalla de login quedó resuelto (deduplicación de sesión, captura correcta del token de OAuth).
-- **Seguridad del backend** — cookies de sesión httpOnly (en vez de solo localStorage), CORS restringido a los dominios reales, límite de intentos en los endpoints de auth, políticas RLS habilitadas en Supabase.
-- **Bug de "Generate website now"** — ya no se trata `needs_more_info` como error. LYRA ahora hace la pregunta que falta de forma conversacional en vez de mostrar "Generation stopped" escondido fuera de vista. (En despliegue.)
+Sin embargo, el producto todavia no cumple de forma consistente la promesa principal: convertir la intencion real de cualquier negocio en un sitio profesional y fiel. El caso BuildRight Hardware demuestra un fallo estructural, no cosmetico. El negocio se clasifico como `industrial_supplier`, pero otra capa independiente reinterpretó la frase "home improvement" como decoracion del hogar, omitio la llamada de IA y publico un catalogo estatico de lamparas, velas, mantas, macetas, marcos y difusores.
 
-## Pendiente — en este orden
+Por tanto, el estado comercial honesto es: **beta funcional con componentes reales, pero no lista para generacion autonoma sin revision humana**. La prioridad no debe ser sumar mas plantillas. Debe ser garantizar fidelidad de catalogo, imagenes y hechos antes de publicar.
 
-1. ~~Riesgo de datos: SQLite local en Render.~~ **Resuelto (2026-07-26).** `DATABASE_URL` ahora apunta a Postgres en Supabase (conexión por Session Pooler, IPv4). Se agregó `psycopg2-binary` a `requirements.txt`. Verificado: el esquema ya coincidía exactamente con los modelos de `db_models.py`, las tablas estaban vacías (no había datos que perder), y el despliegue arrancó sin errores.
-2. ~~Consolidar los 4 portales de cliente duplicados.~~ **Resuelto (2026-07-26).** No eran 4 duplicados — eran 3 productos reales distintos (portal de soporte `client-portal.html`→`client-portal-preview.html`, el asistente LYRA `start/`→`client/setup/`, y el dashboard de tienda `client/portal/`) más 2 carpetas muertas sin ningún enlace en el repo (`client/setup-wizard/`, `client/start/`). Se borraron las 2 muertas, verificado en vivo (404 limpio) y los 3 flujos reales siguen en 200.
-3. **Dividir `ai-builder.js` (~1 MB en un solo archivo) en módulos.** En progreso con Codex. Fase 1 (build con esbuild, aislado en `dist/`) lista (`997586f`). Fase 2 (constantes, i18n, plantillas, utilidades puras) lista (`3c49a2e`). Fase 3 (diagnóstico 2026-07-27): separar auth/chat/generador/editor completos NO es viable todavía — `guidedState` tiene 500+ referencias cruzando las 4 áreas con llamadas bidireccionales (chat↔generación↔editor↔auth). Requeriría rediseñar el manejo de estado, un proyecto de arquitectura aparte. En su lugar, se extrajeron los renderers puros a `src/ai-builder/renderers.js` (~2,211 líneas, entrypoint bajó de 16,967 a 14,085) — listo, en `main` (`a34fba7`). Sin estado mutable movido; dependencias implícitas resueltas por contexto explícito. El núcleo interactivo (chat, generación, editor mutable, auth) queda como un solo bloque cohesivo por ahora — separarlo de verdad es un proyecto de arquitectura aparte.
-   - **Fase 4 (2026-07-31, `main`): módulo de estado centralizado.** Prerrequisito real para poder separar auth/chat/generador/editor. `src/ai-builder/index.js` tenía 123 bindings mutables a nivel de módulo y 440 referencias a `guidedState` sin ningún punto de acceso único. Se extrajo `src/ai-builder/dom.js` (refs de elementos DOM) y `src/ai-builder/state.js` (store único `builderState` con getters/setters/subscribe), migrando todos los accesos directos. Verificado con smoke test en vivo del flujo guiado completo. Commit `63171c4`.
-   - **Cutover a producción (2026-08-01, `main`): `ai-builder.js` ahora se construye en cada deploy desde `src/ai-builder/`.** Antes de esto, `dist/ai-builder.js` (el build modular) existía pero no se conectaba a nada — producción seguía sirviendo el `ai-builder.js` monolítico del root, comprometiendo a mantener dos copias en paralelo cada vez más divergentes con cada fase de refactor. Se modificó `.github/workflows/pages.yml` para correr `node scripts/build-ai-builder.mjs` y sobrescribir el `ai-builder.js` publicado con el build fresco desde la fuente modular, en cada push a `main`. El `ai-builder.js` del root queda en el repo como referencia congelada durante la Fase 5, pero ya NO es lo que se sirve. **Verificado en vivo (byte-idéntico al build local, cero errores de consola).**
-   - **Fix crítico de estabilidad/UX de LYRA (2026-08-01/02, `main`, commit `46dfc48`).** En producción real se detectó que LYRA mostraba "listo para generar" y luego el backend igual pedía más datos. Causa raíz: dos atajos del lado del frontend (`locallyReadyToGenerate` en `sendGuidedReply()`, y el chip "Generate now") que dejaban avanzar a `guidedStep = "review"` sin que el servidor confirmara `readyToGenerate`. Ambos eliminados — ahora el único criterio es la respuesta real del backend. De paso: fila de botones del paso "review" reducida a los 2 de la tarjeta (Generar / Modificar), badge confuso "No raw notes pasted" eliminado, autoguardado de intake subido de 3.2s a 15s con guard de cambio real (bajaba innecesariamente la carga sobre el backend de Render, plan gratis 512MB/0.15 CPU). Verificado en vivo con delegación explícita ("tú decide") y estilo explícito, sin preguntas de más.
-   - **Fase 5a (2026-08-02, `main`, commit `a78dd5a`): módulo de auth/sesión de cliente extraído a `src/ai-builder/auth.js`.** Primera porción del split real de `ai-builder.js` en auth/chat/generador/editor, posible gracias al estado centralizado de la Fase 4. 41 funciones movidas (login Google/Apple/email, sesión demo, panel de proyectos, lock/unlock de workspace). Import circular `index.js <-> auth.js` (auth.js importa ~36 funciones de chat/generador/editor que index.js aún no tiene separadas; index.js importa las 41 de vuelta) — válido en ESM con function declarations, confirmado que esbuild lo resuelve bien. `index.js` bajó a 13,647 líneas. Verificado en vivo: login Google/email/demo, panel de proyectos, ciclo completo chat→generación→editor, sin errores de consola.
-   - **Fase 5b (2026-08-02, `main`, commit `af6d19d`): módulo de chat/asistente extraído a `src/ai-builder/chat.js`.** 39 funciones movidas. Mapa de acoplamiento real (no solo nombres) mostró que chat era el más aislado de los tres que quedaban (33 cruces vs 52 de editor y 79 de generador) — por eso se hizo antes que editor/generador. De regalo se destaparon y corrigieron dos bugs reales, vivos en producción desde el cutover del 1 de agosto: `marketplaceCategories` y `listingLocationForIndex` se llamaban en `renderers.js` sin estar importadas (el monolito viejo las resolvía por scope global, el bundle modular no). Verificado en vivo contra producción real: plantilla "Listing Marketplace" (el tipo que usa `listingLocationForIndex`) seleccionada correctamente vía delegación, sin preguntas de más, cero errores de consola.
-   - **Fase 5c (2026-08-02, `main`, commit `4932706`): módulo de editor/estudio extraído a `src/ai-builder/editor.js`.** 51 funciones movidas. Con chat ya afuera, editor y generador quedaron parejos en cruces (49 cada uno) — se hizo editor primero por ser la mitad más chica (51 funciones vs 108 de generador), dejando generador (el más entrelazado de los tres) para el final. Auditoría cruzada de todo `src/ai-builder/` (incluida una segunda pasada independiente) confirmó cero referencias colgantes entre módulos. Pendiente separado, no bloqueante: en `ai-builder.html` (host admin), el preview en vivo intercepta clics sobre algunos controles del editor tras generar — no causado por esta extracción, necesita revisión visual aparte.
-   - **Fase 5 — CERRADA (2026-08-02).** Diagnóstico final: separar "generador" (108 funciones) en su propio archivo requeriría un cruce de ~92 funciones de import de vuelta desde `index.js` — casi el doble del cruce más alto entre las tres piezas ya extraídas (49). A diferencia de auth/chat/editor, generador no es un "concern" con identidad propia: es el motor central de LYRA, entretejido con el bootstrap y el cableado de arranque de la página. Decisión (con el usuario): no forzar esa cuarta pieza — el riesgo de verificar 92 puntos de cruce no se justifica frente al beneficio real, que ya se obtuvo con las tres piezas que sí tenían identidad propia. `index.js` (330 funciones) queda como el núcleo generador + orquestación de arranque — forma final razonable, no una fase incompleta. `src/ai-builder/` terminó en: `config.js`, `i18n.js`, `templates.js`, `utils.js`, `renderers.js`, `state.js`, `dom.js`, `auth.js`, `chat.js`, `editor.js`, `index.js`.
-4. ~~Eliminar la rama `luma-api` huérfana.~~ **Resuelto (2026-07-26).** También se limpiaron `security-login-rate-limit` y `security-cookie-auth` (apuntaba a una ruta muerta de la rama `luma-api`). `security-supabase-rls` pendiente de borrar (su script ya se aplicó en vivo en Supabase, se está guardando como documentación en el repo primero).
-5. ~~Migrar `seller-portal.js` (dashboard de dueño de tienda, `client/portal/`) a cookies httpOnly.~~ **Resuelto (2026-07-26).** Migración completa (no solo respaldo como quedó en `ai-builder.js`): ya no guarda el token en `localStorage` en absoluto, todo pasa por la cookie httpOnly vía `/api/client/auth/session` y `/api/client/auth/logout`. Probado con Playwright contra endpoints mock. Pendiente: una verificación en vivo rápida tras el despliegue (con cuenta real o `?demo=1`) para cerrar el ciclo. Nota aparte: `ai-builder.js` sigue guardando el token en `localStorage` como respaldo de la cookie — no cierra el riesgo de XSS del todo ahí. Sería un follow-up pequeño si se quiere completar igual.
-6. ~~Agente Revisor/QA para LYRA.~~ **Resuelto (2026-07-26).** `ReviewerAgent` agregado en `agents.py`, corre después de `ValidationAgent` solo en la generación final (`/ai/website-builder`, NO en el chat conversacional). Evalúa copy, catálogo y plantilla contra lo que pidió el cliente; si encuentra algo crítico corrige una sola vez (copywriter/catalog, o si es la plantilla, aplica directamente el `template_id` que el Revisor sugiere del catálogo real — sin reintentar el clasificador de reglas, que es determinístico y no iba a cambiar de respuesta). Sin loops. Probado con caso real (Bath All Day). Commit `e2f95f0`.
-7. ~~`/client/setup/` se veía en blanco/roto durante la validación de sesión.~~ **Resuelto (2026-08-04).** Causa real: cuando había un token guardado, `initClientIntakeSessionGate()` llamaba a `resumeClientSessionFromAuthToken()` sin mostrar ningún loading — mientras el backend (Render free tier) tardaba entre 2.5s y 20+s en validar (o lo rechazaba), la pantalla quedaba completamente vacía. No era un bug de lógica (el gate sí cerraba/abría bien al final). Se agregó un estado de carga visible ("Conectando tu sesión...") durante esa espera. Verificado en vivo: caso de token inválido (aparece el loading, después el form de login) y caso de token válido (gate cierra, clases del body se limpian, layout completo vuelve). Commit `9a77a213`.
-8. ~~Form admin (`ai-builder.html`) sin campo de preferencia de logo.~~ **Resuelto (2026-08-04).** Mismo tipo de gap que `sales_flow` (ver abajo): sin un campo para indicar preferencia de logo, la generación quedaba atascada pidiéndolo por chat. Se agregó `<select name="logo_preference">` con "Sin logo, usa solo texto" como default — no hizo falta tocar JS, `collectPayload()` ya leía ese campo como fallback.
-9. ~~LYRA siempre generaba el mismo resultado sin importar el negocio.~~ **Resuelto (2026-08-05).** Causa raíz confirmada en vivo (probé un restaurante con reservas: el copy se adaptó pero la estructura salió como catálogo de tienda genérico). Dos causas reales, distintas: (a) de 19 templates del backend, solo 3 están "runtime enabled" en `templates.js` — cualquier negocio que no sea retail/marketplace cae forzado en esa estructura (pendiente aparte: construir templates para otros rubros, ver sección de pendientes); (b) incluso dentro de esos 3 templates, los arrays de secciones eran 100% fijos (`buildPremiumProductInstantPages`/`buildRetailInstantPages`/`buildMarketplaceInstantPages` en `index.js`) y un campo `section.variant` que el backend ya mandaba estaba completamente desconectado del render. Se conectó `section.variant` de punta a punta (heroes, marketplace, premium, feature bands con markup/CSS distinto), se reemplazaron los arrays fijos por 3 composiciones determinísticas por template (`split_showcase`/`centered_bold`/`asymmetric_grid`, elegidas por hash de nombre+rubro — mismo negocio = mismo resultado, negocio distinto = alta probabilidad de composición distinta), y se agregó un hook de "dame otro diseño" (`designVariantOffset`) para forzar explícitamente otra composición sin cambiar contenido. Verificado en vivo: dos boutiques de moda distintas generaron composiciones de secciones distintas (una incluyó `fashion-drop-story`/`fashion-fit-guide`, la otra no). Commit `3846654`.
-10. ~~Solo 3 de 19 templates funcionaban de verdad; el resto caía siempre en catálogo de tienda genérico.~~ **Resuelto (2026-08-06), en tres commits.** Investigando el punto 9 más a fondo se descubrió algo mejor de lo esperado: **12 templates más ya estaban completamente construidos** en `index.js` (`buildBookingAppointmentInstantPages`, `buildRestaurantMenuInstantPages`, `buildMedicalWellnessInstantPages`, `buildRealEstateListingsInstantPages`, y 8 más) — el flag `runtimeEnabled` de `templates.js` nunca bloqueó nada en la práctica, era solo informativo. La causa real de por qué nunca se usaban: (a) el clasificador del frontend (`template-router.js`) tenía una colisión de keyword — la palabra "pickup" (común en copy de restaurantes: "order for pickup") disparaba un atajo pensado para "pickup truck" antes de que la regla de "restaurant" (de mayor prioridad) pudiera competir — y (b) la clasificación del frontend sobreescribía incondicionalmente la del backend aunque el backend acertara. Fix: `template-router.js` corregido (colisión de keyword + orden de prioridad), la clasificación del backend ahora prevalece, 18 templates marcados como ejecutables (commit `06a8b8f`). Esto destapó dos bugs más, nunca antes probados en vivo porque esos templates eran inalcanzables: (1) un loop infinito de clasificación para cualquier rubro no cubierto por la lista de alias (ej. "beauty salon") — la respuesta del cliente por chat se descartaba siempre sin aplicarse; se amplió la lista de rubros conocidos y se conectó la respuesta del follow-up para que si resuelva la clasificación (commit `0b78d27`); (2) un `TypeError` real en `buildBookingAppointmentInstantPages` (`copy.bookingHeadline` no era función) que dejaba la UI congelada en "Waiting for generation" sin ningún draft de emergencia — corregido, y se auditaron las otras 11 funciones de template por el mismo patrón de bug, sin encontrar más (commit `aba28b6`). Verificado en vivo contra producción real con 3 rubros distintos (restaurante con "pickup" explícito, salón de belleza con citas, inmobiliaria) — los tres generan correctamente con secciones específicas de su rubro, sin loops ni excepciones.
+## Incidente BuildRight Hardware
 
-## En pausa, no publicado a producción: logos AI con marca de agua + cobro Stripe
+### Causa exacta
 
-Feature completa (generar 3 logos reales con IA, mostrar preview con marca de agua/baja resolución, cobrar pago único por Stripe antes de entregar el archivo limpio) implementada y commiteada en la rama `feature/logo-paywall` (commit `eb44dfd`), separada de `main` a propósito. **No se publica todavía** porque: (1) no hay cuenta de Stripe creada, (2) falta correr `supabase/private_logo_assets.sql` para crear el bucket privado, (3) el precio real por logo no está decidido, (4) el producto base (generación de sitios) recién se estabilizó — no tiene sentido monetizar antes de que el core funcione bien. Retomar cuando esas 3 cosas estén listas.
+1. `backend/app/taxonomy.py`, `infer_seed_profile()` (lineas 198-222), solo reconoce unos pocos perfiles por regex. No existe un perfil para `industrial_supplier`, ferreteria, herramientas, electricidad, plomeria, seguridad industrial o marina.
+2. La regla de `home` (lineas 218-219) acepta la palabra inglesa `home`. La descripcion "hardware and home improvement store" queda clasificada como perfil semilla `home`, aunque la clasificacion principal haya sido `industrial_supplier`.
+3. `backend/app/agents.py`, `semantic_seed_catalog()` (lineas 539-579), solo llama a `generate_ai_seed_catalog()` cuando el perfil es exactamente `default`. Al recibir `home`, evita OpenAI y toma directamente `SEED_PRODUCT_LIBRARY["home"]`.
+4. `backend/app/agents.py` (lineas 405-412) contiene literalmente los seis productos observados en BuildRight: Nordic Table Lamp, Aromatic Candle Set, Soft Knit Throw Blanket, Ceramic Planter Set, Minimalist Photo Frame Set y Ceramic Aroma Diffuser.
+5. `CatalogAgent.run()` (lineas 1250-1295) ejecuta ese catalogo determinista antes del planner. `LyraOrchestrator.run()` (`backend/app/orchestrator.py`, lineas 141-155) corre Art Director, Copywriter y CatalogAgent en paralelo, y despues intenta el planner de OpenAI.
+6. `ensure_plan_seed_catalog_with_source()` (`backend/app/ai_site_planner.py`, lineas 1638-1748) vuelve a invocar el mismo catalogo semilla y puede sustituir o completar el resultado del planner. Ademas, todavia puede heredar del seed precio, rating y badge. Esto crea dos autoridades distintas para el catalogo y permite que el fallback deshaga una decision correcta del planner.
 
-## Incidente resuelto (2026-07-27): exposición pública de backend/ en el sitio real
+### Resultado de reproducciones
 
-Un correo de "build failed" de Render llevó a descubrir que el sitio real (`vmbusinesssystems.com`) no lo sirve Render — lo sirve GitHub Pages, publicando la rama `main` completa tal cual, sin filtro. Confirmado en vivo: `backend/app/main.py`, `supabase/enable_rls.sql` y `project-rebuild-kit/README.md` eran accesibles públicamente. Resuelto con `scripts/stage-public-site.mjs` (excluye backend/, supabase/, docs internos) + `.github/workflows/pages.yml`, cambiando el Source de GitHub Pages de "Deploy from a branch" a "GitHub Actions". Verificado en vivo: todo lo privado ahora da 404, los flujos reales siguen en 200.
+Se ejecuto `CatalogAgent` con el codigo actual, primero sin OpenAI y luego con la llamada real habilitada:
 
-El servicio de Render (`vm-business-systems-website`, Docker, roto desde que se borró `luma-api`) nunca tuvo dominio propio ni sirvió tráfico real — confirmado (0 dominios en su configuración) y borrado. Render ahora solo tiene el backend real (`kreaton-lyra-api`).
+| Negocio | Sin OpenAI | Con OpenAI real | Evaluacion |
+| --- | --- | --- | --- |
+| BuildRight Hardware | Catalogo `home` estatico | El mismo catalogo `home`; OpenAI no se llama | Incorrecto y bloqueante |
+| Casa Brava Restaurant | Menu estatico de restaurante | El mismo menu estatico | Tematicamente cercano, pero inventado y no especifico |
+| Barberia Central | Catalogo generico de tote/tray/pouch | Cortes, fade, barba, afeitado y combos | Relevante cuando alcanza OpenAI |
+| MotorPro Garage | Catalogo generico de tote/tray/pouch | Cambios de aceite, frenos, diagnostico y bateria | Relevante cuando alcanza OpenAI |
+| Harbor Parts | Catalogo generico de tote/tray/pouch | Helice, bomba de achique, bateria marina, luces e impulsor | Relevante cuando alcanza OpenAI |
 
-## Cómo vamos a trabajar esto
+La evidencia descarta que "la IA nunca se llama". Se llama solo para rubros que el regex deja en `default`. Los rubros que chocan con una categoria estatica quedan atrapados en un catalogo prefabricado, aunque el planner conozca la industria correcta.
 
-- Uno a la vez, en el orden de arriba.
-- Para cada punto: diagnóstico primero, luego un prompt preciso para Codex (o lo hago yo directo si es más seguro/rápido), tú confirmas antes de publicar a producción.
-- Este documento se actualiza según avancemos.
+### Gap adicional de integridad
+
+`generate_ai_seed_catalog()` exige hoy `price: float > 0` y luego fabrica `price_type="fixed"`, USD, ratings y badges (`backend/app/agents.py`, lineas 428-535). Ese contrato contradice la regla mas reciente del planner: si el cliente no dio un precio, debe quedar `quote_only` o "Precio por confirmar". Incluso el camino de IA relevante puede producir hechos comerciales no declarados.
+
+El test `backend/tests/test_real_ai_catalog.py` no detecto BuildRight porque mockea OpenAI y prueba rubros que caen en `default`. Tambien afirma explicitamente que hardware sin API key debe usar el seed generico. No cubre la colision `home improvement` -> `home`, ni compara la clasificacion principal con el perfil semilla.
+
+## Inventario de producto
+
+### Verificado hoy en produccion
+
+- Backend `kreaton-lyra-api` saludable y sirviendo `main` en `f93bd52c...`.
+- OpenAI, planner AI, almacenamiento y Unsplash reportan configuracion activa mediante `/api/ai-status`.
+- `usekreaton.com/client/setup/` y `usekreaton.com/admin/` responden por la superficie publica.
+- El fallo BuildRight es reproducible en el codigo actual incluso con OpenAI real, porque el camino incorrecto evita la llamada.
+
+### Construido y respaldado por tests, pero no revalidado hoy de punta a punta en produccion
+
+- Auth de cliente y admin, sesiones, roles y recuperacion de proyectos: rutas en `backend/app/main.py` y politicas frontend.
+- Persistencia de ediciones del dueno: `PUT /api/client/sites/{site_id}` verifica propiedad y persiste `GeneratedSite.generated_config`; cobertura en `backend/tests/test_client_site_update.py` y `tests/ai-builder-client-site-save.test.mjs`.
+- Edicion quirurgica por chat: `/api/luma/edit`, motor backend y politicas frontend con pruebas de aislamiento de cambios.
+- Generacion y revision de logo por IA con fallo no bloqueante: `backend/app/logo_generation.py` y `backend/tests/test_logo_generation.py`.
+- Directorio administrativo, eliminacion transversal, overrides de plantillas y auditoria append-only: `backend/app/main.py`, `backend/app/admin_audit.py`, `backend/app/template_runtime.py` y sus suites.
+- Carrito compartido en todas las plantillas comerciales, aislamiento por negocio/sitio y CTA `quote_only`: `shared-commerce-cart.js` y `tests/shared-commerce-cart.test.mjs`.
+- Backend comercial con productos, inventario, ordenes, clientes, soporte, Stripe Checkout/Connect y webhooks: `backend/app/commerce.py` y `backend/tests/test_commerce_products.py` / `test_stripe_billing.py`.
+- Motor de movimiento con GSAP, reducido por accesibilidad y compatible con inline edit: piloto solo en `mega-retail-store` y `b2b-saas-enterprise-pro`.
+- Suite actual: backend `215 passed`, `26 subtests passed`; frontend `185 passed`.
+
+### Parcial o con brecha funcional
+
+- **Catalogo:** la capa semilla puede contradecir industria, ofertas y planner. Es el riesgo principal de calidad y veracidad.
+- **Checkout publico:** el backend comercial existe, pero el carrito del sitio publico llama `openLeadModal()` al pulsar checkout (`site-viewer.js`, configuracion de `createSharedCommerceCart`). No esta conectado de punta a punta a `/api/v1/checkout/create-session`. No debe venderse aun como checkout completo de autoservicio.
+- **Edicion:** hay cobertura amplia de texto inline y persistencia del schema. No equivale a un CMS completo para editar con la misma facilidad precios, inventario, imagenes, variantes, navegacion y estructura en las ocho plantillas activas.
+- **Imagenes:** Unsplash esta configurado y hay roles/queries de imagen, pero la relevancia depende del catalogo. Un catalogo equivocado produce fotos coherentes con el dato equivocado, no con el negocio real.
+- **Diseño:** Mega Retail, B2B SaaS y Premium Product tienen trabajo dedicado. El nivel no es uniforme entre todas las familias. Las microinteracciones compartidas solo estan habilitadas en dos plantillas.
+- **Copy:** el planner tiene reglas AIDA/PAS y prohibiciones de copy generico, pero no existe aun un benchmark de produccion que mida especificidad, hechos inventados y calidad por rubro de manera sistematica.
+- **Plantillas dinamicas:** se pueden activar/desactivar sin deploy y conservar sitios existentes. El numero exacto activo hoy no se verifico en esta auditoria mediante una sesion admin.
+- **Pagos:** existen implementacion y tests con dobles de Stripe. No se ejecuto hoy una compra real, webhook real, reembolso ni payout de comercio en produccion.
+- **Dominios, publicacion y miniaturas:** existen rutas y UI, pero no se hizo hoy una matriz real de publicacion, dominio y cache para todas las plantillas activas.
+
+### Simulado, temporal o no demostrado
+
+- Los seeds estaticos son contenido de demostracion, no catalogos obtenidos del cliente.
+- Ratings, badges y precios generados por `generate_ai_seed_catalog()` son sinteticos. No deben publicarse como hechos.
+- Los tests de Stripe validan contratos con mocks; no prueban movimiento real de dinero.
+- Los tests de OpenAI con cliente mock prueban estructura, no relevancia semantica del modelo real.
+- Las capturas y previews prueban renderizado, no conversion, accesibilidad completa ni mantenibilidad por parte de un cliente real.
+
+### No iniciado o no cerrado
+
+- Una unica autoridad de catalogo que preserve ofertas declaradas, separe marcas y complete solo cuando corresponde.
+- Evaluacion automatica de relevancia catalogo-negocio antes de publicar.
+- Remediacion de sitios antiguos que ya tengan productos, precios, modelos, ratings o badges inventados.
+- CMS visual completo para catalogo, imagenes, variantes, inventario y estructura posterior a la entrega.
+- Checkout publico conectado de punta a punta al backend comercial y verificado con transaccion real.
+- Benchmark visual y de contenido contra referencias profesionales por viewport y rubro.
+- Auditoria actual de RLS y privilegios en la base de produccion. El archivo `supabase/enable_rls.sql` solo habilita RLS en 16 tablas y deliberadamente no crea politicas. La afirmacion anterior de que RLS estaba "resuelto" no debe considerarse evidencia. El proyecto Supabase de KREATON no estuvo disponible en la conexion usada para esta auditoria, por lo que el estado vivo sigue sin verificar.
+- Pruebas de recuperacion ante desastre, restauracion de backup, rotacion de secretos y objetivos operativos de disponibilidad.
+
+## Comparacion con el estandar objetivo
+
+La referencia compartida muestra el tipo de resultado que KREATON quiere vender: direccion de arte coherente, jerarquia fuerte, movimiento con intencion, imagenes especificas y una experiencia completa. La brecha no se cierra agregando mas CSS o mas plantillas.
+
+| Dimension | Estandar objetivo | KREATON hoy |
+| --- | --- | --- |
+| Fidelidad al negocio | Productos, servicios y hechos trazables al brief | Puede sustituir la intencion por seeds de otra categoria |
+| Direccion de arte | Sistema visual coherente con contenido y activos reales | Algunas plantillas son fuertes; calidad desigual y dependiente del fallback |
+| Imagenes | Fotos especificas por producto, categoria y rol editorial | Unsplash funciona, pero la query hereda errores del catalogo y puede repetir visuales |
+| Movimiento | Transiciones utiles y consistentes en todo el sitio | Motor real, piloto en dos plantillas |
+| Edicion | Todo el contenido comercial mantenible por el dueno | Texto y schema parcial; catalogo/medios/estructura no son un CMS completo |
+| Comercio | Carrito, checkout, pago, inventario y orden conectados | Backend real y carrito real, pero el checkout publico termina en lead modal |
+| Control de calidad | No publica datos inventados ni contenido cruzado | Hay validaciones, pero el fallback puede introducir precios, ratings, badges y productos |
+| Operacion | Seguridad, auditoria, backups y observabilidad verificables | Admin/auditoria construidos; RLS y recuperacion siguen sin cierre actual |
+
+## Plan priorizado
+
+### P0. Integridad de catalogo e intencion
+
+1. Eliminar la seleccion de perfil por coincidencia amplia sobre texto concatenado. `home` no puede ganar por aparecer en "home improvement".
+2. Crear un `CatalogIntent` estructurado y unico: industria primaria, ofertas declaradas, marcas, tipo de venta, categorias permitidas y categorias prohibidas.
+3. Hacer que el planner sea la autoridad. El fallback determinista solo debe preservar ofertas del cliente o devolver items `quote_only`; nunca sustituir un catalogo coherente por seeds.
+4. Cambiar `AISeedCatalogItem.price` a opcional. Prohibir precios, modelos, ratings, stock, descuentos y badges no declarados.
+5. Registrar por item `content_origin`, hechos fuente y motivo de inclusion. Si no se puede justificar un item con el brief, no se publica.
+6. Agregar un gate de relevancia antes de persistir: industria y ofertas deben tener cobertura semantica en el catalogo; ante baja confianza, LYRA pregunta en vez de inventar.
+7. Construir una matriz de al menos 30 rubros con colisiones adversariales: hardware/home improvement, marina, barberia, mecanica, restaurante, legal, salud, educacion, moda y negocios mixtos.
+
+**Criterio de salida:** BuildRight produce herramientas, electricidad, plomeria, tornilleria o seguridad industrial, cero decoracion; los 30 casos no muestran productos de otro rubro; cero hechos comerciales inventados.
+
+### P1. Imagenes coherentes y activos reales
+
+1. Generar queries distintas para `hero_editorial`, `product_packshot`, `category_lifestyle` y `detail_texture` desde el `CatalogIntent` validado.
+2. Prioridad estricta: fotos del cliente, busqueda por producto real, banco curado, fallback neutral. Nunca reutilizar una imagen no relacionada para llenar espacio.
+3. Detectar duplicados perceptuales y placeholders antes de publicar.
+4. Mostrar procedencia de imagen en admin y permitir reemplazo rapido.
+
+**Criterio de salida:** cada imagen corresponde al producto/seccion, no hay repeticion visible indebida y el admin puede explicar de donde salio.
+
+### P2. Edicion posterior a la entrega
+
+1. Completar editor estructurado de catalogo: nombre, descripcion, precio/consulta, imagen, categoria, variantes, stock y visibilidad.
+2. Completar reemplazo/subida de imagenes y logo con persistencia real.
+3. Anadir historial de cambios y rollback por sitio.
+4. Ejecutar matriz real de las plantillas activas: editar, recargar, abrir en otro navegador y confirmar dato desde PostgreSQL.
+
+**Criterio de salida:** un dueno puede mantener su sitio sin soporte de KREATON y sin editar JSON.
+
+### P3. Comercio completo
+
+1. Conectar `shared-commerce-cart.js` a las rutas reales de carrito y `/api/v1/checkout/create-session`.
+2. Verificar Stripe Connect por tienda, webhook, inventario, confirmacion, fallo, cancelacion, reembolso y payout.
+3. Separar claramente `quote_only` de compra directa en UI y ordenes.
+
+**Criterio de salida:** compra real de prueba desde sitio publicado hasta orden pagada y visible para el dueno.
+
+### P4. Calidad visual sistematica
+
+1. Congelar el numero de plantillas activas hasta que cada una pase un benchmark comun.
+2. Definir golden briefs por rubro y capturas desktop/mobile comparables.
+3. Exigir jerarquia, ritmo, variedad de secciones, assets relevantes, accesibilidad y ausencia de overflow.
+4. Expandir el motor de movimiento solo despues de pasar contenido e imagenes.
+
+**Criterio de salida:** todas las plantillas ofrecidas cumplen el mismo minimo profesional, no solo las dos o tres mas trabajadas.
+
+### P5. Seguridad y operacion
+
+1. Auditar en produccion RLS, grants de `anon`/`authenticated`, rol de `DATABASE_URL`, policies y Storage.
+2. Crear politicas owner-only donde corresponda y rutas privadas para operaciones administrativas.
+3. Probar backups/restauracion, rotacion de secretos, logs de fallback y alertas por catalogo `seed_fallback`.
+4. Definir disponibilidad y cold-start aceptables para login y generacion.
+
+**Criterio de salida:** evidencia SQL actual, prueba negativa entre tenants, restauracion demostrada y alertas operativas activas.
+
+## Orden de inversion recomendado
+
+No invertir ahora en mas plantillas ni mas efectos. El orden correcto es: integridad del catalogo, imagenes, edicion del dueno, checkout real, uniformidad visual y seguridad operativa. La razon es directa: un sitio visualmente atractivo con productos falsos o irrelevantes destruye confianza mas rapido que un sitio sencillo pero fiel.
+
+Hasta cerrar P0 y P1, toda generacion deberia tratarse como borrador sujeto a revision, no como publicacion autonoma lista para un cliente de pago.
