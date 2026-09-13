@@ -31,7 +31,7 @@ from .admin_directory import (
 )
 from .agents import TEMPLATE_CATALOG, semantic_seed_catalog, split_items, state_is_commerce_seed_target
 from .ai_site_planner import enforce_client_declared_catalog_facts
-from .client_auth import authenticated_client_user, fetch_supabase_user, supabase_auth_configured
+from .client_auth import authenticated_client_user, fetch_supabase_user, supabase_auth_configured, password_client_session
 from .commerce import router as commerce_router
 from .catalog_sync import apply_commerce_overlay, sync_site_catalog_to_commerce
 from .billing import router as billing_router
@@ -566,6 +566,19 @@ async def client_auth_me(
 class ClientAuthSessionRequest(BaseModel):
     access_token: str
     refresh_token: str = ""
+
+
+class ClientAuthLoginRequest(BaseModel):
+    email: str
+    password: str
+    businessId: Optional[str] = None
+
+
+@app.post("/api/client/auth/login")
+def client_auth_login(payload: ClientAuthLoginRequest, request: Request, response: Response) -> Dict[str, Any]:
+    _enforce_rate_limit(request, "client_auth_login", limit=10)
+    response.headers["Cache-Control"] = "no-store"
+    return password_client_session(payload.email.strip(), payload.password)
 
 
 class AdminAuthSessionRequest(BaseModel):

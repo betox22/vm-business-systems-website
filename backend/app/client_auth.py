@@ -39,6 +39,27 @@ def supabase_auth_configured() -> bool:
     return bool(os.getenv("SUPABASE_URL")) and bool(os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
 
 
+def password_client_session(email: str, password: str) -> Dict[str, Any]:
+    if not supabase_auth_configured():
+        raise HTTPException(status_code=503, detail="Account login is not configured on the server yet.")
+    try:
+        response = httpx.post(
+            f"{os.environ['SUPABASE_URL'].rstrip('/')}/auth/v1/token?grant_type=password",
+            headers={"apikey": os.environ["SUPABASE_SERVICE_ROLE_KEY"]},
+            json={"email": email, "password": password},
+            timeout=10.0,
+        )
+        if response.status_code != 200:
+            raise HTTPException(status_code=401, detail="Credenciales invalidas")
+        result = response.json()
+        if not isinstance(result, dict) or not result.get("access_token") or not isinstance(result.get("user"), dict):
+            raise HTTPException(status_code=401, detail="Credenciales invalidas")
+    except (httpx.HTTPError, ValueError):
+        raise HTTPException(status_code=401, detail="Credenciales invalidas") from None
+    return {"access_token": result["access_token"],
+            "refresh_token": result.get("refresh_token", ""), "user": result["user"]}
+
+
 def fetch_supabase_user(access_token: str) -> Optional[Dict[str, Any]]:
     """Ask Supabase Auth to validate a client access token and return its user.
 

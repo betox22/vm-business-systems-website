@@ -738,6 +738,7 @@ th {
 
 .editor-form label {
   display: grid;
+  min-width: 0;
   gap: 6px;
   color: var(--muted);
   font-size: 12px;
@@ -749,6 +750,13 @@ th {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.editor-form input,
+.editor-form select,
+.editor-form textarea {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .switch-row {
