@@ -16,6 +16,31 @@ Formato de entrada:
 
 ---
 
+## 2026-09-13 — Codex — Portal de comercio Fase 5A (sin commit/push)
+
+**Hecho:** login password Supabase con error generico, configuracion compartida,
+rate limit y no-store. Portal usa cookie validada por /me y rutas reales
+store-owner/products para listar/crear/PATCH/duplicar/archivar. Se conserva
+ownership backend y se envia active/published, sin modificar commerce.py.
+Se retiran rutas fantasma y controles sin persistencia; stock vacio se rechaza.
+Aviso visible de que productos manuales/duplicados no entran al sitio IA.
+Fallback API actualizado; luma-config.js ya apuntaba al custom domain.
+CORS existente cubre usekreaton.com, sin cambio. Cache portal JS/CSS v9.
+
+**Validacion:** Python 293 passed, 40 subtests, 31 warnings; Node 196 passed,
+0 failed. HTTP login/session/PATCH/relectura/overlay con SQLite y Supabase
+mockeado. Chromium desktop/mobile con API fixture, sin errores JS/overflow.
+NO se probo login Supabase real: no hay credenciales de usuario de prueba
+disponibles para esta corrida. Evidencia en kreaton-evidence/portal-phase5a.
+
+**Pendiente:** decision starting_at: se mantiene opcion existente, guardado
+rechaza explicitamente sin degradar a fijo ni inventar campo. Recomendacion
+opcion (a), retirarla temporalmente; NO aplicada. Checkout/pagos/ordenes y
+productos manuales visibles en sitio IA fuera de alcance. No se publicaron cambios.
+
+**Archivos:** client_auth.py, main.py, seller-portal.js/css, client/portal/index.html,
+test_client_password_login.py, seller-portal-commerce.test.mjs y este log.
+
 ## 2026-09-13 — Codex — Overlay publico reducido (Fase 4, sin publicar)
 
 **Hecho:** Product.catalog_index nullable se asigna durante sync segun indice
