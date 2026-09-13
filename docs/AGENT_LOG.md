@@ -16,6 +16,52 @@ Formato de entrada:
 
 ---
 
+## 2026-09-13 — Codex — Importacion de catalogo por sitio (Fase 3, sin publicar)
+
+**Hecho:** _get_or_create_store limita a la Store mas reciente del owner.
+Product incorpora source (default owner_edited), site_id nullable con FK a
+generated_sites ON DELETE SET NULL y price_is_approximate (default false).
+sync_site_catalog_to_commerce archiva las versiones ai_generated de ESE sitio
+e inserta filas nuevas; no hace upsert por ids/SKU inestables de LYRA ni DELETE.
+Conserva nombre, descripcion, imagen, SKU, categoria, precio numerico e inventario
+declarado (cero disponible si no hay inventario); starting_at conserva centavos
+y marca approximate. quote_only conserva precio nulo. Catalogos malformados se
+rechazan con 422 antes de archivar; no se inventan precios de sustitucion.
+El guardado inicial y PUT owner hacen flush/sync/commit en su transaccion,
+con rollback de JSON, archivado y nuevas filas si falla la escritura.
+PATCH owner valido con campos promueve source a owner_edited; PATCH vacio o
+rechazado no lo promueve. Rutas owner/storefront conservan filtro por store_id.
+
+**Limitacion aceptada:** una version editada por el owner queda fuera del sync
+permanentemente y puede coexistir con una fila IA nueva para la misma oferta
+(producto "huerfano"/duplicado). Cada guardado crea historial nuevo incluso si
+solo cambio texto del sitio. No se resuelve esa duplicacion en esta fase.
+Owner API mantiene historico con active=false; storefront excluye Archived.
+ON DELETE SET NULL conserva filas/referencias al borrar un sitio, sin bloquear
+el servicio de borrado existente. No se remedia catalogo de sitios viejos hasta
+que se guarden/regeneren. La fuente publica sigue siendo el JSON.
+
+**Migracion:** mismo arranque aditivo, tres ADD COLUMN. Prueba SQLite real desde
+esquema Fase 2 confirma defaults, FK, cero reconstruccion y cero DDL en segunda
+ejecucion. Si una instalacion aun esta antes de Fase 2, sigue aplicando aquella
+reconstruccion de price_cents; no la requiere Fase 3. PostgreSQL verificado como
+SQL con mock, NO ejecutado en produccion. Conserva lock_timeout=5s y advisory
+lock existentes; ADD COLUMN/FK requiere locks y puede abortar el arranque si
+hay transacciones largas. No es una promesa de despliegue sin bloqueo.
+
+**Validacion:** Python completo: 271 passed, 0 failed, 40 subtests passed,
+2 warnings existentes de FastAPI on_event. Node completo: 186 passed, 0 failed.
+SQLite aislado; sin llamadas OpenAI/Supabase ni cambios de produccion.
+Incluye rollback inyectado despues de insertar/archivar, ambos guardados,
+dos sitios por Store, promocion manual via HTTP y rutas owner/storefront.
+Evidencia: C:/Users/alber/Projects/kreaton-evidence/catalog-phase3/.
+
+**Archivos:** backend/app/{catalog_sync,commerce,db,db_models,main}.py;
+backend/tests/{test_catalog_sync,test_persist_generated_site,test_product_migration}.py;
+docs/AGENT_LOG.md. Sin seller-portal, checkout ni cambio de autoridad publica.
+Sin commit/push de Fase 3. Fase 2 ya publicada en commits 708dc72 + 3e27ece;
+la entrada historica de abajo describia su estado antes de esa autorizacion.
+
 ## 2026-09-13 — Codex — Producto persistente y cotizacion (Fase 2, sin publicar)
 
 **Hecho:** Product agrega description/image_url/sku nullable, quote_only NOT NULL
