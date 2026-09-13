@@ -779,7 +779,7 @@ body.start-minimal-body .client-trust-row span {
 }
 
 .mascot-art {
-  background-image: url("/public/brand/gnu-dev-assistant.png");
+  background-image: url("/assets/nixie_idle.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
