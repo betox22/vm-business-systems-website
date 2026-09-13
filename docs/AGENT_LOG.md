@@ -16,6 +16,28 @@ Formato de entrada:
 
 ---
 
+## 2026-09-12 — Codex — Taxonomía industrial segura para imágenes
+
+**Hecho:** `CATEGORY_KEYWORDS` usa límites de palabra para impedir coincidencias
+por subcadenas como `home` dentro de `homeowners` o `car` dentro de `card`.
+`resolve_product_category()` ya no intenta inferir la categoría de un producto
+desde toda la descripción del negocio: si nombre, categoría, query y descripción
+del producto no bastan, devuelve `producto-general` y usa el placeholder neutral.
+Se añadieron categorías explícitas para material eléctrico, plomería,
+herramientas, tornillería y seguridad industrial; cuando Unsplash está configurado
+esas categorías alimentan búsquedas específicas y, sin una coincidencia segura,
+se conserva el placeholder local.
+
+**Archivos tocados:** `backend/app/taxonomy.py`, `backend/app/image_assets.py`,
+`backend/tests/test_image_assets.py` y esta bitácora.
+
+**Validación:** regresiones focalizadas 18/18 con 10 subtests; suite Node
+182/182; suite backend 215/215 con 26 subtests. Solo permanecen dos advertencias
+preexistentes de deprecación FastAPI.
+
+**Pendiente / abierto:** rama `feature/industrial-image-taxonomy` lista para
+revisión; no fusionada a `main` ni empujada al remoto en esta sesión.
+
 ## 2026-09-12 — Codex — Imágenes coherentes en departamentos Mega Retail
 
 **Hecho:** los banners de departamentos del template `mega-retail-store` ya no

@@ -321,18 +321,6 @@ def resolve_product_category(product: Mapping[str, Any], context: str = "") -> s
         if broad in product_text:
             return broad
 
-    context_text = normalize_image_text(context)
-    for category, pattern in CATEGORY_KEYWORDS.items():
-        if re.search(pattern, context_text):
-            return category
-
-    for broad, subcategories in TAXONOMY.items():
-        for subcategory in subcategories:
-            if subcategory.replace("-", " ") in context_text:
-                return subcategory
-        if broad in context_text:
-            return broad
-
     return "producto-general"
 
 

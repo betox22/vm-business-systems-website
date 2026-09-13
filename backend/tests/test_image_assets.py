@@ -185,6 +185,53 @@ class ImageAssetTests(unittest.TestCase):
         self.assertIn("photo-1484154218962", url)
         self.assertNotIn("photo-1596462502278", url)
 
+    def test_hardware_products_ignore_homeowners_context_and_use_industrial_categories(self) -> None:
+        context = (
+            "hardware and construction supplies store in Valencia selling electrical supplies, "
+            "plumbing supplies, power tools, fasteners, and safety equipment to contractors and homeowners"
+        )
+        cases = [
+            ("12 AWG Copper Building Wire", "Electrical Supplies", "copper electrical wire", "electrico"),
+            ("Schedule 40 PVC Pipe", "Plumbing Supplies", "PVC plumbing pipes", "plomeria"),
+            ("20V Cordless Drill Driver Kit", "Power Tools", "cordless drill kit", "herramientas"),
+            ("Steel Expansion Anchors", "Fasteners", "steel expansion anchors", "tornilleria"),
+            ("Clear Safety Glasses", "Safety Equipment", "clear safety glasses", "seguridad-industrial"),
+        ]
+        unrelated_photo_ids = {
+            "photo-1484154218962",  # home/kitchen seed
+            "photo-1515562141207",  # jewelry/necklace seed
+            "photo-1503376780353",  # automotive seed
+        }
+
+        for name, category, query, expected_category in cases:
+            with self.subTest(name=name):
+                product = {
+                    "name": name,
+                    "category": category,
+                    "description": f"Professional-grade {query} for construction projects.",
+                    "imageSearchQuery": query,
+                }
+                resolved_category = resolve_product_category(product, context)
+                url = resolve_product_image_url(product, context)
+
+                self.assertEqual(resolved_category, expected_category)
+                self.assertTrue(
+                    url == "/images/product-placeholder.svg" or "images.unsplash.com/photo-" in url
+                )
+                for photo_id in unrelated_photo_ids:
+                    self.assertNotIn(photo_id, url)
+
+    def test_unknown_product_does_not_inherit_home_from_homeowners_context(self) -> None:
+        product = {
+            "name": "Specialized Trade Component",
+            "category": "General Supplies",
+            "description": "A specialized component for professional projects.",
+        }
+        context = "A contractor supply business serving contractors and homeowners."
+
+        self.assertEqual(resolve_product_category(product, context), "producto-general")
+        self.assertEqual(resolve_product_image_url(product, context), "/images/product-placeholder.svg")
+
     def test_site_plan_ignores_llm_catalog_image_url(self) -> None:
         hallucinated_url = "https://images.unsplash.com/photo-1582719478181-2f4b2f1d4c4e?auto=format&fit=crop&w=900&q=82"
         plan = AIWebGenerationResponse.model_validate({
