@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  clientSetupAuthRedirect,
   magicLinkFeedback,
   readSupabaseAuthRedirect,
   requestSupabaseMagicLink,
@@ -25,7 +26,10 @@ test("magic-link OTP request sends the expected Supabase contract", async () => 
     },
   });
 
-  assert.equal(capturedUrl, `${projectUrl}/auth/v1/otp`);
+  assert.equal(
+    capturedUrl,
+    `${projectUrl}/auth/v1/otp?redirect_to=https%3A%2F%2Fusekreaton.com%2Fclient%2Fsetup%2F%3Fdraft%3D1`,
+  );
   assert.equal(capturedOptions.method, "POST");
   assert.deepEqual(capturedOptions.headers, {
     apikey: anonKey,
@@ -33,14 +37,26 @@ test("magic-link OTP request sends the expected Supabase contract", async () => 
   });
   assert.deepEqual(JSON.parse(capturedOptions.body), {
     email: "client@example.com",
-    options: {
-      emailRedirectTo: "https://usekreaton.com/client/setup/?draft=1",
-      shouldCreateUser: true,
-    },
+    create_user: true,
   });
   assert.deepEqual(result, { ok: true, status: 200, email: "client@example.com" });
   assert.match(magicLinkFeedback(result, result.email, "es").message, /Te enviamos un enlace de acceso/);
   assert.equal(magicLinkFeedback(result, result.email, "es").title, "Revisa tu correo");
+});
+
+test("client auth callback always targets the builder and drops transient URL state", () => {
+  assert.equal(
+    clientSetupAuthRedirect({
+      href: "https://usekreaton.com/?logout=1#access_token=stale",
+    }),
+    "https://usekreaton.com/client/setup/",
+  );
+  assert.equal(
+    clientSetupAuthRedirect({
+      href: "https://usekreaton.com/client/setup/?lang=es&force-login=1",
+    }),
+    "https://usekreaton.com/client/setup/",
+  );
 });
 
 test("magic-link OTP exposes a real Supabase error and rate-limit state", async () => {

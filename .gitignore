@@ -22,6 +22,7 @@ backend/.test-deps/
 backend/test_deps/
 public-dist*.discard*/
 output/
+.pytest-tmp-auth-merge/
 
 # One-time context packages prepared for other AI assistants (Claude/Gemini)
 # when they couldn't reach a live prototype URL. Kept on disk for reference,

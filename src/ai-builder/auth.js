@@ -42,6 +42,7 @@ import {
   unfinishedClientProject,
 } from './client-project-delete-policy.js';
 import {
+  clientSetupAuthRedirect,
   magicLinkFeedback,
   readSupabaseAuthRedirect,
   requestSupabaseMagicLink,
@@ -202,7 +203,7 @@ async function sendMagicLink(email, { resend = false } = {}) {
 
   const result = await requestSupabaseMagicLink({
     email,
-    redirectTo: window.location.href,
+    redirectTo: clientSetupAuthRedirect(window.location),
     projectUrl: SUPABASE_PROJECT_URL,
     anonKey: SUPABASE_ANON_KEY,
   });
@@ -1576,7 +1577,7 @@ export async function continueWithDemoSession() {
 
 export function continueWithStudioAuth(provider) {
   persistPendingStudioAccountAction(provider);
-  const returnTo = encodeURIComponent(window.location.href);
+  const returnTo = encodeURIComponent(clientSetupAuthRedirect(window.location));
   const supabaseProvider = provider === "apple" ? "apple" : "google";
   window.location.href = `${SUPABASE_AUTH_URL}?provider=${supabaseProvider}&redirect_to=${returnTo}`;
 }
