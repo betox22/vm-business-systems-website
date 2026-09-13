@@ -607,10 +607,106 @@ class BaseAgent:
         raise NotImplementedError
 
 
+class IntakeExtractionPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    businessName: Optional[str] = None
+    servicesProducts: List[str] = Field(default_factory=list, max_length=12)
+    location: Optional[str] = None
+    preferredTone: Optional[str] = None
+    preferredColors: Optional[str] = None
+    websiteIntent: Optional[str] = None
+    confidence: float = Field(ge=0.0, le=1.0)
+
+
+class GeneratedHeroCopy(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    headline: str = Field(min_length=8, max_length=140)
+    subheadline: str = Field(min_length=16, max_length=280)
+    primaryCta: str = Field(min_length=2, max_length=48)
+
+
+class GeneratedArtDirection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    anchorColor: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
+    supportingColors: List[str] = Field(min_length=1, max_length=3)
+    paletteStyle: Literal["elegante", "organico", "tecnologico", "calido"]
+    headingFont: str = Field(min_length=2, max_length=80)
+    bodyFont: str = Field(min_length=2, max_length=80)
+    visualDirection: str = Field(min_length=20, max_length=400)
+
+
+def strict_response_format(name: str, model: type[BaseModel]) -> Dict[str, Any]:
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": name,
+            "strict": True,
+            "schema": make_openai_strict_schema(model.model_json_schema()),
+        },
+    }
+
+
 class IntakeExtractionAgent(BaseAgent):
     name = "intake_extractor"
 
+    def __init__(self) -> None:
+        self.model = os.getenv("OPENAI_INTAKE_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        self.client = (
+            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+            if AsyncOpenAI and self.api_key
+            else None
+        )
+
     async def run(self, state: ProjectState, user_input: str) -> AgentResult:
+        if not self.client or not user_input.strip():
+            return await self._run_deterministic(state, user_input)
+
+        try:
+            response = await create_chat_completion_with_retry(
+                self.client,
+                model=self.model,
+                temperature=0.0,
+                response_format=strict_response_format("kreaton_intake_extraction", IntakeExtractionPayload),
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "Extract only facts explicitly stated in the client's complete message. "
+                            "Do not infer a business name, location, offerings, colors, tone, or intent. "
+                            "Keep servicesProducts as concrete client-named offerings and preserve the "
+                            "message language. Set confidence below 0.65 if the facts are ambiguous."
+                        ),
+                    },
+                    {"role": "user", "content": user_input},
+                ],
+            )
+            parsed = IntakeExtractionPayload.model_validate_json(response.choices[0].message.content or "{}")
+            if parsed.confidence < 0.65:
+                return await self._run_deterministic(state, user_input)
+            fallback = await self._run_deterministic(state, user_input)
+            ai_values = parsed.model_dump(exclude={"confidence"})
+            updates = dict(fallback.updates)
+            for field, value in ai_values.items():
+                if value in (None, "", []):
+                    continue
+                current_value = getattr(state, field, None)
+                if current_value not in (None, "", []):
+                    continue
+                updates[field] = split_items(value) if field == "servicesProducts" else value
+            return AgentResult(
+                agentName=self.name,
+                updates=updates,
+                reasoningSummary="Extracted explicit business facts from the complete intake with structured AI output.",
+                confidence=parsed.confidence,
+            )
+        except Exception:
+            return await self._run_deterministic(state, user_input)
+
+    async def _run_deterministic(self, state: ProjectState, user_input: str) -> AgentResult:
         text = user_input.strip()
         lower = normalize_text(text)
         updates: Dict[str, object] = {}
@@ -848,7 +944,81 @@ class StrategyAgent(BaseAgent):
 class ArtDirectorAgent(BaseAgent):
     name = "art_director"
 
+    def __init__(self) -> None:
+        self.model = os.getenv("OPENAI_ART_DIRECTOR_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        self.client = (
+            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+            if AsyncOpenAI and self.api_key
+            else None
+        )
+
     async def run(self, state: ProjectState, user_input: str) -> AgentResult:
+        fallback = await self._run_deterministic(state, user_input)
+        if not self.client:
+            return fallback
+
+        payload = {
+            "businessName": state.businessName,
+            "businessDescription": state.businessDescription,
+            "industry": state.industry,
+            "servicesProducts": state.servicesProducts,
+            "preferredTone": state.preferredTone,
+            "preferredColors": state.preferredColors,
+            "websiteType": state.websiteType,
+            "selectedLanguage": state.selectedLanguage,
+        }
+        try:
+            response = await create_chat_completion_with_retry(
+                self.client,
+                model=self.model,
+                temperature=0.25,
+                response_format=strict_response_format("kreaton_art_direction", GeneratedArtDirection),
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a senior digital art director. Propose a specific accessible visual system "
+                            "for this exact business. Respect every client-provided color and tone. Return HEX "
+                            "colors, real web-safe or Google font families, and a concrete 1-2 sentence visual "
+                            "direction. Avoid generic design language and do not imitate another brand."
+                        ),
+                    },
+                    {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+                ],
+            )
+            direction = GeneratedArtDirection.model_validate_json(response.choices[0].message.content or "{}")
+            explicit_support = [
+                evidence.color
+                for evidence in state.colorProvenance.colors
+                if evidence.source == "explicit_client"
+                and evidence.color != state.colorProvenance.anchorColor
+            ]
+            anchor = state.colorProvenance.anchorColor or direction.anchorColor
+            colors = build_palette(
+                anchor,
+                direction.paletteStyle,
+                " ".join(filter(None, [
+                    state.industry or "",
+                    state.businessDescription or "",
+                    " ".join(state.servicesProducts),
+                ])),
+                supporting_colors=[*explicit_support, *direction.supportingColors],
+            )
+            return AgentResult(
+                agentName=self.name,
+                updates={
+                    "colors": colors,
+                    "typography": {"heading": direction.headingFont, "body": direction.bodyFont},
+                    "typographyScale": build_typography_scale(direction.paletteStyle),
+                },
+                reasoningSummary=direction.visualDirection,
+                confidence=0.9,
+            )
+        except Exception:
+            return fallback
+
+    async def _run_deterministic(self, state: ProjectState, user_input: str) -> AgentResult:
         text = normalize_text(" ".join([user_input, state.preferredColors or "", state.preferredTone or ""]))
 
         if any(term in text for term in ["cyberpunk", "neon", "futurista"]):
@@ -901,7 +1071,65 @@ class ArtDirectorAgent(BaseAgent):
 class CopywriterAgent(BaseAgent):
     name = "copywriter"
 
+    def __init__(self) -> None:
+        self.model = os.getenv("OPENAI_COPYWRITER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        self.client = (
+            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+            if AsyncOpenAI and self.api_key
+            else None
+        )
+
     async def run(self, state: ProjectState, user_input: str) -> AgentResult:
+        fallback = await self._run_deterministic(state, user_input)
+        if not self.client:
+            return fallback
+
+        payload = {
+            "businessName": state.businessName,
+            "businessDescription": state.businessDescription,
+            "industry": state.industry,
+            "servicesProducts": state.servicesProducts,
+            "preferredTone": state.preferredTone,
+            "websiteType": state.websiteType,
+            "selectedLanguage": state.selectedLanguage,
+        }
+        try:
+            response = await create_chat_completion_with_retry(
+                self.client,
+                model=self.model,
+                temperature=0.45,
+                response_format=strict_response_format("kreaton_hero_copy", GeneratedHeroCopy),
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a senior conversion copywriter. Write a specific hero for this exact "
+                            "business in selectedLanguage. Name a real offering or buyer outcome from the "
+                            "provided facts. Do not merely swap the business name into a generic template. "
+                            "Never invent claims, prices, awards, urgency, or proof. Make primaryCta name the "
+                            "concrete next action."
+                        ),
+                    },
+                    {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+                ],
+            )
+            copy = GeneratedHeroCopy.model_validate_json(response.choices[0].message.content or "{}")
+            return AgentResult(
+                agentName=self.name,
+                updates={
+                    "generatedCopy": {
+                        "hero": copy.model_dump(),
+                        "templateUse": state.selectedTemplateName or "website",
+                    }
+                },
+                reasoningSummary="Created business-specific hero copy with structured AI output.",
+                confidence=0.9,
+            )
+        except Exception:
+            return fallback
+
+    async def _run_deterministic(self, state: ProjectState, user_input: str) -> AgentResult:
         name = state.businessName or "Your Brand"
         language = state.selectedLanguage
         template = state.selectedTemplateName or "website"

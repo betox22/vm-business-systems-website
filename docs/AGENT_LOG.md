@@ -16,6 +16,24 @@ Formato de entrada:
 
 ---
 
+## 2026-09-12 — Codex — Copy, dirección visual e intake con IA real
+
+**Hecho:** `CopywriterAgent`, `ArtDirectorAgent` e `IntakeExtractionAgent`
+usan OpenAI con structured output, timeout de 20 segundos y un reintento. El
+copy y la dirección visual parten de los datos reales del negocio; el intake
+solo acepta extracción IA con confianza mínima de 0.65. Las tres rutas conservan
+intacto su comportamiento determinista anterior cuando falta la API key o falla
+la llamada. `StrategyAgent` no fue modificado.
+
+**Validación:** 181/181 pruebas Node y 145/145 pruebas backend en la rama
+`feature/real-ai-copy-and-design`.
+
+**Archivos tocados:** `backend/app/agents.py`,
+`backend/tests/test_real_ai_agents.py`, `docs/AGENT_LOG.md`.
+
+**Pendiente / abierto:** rama local lista para revisión; no fusionada a `main`
+ni empujada al remoto en esta sesión.
+
 ## 2026-08-31 — Codex — Integración de ListoKDS en la familia VM
 
 **Hecho:** se agregó ListoKDS como tercer producto real en la portada
