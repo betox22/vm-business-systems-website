@@ -106,7 +106,7 @@ STABLE_IMAGE_URLS: List[Dict[str, str]] = [
         "url": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=82",
     },
     {
-        "match": r"truck|bumper|4x4|off-road|auto|car|automotive|camioneta",
+        "match": r"truck|bumper|4x4|off-road|auto|\bcar\b|automotive|camioneta",
         "url": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=82",
     },
     {
@@ -167,7 +167,7 @@ def stable_seed_image_url(keyword: str) -> str:
     for fallback in STABLE_IMAGE_URLS:
         if re.search(fallback["match"], clean):
             return fallback["url"]
-    return "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=900&q=82"
+    return "/images/product-placeholder.svg"
 
 
 def _with_unsplash_attribution_params(url: str) -> str:

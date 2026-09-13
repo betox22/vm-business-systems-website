@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-labelledby="title desc">
+  <title id="title">Neutral product placeholder</title>
+  <desc id="desc">A simple unbranded shipping box on a neutral background.</desc>
+  <rect width="900" height="900" fill="#f1f3f5"/>
+  <path d="M250 338 450 228l200 110-200 111z" fill="#d5b58a"/>
+  <path d="M250 338v247l200 112V449z" fill="#c59b68"/>
+  <path d="M650 338v247L450 697V449z" fill="#b98751"/>
+  <path d="m450 228 72 40-200 111-72-41z" fill="#e2c49c"/>
+  <path d="M450 449v248" stroke="#8a633e" stroke-width="8" opacity=".45"/>
+</svg>

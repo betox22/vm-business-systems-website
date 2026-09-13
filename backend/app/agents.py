@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import asyncio
@@ -15,6 +16,9 @@ from .image_assets import attach_image_asset, stable_seed_image_url
 from .models import AgentResult, ProjectState, WebsiteType
 from .openai_schema import make_openai_strict_schema
 from .taxonomy import infer_seed_profile
+
+
+logger = logging.getLogger(__name__)
 
 try:
     from openai import AsyncOpenAI, OpenAI
@@ -421,6 +425,22 @@ def localized_seed(value: Dict[str, str], language: str) -> str:
     return value.get(language) or value.get("es") or value.get("en") or next(iter(value.values()), "")
 
 
+class AISeedCatalogItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=2, max_length=90)
+    category: str = Field(min_length=2, max_length=60)
+    description: str = Field(min_length=8, max_length=400)
+    price: float = Field(gt=0)
+    image_search_query: str = Field(min_length=2, max_length=80)
+
+
+class AISeedCatalog(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: List[AISeedCatalogItem] = Field(min_length=1, max_length=12)
+
+
 def generate_ai_seed_catalog(context: str, language: str, count: int = 6) -> Optional[List[Dict[str, Any]]]:
     """LLM fallback for niches outside the hand-authored SEED_PRODUCT_LIBRARY.
 
@@ -447,6 +467,11 @@ def generate_ai_seed_catalog(context: str, language: str, count: int = 6) -> Opt
     """
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key or not OpenAI or not context.strip():
+        logger.info(
+            "AI seed catalog skipped configured=%s context_present=%s",
+            bool(api_key and OpenAI),
+            bool(context.strip()),
+        )
         return None
     try:
         client = OpenAI(api_key=api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
@@ -454,8 +479,7 @@ def generate_ai_seed_catalog(context: str, language: str, count: int = 6) -> Opt
         response = create_sync_chat_completion_with_retry(
             client,
             model=model,
-            temperature=0.4,
-            response_format={"type": "json_object"},
+            response_format=strict_response_format("kreaton_seed_catalog", AISeedCatalog),
             messages=[
                 {
                     "role": "system",
@@ -482,22 +506,17 @@ def generate_ai_seed_catalog(context: str, language: str, count: int = 6) -> Opt
                 },
             ],
         )
-        raw = response.choices[0].message.content or "{}"
-        parsed = json.loads(raw)
-        items = parsed.get("items")
-        if not isinstance(items, list) or not items:
-            return None
+        parsed = AISeedCatalog.model_validate_json(response.choices[0].message.content or "{}")
+        items = parsed.items
         catalog: List[Dict[str, Any]] = []
         for index, item in enumerate(items[:count]):
-            if not isinstance(item, dict) or not item.get("name"):
-                continue
-            price = float(item.get("price") or 0) or 29.0
+            price = float(item.price)
             catalog.append({
                 "id": f"prod_{index + 1:03d}",
                 "sku": f"AI-{index + 1:03d}",
-                "name": str(item.get("name"))[:90],
-                "description": str(item.get("description") or "")[:400],
-                "category": str(item.get("category") or "")[:60],
+                "name": item.name,
+                "description": item.description,
+                "category": item.category,
                 "price_type": "fixed",
                 "price": price,
                 "price_amount": price,
@@ -505,13 +524,15 @@ def generate_ai_seed_catalog(context: str, language: str, count: int = 6) -> Opt
                 "price_label": f"USD {price:.2f}",
                 "rating": round(4.5 + (index % 4) * 0.1, 1),
                 "badge": "Best Seller" if index == 0 else "New" if index == 1 else "Featured",
-                "imageSearchQuery": str(item.get("image_search_query") or item.get("name")),
+                "imageSearchQuery": item.image_search_query,
                 "is_active": True,
                 "is_featured": index < 4,
                 "sort_order": index,
             })
+        logger.info("AI seed catalog generated items=%d context=%r", len(catalog), context[:120])
         return catalog or None
-    except Exception:
+    except Exception as exc:
+        logger.warning("AI seed catalog failed; using static fallback: %s", exc)
         return None
 
 
@@ -1230,7 +1251,15 @@ class CatalogAgent(BaseAgent):
     name = "catalog"
 
     async def run(self, state: ProjectState, user_input: str) -> AgentResult:
-        if state_is_commerce_seed_target(state, user_input):
+        catalog_context = " ".join(filter(None, [
+            user_input,
+            state.businessName or "",
+            state.businessDescription or "",
+            state.industry or "",
+            " ".join(state.servicesProducts),
+        ]))
+        unmatched_niche = infer_seed_profile(catalog_context) == "default"
+        if state_is_commerce_seed_target(state, user_input) or unmatched_niche:
             catalog = semantic_seed_catalog(state, user_input, count=6)
             summary = "Generated niche-specific editable seed catalog with prices, descriptions and product image URLs."
         else:
@@ -1254,9 +1283,14 @@ class CatalogAgent(BaseAgent):
                 })
             summary = "Structured the service intake into editable non-commerce catalog entries."
 
+        catalog_source = (
+            "ai_generated"
+            if any(str(item.get("sku") or "").startswith("AI-") for item in catalog)
+            else "seed_fallback"
+        )
         return AgentResult(
             agentName=self.name,
-            updates={"catalogItems": catalog, "catalogSource": "seed_fallback"},
+            updates={"catalogItems": catalog, "catalogSource": catalog_source},
             reasoningSummary=summary,
             confidence=0.84,
         )

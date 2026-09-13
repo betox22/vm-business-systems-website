@@ -31,7 +31,7 @@ CATEGORY_KEYWORDS: Dict[str, str] = {
     "zapatos": r"sneaker|zapato|calzado|shoe|shoes",
     "bolsos": r"bag|bolso|crossbody|cartera",
     "tecnologia": r"usb|phone|gadget|tech|keyboard|projector|electronics|laptop|gaming|rgb",
-    "automotriz": r"truck|bumper|parachoques|4x4|off-road|auto|car|automotive|camioneta|led-light",
+    "automotriz": r"truck|bumper|parachoques|4x4|off-road|auto|\bcar\b|automotive|camioneta|led-light",
     "cafe": r"coffee|espresso|brew|latte|cafe|cold-brew",
     "restaurant": r"restaurant|food|menu|pizza|dish|comida|tacos|salad|dessert|meal",
     "hogar": r"home|decor|furniture|mueble|hogar|lamp|cocina|organizer",

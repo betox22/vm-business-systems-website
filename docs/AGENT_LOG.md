@@ -16,6 +16,27 @@ Formato de entrada:
 
 ---
 
+## 2026-09-12 — Codex — Catálogos IA para rubros no reconocidos
+
+**Hecho:** los rubros que no coinciden con la biblioteca fija ahora usan el
+generador de catálogo de OpenAI con salida JSON Schema estricta, timeout de 20
+segundos y un reintento. Se agregó logging para distinguir ausencia de
+configuración, generación correcta y fallo degradado. El catálogo estático
+`default` queda únicamente como último recurso. La selección de imágenes ya no
+confunde `card` con `car`; cuando el banco no tiene una coincidencia temática
+segura usa un placeholder neutro local en vez de una foto no relacionada.
+
+**Archivos tocados:** `backend/app/agents.py`, `backend/app/image_assets.py`,
+`backend/tests/test_real_ai_catalog.py`, `images/product-placeholder.svg` y esta
+bitácora.
+
+**Validación:** 181/181 pruebas Node y 149/149 pruebas backend en la rama
+`feature/real-ai-catalog`; las regresiones focalizadas de catálogo e imágenes
+pasaron 18/18.
+
+**Pendiente / abierto:** rama lista para revisión; no fusionada a `main` ni
+empujada al remoto en esta sesión.
+
 ## 2026-09-12 — Codex — Copy, dirección visual e intake con IA real
 
 **Hecho:** `CopywriterAgent`, `ArtDirectorAgent` e `IntakeExtractionAgent`
