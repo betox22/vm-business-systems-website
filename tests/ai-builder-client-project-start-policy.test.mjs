@@ -69,5 +69,6 @@ test("OAuth account switch keeps the request created after its reset", () => {
 
 test("template preview palette lookup cannot abort OAuth resume during mixed cache loads", () => {
   const indexSource = readFileSync(new URL("../src/ai-builder/index.js", import.meta.url), "utf8");
+  assert.match(indexSource, /"mega-retail-store": \{ paper:/);
   assert.match(indexSource, /TEMPLATE_PREVIEW_PALETTES\?\.\[normalizeTemplateId\(templateId\)\]/);
 });

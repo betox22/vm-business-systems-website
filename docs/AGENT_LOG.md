@@ -16,6 +16,25 @@ Formato de entrada:
 
 ---
 
+## 2026-09-12 — Codex — Reintentos OpenAI y saneamiento de catálogo
+
+**Hecho:** La rama de rescate de AI Builder usa `gpt-6-astra` como modelo
+predeterminado, configura un timeout de 20 segundos y reintenta una vez con
+backoff antes de entrar al flujo degradado. También elimina valores conectores
+aislados (`and`/`y`) que podían aparecer como productos cuando la IA devolvía
+una lista estructurada.
+
+**Validación:** pruebas unitarias de regresión para catálogo y reintentos,
+además de las suites completas de frontend y backend antes de fusionar.
+
+**Archivos tocados:** `backend/app/agents.py`,
+`backend/app/ai_site_planner.py`, `backend/tests/test_openai_strict_schema.py`.
+
+**Notas para el siguiente agente:** `IntakeExtractionAgent`, `StrategyAgent`,
+`ArtDirectorAgent` y `CopywriterAgent` son deterministas y no realizan llamadas
+a OpenAI. `CatalogAgent` usa la llamada sincronizada solo para nichos sin perfil
+semántico conocido; esa llamada sí quedó cubierta por el reintento.
+
 ## 2026-09-11 — Codex — Corrección estructural del conversor legal
 
 **Hecho:** se regeneraron los seis HTML con los Markdown entregados nuevamente

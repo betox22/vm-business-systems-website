@@ -182,9 +182,10 @@ class SitePlanSectionTests(unittest.TestCase):
         plan = AIWebGenerationResponse.model_validate(payload)
         sections = site_plan_to_updates(plan)["generatedCopy"]["pages"][0]["sections"]
 
-        self.assertEqual(len(sections), len(component_types))
-        for section, component_type in zip(sections, component_types):
+        sections_by_id = {section["sectionId"]: section for section in sections}
+        for component_type in component_types:
             with self.subTest(component_type=component_type):
+                section = sections_by_id[component_type]
                 self.assertEqual(section["dataBinding"], {})
                 self.assertEqual(section["editable"]["headline"], f"Real headline for {component_type}")
                 self.assertEqual(section["editable"]["body"], f"Real body copy for {component_type}")

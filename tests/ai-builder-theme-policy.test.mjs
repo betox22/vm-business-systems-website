@@ -89,13 +89,54 @@ test("guided color reply becomes the explicit client anchor in the final provena
     source: "explicit_user_choice",
     confidence: 1,
   });
-  assert.equal(result.anchorColor, "morado");
+  assert.equal(result.anchorColor, "#6D4AFF");
   assert.equal(result.anchorSource, "explicit_client");
-  assert.equal(result.secondaryColor, "azul");
+  assert.equal(result.secondaryColor, "#2563EB");
   assert.deepEqual(result.colors.slice(0, 2), [
-    { color: "morado", source: "explicit_client" },
-    { color: "azul", source: "explicit_client" },
+    { color: "#6D4AFF", source: "explicit_client" },
+    { color: "#2563EB", source: "explicit_client" },
   ]);
+});
+
+test("electric blue and gray reach the backend as one explicit deterministic palette", () => {
+  const update = colorPreferenceUpdate(["azul electrico y gris"]);
+  const result = buildColorProvenance({
+    preferredColors: update.preferredColors,
+    preferredColorMeta: update.fieldMeta.preferredColors,
+  });
+
+  assert.equal(result.anchorColor, "#0066FF");
+  assert.equal(result.anchorSource, "explicit_client");
+  assert.deepEqual(result.colors, [
+    { color: "#0066FF", source: "explicit_client" },
+    { color: "#64748B", source: "explicit_client" },
+  ]);
+});
+
+test("common Spanish and English color names resolve with light dark and electric variants", () => {
+  const cases = [
+    ["rojo", "#B42318"],
+    ["dark green", "#166534"],
+    ["azul claro", "#60A5FA"],
+    ["purpura electrico", "#7C3AED"],
+    ["amarillo", "#EAB308"],
+    ["naranja oscuro", "#C2410C"],
+    ["light pink", "#F9A8D4"],
+    ["negro", "#111111"],
+    ["white", "#FFFFFF"],
+    ["dorado", "#C89B3C"],
+    ["silver", "#A8B0BA"],
+    ["turquesa", "#14B8A6"],
+  ];
+
+  cases.forEach(([name, expected]) => {
+    const update = colorPreferenceUpdate([name]);
+    const provenance = buildColorProvenance({
+      preferredColors: update.preferredColors,
+      preferredColorMeta: update.fieldMeta.preferredColors,
+    });
+    assert.equal(provenance.anchorColor, expected, name);
+  });
 });
 
 test("delegated color choice does not outrank an extracted logo palette", () => {

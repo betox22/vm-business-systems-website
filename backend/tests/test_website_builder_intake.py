@@ -297,6 +297,66 @@ class WebsiteBuilderIntakeTests(unittest.TestCase):
         for stale_term in ("impresiones 3d", "regalos", "accessories", "gifts", "toys"):
             self.assertNotIn(stale_term, contaminated)
 
+    def test_phonehub_structured_catalog_never_reenters_intake_as_python_repr(self) -> None:
+        services = ["telefonos", "accesorios"]
+        brands = ["Xiaomi", "Apple", "Samsung", "Oppo"]
+        request = WebsiteGenerationRequest(
+            business_name="PhoneHub",
+            business_description=(
+                "Quiero vender telefonos y accesorios, las marcas van a ser Xiaomi, Apple, "
+                "Samsung y Oppo. El negocio se llama PhoneHub. Vendo en linea con envio a domicilio."
+            ),
+            industry="technology",
+            services_products=services,
+            brands_carried=brands,
+            target_audience="Consumidores de tecnologia",
+            preferred_tone="explicit_delegation",
+            logoPreference="explicit_skip",
+            salesFlow="online_sales",
+            selectedLanguage="es",
+            fieldMeta={
+                "niche": {"source": "explicit", "confidence": 1},
+                "sales_flow": {"source": "explicit", "confidence": 1},
+                "brand_style": {"source": "explicit_delegation", "confidence": 1},
+                "logo": {"source": "explicit", "confidence": 1},
+            },
+        )
+        captured = {}
+
+        async def preserve_structured_state(prompt, state, **kwargs):
+            captured["prompt"] = prompt
+            captured["kwargs"] = kwargs
+            captured["services"] = list(state.servicesProducts)
+            captured["brands"] = list(state.brandsCarried)
+            state.websiteType = "online_store"
+            state.selectedTemplateId = "mega-retail-store"
+            state.catalogItems = [
+                {"name": "Telefonos", "category": "Telefonos", "price_type": "quote_only"},
+                {"name": "Accesorios", "category": "Accesorios", "price_type": "quote_only"},
+            ]
+            state.catalogSource = "ai_generated"
+            return state
+
+        with patch.object(main.orchestrator, "run", side_effect=preserve_structured_state):
+            response = asyncio.run(main.website_builder(
+                request,
+                _http_request(),
+                authorization="",
+                luma_client_session="",
+                session=self.session,
+            ))
+
+        self.assertTrue(captured["kwargs"]["skip_intake_strategy"])
+        self.assertEqual(captured["services"], services)
+        self.assertEqual(captured["brands"], brands)
+        self.assertNotIn("['", captured["prompt"])
+        self.assertNotIn("']", captured["prompt"])
+        self.assertIn("Products or services: telefonos, accesorios", captured["prompt"])
+        self.assertIn("Brands carried: Xiaomi, Apple, Samsung, Oppo", captured["prompt"])
+        serialized = str(response.website_schema["catalog_items"])
+        self.assertNotIn("['", serialized)
+        self.assertNotIn("']", serialized)
+
 
 if __name__ == "__main__":
     unittest.main()

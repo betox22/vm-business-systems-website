@@ -63,3 +63,37 @@ test("mergeSemanticSeedCatalog protects real metadata and resolves its own image
   );
   assert.notEqual(result.image_url, "https://seed.example/cyberlamp.jpg");
 });
+
+test("ai-generated real items never inherit unverified commerce metadata from seeds", () => {
+  const [result] = mergeSemanticSeedCatalog(
+    [{
+      name: "Telefonos",
+      category: "Telefonos y accesorios",
+      description: "Modelos seleccionados para entrega a domicilio.",
+      content_origin: "ai_enriched",
+      imageSearchQuery: "smartphone retail display",
+    }],
+    [{
+      name: "Magnetic Desk Stand",
+      price: 49.99,
+      rating: 4.9,
+      review_count: 812,
+      badge: "Best seller",
+      shipping_label: "Free next-day shipping",
+      inventory_quantity: 99,
+    }],
+    "es",
+    "telefonos y accesorios",
+    { catalogSource: "ai_generated" },
+  );
+
+  assert.equal(result.name, "Telefonos");
+  assert.equal(result.price, null);
+  assert.equal(result.price_type, "quote_only");
+  assert.equal(result.price_label, "Precio por confirmar");
+  assert.equal(result.rating, null);
+  assert.equal(result.review_count, null);
+  assert.equal(result.badge, "");
+  assert.equal(result.shipping_label, "");
+  assert.equal(result.inventory_quantity, null);
+});

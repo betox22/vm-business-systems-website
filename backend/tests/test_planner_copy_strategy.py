@@ -61,3 +61,18 @@ def test_copy_strategy_receives_distinct_verified_facts_for_bath_and_b2b() -> No
         "SLA reporting automation",
     ]
     assert bath_summary != b2b_summary
+
+
+def test_client_summary_keeps_carried_brands_separate_from_catalog_offerings() -> None:
+    state = ProjectState(
+        businessName="PhoneHub",
+        businessDescription="Vende telefonos y accesorios con envio a domicilio.",
+        servicesProducts=["Telefonos", "Accesorios"],
+        brandsCarried=["Xiaomi", "Apple", "Samsung", "Oppo"],
+        selectedLanguage="es",
+    )
+
+    summary = state_to_client_summary(state, "Construye la tienda con estas ofertas y marcas.")
+
+    assert summary["servicesProducts"] == ["Telefonos", "Accesorios"]
+    assert summary["brandsCarried"] == ["Xiaomi", "Apple", "Samsung", "Oppo"]

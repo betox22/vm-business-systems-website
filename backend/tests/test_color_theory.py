@@ -89,6 +89,18 @@ class ColorTheoryTests(unittest.TestCase):
 
         self.assertEqual(first, second)
 
+    def test_explicit_blue_and_gray_do_not_gain_a_generated_orange_accent(self) -> None:
+        palette = build_palette(
+            "#0066FF",
+            "tecnologico",
+            "technology retail",
+            supporting_colors=["#64748B"],
+        )
+
+        self.assertEqual(palette["primary"], "#0066FF")
+        self.assertEqual(palette["secondary"], "#64748B")
+        self.assertEqual(palette["accent"], "#0066FF")
+
     def test_logo_extracted_anchor_drives_planner_palette(self) -> None:
         state = ProjectState(
             businessName="Bath All Day",

@@ -1,5 +1,6 @@
-import { createSharedCommerceCart } from "./shared-commerce-cart.js?v=1";
+import { createSharedCommerceCart, resolveCatalogAction } from "./shared-commerce-cart.js?v=2";
 import { createSharedSiteMotion, motionDataAttributes } from "./shared-site-motion.js?v=1";
+import { limitPremiumHeadline, premiumSectionImage, PREMIUM_IMAGE_ROLES } from "./src/ai-builder/premium-product-policy.js?v=1";
 
 const API_BASE_URL = resolveApiBaseUrl();
 const publicSite = document.querySelector("#publicSite");
@@ -99,9 +100,10 @@ function renderWebsite(schema, pageKey = "home") {
   if (templateId === "b2b-saas-enterprise-pro") {
     return renderB2BSaasPublicWebsite(schema, page, { logo, layoutId, templateId, theme });
   }
-  const commerceActions = isCommerceSite(schema) ? renderCommerceNavActions(schema) : "";
+  const isPremiumProductStore = templateId === "premium-product-store";
+  const commerceActions = isCommerceSite(schema) ? renderCommerceNavActions(schema, { showSearch: isPremiumProductStore }) : "";
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)}">
-    <header class="rendered-nav sticky">
+    <header class="rendered-nav ${isPremiumProductStore ? "premium-commerce-header" : ""} sticky">
       <div class="rendered-nav-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business?.name)}">` : renderLogoMark(schema)}</div>
       <nav>${(schema.navigation || [])
         .map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#${escapeAttribute(item.page_key)}" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.label)}</a>`)
@@ -287,9 +289,8 @@ function renderMegaRetailPublicBento(schema, heroSection, categories, items, cli
 }
 
 function renderMegaRetailPublicDeals(schema, sections, items, labels) {
-  const commerce = commerceLabels(schema);
   const source = sections.find((section) => ["DealRow", "ProductGrid"].includes(section.type)) || {};
-  return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailPublicIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailPublicDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${cartTriggerAttributes(item)}>${escapeHtml(commerce.addToCart)}</button></div></article>`).join("")}</div></section>`;
+  return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailPublicIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => { const action = catalogAction(schema, item); return `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailPublicDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${action.attributes}>${escapeHtml(action.label)}</button></div></article>`; }).join("")}</div></section>`;
 }
 
 function megaRetailPublicDiscountBadge(item = {}) {
@@ -368,37 +369,36 @@ function isCommerceSite(schema = {}) {
 function commerceLabels(schema = {}) {
   const language = schema?.business?.selectedLanguage || "en";
   const labels = {
-    en: { account: "Account", cart: "Cart", cartEyebrow: "Your selection", addToCart: "Add to cart", addedToCart: "added to cart", checkout: "Continue to checkout", continueShopping: "Continue shopping", emptyCart: "Your cart is empty.", emptyHint: "Add something you love and it will appear here.", remove: "Remove", decrease: "Decrease quantity", increase: "Increase quantity", close: "Close cart", signInTitle: "Sign in or create account", name: "Name", email: "Email", continue: "Continue", saved: "Saved", items: "items", total: "Total" },
-    es: { account: "Cuenta", cart: "Carrito", cartEyebrow: "Tu seleccion", addToCart: "Agregar al carrito", addedToCart: "agregado al carrito", checkout: "Continuar al pago", continueShopping: "Seguir comprando", emptyCart: "Tu carrito esta vacio.", emptyHint: "Agrega algo que te guste y aparecera aqui.", remove: "Quitar", decrease: "Reducir cantidad", increase: "Aumentar cantidad", close: "Cerrar carrito", signInTitle: "Entrar o crear cuenta", name: "Nombre", email: "Correo", continue: "Continuar", saved: "Guardado", items: "articulos", total: "Total" },
+    en: { account: "Account", cart: "Cart", search: "Search products", cartEyebrow: "Your selection", addToCart: "Add to cart", addedToCart: "added to cart", checkout: "Continue to checkout", continueShopping: "Continue shopping", emptyCart: "Your cart is empty.", emptyHint: "Add something you love and it will appear here.", remove: "Remove", decrease: "Decrease quantity", increase: "Increase quantity", close: "Close cart", signInTitle: "Sign in or create account", name: "Name", email: "Email", continue: "Continue", saved: "Saved", items: "items", total: "Total" },
+    es: { account: "Cuenta", cart: "Carrito", search: "Buscar productos", cartEyebrow: "Tu seleccion", addToCart: "Agregar al carrito", addedToCart: "agregado al carrito", checkout: "Continuar al pago", continueShopping: "Seguir comprando", emptyCart: "Tu carrito esta vacio.", emptyHint: "Agrega algo que te guste y aparecera aqui.", remove: "Quitar", decrease: "Reducir cantidad", increase: "Aumentar cantidad", close: "Cerrar carrito", signInTitle: "Entrar o crear cuenta", name: "Nombre", email: "Correo", continue: "Continuar", saved: "Guardado", items: "articulos", total: "Total" },
     fr: { account: "Compte", cart: "Panier", cartEyebrow: "Votre selection", addToCart: "Ajouter au panier", addedToCart: "ajoute au panier", checkout: "Continuer vers le paiement", continueShopping: "Continuer vos achats", emptyCart: "Votre panier est vide.", emptyHint: "Ajoutez un article et il apparaitra ici.", remove: "Retirer", decrease: "Reduire la quantite", increase: "Augmenter la quantite", close: "Fermer le panier", signInTitle: "Connexion ou creation de compte", name: "Nom", email: "Email", continue: "Continuer", saved: "Enregistre", items: "articles", total: "Total" },
     pt: { account: "Conta", cart: "Carrinho", cartEyebrow: "Sua selecao", addToCart: "Adicionar ao carrinho", addedToCart: "adicionado ao carrinho", checkout: "Continuar para pagamento", continueShopping: "Continuar comprando", emptyCart: "Seu carrinho esta vazio.", emptyHint: "Adicione algo que voce goste e aparecera aqui.", remove: "Remover", decrease: "Diminuir quantidade", increase: "Aumentar quantidade", close: "Fechar carrinho", signInTitle: "Entrar ou criar conta", name: "Nome", email: "Email", continue: "Continuar", saved: "Salvo", items: "itens", total: "Total" },
   };
   return labels[language] || labels.en;
 }
 
-function renderCommerceNavActions(schema) {
+function renderCommerceNavActions(schema, { showSearch = false } = {}) {
   const labels = commerceLabels(schema);
   return `<div class="commerce-actions">
-    <button class="commerce-action" data-account-open type="button">${escapeHtml(labels.account)}</button>
-    <button class="commerce-action cart-button" data-cart-open type="button">${escapeHtml(labels.cart)} <span data-cart-count>${sharedCart?.count() || 0}</span></button>
+    ${showSearch ? `<form class="premium-nav-search" data-catalog-search-form><label><span class="sr-only">${escapeHtml(labels.search || "Search")}</span><input type="search" name="catalog-search" placeholder="${escapeAttribute(labels.search || "Search")}"></label><button type="submit" aria-label="${escapeAttribute(labels.search || "Search")}">${premiumNavIcon("search")}</button></form>` : ""}
+    <button class="commerce-action premium-account-action" data-account-open type="button" aria-label="${escapeAttribute(labels.account)}">${premiumNavIcon("user")}<span>${escapeHtml(labels.account)}</span></button>
+    <button class="commerce-action cart-button" data-cart-open type="button" aria-label="${escapeAttribute(labels.cart)}">${premiumNavIcon("bag")}<span class="commerce-action-label">${escapeHtml(labels.cart)}</span> <span data-cart-count>${sharedCart?.count() || 0}</span></button>
   </div>`;
 }
 
-function cartTriggerAttributes(item = {}, price = "") {
-  return `data-cart-add data-item-id="${escapeAttribute(item.id || item.itemId || item.name || item.title || "")}" data-item-name="${escapeAttribute(item.name || item.title || "Item")}" data-item-price="${escapeAttribute(price || item.price_label || item.priceLabel || item.price || "")}" data-item-image="${escapeAttribute(item.image_url || item.imageUrl || "")}"`;
+function premiumNavIcon(name) {
+  if (name === "search") return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>';
+  if (name === "user") return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>';
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 13H7L6 8Z"></path><path d="M9 8a3 3 0 0 1 6 0"></path></svg>';
 }
 
-function catalogAction(schema, item = {}, fallbackLabel = "Request info") {
-  if (!isCommerceSite(schema)) {
-    return {
-      attributes: `data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name || "")}"`,
-      label: item.button_label || fallbackLabel,
-    };
-  }
-  return {
-    attributes: cartTriggerAttributes(item, item.price_label || item.price || ""),
-    label: commerceLabels(schema).addToCart,
-  };
+function catalogAction(schema, item = {}, fallbackLabel = "Request info", commerceOverride) {
+  return resolveCatalogAction(item, {
+    language: schema?.business?.selectedLanguage || "en",
+    commerce: commerceOverride ?? isCommerceSite(schema),
+    fallbackLabel,
+    cartLabel: commerceLabels(schema).addToCart,
+  });
 }
 
 function renderSection(section, schema) {
@@ -526,13 +526,12 @@ function renderHero(section, schema) {
 function renderPremiumHero(section, schema) {
   const editable = section.editable || {};
   const items = publicCatalogItems(schema);
-  const heroItem = items.find((item) => item.is_featured && item.image_url) || items.find((item) => item.image_url);
-  const image = editable.image_url || heroItem?.image_url || "";
+  const image = premiumSectionImage(section, PREMIUM_IMAGE_ROLES.hero);
   const firstItem = items[0];
   return `<section class="premium-hero ${sectionClass(section)}">
     <div class="premium-hero-copy">
       <span class="rendered-kicker">${escapeHtml(schema.business?.industry || schema.business?.tone || "")}</span>
-      <h1>${escapeHtml(editable.headline || schema.business?.name || "")}</h1>
+      <h1>${escapeHtml(limitPremiumHeadline(editable.headline || schema.business?.name || ""))}</h1>
       <p>${escapeHtml(editable.subtitle || schema.business?.description || "")}</p>
       <div class="rendered-actions">
         <button class="rendered-button" data-open-lead type="button">${escapeHtml(editable.primary_button || schema.theme?.buttons?.primary_label || "Explore")}</button>
@@ -548,7 +547,7 @@ function renderPremiumHero(section, schema) {
 
 function renderProductStory(section, schema) {
   const editable = section.editable || {};
-  const image = editable.image_url || publicCatalogItems(schema).find((item) => item.image_url)?.image_url || "";
+  const image = premiumSectionImage(section, PREMIUM_IMAGE_ROLES.detail);
   return `<section class="premium-story ${sectionClass(section)}">
     <div>
       <span class="rendered-kicker">${escapeHtml(schema.business?.tone || "")}</span>
@@ -1070,7 +1069,9 @@ function renderDealRow(section, schema) {
 function renderTrustStrip(section, schema) {
   const editable = section.editable || {};
   const labels = catalogLocaleLabels(schema);
-  const trust = [labels.secureCheckout, labels.fastShip, labels.support, labels.easyReturns];
+  const trust = Array.isArray(editable.items) && editable.items.length
+    ? editable.items.filter(Boolean).slice(0, 4)
+    : [labels.secureCheckout, labels.fastShip, labels.support, labels.easyReturns];
   return `<section class="marketplace-trust-strip ${sectionClass(section)}"><div><h2>${escapeHtml(editable.title || labels.trustTitle)}</h2>${editable.text ? `<p>${escapeHtml(editable.text)}</p>` : ""}</div><div>${trust.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></section>`;
 }
 
@@ -1344,8 +1345,7 @@ function renderDigitalAccessPanel(section, schema) {
 
 function renderDigitalOfferCatalog(items, schema) {
   const labels = catalogLocaleLabels(schema);
-  const commerce = isCommerceSite(schema);
-  return `<div class="catalog-digital-pro catalog-count-${Math.min(items.length, 9)}">${items.map((item) => `<article ${catalogSearchAttributes(item)}>
+  return `<div class="catalog-digital-pro catalog-count-${Math.min(items.length, 9)}">${items.map((item) => { const action = catalogAction(schema, item, labels.getAccess); return `<article ${catalogSearchAttributes(item)}>
     <div class="digital-card-top"><small>${escapeHtml(item.category || labels.digitalProducts)}</small><span>${escapeHtml(labels.instantAccess)}</span></div>
     ${renderCatalogImage(item)}
     <h3>${escapeHtml(item.name)}</h3>
@@ -1353,9 +1353,9 @@ function renderDigitalOfferCatalog(items, schema) {
     <ul><li>${escapeHtml(labels.downloadable)}</li><li>${escapeHtml(labels.bonus)}</li><li>${escapeHtml(labels.lifetime)}</li></ul>
     <div class="digital-card-bottom">
       <strong>${escapeHtml(item.price_label || labels.request)}</strong>
-      <button class="rendered-button" ${commerce ? cartTriggerAttributes(item, item.price_label || labels.request) : `data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}"`} type="button">${escapeHtml(item.button_label || (commerce ? commerceLabels(schema).addToCart : labels.getAccess))}</button>
+      <button class="rendered-button" ${action.attributes} type="button">${escapeHtml(action.label)}</button>
     </div>
-  </article>`).join("")}</div>`;
+  </article>`; }).join("")}</div>`;
 }
 
 function renderLuxuryHighTicketCatalog(items, schema) {
@@ -1970,13 +1970,9 @@ function renderLeadFunnelOfferCatalog(items, schema) {
 
 function renderCatalogCard(item, className, badge, schema) {
   const labels = catalogLocaleLabels(schema);
-  const commerce = commerceLabels(schema);
   const isMarket = String(className || "").includes("market-card") || isCommerceSite(schema);
   const priceLabel = item.price_label || labels.request;
-  const actionAttributes = isMarket
-    ? cartTriggerAttributes(item, priceLabel)
-    : `data-open-lead data-item-id="${escapeAttribute(item.id || "")}" data-item-name="${escapeAttribute(item.name)}"`;
-  const actionLabel = isMarket ? commerce.addToCart : (item.button_label || labels.view);
+  const action = catalogAction(schema, item, labels.view, isMarket);
   return `<article class="${className}" ${catalogSearchAttributes(item)}>
     ${renderCatalogImage(item)}
     ${badge ? `<small>${escapeHtml(badge)}</small>` : ""}
@@ -1985,7 +1981,7 @@ function renderCatalogCard(item, className, badge, schema) {
     <p>${escapeHtml(item.description)}</p>
     <div class="market-meta"><span>${"★".repeat(Math.max(1, Math.min(5, Math.round(Number(item.rating) || 4))))} ${escapeHtml(item.rating || "4.6")}</span><span>${escapeHtml(item.shipping_label || labels.fastShip)}</span></div>
     <b>${escapeHtml(priceLabel)}</b>
-    <button class="rendered-button" ${actionAttributes} type="button">${escapeHtml(actionLabel)}</button>
+    <button class="rendered-button" ${action.attributes} type="button">${escapeHtml(action.label)}</button>
   </article>`;
 }
 
@@ -2026,9 +2022,13 @@ function renderCourseOffering(section, schema) {
   const embedUrl = safeVideoEmbedUrl(editable.videoUrl || editable.video_url || "");
   const includes = Array.isArray(editable.includes) ? editable.includes.slice(0, 8) : [];
   const commerce = editable.ctaMode === "purchase" && isCommerceSite(schema);
-  const actionAttributes = commerce
-    ? cartTriggerAttributes({ ...editable, id: editable.itemId || section.id || editable.title || "course", name: editable.title || "Course" }, editable.priceLabel || "")
-    : `data-open-lead data-item-id="${escapeAttribute(editable.itemId || section.id || "course")}" data-item-name="${escapeAttribute(editable.title || "Course")}"`;
+  const action = catalogAction(schema, {
+    ...editable,
+    id: editable.itemId || section.id || editable.title || "course",
+    name: editable.title || "Course",
+    price_label: editable.priceLabel || "",
+    price_type: editable.priceType || editable.price_type || (commerce ? "fixed" : "quote_only"),
+  }, editable.ctaLabel || "Learn more", commerce);
   return `<section class="course-offering ${sectionClass(section)}">
     <div class="course-offering-media">
       ${embedUrl
@@ -2040,7 +2040,7 @@ function renderCourseOffering(section, schema) {
       <h2>${escapeHtml(editable.title || "Course")}</h2>
       <p>${escapeHtml(editable.description || editable.text || "")}</p>
       ${includes.length ? `<ul>${includes.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
-      <div class="course-offering-action">${editable.priceLabel ? `<strong>${escapeHtml(editable.priceLabel)}</strong>` : ""}<button class="rendered-button" ${actionAttributes} type="button">${escapeHtml(editable.ctaLabel || "Learn more")}</button></div>
+      <div class="course-offering-action">${editable.priceLabel ? `<strong>${escapeHtml(editable.priceLabel)}</strong>` : ""}<button class="rendered-button" ${action.attributes} type="button">${escapeHtml(action.label)}</button></div>
     </div>
   </section>`;
 }

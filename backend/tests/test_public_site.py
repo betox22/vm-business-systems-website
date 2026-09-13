@@ -157,6 +157,35 @@ class PublicSitePayloadTests(unittest.TestCase):
         self.assertEqual(_schema_summary(public_schema)["accent_color"], "#0F766E")
         self.assertEqual(_schema_summary({"theme": {"accent": "#AABBCC"}})["accent_color"], "#AABBCC")
 
+    def test_private_business_brief_never_becomes_public_schema_copy(self) -> None:
+        private_brief = (
+            "quiero vender telefonos y accesorios, las marcas van a ser Xiaomi, "
+            "Apple, Samsung y Oppo; el navegador esta en ingles"
+        )
+        public_description = "Telefonos y accesorios para comprar en linea con entrega a domicilio."
+        state = ProjectState(
+            businessName="PhoneHub",
+            businessDescription=private_brief,
+            publicBusinessDescription=public_description,
+            selectedLanguage="es",
+            generatedCopy={"hero": {"headline": "Tu proximo telefono, sin vueltas"}},
+        )
+
+        schema = build_schema_from_state(state, catalog_items=[], catalog_source="seed_fallback")
+        serialized = json.dumps(schema, ensure_ascii=False)
+
+        self.assertEqual(schema["business"]["description"], public_description)
+        self.assertNotIn(private_brief, serialized)
+
+    def test_missing_public_copy_does_not_fall_back_to_private_brief(self) -> None:
+        private_brief = "NOTA PRIVADA: copiar marcas, revisar envio y definir el tono luego"
+        state = ProjectState(businessName="PhoneHub", businessDescription=private_brief)
+
+        schema = build_schema_from_state(state, catalog_items=[], catalog_source="seed_fallback")
+
+        self.assertEqual(schema["business"]["description"], "")
+        self.assertNotIn(private_brief, json.dumps(schema, ensure_ascii=False))
+
     def test_real_contact_and_client_photo_reach_generated_schema(self) -> None:
         contact_info = {
             "phone": "+1 305 555 0100",

@@ -66,9 +66,11 @@ def normalize_state_payload(payload: Dict[str, Any] | None) -> ProjectState:
     return ProjectState(**_sanitize_project_state_payload({
         "businessName": payload.get("businessName") or payload.get("business_name"),
         "businessDescription": payload.get("businessDescription") or payload.get("business_description"),
+        "publicBusinessDescription": payload.get("publicBusinessDescription") or payload.get("public_business_description"),
         "industry": payload.get("industry"),
         "location": payload.get("location"),
         "servicesProducts": split_items(payload.get("servicesProducts") or payload.get("services_products")),
+        "brandsCarried": split_items(payload.get("brandsCarried") or payload.get("brands_carried")),
         "targetAudience": payload.get("targetAudience") or payload.get("target_audience"),
         "preferredTone": payload.get("preferredTone") or payload.get("preferred_tone"),
         "preferredColors": preferred_colors,

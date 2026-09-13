@@ -3,7 +3,7 @@ from __future__ import annotations
 import colorsys
 import re
 import unicodedata
-from typing import Dict, Iterable, Literal, Optional, Tuple
+from typing import Dict, Iterable, Literal, Optional, Sequence, Tuple
 
 
 HSL = Tuple[float, float, float]
@@ -242,6 +242,7 @@ def build_palette(
     anchor_hex_or_none: Optional[str],
     palette_style: str,
     niche_hint: object = "",
+    supporting_colors: Sequence[str] = (),
 ) -> Dict[str, str]:
     style = _normalize_style(palette_style)
     rule = STYLE_RULES[style]
@@ -274,8 +275,20 @@ def build_palette(
         secondary_lightness = _clamp(anchor_lightness + 0.10, 0.34, 0.62)
         accent_lightness = _clamp(anchor_lightness - 0.02, 0.34, 0.56)
 
-    secondary = hsl_to_hex((secondary_hue, styled_saturation * 0.82, secondary_lightness))
-    accent = hsl_to_hex((accent_hue, styled_saturation, accent_lightness))
+    explicit_support = next(
+        (
+            color
+            for value in supporting_colors
+            if (color := normalize_hex(value)) and color != normalized_anchor
+        ),
+        None,
+    )
+    if explicit_support:
+        secondary = explicit_support
+        accent = normalized_anchor
+    else:
+        secondary = hsl_to_hex((secondary_hue, styled_saturation * 0.82, secondary_lightness))
+        accent = hsl_to_hex((accent_hue, styled_saturation, accent_lightness))
     text = _accessible_text((anchor_hue, styled_saturation, anchor_lightness), (background, surface))
 
     semantic_saturation = _clamp(0.48 + styled_saturation * 0.28, 0.52, 0.74)

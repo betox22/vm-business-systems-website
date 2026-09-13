@@ -11,7 +11,9 @@ from urllib.parse import urlparse
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, field_validator, model_validator
 
 from .agents import (
+    OPENAI_REQUEST_TIMEOUT_SECONDS,
     TEMPLATE_CATALOG,
+    create_chat_completion_with_retry,
     normalize_template_id,
     semantic_seed_catalog,
     state_is_commerce_seed_target,
@@ -20,7 +22,7 @@ from .agents import (
 )
 from .color_theory import build_palette, resolve_color
 from .typography_theory import build_typography_scale
-from .image_assets import attach_image_asset
+from .image_assets import ImageAssetRole, attach_image_asset, build_image_asset
 from .models import AgentResult, ProjectState, WebsiteType
 from .openai_schema import make_openai_strict_schema
 
@@ -158,6 +160,7 @@ class MediaProps(BaseModel):
 
     imageSearchQuery: Optional[str] = None
     imageUrl: Optional[str] = None
+    imageRole: Optional[ImageAssetRole] = None
     alt: Optional[str] = None
     visualDirection: Optional[str] = None
 
@@ -419,6 +422,7 @@ class AIWebGenerationResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     reasoningSummary: str
+    publicBusinessDescription: Optional[str] = None
     templateId: str
     primaryCatalogType: Optional[str] = None
     confidenceScore: float = Field(default=0.0, ge=0.0, le=1.0)
@@ -636,6 +640,7 @@ def state_to_client_summary(state: ProjectState, user_input: str) -> Dict[str, A
         "industry": state.industry,
         "location": state.location,
         "servicesProducts": state.servicesProducts,
+        "brandsCarried": state.brandsCarried,
         "targetAudience": state.targetAudience,
         "preferredTone": state.preferredTone,
         "preferredColors": state.preferredColors,
@@ -654,6 +659,44 @@ COURSE_SIGNAL_RE = re.compile(
     r"\b(cursos?|courses?|academy|academia|clases?|training|formacion|taller(?:es)?|workshops?)\b",
     re.IGNORECASE,
 )
+
+EXPLICIT_CATALOG_PRICE_RE = re.compile(
+    r"(?:[$€£]\s*\d|\b(?:usd|eur|gbp|precio|price|cuesta|costs?)\b\s*[:=]?\s*\d|\d\s*(?:usd|eur|gbp|dolares?|dollars?|euros?)\b)",
+    re.IGNORECASE,
+)
+
+
+def _state_has_explicit_catalog_pricing(state: ProjectState) -> bool:
+    source = " ".join([
+        state.businessDescription or "",
+        *[str(item or "") for item in state.servicesProducts],
+    ])
+    return bool(EXPLICIT_CATALOG_PRICE_RE.search(source))
+
+
+def _price_confirmation_label(language: str) -> str:
+    return {
+        "es": "Precio por confirmar",
+        "fr": "Prix a confirmer",
+        "pt": "Preco a confirmar",
+    }.get(language, "Price to confirm")
+
+
+def _without_invented_catalog_commerce_metadata(item: Dict[str, Any], language: str) -> Dict[str, Any]:
+    cleaned = {
+        key: value
+        for key, value in item.items()
+        if key not in {"rating", "review_count", "inventory_quantity", "stock"}
+    }
+    cleaned.update({
+        "price": None,
+        "price_value": None,
+        "price_amount": None,
+        "price_type": "quote_only",
+        "price_label": _price_confirmation_label(language),
+        "track_inventory": False,
+    })
+    return cleaned
 
 
 def _course_page_labels(language: str) -> Dict[str, Any]:
@@ -794,6 +837,231 @@ def _ensure_course_page(
     return pages
 
 
+def _premium_renderer_component(component_type: str, renderer_component: str, template_id: str) -> str:
+    if template_id != "premium-product-store":
+        return renderer_component
+    if renderer_component in {"Hero", "MarketplaceHero"}:
+        return "PremiumHero"
+    if renderer_component == "StoryBlock":
+        return "ProductStory"
+    if renderer_component == "FeatureSpotlight":
+        return "FeatureShowcase"
+    return {
+        "hero_editorial_product": "PremiumHero",
+        "story_block": "ProductStory",
+        "feature_spotlight": "FeatureShowcase",
+    }.get(component_type, renderer_component)
+
+
+def _section_image_role(component_type: str, renderer_component: str) -> ImageAssetRole:
+    if renderer_component in {"PremiumHero", "Hero", "MarketplaceHero"}:
+        return "hero_editorial"
+    if renderer_component in {"ProductStory", "StoryBlock", "FeatureShowcase", "FeatureSpotlight"}:
+        return "detail_texture"
+    if renderer_component in {"CategoryRail", "Lookbook", "PortfolioGallery"}:
+        return "category_lifestyle"
+    if component_type in {"product_grid_4x", "featured_products"}:
+        return "product_packshot"
+    return "category_lifestyle"
+
+
+def _resolve_section_media(
+    section_media: Dict[str, Any],
+    *,
+    component_type: str,
+    renderer_component: str,
+    state: Optional[ProjectState],
+    enrichment_context: str,
+) -> Dict[str, Any]:
+    role = _section_image_role(component_type, renderer_component)
+    query = str(section_media.get("imageSearchQuery") or "").strip()
+    if not query:
+        offerings = " ".join(state.servicesProducts[:3]) if state else ""
+        query = " ".join(filter(None, [
+            state.businessName if state else "",
+            state.industry if state else "",
+            offerings,
+            renderer_component,
+        ]))
+    if not query:
+        return {**section_media, "imageRole": role}
+
+    asset_input = {
+        "name": str(section_media.get("alt") or (state.businessName if state else "") or query),
+        "imageSearchQuery": query,
+        "imageRole": role,
+        "image_url": str(section_media.get("imageUrl") or ""),
+    }
+    asset = build_image_asset(asset_input, context=enrichment_context)
+    return {
+        **section_media,
+        "imageSearchQuery": query,
+        "imageRole": role,
+        "imageUrl": asset["url"],
+        "image_url": asset["url"],
+        "imageAsset": asset,
+    }
+
+
+def _limit_premium_headline(copy: Dict[str, Any], maximum_words: int = 12) -> Dict[str, Any]:
+    headline = str(copy.get("headline") or "").strip()
+    words = headline.split()
+    if len(words) > maximum_words:
+        copy = {**copy, "headline": " ".join(words[:maximum_words]).rstrip(".,;:")}
+    return copy
+
+
+def _order_premium_sections(sections: List[Dict[str, Any]], template_id: str) -> List[Dict[str, Any]]:
+    if template_id != "premium-product-store":
+        return sections
+    rank = {
+        "PremiumHero": 0,
+        "TrustStrip": 1,
+        "ProductGrid": 2,
+        "FeaturedProducts": 2,
+        "ProductStory": 3,
+        "FeatureShowcase": 4,
+        "ProofPanel": 5,
+        "Testimonials": 5,
+        "CTA": 6,
+    }
+    ordered = sorted(
+        enumerate(sections),
+        key=lambda pair: (rank.get(pair[1].get("type"), 4), pair[0]),
+    )
+    return [section for _, section in ordered]
+
+
+def _ensure_premium_home_sections(
+    pages: List[Dict[str, Any]],
+    *,
+    template_id: str,
+    state: Optional[ProjectState],
+    catalog_items: List[Dict[str, Any]],
+    hero_copy: Dict[str, str],
+    enrichment_context: str,
+) -> List[Dict[str, Any]]:
+    if template_id != "premium-product-store" or not pages:
+        return pages
+    home = next((page for page in pages if page.get("page_key") == "home" or page.get("slug") == "/"), pages[0])
+    sections = list(home.get("sections") or [])
+    existing = {str(section.get("type") or "") for section in sections}
+    language = state.selectedLanguage if state else "en"
+    es = language == "es"
+    business_name = str(state.businessName or "") if state else ""
+    description = str(state.publicBusinessDescription or state.businessDescription or "") if state else ""
+    offering_names = [str(item.get("name") or "").strip() for item in catalog_items[:3] if item.get("name")]
+    trust_items = [
+        "Disponibilidad consultable" if es else "Availability by inquiry",
+        "Catalogo basado en la oferta real" if es else "Catalog based on the real offer",
+    ]
+    if state and state.salesFlow == "online_sales":
+        trust_items.append("Venta en linea" if es else "Online ordering")
+    if state and state.location:
+        trust_items.append(str(state.location))
+
+    if "TrustStrip" not in existing:
+        sections.append({
+            "id": "premium-trust",
+            "sectionId": "premium-trust",
+            "type": "TrustStrip",
+            "component": "TrustStrip",
+            "componentType": "trust_strip",
+            "variant": "compact",
+            "purpose": "Clarify the path from product discovery to availability inquiry.",
+            "motion": SectionMotionPlan().model_dump(),
+            "dataBinding": {},
+            "editable": {
+                "title": "Compra con informacion clara" if es else "Shop with clear information",
+                "text": "Explora el catalogo y consulta disponibilidad antes de decidir." if es else "Explore the catalog and confirm availability before deciding.",
+                "items": trust_items,
+                "copy": {}, "media": {}, "dataBinding": {},
+            },
+        })
+    if not existing.intersection({"ProductGrid", "FeaturedProducts"}):
+        sections.append({
+            "id": "premium-products",
+            "sectionId": "premium-products",
+            "type": "ProductGrid",
+            "component": "ProductGrid",
+            "componentType": "product_grid_4x",
+            "variant": "premium_editorial",
+            "purpose": "Present the client-declared catalog as the primary shopping path.",
+            "motion": SectionMotionPlan().model_dump(),
+            "dataBinding": {"source": "catalogItems"},
+            "editable": {
+                "title": "Seleccion destacada" if es else "Featured selection",
+                "text": ", ".join(offering_names),
+                "copy": {}, "media": {}, "dataBinding": {"source": "catalogItems"},
+            },
+        })
+    if "ProductStory" not in existing:
+        story_media = _resolve_section_media(
+            {"imageSearchQuery": " ".join(filter(None, [business_name, *offering_names, "materials detail"]))},
+            component_type="story_block",
+            renderer_component="ProductStory",
+            state=state,
+            enrichment_context=enrichment_context,
+        )
+        sections.append({
+            "id": "premium-story",
+            "sectionId": "premium-story",
+            "type": "ProductStory",
+            "component": "ProductStory",
+            "componentType": "story_block",
+            "variant": "editorial_split",
+            "purpose": "Explain the concrete offer and why it belongs in the buyer's day.",
+            "motion": SectionMotionPlan().model_dump(),
+            "dataBinding": {},
+            "editable": {
+                "title": "Elegidos para tu dia a dia" if es else "Selected for everyday use",
+                "text": description,
+                **story_media,
+                "copy": {}, "media": story_media, "dataBinding": {},
+            },
+        })
+    if "FeatureShowcase" not in existing:
+        sections.append({
+            "id": "premium-features",
+            "sectionId": "premium-features",
+            "type": "FeatureShowcase",
+            "component": "FeatureShowcase",
+            "componentType": "feature_spotlight",
+            "variant": "feature_focus",
+            "purpose": "Turn concrete catalog details into useful buying context.",
+            "motion": SectionMotionPlan().model_dump(),
+            "dataBinding": {},
+            "editable": {
+                "title": "Detalles que ayudan a elegir" if es else "Details that help you choose",
+                "text": ", ".join(offering_names),
+                "copy": {}, "media": {}, "dataBinding": {},
+            },
+        })
+    if "CTA" not in existing:
+        sections.append({
+            "id": "premium-cta",
+            "sectionId": "premium-cta",
+            "type": "CTA",
+            "component": "CTA",
+            "componentType": "cta_band",
+            "variant": "centered",
+            "purpose": "Give the visitor one concrete next action.",
+            "motion": SectionMotionPlan().model_dump(),
+            "dataBinding": {},
+            "editable": {
+                "title": hero_copy.get("headline") or business_name,
+                "text": hero_copy.get("subheadline") or description,
+                "primary_button": "Consultar disponibilidad" if es else "Check availability",
+                "copy": {}, "media": {}, "dataBinding": {},
+            },
+        })
+
+    home["sections"] = _order_premium_sections(sections, template_id)
+    for index, section in enumerate(home["sections"]):
+        section["order"] = index + 1
+    return pages
+
+
 def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None) -> Dict[str, Any]:
     template = TEMPLATE_CATALOG[plan.templateId]
     enrichment_context = " ".join([
@@ -814,21 +1082,21 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             continue
         image_query = str(item.get("imageSearchQuery") or item.get("image_search_query") or name)
         price_value = parse_price_amount(item.get("price_amount") or item.get("price"), None)
+        has_price = price_value is not None
         normalized_item = {
             "id": str(item.get("id") or f"ai_item_{index + 1}"),
             "sku": str(item.get("sku") or f"AI-{index + 1:03d}"),
             "name": name[:80],
             "description": str(item.get("description") or ""),
             "category": str(item.get("category") or (plan.catalogCategories[index % len(plan.catalogCategories)] if plan.catalogCategories else "Featured")),
-            "price_type": str(item.get("price_type") or "fixed"),
+            "price_type": str(item.get("price_type") or ("fixed" if has_price else "quote_only")),
             "price": price_value if price_value is not None else "",
             "price_amount": price_value if price_value is not None else "",
             "currency": str(item.get("currency") or "USD"),
-            "price_label": str(item.get("price_label") or (f"USD {price_value:.2f}" if price_value is not None else "")),
-            "content_origin": str(item.get("content_origin") or "ai_enriched"),
-            "rating": item.get("rating") or 4.7,
-            "badge": str(item.get("badge") or "Featured"),
+            "price_label": str(item.get("price_label") or (f"USD {price_value:.2f}" if has_price else "")),
             "imageSearchQuery": image_query,
+            "imageRole": "product_packshot",
+            "content_origin": str(item.get("content_origin") or "ai_enriched"),
             "image_url": unsplash_seed_url(image_query),
             "is_active": bool(item.get("is_active", True)),
             "is_featured": bool(item.get("is_featured", index < 4)),
@@ -839,6 +1107,9 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
     if state:
         catalog_items, catalog_source = ensure_plan_seed_catalog_with_source(catalog_items, state, plan)
     catalog_items = enforce_client_declared_catalog_facts(catalog_items, state)
+    if state:
+        if not _state_has_explicit_catalog_pricing(state):
+            catalog_items = [_without_invented_catalog_commerce_metadata(item, state.selectedLanguage) for item in catalog_items]
     _mark_course_catalog_items(catalog_items, state)
 
     pages = []
@@ -846,10 +1117,24 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
     for page in plan.pages:
         sections = []
         for section in page.sections:
-            renderer_component = ALLOWED_SECTION_COMPONENT_TYPES[section.componentType]
+            base_renderer_component = ALLOWED_SECTION_COMPONENT_TYPES[section.componentType]
+            renderer_component = _premium_renderer_component(
+                section.componentType,
+                base_renderer_component,
+                plan.templateId,
+            )
             section_copy = section.copyProps.model_dump(exclude_none=True)
+            if renderer_component == "PremiumHero":
+                section_copy = _limit_premium_headline(section_copy)
             section_media = section.media.model_dump(exclude_none=True) if section.media else {}
-            if not hero_copy and section_copy and renderer_component in {"Hero", "MarketplaceHero"}:
+            section_media = _resolve_section_media(
+                section_media,
+                component_type=section.componentType,
+                renderer_component=renderer_component,
+                state=state,
+                enrichment_context=enrichment_context,
+            )
+            if not hero_copy and section_copy and renderer_component in {"Hero", "MarketplaceHero", "PremiumHero"}:
                 hero_copy = section_copy
             sections.append({
                 "id": section.sectionId,
@@ -870,6 +1155,9 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
                     "dataBinding": section.dataBinding,
                 },
             })
+        sections = _order_premium_sections(sections, plan.templateId)
+        for section_index, output_section in enumerate(sections):
+            output_section["order"] = section_index + 1
         pages.append({
             "page_key": page.pageId,
             "pageKey": page.pageId,
@@ -880,6 +1168,14 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             "sections": sections,
         })
 
+    pages = _ensure_premium_home_sections(
+        pages,
+        template_id=plan.templateId,
+        state=state,
+        catalog_items=catalog_items,
+        hero_copy=hero_copy,
+        enrichment_context=enrichment_context,
+    )
     pages = _ensure_course_page(pages, state, catalog_items)
 
     anchor_color = state.colorProvenance.anchorColor if state else None
@@ -890,7 +1186,17 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
         plan.templateId,
         plan.targetAudience,
     ]))
-    palette = build_palette(anchor_color, plan.brand_identity.palette_style, niche_hint)
+    supporting_colors = [
+        evidence.color
+        for evidence in (state.colorProvenance.colors if state else [])
+        if evidence.source == "explicit_client" and evidence.color != anchor_color
+    ]
+    palette = build_palette(
+        anchor_color,
+        plan.brand_identity.palette_style,
+        niche_hint,
+        supporting_colors=supporting_colors,
+    )
     explicit_secondary = resolve_color(state.colorProvenance.secondaryColor) if state else None
     if explicit_secondary:
         palette["secondary"] = explicit_secondary
@@ -929,6 +1235,7 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             "catalogCategories": plan.catalogCategories,
             "brandIdentity": brand_identity,
         },
+        "publicBusinessDescription": str(plan.publicBusinessDescription or hero_copy.get("subheadline") or "").strip(),
         "catalogItems": catalog_items,
         "catalogSource": catalog_source,
         "confidence": plan.confidence,
@@ -1253,48 +1560,61 @@ def _reconcile_client_catalog(
         if matched_index is not None:
             used_model_indexes.add(matched_index)
             genuinely_matched_count += 1
-        fallback = seed[index % len(seed)] if seed else {
-            "id": f"client_item_{index + 1}",
-            "sku": f"CLIENT-{index + 1:03d}",
-            "name": client_name,
-            "description": f"{client_name} presented with clear details and a professional customer experience.",
-            "category": "Services",
-            "price_amount": 99.0,
-            "rating": 4.7,
-            "badge": "Featured",
-            "imageSearchQuery": client_name,
-        }
-        source = matched or fallback
+        source = matched or {}
         if matched is None:
             logger.warning(
-                "LYRA catalog item fallback to seed offering=%s business=%s",
+                "LYRA catalog item preserved without AI enrichment offering=%s business=%s",
                 client_name,
                 business_name or "unknown",
             )
-        price = parse_price_amount(source.get("price_amount") or source.get("price"), float(fallback["price_amount"]))
         image_query = str(
             source.get("imageSearchQuery") or source.get("image_search_query") or client_name
-        ) if matched else client_name
-        item = {
-            **source,
-            "id": str(source.get("id") or f"client_item_{index + 1}") if matched else f"client_item_{index + 1}",
-            "sku": str(source.get("sku") or f"CLIENT-{index + 1:03d}") if matched else f"CLIENT-{index + 1:03d}",
-            "name": client_name,
-            "description": str(source.get("description") or fallback["description"]),
-            "category": str(source.get("category") or fallback["category"]),
-            "price_type": str(source.get("price_type") or "fixed"),
-            "price": price,
-            "price_amount": price,
-            "currency": str(source.get("currency") or "USD"),
-            "price_label": str(source.get("price_label") or f"USD {float(price):.2f}"),
-            "rating": source.get("rating") or fallback["rating"],
-            "badge": str(source.get("badge") or fallback["badge"]),
-            "imageSearchQuery": image_query,
-            "image_url": unsplash_seed_url(image_query),
-            "is_active": source.get("is_active", True),
-            "is_featured": source.get("is_featured", index < 4),
-            "sort_order": index,
-        }
+        )
+        if matched:
+            price = parse_price_amount(source.get("price_amount") or source.get("price"), None)
+            item = {
+                **source,
+                "id": str(source.get("id") or f"client_item_{index + 1}"),
+                "sku": str(source.get("sku") or f"CLIENT-{index + 1:03d}"),
+                "name": client_name,
+                "description": str(source.get("description") or ""),
+                "category": str(source.get("category") or client_name),
+                "price_type": str(source.get("price_type") or ("fixed" if price is not None else "quote_only")),
+                "price": price,
+                "price_amount": price,
+                "currency": str(source.get("currency") or "USD"),
+                "price_label": str(source.get("price_label") or (f"USD {float(price):.2f}" if price is not None else "")),
+                "imageSearchQuery": image_query,
+                "image_url": unsplash_seed_url(image_query),
+                "content_origin": "ai_enriched",
+                "is_active": source.get("is_active", True),
+                "is_featured": source.get("is_featured", index < 4),
+                "sort_order": index,
+            }
+        else:
+            item = {
+                "id": f"client_item_{index + 1}",
+                "sku": f"CLIENT-{index + 1:03d}",
+                "name": client_name,
+                "description": "",
+                "category": client_name,
+                "price_type": "quote_only",
+                "price": None,
+                "price_amount": None,
+                "currency": "USD",
+                "price_label": "",
+                "rating": None,
+                "review_count": None,
+                "badge": "",
+                "inventory_quantity": None,
+                "track_inventory": False,
+                "imageSearchQuery": client_name,
+                "image_url": unsplash_seed_url(client_name),
+                "content_origin": "client_declared",
+                "is_active": True,
+                "is_featured": index < 4,
+                "sort_order": index,
+            }
         reconciled.append(attach_image_asset(item, context=context))
 
     target_count = min(6, max(4, len(client_names)))
@@ -1308,7 +1628,7 @@ def _reconcile_client_catalog(
         if not fallback_name or fallback_name in used_names:
             continue
         used_names.add(fallback_name)
-        extra = {**fallback, "sort_order": len(reconciled)}
+        extra = {**fallback, "content_origin": "seed_added", "sort_order": len(reconciled)}
         reconciled.append(attach_image_asset(extra, context=context))
 
     used_seed_fallback = genuinely_matched_count * 2 < len(client_names)
@@ -1438,9 +1758,13 @@ class OpenAISitePlanAgent:
     name = "openai_site_planner"
 
     def __init__(self) -> None:
-        self.model = os.getenv("OPENAI_SITE_PLANNER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-4o"
+        self.model = os.getenv("OPENAI_SITE_PLANNER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
         self.api_key = os.getenv("OPENAI_API_KEY")
-        self.client = AsyncOpenAI(api_key=self.api_key) if AsyncOpenAI and self.api_key else None
+        self.client = (
+            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+            if AsyncOpenAI and self.api_key
+            else None
+        )
 
     async def run(self, state: ProjectState, user_input: str) -> AgentResult:
         if not self.client:
@@ -1468,6 +1792,7 @@ class OpenAISitePlanAgent:
             "allowedTemplates": compact_template_catalog(template_catalog),
             "allowedComponentTypes": sorted(ALLOWED_SECTION_COMPONENT_TYPES),
             "requiredOutput": {
+                "publicBusinessDescription": "polished public-facing business summary in selectedLanguage; never raw intake text",
                 "websiteType": "one allowed WebsiteType",
                 "templateId": "one id from allowedTemplates",
                 "primaryCatalogType": "catalogType for the business's main revenue offer",
@@ -1512,6 +1837,7 @@ class OpenAISitePlanAgent:
                         },
                         "media": {
                             "imageSearchQuery": "visual search phrase",
+                            "imageRole": "hero_editorial",
                             "visualDirection": "art direction",
                         },
                         "dataBinding": {"source": "catalogItems"},
@@ -1525,7 +1851,7 @@ class OpenAISitePlanAgent:
                     "category": "specific category",
                     "price": None,
                     "price_amount": None,
-                    "price_label": None,
+                    "price_label": "Price to confirm",
                     "price_type": "quote_only",
                     "content_origin": "client_declared",
                     "imageSearchQuery": "english-search-keyword"
@@ -1535,10 +1861,10 @@ class OpenAISitePlanAgent:
             },
             "requiredDataBindingSchemas": {
                 "product_grid_4x_or_featured_products": {
-                    "items": "12 to 16 products. Each product requires id, name, category, description, price, rating from 4.2 to 5.0, badge, imageSearchQuery."
+                    "items": "4 to 16 products. Each product requires id, name, category, description and imageSearchQuery. Price fields are nullable and quote_only unless the client supplied a price. Never invent ratings, badges, reviews or stock."
                 },
                 "restaurant_menu": {
-                    "categories": "3 to 6 categories such as Entradas, Principales, Bebidas. Each category requires 3 to 8 items with name, description, price, tags."
+                    "categories": "3 to 6 categories such as Entradas, Principales, Bebidas. Each category requires 3 to 8 items with name, description and tags. Price is nullable and must appear only when the client supplied it."
                 },
                 "feature_spotlight": {
                     "specs": "4 to 8 specs. Each spec requires specLabel and specValue."
@@ -1575,7 +1901,8 @@ class OpenAISitePlanAgent:
                 {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
             ]
             try:
-                response = await self.client.chat.completions.create(
+                response = await create_chat_completion_with_retry(
+                    self.client,
                     model=self.model,
                     temperature=0.15,
                     response_format=self._strict_response_format(),
@@ -1586,7 +1913,8 @@ class OpenAISitePlanAgent:
                     "OpenAI planner strict response_format failed; used json_object fallback: "
                     f"{type(strict_error).__name__}: {strict_error}"
                 )
-                response = await self.client.chat.completions.create(
+                response = await create_chat_completion_with_retry(
+                    self.client,
                     model=self.model,
                     temperature=0.15,
                     response_format={"type": "json_object"},
@@ -1651,6 +1979,7 @@ COPY QUALITY GATE (hard validity requirement):
 
 Hard rules:
 - Return ONLY valid JSON. No markdown.
+- publicBusinessDescription must be a concise, polished customer-facing summary in selectedLanguage. Rewrite it from verified facts; never repeat the client's raw intake paragraph verbatim.
 - Never return HTML, CSS, class names, JavaScript, or invented renderer components.
 - templateId must be exactly one id from allowedTemplates.
 - primaryCatalogType must be the catalogType that best describes the main revenue offer.
@@ -1679,6 +2008,7 @@ Hard rules:
 - brand_identity.logo_config.generation_prompt MUST always be present and must follow this exact structure with real niche/name/style substitutions: "Minimalist flat vector logo for a [niche] brand named [Name], [palette_style] style, geometric clean shapes, solid colors, no gradients, high detail, white background, trending on Dribbble --vector"
 - For commerce templates, catalogItems must contain exactly 4 to 6 real, niche-specific products. Do not use "Product 1", "Featured item", "Price editable", Lorem Ipsum, or empty fields.
 - If clientSummary.servicesProducts or clientSummary.businessDescription names concrete products or services, catalogItems MUST preserve those real names as the catalog foundation. Polish only their public description, category, price, price label, and imageSearchQuery. Never replace a client-named offering with a different invented offering.
+- clientSummary.brandsCarried is commercial context only. Never turn a carried brand into a catalog item unless the client explicitly named a concrete branded product model. Use the brands only to understand compatibility, assortment, and public copy without imitating their trademarks.
 - This does not conflict with the private-notes rule: do not paste the client's raw sentences as public copy, but always preserve the identity and name of each concrete product or service they actually offer.
 - Only when the client supplied fewer than 4 concrete offerings may you add niche-plausible offerings to reach the minimum of 4. Client-named offerings always come first and are never discarded.
 - clientSummary.contactInfo contains verified public contact details supplied by the client. Contact sections must use those exact values when present; never invent a phone number, email, social handle, WhatsApp number, or address.
@@ -1686,6 +2016,12 @@ Hard rules:
 - clientSummary.videoUrls contains client-provided videos. Use only those exact URLs for relevant VideoShowcase sections; never invent a video URL.
 - Never invent a price, model number, brand, technical specification, capacity, rating, inventory quantity, discount, or shipping promise. Only use those facts when clientSummary explicitly contains them.
 - Each catalogItems object must include id, name, description, category, imageSearchQuery, price, price_amount, price_label, price_type and content_origin. When no client-provided price exists, return null for all price values, price_type="quote_only", and a localized equivalent of "Price to confirm".
+- Every visual section must assign media.imageRole to exactly one of hero_editorial, product_packshot, category_lifestyle, or detail_texture. Generate an independent imageSearchQuery for that section's conversion job; never reuse the first catalog product image as the hero or story visual.
+- hero_editorial is a wide real-life editorial composition showing the offer in context; product_packshot is a clean individual product photograph; category_lifestyle shows a category in use; detail_texture is a close material/process/detail photograph. Do not ask for abstract gradients, 3D blobs, floating UI objects, or fantasy renders.
+- For premium-product-store, use hero_editorial_product with a headline of 7 to 12 words, then trust_strip, product_grid_4x or featured_products, story_block with detail_texture, feature_spotlight for materials/differentiators, proof_panel only when clientSummary contains real proof, and a final cta_band. Do not fabricate testimonials or social proof to fill the sequence.
+- Each catalogItems object must include id, name, description, category, price, price_amount, price_label, price_type, and imageSearchQuery.
+- Prices are evidence-bound. Only return a numeric price/price_amount when the client explicitly supplied that price. Otherwise return null for price and price_amount, set price_type to "quote_only", and use the selected-language equivalent of "Price to confirm". Never estimate a plausible market price.
+- Do not invent ratings, review counts, stock, inventory quantities, shipping promises, discounts, or badges that imply unverified facts.
 - Do not generate image_url, imageUrl, stock image URLs, Unsplash URLs, CDN URLs, or any other image URL in catalogItems. KREATON resolves product imagery server-side from imageSearchQuery.
 - If a client sells a focused product family such as jewelry, handmade accessories, fashion, candles, beauty, or crafts, choose a focused store/showroom template, not a broad marketplace.
 - Choose a broad marketplace only for explicit Amazon/general-store intent or unrelated multi-category catalogs.

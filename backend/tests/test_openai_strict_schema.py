@@ -1,6 +1,13 @@
 import unittest
+from unittest.mock import AsyncMock, Mock, patch
 
-from app.agents import BaseAgent, ReviewerAgent
+from app.agents import (
+    BaseAgent,
+    ReviewerAgent,
+    create_chat_completion_with_retry,
+    create_sync_chat_completion_with_retry,
+    split_items,
+)
 from app.ai_site_planner import OpenAISitePlanAgent
 from app.models import AgentResult, ProjectState
 from app.orchestrator import LyraOrchestrator
@@ -39,6 +46,34 @@ class WarningAgent(BaseAgent):
 
 
 class OpenAIStrictSchemaTests(unittest.IsolatedAsyncioTestCase):
+    def test_split_items_drops_connector_only_values_from_model_lists(self):
+        self.assertEqual(
+            split_items(["Impresoras 3D", "and", "Cursos online", "Y", "Materiales"]),
+            ["Impresoras 3D", "Cursos online", "Materiales"],
+        )
+
+    async def test_async_openai_call_retries_once_before_succeeding(self):
+        client = Mock()
+        client.chat.completions.create = AsyncMock(side_effect=[TimeoutError("slow"), "ok"])
+
+        with patch("app.agents.asyncio.sleep", new=AsyncMock()) as sleep:
+            result = await create_chat_completion_with_retry(client, model="test")
+
+        self.assertEqual(result, "ok")
+        self.assertEqual(client.chat.completions.create.await_count, 2)
+        sleep.assert_awaited_once()
+
+    def test_sync_openai_call_retries_once_before_succeeding(self):
+        client = Mock()
+        client.chat.completions.create.side_effect = [TimeoutError("slow"), "ok"]
+
+        with patch("app.agents.time.sleep") as sleep:
+            result = create_sync_chat_completion_with_retry(client, model="test")
+
+        self.assertEqual(result, "ok")
+        self.assertEqual(client.chat.completions.create.call_count, 2)
+        sleep.assert_called_once()
+
     def test_planner_schema_is_recursive_strict_and_nullable(self):
         schema = OpenAISitePlanAgent._strict_response_format()["json_schema"]["schema"]
 

@@ -1133,10 +1133,14 @@ export function hydrateClientIntakeSession(session, options = {}) {
     };
   }
   const draft = sanitizeClientSessionDraft(session.draft || {});
-  if (draft.selectedLanguage) setSelectedLanguage(draft.selectedLanguage);
+  if (draft.selectedLanguage) setSelectedLanguage(draft.selectedLanguage, {
+    source: draft.selectedLanguageSource || "browser",
+    resetConversation: false,
+  });
   const normalizedDraft = {
     ...draft,
     servicesProducts: arrayValue(draft.servicesProducts),
+    brandsCarried: arrayValue(draft.brandsCarried),
     preferredColors: arrayValue(draft.preferredColors),
     photoUrls: arrayValue(draft.photoUrls),
     videoUrls: arrayValue(draft.videoUrls),
@@ -1390,6 +1394,7 @@ export function guidedSessionDraftForApi() {
     industry: builderState.guidedState.industry,
     location: builderState.guidedState.location,
     servicesProducts: arrayValue(builderState.guidedState.servicesProducts),
+    brandsCarried: arrayValue(builderState.guidedState.brandsCarried),
     targetAudience: builderState.guidedState.targetAudience,
     preferredTone: builderState.guidedState.preferredTone,
     preferredColors: arrayValue(builderState.guidedState.preferredColors),
@@ -1406,6 +1411,7 @@ export function guidedSessionDraftForApi() {
     logoApprovalStatus: builderState.guidedState.logoApprovalStatus || "",
     fieldMeta,
     selectedLanguage: builderState.selectedLanguage,
+    selectedLanguageSource: builderState.selectedLanguageSource,
     hasLogo: Boolean(builderState.guidedState.hasLogo || builderState.guidedState.logoUrl),
     hasPhotos: Boolean(builderState.guidedState.hasPhotos || arrayValue(builderState.guidedState.photoUrls).length || arrayValue(builderState.guidedState.videoUrls).length),
     salesMode: builderState.guidedState.salesMode,
@@ -1438,6 +1444,7 @@ export function sanitizeClientSessionDraft(raw = {}) {
     industry: trimmed(source.industry, 220),
     location: trimmed(source.location, 220),
     servicesProducts: cleanList(source.servicesProducts),
+    brandsCarried: cleanList(source.brandsCarried, 30),
     targetAudience: trimmed(source.targetAudience, 500),
     preferredTone: trimmed(source.preferredTone, 240),
     preferredColors: cleanList(source.preferredColors, 10),
@@ -1466,6 +1473,7 @@ export function sanitizeClientSessionDraft(raw = {}) {
     } : null,
     fieldMeta,
     selectedLanguage: SUPPORTED_LANGUAGES.includes(source.selectedLanguage) ? source.selectedLanguage : builderState.selectedLanguage,
+    selectedLanguageSource: source.selectedLanguageSource === "manual" ? "manual" : source.selectedLanguageSource === "detected" ? "detected" : "browser",
     hasLogo: Boolean(source.hasLogo || source.logoUrl),
     hasPhotos: Boolean(source.hasPhotos || cleanList(source.photoUrls).length || cleanList(source.videoUrls).length),
     salesMode: trimmed(source.salesMode, 160),

@@ -71,9 +71,11 @@ class ProjectState(BaseModel):
 
     businessName: Optional[str] = None
     businessDescription: Optional[str] = None
+    publicBusinessDescription: Optional[str] = None
     industry: Optional[str] = None
     location: Optional[str] = None
     servicesProducts: List[str] = Field(default_factory=list)
+    brandsCarried: List[str] = Field(default_factory=list)
     targetAudience: Optional[str] = None
     preferredTone: Optional[str] = None
     preferredColors: Optional[str] = None
@@ -161,10 +163,14 @@ class WebsiteGenerationRequest(BaseModel):
     businessName: Optional[str] = None
     business_description: Optional[str] = None
     businessDescription: Optional[str] = None
+    public_business_description: Optional[str] = None
+    publicBusinessDescription: Optional[str] = None
     industry: Optional[str] = None
     location: Optional[str] = None
     services_products: List[str] | str | None = None
     servicesProducts: List[str] | str | None = None
+    brands_carried: List[str] | str | None = None
+    brandsCarried: List[str] | str | None = None
     target_audience: Optional[str] = None
     targetAudience: Optional[str] = None
     preferred_tone: Optional[str] = None

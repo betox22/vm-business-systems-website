@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { constructionPreviewModel } from "../src/ai-builder/construction-preview-policy.js";
+import {
+  constructionPreviewModel,
+  isAuthoritativeTemplateSelection,
+  resolveConstructionPreviewTemplateId,
+} from "../src/ai-builder/construction-preview-policy.js";
 import { TEMPLATE_PREVIEW_CHOICES } from "../src/ai-builder/templates.js";
 
 test("mirrors the approved flagship design maturity catalog", () => {
@@ -67,4 +71,33 @@ test("exposes a visible busy state while the final website is generated", () => 
 
   assert.equal(model.mode, "template");
   assert.equal(model.isGenerating, true);
+});
+
+test("backend-confirmed Mega Retail cannot be replaced by provisional Fashion inference", () => {
+  const selection = {
+    templateId: "mega-retail-store",
+    intent: "backend_ai_selected_template",
+  };
+
+  assert.equal(isAuthoritativeTemplateSelection(selection), true);
+  assert.equal(resolveConstructionPreviewTemplateId({
+    selection,
+    aiTemplateId: "mega-retail-store",
+    localTemplateId: "fashion-drop-pro",
+  }), "mega-retail-store");
+});
+
+test("provisional selection still follows richer local context before LYRA decides", () => {
+  assert.equal(resolveConstructionPreviewTemplateId({
+    selection: {
+      templateId: "fashion-drop-pro",
+      intent: "guided_context_template",
+    },
+    localTemplateId: "premium-product-store",
+  }), "premium-product-store");
+});
+
+test("an empty startup selection safely renders the default sketch", () => {
+  assert.equal(isAuthoritativeTemplateSelection(null), false);
+  assert.equal(resolveConstructionPreviewTemplateId({ selection: null }), "mega-retail-store");
 });

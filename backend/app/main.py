@@ -95,9 +95,11 @@ CLIENT_DRAFT_KEYS = {
     "websiteIntent",
     "businessName",
     "businessDescription",
+    "publicBusinessDescription",
     "industry",
     "location",
     "servicesProducts",
+    "brandsCarried",
     "targetAudience",
     "preferredTone",
     "preferredColors",
@@ -112,6 +114,7 @@ CLIENT_DRAFT_KEYS = {
     "logoPalette",
     "colorProvenance",
     "selectedLanguage",
+    "selectedLanguageSource",
     "hasLogo",
     "hasPhotos",
     "salesMode",
@@ -160,7 +163,7 @@ def sanitize_client_draft(raw: Any) -> Dict[str, Any]:
         if key not in raw:
             continue
         value = raw.get(key)
-        if key in {"servicesProducts", "preferredColors", "photoUrls", "videoUrls", "logoPalette"}:
+        if key in {"servicesProducts", "brandsCarried", "preferredColors", "photoUrls", "videoUrls", "logoPalette"}:
             draft[key] = _safe_list(value)
         elif key == "colorProvenance":
             try:
@@ -1720,6 +1723,7 @@ async def luma_chat(
             "industry": final_state.industry,
             "location": final_state.location,
             "servicesProducts": final_state.servicesProducts,
+            "brandsCarried": final_state.brandsCarried,
             "targetAudience": final_state.targetAudience,
             "preferredTone": final_state.preferredTone,
             "preferredColors": final_state.preferredColors,
@@ -2024,9 +2028,11 @@ async def website_builder(
     state = normalize_state_payload({
         "businessName": request.businessName or request.business_name,
         "businessDescription": request.businessDescription or request.business_description,
+        "publicBusinessDescription": request.publicBusinessDescription or request.public_business_description,
         "industry": infer_generation_industry(request),
         "location": request.location,
         "servicesProducts": request.servicesProducts or request.services_products,
+        "brandsCarried": request.brandsCarried or request.brands_carried,
         "targetAudience": request.targetAudience or request.target_audience,
         "preferredTone": request.preferredTone or request.preferred_tone or request.brandStyle,
         "preferredColors": request.preferredColors or request.preferred_colors,
@@ -2069,8 +2075,24 @@ async def website_builder(
             storage_status="needs_more_info",
             used_dev_mock=False,
         )
-    prompt_context = " ".join(str(value) for value in payload.values() if value)
-    final_state = await orchestrator.run(prompt_context, state, run_review=True)
+    prompt_context = "\n".join(
+        part
+        for part in (
+            state.businessDescription or "",
+            f"Industry: {state.industry}" if state.industry else "",
+            f"Products or services: {', '.join(state.servicesProducts)}" if state.servicesProducts else "",
+            f"Brands carried: {', '.join(state.brandsCarried)}" if state.brandsCarried else "",
+            f"Target audience: {state.targetAudience}" if state.targetAudience else "",
+            f"Location: {state.location}" if state.location else "",
+        )
+        if part
+    )
+    final_state = await orchestrator.run(
+        prompt_context,
+        state,
+        skip_intake_strategy=True,
+        run_review=True,
+    )
     catalog_items, catalog_source = resolve_catalog_items_and_source(final_state)
     if catalog_source == "seed_fallback":
         logger.warning(
@@ -2230,7 +2252,12 @@ def build_schema_from_state(
     template_id = state.selectedTemplateId or "corporate-company-pro"
     copy = state.generatedCopy.get("hero", {})
     headline = copy.get("headline") or name
-    subheadline = copy.get("subheadline") or state.businessDescription or ""
+    public_description = str(
+        state.publicBusinessDescription
+        or copy.get("subheadline")
+        or ""
+    ).strip()
+    subheadline = copy.get("subheadline") or public_description
     primary_cta = copy.get("primaryCta") or "Explore"
     if catalog_items is None or catalog_source is None:
         catalog_items, catalog_source = resolve_catalog_items_and_source(state)
@@ -2265,7 +2292,7 @@ def build_schema_from_state(
         },
         "business": {
             "name": name,
-            "description": state.businessDescription or subheadline,
+            "description": public_description,
             "industry": state.industry or "",
             "location": state.location or "",
             "selectedLanguage": state.selectedLanguage,

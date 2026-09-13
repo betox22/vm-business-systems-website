@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import logging
 from threading import Lock
 from typing import Any, Dict, List, Literal, Mapping, Optional
 
@@ -21,6 +22,34 @@ ImageAssetSource = Literal[
     "unsplash_api",
 ]
 
+ImageAssetRole = Literal[
+    "hero_editorial",
+    "product_packshot",
+    "category_lifestyle",
+    "detail_texture",
+]
+
+logger = logging.getLogger(__name__)
+
+IMAGE_ROLE_SEARCH_CONFIG: Dict[ImageAssetRole, Dict[str, str]] = {
+    "hero_editorial": {
+        "orientation": "landscape",
+        "suffix": "editorial lifestyle wide composition real photography",
+    },
+    "product_packshot": {
+        "orientation": "squarish",
+        "suffix": "product packshot clean studio softbox real photography",
+    },
+    "category_lifestyle": {
+        "orientation": "landscape",
+        "suffix": "category lifestyle scene real photography",
+    },
+    "detail_texture": {
+        "orientation": "landscape",
+        "suffix": "material detail texture close up real photography",
+    },
+}
+
 
 class ImageAsset(BaseModel):
     """Editable image metadata used by Lyra without changing the render contract.
@@ -32,6 +61,7 @@ class ImageAsset(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     source: ImageAssetSource = "seed_bank"
+    role: ImageAssetRole = "product_packshot"
     provider: str = "kreaton_seed_bank"
     category: str = "producto-general"
     query: str = ""
@@ -128,7 +158,7 @@ STABLE_IMAGE_URLS: List[Dict[str, str]] = [
 
 UNSPLASH_SEARCH_URL = "https://api.unsplash.com/search/photos"
 UNSPLASH_UTM_SOURCE = "kreaton"
-_UNSPLASH_SEARCH_CACHE: Dict[str, Optional[Dict[str, str]]] = {}
+_UNSPLASH_SEARCH_CACHE: Dict[str, Dict[str, str]] = {}
 _UNSPLASH_CACHE_LOCK = Lock()
 
 
@@ -145,22 +175,35 @@ def _with_unsplash_attribution_params(url: str) -> str:
     return f"{url}{separator}utm_source={UNSPLASH_UTM_SOURCE}&utm_medium=referral"
 
 
-def _search_unsplash_photo(query: str) -> Optional[Dict[str, str]]:
+def _normalize_image_role(value: Any) -> ImageAssetRole:
+    role = str(value or "").strip().lower()
+    return role if role in IMAGE_ROLE_SEARCH_CONFIG else "product_packshot"  # type: ignore[return-value]
+
+
+def _role_search_query(query: str, role: ImageAssetRole) -> str:
+    base = " ".join(str(query or "").split())
+    suffix = IMAGE_ROLE_SEARCH_CONFIG[role]["suffix"]
+    return f"{base} {suffix}".strip()
+
+
+def _search_unsplash_photo(query: str, orientation: str = "landscape") -> Optional[Dict[str, str]]:
     access_key = os.environ.get("UNSPLASH_ACCESS_KEY", "").strip()
     normalized_query = " ".join(str(query or "").split()).lower()
     if not access_key or not normalized_query:
         return None
 
+    cache_key = f"{orientation}:{normalized_query}"
+
     with _UNSPLASH_CACHE_LOCK:
-        cached = _UNSPLASH_SEARCH_CACHE.get(normalized_query)
-        if normalized_query in _UNSPLASH_SEARCH_CACHE:
-            return dict(cached) if cached else None
+        cached = _UNSPLASH_SEARCH_CACHE.get(cache_key)
+        if cached:
+            return dict(cached)
 
     result: Optional[Dict[str, str]] = None
     try:
         response = httpx.get(
             UNSPLASH_SEARCH_URL,
-            params={"query": normalized_query, "per_page": 1, "orientation": "landscape"},
+            params={"query": normalized_query, "per_page": 1, "orientation": orientation},
             headers={"Authorization": f"Client-ID {access_key}"},
             timeout=3.0,
         )
@@ -181,11 +224,26 @@ def _search_unsplash_photo(query: str) -> Optional[Dict[str, str]]:
                     "photographer_profile_url": _with_unsplash_attribution_params(profile_url) if profile_url else "https://unsplash.com",
                     "download_tracking_url": str(links.get("download_location") or ""),
                 }
-    except (httpx.HTTPError, TypeError, ValueError, KeyError):
+        if not result:
+            logger.warning(
+                "Unsplash search returned no usable photo query=%r orientation=%s",
+                normalized_query,
+                orientation,
+            )
+    except (httpx.HTTPError, TypeError, ValueError, KeyError) as error:
+        status_code = getattr(getattr(error, "response", None), "status_code", None)
+        logger.warning(
+            "Unsplash search failed query=%r orientation=%s error=%s status=%s",
+            normalized_query,
+            orientation,
+            type(error).__name__,
+            status_code or "n/a",
+        )
         result = None
 
-    with _UNSPLASH_CACHE_LOCK:
-        _UNSPLASH_SEARCH_CACHE[normalized_query] = dict(result) if result else None
+    if result:
+        with _UNSPLASH_CACHE_LOCK:
+            _UNSPLASH_SEARCH_CACHE[cache_key] = dict(result)
     return result
 
 
@@ -295,14 +353,16 @@ def resolve_product_image_url(product: Mapping[str, Any], context: str = "") -> 
 
 
 def build_image_asset(product: Mapping[str, Any], context: str = "") -> Dict[str, Any]:
+    role = _normalize_image_role(product.get("imageRole") or product.get("image_role"))
     category = resolve_product_category(product, context)
-    query = str(
+    base_query = str(
         product.get("imageSearchQuery")
         or product.get("image_search_query")
         or product.get("category")
         or product.get("name")
         or category
     )
+    query = _role_search_query(base_query, role)
     seed_url = stable_seed_image_url(f"{category} {query}")
     existing_url = str(product.get("image_url") or product.get("imageUrl") or "")
     stable_urls = {entry["url"] for entry in STABLE_IMAGE_URLS}
@@ -311,10 +371,12 @@ def build_image_asset(product: Mapping[str, Any], context: str = "") -> Dict[str
         or existing_url == seed_url
         or existing_url in stable_urls
     )
-    unsplash_photo = _search_unsplash_photo(query) if uses_seed_candidate else None
+    orientation = IMAGE_ROLE_SEARCH_CONFIG[role]["orientation"]
+    unsplash_photo = _search_unsplash_photo(query, orientation) if uses_seed_candidate else None
     if unsplash_photo:
         asset = ImageAsset(
             source="unsplash_api",
+            role=role,
             provider="unsplash",
             category=category,
             query=query,
@@ -344,6 +406,7 @@ def build_image_asset(product: Mapping[str, Any], context: str = "") -> Dict[str
 
     asset = ImageAsset(
         source=source,
+        role=role,
         provider="kreaton_seed_bank" if source == "seed_bank" else "provided_url",
         category=category,
         query=query,

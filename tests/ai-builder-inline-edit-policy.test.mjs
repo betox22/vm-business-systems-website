@@ -114,6 +114,19 @@ test("the 16 new templates enter the shared shell while dedicated top-level rend
   assert.equal(supportsSharedShellInlineEditing("standard"), false);
 });
 
+test("mega retail dedicated renderer delegates its real hero and catalog paths to the inline engine", () => {
+  const renderer = readFileSync(new URL("../src/ai-builder/renderers.js", import.meta.url), "utf8");
+  const start = renderer.indexOf("function renderMegaRetailWebsite");
+  const end = renderer.indexOf("function megaRetailLabels", start);
+  const source = renderer.slice(start, end);
+  assert.match(renderer, /templateId === "mega-retail-store"/);
+  assert.match(source, /inlineEditAttrs\(schema, heroSection, "headline"\)/);
+  assert.match(source, /inlineEditAttrs\(schema, heroSection, "subtitle"\)/);
+  assert.match(source, /inlineCatalogEditAttrs\(schema, item, "name", "product_name"\)/);
+  assert.match(source, /inlineCatalogEditAttrs\(schema, item, "description", "product_description"\)/);
+  assert.match(source, /inlineEditAttrsForPath\(schema, "global_components\.footer_text", "footer_text"\)/);
+});
+
 test("reusable section collections resolve only to persistent course and quote paths", () => {
   const { hero, schema } = schemaWithHero("CourseOffering");
   assert.equal(inlineEditSectionCollectionItemPath(schema, hero, "includes", 1, ""), "pages.0.sections.0.editable.includes.1");
@@ -338,7 +351,7 @@ test("inline editing inherits the owning card radius instead of forcing one gene
   const css = readFileSync(new URL("../ai-builder.css", import.meta.url), "utf8");
   assert.match(css, /border-radius:\s*var\(--inline-edit-radius,\s*6px\)/);
   assert.match(css, /\.premium-feature-grid article\s*\{\s*--inline-edit-radius:\s*28px;/);
-  assert.match(css, /\.catalog-premium-editorial article\s*\{\s*--inline-edit-radius:\s*32px;/);
+  assert.match(css, /\.catalog-premium-editorial article\s*\{\s*--inline-edit-radius:\s*16px;/);
   assert.match(css, /\.template-b2b-saas-enterprise-pro \.b2b-saas-features article\s*\{\s*--inline-edit-radius:\s*28px;/);
   assert.match(css, /\.template-b2b-saas-enterprise-pro \.b2b-saas-plans article\s*\{\s*--inline-edit-radius:\s*18px;/);
   assert.match(css, /\.catalog-luxury-high-ticket article\s*\{\s*--inline-edit-radius:\s*6px;/);
