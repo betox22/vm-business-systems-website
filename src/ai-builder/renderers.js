@@ -1,7 +1,7 @@
 import { DEFAULT_BRAND } from './templates.js';
 import { escapeHtml, escapeAttribute } from './utils.js';
 import { listingLocationForIndex, marketplaceCategories } from './index.js';
-import { isMegaRetailTemplate, megaRetailFeatureFlags, megaRetailWhatsAppUrl, resolveMegaRetailTileMedia } from './mega-retail-policy.js';
+import { isMegaRetailTemplate, megaRetailFeatureFlags, megaRetailWhatsAppUrl, resolveMegaRetailDepartmentTiles } from './mega-retail-policy.js';
 import { isB2BSaasTemplate } from './b2b-saas-policy.js';
 import { renderB2BSaasWebsite } from './b2b-saas-renderer.js';
 import { bathBodyStockImageUrl } from './catalog-preview-policy.js';
@@ -2625,11 +2625,8 @@ function renderMegaRetailHeader(schema, page, logo, categories, labels, interact
 
 function renderMegaRetailBento(schema, heroSection, categories, items, clientPhotos, hasBrandVisual, labels) {
   const heroCopy = heroSection.editable || {};
-  const tileCategories = categories.length ? categories : labels.fallbackCategories;
-  const tiles = Array.from({ length: 5 }, (_, index) => {
-    const category = tileCategories[index % tileCategories.length];
-    const item = items.find((entry) => String(entry.category || "").toLowerCase() === String(category).toLowerCase()) || items[index];
-    const media = resolveMegaRetailTileMedia({ clientPhotoUrls: clientPhotos, tileIndex: index, category, categoryImage: item?.image_url || item?.imageUrl, hasBrandVisual });
+  const departmentTiles = resolveMegaRetailDepartmentTiles({ categories, items, clientPhotoUrls: clientPhotos, hasBrandVisual, fallbackCategories: labels.fallbackCategories });
+  const tiles = departmentTiles.map(({ category, item, media }, index) => {
     const title = index === 0 ? (heroCopy.headline || schema.business?.name || labels.featured) : category;
     const text = index === 0 ? (heroCopy.subtitle || schema.business?.description || labels.heroText) : (item?.description || labels.discover);
     const className = index === 0 ? "is-primary" : index === 1 ? "is-medium" : "is-small";

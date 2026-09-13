@@ -1,6 +1,7 @@
 import { createSharedCommerceCart, resolveCatalogAction } from "./shared-commerce-cart.js?v=2";
 import { createSharedSiteMotion, motionDataAttributes } from "./shared-site-motion.js?v=1";
 import { limitPremiumHeadline, premiumSectionImage, PREMIUM_IMAGE_ROLES } from "./src/ai-builder/premium-product-policy.js?v=1";
+import { resolveMegaRetailDepartmentTiles } from "./src/ai-builder/mega-retail-policy.js?v=2";
 
 const API_BASE_URL = resolveApiBaseUrl();
 const publicSite = document.querySelector("#publicSite");
@@ -277,11 +278,8 @@ function renderMegaRetailPublicHeader(schema, logo, categories, labels) {
 
 function renderMegaRetailPublicBento(schema, heroSection, categories, items, clientPhotos, hasBrandVisual, labels) {
   const heroCopy = heroSection.editable || {};
-  const tileCategories = categories.length ? categories : labels.fallbackCategories;
-  return `<main class="mega-retail-bento" ${motionDataAttributes(heroSection.motion)}>${Array.from({ length: 5 }, (_, index) => {
-    const category = tileCategories[index % tileCategories.length];
-    const item = items.find((entry) => String(entry.category || "").toLowerCase() === String(category).toLowerCase()) || items[index];
-    const media = resolveMegaRetailPublicTileMedia({ clientPhotoUrls: clientPhotos, tileIndex: index, category, categoryImage: item?.image_url || item?.imageUrl, hasBrandVisual });
+  const departmentTiles = resolveMegaRetailDepartmentTiles({ categories, items, clientPhotoUrls: clientPhotos, hasBrandVisual, fallbackCategories: labels.fallbackCategories });
+  return `<main class="mega-retail-bento" ${motionDataAttributes(heroSection.motion)}>${departmentTiles.map(({ category, item, media }, index) => {
     const title = index === 0 ? (heroCopy.headline || schema.business?.name || labels.featured) : category;
     const detail = index === 0 ? (heroCopy.subtitle || schema.business?.description || labels.heroText) : (item?.description || labels.discover);
     return `<article class="mega-retail-tile ${index === 0 ? "is-primary" : index === 1 ? "is-medium" : "is-small"} ${media.duotone ? "is-duotone" : ""}" data-image-source="${escapeAttribute(media.source)}" data-motion-item><img src="${escapeAttribute(media.url)}" alt="${escapeAttribute(title)}"><div><span>${escapeHtml(index === 0 ? labels.featured : labels.department)}</span><h${index === 0 ? "1" : "2"} ${index === 0 ? "data-motion-headline" : ""}>${escapeHtml(title)}</h${index === 0 ? "1" : "2"}>${index < 2 ? `<p ${index === 0 ? "data-motion-copy" : ""}>${escapeHtml(detail)}</p>` : ""}<button type="button" data-catalog-category="${escapeAttribute(String(category || "").toLowerCase())}" ${index === 0 ? "data-motion-cta" : ""}>${escapeHtml(labels.explore)} ${megaRetailPublicIcon("arrow")}</button></div></article>`;
@@ -329,18 +327,6 @@ function megaRetailPublicWhatsAppUrl(contact = {}) {
   if (!raw) return "";
   const digits = raw.replace(/\D/g, "");
   return digits.length >= 7 ? `https://wa.me/${digits}` : "";
-}
-
-function resolveMegaRetailPublicTileMedia({ clientPhotoUrls = [], tileIndex = 0, category = "", categoryImage = "", hasBrandVisual = false }) {
-  const photos = clientPhotoUrls.map((value) => String(value || "").trim()).filter(Boolean);
-  if (photos.length) return { url: photos[tileIndex % photos.length], source: "client_photo", duotone: false };
-  return { url: String(categoryImage || "").trim() || megaRetailPublicStockImage(category), source: hasBrandVisual ? "brand_duotone" : "stock_category", duotone: Boolean(hasBrandVisual) };
-}
-
-function megaRetailPublicStockImage(category = "") {
-  const text = String(category).toLowerCase();
-  const images = [[/fashion|moda|ropa|style/, "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1400&q=84"], [/home|hogar|decor|furniture/, "https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1400&q=84"], [/beauty|belleza|skin|cosmetic/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1400&q=84"], [/food|comida|gourmet|restaurant/, "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1400&q=84"], [/sport|fitness|outdoor/, "https://images.unsplash.com/photo-1538805060514-97d9cc17730c?auto=format&fit=crop&w=1400&q=84"], [/tech|electronic|gadget|computer/, "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=1400&q=84"]];
-  return (images.find(([pattern]) => pattern.test(text)) || [null, "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1400&q=84"])[1];
 }
 
 function megaRetailPublicLabels(schema = {}) {

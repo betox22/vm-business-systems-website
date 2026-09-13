@@ -16,6 +16,31 @@ Formato de entrada:
 
 ---
 
+## 2026-09-12 — Codex — Imágenes coherentes en departamentos Mega Retail
+
+**Hecho:** los banners de departamentos del template `mega-retail-store` ya no
+usan un pool frontend desconectado ni reutilizan `catalog_items` por posición.
+El builder y el visor público comparten una sola política: foto aportada por el
+cliente, imagen ya resuelta por backend para un producto de categoría exactamente
+coincidente, o `images/product-placeholder.svg` cuando no existe una coincidencia
+segura.
+
+**Causa raíz:** tanto el renderer del builder como `site-viewer.js` sustituían la
+ausencia de un producto de la categoría con `items[index]`; así una imagen válida
+de joyería, cocina o autos terminaba en un departamento distinto. Además, cada
+superficie mantenía su propio pool fijo de stock.
+
+**Archivos tocados:** `src/ai-builder/mega-retail-policy.js`,
+`src/ai-builder/renderers.js`, `site-viewer.js`, artefactos compilados del builder,
+`tests/ai-builder-mega-retail-policy.test.mjs` y esta bitácora.
+
+**Validación:** el test focalizado pasa 6/6 y cubre schemas completos de
+ferretería, plomería, veterinaria y bufete; suite Node 182/182 y backend 149/149.
+El bundle del builder compiló correctamente.
+
+**Pendiente / abierto:** rama lista para revisión; no fusionada a `main` ni
+empujada al remoto en esta sesión.
+
 ## 2026-09-12 — Codex — Catálogos IA para rubros no reconocidos
 
 **Hecho:** los rubros que no coinciden con la biblioteca fija ahora usan el

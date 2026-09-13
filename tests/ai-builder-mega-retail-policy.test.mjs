@@ -3,21 +3,17 @@ import fs from "node:fs";
 import test from "node:test";
 import {
   isMegaRetailTemplate,
+  NEUTRAL_PRODUCT_PLACEHOLDER,
   megaRetailFeatureFlags,
   megaRetailStockImage,
   megaRetailWhatsAppUrl,
+  resolveMegaRetailDepartmentTiles,
   resolveMegaRetailTileMedia,
 } from "../src/ai-builder/mega-retail-policy.js";
 
-test("bath departments use bath-specific media instead of the generic OPEN storefront", () => {
-  assert.match(megaRetailStockImage("Bath bombs"), /1540555700478/);
-  assert.match(megaRetailStockImage("Artisan soaps"), /1663108275588/);
-  assert.match(megaRetailStockImage("Scented candles"), /1742544637816/);
-  const protectedBathBomb = resolveMegaRetailTileMedia({
-    category: "Bombas de bano",
-    categoryImage: "https://images.unsplash.com/photo-1472851294608-062f824d29cc",
-  });
-  assert.match(protectedBathBomb.url, /1540555700478/);
+test("departments without an exact catalog image use the neutral product placeholder", () => {
+  assert.equal(megaRetailStockImage("Electrical Supplies"), NEUTRAL_PRODUCT_PLACEHOLDER);
+  assert.equal(megaRetailStockImage("Plumbing Supplies"), NEUTRAL_PRODUCT_PLACEHOLDER);
 });
 
 test("mega retail tile images prioritize client photos over brand treatment and stock", () => {
@@ -28,8 +24,54 @@ test("mega retail tile images prioritize client photos over brand treatment and 
   assert.deepEqual(branded, { url: "https://stock.example/category.jpg", source: "brand_duotone", duotone: true });
 
   const stock = resolveMegaRetailTileMedia({ category: "technology" });
-  assert.equal(stock.source, "stock_category");
-  assert.match(stock.url, /^https:\/\/images\.unsplash\.com\//);
+  assert.equal(stock.source, "neutral_placeholder");
+  assert.equal(stock.url, NEUTRAL_PRODUCT_PLACEHOLDER);
+});
+
+test("complete mega retail site schemas never reuse unrelated positional product images as department banners", () => {
+  const cases = [
+    ["Hardware Center", ["Electrical Supplies", "Plumbing Supplies", "Power Tools", "Fasteners", "Safety Equipment"]],
+    ["Plumbing Services", ["Drain Cleaning", "Pipe Repair", "Water Heaters", "Valves", "Emergency Service"]],
+    ["Veterinary Clinic", ["Preventive Care", "Vaccinations", "Diagnostics", "Dental Care", "Surgery"]],
+    ["Business Law Firm", ["Contract Review", "Company Formation", "Compliance", "Disputes", "Legal Consultation"]],
+  ];
+  const unrelatedPhotoIds = [
+    "photo-1515562141207", "photo-1503376780353",
+    "photo-1484101403633", "photo-1596462502278",
+  ];
+
+  for (const [businessName, categories] of cases) {
+    const schema = {
+      business: { name: businessName, description: `${businessName} professional catalog`, selectedLanguage: "en" },
+      active_template: { id: "mega-retail-store" },
+      selected_template: { id: "mega-retail-store" },
+      layout_mode: { id: "standard" },
+      theme: {}, brand: {}, global_components: {},
+      catalog_categories: categories,
+      catalog_items: [{
+        name: "Unrelated legacy item",
+        category: "Legacy Other",
+        description: "Must never supply a department banner by array position.",
+        image_url: "https://images.unsplash.com/photo-1503376780353-7e6692767b70",
+      }],
+      pages: [{
+        page_key: "home", title: "Home", order: 0,
+        sections: [{ type: "Hero", editable: { headline: businessName, subtitle: "Specialized services and products" } }],
+      }],
+    };
+
+    const tiles = resolveMegaRetailDepartmentTiles({
+      categories: schema.catalog_categories,
+      items: schema.catalog_items,
+    });
+    const bannerUrls = tiles.map(({ media }) => media.url);
+
+    assert.equal(bannerUrls.length, 5, businessName);
+    assert.ok(bannerUrls.every((url) => url === NEUTRAL_PRODUCT_PLACEHOLDER), businessName);
+    unrelatedPhotoIds.forEach((photoId) => {
+      assert.ok(bannerUrls.every((url) => !url.includes(photoId)), `${businessName}: ${photoId}`);
+    });
+  }
 });
 
 test("WhatsApp is absent without a real value and uses wa.me when provided", () => {

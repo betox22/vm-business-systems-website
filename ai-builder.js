@@ -1744,79 +1744,46 @@
     return score >= 3 && score >= runnerUp + 2 ? winner : "";
   }
 
-  // src/ai-builder/catalog-preview-policy.js
-  function normalized(value) {
-    return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  }
-  function isBathBodyCatalogContext(value) {
-    const text = normalized(value);
-    return /\b(jabon|jabones|soaps?|bath bombs?|bombas? de bano|vela|velas|candle|candles|sales de bano|bath salts|body oil|aceite corporal)\b/.test(text);
-  }
-  function bathBodyStockImageUrl(value) {
-    const text = normalized(value);
-    if (/\b(vela|velas|candle|candles)\b/.test(text)) {
-      return "https://images.unsplash.com/photo-1742544637816-44a0e7f016c6?auto=format&fit=crop&w=900&q=82";
-    }
-    if (/\b(bath bombs?|bombas? de bano)\b/.test(text)) {
-      return "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=900&q=82";
-    }
-    if (/\b(jabon|jabones|soaps?)\b/.test(text)) {
-      return "https://images.unsplash.com/photo-1663108275588-f39db09701e1?auto=format&fit=crop&w=900&q=82";
-    }
-    return "";
-  }
-  function bathBodyCategoryLabel(value, language = "en") {
-    const text = normalized(value);
-    const labels = {
-      en: { soap: "Artisan soaps", candle: "Scented candles", bathBomb: "Bath bombs", bath: "Bath essentials" },
-      es: { soap: "Jabones artesanales", candle: "Velas arom\xE1ticas", bathBomb: "Bombas de ba\xF1o", bath: "Cuidado para el ba\xF1o" },
-      fr: { soap: "Savons artisanaux", candle: "Bougies parfumees", bathBomb: "Bombes de bain", bath: "Essentiels pour le bain" },
-      pt: { soap: "Sabonetes artesanais", candle: "Velas aromaticas", bathBomb: "Bombas de banho", bath: "Cuidados para o banho" }
-    };
-    const copy = labels[language] || labels.en;
-    if (/\b(vela|velas|candle|candles)\b/.test(text)) return copy.candle;
-    if (/\b(bath bombs?|bombas? de bano)\b/.test(text)) return copy.bathBomb;
-    if (/\b(jabon|jabones|soaps?)\b/.test(text)) return copy.soap;
-    return isBathBodyCatalogContext(text) ? copy.bath : "";
-  }
-  function shouldExpandInstantCatalog({ items = [], sourceIsBroad = false, templateIsBroad = false } = {}) {
-    const concreteItems = (Array.isArray(items) ? items : []).filter((item) => String(item || "").trim());
-    if (concreteItems.length >= 2 && !sourceIsBroad) return false;
-    return Boolean(sourceIsBroad || templateIsBroad);
-  }
-
   // src/ai-builder/mega-retail-policy.js
-  var STOCK_BY_CATEGORY = [
-    [/fashion|moda|ropa|style/, "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1400&q=84"],
-    [/home|hogar|decor|furniture/, "https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1400&q=84"],
-    [/beauty|belleza|skin|cosmetic/, "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1400&q=84"],
-    [/food|comida|gourmet|restaurant/, "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1400&q=84"],
-    [/sport|fitness|outdoor/, "https://images.unsplash.com/photo-1538805060514-97d9cc17730c?auto=format&fit=crop&w=1400&q=84"],
-    [/tech|electronic|gadget|computer/, "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=1400&q=84"]
-  ];
+  var NEUTRAL_PRODUCT_PLACEHOLDER = "/images/product-placeholder.svg";
   function isMegaRetailTemplate(templateId) {
     return String(templateId || "") === "mega-retail-store";
   }
   function megaRetailStockImage(category = "") {
-    const normalized3 = String(category).toLowerCase();
-    const bathBodyImage = bathBodyStockImageUrl(normalized3);
-    if (bathBodyImage) return bathBodyImage;
-    return (STOCK_BY_CATEGORY.find(([pattern]) => pattern.test(normalized3)) || [
-      null,
-      "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1400&q=84"
-    ])[1];
+    void category;
+    return NEUTRAL_PRODUCT_PLACEHOLDER;
   }
   function resolveMegaRetailTileMedia({ clientPhotoUrls = [], tileIndex = 0, category = "", categoryImage = "", hasBrandVisual = false } = {}) {
     const photos = Array.isArray(clientPhotoUrls) ? clientPhotoUrls.map((value) => String(value || "").trim()).filter(Boolean) : [];
     if (photos.length) {
       return { url: photos[tileIndex % photos.length], source: "client_photo", duotone: false };
     }
-    const bathBodyImage = bathBodyStockImageUrl(category);
+    const resolvedCategoryImage = String(categoryImage || "").trim();
     return {
-      url: bathBodyImage || String(categoryImage || "").trim() || megaRetailStockImage(category),
-      source: hasBrandVisual ? "brand_duotone" : "stock_category",
+      url: resolvedCategoryImage || megaRetailStockImage(category),
+      source: resolvedCategoryImage ? hasBrandVisual ? "brand_duotone" : "catalog_category" : "neutral_placeholder",
       duotone: Boolean(hasBrandVisual)
     };
+  }
+  function resolveMegaRetailDepartmentTiles({ categories = [], items = [], clientPhotoUrls = [], hasBrandVisual = false, fallbackCategories = [] } = {}) {
+    const tileCategories = categories.length ? categories : fallbackCategories;
+    return Array.from({ length: 5 }, (_, tileIndex) => {
+      const category = tileCategories[tileIndex % tileCategories.length];
+      const item = items.find(
+        (entry) => String(entry.category || "").trim().toLowerCase() === String(category || "").trim().toLowerCase()
+      );
+      return {
+        category,
+        item,
+        media: resolveMegaRetailTileMedia({
+          clientPhotoUrls,
+          tileIndex,
+          category,
+          categoryImage: item?.image_url || item?.imageUrl,
+          hasBrandVisual
+        })
+      };
+    });
   }
   function megaRetailWhatsAppUrl(contact = {}) {
     const raw = String(contact.whatsapp || "").trim();
@@ -2025,6 +1992,47 @@
     guidedState.logoGenerationStatus = "";
     guidedState.logoApprovalStatus = "";
     return guidedState;
+  }
+
+  // src/ai-builder/catalog-preview-policy.js
+  function normalized(value) {
+    return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+  function isBathBodyCatalogContext(value) {
+    const text = normalized(value);
+    return /\b(jabon|jabones|soaps?|bath bombs?|bombas? de bano|vela|velas|candle|candles|sales de bano|bath salts|body oil|aceite corporal)\b/.test(text);
+  }
+  function bathBodyStockImageUrl(value) {
+    const text = normalized(value);
+    if (/\b(vela|velas|candle|candles)\b/.test(text)) {
+      return "https://images.unsplash.com/photo-1742544637816-44a0e7f016c6?auto=format&fit=crop&w=900&q=82";
+    }
+    if (/\b(bath bombs?|bombas? de bano)\b/.test(text)) {
+      return "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=900&q=82";
+    }
+    if (/\b(jabon|jabones|soaps?)\b/.test(text)) {
+      return "https://images.unsplash.com/photo-1663108275588-f39db09701e1?auto=format&fit=crop&w=900&q=82";
+    }
+    return "";
+  }
+  function bathBodyCategoryLabel(value, language = "en") {
+    const text = normalized(value);
+    const labels = {
+      en: { soap: "Artisan soaps", candle: "Scented candles", bathBomb: "Bath bombs", bath: "Bath essentials" },
+      es: { soap: "Jabones artesanales", candle: "Velas arom\xE1ticas", bathBomb: "Bombas de ba\xF1o", bath: "Cuidado para el ba\xF1o" },
+      fr: { soap: "Savons artisanaux", candle: "Bougies parfumees", bathBomb: "Bombes de bain", bath: "Essentiels pour le bain" },
+      pt: { soap: "Sabonetes artesanais", candle: "Velas aromaticas", bathBomb: "Bombas de banho", bath: "Cuidados para o banho" }
+    };
+    const copy = labels[language] || labels.en;
+    if (/\b(vela|velas|candle|candles)\b/.test(text)) return copy.candle;
+    if (/\b(bath bombs?|bombas? de bano)\b/.test(text)) return copy.bathBomb;
+    if (/\b(jabon|jabones|soaps?)\b/.test(text)) return copy.soap;
+    return isBathBodyCatalogContext(text) ? copy.bath : "";
+  }
+  function shouldExpandInstantCatalog({ items = [], sourceIsBroad = false, templateIsBroad = false } = {}) {
+    const concreteItems = (Array.isArray(items) ? items : []).filter((item) => String(item || "").trim());
+    if (concreteItems.length >= 2 && !sourceIsBroad) return false;
+    return Boolean(sourceIsBroad || templateIsBroad);
   }
 
   // src/ai-builder/instant-preview-theme-policy.js
@@ -6142,11 +6150,8 @@
   }
   function renderMegaRetailBento(schema, heroSection, categories, items, clientPhotos, hasBrandVisual, labels) {
     const heroCopy = heroSection.editable || {};
-    const tileCategories = categories.length ? categories : labels.fallbackCategories;
-    const tiles = Array.from({ length: 5 }, (_, index) => {
-      const category = tileCategories[index % tileCategories.length];
-      const item = items.find((entry) => String(entry.category || "").toLowerCase() === String(category).toLowerCase()) || items[index];
-      const media = resolveMegaRetailTileMedia({ clientPhotoUrls: clientPhotos, tileIndex: index, category, categoryImage: item?.image_url || item?.imageUrl, hasBrandVisual });
+    const departmentTiles = resolveMegaRetailDepartmentTiles({ categories, items, clientPhotoUrls: clientPhotos, hasBrandVisual, fallbackCategories: labels.fallbackCategories });
+    const tiles = departmentTiles.map(({ category, item, media }, index) => {
       const title = index === 0 ? heroCopy.headline || schema.business?.name || labels.featured : category;
       const text = index === 0 ? heroCopy.subtitle || schema.business?.description || labels.heroText : item?.description || labels.discover;
       const className = index === 0 ? "is-primary" : index === 1 ? "is-medium" : "is-small";
