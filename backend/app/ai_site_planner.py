@@ -11,7 +11,9 @@ from urllib.parse import urlparse
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, field_validator, model_validator
 
 from .agents import (
+    OPENAI_REQUEST_TIMEOUT_SECONDS,
     TEMPLATE_CATALOG,
+    create_chat_completion_with_retry,
     normalize_template_id,
     semantic_seed_catalog,
     state_is_commerce_seed_target,
@@ -1623,9 +1625,13 @@ class OpenAISitePlanAgent:
     name = "openai_site_planner"
 
     def __init__(self) -> None:
-        self.model = os.getenv("OPENAI_SITE_PLANNER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-4o"
+        self.model = os.getenv("OPENAI_SITE_PLANNER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
         self.api_key = os.getenv("OPENAI_API_KEY")
-        self.client = AsyncOpenAI(api_key=self.api_key) if AsyncOpenAI and self.api_key else None
+        self.client = (
+            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+            if AsyncOpenAI and self.api_key
+            else None
+        )
 
     async def run(self, state: ProjectState, user_input: str) -> AgentResult:
         if not self.client:
@@ -1761,7 +1767,8 @@ class OpenAISitePlanAgent:
                 {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
             ]
             try:
-                response = await self.client.chat.completions.create(
+                response = await create_chat_completion_with_retry(
+                    self.client,
                     model=self.model,
                     temperature=0.15,
                     response_format=self._strict_response_format(),
@@ -1772,7 +1779,8 @@ class OpenAISitePlanAgent:
                     "OpenAI planner strict response_format failed; used json_object fallback: "
                     f"{type(strict_error).__name__}: {strict_error}"
                 )
-                response = await self.client.chat.completions.create(
+                response = await create_chat_completion_with_retry(
+                    self.client,
                     model=self.model,
                     temperature=0.15,
                     response_format={"type": "json_object"},

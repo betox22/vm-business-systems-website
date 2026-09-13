@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import asyncio
+import time
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -183,15 +185,51 @@ def normalize_text(value: str | None) -> str:
 
 
 def split_items(value: str | List[str] | None) -> List[str]:
+    def is_real_item(item: str) -> bool:
+        return bool(item) and not re.fullmatch(r"(?:and|y)", item, flags=re.IGNORECASE)
+
     if isinstance(value, list):
-        return [str(item).strip() for item in value if str(item).strip()]
+        return [item for raw_item in value if is_real_item(item := str(raw_item).strip())]
     if not value:
         return []
     return [
         part.strip()
         for part in re.split(r",|\n|;|\by\b|\band\b", str(value), flags=re.IGNORECASE)
-        if part.strip()
+        if is_real_item(part.strip())
     ]
+
+
+OPENAI_REQUEST_TIMEOUT_SECONDS = 20.0
+OPENAI_MAX_ATTEMPTS = 2
+OPENAI_RETRY_BACKOFF_SECONDS = 0.5
+
+
+async def create_chat_completion_with_retry(client: Any, **kwargs: Any) -> Any:
+    """Retry one transient OpenAI chat failure before callers degrade gracefully."""
+    last_error: Optional[Exception] = None
+    for attempt in range(OPENAI_MAX_ATTEMPTS):
+        try:
+            return await client.chat.completions.create(**kwargs)
+        except Exception as error:
+            last_error = error
+            if attempt + 1 < OPENAI_MAX_ATTEMPTS:
+                await asyncio.sleep(OPENAI_RETRY_BACKOFF_SECONDS)
+    assert last_error is not None
+    raise last_error
+
+
+def create_sync_chat_completion_with_retry(client: Any, **kwargs: Any) -> Any:
+    """Synchronous counterpart used by the unmatched-niche catalog fallback."""
+    last_error: Optional[Exception] = None
+    for attempt in range(OPENAI_MAX_ATTEMPTS):
+        try:
+            return client.chat.completions.create(**kwargs)
+        except Exception as error:
+            last_error = error
+            if attempt + 1 < OPENAI_MAX_ATTEMPTS:
+                time.sleep(OPENAI_RETRY_BACKOFF_SECONDS)
+    assert last_error is not None
+    raise last_error
 
 
 def suggests_jewelry_or_handmade_accessories(text: str) -> bool:
@@ -411,9 +449,10 @@ def generate_ai_seed_catalog(context: str, language: str, count: int = 6) -> Opt
     if not api_key or not OpenAI or not context.strip():
         return None
     try:
-        client = OpenAI(api_key=api_key, timeout=12.0)
-        model = os.getenv("OPENAI_SEED_CATALOG_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-4o-mini"
-        response = client.chat.completions.create(
+        client = OpenAI(api_key=api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+        model = os.getenv("OPENAI_SEED_CATALOG_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
+        response = create_sync_chat_completion_with_retry(
+            client,
             model=model,
             temperature=0.4,
             response_format={"type": "json_object"},
@@ -1039,9 +1078,13 @@ class ReviewerAgent(BaseAgent):
     name = "reviewer"
 
     def __init__(self) -> None:
-        self.model = os.getenv("OPENAI_REVIEWER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-4o-mini"
+        self.model = os.getenv("OPENAI_REVIEWER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
         self.api_key = os.getenv("OPENAI_API_KEY")
-        self.client = AsyncOpenAI(api_key=self.api_key) if AsyncOpenAI and self.api_key else None
+        self.client = (
+            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+            if AsyncOpenAI and self.api_key
+            else None
+        )
 
     async def run(self, state: ProjectState, user_input: str) -> AgentResult:
         if not self.client:
@@ -1087,7 +1130,8 @@ class ReviewerAgent(BaseAgent):
         fallback_warnings: List[str] = []
         try:
             try:
-                response = await self.client.chat.completions.create(
+                response = await create_chat_completion_with_retry(
+                    self.client,
                     model=self.model,
                     temperature=0.0,
                     response_format=self._strict_response_format(),
@@ -1098,7 +1142,8 @@ class ReviewerAgent(BaseAgent):
                     "Reviewer strict response_format failed; used json_object fallback: "
                     f"{type(strict_error).__name__}: {strict_error}"
                 )
-                response = await self.client.chat.completions.create(
+                response = await create_chat_completion_with_retry(
+                    self.client,
                     model=self.model,
                     temperature=0.0,
                     response_format={"type": "json_object"},
