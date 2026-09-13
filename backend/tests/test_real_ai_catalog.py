@@ -2,10 +2,10 @@ import json
 import os
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from app import agents
-from app.agents import CatalogAgent, SEED_PRODUCT_LIBRARY, generate_ai_seed_catalog
+from app.agents import CatalogAgent, SEED_PRODUCT_LIBRARY, generate_ai_seed_catalog, semantic_seed_catalog
 from app.image_assets import resolve_product_image_url
 from app.models import ProjectState
 
@@ -70,6 +70,85 @@ class _FakeOpenAI:
 
 
 class RealAICatalogTests(unittest.IsolatedAsyncioTestCase):
+    async def test_hardware_home_improvement_uses_ai_despite_home_keyword(self):
+        brief = "BuildRight Hardware is a hardware and home improvement superstore."
+        expected = NICHE_CASES["hardware and construction supplies"]
+        completions = _NicheCompletions()
+        _FakeOpenAI.completions = completions
+        state = ProjectState(
+            businessName="BuildRight Hardware",
+            businessDescription=brief,
+            industry="industrial_supplier",
+            websiteType="online_store",
+            salesFlow="online_sales",
+            selectedLanguage="en",
+        )
+
+        with (
+            patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"}),
+            patch.object(agents, "OpenAI", _FakeOpenAI),
+            patch("app.image_assets._search_unsplash_photo", return_value=None),
+        ):
+            result = await CatalogAgent().run(state, brief)
+
+        self.assertEqual(result.updates["catalogSource"], "ai_generated")
+        self.assertEqual([item["name"] for item in result.updates["catalogItems"]], [item[0] for item in expected])
+        self.assertEqual(len(completions.calls), 1)
+        prompt = completions.calls[0]["messages"][-1]["content"]
+        self.assertIn(brief, prompt)
+        self.assertIn("industrial_supplier", prompt)
+        self.assertNotIn("Nordic Table Lamp", str(result.updates))
+
+    def test_all_known_profiles_and_unknown_niches_prefer_ai_catalog(self):
+        cases = {
+            "marketplace": "mega tienda de productos variados",
+            "restaurant": "restaurant serving seasonal food",
+            "coffee": "coffee and espresso roaster",
+            "jewelry": "handmade jewelry and gold rings",
+            "beauty": "beauty and skincare store",
+            "auto": "off-road truck accessories",
+            "fashion": "fashion boutique clothing",
+            "home": "home decor and furniture",
+            "tech": "tech gadget and phone store",
+            "default": "marine propellers and bilge pumps",
+        }
+        for profile, brief in cases.items():
+            with self.subTest(profile=profile):
+                self.assertEqual(agents.infer_seed_profile(brief), profile)
+                generated = _response([(f"Custom {profile} offering", "Client catalog", f"An offer specific to {brief}.", 25.0, "specific offering")])
+                completion = Mock(return_value=generated)
+                _FakeOpenAI.completions = SimpleNamespace(create=completion)
+                state = ProjectState(businessDescription=brief, selectedLanguage="en")
+                with (
+                    patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"}),
+                    patch.object(agents, "OpenAI", _FakeOpenAI),
+                    patch("app.image_assets._search_unsplash_photo", return_value=None),
+                ):
+                    catalog = semantic_seed_catalog(state, brief, count=1)
+                completion.assert_called_once()
+                self.assertEqual([item["name"] for item in catalog], [f"Custom {profile} offering"])
+                self.assertEqual(catalog[0]["sku"], "AI-001")
+                self.assertIn(brief, completion.call_args.kwargs["messages"][-1]["content"])
+
+    def test_ai_unavailable_preserves_static_profile_fallback(self):
+        for brief, profile in [
+            ("hardware and home improvement superstore", "home"),
+            ("restaurant food", "restaurant"),
+            ("mega tienda de productos variados", "marketplace"),
+            ("marine propellers and bilge pumps", "default"),
+        ]:
+            with (
+                self.subTest(profile=profile),
+                patch.object(agents, "generate_ai_seed_catalog", return_value=None) as generate,
+                patch("app.image_assets._search_unsplash_photo", return_value=None),
+            ):
+                catalog = semantic_seed_catalog(ProjectState(selectedLanguage="en"), brief, count=2)
+                generate.assert_called_once()
+                expected_profile = "tech" if profile == "marketplace" else profile
+                self.assertEqual(catalog[0]["name"], SEED_PRODUCT_LIBRARY[expected_profile][0]["name"]["en"])
+                self.assertEqual(len(catalog), 2)
+                self.assertFalse(any(item["sku"].startswith("AI-") for item in catalog))
+
     async def test_unrecognized_valid_niches_use_structured_ai_catalog(self):
         completions = _NicheCompletions()
         _FakeOpenAI.completions = completions

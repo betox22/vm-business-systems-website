@@ -1,0 +1,1932 @@
+{
+  "started_at_utc": "2026-09-13T17:13:32.847514+00:00",
+  "scope": "Real CatalogAgent -> semantic_seed_catalog -> OpenAI; not full website generation or publication",
+  "base_commit": "f93bd52c2ce6f5450f42bfd63edc8c8d88eb0692",
+  "agents_sha256": "b2faa09fdfac82eac138af0c30cb0f1b92b39027e4e62ac751dfc7be7f4ff4ed",
+  "mocked_services": [],
+  "unsplash_configured": false,
+  "cases": [
+    {
+      "business_name": "BuildRight Hardware",
+      "input": {
+        "businessName": "BuildRight Hardware",
+        "businessDescription": "BuildRight Hardware is a hardware and home improvement superstore.",
+        "industry": "industrial_supplier",
+        "servicesProducts": [],
+        "brandsCarried": [],
+        "contactInfo": {},
+        "logoPalette": [],
+        "colorProvenance": {
+          "anchorSource": "unknown",
+          "colors": []
+        },
+        "photoUrls": [],
+        "videoUrls": [],
+        "selectedLanguage": "en",
+        "websiteType": "online_store",
+        "secondaryOfferingCategories": [],
+        "salesFlow": "online_sales",
+        "colors": {},
+        "typography": {},
+        "typographyScale": {},
+        "generatedCopy": {},
+        "catalogItems": [],
+        "assets": {},
+        "fieldMeta": {},
+        "missingImportantFields": [],
+        "confidence": 0.0,
+        "notes": []
+      },
+      "legacy_keyword_profile": "home",
+      "elapsed_seconds": 10.135,
+      "catalog_source": "ai_generated",
+      "product_names": [
+        "20V Cordless Hammer Drill Kit",
+        "Heavy-Duty 5-Tier Steel Shelving",
+        "3/4-Inch Brass Ball Valve",
+        "12/3 Contractor Extension Cord, 50 ft",
+        "Exterior Deck Screws, 3-Inch, 5 lb Box",
+        "6 ft Fiberglass Stepladder"
+      ],
+      "catalog_items": [
+        {
+          "id": "prod_001",
+          "sku": "AI-001",
+          "name": "20V Cordless Hammer Drill Kit",
+          "description": "Two-speed hammer drill with a 1/2-inch keyless chuck, 2.0Ah lithium-ion battery, charger, and carrying case for drilling wood, metal, and masonry.",
+          "category": "Power Tools",
+          "price_type": "fixed",
+          "price": 129.99,
+          "price_amount": 129.99,
+          "currency": "USD",
+          "price_label": "USD 129.99",
+          "rating": 4.5,
+          "badge": "Best Seller",
+          "imageSearchQuery": "cordless hammer drill",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 0,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "herramientas",
+            "query": "cordless hammer drill product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "20V Cordless Hammer Drill Kit",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_002",
+          "sku": "AI-002",
+          "name": "Heavy-Duty 5-Tier Steel Shelving",
+          "description": "Boltless steel shelving unit measuring 48 x 24 x 72 inches, with adjustable shelves rated for 800 lb each when evenly loaded.",
+          "category": "Workshop Storage",
+          "price_type": "fixed",
+          "price": 189.99,
+          "price_amount": 189.99,
+          "currency": "USD",
+          "price_label": "USD 189.99",
+          "rating": 4.6,
+          "badge": "New",
+          "imageSearchQuery": "industrial steel shelving",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 1,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "industrial",
+            "query": "industrial steel shelving product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Heavy-Duty 5-Tier Steel Shelving",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_003",
+          "sku": "AI-003",
+          "name": "3/4-Inch Brass Ball Valve",
+          "description": "Lead-free brass shutoff valve with female threaded connections, a full-port design, and a quarter-turn lever for residential water lines.",
+          "category": "Plumbing Supplies",
+          "price_type": "fixed",
+          "price": 18.49,
+          "price_amount": 18.49,
+          "currency": "USD",
+          "price_label": "USD 18.49",
+          "rating": 4.7,
+          "badge": "Featured",
+          "imageSearchQuery": "brass ball valve",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 2,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "plomeria",
+            "query": "brass ball valve product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "3/4-Inch Brass Ball Valve",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_004",
+          "sku": "AI-004",
+          "name": "12/3 Contractor Extension Cord, 50 ft",
+          "description": "Heavy-duty grounded extension cord with a weather-resistant jacket and illuminated connector, rated for 15A, 125V outdoor use.",
+          "category": "Electrical Supplies",
+          "price_type": "fixed",
+          "price": 54.99,
+          "price_amount": 54.99,
+          "currency": "USD",
+          "price_label": "USD 54.99",
+          "rating": 4.8,
+          "badge": "Featured",
+          "imageSearchQuery": "contractor extension cord",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 3,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "electrico",
+            "query": "contractor extension cord product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "12/3 Contractor Extension Cord, 50 ft",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_005",
+          "sku": "AI-005",
+          "name": "Exterior Deck Screws, 3-Inch, 5 lb Box",
+          "description": "Coated steel deck screws with star-drive heads and self-starting tips for fastening pressure-treated decking and outdoor wood projects.",
+          "category": "Fasteners",
+          "price_type": "fixed",
+          "price": 32.99,
+          "price_amount": 32.99,
+          "currency": "USD",
+          "price_label": "USD 32.99",
+          "rating": 4.5,
+          "badge": "Featured",
+          "imageSearchQuery": "exterior deck screws",
+          "is_active": true,
+          "is_featured": false,
+          "sort_order": 4,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "tornilleria",
+            "query": "exterior deck screws product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Exterior Deck Screws, 3-Inch, 5 lb Box",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_006",
+          "sku": "AI-006",
+          "name": "6 ft Fiberglass Stepladder",
+          "description": "Type IA stepladder with a 300 lb duty rating, slip-resistant steps, nonconductive fiberglass rails, and a molded tool tray.",
+          "category": "Ladders & Access Equipment",
+          "price_type": "fixed",
+          "price": 119.99,
+          "price_amount": 119.99,
+          "currency": "USD",
+          "price_label": "USD 119.99",
+          "rating": 4.6,
+          "badge": "Featured",
+          "imageSearchQuery": "fiberglass step ladder",
+          "is_active": true,
+          "is_featured": false,
+          "sort_order": 5,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "herramientas",
+            "query": "fiberglass step ladder product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "6 ft Fiberglass Stepladder",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        }
+      ],
+      "openai_calls": [
+        {
+          "request": {
+            "model": "gpt-6-astra",
+            "response_format": {
+              "type": "json_schema",
+              "json_schema": {
+                "name": "kreaton_seed_catalog",
+                "strict": true,
+                "schema": {
+                  "$defs": {
+                    "AISeedCatalogItem": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": {
+                          "maxLength": 90,
+                          "minLength": 2,
+                          "title": "Name",
+                          "type": "string"
+                        },
+                        "category": {
+                          "maxLength": 60,
+                          "minLength": 2,
+                          "title": "Category",
+                          "type": "string"
+                        },
+                        "description": {
+                          "maxLength": 400,
+                          "minLength": 8,
+                          "title": "Description",
+                          "type": "string"
+                        },
+                        "price": {
+                          "exclusiveMinimum": 0.0,
+                          "title": "Price",
+                          "type": "number"
+                        },
+                        "image_search_query": {
+                          "maxLength": 80,
+                          "minLength": 2,
+                          "title": "Image Search Query",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "category",
+                        "description",
+                        "price",
+                        "image_search_query"
+                      ],
+                      "title": "AISeedCatalogItem",
+                      "type": "object"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "items": {
+                        "$ref": "#/$defs/AISeedCatalogItem"
+                      },
+                      "maxItems": 12,
+                      "minItems": 1,
+                      "title": "Items",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "title": "AISeedCatalog",
+                  "type": "object"
+                }
+              }
+            },
+            "messages": [
+              {
+                "role": "system",
+                "content": "You write short sample product/service catalogs for a website builder. Given a business description in any language and any niche -- it can be anything: boat parts, fishing gear, extreme sports equipment, car accessories, bathroom fixtures, literally anything -- return realistic, specific sample items for THAT niche. Never fall back to generic filler like 'featured item' or unrelated products. Reply in the same language as the business description. Return strict JSON: {\"items\": [{\"name\": str, \"category\": str, \"description\": str, \"price\": number, \"image_search_query\": \"2-4 English keywords for stock photo search\"}]}"
+              },
+              {
+                "role": "user",
+                "content": "Business description: BuildRight Hardware is a hardware and home improvement superstore. BuildRight Hardware BuildRight Hardware is a hardware and home improvement superstore. industrial_supplier\nLanguage: en\nReturn exactly 6 items."
+              }
+            ]
+          },
+          "response": {
+            "id": "chatcmpl-ENi3i8CeQkiKwvExqgaGq9nI5vhh8",
+            "choices": [
+              {
+                "finish_reason": "stop",
+                "index": 0,
+                "logprobs": null,
+                "message": {
+                  "content": "{\"items\":[{\"name\":\"20V Cordless Hammer Drill Kit\",\"category\":\"Power Tools\",\"description\":\"Two-speed hammer drill with a 1/2-inch keyless chuck, 2.0Ah lithium-ion battery, charger, and carrying case for drilling wood, metal, and masonry.\",\"price\":129.99,\"image_search_query\":\"cordless hammer drill\"},{\"name\":\"Heavy-Duty 5-Tier Steel Shelving\",\"category\":\"Workshop Storage\",\"description\":\"Boltless steel shelving unit measuring 48 x 24 x 72 inches, with adjustable shelves rated for 800 lb each when evenly loaded.\",\"price\":189.99,\"image_search_query\":\"industrial steel shelving\"},{\"name\":\"3/4-Inch Brass Ball Valve\",\"category\":\"Plumbing Supplies\",\"description\":\"Lead-free brass shutoff valve with female threaded connections, a full-port design, and a quarter-turn lever for residential water lines.\",\"price\":18.49,\"image_search_query\":\"brass ball valve\"},{\"name\":\"12/3 Contractor Extension Cord, 50 ft\",\"category\":\"Electrical Supplies\",\"description\":\"Heavy-duty grounded extension cord with a weather-resistant jacket and illuminated connector, rated for 15A, 125V outdoor use.\",\"price\":54.99,\"image_search_query\":\"contractor extension cord\"},{\"name\":\"Exterior Deck Screws, 3-Inch, 5 lb Box\",\"category\":\"Fasteners\",\"description\":\"Coated steel deck screws with star-drive heads and self-starting tips for fastening pressure-treated decking and outdoor wood projects.\",\"price\":32.99,\"image_search_query\":\"exterior deck screws\"},{\"name\":\"6 ft Fiberglass Stepladder\",\"category\":\"Ladders & Access Equipment\",\"description\":\"Type IA stepladder with a 300 lb duty rating, slip-resistant steps, nonconductive fiberglass rails, and a molded tool tray.\",\"price\":119.99,\"image_search_query\":\"fiberglass step ladder\"}]}",
+                  "refusal": null,
+                  "role": "assistant",
+                  "annotations": [],
+                  "audio": null,
+                  "function_call": null,
+                  "tool_calls": null
+                }
+              }
+            ],
+            "created": 1789319614,
+            "model": "gpt-6-astra",
+            "object": "chat.completion",
+            "service_tier": "default",
+            "system_fingerprint": null,
+            "usage": {
+              "completion_tokens": 397,
+              "prompt_tokens": 313,
+              "total_tokens": 710,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": 0,
+                "audio_tokens": 0,
+                "reasoning_tokens": 0,
+                "rejected_prediction_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 0
+              }
+            }
+          }
+        }
+      ],
+      "real_ai_verified": true
+    },
+    {
+      "business_name": "Harbor Parts",
+      "input": {
+        "businessName": "Harbor Parts",
+        "businessDescription": "Harbor Parts is a boat spare parts store selling marine engine parts, propellers, bilge pumps and marine electrical components.",
+        "industry": "marine_parts",
+        "servicesProducts": [],
+        "brandsCarried": [],
+        "contactInfo": {},
+        "logoPalette": [],
+        "colorProvenance": {
+          "anchorSource": "unknown",
+          "colors": []
+        },
+        "photoUrls": [],
+        "videoUrls": [],
+        "selectedLanguage": "en",
+        "websiteType": "online_store",
+        "secondaryOfferingCategories": [],
+        "salesFlow": "online_sales",
+        "colors": {},
+        "typography": {},
+        "typographyScale": {},
+        "generatedCopy": {},
+        "catalogItems": [],
+        "assets": {},
+        "fieldMeta": {},
+        "missingImportantFields": [],
+        "confidence": 0.0,
+        "notes": []
+      },
+      "legacy_keyword_profile": "default",
+      "elapsed_seconds": 10.451,
+      "catalog_source": "ai_generated",
+      "product_names": [
+        "Outboard Water Pump Impeller Kit",
+        "10-Micron Fuel Water Separator",
+        "Aluminum Propeller, 13.25 × 17 Inches",
+        "Automatic Bilge Pump, 750 GPH",
+        "Marine Battery Selector Switch",
+        "Six-Circuit Marine Fuse Block"
+      ],
+      "catalog_items": [
+        {
+          "id": "prod_001",
+          "sku": "AI-001",
+          "name": "Outboard Water Pump Impeller Kit",
+          "description": "Replacement rubber impeller with gaskets and wear plate for compatible 40–60 HP outboards. Verify engine model and year before ordering.",
+          "category": "Marine Engine Parts",
+          "price_type": "fixed",
+          "price": 49.95,
+          "price_amount": 49.95,
+          "currency": "USD",
+          "price_label": "USD 49.95",
+          "rating": 4.5,
+          "badge": "Best Seller",
+          "imageSearchQuery": "outboard water pump impeller",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 0,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "outboard water pump impeller product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Outboard Water Pump Impeller Kit",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_002",
+          "sku": "AI-002",
+          "name": "10-Micron Fuel Water Separator",
+          "description": "Spin-on marine fuel filter with a 10-micron element to help remove water and debris from gasoline. Fits compatible separator heads.",
+          "category": "Marine Engine Parts",
+          "price_type": "fixed",
+          "price": 24.99,
+          "price_amount": 24.99,
+          "currency": "USD",
+          "price_label": "USD 24.99",
+          "rating": 4.6,
+          "badge": "New",
+          "imageSearchQuery": "marine fuel water separator",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 1,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "marine fuel water separator product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "10-Micron Fuel Water Separator",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_003",
+          "sku": "AI-003",
+          "name": "Aluminum Propeller, 13.25 × 17 Inches",
+          "description": "Three-blade, right-hand aluminum propeller for compatible outboard motors. Requires a hub kit matched to your engine's propeller shaft.",
+          "category": "Propellers",
+          "price_type": "fixed",
+          "price": 139.95,
+          "price_amount": 139.95,
+          "currency": "USD",
+          "price_label": "USD 139.95",
+          "rating": 4.7,
+          "badge": "Featured",
+          "imageSearchQuery": "aluminum outboard boat propeller",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 2,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "aluminum outboard boat propeller product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Aluminum Propeller, 13.25 × 17 Inches",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_004",
+          "sku": "AI-004",
+          "name": "Automatic Bilge Pump, 750 GPH",
+          "description": "Compact 12V submersible bilge pump with an integrated float switch, removable strainer base and 3/4-inch hose outlet.",
+          "category": "Bilge Pumps",
+          "price_type": "fixed",
+          "price": 69.95,
+          "price_amount": 69.95,
+          "currency": "USD",
+          "price_label": "USD 69.95",
+          "rating": 4.8,
+          "badge": "Featured",
+          "imageSearchQuery": "automatic boat bilge pump",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 3,
+          "image_url": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=82",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "electrico",
+            "query": "automatic boat bilge pump product packshot clean studio softbox real photography",
+            "url": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=82",
+            "alt": "Automatic Bilge Pump, 750 GPH",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=82",
+              "card": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=82",
+              "full": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=82"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_005",
+          "sku": "AI-005",
+          "name": "Marine Battery Selector Switch",
+          "description": "Four-position battery switch with OFF, 1, 2 and BOTH settings for dual-battery systems. Rated for 300A continuous service on 12–48V DC systems.",
+          "category": "Marine Electrical Components",
+          "price_type": "fixed",
+          "price": 44.95,
+          "price_amount": 44.95,
+          "currency": "USD",
+          "price_label": "USD 44.95",
+          "rating": 4.5,
+          "badge": "Featured",
+          "imageSearchQuery": "marine battery selector switch",
+          "is_active": true,
+          "is_featured": false,
+          "sort_order": 4,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "electrico",
+            "query": "marine battery selector switch product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Marine Battery Selector Switch",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_006",
+          "sku": "AI-006",
+          "name": "Six-Circuit Marine Fuse Block",
+          "description": "Covered blade-fuse block with a negative bus and corrosion-resistant terminals for organizing boat accessory wiring. Fuses sold separately.",
+          "category": "Marine Electrical Components",
+          "price_type": "fixed",
+          "price": 36.5,
+          "price_amount": 36.5,
+          "currency": "USD",
+          "price_label": "USD 36.50",
+          "rating": 4.6,
+          "badge": "Featured",
+          "imageSearchQuery": "marine blade fuse block",
+          "is_active": true,
+          "is_featured": false,
+          "sort_order": 5,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "electrico",
+            "query": "marine blade fuse block product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Six-Circuit Marine Fuse Block",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        }
+      ],
+      "openai_calls": [
+        {
+          "request": {
+            "model": "gpt-6-astra",
+            "response_format": {
+              "type": "json_schema",
+              "json_schema": {
+                "name": "kreaton_seed_catalog",
+                "strict": true,
+                "schema": {
+                  "$defs": {
+                    "AISeedCatalogItem": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": {
+                          "maxLength": 90,
+                          "minLength": 2,
+                          "title": "Name",
+                          "type": "string"
+                        },
+                        "category": {
+                          "maxLength": 60,
+                          "minLength": 2,
+                          "title": "Category",
+                          "type": "string"
+                        },
+                        "description": {
+                          "maxLength": 400,
+                          "minLength": 8,
+                          "title": "Description",
+                          "type": "string"
+                        },
+                        "price": {
+                          "exclusiveMinimum": 0.0,
+                          "title": "Price",
+                          "type": "number"
+                        },
+                        "image_search_query": {
+                          "maxLength": 80,
+                          "minLength": 2,
+                          "title": "Image Search Query",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "category",
+                        "description",
+                        "price",
+                        "image_search_query"
+                      ],
+                      "title": "AISeedCatalogItem",
+                      "type": "object"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "items": {
+                        "$ref": "#/$defs/AISeedCatalogItem"
+                      },
+                      "maxItems": 12,
+                      "minItems": 1,
+                      "title": "Items",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "title": "AISeedCatalog",
+                  "type": "object"
+                }
+              }
+            },
+            "messages": [
+              {
+                "role": "system",
+                "content": "You write short sample product/service catalogs for a website builder. Given a business description in any language and any niche -- it can be anything: boat parts, fishing gear, extreme sports equipment, car accessories, bathroom fixtures, literally anything -- return realistic, specific sample items for THAT niche. Never fall back to generic filler like 'featured item' or unrelated products. Reply in the same language as the business description. Return strict JSON: {\"items\": [{\"name\": str, \"category\": str, \"description\": str, \"price\": number, \"image_search_query\": \"2-4 English keywords for stock photo search\"}]}"
+              },
+              {
+                "role": "user",
+                "content": "Business description: Harbor Parts is a boat spare parts store selling marine engine parts, propellers, bilge pumps and marine electrical components. Harbor Parts Harbor Parts is a boat spare parts store selling marine engine parts, propellers, bilge pumps and marine electrical components. marine_parts\nLanguage: en\nReturn exactly 6 items."
+              }
+            ]
+          },
+          "response": {
+            "id": "chatcmpl-ENi3rAXQfgMdEl8CsrK5YNIaOUlzg",
+            "choices": [
+              {
+                "finish_reason": "stop",
+                "index": 0,
+                "logprobs": null,
+                "message": {
+                  "content": "{\"items\":[{\"name\":\"Outboard Water Pump Impeller Kit\",\"category\":\"Marine Engine Parts\",\"description\":\"Replacement rubber impeller with gaskets and wear plate for compatible 40–60 HP outboards. Verify engine model and year before ordering.\",\"price\":49.95,\"image_search_query\":\"outboard water pump impeller\"},{\"name\":\"10-Micron Fuel Water Separator\",\"category\":\"Marine Engine Parts\",\"description\":\"Spin-on marine fuel filter with a 10-micron element to help remove water and debris from gasoline. Fits compatible separator heads.\",\"price\":24.99,\"image_search_query\":\"marine fuel water separator\"},{\"name\":\"Aluminum Propeller, 13.25 × 17 Inches\",\"category\":\"Propellers\",\"description\":\"Three-blade, right-hand aluminum propeller for compatible outboard motors. Requires a hub kit matched to your engine's propeller shaft.\",\"price\":139.95,\"image_search_query\":\"aluminum outboard boat propeller\"},{\"name\":\"Automatic Bilge Pump, 750 GPH\",\"category\":\"Bilge Pumps\",\"description\":\"Compact 12V submersible bilge pump with an integrated float switch, removable strainer base and 3/4-inch hose outlet.\",\"price\":69.95,\"image_search_query\":\"automatic boat bilge pump\"},{\"name\":\"Marine Battery Selector Switch\",\"category\":\"Marine Electrical Components\",\"description\":\"Four-position battery switch with OFF, 1, 2 and BOTH settings for dual-battery systems. Rated for 300A continuous service on 12–48V DC systems.\",\"price\":44.95,\"image_search_query\":\"marine battery selector switch\"},{\"name\":\"Six-Circuit Marine Fuse Block\",\"category\":\"Marine Electrical Components\",\"description\":\"Covered blade-fuse block with a negative bus and corrosion-resistant terminals for organizing boat accessory wiring. Fuses sold separately.\",\"price\":36.5,\"image_search_query\":\"marine blade fuse block\"}]}",
+                  "refusal": null,
+                  "role": "assistant",
+                  "annotations": [],
+                  "audio": null,
+                  "function_call": null,
+                  "tool_calls": null
+                }
+              }
+            ],
+            "created": 1789319623,
+            "model": "gpt-6-astra",
+            "object": "chat.completion",
+            "service_tier": "default",
+            "system_fingerprint": null,
+            "usage": {
+              "completion_tokens": 393,
+              "prompt_tokens": 336,
+              "total_tokens": 729,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": 0,
+                "audio_tokens": 0,
+                "reasoning_tokens": 0,
+                "rejected_prediction_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 0
+              }
+            }
+          }
+        }
+      ],
+      "real_ai_verified": true
+    },
+    {
+      "business_name": "PawCare Vet & Shop",
+      "input": {
+        "businessName": "PawCare Vet & Shop",
+        "businessDescription": "PawCare Vet & Shop is a veterinary clinic with a retail shop for pet nutrition, grooming supplies and preventive pet care products for dogs and cats.",
+        "industry": "veterinary",
+        "servicesProducts": [],
+        "brandsCarried": [],
+        "contactInfo": {},
+        "logoPalette": [],
+        "colorProvenance": {
+          "anchorSource": "unknown",
+          "colors": []
+        },
+        "photoUrls": [],
+        "videoUrls": [],
+        "selectedLanguage": "en",
+        "websiteType": "online_store",
+        "secondaryOfferingCategories": [],
+        "salesFlow": "online_sales",
+        "colors": {},
+        "typography": {},
+        "typographyScale": {},
+        "generatedCopy": {},
+        "catalogItems": [],
+        "assets": {},
+        "fieldMeta": {},
+        "missingImportantFields": [],
+        "confidence": 0.0,
+        "notes": []
+      },
+      "legacy_keyword_profile": "default",
+      "elapsed_seconds": 9.245,
+      "catalog_source": "ai_generated",
+      "product_names": [
+        "Dog & Cat Wellness Examination",
+        "Adult Dog Chicken & Rice Kibble, 2 kg",
+        "Adult Cat Salmon Wet Food, 12 × 85 g",
+        "Gentle Oatmeal Dog Shampoo, 250 ml",
+        "Cat Flea Prevention Spot-On, 3 Doses",
+        "Dog Dental Care Starter Kit"
+      ],
+      "catalog_items": [
+        {
+          "id": "prod_001",
+          "sku": "AI-001",
+          "name": "Dog & Cat Wellness Examination",
+          "description": "Routine physical examination covering weight, teeth, ears, skin and heart health, with tailored preventive care advice.",
+          "category": "Veterinary Services",
+          "price_type": "fixed",
+          "price": 65.0,
+          "price_amount": 65.0,
+          "currency": "USD",
+          "price_label": "USD 65.00",
+          "rating": 4.5,
+          "badge": "Best Seller",
+          "imageSearchQuery": "veterinarian examining dog",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 0,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "veterinarian examining dog product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Dog & Cat Wellness Examination",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_002",
+          "sku": "AI-002",
+          "name": "Adult Dog Chicken & Rice Kibble, 2 kg",
+          "description": "Complete dry food for adult dogs, made with chicken and rice and enriched with vitamins and minerals.",
+          "category": "Dog Nutrition",
+          "price_type": "fixed",
+          "price": 24.99,
+          "price_amount": 24.99,
+          "currency": "USD",
+          "price_label": "USD 24.99",
+          "rating": 4.6,
+          "badge": "New",
+          "imageSearchQuery": "dry dog food",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 1,
+          "image_url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "restaurant",
+            "query": "dry dog food product packshot clean studio softbox real photography",
+            "url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82",
+            "alt": "Adult Dog Chicken & Rice Kibble, 2 kg",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82",
+              "card": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82",
+              "full": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_003",
+          "sku": "AI-003",
+          "name": "Adult Cat Salmon Wet Food, 12 × 85 g",
+          "description": "Complete salmon wet food in convenient pouches, with taurine to support normal heart and eye function.",
+          "category": "Cat Nutrition",
+          "price_type": "fixed",
+          "price": 19.99,
+          "price_amount": 19.99,
+          "currency": "USD",
+          "price_label": "USD 19.99",
+          "rating": 4.7,
+          "badge": "Featured",
+          "imageSearchQuery": "cat wet food",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 2,
+          "image_url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "restaurant",
+            "query": "cat wet food product packshot clean studio softbox real photography",
+            "url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82",
+            "alt": "Adult Cat Salmon Wet Food, 12 × 85 g",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82",
+              "card": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82",
+              "full": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=82"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_004",
+          "sku": "AI-004",
+          "name": "Gentle Oatmeal Dog Shampoo, 250 ml",
+          "description": "Mild dog shampoo with colloidal oatmeal for routine bathing, helping cleanse the coat without harsh fragrances.",
+          "category": "Grooming Supplies",
+          "price_type": "fixed",
+          "price": 13.5,
+          "price_amount": 13.5,
+          "currency": "USD",
+          "price_label": "USD 13.50",
+          "rating": 4.8,
+          "badge": "Featured",
+          "imageSearchQuery": "dog shampoo bottle",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 3,
+          "image_url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "bath",
+            "query": "dog shampoo bottle product packshot clean studio softbox real photography",
+            "url": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
+            "alt": "Gentle Oatmeal Dog Shampoo, 250 ml",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
+              "card": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82",
+              "full": "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=82"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_005",
+          "sku": "AI-005",
+          "name": "Cat Flea Prevention Spot-On, 3 Doses",
+          "description": "Monthly topical flea prevention formulated for cats. Ask our veterinary team to confirm suitability for your cat’s age and weight.",
+          "category": "Preventive Pet Care",
+          "price_type": "fixed",
+          "price": 32.0,
+          "price_amount": 32.0,
+          "currency": "USD",
+          "price_label": "USD 32.00",
+          "rating": 4.5,
+          "badge": "Featured",
+          "imageSearchQuery": "cat flea treatment",
+          "is_active": true,
+          "is_featured": false,
+          "sort_order": 4,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "cat flea treatment product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Cat Flea Prevention Spot-On, 3 Doses",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_006",
+          "sku": "AI-006",
+          "name": "Dog Dental Care Starter Kit",
+          "description": "Dog-safe enzymatic toothpaste and a dual-ended toothbrush for an at-home brushing routine. Never substitute human toothpaste.",
+          "category": "Dental Care",
+          "price_type": "fixed",
+          "price": 17.99,
+          "price_amount": 17.99,
+          "currency": "USD",
+          "price_label": "USD 17.99",
+          "rating": 4.6,
+          "badge": "Featured",
+          "imageSearchQuery": "dog toothbrush toothpaste",
+          "is_active": true,
+          "is_featured": false,
+          "sort_order": 5,
+          "image_url": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "hogar",
+            "query": "dog toothbrush toothpaste product packshot clean studio softbox real photography",
+            "url": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82",
+            "alt": "Dog Dental Care Starter Kit",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82",
+              "card": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82",
+              "full": "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=900&q=82"
+            },
+            "is_editable": true
+          }
+        }
+      ],
+      "openai_calls": [
+        {
+          "request": {
+            "model": "gpt-6-astra",
+            "response_format": {
+              "type": "json_schema",
+              "json_schema": {
+                "name": "kreaton_seed_catalog",
+                "strict": true,
+                "schema": {
+                  "$defs": {
+                    "AISeedCatalogItem": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": {
+                          "maxLength": 90,
+                          "minLength": 2,
+                          "title": "Name",
+                          "type": "string"
+                        },
+                        "category": {
+                          "maxLength": 60,
+                          "minLength": 2,
+                          "title": "Category",
+                          "type": "string"
+                        },
+                        "description": {
+                          "maxLength": 400,
+                          "minLength": 8,
+                          "title": "Description",
+                          "type": "string"
+                        },
+                        "price": {
+                          "exclusiveMinimum": 0.0,
+                          "title": "Price",
+                          "type": "number"
+                        },
+                        "image_search_query": {
+                          "maxLength": 80,
+                          "minLength": 2,
+                          "title": "Image Search Query",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "category",
+                        "description",
+                        "price",
+                        "image_search_query"
+                      ],
+                      "title": "AISeedCatalogItem",
+                      "type": "object"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "items": {
+                        "$ref": "#/$defs/AISeedCatalogItem"
+                      },
+                      "maxItems": 12,
+                      "minItems": 1,
+                      "title": "Items",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "title": "AISeedCatalog",
+                  "type": "object"
+                }
+              }
+            },
+            "messages": [
+              {
+                "role": "system",
+                "content": "You write short sample product/service catalogs for a website builder. Given a business description in any language and any niche -- it can be anything: boat parts, fishing gear, extreme sports equipment, car accessories, bathroom fixtures, literally anything -- return realistic, specific sample items for THAT niche. Never fall back to generic filler like 'featured item' or unrelated products. Reply in the same language as the business description. Return strict JSON: {\"items\": [{\"name\": str, \"category\": str, \"description\": str, \"price\": number, \"image_search_query\": \"2-4 English keywords for stock photo search\"}]}"
+              },
+              {
+                "role": "user",
+                "content": "Business description: PawCare Vet & Shop is a veterinary clinic with a retail shop for pet nutrition, grooming supplies and preventive pet care products for dogs and cats. PawCare Vet & Shop PawCare Vet & Shop is a veterinary clinic with a retail shop for pet nutrition, grooming supplies and preventive pet care products for dogs and cats. veterinary\nLanguage: en\nReturn exactly 6 items."
+              }
+            ]
+          },
+          "response": {
+            "id": "chatcmpl-ENi42zneRPdM5997JJ7ccbU5mK3Lv",
+            "choices": [
+              {
+                "finish_reason": "stop",
+                "index": 0,
+                "logprobs": null,
+                "message": {
+                  "content": "{\"items\":[{\"name\":\"Dog & Cat Wellness Examination\",\"category\":\"Veterinary Services\",\"description\":\"Routine physical examination covering weight, teeth, ears, skin and heart health, with tailored preventive care advice.\",\"price\":65,\"image_search_query\":\"veterinarian examining dog\"},{\"name\":\"Adult Dog Chicken & Rice Kibble, 2 kg\",\"category\":\"Dog Nutrition\",\"description\":\"Complete dry food for adult dogs, made with chicken and rice and enriched with vitamins and minerals.\",\"price\":24.99,\"image_search_query\":\"dry dog food\"},{\"name\":\"Adult Cat Salmon Wet Food, 12 × 85 g\",\"category\":\"Cat Nutrition\",\"description\":\"Complete salmon wet food in convenient pouches, with taurine to support normal heart and eye function.\",\"price\":19.99,\"image_search_query\":\"cat wet food\"},{\"name\":\"Gentle Oatmeal Dog Shampoo, 250 ml\",\"category\":\"Grooming Supplies\",\"description\":\"Mild dog shampoo with colloidal oatmeal for routine bathing, helping cleanse the coat without harsh fragrances.\",\"price\":13.5,\"image_search_query\":\"dog shampoo bottle\"},{\"name\":\"Cat Flea Prevention Spot-On, 3 Doses\",\"category\":\"Preventive Pet Care\",\"description\":\"Monthly topical flea prevention formulated for cats. Ask our veterinary team to confirm suitability for your cat’s age and weight.\",\"price\":32,\"image_search_query\":\"cat flea treatment\"},{\"name\":\"Dog Dental Care Starter Kit\",\"category\":\"Dental Care\",\"description\":\"Dog-safe enzymatic toothpaste and a dual-ended toothbrush for an at-home brushing routine. Never substitute human toothpaste.\",\"price\":17.99,\"image_search_query\":\"dog toothbrush toothpaste\"}]}",
+                  "refusal": null,
+                  "role": "assistant",
+                  "annotations": [],
+                  "audio": null,
+                  "function_call": null,
+                  "tool_calls": null
+                }
+              }
+            ],
+            "created": 1789319634,
+            "model": "gpt-6-astra",
+            "object": "chat.completion",
+            "service_tier": "default",
+            "system_fingerprint": null,
+            "usage": {
+              "completion_tokens": 342,
+              "prompt_tokens": 348,
+              "total_tokens": 690,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": 0,
+                "audio_tokens": 0,
+                "reasoning_tokens": 0,
+                "rejected_prediction_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 0
+              }
+            }
+          }
+        }
+      ],
+      "real_ai_verified": true
+    },
+    {
+      "business_name": "Chapter House Books",
+      "input": {
+        "businessName": "Chapter House Books",
+        "businessDescription": "Chapter House Books is an independent bookstore selling fiction, nonfiction, children's books and reference books.",
+        "industry": "bookstore",
+        "servicesProducts": [],
+        "brandsCarried": [],
+        "contactInfo": {},
+        "logoPalette": [],
+        "colorProvenance": {
+          "anchorSource": "unknown",
+          "colors": []
+        },
+        "photoUrls": [],
+        "videoUrls": [],
+        "selectedLanguage": "en",
+        "websiteType": "online_store",
+        "secondaryOfferingCategories": [],
+        "salesFlow": "online_sales",
+        "colors": {},
+        "typography": {},
+        "typographyScale": {},
+        "generatedCopy": {},
+        "catalogItems": [],
+        "assets": {},
+        "fieldMeta": {},
+        "missingImportantFields": [],
+        "confidence": 0.0,
+        "notes": []
+      },
+      "legacy_keyword_profile": "default",
+      "elapsed_seconds": 9.125,
+      "catalog_source": "ai_generated",
+      "product_names": [
+        "Pride and Prejudice — Paperback",
+        "The Thursday Murder Club — Paperback",
+        "Educated — Paperback",
+        "The Very Hungry Caterpillar — Board Book",
+        "Charlotte’s Web — Paperback",
+        "Merriam-Webster’s Collegiate Dictionary — Hardcover"
+      ],
+      "catalog_items": [
+        {
+          "id": "prod_001",
+          "sku": "AI-001",
+          "name": "Pride and Prejudice — Paperback",
+          "description": "Jane Austen’s classic novel of manners, family expectations and unexpected romance, in a convenient paperback edition.",
+          "category": "Fiction",
+          "price_type": "fixed",
+          "price": 12.99,
+          "price_amount": 12.99,
+          "currency": "USD",
+          "price_label": "USD 12.99",
+          "rating": 4.5,
+          "badge": "Best Seller",
+          "imageSearchQuery": "classic novel paperback",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 0,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "classic novel paperback product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Pride and Prejudice — Paperback",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_002",
+          "sku": "AI-002",
+          "name": "The Thursday Murder Club — Paperback",
+          "description": "Richard Osman’s witty mystery follows four retirement-village friends whose weekly cold-case discussions turn into a real murder investigation.",
+          "category": "Fiction",
+          "price_type": "fixed",
+          "price": 18.0,
+          "price_amount": 18.0,
+          "currency": "USD",
+          "price_label": "USD 18.00",
+          "rating": 4.6,
+          "badge": "New",
+          "imageSearchQuery": "mystery book reading",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 1,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "mystery book reading product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "The Thursday Murder Club — Paperback",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_003",
+          "sku": "AI-003",
+          "name": "Educated — Paperback",
+          "description": "Tara Westover’s memoir traces her journey from an isolated upbringing in rural Idaho to a life transformed by education.",
+          "category": "Nonfiction",
+          "price_type": "fixed",
+          "price": 18.99,
+          "price_amount": 18.99,
+          "currency": "USD",
+          "price_label": "USD 18.99",
+          "rating": 4.7,
+          "badge": "Featured",
+          "imageSearchQuery": "memoir book paperback",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 2,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "memoir book paperback product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Educated — Paperback",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_004",
+          "sku": "AI-004",
+          "name": "The Very Hungry Caterpillar — Board Book",
+          "description": "Eric Carle’s colorful counting story introduces young readers to foods, days of the week and a caterpillar’s transformation.",
+          "category": "Children’s Books",
+          "price_type": "fixed",
+          "price": 10.99,
+          "price_amount": 10.99,
+          "currency": "USD",
+          "price_label": "USD 10.99",
+          "rating": 4.8,
+          "badge": "Featured",
+          "imageSearchQuery": "toddler board book",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 3,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "toddler board book product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "The Very Hungry Caterpillar — Board Book",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_005",
+          "sku": "AI-005",
+          "name": "Charlotte’s Web — Paperback",
+          "description": "E. B. White’s beloved tale of Wilbur the pig and Charlotte the spider makes a memorable family read-aloud or independent reading choice.",
+          "category": "Children’s Books",
+          "price_type": "fixed",
+          "price": 9.99,
+          "price_amount": 9.99,
+          "currency": "USD",
+          "price_label": "USD 9.99",
+          "rating": 4.5,
+          "badge": "Featured",
+          "imageSearchQuery": "children chapter book",
+          "is_active": true,
+          "is_featured": false,
+          "sort_order": 4,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "children chapter book product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Charlotte’s Web — Paperback",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_006",
+          "sku": "AI-006",
+          "name": "Merriam-Webster’s Collegiate Dictionary — Hardcover",
+          "description": "A dependable desk reference with definitions, pronunciations and word origins for students, writers and curious readers.",
+          "category": "Reference Books",
+          "price_type": "fixed",
+          "price": 29.95,
+          "price_amount": 29.95,
+          "currency": "USD",
+          "price_label": "USD 29.95",
+          "rating": 4.6,
+          "badge": "Featured",
+          "imageSearchQuery": "hardcover dictionary desk",
+          "is_active": true,
+          "is_featured": false,
+          "sort_order": 5,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "hardcover dictionary desk product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Merriam-Webster’s Collegiate Dictionary — Hardcover",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        }
+      ],
+      "openai_calls": [
+        {
+          "request": {
+            "model": "gpt-6-astra",
+            "response_format": {
+              "type": "json_schema",
+              "json_schema": {
+                "name": "kreaton_seed_catalog",
+                "strict": true,
+                "schema": {
+                  "$defs": {
+                    "AISeedCatalogItem": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": {
+                          "maxLength": 90,
+                          "minLength": 2,
+                          "title": "Name",
+                          "type": "string"
+                        },
+                        "category": {
+                          "maxLength": 60,
+                          "minLength": 2,
+                          "title": "Category",
+                          "type": "string"
+                        },
+                        "description": {
+                          "maxLength": 400,
+                          "minLength": 8,
+                          "title": "Description",
+                          "type": "string"
+                        },
+                        "price": {
+                          "exclusiveMinimum": 0.0,
+                          "title": "Price",
+                          "type": "number"
+                        },
+                        "image_search_query": {
+                          "maxLength": 80,
+                          "minLength": 2,
+                          "title": "Image Search Query",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "category",
+                        "description",
+                        "price",
+                        "image_search_query"
+                      ],
+                      "title": "AISeedCatalogItem",
+                      "type": "object"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "items": {
+                        "$ref": "#/$defs/AISeedCatalogItem"
+                      },
+                      "maxItems": 12,
+                      "minItems": 1,
+                      "title": "Items",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "title": "AISeedCatalog",
+                  "type": "object"
+                }
+              }
+            },
+            "messages": [
+              {
+                "role": "system",
+                "content": "You write short sample product/service catalogs for a website builder. Given a business description in any language and any niche -- it can be anything: boat parts, fishing gear, extreme sports equipment, car accessories, bathroom fixtures, literally anything -- return realistic, specific sample items for THAT niche. Never fall back to generic filler like 'featured item' or unrelated products. Reply in the same language as the business description. Return strict JSON: {\"items\": [{\"name\": str, \"category\": str, \"description\": str, \"price\": number, \"image_search_query\": \"2-4 English keywords for stock photo search\"}]}"
+              },
+              {
+                "role": "user",
+                "content": "Business description: Chapter House Books is an independent bookstore selling fiction, nonfiction, children's books and reference books. Chapter House Books Chapter House Books is an independent bookstore selling fiction, nonfiction, children's books and reference books. bookstore\nLanguage: en\nReturn exactly 6 items."
+              }
+            ]
+          },
+          "response": {
+            "id": "chatcmpl-ENi4BwCbm5gctaq4OLbOMgOG1DCUk",
+            "choices": [
+              {
+                "finish_reason": "stop",
+                "index": 0,
+                "logprobs": null,
+                "message": {
+                  "content": "{\"items\":[{\"name\":\"Pride and Prejudice — Paperback\",\"category\":\"Fiction\",\"description\":\"Jane Austen’s classic novel of manners, family expectations and unexpected romance, in a convenient paperback edition.\",\"price\":12.99,\"image_search_query\":\"classic novel paperback\"},{\"name\":\"The Thursday Murder Club — Paperback\",\"category\":\"Fiction\",\"description\":\"Richard Osman’s witty mystery follows four retirement-village friends whose weekly cold-case discussions turn into a real murder investigation.\",\"price\":18.0,\"image_search_query\":\"mystery book reading\"},{\"name\":\"Educated — Paperback\",\"category\":\"Nonfiction\",\"description\":\"Tara Westover’s memoir traces her journey from an isolated upbringing in rural Idaho to a life transformed by education.\",\"price\":18.99,\"image_search_query\":\"memoir book paperback\"},{\"name\":\"The Very Hungry Caterpillar — Board Book\",\"category\":\"Children’s Books\",\"description\":\"Eric Carle’s colorful counting story introduces young readers to foods, days of the week and a caterpillar’s transformation.\",\"price\":10.99,\"image_search_query\":\"toddler board book\"},{\"name\":\"Charlotte’s Web — Paperback\",\"category\":\"Children’s Books\",\"description\":\"E. B. White’s beloved tale of Wilbur the pig and Charlotte the spider makes a memorable family read-aloud or independent reading choice.\",\"price\":9.99,\"image_search_query\":\"children chapter book\"},{\"name\":\"Merriam-Webster’s Collegiate Dictionary — Hardcover\",\"category\":\"Reference Books\",\"description\":\"A dependable desk reference with definitions, pronunciations and word origins for students, writers and curious readers.\",\"price\":29.95,\"image_search_query\":\"hardcover dictionary desk\"}]}",
+                  "refusal": null,
+                  "role": "assistant",
+                  "annotations": [],
+                  "audio": null,
+                  "function_call": null,
+                  "tool_calls": null
+                }
+              }
+            ],
+            "created": 1789319643,
+            "model": "gpt-6-astra",
+            "object": "chat.completion",
+            "service_tier": "default",
+            "system_fingerprint": null,
+            "usage": {
+              "completion_tokens": 347,
+              "prompt_tokens": 324,
+              "total_tokens": 671,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": 0,
+                "audio_tokens": 0,
+                "reasoning_tokens": 0,
+                "rejected_prediction_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 0
+              }
+            }
+          }
+        }
+      ],
+      "real_ai_verified": true
+    },
+    {
+      "business_name": "Deskline Office Supply",
+      "input": {
+        "businessName": "Deskline Office Supply",
+        "businessDescription": "Deskline Office Supply is an office supplies store selling printer paper, writing instruments, filing supplies and everyday office stationery.",
+        "industry": "office_supplies",
+        "servicesProducts": [],
+        "brandsCarried": [],
+        "contactInfo": {},
+        "logoPalette": [],
+        "colorProvenance": {
+          "anchorSource": "unknown",
+          "colors": []
+        },
+        "photoUrls": [],
+        "videoUrls": [],
+        "selectedLanguage": "en",
+        "websiteType": "online_store",
+        "secondaryOfferingCategories": [],
+        "salesFlow": "online_sales",
+        "colors": {},
+        "typography": {},
+        "typographyScale": {},
+        "generatedCopy": {},
+        "catalogItems": [],
+        "assets": {},
+        "fieldMeta": {},
+        "missingImportantFields": [],
+        "confidence": 0.0,
+        "notes": []
+      },
+      "legacy_keyword_profile": "default",
+      "elapsed_seconds": 8.075,
+      "catalog_source": "ai_generated",
+      "product_names": [
+        "A4 Copy Paper, 500 Sheets",
+        "Retractable Ballpoint Pens, Black, 12-Pack",
+        "Letter-Size Hanging File Folders, 25-Pack",
+        "Yellow Sticky Notes, 12 Pads",
+        "Desktop Stapler with 1,000 Staples",
+        "A5 Spiral Notebook, 160 Pages"
+      ],
+      "catalog_items": [
+        {
+          "id": "prod_001",
+          "sku": "AI-001",
+          "name": "A4 Copy Paper, 500 Sheets",
+          "description": "White 80 gsm A4 paper for everyday printing and copying in inkjet and laser printers.",
+          "category": "Printer Paper",
+          "price_type": "fixed",
+          "price": 6.99,
+          "price_amount": 6.99,
+          "currency": "USD",
+          "price_label": "USD 6.99",
+          "rating": 4.5,
+          "badge": "Best Seller",
+          "imageSearchQuery": "printer paper ream",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 0,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "printer paper ream product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "A4 Copy Paper, 500 Sheets",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_002",
+          "sku": "AI-002",
+          "name": "Retractable Ballpoint Pens, Black, 12-Pack",
+          "description": "Medium-point black ballpoint pens with retractable tips and comfortable grips for daily office use.",
+          "category": "Writing Instruments",
+          "price_type": "fixed",
+          "price": 8.49,
+          "price_amount": 8.49,
+          "currency": "USD",
+          "price_label": "USD 8.49",
+          "rating": 4.6,
+          "badge": "New",
+          "imageSearchQuery": "black ballpoint pens",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 1,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "black ballpoint pens product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Retractable Ballpoint Pens, Black, 12-Pack",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_003",
+          "sku": "AI-003",
+          "name": "Letter-Size Hanging File Folders, 25-Pack",
+          "description": "Green hanging folders with adjustable plastic tabs and blank inserts for organizing letter-size documents.",
+          "category": "Filing Supplies",
+          "price_type": "fixed",
+          "price": 17.99,
+          "price_amount": 17.99,
+          "currency": "USD",
+          "price_label": "USD 17.99",
+          "rating": 4.7,
+          "badge": "Featured",
+          "imageSearchQuery": "hanging file folders",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 2,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "hanging file folders product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Letter-Size Hanging File Folders, 25-Pack",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_004",
+          "sku": "AI-004",
+          "name": "Yellow Sticky Notes, 12 Pads",
+          "description": "Classic 3 × 3-inch yellow sticky notes for reminders and quick messages, with 100 sheets per pad.",
+          "category": "Office Stationery",
+          "price_type": "fixed",
+          "price": 9.99,
+          "price_amount": 9.99,
+          "currency": "USD",
+          "price_label": "USD 9.99",
+          "rating": 4.8,
+          "badge": "Featured",
+          "imageSearchQuery": "yellow sticky notes",
+          "is_active": true,
+          "is_featured": true,
+          "sort_order": 3,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "yellow sticky notes product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Yellow Sticky Notes, 12 Pads",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_005",
+          "sku": "AI-005",
+          "name": "Desktop Stapler with 1,000 Staples",
+          "description": "Full-strip desktop stapler with a 20-sheet capacity, supplied with 1,000 standard staples.",
+          "category": "Desk Accessories",
+          "price_type": "fixed",
+          "price": 12.49,
+          "price_amount": 12.49,
+          "currency": "USD",
+          "price_label": "USD 12.49",
+          "rating": 4.5,
+          "badge": "Featured",
+          "imageSearchQuery": "desktop stapler staples",
+          "is_active": true,
+          "is_featured": false,
+          "sort_order": 4,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "desktop stapler staples product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "Desktop Stapler with 1,000 Staples",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        },
+        {
+          "id": "prod_006",
+          "sku": "AI-006",
+          "name": "A5 Spiral Notebook, 160 Pages",
+          "description": "Compact notebook with 160 ruled pages, a durable card cover and spiral binding for meeting notes and task lists.",
+          "category": "Notebooks & Pads",
+          "price_type": "fixed",
+          "price": 4.99,
+          "price_amount": 4.99,
+          "currency": "USD",
+          "price_label": "USD 4.99",
+          "rating": 4.6,
+          "badge": "Featured",
+          "imageSearchQuery": "spiral ruled notebook",
+          "is_active": true,
+          "is_featured": false,
+          "sort_order": 5,
+          "image_url": "/images/product-placeholder.svg",
+          "image_asset": {
+            "source": "seed_bank",
+            "role": "product_packshot",
+            "provider": "kreaton_seed_bank",
+            "category": "producto-general",
+            "query": "spiral ruled notebook product packshot clean studio softbox real photography",
+            "url": "/images/product-placeholder.svg",
+            "alt": "A5 Spiral Notebook, 160 Pages",
+            "license_note": "Prototype seed image. Replace with licensed, client-owned, or generated asset before final production publishing.",
+            "variants": {
+              "thumb": "/images/product-placeholder.svg",
+              "card": "/images/product-placeholder.svg",
+              "full": "/images/product-placeholder.svg"
+            },
+            "is_editable": true
+          }
+        }
+      ],
+      "openai_calls": [
+        {
+          "request": {
+            "model": "gpt-6-astra",
+            "response_format": {
+              "type": "json_schema",
+              "json_schema": {
+                "name": "kreaton_seed_catalog",
+                "strict": true,
+                "schema": {
+                  "$defs": {
+                    "AISeedCatalogItem": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": {
+                          "maxLength": 90,
+                          "minLength": 2,
+                          "title": "Name",
+                          "type": "string"
+                        },
+                        "category": {
+                          "maxLength": 60,
+                          "minLength": 2,
+                          "title": "Category",
+                          "type": "string"
+                        },
+                        "description": {
+                          "maxLength": 400,
+                          "minLength": 8,
+                          "title": "Description",
+                          "type": "string"
+                        },
+                        "price": {
+                          "exclusiveMinimum": 0.0,
+                          "title": "Price",
+                          "type": "number"
+                        },
+                        "image_search_query": {
+                          "maxLength": 80,
+                          "minLength": 2,
+                          "title": "Image Search Query",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "category",
+                        "description",
+                        "price",
+                        "image_search_query"
+                      ],
+                      "title": "AISeedCatalogItem",
+                      "type": "object"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "items": {
+                        "$ref": "#/$defs/AISeedCatalogItem"
+                      },
+                      "maxItems": 12,
+                      "minItems": 1,
+                      "title": "Items",
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "title": "AISeedCatalog",
+                  "type": "object"
+                }
+              }
+            },
+            "messages": [
+              {
+                "role": "system",
+                "content": "You write short sample product/service catalogs for a website builder. Given a business description in any language and any niche -- it can be anything: boat parts, fishing gear, extreme sports equipment, car accessories, bathroom fixtures, literally anything -- return realistic, specific sample items for THAT niche. Never fall back to generic filler like 'featured item' or unrelated products. Reply in the same language as the business description. Return strict JSON: {\"items\": [{\"name\": str, \"category\": str, \"description\": str, \"price\": number, \"image_search_query\": \"2-4 English keywords for stock photo search\"}]}"
+              },
+              {
+                "role": "user",
+                "content": "Business description: Deskline Office Supply is an office supplies store selling printer paper, writing instruments, filing supplies and everyday office stationery. Deskline Office Supply Deskline Office Supply is an office supplies store selling printer paper, writing instruments, filing supplies and everyday office stationery. office_supplies\nLanguage: en\nReturn exactly 6 items."
+              }
+            ]
+          },
+          "response": {
+            "id": "chatcmpl-ENi4KRvj9maPajkMmQzJGHKLGXyH4",
+            "choices": [
+              {
+                "finish_reason": "stop",
+                "index": 0,
+                "logprobs": null,
+                "message": {
+                  "content": "{\"items\":[{\"name\":\"A4 Copy Paper, 500 Sheets\",\"category\":\"Printer Paper\",\"description\":\"White 80 gsm A4 paper for everyday printing and copying in inkjet and laser printers.\",\"price\":6.99,\"image_search_query\":\"printer paper ream\"},{\"name\":\"Retractable Ballpoint Pens, Black, 12-Pack\",\"category\":\"Writing Instruments\",\"description\":\"Medium-point black ballpoint pens with retractable tips and comfortable grips for daily office use.\",\"price\":8.49,\"image_search_query\":\"black ballpoint pens\"},{\"name\":\"Letter-Size Hanging File Folders, 25-Pack\",\"category\":\"Filing Supplies\",\"description\":\"Green hanging folders with adjustable plastic tabs and blank inserts for organizing letter-size documents.\",\"price\":17.99,\"image_search_query\":\"hanging file folders\"},{\"name\":\"Yellow Sticky Notes, 12 Pads\",\"category\":\"Office Stationery\",\"description\":\"Classic 3 × 3-inch yellow sticky notes for reminders and quick messages, with 100 sheets per pad.\",\"price\":9.99,\"image_search_query\":\"yellow sticky notes\"},{\"name\":\"Desktop Stapler with 1,000 Staples\",\"category\":\"Desk Accessories\",\"description\":\"Full-strip desktop stapler with a 20-sheet capacity, supplied with 1,000 standard staples.\",\"price\":12.49,\"image_search_query\":\"desktop stapler staples\"},{\"name\":\"A5 Spiral Notebook, 160 Pages\",\"category\":\"Notebooks & Pads\",\"description\":\"Compact notebook with 160 ruled pages, a durable card cover and spiral binding for meeting notes and task lists.\",\"price\":4.99,\"image_search_query\":\"spiral ruled notebook\"}]}",
+                  "refusal": null,
+                  "role": "assistant",
+                  "annotations": [],
+                  "audio": null,
+                  "function_call": null,
+                  "tool_calls": null
+                }
+              }
+            ],
+            "created": 1789319652,
+            "model": "gpt-6-astra",
+            "object": "chat.completion",
+            "service_tier": "default",
+            "system_fingerprint": null,
+            "usage": {
+              "completion_tokens": 341,
+              "prompt_tokens": 337,
+              "total_tokens": 678,
+              "completion_tokens_details": {
+                "accepted_prediction_tokens": 0,
+                "audio_tokens": 0,
+                "reasoning_tokens": 0,
+                "rejected_prediction_tokens": 0
+              },
+              "prompt_tokens_details": {
+                "audio_tokens": 0,
+                "cached_tokens": 0,
+                "cache_write_tokens": 0
+              }
+            }
+          }
+        }
+      ],
+      "real_ai_verified": true
+    }
+  ],
+  "completed_at_utc": "2026-09-13T17:14:19.944249+00:00",
+  "all_real_ai_verified": true
+}

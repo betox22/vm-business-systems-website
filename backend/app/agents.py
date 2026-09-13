@@ -442,28 +442,11 @@ class AISeedCatalog(BaseModel):
 
 
 def generate_ai_seed_catalog(context: str, language: str, count: int = 6) -> Optional[List[Dict[str, Any]]]:
-    """LLM fallback for niches outside the hand-authored SEED_PRODUCT_LIBRARY.
+    """Generate the primary sample catalog from the actual business context.
 
-    infer_seed_profile() only recognizes a handful of hardcoded categories
-    (jewelry, fashion, coffee, auto, tech, beauty, home, restaurant,
-    marketplace). Anything else -- boat parts, fishing gear, extreme sports
-    gear, or literally whatever the client actually said -- used to collapse
-    into a generic "default" filler catalog (tote bags, desk trays) with no
-    relation to the real business. This asks the model directly for a small
-    set of realistic sample products for the client's actual niche, so the
-    placeholder catalog is at least topically relevant instead of random.
-
-    This intentionally uses the SYNC OpenAI client and stays a plain
-    function (not async), even though it is called from async agent code.
-    semantic_seed_catalog() is called from several places across
-    agents.py/ai_site_planner.py/main.py that are not all async; threading
-    async through that whole chain is a much bigger, riskier change than a
-    single occasional blocking call on the rare "unmatched niche" path (most
-    requests hit a known category and never reach this function at all).
-
-    Returns None (never raises) if no API key is configured, the openai
-    package is unavailable, or the call fails for any reason -- callers must
-    fall back to the static default library with zero behavior change.
+    Uses the synchronous client because callers include synchronous schema
+    builders. Returns None when configuration is missing or generation fails,
+    allowing the caller to use the existing static profile as a last resort.
     """
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key or not OpenAI or not context.strip():
@@ -547,6 +530,11 @@ def semantic_seed_catalog(state: ProjectState, user_input: str, count: int = 6) 
         state.preferredTone or "",
         state.preferredColors or "",
     ])
+    ai_catalog = generate_ai_seed_catalog(context, state.selectedLanguage or language, count)
+    if ai_catalog is not None:
+        return [attach_image_asset(item, context=context) for item in ai_catalog]
+
+    # Keyword profiles are only an offline/error fallback, not catalog authority.
     template_records = TEMPLATE_CATALOG.items() if isinstance(TEMPLATE_CATALOG, dict) else enumerate(TEMPLATE_CATALOG)
     for template_id, template in template_records:
         if not isinstance(template, dict):
@@ -564,17 +552,6 @@ def semantic_seed_catalog(state: ProjectState, user_input: str, count: int = 6) 
             SEED_PRODUCT_LIBRARY["jewelry"][4],
             SEED_PRODUCT_LIBRARY["tech"][5],
         ][:count]
-    elif profile == "default":
-        # infer_seed_profile() only recognizes a handful of hardcoded niches.
-        # Anything else used to fall straight into the generic "default"
-        # filler (tote bags, desk trays) with no relation to the real
-        # business. Try the LLM first so the client's actual words (boat
-        # parts, fishing gear, whatever they said) drive the sample catalog;
-        # fall back to the static default library if AI is unavailable.
-        ai_catalog = generate_ai_seed_catalog(context, state.selectedLanguage or language, count)
-        if ai_catalog:
-            return [attach_image_asset(item, context=context) for item in ai_catalog]
-        products = SEED_PRODUCT_LIBRARY["default"][:count]
     else:
         products = SEED_PRODUCT_LIBRARY.get(profile, SEED_PRODUCT_LIBRARY["default"])[:count]
     catalog: List[Dict[str, Any]] = []

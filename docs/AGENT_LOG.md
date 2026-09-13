@@ -16,6 +16,44 @@ Formato de entrada:
 
 ---
 
+## 2026-09-13 — Codex — Catálogo IA primero para todos los perfiles
+
+**Hecho:** `semantic_seed_catalog()` intenta `generate_ai_seed_catalog()` con
+el contexto completo del negocio antes de inferir cualquier perfil estático.
+La biblioteca por palabras clave se conserva exclusivamente cuando el generador
+devuelve `None`. Esto evita que "hardware and home improvement superstore"
+seleccione decoración por la palabra `home`. Se actualizó el docstring que
+describía la IA como recurso exclusivo para nichos desconocidos.
+
+**Validación:** regresiones demostradas en rojo antes del cambio y en verde
+después: 7 tests + 18 subtests. Incluyen BuildRight con `industrial_supplier`,
+las nueve categorías reconocidas, un nicho desconocido y fallback estático.
+Suite completa: backend 218 passed + 40 subtests passed; frontend 185/185.
+Las suites se ejecutaron sin credenciales externas, aparte de la validación real.
+
+**Evidencia real:** `backend/scripts/verify_ai_first_catalog.py` ejecutó cinco
+llamadas reales de `CatalogAgent` a OpenAI (`gpt-6-astra`, JSON Schema estricto).
+Los cinco resultados fueron `ai_generated`, seis ítems por catálogo: BuildRight
+Hardware, Harbor Parts, PawCare Vet & Shop, Chapter House Books y Deskline Office
+Supply. El fixture `backend/tests/fixtures/ai_first_catalog_five_businesses_evidence.json`
+conserva inputs, requests, respuestas originales con IDs/uso de tokens, nombres
+y catálogo devuelto. Las llamadas tardaron entre 8.075 y 10.451 segundos.
+Esta prueba verifica catálogo; no publica sitios ni valida el flujo completo
+de generación. No había clave Unsplash en el entorno local de esta prueba.
+
+**Archivos tocados:** `backend/app/agents.py`,
+`backend/tests/test_real_ai_catalog.py`, script y fixture de evidencia, esta bitácora.
+
+**Pendiente / abierto:** el generador conserva su contrato previo de productos
+de muestra, incluidos precios, especificaciones, ratings y badges sintéticos;
+este cambio de prioridad no los convierte en datos verificados del cliente.
+El fallback estático aún puede ser irrelevante si OpenAI no está disponible.
+La inversión de prioridad aumenta llamadas/coste/latencia para perfiles que
+antes usaban seeds. La función síncrona tiene varios consumidores y puede
+ejecutarse varias veces durante la generación completa.
+`KREATON-ROADMAP.md` ya estaba modificado por la auditoría anterior y queda
+fuera de este commit. Commit y push a `main` autorizados explícitamente por Beto.
+
 ## 2026-09-13 — Codex — Diagnóstico de configuración Unsplash
 
 **Hecho:** `GET /api/ai-status` expone `unsplashConfigured` como booleano y
