@@ -286,6 +286,16 @@ content.addEventListener("click", event => {
   if (button.dataset.duplicateItem) mutateProduct(productsPath(), "POST", duplicatePayload(item), true);
 });
 loginForm.addEventListener("submit", loginSeller);
+function continueWithSellerGoogle() {
+  const authUrl = window.LUMA_SUPABASE_AUTH_URL;
+  if (!authUrl) {
+    loginStatus.textContent = "El acceso con Google no esta configurado. Recarga la pagina.";
+    return;
+  }
+  const returnTo = encodeURIComponent(window.location.href);
+  window.location.href = `${authUrl}?provider=google&redirect_to=${returnTo}`;
+}
+document.querySelector("#sellerGoogleLoginButton")?.addEventListener("click", continueWithSellerGoogle);
 document.querySelector("#existingAccessButton")?.addEventListener("click", () => showLogin("", true));
 document.querySelector("#sellerLogoutButton").addEventListener("click", async () => {
   resetView();

@@ -236,6 +236,29 @@ body {
   display: none;
 }
 
+.seller-login-card .seller-google-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  background: #fff;
+  color: #18212f;
+  border: 1px solid #d9e0e8;
+}
+
+.seller-google-button svg {
+  flex-shrink: 0;
+}
+
+.seller-login-alternative {
+  text-align: center;
+  color: #b7c8dc;
+  margin: 4px 0;
+  font-size: 13px;
+}
+
 .welcome-copy[hidden] {
   display: none;
 }
