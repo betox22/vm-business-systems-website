@@ -16,6 +16,25 @@ Formato de entrada:
 
 ---
 
+## 2026-09-13 — Codex — Diagnóstico de configuración Unsplash
+
+**Hecho:** `GET /api/ai-status` expone `unsplashConfigured` como booleano y
+`on_startup()` emite un warning si `UNSPLASH_ACCESS_KEY` falta, está vacía o
+contiene solo espacios. Ninguno de los dos muestra el valor de la clave. El
+indicador comprueba presencia, no validez de credenciales ni resultados de búsqueda.
+
+**Archivos tocados:** `backend/app/main.py` y esta bitácora.
+
+**Validación:** suite backend completa sobre `main`: 215 passed + 26 subtests
+passed; dos advertencias preexistentes de FastAPI. Comprobación local con
+TestClient: 4/4 casos (clave ausente, vacía, con espacios y configurada), incluido
+el warning al arrancar y la ausencia del valor de la clave en la respuesta.
+
+**Publicación:** commit y push a `main` autorizados por Beto.
+
+**Pendiente / abierto:** consultar el indicador y los logs de arranque tras el
+deploy para diagnosticar producción.
+
 ## 2026-09-13 — Codex — Identidad estable en edición inline de catálogo
 
 **Hecho:** el re-render del editor conserva `catalog_items` como fuente

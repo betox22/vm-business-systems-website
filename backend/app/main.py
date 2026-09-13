@@ -412,6 +412,8 @@ app.include_router(operations_router)
 
 @app.on_event("startup")
 async def on_startup() -> None:
+    if not os.getenv("UNSPLASH_ACCESS_KEY", "").strip():
+        logger.warning("UNSPLASH_ACCESS_KEY is not configured; Unsplash image search is disabled.")
     init_db()
 
 
@@ -454,6 +456,7 @@ async def ai_status() -> Dict[str, bool]:
         "intakeAIAvailable": getattr(intake_engine, "client", None) is not None,
         "plannerAIAvailable": getattr(planner, "client", None) is not None,
         "storageConfigured": storage_is_configured(),
+        "unsplashConfigured": bool(os.getenv("UNSPLASH_ACCESS_KEY", "").strip()),
     }
 
 
