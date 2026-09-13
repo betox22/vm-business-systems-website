@@ -2319,8 +2319,12 @@
     if (!["name", "description", "category", "button_label"].includes(field)) return "";
     for (const collection of ["catalog_items", "products_services"]) {
       const items = Array.isArray(schema?.[collection]) ? schema[collection] : [];
-      const index = items.findIndex((candidate) => candidate === item || candidate?.id && item?.id && candidate.id === item.id);
-      if (index >= 0) return `${collection}.${index}.${field}`;
+      const referenceIndex = items.indexOf(item);
+      if (referenceIndex >= 0) return `${collection}.${referenceIndex}.${field}`;
+      if (item?.id) {
+        const idMatches = items.map((candidate, index) => candidate?.id === item.id ? index : -1).filter((index) => index >= 0);
+        if (idMatches.length === 1) return `${collection}.${idMatches[0]}.${field}`;
+      }
     }
     return "";
   }
@@ -20215,7 +20219,8 @@ Site ID: ${builderState.currentSiteId}`
     }));
   }
   function catalogItemsFromSchema(schema) {
-    return (schema.products_services || []).map((item, index) => ({
+    const sourceItems = Array.isArray(schema?.catalog_items) && schema.catalog_items.length ? schema.catalog_items : Array.isArray(schema?.products_services) ? schema.products_services : [];
+    return sourceItems.map((item, index) => ({
       id: item.id || `catalog_${index + 1}`,
       name: item.name || "Catalog item",
       description: item.description || "",
@@ -20825,7 +20830,7 @@ ${content}` : content;
     const preset = selectedTemplatePreset();
     const schema = structuredClone(builderState.currentSchema);
     schema.theme = variant.theme || schema.theme;
-    if (Array.isArray(builderState.currentCatalogItems) && builderState.currentCatalogItems.length) {
+    if ((!Array.isArray(schema.catalog_items) || !schema.catalog_items.length) && Array.isArray(builderState.currentCatalogItems) && builderState.currentCatalogItems.length) {
       schema.catalog_items = builderState.currentCatalogItems;
     }
     schema.layout_mode = { ...schema.layout_mode, id: variant.layout_mode_id || schema.layout_mode?.id };

@@ -12396,7 +12396,12 @@ function catalogItemsFromForm() {
 }
 
 export function catalogItemsFromSchema(schema) {
-  return (schema.products_services || []).map((item, index) => ({
+  const sourceItems = Array.isArray(schema?.catalog_items) && schema.catalog_items.length
+    ? schema.catalog_items
+    : Array.isArray(schema?.products_services)
+      ? schema.products_services
+      : [];
+  return sourceItems.map((item, index) => ({
     id: item.id || `catalog_${index + 1}`,
     name: item.name || "Catalog item",
     description: item.description || "",
@@ -13087,7 +13092,9 @@ function schemaForPreview() {
   const preset = selectedTemplatePreset();
   const schema = structuredClone(builderState.currentSchema);
   schema.theme = variant.theme || schema.theme;
-  if (Array.isArray(builderState.currentCatalogItems) && builderState.currentCatalogItems.length) {
+  if ((!Array.isArray(schema.catalog_items) || !schema.catalog_items.length)
+    && Array.isArray(builderState.currentCatalogItems)
+    && builderState.currentCatalogItems.length) {
     schema.catalog_items = builderState.currentCatalogItems;
   }
   schema.layout_mode = { ...schema.layout_mode, id: variant.layout_mode_id || schema.layout_mode?.id };

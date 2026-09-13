@@ -52,6 +52,27 @@ test("inline fields resolve to the same schema paths used by the inspector", () 
   assert.equal(inlineEditPath(schema, hero, "image_url"), "");
 });
 
+test("repeated catalog renderers preserve per-item paths even when legacy ids are duplicated", () => {
+  const first = { id: "legacy-duplicate", name: "First", category: "One" };
+  const second = { id: "legacy-duplicate", name: "Second", category: "Two" };
+  const schema = { catalog_items: [first, second] };
+
+  assert.equal(inlineEditCatalogPath(schema, first, "name"), "catalog_items.0.name");
+  assert.equal(inlineEditCatalogPath(schema, second, "name"), "catalog_items.1.name");
+  assert.equal(inlineEditCatalogPath(schema, second, "category"), "catalog_items.1.category");
+  assert.equal(inlineEditCatalogPath(schema, { ...second }, "name"), "");
+});
+
+test("preview catalog synchronization keeps catalog_items authoritative over products_services", () => {
+  const source = readFileSync(new URL("../src/ai-builder/index.js", import.meta.url), "utf8");
+  const catalogLoader = source.match(/export function catalogItemsFromSchema\(schema\) \{[\s\S]*?\n\}/)?.[0] || "";
+  const previewBuilder = source.match(/function schemaForPreview\(\) \{[\s\S]*?\n\}/)?.[0] || "";
+
+  assert.match(catalogLoader, /schema\?\.catalog_items/);
+  assert.ok(catalogLoader.indexOf("schema?.catalog_items") < catalogLoader.indexOf("schema?.products_services"));
+  assert.match(previewBuilder, /!Array\.isArray\(schema\.catalog_items\) \|\| !schema\.catalog_items\.length/);
+});
+
 test("coverage paths map only to persistent section, catalog, navigation, footer, and contact data", () => {
   const { hero, schema } = schemaWithHero();
   const about = { id: "about", type: "About", editable: { title: "Our story", text: "Made with care." } };

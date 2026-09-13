@@ -10,6 +10,7 @@ import {
   resolveMegaRetailDepartmentTiles,
   resolveMegaRetailTileMedia,
 } from "../src/ai-builder/mega-retail-policy.js";
+import { inlineEditCatalogPath } from "../src/ai-builder/inline-edit-policy.js";
 
 test("departments without an exact catalog image use the neutral product placeholder", () => {
   assert.equal(megaRetailStockImage("Electrical Supplies"), NEUTRAL_PRODUCT_PLACEHOLDER);
@@ -72,6 +73,47 @@ test("complete mega retail site schemas never reuse unrelated positional product
       assert.ok(bannerUrls.every((url) => !url.includes(photoId)), `${businessName}: ${photoId}`);
     });
   }
+});
+
+test("editing one department preserves every sibling title image and inline path after rerender", () => {
+  const items = [
+    ["Electrical Supplies", "/images/electrical.jpg"],
+    ["Plumbing Supplies", "/images/plumbing.jpg"],
+    ["Power Tools", "/images/tools.jpg"],
+    ["Fasteners", "/images/fasteners.jpg"],
+    ["Safety Equipment", "/images/safety.jpg"],
+  ].map(([category, image_url], index) => ({
+    id: `item-${index + 1}`,
+    name: `${category} item`,
+    category,
+    description: `${category} description`,
+    image_url,
+  }));
+  const schema = { catalog_items: items };
+  const before = resolveMegaRetailDepartmentTiles({
+    categories: [...new Set(items.map((item) => item.category))],
+    items,
+  });
+  const beforePaths = before.slice(1).map(({ item }) => inlineEditCatalogPath(schema, item, "category"));
+
+  items[4].category = "Contractor Safety";
+
+  const after = resolveMegaRetailDepartmentTiles({
+    categories: [...new Set(items.map((item) => item.category))],
+    items,
+  });
+  const afterPaths = after.slice(1).map(({ item }) => inlineEditCatalogPath(schema, item, "category"));
+
+  assert.deepEqual(after.map(({ category }) => category), [
+    "Electrical Supplies", "Plumbing Supplies", "Power Tools", "Fasteners", "Contractor Safety",
+  ]);
+  assert.deepEqual(after.map(({ media }) => media.url), [
+    "/images/electrical.jpg", "/images/plumbing.jpg", "/images/tools.jpg", "/images/fasteners.jpg", "/images/safety.jpg",
+  ]);
+  assert.deepEqual(beforePaths, [
+    "catalog_items.1.category", "catalog_items.2.category", "catalog_items.3.category", "catalog_items.4.category",
+  ]);
+  assert.deepEqual(afterPaths, beforePaths);
 });
 
 test("WhatsApp is absent without a real value and uses wa.me when provided", () => {

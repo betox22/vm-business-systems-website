@@ -16,6 +16,34 @@ Formato de entrada:
 
 ---
 
+## 2026-09-13 — Codex — Identidad estable en edición inline de catálogo
+
+**Hecho:** el re-render del editor conserva `catalog_items` como fuente
+autoritativa y ya no lo sustituye por una reconstrucción desde
+`products_services`. `catalogItemsFromSchema()` ahora respeta el mismo orden de
+prioridad. Los paths inline se resuelven primero por identidad real del objeto;
+un ID heredado duplicado solo se usa como fallback cuando su coincidencia es
+única, evitando que elementos repetidos de Mega Retail, Fashion, Premium Product
+y `renderCatalogCard` colapsen al índice del primer ítem.
+
+**Causa raíz:** el ciclo posterior a `finishInlineEdit()` podía inyectar
+`currentCatalogItems` derivado de la colección secundaria. Además, la búsqueda
+combinada `candidate === item || candidate.id === item.id` devolvía prematuramente
+el primer objeto con ID repetido.
+
+**Archivos tocados:** `src/ai-builder/index.js`,
+`src/ai-builder/inline-edit-policy.js`, tests de inline edit/Mega Retail,
+artefactos compilados del builder y esta bitácora.
+
+**Validación:** 26/26 pruebas focalizadas; suite Node completa 185/185; suite
+backend 215 passed + 26 subtests passed. El bundle raíz `ai-builder.js` fue
+reconstruido desde `src/ai-builder/index.js`.
+
+**Pendiente / abierto:** la reproducción interactiva real requiere una sesión y
+proyecto de cliente autenticados; la cobertura automatizada reproduce el commit
+y re-render con cinco departamentos. La rama
+`feature/inline-edit-item-identity` no debe fusionarse a `main` sin aprobación.
+
 ## 2026-09-12 — Codex — Taxonomía industrial segura para imágenes
 
 **Hecho:** `CATEGORY_KEYWORDS` usa límites de palabra para impedir coincidencias

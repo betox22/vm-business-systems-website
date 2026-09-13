@@ -126,8 +126,14 @@ export function inlineEditCatalogPath(schema, item, field) {
   if (!["name", "description", "category", "button_label"].includes(field)) return "";
   for (const collection of ["catalog_items", "products_services"]) {
     const items = Array.isArray(schema?.[collection]) ? schema[collection] : [];
-    const index = items.findIndex((candidate) => candidate === item || (candidate?.id && item?.id && candidate.id === item.id));
-    if (index >= 0) return `${collection}.${index}.${field}`;
+    const referenceIndex = items.indexOf(item);
+    if (referenceIndex >= 0) return `${collection}.${referenceIndex}.${field}`;
+    if (item?.id) {
+      const idMatches = items
+        .map((candidate, index) => candidate?.id === item.id ? index : -1)
+        .filter((index) => index >= 0);
+      if (idMatches.length === 1) return `${collection}.${idMatches[0]}.${field}`;
+    }
   }
   return "";
 }
