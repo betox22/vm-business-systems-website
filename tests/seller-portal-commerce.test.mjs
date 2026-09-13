@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const source = readFileSync(new URL('../seller-portal.js', import.meta.url), 'utf8');
 function harness(fetch = async () => ({ ok: true, json: async () => ({ products: [] }) }), config = {}) {
-  const element = { innerHTML: '', textContent: '', addEventListener() {}, classList: { add() {}, remove() {} }, setAttribute() {}, querySelectorAll() { return []; } };
+  const element = { innerHTML: '', textContent: '', dataset: {}, addEventListener() {}, classList: { add() {}, remove() {} }, setAttribute() {}, querySelectorAll() { return []; } };
   const context = vm.createContext({ URL, URLSearchParams, fetch,
     window: { location: { search: '?business_id=owned', hostname: 'usekreaton.com' }, ...config },
     localStorage: { getItem() { return null; }, removeItem() {} },

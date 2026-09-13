@@ -236,6 +236,15 @@ body {
   display: none;
 }
 
+.welcome-copy[hidden] {
+  display: none;
+}
+
+.seller-login-screen[data-existing-store="true"] .seller-welcome-card {
+  width: min(800px, 100%);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+
 .login-card-head {
   display: flex;
   align-items: center;

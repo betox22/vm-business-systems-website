@@ -8,14 +8,27 @@ const state = {
   authenticated: false,
   notice: "",
   epoch: 0,
+  loginRevealed: false,
 };
 const apiBase = resolveApiBase();
 const content = document.querySelector("#sellerContent");
 const loginScreen = document.querySelector("#sellerLoginScreen");
 const loginForm = document.querySelector("#sellerLoginForm");
 const loginStatus = document.querySelector("#sellerLoginStatus");
+const welcomeCopy = document.querySelector(".welcome-copy");
 const manualNotice = "Los productos nuevos y duplicados se guardan en comercio, pero todavia no aparecen en la pagina publica generada por IA. Esta limitacion no impide guardar tu catalogo aqui.";
 clearLegacyTokenStorage();
+configureLoginEntry();
+
+function configureLoginEntry() {
+  const existingStore = Boolean(state.businessId);
+  welcomeCopy.hidden = existingStore;
+  loginScreen.dataset.existingStore = String(existingStore);
+  const reveal = existingStore || state.loginRevealed;
+  if (reveal) loginForm.classList.remove("login-collapsed");
+  else loginForm.classList.add("login-collapsed");
+  loginForm.setAttribute("aria-hidden", String(!reveal));
+}
 
 function resolveApiBase() {
   if (window.LUMA_API_BASE_URL) return String(window.LUMA_API_BASE_URL).replace(/\/$/, "");
@@ -63,10 +76,10 @@ function resetView() {
   document.querySelector("#sellerStoreName").textContent = "Mi tienda";
   showLogin("Inicia sesion para continuar.");
 }
-function showLogin(message = "") {
+function showLogin(message = "", revealForm = false) {
   loginScreen.classList.remove("hidden");
-  loginForm.classList.remove("login-collapsed");
-  loginForm.setAttribute("aria-hidden", "false");
+  state.loginRevealed = state.loginRevealed || revealForm;
+  configureLoginEntry();
   loginStatus.textContent = message;
 }
 async function establishCookieSession(accessToken, refreshToken = "") {
@@ -273,7 +286,7 @@ content.addEventListener("click", event => {
   if (button.dataset.duplicateItem) mutateProduct(productsPath(), "POST", duplicatePayload(item), true);
 });
 loginForm.addEventListener("submit", loginSeller);
-document.querySelector("#existingAccessButton")?.addEventListener("click", () => showLogin());
+document.querySelector("#existingAccessButton")?.addEventListener("click", () => showLogin("", true));
 document.querySelector("#sellerLogoutButton").addEventListener("click", async () => {
   resetView();
   try { await apiRequest("/api/client/auth/logout", { method: "POST" }); showLogin("Sesion cerrada."); }
