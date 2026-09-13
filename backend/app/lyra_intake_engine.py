@@ -68,7 +68,8 @@ LOGO_EXPLICIT_SKIP_RE = re.compile(
     re.IGNORECASE,
 )
 LOGO_GENERATION_REQUEST_RE = re.compile(
-    r"(?:quiero|quisiera|necesito|me gustaria|me gustaría|podrias|podrías|puedes|quiero que|we need|i want|i need|could you|can you).{0,40}\b(?:crear|crees|diseñ(?:a|ar|es)|disen(?:a|ar|es)|generar|hacer|make|create|design|generate)(?:me)?\b.{0,24}\blogo\b"
+    r"(?:quiero|quisiera|necesito|me gustaria|me gustaría|podrias|podrías|puedes|quiero que|we need|i want|i need|could you|can you).{0,40}\blogo\b"
+    r"|\blogo\b.{0,40}(?:crea|crear|diseña|diseñar|genera|generar|make|create|design|generate)"
     r"|\b(?:crea(?:r)?(?:me)?|haz(?:me)?|diseñ(?:a|ar)|disena(?:r)?|gen[eé]rame|generate|make|design)(?:\s+(?:un|a))?\s+logo\b",
     re.IGNORECASE,
 )
