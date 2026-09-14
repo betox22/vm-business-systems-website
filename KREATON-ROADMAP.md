@@ -1,6 +1,6 @@
 # KREATON / LYRA: estado real y hoja de ruta
 
-Ultima actualizacion: 2026-09-13
+Ultima actualizacion: 2026-09-14
 
 ## Veredicto ejecutivo
 
@@ -65,20 +65,17 @@ El test `backend/tests/test_real_ai_catalog.py` no detecto BuildRight porque moc
 ### Parcial o con brecha funcional
 
 - **Catalogo:** la capa semilla puede contradecir industria, ofertas y planner. Es el riesgo principal de calidad y veracidad.
-- **Checkout publico:** el backend comercial existe, pero el carrito del sitio publico llama `openLeadModal()` al pulsar checkout (`site-viewer.js`, configuracion de `createSharedCommerceCart`). No esta conectado de punta a punta a `/api/v1/checkout/create-session`. No debe venderse aun como checkout completo de autoservicio.
 - **Edicion:** hay cobertura amplia de texto inline y persistencia del schema. No equivale a un CMS completo para editar con la misma facilidad precios, inventario, imagenes, variantes, navegacion y estructura en las ocho plantillas activas.
 - **Imagenes:** Unsplash esta configurado y hay roles/queries de imagen, pero la relevancia depende del catalogo. Un catalogo equivocado produce fotos coherentes con el dato equivocado, no con el negocio real.
 - **Diseño:** Mega Retail, B2B SaaS y Premium Product tienen trabajo dedicado. El nivel no es uniforme entre todas las familias. Las microinteracciones compartidas solo estan habilitadas en dos plantillas.
 - **Copy:** el planner tiene reglas AIDA/PAS y prohibiciones de copy generico, pero no existe aun un benchmark de produccion que mida especificidad, hechos inventados y calidad por rubro de manera sistematica.
 - **Plantillas dinamicas:** se pueden activar/desactivar sin deploy y conservar sitios existentes. El numero exacto activo hoy no se verifico en esta auditoria mediante una sesion admin.
-- **Pagos:** existen implementacion y tests con dobles de Stripe. No se ejecuto hoy una compra real, webhook real, reembolso ni payout de comercio en produccion.
 - **Dominios, publicacion y miniaturas:** existen rutas y UI, pero no se hizo hoy una matriz real de publicacion, dominio y cache para todas las plantillas activas.
 
 ### Simulado, temporal o no demostrado
 
 - Los seeds estaticos son contenido de demostracion, no catalogos obtenidos del cliente.
 - Ratings, badges y precios generados por `generate_ai_seed_catalog()` son sinteticos. No deben publicarse como hechos.
-- Los tests de Stripe validan contratos con mocks; no prueban movimiento real de dinero.
 - Los tests de OpenAI con cliente mock prueban estructura, no relevancia semantica del modelo real.
 - Las capturas y previews prueban renderizado, no conversion, accesibilidad completa ni mantenibilidad por parte de un cliente real.
 
@@ -88,7 +85,6 @@ El test `backend/tests/test_real_ai_catalog.py` no detecto BuildRight porque moc
 - Evaluacion automatica de relevancia catalogo-negocio antes de publicar.
 - Remediacion de sitios antiguos que ya tengan productos, precios, modelos, ratings o badges inventados.
 - CMS visual completo para catalogo, imagenes, variantes, inventario y estructura posterior a la entrega.
-- Checkout publico conectado de punta a punta al backend comercial y verificado con transaccion real.
 - Benchmark visual y de contenido contra referencias profesionales por viewport y rubro.
 - Auditoria actual de RLS y privilegios en la base de produccion. El archivo `supabase/enable_rls.sql` solo habilita RLS en 16 tablas y deliberadamente no crea politicas. La afirmacion anterior de que RLS estaba "resuelto" no debe considerarse evidencia. El proyecto Supabase de KREATON no estuvo disponible en la conexion usada para esta auditoria, por lo que el estado vivo sigue sin verificar.
 - Pruebas de recuperacion ante desastre, restauracion de backup, rotacion de secretos y objetivos operativos de disponibilidad.
@@ -104,7 +100,7 @@ La referencia compartida muestra el tipo de resultado que KREATON quiere vender:
 | Imagenes | Fotos especificas por producto, categoria y rol editorial | Unsplash funciona, pero la query hereda errores del catalogo y puede repetir visuales |
 | Movimiento | Transiciones utiles y consistentes en todo el sitio | Motor real, piloto en dos plantillas |
 | Edicion | Todo el contenido comercial mantenible por el dueno | Texto y schema parcial; catalogo/medios/estructura no son un CMS completo |
-| Comercio | Carrito, checkout, pago, inventario y orden conectados | Backend real y carrito real, pero el checkout publico termina en lead modal |
+| Comercio | Modulo transaccional universal | Bloqueante comercial; ver seccion unica de checkout y pagos |
 | Control de calidad | No publica datos inventados ni contenido cruzado | Hay validaciones, pero el fallback puede introducir precios, ratings, badges y productos |
 | Operacion | Seguridad, auditoria, backups y observabilidad verificables | Admin/auditoria construidos; RLS y recuperacion siguen sin cierre actual |
 
@@ -140,14 +136,6 @@ La referencia compartida muestra el tipo de resultado que KREATON quiere vender:
 
 **Criterio de salida:** un dueno puede mantener su sitio sin soporte de KREATON y sin editar JSON.
 
-### P3. Comercio completo
-
-1. Conectar `shared-commerce-cart.js` a las rutas reales de carrito y `/api/v1/checkout/create-session`.
-2. Verificar Stripe Connect por tienda, webhook, inventario, confirmacion, fallo, cancelacion, reembolso y payout.
-3. Separar claramente `quote_only` de compra directa en UI y ordenes.
-
-**Criterio de salida:** compra real de prueba desde sitio publicado hasta orden pagada y visible para el dueno.
-
 ### P4. Calidad visual sistematica
 
 1. Congelar el numero de plantillas activas hasta que cada una pase un benchmark comun.
@@ -167,6 +155,26 @@ La referencia compartida muestra el tipo de resultado que KREATON quiere vender:
 **Criterio de salida:** evidencia SQL actual, prueba negativa entre tenants, restauracion demostrada y alertas operativas activas.
 
 ## Pendientes nuevos por definir
+
+### Checkout + pagos: modulo obligatorio, universal para toda plantilla
+
+**Prioridad:** MAXIMA. Obligatorio, no opcional; bloquea el lanzamiento comercial real. Esta es la unica fuente de verdad para el alcance de checkout, impuestos y Stripe Connect; reemplaza el antiguo P3 y las notas separadas de pagos.
+
+**Requisito no negociable:** TODA tienda, tanto una plantilla vieja ya generada como una nueva que LYRA cree de cero, debe poder conectar carrito, checkout y cobro con Stripe. El pago es un modulo independiente que se conecta a cualquier plantilla visual, no una funcionalidad particular de cada plantilla.
+
+**Estado y evidencia previa:** el backend comercial y el carrito compartido existen, pero la auditoria previa encontro que `site-viewer.js` conecta el checkout a `openLeadModal()` en vez de completar el flujo contra `/api/v1/checkout/create-session`. Los tests de Stripe usan dobles y no demuestran movimiento real de dinero. No se ha acreditado aqui una compra, webhook, reembolso ni payout real de punta a punta. Esta consolidacion documental no constituye una nueva auditoria de produccion ni autoriza implementar o activar cobros.
+
+**Componentes obligatorios:**
+
+1. Corregir primero el bug identificado y reportado: el calculo de comercio aplica un 7% fijo, pero Stripe cobra solo el subtotal sin impuesto, causando subcobro en todas las ordenes afectadas por ese camino. Referencia de la auditoria previa: `backend/app/commerce.py:384` (numeracion historica, a revalidar al implementar). El reporte recibido lo identifica como un problema del 100% de las ordenes de ese flujo; no se ha vuelto a medir produccion en este cambio documental. No construir nada nuevo encima de este bug sin corregirlo primero.
+2. Stripe Connect: cada dueno conecta SU PROPIA cuenta de Stripe. El cobro al cliente final va a la cuenta del dueno, no a vmbusiness. V&M/vmbusiness cobra aparte la suscripcion/licencia de la plataforma con su propio Stripe: son dos cuentas y dos flujos distintos. Coordinar con Beto la integracion paralela, sin modificar Listo POS ni Listo KDS desde este trabajo. Stripe simple de vmbusiness no sustituye este requisito.
+3. Menu de configuracion en `client/portal/` para conectar/desconectar Stripe y consultar el estado de la conexion, sin tocar codigo ni depender de soporte.
+4. Carrito y boton de pago disponibles en CUALQUIER plantilla comercial, vieja o nueva, mediante el modulo compartido (`shared-commerce-cart.js`) conectado al backend real. Mantener `quote_only` separado de compra directa, sin cobrar productos que requieren cotizacion. Este trabajo NO depende del editor visual universal: transacciones y edicion de diseno/contenido son proyectos paralelos.
+5. Resolver dentro del mismo bloque los pendientes tecnicos identificados: carrito e idempotency-key en memoria (no persistentes), inventario sin bloqueo (riesgo de sobreventa), y webhook sin validacion del monto contra el esperado.
+
+**Orden propuesto de implementacion, a acordar con Beto al retomar:** 1) fix del 7%; 2) Stripe Connect basico, conectar cuenta y cobrar a esa cuenta; 3) menu de configuracion del portal; 4) durabilidad de carrito/idempotencia, consistencia de inventario y validacion de webhook. Documentar este orden no autoriza implementacion ahora.
+
+**Criterio de salida:** prueba end-to-end de tienda publicada hasta orden pagada visible al dueno, importe total e impuestos consistentes, destino de fondos correcto por tienda, reintentos sin doble cobro, inventario sin sobreventa y webhook validado. Cubrir confirmacion, fallo, cancelacion, reembolso y payout con evidencia del proveedor; no dar por cerrado con mocks. Todas las plantillas comerciales existentes y nuevas deben cumplir el mismo contrato, independientemente del avance del editor universal.
 
 ### Editor visual universal (editar todo, no solo campos reconocidos)
 
@@ -216,7 +224,7 @@ La referencia compartida muestra el tipo de resultado que KREATON quiere vender:
 
 ### Arquitectura modular tipo Shopify/Wix (vision de producto)
 
-**Prioridad:** a definir con Beto. Vision de mediano/largo plazo, posterior a resolver el checkout basico (Fases 5B/5C, impuestos y Stripe).
+**Prioridad:** a definir con Beto. Vision de mediano/largo plazo, posterior a cerrar el bloque obligatorio de checkout y pagos definido en esta seccion de pendientes.
 
 **Estado:** vision de producto pendiente de evaluacion, sin diseno tecnico ni implementacion aprobados.
 
@@ -238,7 +246,7 @@ La referencia compartida muestra el tipo de resultado que KREATON quiere vender:
 
 **Pautas obligatorias para cualquier plantilla aprobada:**
 
-1. Si es de venta (incluye productos/precios), debe incluir carrito y checkout funcionales, no opcionales.
+1. Si es de venta, debe cumplir el contrato universal del bloque obligatorio de checkout y pagos, sin implementacion transaccional propia por plantilla.
 2. Todas las plantillas, sin excepcion, deben tener un panel admin real conectado, no una maqueta, para modificar contenido, catalogo, precios, imagenes y demas datos del sitio.
 3. La calidad objetivo debe ser comparable a plantillas premium de Shopify/Wix, no a plantillas genericas basicas.
 
@@ -252,23 +260,8 @@ La referencia compartida muestra el tipo de resultado que KREATON quiere vender:
 
 **Criterio de salida:** al retomar, presentar un proceso de generacion, revision y aprobacion de candidatas reutilizables, con verificacion funcional de las pautas y contratos de los modulos especializados. Este registro no autoriza implementar ni generar candidatas ahora.
 
-### Stripe Connect: cuenta propia de cada cliente para su checkout
-
-**Prioridad:** prerequisito de diseno del checkout real (Fases 5B/5C), incluido el problema reportado del 7% de impuestos. Debe evaluarse antes de decidir la arquitectura de pagos.
-
-**Estado:** pendiente de decision, sin implementacion autorizada en este paso. Segun Beto, la integracion de Stripe para KREATON, Listo POS y Listo KDS avanza desde otro frente en paralelo; este registro no implica modificar esos otros proyectos ni confirma que esa integracion este terminada.
-
-**Dos niveles distintos, no intercambiables:**
-
-1. Stripe de V&M/vmbusiness: cobrar a cada cliente de la plataforma (Representante/Cliente) su suscripcion o licencia de uso.
-2. Stripe Connect o equivalente por tienda: cada dueno debe poder crear o conectar su propia cuenta de Stripe. Cuando sus clientes finales compren desde el carrito de su pagina, el cobro debe ir a la cuenta del dueno de esa tienda, no a la cuenta de vmbusiness.
-
-**Alcance al retomar:** coordinar con Beto y revisar lo que ya exista; decidir explicitamente si el checkout se construye sobre Stripe Connect o Stripe simple, considerando el requisito de cuenta propia por tienda, porque la eleccion cambia el modelo de datos y el flujo de pago. No asumir que el Stripe de suscripciones de V&M resuelve los cobros de los clientes finales de cada tienda.
-
-**Criterio de salida:** decision documentada sobre cuentas, destino de fondos, modelo de datos y flujo de checkout, coherente con la integracion paralela y aprobada antes de implementar Fases 5B/5C. No activar cobros ni implementar cambios por registrar este pendiente.
-
 ## Orden de inversion recomendado
 
-No invertir ahora en mas plantillas ni mas efectos. El orden correcto es: integridad del catalogo, imagenes, edicion del dueno, checkout real, uniformidad visual y seguridad operativa. La razon es directa: un sitio visualmente atractivo con productos falsos o irrelevantes destruye confianza mas rapido que un sitio sencillo pero fiel.
+No invertir ahora en mas plantillas ni mas efectos. Checkout y pagos es un bloqueo comercial de prioridad MAXIMA, con alcance y orden en su seccion unica anterior, y debe avanzar en paralelo al editor universal. Mantener ademas el trabajo de integridad del catalogo, imagenes, edicion del dueno, uniformidad visual y seguridad operativa: un sitio atractivo con productos falsos o irrelevantes destruye confianza mas rapido que uno sencillo pero fiel.
 
 Hasta cerrar P0 y P1, toda generacion deberia tratarse como borrador sujeto a revision, no como publicacion autonoma lista para un cliente de pago.
