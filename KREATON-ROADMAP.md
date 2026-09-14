@@ -216,6 +216,43 @@ La referencia compartida muestra el tipo de resultado que KREATON quiere vender:
 
 **Criterio de salida:** despues de resolver el checkout basico y acordar la prioridad con Beto, presentar limites de modulos, contratos, dependencias, activacion independiente y plan de transicion para aprobacion. Registrar esta vision no autoriza implementar cambios ni definir precios.
 
+### Plantillas premium con pautas fijas + modulos especializados de tienda
+
+**Prioridad:** vision de mediano/largo plazo, a definir con Beto.
+
+**Estado:** idea de producto, sin implementacion aprobada. LYRA generaria plantillas candidatas siguiendo pautas concretas; las aprobadas quedarian guardadas como plantillas reutilizables de nivel "pro", en vez de generar todo desde cero en cada sitio. El costo inicial de generar y revisar candidatas seria mayor, pero podria destrabar el estancamiento actual de calidad.
+
+**Pautas obligatorias para cualquier plantilla aprobada:**
+
+1. Si es de venta (incluye productos/precios), debe incluir carrito y checkout funcionales, no opcionales.
+2. Todas las plantillas, sin excepcion, deben tener un panel admin real conectado, no una maqueta, para modificar contenido, catalogo, precios, imagenes y demas datos del sitio.
+3. La calidad objetivo debe ser comparable a plantillas premium de Shopify/Wix, no a plantillas genericas basicas.
+
+**Modulos especializados de tienda:** independientes de la plantilla visual y activables segun el tipo de negocio.
+
+- Toma de pedidos.
+- Impresion de tickets.
+- Gestion y seguimiento de ordenes.
+- Recoleccion de datos del cliente (nombre, telefono, direccion, etc.).
+- Generacion de etiquetas de envio.
+
+**Criterio de salida:** al retomar, presentar un proceso de generacion, revision y aprobacion de candidatas reutilizables, con verificacion funcional de las pautas y contratos de los modulos especializados. Este registro no autoriza implementar ni generar candidatas ahora.
+
+### Stripe Connect: cuenta propia de cada cliente para su checkout
+
+**Prioridad:** prerequisito de diseno del checkout real (Fases 5B/5C), incluido el problema reportado del 7% de impuestos. Debe evaluarse antes de decidir la arquitectura de pagos.
+
+**Estado:** pendiente de decision, sin implementacion autorizada en este paso. Segun Beto, la integracion de Stripe para KREATON, Listo POS y Listo KDS avanza desde otro frente en paralelo; este registro no implica modificar esos otros proyectos ni confirma que esa integracion este terminada.
+
+**Dos niveles distintos, no intercambiables:**
+
+1. Stripe de V&M/vmbusiness: cobrar a cada cliente de la plataforma (Representante/Cliente) su suscripcion o licencia de uso.
+2. Stripe Connect o equivalente por tienda: cada dueno debe poder crear o conectar su propia cuenta de Stripe. Cuando sus clientes finales compren desde el carrito de su pagina, el cobro debe ir a la cuenta del dueno de esa tienda, no a la cuenta de vmbusiness.
+
+**Alcance al retomar:** coordinar con Beto y revisar lo que ya exista; decidir explicitamente si el checkout se construye sobre Stripe Connect o Stripe simple, considerando el requisito de cuenta propia por tienda, porque la eleccion cambia el modelo de datos y el flujo de pago. No asumir que el Stripe de suscripciones de V&M resuelve los cobros de los clientes finales de cada tienda.
+
+**Criterio de salida:** decision documentada sobre cuentas, destino de fondos, modelo de datos y flujo de checkout, coherente con la integracion paralela y aprobada antes de implementar Fases 5B/5C. No activar cobros ni implementar cambios por registrar este pendiente.
+
 ## Orden de inversion recomendado
 
 No invertir ahora en mas plantillas ni mas efectos. El orden correcto es: integridad del catalogo, imagenes, edicion del dueno, checkout real, uniformidad visual y seguridad operativa. La razon es directa: un sitio visualmente atractivo con productos falsos o irrelevantes destruye confianza mas rapido que un sitio sencillo pero fiel.
