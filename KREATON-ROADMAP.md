@@ -200,6 +200,22 @@ La referencia compartida muestra el tipo de resultado que KREATON quiere vender:
 
 **Criterio de salida:** tras elegir proveedor y aprobar el alcance, demostrar consultas reales de disponibilidad/precio, calculo del precio final y alternativas verificadas, sin exponer el margen al cliente. Documentar este pendiente no autoriza implementar ni contratar servicios.
 
+### Arquitectura modular tipo Shopify/Wix (vision de producto)
+
+**Prioridad:** a definir con Beto. Vision de mediano/largo plazo, posterior a resolver el checkout basico (Fases 5B/5C, impuestos y Stripe).
+
+**Estado:** vision de producto pendiente de evaluacion, sin diseno tecnico ni implementacion aprobados.
+
+**Objetivo:** poder vender el sistema de comercio completo o en modulos separados y activables de forma independiente: checkout, administracion del contenido de la pagina, operaciones/ventas, inventario y catalogo. Listo (POS) se vende aparte y sirve como referencia comercial, no como autorizacion para modificar ese producto. Se busca igualar la calidad y robustez de Shopify y Wix, con un precio de entrada mas competitivo para ganar mercado.
+
+**Implicaciones a evaluar al retomar, sin decisiones tomadas:**
+
+1. Separacion clara de capas: comercio (productos, inventario y ordenes), checkout/pagos, panel admin de contenido del sitio y panel de operaciones de venta. Evaluar cada una como modulo independiente con su propia API y contratos explicitos, evitando acoplamiento directo entre implementaciones.
+2. Modelo de precios por modulo frente a plan completo: a definir con Beto; no es una decision tecnica.
+3. Impacto en la arquitectura actual de `commerce.py` y el portal, donde hoy conviven estas responsabilidades, y una ruta incremental hacia la modularidad sin rehacer todo de cero ni romper los flujos existentes.
+
+**Criterio de salida:** despues de resolver el checkout basico y acordar la prioridad con Beto, presentar limites de modulos, contratos, dependencias, activacion independiente y plan de transicion para aprobacion. Registrar esta vision no autoriza implementar cambios ni definir precios.
+
 ## Orden de inversion recomendado
 
 No invertir ahora en mas plantillas ni mas efectos. El orden correcto es: integridad del catalogo, imagenes, edicion del dueno, checkout real, uniformidad visual y seguridad operativa. La razon es directa: un sitio visualmente atractivo con productos falsos o irrelevantes destruye confianza mas rapido que un sitio sencillo pero fiel.
