@@ -16,6 +16,33 @@ Formato de entrada:
 
 ---
 
+## 2026-09-14 — Codex — Inventario operativo inline (sin commit/push)
+
+**Hecho:** tabla principal con imagen/nombre/SKU, precio y stock inline,
+estado y acciones existentes. Enter o boton confirma PATCH aislado; Escape
+cancela. Estados por celda guardando/guardado/error y bloqueo de doble envio.
+Cotizacion nunca se presenta como cero. Estados vacios diferenciados.
+Formulario existente reorganizado como seccion desplegable secundaria.
+Mobile conserva precio y stock. Cache JS/CSS del portal v12.
+
+**Validacion:** Node 214 passed, 0 failed; Python 293 passed, 40 subtests,
+31 warnings; exit 0 en ambas suites completas. Chromium con innerWidth
+1440/390, sin errores de consola ni overflow horizontal, Enter y Escape.
+Capturas OFFLINE con copia de los seis productos importados de ElectroHub y
+API simulada, no prueba de persistencia real. El portal local contra API real
+respondio Invalid or expired session: falta login del propietario y autorizacion
+puntual de cambios temporales para prueba de escritura/restauracion real.
+No se modificaron datos de produccion en esta tarea. Evidencia fuera del repo:
+kreaton-evidence/portal-inventory-inline (full.diff, logs, capturas offline).
+
+**Archivos:** seller-portal.js/css, client/portal/index.html,
+tests/seller-portal-inventory.test.mjs y este log. Backend, checkout, Stripe,
+borrado y logica de archivado intactos. Sin commit ni push.
+
+**Cierre posterior:** Beto confirma verificacion offline y PATCH real contra
+ElectroHub y autoriza commit/push del inventario inline. La verificacion real
+es confirmacion del usuario; no sustituye la evidencia offline descrita arriba.
+
 ## 2026-09-13 — Codex — Portal de comercio Fase 5A (sin commit/push)
 
 **Hecho:** login password Supabase con error generico, configuracion compartida,

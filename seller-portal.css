@@ -544,7 +544,7 @@ button {
 
 .catalog-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
@@ -756,8 +756,7 @@ th {
 }
 
 .editor-card {
-  position: sticky;
-  top: 14px;
+  position: static;
   align-self: start;
   overflow: hidden;
 }
@@ -993,8 +992,68 @@ th {
     grid-template-columns: 1fr;
   }
 
-  th:nth-child(3),
-  td:nth-child(3) {
-    display: none;
-  }
+}
+
+/* Operational inventory: the same fields remain available at every width. */
+.inventory-table { table-layout: fixed; }
+.inventory-table th:first-child { width: 32%; }
+.inventory-table th:nth-child(2) { width: 19%; }
+.inventory-table th:nth-child(3) { width: 14%; }
+.inventory-table th:nth-child(4) { width: 13%; }
+.inventory-table th:last-child { width: 22%; }
+.inventory-table td { vertical-align: middle; padding: 16px 12px; }
+.inventory-table th { padding: 12px; background: #f8fafb; font-weight: 600; }
+.inventory-table tbody tr { transition: background 160ms ease; }
+.inventory-table tbody tr:hover { background: #f4f8fb; }
+.inventory-table tbody tr:last-child td { border-bottom: 0; }
+.inventory-table .is-inactive { background: #f7f7f8; }
+.inventory-table .product-cell > div:last-child { min-width: 0; overflow-wrap: anywhere; }
+.inventory-table .product-cell strong { display: block; font-size: 14px; font-weight: 650; }
+.inventory-table .product-cell .muted, .inventory-table small { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.inventory-table .product-thumb { display: grid; place-items: center; width: 52px; height: 60px; font-size: 11px; }
+.inventory-table .catalog-card-actions { justify-content: flex-start; gap: 8px; }
+.inventory-table .catalog-card-actions button { min-height: 36px; font-weight: 600; }
+.inventory-table .text-button { font-size: 12px; }
+.inventory-count { color: var(--muted); margin-left: 8px; font-size: 14px; font-weight: 500; }
+.inventory-cell { min-width: 0; }
+.inventory-control { display: flex; align-items: center; gap: 4px; position: relative; }
+.inventory-control > span { position: absolute; left: 10px; color: var(--muted); pointer-events: none; }
+.inventory-control input { width: 100%; min-width: 0; min-height: 42px; font-size: 14px; font-variant-numeric: tabular-nums; padding: 10px 8px; border-radius: 6px; }
+.inventory-control > span + input { padding-left: 23px; }
+.inventory-control button { flex: 0 0 34px; min-height: 40px; border: 0; border-radius: 6px; background: var(--primary); color: white; }
+.inventory-control button[hidden] { display: none; }
+.inventory-control input:focus-visible, .inventory-control button:focus-visible, .editor-card summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.cell-status { display: block; min-height: 18px; margin-top: 5px; font-size: 11px; line-height: 1.4; color: var(--muted); overflow-wrap: anywhere; }
+.inventory-cell[data-status="saved"] .cell-status { color: var(--success); }
+.inventory-cell[data-status="saving"] .cell-status { color: var(--primary); }
+.inventory-cell[data-status="error"] .cell-status { color: var(--danger); }
+.inventory-cell[data-status="error"] input { border-color: var(--danger); }
+.quote-label { display: block; font-size: 13px; line-height: 1.5; }
+.editor-card summary { cursor: pointer; font-size: 16px; font-weight: 650; }
+.editor-card summary::after { content: "+"; font-size: 22px; color: var(--primary); }
+.editor-card[open] summary::after { content: "\2212"; }
+.editor-card .editor-form { max-width: 760px; }
+button:disabled, input:disabled { cursor: wait; opacity: .65; }
+.seller-content > [role="status"]:empty { display: none; }
+@media (max-width: 720px) {
+  .seller-sidebar { padding: 12px 16px; }
+  .seller-sidebar .brand { margin-bottom: 0; }
+  .seller-sidebar .brand span { font-size: 11px; overflow-wrap: anywhere; }
+  .seller-nav { display: none; }
+  .seller-topbar { padding: 16px; gap: 12px; }
+  .seller-topbar h1 { font-size: 22px; }
+  .seller-topbar p { font-size: 13px; }
+  .topbar-actions { flex-direction: row; gap: 8px; }
+  .topbar-actions > * { font-size: 12px; }
+  .seller-content { padding: 12px; }
+  .inventory-table, .inventory-table tbody { display: block; width: 100%; }
+  .inventory-table thead { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+  .inventory-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 16px; border-bottom: 1px solid var(--line); }
+  .inventory-table td { display: block; padding: 0; border: 0; min-width: 0; }
+  .inventory-table td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 6px; font-size: 12px; color: var(--muted); }
+  .inventory-table .inventory-product, .inventory-table .inventory-actions { grid-column: 1 / -1; }
+  .inventory-table .inventory-actions button { min-height: 44px; }
+  .inventory-control input { min-height: 44px; font-size: 16px; }
+  .inventory-control button { min-height: 44px; }
+  .panel-header { padding: 12px; }
 }
