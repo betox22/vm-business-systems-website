@@ -284,10 +284,14 @@ function showStudioAuthLoading() {
   }, CLIENT_AUTH_SLOW_NOTICE_DELAY_MS);
 }
 
+export function requestedClientProjectId() {
+  return new URLSearchParams(window.location.search).get("project_id")?.trim() || "";
+}
+
 export function initClientIntakeSessionGate() {
   if (!isPublicClientSetup) return;
   ensureStudioAuthRedirectCaptured();
-  if (storedClientAccessToken()) {
+  if (storedClientAccessToken() || requestedClientProjectId()) {
     showStudioAuthLoading();
     resumeClientSessionFromAuthToken();
     return;
@@ -526,9 +530,9 @@ export function handleExpiredClientAuth(reason = "unknown", detail = null) {
   openStudioAuthGate("start");
 }
 
-export async function fetchClientAuthUser() {
+export async function fetchClientAuthUser({ allowCookie = false } = {}) {
   const token = storedClientAccessToken();
-  if (!token) {
+  if (!token && !allowCookie) {
     console.error("Cannot validate client auth: no stored access token.");
     return null;
   }
@@ -560,7 +564,7 @@ export async function fetchClientAuthUser() {
         throw lastError;
       }
     } catch (error) {
-      if (!storedClientAccessToken()) throw error;
+      if (!storedClientAccessToken() && !allowCookie) throw error;
       lastError = error;
       const status = Number(error?.authValidationStatus) || 0;
       if (!shouldRetryClientAuthValidation({ attempt, status })) throw error;
@@ -1044,7 +1048,7 @@ export async function loadClientProject(projectId, options = {}) {
     generatedSiteId: builderState.currentSiteId,
     storage_status: data.storage_status || "stored",
     used_dev_mock: false,
-  });
+  }, { persist: false });
   siteTitle.textContent = builderState.currentSchema.business?.name || "Generated site";
   storageStatus.textContent = storageLabel(data.storage_status || "stored", false);
   renderEditor();
@@ -1059,9 +1063,25 @@ export async function resumeClientSessionFromAuthToken() {
   showStudioAuthLoading();
   builderState.clientAuthResumePromise = (async () => {
   try {
-    const user = await fetchClientAuthUser();
+    const projectId = requestedClientProjectId();
+    const user = await fetchClientAuthUser({ allowCookie: Boolean(projectId) });
     const email = user?.email || "";
     if (!email) throw new Error("Authenticated user email missing.");
+    if (projectId) {
+      // A portal deep link must not restore an unrelated intake or start a new business.
+      builderState.clientAuthStatus = "authenticated";
+      builderState.authenticatedClientEmail = email;
+      await loadClientProject(projectId);
+      markClientWorkspaceUnlocked();
+      closeStudioAuthGate();
+      renderClientAccountControl();
+      // The builder reads stored JSON, not the current Product commerce overlay.
+      if (storageStatus) storageStatus.textContent = langText({
+        es: "Editando el diseno guardado. Los ultimos cambios de comercio pueden no aparecer aqui; guardar un catalogo desactualizado puede afectar esos cambios.",
+        en: "Editing the saved design. Recent commerce changes may not appear here; saving an outdated catalog may affect those changes.",
+      });
+      return builderState.clientIntakeSession;
+    }
     const name = user?.userMetadata?.full_name || user?.userMetadata?.name || builderState.guidedState.businessName || "";
     const session = await createOrResumeClientIntakeSession({
       email,

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Panel de Cliente | V&M AI Websites</title>
-    <link rel="stylesheet" href="/seller-portal.css?v=12">
+    <link rel="stylesheet" href="/seller-portal.css?v=13">
   </head>
   <body>
     <section id="sellerLoginScreen" class="seller-login-screen">
@@ -76,6 +76,7 @@
             <p id="sellerSubtitle">Productos, precios, inventario e imagenes.</p>
           </div>
           <div class="topbar-actions">
+            <button id="editDesignButton" class="primary-button" type="button" hidden>Editar diseño de mi pagina con Lyra</button>
             <a class="secondary-button" href="/start/">Crear otra pagina</a>
             <button id="sellerLogoutButton" class="secondary-button" type="button">Salir</button>
             <button id="refreshButton" class="primary-button" type="button">Actualizar</button>
@@ -86,8 +87,13 @@
       </section>
     </main>
 
+    <dialog id="designProjectDialog" aria-labelledby="designProjectTitle">
+      <h2 id="designProjectTitle">Elige la pagina que quieres editar</h2>
+      <div id="designProjectChoices"></div>
+      <form method="dialog"><button class="secondary-button">Cerrar</button></form>
+    </dialog>
     <script src="/luma-config.js?v=1781138878"></script>
-    <script src="/seller-portal.js?v=12"></script>
+    <script src="/seller-portal.js?v=13"></script>
   <script src="/js/legal-footer.js?v=1"></script>
 </body>
 </html>

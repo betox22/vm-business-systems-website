@@ -13,7 +13,7 @@ from test_catalog_sync import db, item, products, site
 from test_client_site_update import OWNER, _client_and_session, _schema
 
 
-OVERLAID = {"name", "description", "image_url", "price", "price_amount", "price_value",
+OVERLAID = {"name", "description", "image_url", "category", "price", "price_amount", "price_value",
             "price_type", "price_label", "inventory_quantity"}
 
 
@@ -42,7 +42,7 @@ def test_real_owner_patch_is_projected_in_both_public_routes_without_writing_jso
             client.cookies.set("luma_client_session", "owner-token")
             response = client.patch(f"/api/v1/store-owner/store-owner/products/{product_id}", json={
                 "name": "Owner drill", "price": 37.25, "description": "Owner description",
-                "imageUrl": "https://example.com/owner.jpg", "stock": 12,
+                "imageUrl": "https://example.com/owner.jpg", "stock": 12, "categoryId": "Electrical",
             })
             assert response.status_code == 200, response.text
         for path in ("/public/sites/site-owner", "/public/resolve-site?host=owner-shop-site.usekreaton.com"):
@@ -53,7 +53,7 @@ def test_real_owner_patch_is_projected_in_both_public_routes_without_writing_jso
             updated = payload["catalog_items"][0]
             assert {k: v for k, v in updated.items() if k not in OVERLAID} == {k: v for k, v in original.items() if k not in OVERLAID}
             assert {k: updated[k] for k in OVERLAID} == dict(
-                name="Owner drill", description="Owner description", image_url="https://example.com/owner.jpg",
+                name="Owner drill", description="Owner description", image_url="https://example.com/owner.jpg", category="Electrical",
                 price=37.25, price_amount=37.25, price_value=37.25,
                 price_type="fixed", price_label="USD 37.25", inventory_quantity=12,
             )

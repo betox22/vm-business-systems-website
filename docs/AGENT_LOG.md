@@ -16,6 +16,27 @@ Formato de entrada:
 
 ---
 
+## 2026-09-14 — Codex — Portal a editor por proyecto y categoria comercial
+
+**Hecho:** listado autenticado expone store_id. Portal resuelve por ID real,
+abre un sitio directo o exige seleccion si hay varios. Entrada project_id valida
+sesion (cookie o token) antes de cargar el proyecto con el endpoint owner existente,
+sin crear intake nuevo. Apertura cachea localmente sin guardar remotamente el JSON.
+Overlay publico incluye Product.category; no mueve secciones ni cambia plantilla.
+Aviso visible del riesgo de JSON antiguo al guardar desde el builder.
+
+**Validacion:** Node 219 passed / 0 failed; Python 294 passed + 40 subtests,
+31 warnings, exit 0. Navegador real: portal store_db1c735b5c0e, seis productos,
+clic abre site_8bf46e75566d y renderiza ElectroHub Market con aviso visible.
+Frontend local actualizado contra backend real, sin respuestas simuladas.
+Capturas PNG bloqueadas por timeout de Page.captureScreenshot; evidencia DOM/URL
+en kreaton-evidence/portal-design-link/real-browser.txt. Consola sin errores.
+
+**Pendiente / abierto:** sin commit/push. Backend nuevo verificado por tests,
+no desplegado. Para listado anterior sin store_id el portal usa el detalle
+owner-checked y su business_id real, nunca nombre/slug. Guardar JSON antiguo
+todavia puede afectar cambios comerciales; abrir ya no dispara guardado remoto.
+
 ## 2026-09-14 — Codex — Inventario operativo inline (sin commit/push)
 
 **Hecho:** tabla principal con imagen/nombre/SKU, precio y stock inline,

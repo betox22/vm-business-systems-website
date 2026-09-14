@@ -75,6 +75,9 @@ function resetView() {
   state.editorOpen = false;
   state.notice = "";
   content.innerHTML = "";
+  document.querySelector("#editDesignButton").hidden = true;
+  document.querySelector("#designProjectDialog")?.close?.();
+  document.querySelector("#designProjectChoices").textContent = "";
   document.querySelector("#sellerStoreName").textContent = "Mi tienda";
   showLogin("Inicia sesion para continuar.");
 }
@@ -121,6 +124,7 @@ async function loadPortal() {
     const result = await apiRequest(productsPath());
     if (epoch !== state.epoch) return;
     state.authenticated = true;
+    document.querySelector("#editDesignButton").hidden = false;
     state.products = result.products;
     loginScreen.classList.add("hidden");
     document.querySelector("#sellerStoreName").textContent = "Mi catalogo";
@@ -129,6 +133,7 @@ async function loadPortal() {
   } catch (error) {
     if (epoch !== state.epoch && error.status !== 401) return;
     state.authenticated = false;
+    document.querySelector("#editDesignButton").hidden = true;
     state.products = [];
     content.innerHTML = "";
     showLogin(error.message);
@@ -381,4 +386,44 @@ document.querySelector("#sellerLogoutButton").addEventListener("click", async ()
   catch { showLogin("No se pudo cerrar la sesion del servidor. Vuelve a intentarlo."); }
 });
 document.querySelector("#refreshButton").addEventListener("click", loadPortal);
+function projectsForStore(projects, storeId) {
+  return projects.filter(project => project.store_id === storeId);
+}
+function projectEditorUrl(projectId) {
+  const url = new URL("/client/setup/", window.location.origin);
+  url.searchParams.set("project_id", projectId);
+  return url.href;
+}
+async function openStoreDesign() {
+  if (!state.authenticated) return;
+  const button = document.querySelector("#editDesignButton");
+  const dialog = document.querySelector("#designProjectDialog");
+  const choices = document.querySelector("#designProjectChoices");
+  const epoch = state.epoch;
+  button.disabled = true;
+  try {
+    const result = await apiRequest("/api/client/projects");
+    // Rolling deployments: older listings omit store_id; the owner-checked detail has it.
+    for (const project of result.projects || []) {
+      if (project.store_id != null) continue;
+      const detail = await apiRequest(`/api/client/projects/${encodeURIComponent(project.id)}`);
+      if (epoch !== state.epoch || !state.authenticated) return;
+      project.store_id = detail.business_id;
+    }
+    if (epoch !== state.epoch || !state.authenticated) return;
+    const projects = projectsForStore(result.projects || [], state.businessId);
+    if (projects.length === 1) { window.location.href = projectEditorUrl(projects[0].id); return; }
+    choices.innerHTML = projects.length ? projects.map(project => `<button class="secondary-button design-project-choice" type="button" data-design-project="${escapeHtml(project.id)}"><strong>${escapeHtml(project.business_name)}</strong><span>${escapeHtml(project.template_name)} · ${escapeHtml(project.status)}</span></button>`).join("") : '<p>No hay paginas asociadas a esta tienda.</p>';
+    dialog.showModal();
+  } catch (error) {
+    if (epoch !== state.epoch || !state.authenticated) return;
+    choices.textContent = error.message;
+    dialog.showModal();
+  } finally { button.disabled = false; }
+}
+document.querySelector("#editDesignButton")?.addEventListener("click", openStoreDesign);
+document.querySelector("#designProjectChoices")?.addEventListener("click", event => {
+  const button = event.target.closest("[data-design-project]");
+  if (button && state.authenticated) window.location.href = projectEditorUrl(button.dataset.designProject);
+});
 (async () => { if (!await captureAuthRedirect()) await loadPortal(); })();

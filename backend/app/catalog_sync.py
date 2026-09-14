@@ -113,6 +113,7 @@ def apply_commerce_overlay(catalog_items: list, site: GeneratedSite, session: Se
             label = f"{from_label} {label}"
         item.update(
             name=product.name, description=product.description, image_url=product.image_url,
+            category=product.category,
             price=amount, price_amount=amount, price_value=amount,
             price_type=price_type, price_label=label, inventory_quantity=product.inventory,
         )

@@ -6838,10 +6838,13 @@
       });
     }, CLIENT_AUTH_SLOW_NOTICE_DELAY_MS);
   }
+  function requestedClientProjectId() {
+    return new URLSearchParams(window.location.search).get("project_id")?.trim() || "";
+  }
   function initClientIntakeSessionGate() {
     if (!isPublicClientSetup) return;
     ensureStudioAuthRedirectCaptured();
-    if (storedClientAccessToken()) {
+    if (storedClientAccessToken() || requestedClientProjectId()) {
       showStudioAuthLoading();
       resumeClientSessionFromAuthToken();
       return;
@@ -7062,9 +7065,9 @@
     renderClientAccountControl();
     openStudioAuthGate("start");
   }
-  async function fetchClientAuthUser() {
+  async function fetchClientAuthUser({ allowCookie = false } = {}) {
     const token = storedClientAccessToken();
-    if (!token) {
+    if (!token && !allowCookie) {
       console.error("Cannot validate client auth: no stored access token.");
       return null;
     }
@@ -7095,7 +7098,7 @@
           throw lastError;
         }
       } catch (error) {
-        if (!storedClientAccessToken()) throw error;
+        if (!storedClientAccessToken() && !allowCookie) throw error;
         lastError = error;
         const status = Number(error?.authValidationStatus) || 0;
         if (!shouldRetryClientAuthValidation({ attempt, status })) throw error;
@@ -7552,7 +7555,7 @@
       generatedSiteId: builderState.currentSiteId,
       storage_status: data.storage_status || "stored",
       used_dev_mock: false
-    });
+    }, { persist: false });
     siteTitle.textContent = builderState.currentSchema.business?.name || "Generated site";
     storageStatus.textContent = storageLabel(data.storage_status || "stored", false);
     renderEditor();
@@ -7566,9 +7569,23 @@
     showStudioAuthLoading();
     builderState.clientAuthResumePromise = (async () => {
       try {
-        const user = await fetchClientAuthUser();
+        const projectId = requestedClientProjectId();
+        const user = await fetchClientAuthUser({ allowCookie: Boolean(projectId) });
         const email = user?.email || "";
         if (!email) throw new Error("Authenticated user email missing.");
+        if (projectId) {
+          builderState.clientAuthStatus = "authenticated";
+          builderState.authenticatedClientEmail = email;
+          await loadClientProject(projectId);
+          markClientWorkspaceUnlocked();
+          closeStudioAuthGate();
+          renderClientAccountControl();
+          if (storageStatus) storageStatus.textContent = langText({
+            es: "Editando el diseno guardado. Los ultimos cambios de comercio pueden no aparecer aqui; guardar un catalogo desactualizado puede afectar esos cambios.",
+            en: "Editing the saved design. Recent commerce changes may not appear here; saving an outdated catalog may affect those changes."
+          });
+          return builderState.clientIntakeSession;
+        }
         const name = user?.userMetadata?.full_name || user?.userMetadata?.name || builderState.guidedState.businessName || "";
         const session = await createOrResumeClientIntakeSession({
           email,
@@ -11530,7 +11547,7 @@ ${langText({
     }
     return clientSiteSaveInFlight;
   }
-  function saveGeneratedSite(result) {
+  function saveGeneratedSite(result, { persist = true } = {}) {
     if (!isPublicClientSetup) return;
     try {
       localStorage.setItem(
@@ -11544,7 +11561,7 @@ ${langText({
       );
     } catch {
     }
-    return persistGeneratedSiteForClient(result);
+    if (persist) return persistGeneratedSiteForClient(result);
   }
   function restoreGeneratedSite() {
     if (!isPublicClientSetup) return;

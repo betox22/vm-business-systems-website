@@ -1319,6 +1319,7 @@ def persist_generated_site(
 def _project_item(site: GeneratedSite) -> Dict[str, Any]:
     return {
         "id": site.id,
+        "store_id": site.store_id,
         "business_name": site.business_name,
         "template_name": site.template_name,
         "status": site.status,

@@ -2490,7 +2490,7 @@ export function persistGeneratedSiteForClient(result = {}) {
   return clientSiteSaveInFlight;
 }
 
-export function saveGeneratedSite(result) {
+export function saveGeneratedSite(result, { persist = true } = {}) {
   if (!isPublicClientSetup) return;
   try {
     localStorage.setItem(
@@ -2505,7 +2505,7 @@ export function saveGeneratedSite(result) {
   } catch {
     // Generated previews can be large; if storage is full, keep the live preview only.
   }
-  return persistGeneratedSiteForClient(result);
+  if (persist) return persistGeneratedSiteForClient(result);
 }
 
 function restoreGeneratedSite() {
