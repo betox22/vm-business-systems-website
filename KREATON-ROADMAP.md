@@ -168,6 +168,20 @@ La referencia compartida muestra el tipo de resultado que KREATON quiere vender:
 
 ## Pendientes nuevos por definir
 
+### Editor visual universal (editar todo, no solo campos reconocidos)
+
+**Prioridad:** ALTA. Brecha principal reportada para alcanzar un editor de nivel profesional comparable a Wix/Shopify.
+
+**Estado:** pendiente de diseno arquitectonico propio, sin implementacion autorizada.
+
+**Problema:** la edicion quirurgica de LYRA depende de los campos que `surgical-edit-policy.js` reconoce (color, texto de seccion, nombre de producto o imagen puntual). La cobertura inline existente tampoco permite seleccionar cualquier elemento visible y modificarlo directamente: banners, ofertas, layout y textos fuera de los paths instrumentados siguen sin edicion universal.
+
+**Objetivo:** editor click-to-edit sobre la pagina renderizada real, con edicion in-place de cualquier elemento visible, no un formulario aparte ni una capacidad condicionada a que LYRA reconozca previamente ese campo.
+
+**Alcance al retomar:** disenar primero una arquitectura de identificadores editables estables para los elementos del sitio generado, mas alla de los paths ya mapeados. Evaluar como representar y persistir contenido, banners, ofertas y layout, conservando los flujos de edicion y comercio que ya funcionan. La necesidad y forma exacta de esos identificadores debe validarse en el diseno, no asumirse como una solucion ya implementada.
+
+**Criterio de salida:** propuesta arquitectonica revisada y aprobada antes de tocar codigo; posteriormente, demostrar edicion directa y persistente de elementos actualmente no cubiertos sobre el sitio renderizado. Registrar este pendiente no autoriza su implementacion.
+
 ### Idioma del sitio generado vs. idioma de la conversacion con LYRA
 
 **Prioridad:** alta. Afecta a clientes reales cuyo mercado objetivo usa un idioma distinto al de la conversacion; no es solo un detalle de interfaz.
