@@ -142,12 +142,17 @@ class StripeBillingTests(unittest.TestCase):
                 asyncio.run(billing.subscription_checkout(payload, session=self.session))
             checkout.assert_not_called()
 
-    def test_zero_trial_omits_stripe_parameter(self):
+    def test_zero_trial_omits_stripe_parameter_and_method_switch_is_rejected(self):
         payload = billing.SubscriptionCheckoutRequest(product="kreaton", planId="level_a", businessRef="store_1",
             successUrl="https://example.test", cancelUrl="https://example.test", legalConsent=True, legalConsentVersion="en:test")
         with patch.object(billing, "_user", return_value={"id": "user_1"}), patch.dict("os.environ", {"STRIPE_KREATON_LEVEL_A_PRICE_ID": "price_test_a", "STRIPE_KREATON_TRIAL_DAYS": "0"}), patch.object(billing, "checkout_session", return_value={"url": "https://example.test"}) as checkout:
             asyncio.run(billing.subscription_checkout(payload, session=self.session))
             self.assertNotIn("trial_period_days", checkout.call_args.kwargs)
+            checkout.reset_mock()
+            payload.paymentMethod = "manual"
+            with self.assertRaisesRegex(Exception, "explicit subscription migration"):
+                asyncio.run(billing.subscription_checkout(payload, session=self.session))
+            checkout.assert_not_called()
 
     def test_webhooks_update_subscription_once(self) -> None:
         record = PlatformSubscription(product="listo_pos", business_ref="business_7", owner_email="owner@example.com")

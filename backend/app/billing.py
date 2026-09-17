@@ -31,6 +31,7 @@ PRICE_ENV = {
 class SubscriptionCheckoutRequest(BaseModel):
     product: Product
     planId: str = Field(default="", max_length=80)
+    manualPaymentReference: Optional[str] = Field(default=None, max_length=240)
     businessRef: str = Field(min_length=1, max_length=160)
     countryCode: str = Field(default="US", min_length=2, max_length=2)
     paymentMethod: PaymentMethod = "stripe"
@@ -77,15 +78,28 @@ def _user(authorization: str) -> Dict[str, Any]:
 
 
 def _record(session: Session, payload: SubscriptionCheckoutRequest, email: str) -> PlatformSubscription:
-    record = session.scalar(select(PlatformSubscription).where(PlatformSubscription.product == payload.product, PlatformSubscription.business_ref == payload.businessRef))
+    statement = select(PlatformSubscription).where(PlatformSubscription.product == payload.product, PlatformSubscription.business_ref == payload.businessRef)
+    if payload.product == "kreaton":
+        statement = statement.with_for_update()
+    record = session.scalar(statement)
+    if record and payload.product == "kreaton":
+        if record.payment_method != payload.paymentMethod:
+            raise HTTPException(status_code=409, detail="Payment method changes require an explicit subscription migration.")
+        if payload.paymentMethod == "manual" and record.status != "pending_manual_confirmation":
+            raise HTTPException(status_code=409, detail="This manual subscription is no longer pending confirmation.")
     if not record:
         record = PlatformSubscription(product=payload.product, business_ref=payload.businessRef)
+        if payload.product == "kreaton" and payload.paymentMethod == "manual":
+            # Manual trial uses the local request time, not a Stripe subscription date.
+            record.trial_end = int(time.time()) + kreaton_trial_days() * 86400
         session.add(record)
     record.owner_email = email
     record.country_code = payload.countryCode.upper()
     record.payment_method = payload.paymentMethod
     if payload.product == "kreaton":
         record.plan_id = payload.planId
+        if payload.paymentMethod == "manual" and "manualPaymentReference" in payload.model_fields_set:
+            record.manual_payment_reference = (payload.manualPaymentReference or "").strip() or None
         record.legal_consent_version = payload.legalConsentVersion.strip()
         record.legal_consent_language = payload.legalConsentLanguage
         record.legal_accepted_at = int(time.time())
@@ -120,11 +134,12 @@ async def subscription_checkout(
 ) -> Dict[str, Any]:
     user = _user(authorization) if payload.product == "kreaton" else {}
     _authorize_product(session, payload, user, listo_billing_key)
+    if payload.product == "kreaton":
+        # Serialize first creation as well as retries for the same store.
+        session.execute(select(Store.id).where(Store.id == payload.businessRef).with_for_update())
     owner_email = str(user.get("email") or payload.ownerEmail).strip().lower()
     record = _record(session, payload, owner_email)
     if payload.paymentMethod == "manual":
-        if payload.product == "kreaton":
-            raise HTTPException(status_code=400, detail="KREATON subscriptions use Stripe billing.")
         record.status = "pending_manual_confirmation"
         record.stripe_price_id = None
         session.commit()
@@ -182,7 +197,7 @@ def process_billing_event(session: Session, event: Dict[str, Any]) -> None:
         record = session.scalar(select(PlatformSubscription).where(PlatformSubscription.stripe_subscription_id == str(subscription_ref)))
     if not record and obj.get("id") and event_type.startswith("customer.subscription."):
         record = session.scalar(select(PlatformSubscription).where(PlatformSubscription.stripe_subscription_id == str(obj["id"])))
-    if record:
+    if record and not (record.product == "kreaton" and record.payment_method == "manual"):
         # Zero-amount trial invoices and late Checkout events must not end a known trial.
         in_trial = record.product == "kreaton" and record.status == "trialing" and (record.trial_end or 0) > int(time.time())
         if event_type == "checkout.session.completed":

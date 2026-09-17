@@ -36,7 +36,7 @@ from .commerce import router as commerce_router
 from .catalog_sync import apply_commerce_overlay, sync_site_catalog_to_commerce
 from .billing import router as billing_router
 from .db import get_session, init_db
-from .db_models import GeneratedSite, Store
+from .db_models import GeneratedSite, Store, PlatformSubscription
 from .domains import router as domains_router
 from .operations import router as operations_router
 from .models import (
@@ -739,6 +739,45 @@ async def admin_auth_logout(
         )
     clear_admin_session_cookie(response)
     return {"status": "logged_out"}
+
+
+@app.post("/api/admin/subscriptions/{subscription_id}/confirm-manual")
+async def confirm_manual_subscription(
+    subscription_id: str,
+    request: Request,
+    authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    _enforce_rate_limit(request, "admin_manual_subscription_confirm", limit=30)
+    identity = _authenticated_admin_identity(authorization, kreaton_admin_session)
+    audit_args = dict(actor=identity, action="admin.subscription.manual_confirmed",
+                      target_type="platform_subscription", target_id=subscription_id,
+                      request_id=request.state.request_id)
+    try:
+        require_admin_permission(identity, "subscriptions:write")
+    except HTTPException:
+        record_admin_audit_event(session, **audit_args, outcome="denied",
+                                 metadata={"reason": "permission_denied"})
+        raise
+    record = session.scalar(select(PlatformSubscription).where(
+        PlatformSubscription.id == subscription_id,
+        PlatformSubscription.product == "kreaton",
+    ).with_for_update())
+    if not record:
+        record_admin_audit_event(session, **audit_args, outcome="failure", metadata={"reason": "not_found"})
+        raise HTTPException(status_code=404, detail="KREATON subscription not found.")
+    if record.payment_method != "manual" or record.status != "pending_manual_confirmation":
+        record_admin_audit_event(session, **audit_args, outcome="failure", metadata={"reason": "not_pending_manual"})
+        raise HTTPException(status_code=409, detail="Subscription is not awaiting manual confirmation.")
+    record.status = "active"
+    # Existing audit helper commits both the transition and event, or rolls both back.
+    audit = record_admin_audit_event(session, **audit_args, outcome="success",
+        metadata={"fromStatus": "pending_manual_confirmation", "toStatus": "active",
+                  "planId": record.plan_id, "referencePresent": bool(record.manual_payment_reference)})
+    return {"subscriptionId": record.id, "status": record.status,
+            "confirmedBy": audit.actor_user_id, "confirmedAt": audit.created_at,
+            "auditEventId": audit.id}
 
 
 @app.get("/api/admin/clients")

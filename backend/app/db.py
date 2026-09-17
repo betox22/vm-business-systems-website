@@ -73,6 +73,7 @@ def _ensure_additive_columns() -> None:
         "platform_subscriptions": {
             "plan_id": "plan_id VARCHAR NOT NULL DEFAULT ''",
             "trial_end": "trial_end BIGINT",
+            "manual_payment_reference": "manual_payment_reference VARCHAR",
             "legal_consent_version": "legal_consent_version VARCHAR",
             "legal_consent_language": "legal_consent_language VARCHAR",
             "legal_accepted_at": "legal_accepted_at BIGINT",

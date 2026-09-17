@@ -178,6 +178,7 @@ class PlatformSubscription(Base):
     stripe_price_id: Mapped[Optional[str]] = mapped_column(nullable=True)
     plan_id: Mapped[str] = mapped_column(default="", server_default="", nullable=False)
     trial_end: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    manual_payment_reference: Mapped[Optional[str]] = mapped_column(nullable=True)
     status: Mapped[str] = mapped_column(default="not_started")
     current_period_end: Mapped[Optional[int]] = mapped_column(nullable=True)
     legal_consent_version: Mapped[Optional[str]] = mapped_column(nullable=True)
