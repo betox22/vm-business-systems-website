@@ -28,6 +28,7 @@ def checkout_session(
     stripe_account: Optional[str] = None,
     application_fee_amount: Optional[int] = None,
     subscription_metadata: Optional[Dict[str, str]] = None,
+    trial_period_days: Optional[int] = None,
 ) -> Dict[str, Any]:
     params: Dict[str, Any] = {
         "mode": mode,
@@ -42,6 +43,10 @@ def checkout_session(
         params["payment_intent_data"] = {"application_fee_amount": application_fee_amount}
     if subscription_metadata:
         params["subscription_data"] = {"metadata": subscription_metadata}
+    if trial_period_days is not None:
+        if mode != "subscription" or isinstance(trial_period_days, bool) or not isinstance(trial_period_days, int) or not 1 <= trial_period_days <= 730:
+            raise HTTPException(status_code=422, detail="Trial requires subscription mode and 1..730 days.")
+        params.setdefault("subscription_data", {})["trial_period_days"] = trial_period_days
     try:
         session = _client().v1.checkout.sessions.create(params, options={"stripe_account": stripe_account} if stripe_account else None)
     except stripe.StripeError as exc:

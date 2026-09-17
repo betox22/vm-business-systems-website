@@ -4,7 +4,7 @@ import time
 import uuid
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Index, Text, UniqueConstraint, event, false
+from sqlalchemy import BigInteger, ForeignKey, Index, Text, UniqueConstraint, event, false
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -176,6 +176,8 @@ class PlatformSubscription(Base):
     stripe_customer_id: Mapped[Optional[str]] = mapped_column(nullable=True)
     stripe_subscription_id: Mapped[Optional[str]] = mapped_column(nullable=True, unique=True)
     stripe_price_id: Mapped[Optional[str]] = mapped_column(nullable=True)
+    plan_id: Mapped[str] = mapped_column(default="", server_default="", nullable=False)
+    trial_end: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     status: Mapped[str] = mapped_column(default="not_started")
     current_period_end: Mapped[Optional[int]] = mapped_column(nullable=True)
     legal_consent_version: Mapped[Optional[str]] = mapped_column(nullable=True)
