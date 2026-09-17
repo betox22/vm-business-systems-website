@@ -10,12 +10,18 @@ import {
   templateUpdatePayload,
 } from "../admin/kreaton-admin-policy.js?v=2";
 
+import { mountPlans } from "./plans.js?v=1";
+const planNav = document.createElement("button");
+planNav.type = "button"; planNav.dataset.view = "plans";
+planNav.innerHTML = '<i data-icon="card"></i><span>Planes KREATON</span>';
+document.querySelector('[data-view="payments"]').after(planNav);
 const API_BASE = String(window.LUMA_API_BASE_URL || "").replace(/\/$/, "");
 const SUPABASE_URL = "https://rzdidqclbvnqqlcaueoh.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6ZGlkcWNsYnZucXFsY2F1ZW9oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxOTY3NzUsImV4cCI6MjA5Mzc3Mjc3NX0.R6gl2jmRRaXDzOzh_QdsAlzdzvdSyfp0muCEJGnJku0";
 
 const state = { identity: null, view: "overview", overview: null, items: [], clients: [], templates: [], confirmAction: null, product: "all" };
 const meta = {
+  plans: ["SUSCRIPCIONES", "Planes KREATON", "Precios y trials para nuevas suscripciones."],
   overview: ["PORTAFOLIO", "Inicio", "Estado general de tus productos."],
   requests: ["COLA OPERATIVA", "Solicitudes", "Borradores y trabajos que todavía requieren atención."],
   businesses: ["CUENTAS", "Negocios", "Tiendas y negocios registrados en KREATON."],
@@ -54,7 +60,7 @@ function showApp(){ document.querySelector("#loginScreen").classList.add("hidden
 function loading(){ document.querySelector("#content").innerHTML='<div class="surface empty"><span class="spinner"></span><p>Cargando datos reales...</p></div>'; }
 function error(message){ document.querySelector("#content").innerHTML=`<div class="surface empty"><h2>No pudimos cargar esta vista</h2><p>${esc(message)}</p><button class="primary-button" data-retry>Reintentar</button></div>`; }
 function setChrome(){ const [k,t,s]=meta[state.view];document.querySelector("#viewKicker").textContent=k;document.querySelector("#viewTitle").textContent=t;document.querySelector("#viewSubtitle").textContent=s;document.querySelectorAll("#mainNav button").forEach(b=>b.classList.toggle("active",b.dataset.view===state.view)); }
-async function load(view){ state.view=view;setChrome();loading();try{ if(view==="overview")state.overview=await api("/overview");else if(view==="clients"){const body=await adminApi("/api/admin/clients?per_page=100");state.clients=body.clients||[];}else if(view==="templates"){const body=await adminApi("/api/admin/templates");state.templates=body.templates||[];}else state.items=(await api(paths[view])).items||[];render(); }catch(e){if(e.status===401){showLogin("Tu sesión terminó.");return;}error(e.message);} }
+async function load(view){ state.view=view;setChrome();loading();try{ if(view==="plans"){const body=await adminApi("/api/admin/plans");mountPlans(document.querySelector("#content"),{...body,api:adminApi,reload:()=>load("plans")});return;} if(view==="overview")state.overview=await api("/overview");else if(view==="clients"){const body=await adminApi("/api/admin/clients?per_page=100");state.clients=body.clients||[];}else if(view==="templates"){const body=await adminApi("/api/admin/templates");state.templates=body.templates||[];}else state.items=(await api(paths[view])).items||[];render(); }catch(e){if(e.status===401){showLogin("Tu sesión terminó.");return;}error(e.message);} }
 function stats(){ const o=state.overview;if(!o){document.querySelector("#stats").innerHTML="";return;} const rows=[[o.businesses,"Negocios"],[o.publishedSites,"Sitios publicados"],[o.orders,"Pedidos"],[money(o.revenueCents),"Ventas registradas"]];document.querySelector("#stats").innerHTML=rows.map(([v,l])=>`<article><strong>${esc(v)}</strong><span>${l}</span></article>`).join(""); }
 function surface(title,subtitle,body,action=""){return `<section class="surface"><header><div><h2>${title}</h2><p>${subtitle}</p></div>${action}</header>${body}</section>`;}
 function empty(label){return `<div class="empty"><h3>No hay ${label}</h3><p>Esta vista usa datos reales. No mostramos registros de demostración cuando la fuente está vacía.</p></div>`;}

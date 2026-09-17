@@ -163,6 +163,20 @@ class StripeConnectAccount(Base):
     updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
 
 
+class PlatformPlan(Base):
+    __tablename__ = "platform_plans"
+
+    product: Mapped[str] = mapped_column(primary_key=True)
+    plan_id: Mapped[str] = mapped_column(primary_key=True)
+    display_name: Mapped[str]
+    stripe_price_id: Mapped[str]
+    trial_days: Mapped[int] = mapped_column(default=0)
+    active: Mapped[bool] = mapped_column(default=True)
+    version: Mapped[int] = mapped_column(default=1)
+    created_at: Mapped[int] = mapped_column(default=_now)
+    updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
+
+
 class PlatformSubscription(Base):
     __tablename__ = "platform_subscriptions"
     __table_args__ = (UniqueConstraint("product", "business_ref", name="platform_subscription_product_business_key"),)

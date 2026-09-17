@@ -46,6 +46,8 @@ def init_db() -> None:
     Base.metadata.create_all(bind=engine)
     ensure_admin_audit_append_only(engine)
     _ensure_additive_columns()
+    from .platform_plans import bootstrap_plans
+    bootstrap_plans(engine)
 
 
 def _ensure_additive_columns() -> None:

@@ -17,6 +17,38 @@ def _client() -> stripe.StripeClient:
     return stripe.StripeClient(key, stripe_version=STRIPE_API_VERSION)
 
 
+def _test_plan_client():
+    if not os.getenv("STRIPE_SECRET_KEY", "").strip().startswith(("sk_test_", "rk_test_")):
+        raise HTTPException(503, "Plan pricing administration currently requires Stripe test mode.")
+    return _client()
+
+
+def read_plan_price(price_id: str) -> Dict[str, Any]:
+    try:
+        price = _test_plan_client().v1.prices.retrieve(price_id).to_dict_recursive()
+    except stripe.StripeError as exc:
+        raise HTTPException(502, "Could not validate the Stripe Price.") from exc
+    recurring = price.get("recurring") or {}
+    if (price.get("livemode") is not False or not price.get("active") or
+            price.get("type") != "recurring" or recurring.get("usage_type") != "licensed" or
+            price.get("billing_scheme") != "per_unit" or price.get("currency") != "usd" or
+            not isinstance(price.get("unit_amount"), int) or price["unit_amount"] <= 0):
+        raise HTTPException(422, "Expected an active test USD recurring per-unit licensed Price.")
+    return price
+
+
+def create_plan_price(previous_price_id: str, amount_cents: int, idempotency_key: str) -> str:
+    previous = read_plan_price(previous_price_id)
+    params = {"product": previous["product"], "currency": previous["currency"],
+              "unit_amount": amount_cents, "tax_behavior": previous.get("tax_behavior", "unspecified"),
+              "recurring": {key: previous["recurring"][key] for key in ("interval", "interval_count", "usage_type")}}
+    try:
+        price = _test_plan_client().v1.prices.create(params, options={"idempotency_key": f"kreaton-plan-{idempotency_key}"})
+    except stripe.StripeError as exc:
+        raise HTTPException(502, "Could not create the replacement Stripe Price.") from exc
+    return price.id
+
+
 def checkout_session(
     *,
     mode: str,

@@ -16,8 +16,12 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from .admin_audit import list_admin_audit_events, record_admin_audit_event
+from .platform_plans import PlanCreate, PlanEdit, PlanPriceEdit, create_plan, update_plan, plan_dict
+from .db_models import PlatformPlan
+from .manual_trial_expiry import expire_manual_trials
 from .admin_auth import (
     admin_identity_from_user,
     clear_admin_session_cookie,
@@ -779,6 +783,95 @@ async def confirm_manual_subscription(
     return {"subscriptionId": record.id, "status": record.status,
             "confirmedBy": audit.actor_user_id, "confirmedAt": audit.created_at,
             "auditEventId": audit.id}
+
+
+def _plan_admin(request, session, authorization, cookie, *, write):
+    _enforce_rate_limit(request, "admin_plans", limit=60)
+    identity = _authenticated_admin_identity(authorization, cookie)
+    try:
+        require_admin_permission(identity, "subscriptions:write" if write else "subscriptions:read")
+    except HTTPException:
+        record_admin_audit_event(session, actor=identity, action="admin.plan.access",
+            target_type="platform_plan", target_id="kreaton", outcome="denied",
+            request_id=request.state.request_id)
+        raise
+    return identity
+
+
+def _plan_write(session, identity, request, plan_id, operation):
+    try:
+        return {"plan": operation()}
+    except (HTTPException, IntegrityError) as exc:
+        session.rollback()
+        status = exc.status_code if isinstance(exc, HTTPException) else 409
+        record_admin_audit_event(session, actor=identity, action="admin.plan.change_failed",
+            target_type="platform_plan", target_id=plan_id, outcome="failure",
+            request_id=request.state.request_id, metadata={"statusCode": status})
+        if isinstance(exc, IntegrityError):
+            raise HTTPException(409, "Plan already exists or changed concurrently.") from exc
+        raise
+
+
+@app.get("/api/admin/plans")
+async def admin_plans(request: Request, authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""), session: Session = Depends(get_session)):
+    identity = _plan_admin(request, session, authorization, kreaton_admin_session, write=False)
+    plans = session.scalars(select(PlatformPlan).where(PlatformPlan.product == "kreaton")
+        .order_by(PlatformPlan.created_at, PlatformPlan.plan_id)).all()
+    result = [plan_dict(plan) for plan in plans]
+    record_admin_audit_event(session, actor=identity, action="admin.plan.listed",
+        target_type="platform_plan", target_id="kreaton", outcome="success", request_id=request.state.request_id)
+    return {"plans": result, "canWrite": identity["role"] == "super_admin"}
+
+
+@app.post("/api/admin/plans")
+async def admin_create_plan(payload: PlanCreate, request: Request, authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""), session: Session = Depends(get_session)):
+    identity = _plan_admin(request, session, authorization, kreaton_admin_session, write=True)
+    return _plan_write(session, identity, request, payload.planId,
+        lambda: create_plan(session, payload, identity, request.state.request_id))
+
+
+@app.patch("/api/admin/plans/{plan_id}")
+async def admin_edit_plan(plan_id: str, payload: PlanEdit, request: Request,
+    authorization: str = Header(default=""), kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session)):
+    identity = _plan_admin(request, session, authorization, kreaton_admin_session, write=True)
+    return _plan_write(session, identity, request, plan_id,
+        lambda: update_plan(session, plan_id, payload, identity, request.state.request_id))
+
+
+@app.post("/api/admin/plans/{plan_id}/price")
+async def admin_replace_plan_price(plan_id: str, payload: PlanPriceEdit, request: Request,
+    authorization: str = Header(default=""), kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session)):
+    identity = _plan_admin(request, session, authorization, kreaton_admin_session, write=True)
+    return _plan_write(session, identity, request, plan_id,
+        lambda: update_plan(session, plan_id, payload, identity, request.state.request_id))
+
+
+@app.get("/api/admin/plans/{plan_id}/price")
+async def admin_plan_price(plan_id: str, request: Request, authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""), session: Session = Depends(get_session)):
+    identity = _plan_admin(request, session, authorization, kreaton_admin_session, write=False)
+    plan = session.get(PlatformPlan, ("kreaton", plan_id))
+    if not plan:
+        raise HTTPException(404, "Plan not found.")
+    from .stripe_gateway import read_plan_price
+    price = read_plan_price(plan.stripe_price_id)
+    record_admin_audit_event(session, actor=identity, action="admin.plan.price_viewed",
+        target_type="platform_plan", target_id=plan_id, outcome="success", request_id=request.state.request_id)
+    return {"priceId": price["id"], "amountCents": price["unit_amount"],
+            "currency": price["currency"], "interval": price["recurring"]["interval"],
+            "intervalCount": price["recurring"]["interval_count"], "livemode": False}
+
+
+@app.post("/api/admin/subscriptions/expire-manual-trials")
+async def admin_expire_manual_trials(request: Request, limit: int = Query(default=100, ge=1, le=500),
+    authorization: str = Header(default=""), kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session)):
+    identity = _plan_admin(request, session, authorization, kreaton_admin_session, write=True)
+    return expire_manual_trials(session, identity, request.state.request_id, limit=limit)
 
 
 @app.get("/api/admin/clients")

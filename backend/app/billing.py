@@ -77,7 +77,7 @@ def _user(authorization: str) -> Dict[str, Any]:
     return user
 
 
-def _record(session: Session, payload: SubscriptionCheckoutRequest, email: str) -> PlatformSubscription:
+def _record(session: Session, payload: SubscriptionCheckoutRequest, email: str, trial_days: Optional[int] = None) -> PlatformSubscription:
     statement = select(PlatformSubscription).where(PlatformSubscription.product == payload.product, PlatformSubscription.business_ref == payload.businessRef)
     if payload.product == "kreaton":
         statement = statement.with_for_update()
@@ -91,7 +91,7 @@ def _record(session: Session, payload: SubscriptionCheckoutRequest, email: str) 
         record = PlatformSubscription(product=payload.product, business_ref=payload.businessRef)
         if payload.product == "kreaton" and payload.paymentMethod == "manual":
             # Manual trial uses the local request time, not a Stripe subscription date.
-            record.trial_end = int(time.time()) + kreaton_trial_days() * 86400
+            record.trial_end = int(time.time()) + (kreaton_trial_days() if trial_days is None else trial_days) * 86400
         session.add(record)
     record.owner_email = email
     record.country_code = payload.countryCode.upper()
@@ -138,7 +138,11 @@ async def subscription_checkout(
         # Serialize first creation as well as retries for the same store.
         session.execute(select(Store.id).where(Store.id == payload.businessRef).with_for_update())
     owner_email = str(user.get("email") or payload.ownerEmail).strip().lower()
-    record = _record(session, payload, owner_email)
+    plan_price, plan_trial = None, None
+    if payload.product == "kreaton":
+        from .platform_plans import resolve_plan
+        plan_price, plan_trial = resolve_plan(session, payload.planId, manual=payload.paymentMethod == "manual")
+    record = _record(session, payload, owner_email, plan_trial)
     if payload.paymentMethod == "manual":
         record.status = "pending_manual_confirmation"
         record.stripe_price_id = None
@@ -146,12 +150,12 @@ async def subscription_checkout(
         return {"subscriptionId": record.id, "paymentMethod": "manual", "status": record.status}
 
     price_env = f"STRIPE_KREATON_{payload.planId.upper()}_PRICE_ID" if payload.product == "kreaton" else PRICE_ENV[payload.product]
-    price_id = os.getenv(price_env, "").strip()
+    price_id = plan_price if payload.product == "kreaton" else os.getenv(price_env, "").strip()
     if not price_id:
         raise HTTPException(status_code=503, detail=f"{price_env} is not configured.")
     trial_options = {}
     if payload.product == "kreaton":
-        days = kreaton_trial_days()
+        days = plan_trial
         if days:
             trial_options["trial_period_days"] = days
         # Materialize the record ID before copying it into Stripe metadata.
