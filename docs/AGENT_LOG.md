@@ -16,6 +16,43 @@ Formato de entrada:
 
 ---
 
+## 2026-09-17 — Codex — Express, ciclo de pago, registro de planes y vencimiento manual
+
+**Hecho:** cuentas Connect nuevas usan Express. Webhook de tienda reconcilia los
+cuatro eventos Checkout contra Stripe vigente, valida cuenta/sesion/importe/moneda/
+ambiente y repone inventario una sola vez en fallo/expiracion. El retorno consulta
+el estado persistido antes de limpiar solo el carrito correspondiente, sin borrar
+items agregados despues del pago. Impuestos y application fee sin cambios.
+
+KB-3 agrega platform_plans, importacion idempotente del level_a configurado al
+arrancar, prioridad DB sobre env y pantalla Planes KREATON en el admin existente.
+Super-admin escribe, support solo consulta. Crear/asignar un precio usa un Stripe
+Price NUEVO, con idempotencia y version optimista; nunca modifica suscripciones.
+La administracion de precios rechaza claves live en esta entrega. Cada cambio y
+la importacion inicial quedan auditados. Tabla nueva revoca acceso anon/authenticated
+en Postgres; no modifica tablas ni permisos existentes.
+
+KB-4 agrega POST /api/admin/subscriptions/expire-manual-trials (super-admin,
+lotes de hasta 500). Solo KREATON manual sin subscription ID de Stripe, vencido
+y pending_manual_confirmation/trialing pasa a past_due. Transicion y auditoria
+son atomicas por fila. Repetir no duplica efectos; no toca Listo ni trials Stripe.
+
+**Verificacion:** Python 387 passed, 40 subtests passed; Node 230 passed, 0 failed.
+Publicacion y dependencias ES verificadas. Chromium 1440/390: crear plan, editar,
+recargar con persistencia SQLite y reemplazar referencia de precio. Auth/Stripe
+son fixtures en esta QA local, NO una prueba nueva de Stripe en produccion.
+
+**Pendiente / abierto:** desplegar esta rama e importar level_a real en el arranque;
+programar invocacion periodica del endpoint KB-4; enforcement de acceso al sitio
+publicado es separado del estado past_due. No se implemento verificacion bancaria,
+impresion, etiquetas de envio ni activacion de fees. No se escribio en produccion.
+Un Price creado en Stripe seguido de fallo DB puede quedar sin referencia; el retry
+de la misma version/cantidad reutiliza su idempotency key, sin tocar suscripciones.
+
+**Evidencia:** C:\Users\alber\Projects\kreaton-evidence\plans-trial-safety\report.md.
+Rama aislada feature/kreaton-plans-trial-safety desde 24ffbbf; trabajo pendiente
+del editor shadow y Connect de otros worktrees conservado sin modificaciones.
+
 ## 2026-09-14 — Codex — Portal a editor por proyecto y categoria comercial
 
 **Hecho:** listado autenticado expone store_id. Portal resuelve por ID real,
