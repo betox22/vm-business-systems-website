@@ -48,6 +48,8 @@ class Store(Base):
     name: Mapped[str]
     business_type: Mapped[str]
     public_url: Mapped[str]
+    # Manual merchant rate, not jurisdiction-aware tax calculation.
+    tax_rate_bps: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
     status: Mapped[str] = mapped_column(default="published")
     created_at: Mapped[int] = mapped_column(default=_now)
     updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)

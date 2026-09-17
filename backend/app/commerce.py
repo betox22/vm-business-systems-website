@@ -353,6 +353,7 @@ def cart_response(cart_id: str, session: Session, business_id: Optional[str] = N
     # validates against real DB products -- no more silent stale-data path.
     lines = []
     subtotal = money(0)
+    tax_total = Decimal("0")
     for line in cart_lines(cart_id):
         if business_id and line.get("businessId") != business_id:
             continue
@@ -368,6 +369,11 @@ def cart_response(cart_id: str, session: Session, business_id: Optional[str] = N
         qty = int(line["quantity"])
         line_total = money(product.price) * qty
         subtotal += line_total
+        store = session.get(Store, store_id)
+        rate_bps = store.tax_rate_bps if store and store.tax_rate_bps is not None else 0
+        if not 0 <= rate_bps <= 10000:
+            raise HTTPException(status_code=409, detail="Invalid store tax configuration.")
+        tax_total += line_total * Decimal(rate_bps) / Decimal(10000)
         lines.append(
             {
                 "cartItemId": line["cartItemId"],
@@ -381,7 +387,7 @@ def cart_response(cart_id: str, session: Session, business_id: Optional[str] = N
             }
         )
     shipping = money(0) if subtotal else money(0)
-    tax = money(subtotal * Decimal("0.07"))
+    tax = money(tax_total)
     total = money(subtotal + shipping + tax)
     return {
         "cartId": cart_id,
@@ -675,6 +681,22 @@ def stripe_checkout_session(
         }
         for item in order["items"]
     ]
+    # Use the order's already-rounded tax, not a second tax-rate calculation.
+    tax_cents = price_to_cents(order.get("taxAmount", 0))
+    if tax_cents < 0:
+        raise HTTPException(status_code=409, detail="Order tax cannot be negative.")
+    if tax_cents:
+        line_items.append({
+            "price_data": {
+                "currency": "usd",
+                "product_data": {"name": "Tax"},
+                "unit_amount": tax_cents,
+            },
+            "quantity": 1,
+        })
+    charge_cents = sum(line["price_data"]["unit_amount"] * line["quantity"] for line in line_items)
+    if charge_cents != price_to_cents(order["total"]):
+        raise HTTPException(status_code=409, detail="Checkout amount does not match the order total.")
     fee_bps = max(0, min(int(os.getenv("STRIPE_CONNECT_APPLICATION_FEE_BPS", "0") or 0), 10000))
     fee_amount = int(order["total"] * 100 * fee_bps / 10000) if connected_account_id and fee_bps else None
     payload = create_stripe_session(

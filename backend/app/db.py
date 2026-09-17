@@ -59,6 +59,7 @@ def _ensure_additive_columns() -> None:
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
     migrations = {
+        "stores": {"tax_rate_bps": "tax_rate_bps INTEGER NOT NULL DEFAULT 0"},
         "products": {
             "description": "description TEXT",
             "image_url": "image_url VARCHAR",
@@ -77,7 +78,7 @@ def _ensure_additive_columns() -> None:
     }
     if engine.dialect.name == "sqlite":
         migrations.update({
-            "stores": {"owner_user_id": "owner_user_id TEXT"},
+            "stores": {**migrations["stores"], "owner_user_id": "owner_user_id TEXT"},
             "generated_sites": {"owner_user_id": "owner_user_id TEXT"},
             "orders": {
                 "items_json": "items_json TEXT DEFAULT '[]'",
