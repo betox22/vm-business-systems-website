@@ -62,7 +62,7 @@ def construct_event(raw_body: bytes, signature: str, secret: str) -> Dict[str, A
 
 
 def create_connected_account(*, email: str, display_name: str, country: str) -> str:
-    """Create a new Accounts v2 merchant with Stripe-hosted full dashboard.
+    """Create a new Accounts v2 merchant with Stripe-hosted Express dashboard.
 
     Stripe collects requirements and the connected merchant owns fees/losses;
     KREATON never receives or holds the merchant's sale proceeds.
@@ -71,7 +71,7 @@ def create_connected_account(*, email: str, display_name: str, country: str) -> 
         "contact_email": email,
         "display_name": display_name,
         "identity": {"country": country.lower()},
-        "dashboard": "full",
+        "dashboard": "express",
         "defaults": {"responsibilities": {"fees_collector": "stripe", "losses_collector": "stripe"}},
         "configuration": {"merchant": {"capabilities": {"card_payments": {"requested": True}}}},
     }
@@ -109,3 +109,13 @@ def create_billing_portal(*, customer_id: str, return_url: str) -> str:
     except stripe.StripeError as exc:
         raise HTTPException(status_code=502, detail=f"Stripe billing portal failed: {exc.user_message or str(exc)}") from exc
     return portal.url
+
+
+def retrieve_store_checkout(session_id: str, account_id: Optional[str]) -> Dict[str, Any]:
+    try:
+        return dict(_client().v1.checkout.sessions.retrieve(
+            session_id, {"expand": ["payment_intent"]},
+            options={"stripe_account": account_id} if account_id else None,
+        ))
+    except stripe.StripeError as exc:
+        raise HTTPException(503, "Stripe payment reconciliation temporarily unavailable.") from exc

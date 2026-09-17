@@ -44,7 +44,21 @@ export function createCheckoutAttempt({ apiBase, businessId, lines, fetchRef = g
   };
 }
 
-export function openStorefrontCheckout({ site, items, apiBase, documentRef = document, locationRef = window.location }) {
+export async function reconcileCheckoutReturn({ site, cart, apiBase, locationRef = location, storage = sessionStorage, fetchRef = fetch }) {
+  const url = new URL(locationRef.href);
+  if (url.searchParams.get("checkout") !== "returned") return false;
+  const key = `kreaton:checkout:${cart.storageKey}`;
+  let receipt;
+  try { receipt = JSON.parse(storage.getItem(key) || "null"); } catch { return false; }
+  if (!receipt?.sessionId || receipt.businessId !== site.commerce?.businessId) return false;
+  const response = await fetchRef(`${apiBase}/api/v1/checkout/session-status?businessId=${encodeURIComponent(receipt.businessId)}&sessionId=${encodeURIComponent(receipt.sessionId)}`);
+  if (!response.ok || (await response.json()).paid !== true) return false;
+  const cleared = cart.clearIfUnchanged(receipt.items);
+  storage.removeItem(key);
+  return cleared;
+}
+
+export function openStorefrontCheckout({ site, items, apiBase, cart, documentRef = document, locationRef = window.location }) {
   documentRef.querySelector(".storefront-checkout")?.remove();
   const es = (site.schema?.business?.selectedLanguage || site.schema?.selectedLanguage) === "es";
   const copy = es ? {
@@ -103,6 +117,11 @@ export function openStorefrontCheckout({ site, items, apiBase, documentRef = doc
         shippingAddress: { line1: values.line1.trim(), city: values.city.trim(), region: values.region.trim(), postalCode: values.postalCode.trim(), country: values.country.toUpperCase() },
         successUrl: success.href, cancelUrl: cancel.href,
       });
+      if (cart && result.payment?.sessionId) {
+        try { sessionStorage.setItem(`kreaton:checkout:${cart.storageKey}`, JSON.stringify({
+          sessionId: result.payment.sessionId, businessId: site.commerce.businessId, items,
+        })); } catch { /* Storage restrictions must not prevent payment. */ }
+      }
       locationRef.assign(result.checkoutUrl);
     } catch (error) { status.textContent = error.message; }
     finally { pending = false; submit.disabled = false; }

@@ -1,5 +1,5 @@
-import { createSharedCommerceCart, resolveCatalogAction } from "./shared-commerce-cart.js?v=2";
-import { openStorefrontCheckout } from "./storefront-checkout.js?v=1";
+import { createSharedCommerceCart, resolveCatalogAction } from "./shared-commerce-cart.js?v=3";
+import { openStorefrontCheckout, reconcileCheckoutReturn } from "./storefront-checkout.js?v=2";
 import { createSharedSiteMotion, motionDataAttributes } from "./shared-site-motion.js?v=1";
 import { limitPremiumHeadline, premiumSectionImage, PREMIUM_IMAGE_ROLES } from "./src/ai-builder/premium-product-policy.js?v=1";
 import { resolveMegaRetailDepartmentTiles } from "./src/ai-builder/mega-retail-policy.js?v=2";
@@ -37,7 +37,7 @@ async function loadPublicSite() {
       getLabels: () => commerceLabels(currentPublicSite?.schema),
       onCheckout: ({ items, summary }) => {
         if (site.commerce?.salesEnabled === true && site.commerce.checkoutModel === "single_store_checkout") {
-          openStorefrontCheckout({ site, items, apiBase: API_BASE_URL });
+          openStorefrontCheckout({ site, items, cart: sharedCart, apiBase: API_BASE_URL });
         } else {
           openLeadModal({ catalogItemName: summary || commerceLabels(currentPublicSite?.schema).cart });
         }
@@ -46,6 +46,16 @@ async function loadPublicSite() {
     currentPublicPageKey = window.location.hash.replace(/^#/, "") || currentPublicSchema.pages?.[0]?.page_key || "home";
     applyGeneratedFavicon(site.schema);
     renderCurrentPublicPage();
+    if (!isProjectCardPreview) {
+      // Webhook delivery can lag the redirect. Bound polling, never clear on URL alone.
+      const check = async (attempt = 0) => {
+        try {
+          if (await reconcileCheckoutReturn({ site, cart: sharedCart, apiBase: API_BASE_URL })) return;
+        } catch (_) { /* Keep the customer's cart on network failure. */ }
+        if (viewerParams.get("checkout") === "returned" && attempt < 5) setTimeout(() => check(attempt + 1), 2000);
+      };
+      void check();
+    }
     notifyProjectCardPreview("ready");
   } catch (error) {
     console.error("Could not load public site preview", { siteId, error });

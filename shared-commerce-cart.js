@@ -227,7 +227,11 @@ export function createSharedCommerceCart({
     syncCounters();
   }
 
-  return { component: SHARED_CART_COMPONENT, storageKey: key, bind, open, close, count, items: () => normalizeCartItems(items) };
+  function clearIfUnchanged(expected) {
+    if (JSON.stringify(readItems()) !== JSON.stringify(normalizeCartItems(expected))) return false;
+    items = []; storage?.removeItem(key); syncCounters(); return true;
+  }
+  return { component: SHARED_CART_COMPONENT, storageKey: key, bind, open, close, count, clearIfUnchanged, items: () => normalizeCartItems(items) };
 }
 
 function escapeMarkup(value) {

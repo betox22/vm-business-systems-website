@@ -934,19 +934,22 @@ async def stripe_webhook(
     if not webhook_secret:
         raise HTTPException(status_code=503, detail="STRIPE_STORE_WEBHOOK_SECRET is not configured.")
     event = construct_event(raw, stripe_signature or "", webhook_secret)
-    event_type = event.get("type")
-    stripe_session = event.get("data", {}).get("object", {})
-    order_id = stripe_session.get("metadata", {}).get("order_id")
-    if order_id and event_type == "checkout.session.completed":
-        order = session.get(DbOrder, order_id)
-        if order:
-            payment = json_field(order.payment_json, {})
-            payment["providerStatus"] = "paid"
-            order.status = "paid"
-            order.payment_json = json.dumps(payment)
-            session.commit()
-            audit("stripe_webhook", "order_paid", order.store_id, {"orderId": order_id})
-    return {"received": True}
+    from .commerce_webhooks import process_payment_event
+    return process_payment_event(session, event)
+
+
+@router.get("/checkout/session-status")
+def checkout_return_status(businessId: str, sessionId: str, response: Response, session: Session = Depends(get_session)):
+    # Session ID is an unguessable receipt capability; expose no customer/order data.
+    response.headers["Cache-Control"] = "no-store"
+    if not sessionId.startswith("cs_") or len(sessionId) > 255:
+        raise HTTPException(404, "Checkout not found.")
+    orders = session.scalars(select(DbOrder).where(DbOrder.store_id == businessId))
+    for order in orders:
+        payment = json_field(order.payment_json, {})
+        if payment.get("provider") == "stripe" and payment.get("sessionId") == sessionId:
+            return {"paid": order.status in {"paid", "partially_fulfilled", "fulfilled"}}
+    raise HTTPException(404, "Checkout not found.")
 
 
 @router.post("/payments/stripe/connect-webhook")

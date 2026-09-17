@@ -179,7 +179,7 @@ class StripeBillingTests(unittest.TestCase):
         self.assertEqual(account_id, "acct_test")
         self.assertEqual(url, "https://connect.stripe.test/onboard")
         account_params = client.v2.core.accounts.create.call_args.args[0]
-        self.assertEqual(account_params["dashboard"], "full")
+        self.assertEqual(account_params["dashboard"], "express")
         self.assertEqual(account_params["defaults"]["responsibilities"]["fees_collector"], "stripe")
         link_params = client.v2.core.account_links.create.call_args.args[0]
         self.assertEqual(link_params["use_case"]["account_onboarding"]["configurations"], ["merchant"])
