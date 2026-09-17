@@ -1,4 +1,5 @@
 import { createSharedCommerceCart, resolveCatalogAction } from "./shared-commerce-cart.js?v=2";
+import { openStorefrontCheckout } from "./storefront-checkout.js?v=1";
 import { createSharedSiteMotion, motionDataAttributes } from "./shared-site-motion.js?v=1";
 import { limitPremiumHeadline, premiumSectionImage, PREMIUM_IMAGE_ROLES } from "./src/ai-builder/premium-product-policy.js?v=1";
 import { resolveMegaRetailDepartmentTiles } from "./src/ai-builder/mega-retail-policy.js?v=2";
@@ -34,7 +35,13 @@ async function loadPublicSite() {
       businessId: site.business_id,
       siteId: site.site_id,
       getLabels: () => commerceLabels(currentPublicSite?.schema),
-      onCheckout: ({ summary }) => openLeadModal({ catalogItemName: summary || commerceLabels(currentPublicSite?.schema).cart }),
+      onCheckout: ({ items, summary }) => {
+        if (site.commerce?.salesEnabled === true && site.commerce.checkoutModel === "single_store_checkout") {
+          openStorefrontCheckout({ site, items, apiBase: API_BASE_URL });
+        } else {
+          openLeadModal({ catalogItemName: summary || commerceLabels(currentPublicSite?.schema).cart });
+        }
+      },
     });
     currentPublicPageKey = window.location.hash.replace(/^#/, "") || currentPublicSchema.pages?.[0]?.page_key || "home";
     applyGeneratedFavicon(site.schema);

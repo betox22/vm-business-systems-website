@@ -34,6 +34,7 @@ from .ai_site_planner import enforce_client_declared_catalog_facts
 from .client_auth import authenticated_client_user, fetch_supabase_user, supabase_auth_configured, password_client_session
 from .commerce import router as commerce_router
 from .catalog_sync import apply_commerce_overlay, sync_site_catalog_to_commerce
+from .public_commerce import public_commerce_capabilities
 from .billing import router as billing_router
 from .db import get_session, init_db
 from .db_models import GeneratedSite, Store, PlatformSubscription
@@ -1634,6 +1635,7 @@ def _public_site_payload(site: GeneratedSite, session: Session | None = None) ->
         "public_url": site.public_url,
         "schema": schema,
         "catalog_items": catalog_items,
+        "commerce": public_commerce_capabilities(site.template_id, site.store_id),
     }
 
 
