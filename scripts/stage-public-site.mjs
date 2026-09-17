@@ -111,6 +111,7 @@ const TEMPLATES_ALLOWLIST = [
 const VENDOR_ASSETS = [
   ["src/ai-builder/shared-site-motion.js", "shared-site-motion.js"],
   ["src/ai-builder/premium-product-policy.js", "src/ai-builder/premium-product-policy.js"],
+  ["src/ai-builder/mega-retail-policy.js", "src/ai-builder/mega-retail-policy.js"],
   ["node_modules/gsap/dist/gsap.min.js", "vendor/gsap.min.js"],
 ];
 
