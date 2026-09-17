@@ -14,7 +14,7 @@ from test_client_site_update import OWNER, _client_and_session, _schema
 
 
 OVERLAID = {"name", "description", "image_url", "category", "price", "price_amount", "price_value",
-            "price_type", "price_label", "inventory_quantity"}
+            "price_type", "price_label", "inventory_quantity", "business_id", "product_id"}
 
 
 def test_real_owner_patch_is_projected_in_both_public_routes_without_writing_json():
@@ -38,6 +38,7 @@ def test_real_owner_patch_is_projected_in_both_public_routes_without_writing_jso
             assert product.catalog_index == 0
             product_id = product.id
             saved_json = row.generated_config
+            original = json.loads(saved_json)["catalog_items"][0]
         with patch.object(client_auth, "supabase_auth_configured", return_value=True), patch.object(client_auth, "fetch_supabase_user", return_value=OWNER):
             client.cookies.set("luma_client_session", "owner-token")
             response = client.patch(f"/api/v1/store-owner/store-owner/products/{product_id}", json={
@@ -56,6 +57,7 @@ def test_real_owner_patch_is_projected_in_both_public_routes_without_writing_jso
                 name="Owner drill", description="Owner description", image_url="https://example.com/owner.jpg", category="Electrical",
                 price=37.25, price_amount=37.25, price_value=37.25,
                 price_type="fixed", price_label="USD 37.25", inventory_quantity=12,
+                business_id="store-owner", product_id=product_id,
             )
         with factory() as session:
             assert session.get(GeneratedSite, "site-owner").generated_config == saved_json
@@ -77,6 +79,55 @@ def test_price_modes_and_original_objects_untouched(db, mode, price, label):
     assert (result[0]["price"], result[0]["price_amount"], result[0]["price_value"]) == (price, price, price)
     assert (result[0]["price_type"], result[0]["price_label"]) == (mode, label)
     assert catalog == original and result is not catalog and result[0] is not catalog[0]
+    if mode == "quote_only":
+        assert "product_id" not in result[0] and "business_id" not in result[0]
+    else:
+        assert result[0]["product_id"] == products(db)[0].id
+        assert result[0]["business_id"] == row.store_id
+
+
+def test_checkout_ids_come_from_product_not_json_or_catalog_uid(db):
+    catalog = [dict(item(), id="original-json-id", catalog_uid="11111111-1111-4111-8111-111111111111",
+                    product_id="untrusted-product", business_id="another-store")]
+    original = deepcopy(catalog)
+    row = site(db, catalog=catalog)
+    sync_site_catalog_to_commerce(db, row)
+    db.commit()
+    saved = row.generated_config
+    result = apply_commerce_overlay(catalog, row, db)
+    assert result[0]["product_id"] == products(db)[0].id
+    assert result[0]["business_id"] == row.store_id
+    assert result[0]["id"] == "original-json-id"
+    assert result[0]["product_id"] != result[0]["catalog_uid"]
+    assert catalog == original and row.generated_config == saved
+
+
+@pytest.mark.parametrize("case", ["legacy", "count", "invalid_price", "index", "quote_only"])
+def test_unresolved_and_quote_items_cannot_reuse_checkout_ids_from_json(db, case):
+    catalog = [dict(item(), product_id="stale-product", business_id="stale-store")]
+    row = site(db, catalog=catalog)
+    if case != "legacy":
+        sync_site_catalog_to_commerce(db, row)
+        db.flush()
+        product = products(db)[0]
+        if case == "count":
+            db.add(Product(store_id=row.store_id, site_id=row.id, name="Extra", category="tools",
+                           price_cents=100, catalog_index=1, status="Published"))
+        elif case == "invalid_price":
+            product.price_cents = 0
+        elif case == "index":
+            product.catalog_index = 42
+        elif case == "quote_only":
+            product.quote_only = True
+            product.price_cents = None
+    db.commit()
+    saved = row.generated_config
+    payload = main._public_site_payload(row, db)
+    assert payload["catalog_items"] == payload["schema"]["catalog_items"]
+    assert "product_id" not in payload["catalog_items"][0]
+    assert "business_id" not in payload["catalog_items"][0]
+    assert catalog[0]["product_id"] == "stale-product"
+    assert row.generated_config == saved
 
 
 @pytest.mark.parametrize("catalog", [None, [], [item()], "null"])

@@ -74,6 +74,11 @@ def sync_site_catalog_to_commerce(session: Session, site: GeneratedSite) -> None
 def apply_commerce_overlay(catalog_items: list, site: GeneratedSite, session: Session) -> list:
     """Project only current commerce values; never mutate the stored catalog."""
     result = deepcopy(catalog_items)
+    # Checkout bindings are derived from verified rows, never trusted from JSON.
+    for item in result:
+        if isinstance(item, dict):
+            item.pop("business_id", None)
+            item.pop("product_id", None)
     products = list(session.scalars(select(Product).where(
         Product.site_id == site.id, Product.store_id == site.store_id,
         Product.status == "Published",
@@ -117,4 +122,6 @@ def apply_commerce_overlay(catalog_items: list, site: GeneratedSite, session: Se
             price=amount, price_amount=amount, price_value=amount,
             price_type=price_type, price_label=label, inventory_quantity=product.inventory,
         )
+        if not product.quote_only:
+            item.update(business_id=site.store_id, product_id=product.id)
     return result
