@@ -6,12 +6,18 @@ from sqlalchemy.orm import Session
 from . import site_graph_patterns, site_graph_service, site_graph_llm
 from .admin_audit import record_admin_audit_event
 from .site_graph_contract import DesignPattern
-from .site_graph_generation_contract import GenerationRequest, generation_contract, synthetic_scenario, validate_generated_batch
+from .site_graph_generation_contract import (
+    GenerationInput,
+    generation_contract,
+    generation_scenario,
+    validate_generated_batch,
+    validate_generation_request,
+)
 from .site_graph_llm import GenerationFailure
 from .site_graph_models import SiteGraphRow
 
 
-def build_generation_envelope(engine, request: GenerationRequest) -> dict:
+def build_generation_envelope(engine, request: GenerationInput) -> dict:
     with Session(bind=engine, autoflush=False) as read_session:
         if engine.dialect.name == "postgresql":
             read_session.execute(text("SET TRANSACTION READ ONLY"))
@@ -19,13 +25,17 @@ def build_generation_envelope(engine, request: GenerationRequest) -> dict:
         validated = [DesignPattern.model_validate(p.model_dump()).model_dump(mode="json") for p in patterns]
     if not validated:
         raise GenerationFailure("no_matching_patterns", 422)
-    return {"scenario": synthetic_scenario(request), "patterns": validated, "contract": generation_contract()}
+    return {
+        "scenario": generation_scenario(request),
+        "patterns": validated,
+        "contract": generation_contract(),
+    }
 
 
 def generate_graph(session: Session, *, site_id: str, payload, actor: dict, request_id: str = ""):
     try:
         try:
-            request = GenerationRequest.model_validate(payload)
+            request = validate_generation_request(payload)
         except ValidationError as exc:
             raise GenerationFailure("invalid_generation_request", 422) from exc
         # Check identity only, never fetch existing blocks as LLM context.

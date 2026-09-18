@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import event, select
 
 from app import agents, main, site_graph_generation, site_graph_llm, site_graph_service
-from app.db_models import AdminAuditEvent, GeneratedSite, Store
+from app.db_models import AdminAuditEvent, GeneratedSite, Product, Store
 from app.site_graph_contract import DesignPattern
 from app.site_graph_generation_contract import GenerationRequest, SCENARIOS, generation_contract, synthetic_scenario
 from app.site_graph_models import DesignReferencePattern, SiteGraphRow
@@ -74,6 +74,8 @@ def test_wire_envelope_only_scenario_patterns_contract_and_no_private_queries(se
         session.add(GeneratedSite(id="private-site", store_id="private-store", owner_email="private@example.invalid",
             business_name=marker, business_type="retail", template_id="x", template_name="x", template_mode="x",
             domain_slug="private", public_url="https://private.invalid", generated_config=json.dumps({"private": marker})))
+        session.add(Product(id="private-product", store_id="private-store", name=marker,
+            category="private", description=marker, price_cents=None, inventory=0))
         session.add(SiteGraphRow(site_id="private-graph", version=1, blocks=[block(content={"headline": marker})]))
         session.commit()
     statements, before_provider = [], []

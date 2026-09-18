@@ -16,6 +16,45 @@ Formato de entrada:
 
 ---
 
+## 2026-09-17 — Codex — Sprint 3 graph: entrada business con fidelidad exacta
+
+**Hecho:** worktree y rama aislados
+`feature/ai-graph-sprint3-business-input` desde `origin/main` en `99963a1`.
+La misma ruta de generación acepta ahora una segunda forma estricta
+`input_mode=business` con nombre, tagline y 1-12 productos. El sobre proyecta
+solo esos datos actuales, idioma, patrones abstractos y contrato. El copy business
+queda cerrado a nombre/tagline suministrados, heading neutro y pares exactos de
+nombre+descripción; cualquier desviación rechaza el batch completo. Se reforzó la
+entrada contra referencias URL/email/file obvias sin fetch ni DNS. Proveedor,
+reintentos, servicio de persistencia, modelos, migraciones, flag y roles no cambian.
+
+**Verificación:** graph 136 passed; Python completa 527 passed + 40 subtests;
+Node contractual 231 passed / 0 failed. La matriz cubre límites, tipos, extras,
+formas híbridas, pares exactos, copy no autorizado, SQL/request spies, fuga,
+atomicidad, concurrencia, auth e inyección. La copia literal autorizada se guarda
+exacta y el preview la escapa. OpenAI real respondió 200 con `gpt-6-astra` para
+datos QA ficticios, incluido texto injection-like autorizado; graph v1 reabierto
+en otro proceso con todas las comparaciones exactas. Preview del mismo graph: 200,
+captura Playwright, cero errores de consola. Evidencia en
+`C:/Users/alber/Projects/kreaton-evidence/ai-graph-sprint3/`.
+
+**Pendiente / abierto:** revisión de Beto. No se hizo merge, push, deploy ni cambio
+de Render. El flag sigue apagado. Copywriting libre y diseño visual rico quedan
+fuera de Sprint 3.
+
+**Archivos tocados:** `backend/app/site_graph_generation_contract.py`,
+`backend/app/site_graph_generation.py`, `backend/app/site_graph_llm.py`,
+`backend/tests/test_site_graph_generation.py`,
+`backend/tests/test_site_graph_business_generation.py`,
+`docs/AI-GRAPH-GENERATION.md`, `docs/AGENT_LOG.md`.
+
+**Notas para el siguiente agente:** `node --test` sin scope descubre
+`template-test/template-test.js`, que es un script de navegador y falla sin DOM.
+La suite Node contractual es `tests/*.test.mjs`. No ampliar estas restricciones de
+generación a la ruta general de operations sin una decisión separada.
+
+---
+
 ## 2026-09-17 — Codex — Sprint 2 graph: OpenAI y guardado compartido
 
 **Hecho:** rama aislada kreaton-ai-graph-sprint2 desde 5713f8f. Extraccion de
