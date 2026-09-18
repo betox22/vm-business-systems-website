@@ -4,7 +4,12 @@ from html import escape
 from .site_graph_contract import SiteGraph
 
 
-def render_graph(graph: SiteGraph) -> str:
+def render_graph(graph: SiteGraph, pattern: str | None = None, fixture: str | None = None) -> str:
+    if pattern == "bold_commerce":
+        from .site_graph_bold_preview import render_bold_graph
+        return render_bold_graph(graph, fixture)
+    if pattern is not None or fixture is not None:
+        raise ValueError("Unknown preview presentation")
     sections = []
     def text(value):
         return escape(value if isinstance(value, str) else "")

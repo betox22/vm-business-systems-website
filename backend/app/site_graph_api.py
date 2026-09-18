@@ -2,7 +2,7 @@
 import base64
 import hashlib
 
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -41,18 +41,27 @@ def create_graph_router(resolve_admin):
                               request_id=getattr(request.state, "request_id", ""))
 
     @router.get("/api/admin/internal/graph-preview", response_class=HTMLResponse)
-    def preview(site_id: Identifier, request: Request, actor=Depends(identity), session: Session = Depends(get_session)):
+    def preview(site_id: Identifier, request: Request, actor=Depends(identity), session: Session = Depends(get_session),
+                pattern: Literal["bold_commerce"] | None = None, fixture: Literal["hardware_qa"] | None = None):
         require_admin_permission(actor, "sites:read")
+        if pattern == "bold_commerce" and actor.get("role") != "super_admin":
+            raise HTTPException(403, "Only super_admin may view bold previews")
+        if fixture is not None and pattern is None:
+            raise HTTPException(422, "A fixture requires an explicit pattern")
         row = session.get(SiteGraphRow, site_id)
         if row is None:
             raise HTTPException(404, "Graph not found")
-        html = render_graph(SiteGraph(site_id=site_id, version=row.version, blocks=row.blocks))
+        try:
+            html = render_graph(SiteGraph(site_id=site_id, version=row.version, blocks=row.blocks), pattern, fixture)
+        except ValueError:
+            raise HTTPException(422, "Graph does not match the requested preview fixture") from None
         css = html.split("<style>", 1)[1].split("</style>", 1)[0]
         style_hash = base64.b64encode(hashlib.sha256(css.encode()).digest()).decode()
         record_admin_audit_event(session, actor=actor, action="admin.graph.preview",
             target_type="site_graph", target_id=site_id, outcome="success",
             request_id=getattr(request.state, "request_id", ""))
+        asset_policy = "; img-src data:; font-src data:" if pattern == "bold_commerce" else ""
         return HTMLResponse(html, headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow",
-            "Content-Security-Policy": f"default-src 'none'; style-src 'sha256-{style_hash}'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"})
+            "Content-Security-Policy": f"default-src 'none'; style-src 'sha256-{style_hash}'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'" + asset_policy})
 
     return router

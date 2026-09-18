@@ -1,0 +1,113 @@
+{
+  "hero": {
+    "file": "hero.webp",
+    "original": "hero-unsplash.jpg",
+    "source_sha256": "6a9717c7a14be564dee41d7034c35042b90f1a766ab0ec46bf2c53d55cad88a9",
+    "sha256": "3c83d1aa4bd02f2b0d30b350095a50ed172472149582b601af44af0915e27872",
+    "bytes": 180936,
+    "size": [
+      1600,
+      2400
+    ],
+    "processing": "resize/WebP; tools padded to 4:5, rotated 90 degrees when recorded",
+    "rotated": false,
+    "author": "Thomas Marquize",
+    "source": "https://unsplash.com/photos/hands-using-a-bow-saw-to-cut-wood-on-sand-5N4iAZd45q8",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "alt": "Manos usando una sierra sobre madera",
+    "framing": "cover, 50% 58% desktop; 55% 65% mobile; natural photo, no dark filter"
+  },
+  "hammer": {
+    "file": "hammer.webp",
+    "original": "hammer-alternative.jpg",
+    "source_sha256": "c811493bd3a579e8d68b1764d4be8a8d78f517e245335bc964b7354fe6e2b04c",
+    "sha256": "54e55890938c77355817c56373d3db2153990f8b96bfc4a7d83bb859e5a23486",
+    "bytes": 10034,
+    "size": [
+      640,
+      800
+    ],
+    "processing": "resize/WebP; tools padded to 4:5, rotated 90 degrees when recorded",
+    "rotated": true,
+    "author": "Shakespeare",
+    "source": "https://commons.wikimedia.org/wiki/File:Claw_hammer-1.jpg",
+    "license": "CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "alt": "Martillo de una",
+    "framing": "Whole object retained in 4:5 padded raster; CSS cover"
+  },
+  "wrench": {
+    "file": "wrench.webp",
+    "original": "wrench.jpg",
+    "source_sha256": "97fc202260207ccd541467e6eabadcb6807461c81621d3c281a645a2d0d4aedb",
+    "sha256": "7f3961f8e9caa48ed7099487ff8ea2d360a531005f7d0e16f95e0c9fb09a158a",
+    "bytes": 20364,
+    "size": [
+      640,
+      800
+    ],
+    "processing": "resize/WebP; tools padded to 4:5, rotated 90 degrees when recorded",
+    "rotated": true,
+    "author": "Batholith",
+    "source": "https://commons.wikimedia.org/wiki/File:Adjustable_spanner_20101109.jpg",
+    "license": "PD-self",
+    "license_url": "https://commons.wikimedia.org/wiki/File:Adjustable_spanner_20101109.jpg#Licensing",
+    "alt": "Llave ajustable",
+    "framing": "Whole object retained in 4:5 padded raster; CSS cover"
+  },
+  "clamp": {
+    "file": "clamp.webp",
+    "original": "clamp.jpg",
+    "source_sha256": "684a0eeca5ed9580debca549d5690ca1f348524c8c32bcc099f1b2b93df5485f",
+    "sha256": "1930c9d26d1d42ff71e4020a2d4041dec1b9a56411a42c0dfb339ea05f17229b",
+    "bytes": 47720,
+    "size": [
+      640,
+      800
+    ],
+    "processing": "resize/WebP; tools padded to 4:5, rotated 90 degrees when recorded",
+    "rotated": false,
+    "author": "Chrislk02 (Commons attribution inferred from uploader)",
+    "source": "https://commons.wikimedia.org/wiki/File:Closed_c-clamp.JPG",
+    "license": "PD-self",
+    "license_url": "https://commons.wikimedia.org/wiki/File:Closed_c-clamp.JPG#Licensing",
+    "alt": "Sargento",
+    "framing": "Whole object retained in 4:5 padded raster; CSS cover"
+  },
+  "BarlowCondensed-Bold.ttf": {
+    "file": "BarlowCondensed-Bold.ttf",
+    "sha256": "e476562ec9c1e16cf16475895b511f08c804f438cc9a9f80a44ea50a0eeb5b65",
+    "bytes": 109912,
+    "source": "https://github.com/google/fonts/tree/main/ofl/barlowcondensed",
+    "license": "SIL OFL 1.1"
+  },
+  "OFL.txt": {
+    "file": "OFL.txt",
+    "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+    "bytes": 4377,
+    "source": "https://github.com/google/fonts/tree/main/ofl/barlowcondensed",
+    "license": "SIL OFL 1.1"
+  },
+  "shopping-cart.svg": {
+    "file": "shopping-cart.svg",
+    "sha256": "f0e802256fcfac4ed69780fadf4c910f938ea6274ff61a2b4d525f6365e6a5c5",
+    "bytes": 373,
+    "source": "https://github.com/lucide-icons/lucide/tree/0.468.0",
+    "license": "ISC"
+  },
+  "credit-card.svg": {
+    "file": "credit-card.svg",
+    "sha256": "b2066277e6e47eb114113305a2b8c6649453ba52830a323e0e2ad9b5b664f609",
+    "bytes": 303,
+    "source": "https://github.com/lucide-icons/lucide/tree/0.468.0",
+    "license": "ISC"
+  },
+  "lucide-LICENSE": {
+    "file": "lucide-LICENSE",
+    "sha256": "1e7290b35280a048667bbf0ebabac1c7fd52a75300e8b2946ac165715997f2bc",
+    "bytes": 880,
+    "source": "https://github.com/lucide-icons/lucide/tree/0.468.0",
+    "license": "ISC"
+  }
+}
