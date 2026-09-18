@@ -1,4 +1,123 @@
-# Sprint 3 - structured business graph generation
+# Internal SiteGraph generation: Sprint 4
+
+## Final policy: prose prohibition (supersedes support matching for prose)
+
+All twelve CLAIM_RULES_V1 categories are forbidden in business creative prose,
+WITH OR WITHOUT matching provided_facts: headline, subheadline/tagline, heading,
+section_text, footer and product descriptions. Any finding rejects the proposed
+batch, triggers the existing one semantic retry, then validated neutral fallback.
+The scanner is still a closed pattern policy, not a universal semantic detector.
+
+The ONLY exception is the exact mandatory product name field. Its risky identity
+still requires specific support in provided_facts, both at input preflight and
+output validation. Repeating a supported name as a hero/description does not gain
+that exception. provided_facts remains in the request and provider envelope, but
+its sole authorizing role is product identity. No fact can authorize prose.
+
+The signature comparison/ES-EN normalization below now describes identity support
+only. The earlier discussion of supported marketing claims is historical and no
+longer operative. business_claim_findings classifies fields before checking them;
+operations/persistence/transport/auth remain unchanged.
+
+Final suites: Python 970 passed + 40 subtests (31 warnings), Node 231 passed,
+0 failed; exit 0 both. The new 288-case matrix covers 12 categories x 2 languages
+x 6 prose fields x with/without facts. Risky-name support tests remain unchanged;
+new test ensures that moving the same identity into prose is forbidden, and that
+fallback preserves only the supported name. No trust/promotions data block added.
+
+New real OpenAI QA: sprint4-conditional-328e7061, one attempt, HTTP 200, version 1,
+zero policy findings. It retained Certified Installation only as the product name
+and omitted declared commercial claims from prose. Real request/output/IDs saved
+in the evidence directory. No new real retry occurred under this final policy;
+retry/fallback coverage is deterministic. The old real retry remains historical,
+not mislabeled as a run under this policy. Flag remains off by default in Render.
+
+## Historical implementation before final prose prohibition
+
+The record below is superseded by the final policy above. Internal only,
+super_admin only, feature flag off by default. No customer/public integration.
+
+## Current business contract
+
+- Required business_name and business_category: strict plain strings, 1-400 chars.
+- products: 1-12 exact unique names; description optional (null or 1-400 chars).
+- provided_facts: optional, maximum 20 unique strict plain strings, 1-400 chars.
+Only facts may contain contact details; URLs/files/HTML remain forbidden.
+- industry_tag remains product/commerce/luxury; language en/es; expected_version 0.
+- Legacy tagline and hybrid/extra fields are rejected. Risky mandatory product
+  names without a supporting fact fail before OpenAI.
+
+Business hero, subheadline, grid heading/section_text, descriptions and footer are
+creative. Only product names/cardinality remain exact (reordering allowed).
+All visible text is scanned. section_text is escaped by the internal preview.
+
+## Claims and retries
+
+CLAIM_RULES_V1 has twelve rules: experience duration, percentage, price, promotion,
+guarantee, free shipping, award, certification, ranking, email, phone and address.
+Each has patterns, signature extraction and exact support comparison. Only an
+individual provided_fact with matching concrete values/scope supports a claim.
+There is no category unlock or combination of facts. Descriptions are not facts.
+
+The first structurally valid but semantically invalid response triggers one retry,
+with at most ten findings in contract.retry_feedback. Invalid second output uses
+server-owned neutral copy for six language/tag combinations, with only exact
+product names interpolated. The SAME validator/scanner checks that fallback.
+No business verbatim fallback remains. Initial malformed output and provider
+errors/refusals/tools/timeouts on either attempt fail without fallback.
+
+Provider envelopes remain scenario + patterns + contract only. No actor/session,
+destination, secrets or other business data. Separate pattern read session closes
+before both calls; PostgreSQL uses READ ONLY. Existing OpenAI transport/timeout
+and HTTP retries unchanged. Two semantic attempts are distinct from HTTP retries.
+Input and feedback remain JSON data, never system instructions.
+
+Both operations and generation still use site_graph_service.persist_graph_batch.
+CAS and graph+success-audit atomicity remain unchanged. Retry rejection is audited
+before any graph write; only bounded rule IDs and reason/policy codes, no excerpts,
+raw prompt/output or PII. No service/auth/model/migration/payment changes.
+
+## Verification and limitations (2026-09-18)
+
+Normalization follow-up: commercial signatures now canonicalize bounded ES/EN
+equivalents for percentage/price/promotion/free shipping, including month, service
+scope, currency and order-threshold comparators. The saved conditional outputs
+have zero unsupported findings for those rules after this fix. Unknown qualifiers
+remain conservative; experience-duration paraphrases in that recording still
+fail scope matching. No same-language input restriction was introduced.
+Regression suite now totals Python 681 passed + 40 subtests, Node 231 passed.
+See normalization-report.md and conditional-signatures-before/after.json in the
+evidence directory. No new provider call; replay used the original saved outputs.
+
+Complete suites: Python 659 passed + 40 subtests, 31 warnings, exit 0;
+Node 231 passed / 0 failed, exit 0. All 31 design groups mapped in test-matrix.md.
+Node's first sandbox run failed the publication test due to esbuild directory
+access; the full unsandboxed rerun passed. Both logs are retained.
+
+Three fictional QA requests used real OpenAI with isolated local SQLite. Claims
+and injection cases succeeded immediately. Conditional claims produced a REAL
+second call, then validated neutral fallback, with unaltered provider responses:
+
+- chatcmpl-EPUexNdP55CokVqbWUAYygFyPPExy
+- chatcmpl-EPUf7Xd3zUlYzq84C8rgEpa5DhzhE
+
+Conservative clause token signatures rejected English-to-Spanish paraphrases of
+declared facts. This proves retry/fallback, NOT model fabrication or successful
+second-attempt correction. Successful second-attempt correction is proven only
+by deterministic tests in this delivery.
+
+This closed policy is NOT a universal truth detector. Undetected paraphrases are
+possible, facts are not independently verified, and legitimate translations can
+be rejected conservatively. A separate process re-read saved graphs, verified
+exact names and zero unsupported findings. Chrome rendered those exact graphs
+through the internal preview using a local synthetic admin, not production auth.
+
+Evidence: C:/Users/alber/Projects/kreaton-evidence/ai-graph-sprint4/.
+No commit, push, merge, deploy or Render flag change.
+
+---
+
+# Historical Sprint 3 record (superseded, not the current contract)
 
 Status: implemented on isolated branch
 `feature/ai-graph-sprint3-business-input`, based on

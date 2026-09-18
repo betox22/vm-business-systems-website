@@ -1,5 +1,51 @@
 # Bitácora de agentes (Claude / Codex)
 
+## 2026-09-18 - Codex - Final Sprint 4 policy and authorized release
+
+Business prose now forbids every CLAIM_RULES_V1 category even with matching facts.
+Only exact product names retain specific identity support. No matching for prose;
+same semantic retry/neutral fallback and atomic shared persistence. No structured
+trust/promotions block, no schema/auth/transport/customer integration changes.
+
+Python 970 passed + 40 subtests, 31 warnings; Node 231 passed / 0 failed. New
+288-case prose matrix plus risky identity/fallback regression. Real OpenAI case
+sprint4-conditional-328e7061: one attempt, persisted version 1, zero findings under
+final policy. No real retry in that new run; old retry evidence is historical.
+
+User authorized merge after this policy and green suites. Release is fast-forward
+to origin/main, preserving history; dirty local main worktree is not touched.
+Feature flag stays unconfigured/off by default; no Render setting changes.
+Evidence: C:/Users/alber/Projects/kreaton-evidence/ai-graph-sprint4/prose-ban-report.md.
+
+## 2026-09-18 - Codex - Sprint 4 ES/EN commercial claim normalization
+
+Confirmed a correctable bug: normalized values matched, but lexical clause scope
+still differed across languages. Added bounded shared commercial normalization,
+preserving currency, month, territory, negation and strict/inclusive thresholds.
+22 regression cases added; Python 681 passed + 40 subtests, Node 231 passed.
+Original real OpenAI outputs replayed without new provider calls or DB writes;
+percentage/price/shipping and promotion now match. Experience scope remains a
+separate conservative limitation. No same-language contract constraint, no merge.
+Evidence: ai-graph-sprint4/normalization-report.md and before/after signatures.
+
+## 2026-09-18 - Codex - Sprint 4 creative copy and claim safeguards
+
+Worktree kreaton-ai-graph-sprint4, branch feature/ai-graph-sprint4-creative-claims,
+base cadebe2. Completed the existing partial implementation (baseline preserved).
+Creative business copy, exact product identity, CLAIM_RULES_V1 specific support,
+maximum two semantic attempts, validated server-owned neutral fallback. No raw
+business fallback. Shared persistence/auth/flag/transport/schema unchanged.
+
+Python: 659 passed + 40 subtests, 31 warnings. Node: 231 passed, 0 failed.
+All 31 design groups mapped. Real OpenAI conditional case retried and used neutral
+fallback; conservative matching rejected translated facts. This is not a proven
+real second-attempt model correction. See AI-GRAPH-GENERATION.md for limitations.
+
+Evidence in C:/Users/alber/Projects/kreaton-evidence/ai-graph-sprint4/: full diff,
+suite logs, provider envelopes/responses/IDs, separate-process DB read and Chrome
+captures. Local SQLite/synthetic admin, no production data or config changes.
+No commit/push/merge/deploy. Awaiting review.
+
 Cada sesión de trabajo agrega una entrada arriba (más reciente primero). No borres
 entradas viejas — si algo queda obsoleto, táchalo o anota que ya no aplica.
 
