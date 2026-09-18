@@ -15,7 +15,7 @@ from .site_graph_contract import Identifier, OperationsRequest, SiteGraph
 from . import site_graph_service
 from .site_graph_generation import generate_graph
 from .site_graph_models import SiteGraphRow
-from .site_graph_preview import render_graph
+from .site_graph_preview import VISUAL_RESOURCE_PATTERNS, VisualPattern, render_graph
 
 
 def create_graph_router(resolve_admin):
@@ -42,10 +42,11 @@ def create_graph_router(resolve_admin):
 
     @router.get("/api/admin/internal/graph-preview", response_class=HTMLResponse)
     def preview(site_id: Identifier, request: Request, actor=Depends(identity), session: Session = Depends(get_session),
-                pattern: Literal["bold_commerce"] | None = None, fixture: Literal["hardware_qa"] | None = None):
+                pattern: VisualPattern | None = None, fixture: Literal["hardware_qa", "objects_qa"] | None = None):
         require_admin_permission(actor, "sites:read")
-        if pattern == "bold_commerce" and actor.get("role") != "super_admin":
-            raise HTTPException(403, "Only super_admin may view bold previews")
+        is_visual = pattern in VISUAL_RESOURCE_PATTERNS
+        if is_visual and actor.get("role") != "super_admin":
+            raise HTTPException(403, "Only super_admin may view visual previews")
         if fixture is not None and pattern is None:
             raise HTTPException(422, "A fixture requires an explicit pattern")
         row = session.get(SiteGraphRow, site_id)
@@ -60,7 +61,7 @@ def create_graph_router(resolve_admin):
         record_admin_audit_event(session, actor=actor, action="admin.graph.preview",
             target_type="site_graph", target_id=site_id, outcome="success",
             request_id=getattr(request.state, "request_id", ""))
-        asset_policy = "; img-src data:; font-src data:" if pattern == "bold_commerce" else ""
+        asset_policy = "; img-src data:; font-src data:" if is_visual else ""
         return HTMLResponse(html, headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow",
             "Content-Security-Policy": f"default-src 'none'; style-src 'sha256-{style_hash}'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'" + asset_policy})
 

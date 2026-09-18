@@ -1,13 +1,20 @@
 """Escaped, script-free verification renderer; never used by public site-viewer."""
 from html import escape
+from typing import Literal, get_args
 
 from .site_graph_contract import SiteGraph
+
+VisualPattern = Literal["bold_commerce", "luxury_quiet"]
+VISUAL_RESOURCE_PATTERNS = frozenset(get_args(VisualPattern))
 
 
 def render_graph(graph: SiteGraph, pattern: str | None = None, fixture: str | None = None) -> str:
     if pattern == "bold_commerce":
         from .site_graph_bold_preview import render_bold_graph
         return render_bold_graph(graph, fixture)
+    if pattern == "luxury_quiet":
+        from .site_graph_luxury_preview import render_luxury_graph
+        return render_luxury_graph(graph, fixture)
     if pattern is not None or fixture is not None:
         raise ValueError("Unknown preview presentation")
     sections = []
