@@ -16,6 +16,30 @@ Formato de entrada:
 
 ---
 
+## 2026-09-17 — Codex — Sprint 2 graph: OpenAI y guardado compartido
+
+**Hecho:** rama aislada kreaton-ai-graph-sprint2 desde 5713f8f. Extraccion de
+persist_graph_batch; ruta operations existente y ruta generate nueva llaman al
+mismo servicio. Por correccion aprobada, reutiliza OpenAI y el helper sincronico
+de agents.py (timeout 20s, reintentos existentes), sin segundo proveedor. Escenarios sinteticos
+cerrados, sobre scenario/patterns/contract, sin herramientas ni contexto de sitios.
+Validacion completa antes de escribir y auditoria de rechazo con codigos saneados.
+
+**Verificacion:** Python 476 passed + 40 subtests, Node 231 passed / 0 failed.
+85 pruebas graph: 32 previas + 53 nuevas, espias del request/SQL/servicio compartido,
+rollback, identidad, fallos del proveedor y concurrencia. Espia del SDK real contra
+MockTransport y prueba de llamada al mismo helper de agents.py sin invocar catalogo.
+
+**Prueba real completada:** OpenAI 200, completion chatcmpl-EPI9m5iubsg4UegXlpT5Pe2a2GBtJ,
+request req_9c4c1de66c724ab1b4f8cb5351883383. Graph synthetic-openai-smoke v1
+persistido en SQLite aislado y reabierto desde otro proceso. Nombres/descripciones
+de ambos productos iguales al escenario studio_goods. Captura Chrome de preview
+real guardada. El harness usa identidad QA sintetica con sites:read, no login real.
+Publicacion fast-forward autorizada tras esta evidencia; flag sigue apagado por
+defecto, sin cambios de configuracion en Render ni superficies de comercio.
+Contrato: docs/AI-GRAPH-GENERATION.md. Evidencia:
+C:/Users/alber/Projects/kreaton-evidence/ai-graph-sprint2/.
+
 ## 2026-09-17 — Codex — AI graph skeleton aislado
 
 **Hecho:** worktree kreaton-ai-graph desde origin/main b34f58a. Contratos Pydantic
