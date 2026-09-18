@@ -111,7 +111,7 @@ test("the legacy KREATON module retains its real management contracts", async ()
   assert.match(script, /from "\.\/kreaton-admin-policy\.js\?v=2"/);
   assert.match(script, /internalAuthHeaders\(sessionStorage/);
   assert.match(script, /clearInternalAccessToken\(sessionStorage\)/);
-  assert.match(html, /operations\/operations\.js\?v=5/);
+  assert.match(html, /operations\/operations\.js\?v=6/);
   assert.match(html, /data-view="templates"/);
   assert.match(html, /data-view="payments"/);
 });
