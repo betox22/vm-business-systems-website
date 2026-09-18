@@ -22,6 +22,27 @@ def render_graph(graph: SiteGraph) -> str:
             sections.append(f'<section {attrs}><h2>{text(content.get("heading"))}</h2>{intro}<div class="grid">{cards}</div></section>')
         elif block.type == "footer":
             sections.append(f'<footer {attrs}>{text(content.get("text"))}</footer>')
+        elif block.type == "trust_facts":
+            rows = []
+            contact = content.get("contact") or {}
+            for key, label in (("phone", "Phone"), ("whatsapp", "WhatsApp"), ("email", "Email"), ("address", "Address")):
+                if contact.get(key) is not None:
+                    rows.append(f'<dt>{label}</dt><dd>{text(contact[key])}</dd>')
+            if content.get("experience_years") is not None:
+                rows.append(f'<dt>Years of experience</dt><dd>{content["experience_years"]}</dd>')
+            if content.get("guarantee") is not None:
+                rows.append(f'<dt>Guarantee</dt><dd>{text(content["guarantee"])}</dd>')
+            details = '<dl>' + ''.join(rows) + '</dl>' if rows else ''
+            certificates = content.get("certifications") or []
+            if certificates:
+                details += '<h3>Certifications</h3><ul>' + ''.join(f'<li>{text(item)}</li>' for item in certificates) + '</ul>'
+            promotion = content.get("promotion")
+            if promotion:
+                details += f'<h3>Promotion</h3><p>{text(promotion["text"])}</p>'
+                if promotion.get("valid_until"):
+                    details += f'<p>Declared valid until: <time>{text(promotion["valid_until"])}</time></p>'
+            if details:
+                sections.append(f'<section {attrs}><h2>Business information</h2>{details}</section>')
         else:
             sections.append(f'<aside {attrs}>Fixed module reference: {text(content["module"])} (not executed in preview)</aside>')
     # No public scripts: even fixed embeds must not initialize commerce in this harness.

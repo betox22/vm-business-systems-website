@@ -4,10 +4,10 @@ from collections import Counter
 from copy import deepcopy
 from typing import Annotated, Literal, Union
 
-from pydantic import Field, TypeAdapter, field_validator, model_validator
+from pydantic import Field, JsonValue, TypeAdapter, field_validator, model_validator
 
 from .site_graph_contract import (
-    AddBlock,
+    Identifier,
     OperationsRequest,
     SiteGraph,
     StrictModel,
@@ -89,8 +89,21 @@ GenerationInput = Annotated[
 GENERATION_INPUT_ADAPTER = TypeAdapter(GenerationInput)
 
 
+class GeneratedBlock(StrictModel):
+    block_id: Identifier
+    type: Literal["hero", "product_grid", "footer", "cart_embed", "checkout_embed"]
+    content: dict[str, JsonValue]
+    layout_variant: Identifier = "default"
+    order_index: int = Field(ge=0, le=199)
+
+
+class GeneratedAddBlock(StrictModel):
+    op: Literal["add_block"]
+    block: GeneratedBlock
+
+
 class ProposedGraph(StrictModel):
-    operations: list[AddBlock] = Field(min_length=3, max_length=5)
+    operations: list[GeneratedAddBlock] = Field(min_length=3, max_length=5)
 
 
 SCENARIOS = {
@@ -261,7 +274,7 @@ def validate_generated_batch(
         raise ValueError("Invalid generation size")
     data = json.loads(raw, object_pairs_hook=_unique_keys)
     proposal = ProposedGraph.model_validate(data)
-    batch = OperationsRequest(expected_version=0, operations=proposal.operations)
+    batch = OperationsRequest.model_validate({"expected_version": 0, "operations": proposal.model_dump()["operations"]})
     graph = apply_operations(SiteGraph(site_id=site_id, version=0, blocks=[]), batch)
     kinds = [block.type for block in graph.blocks]
     if kinds[:3] != ["hero", "product_grid", "footer"] or len(set(kinds)) != len(

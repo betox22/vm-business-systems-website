@@ -53,6 +53,191 @@
               }
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "trust_facts"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "content": {
+                "additionalProperties": false,
+                "properties": {
+                  "contact": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "phone": {
+                            "anyOf": [
+                              {
+                                "maxLength": 40,
+                                "minLength": 1,
+                                "pattern": "^(?=(?:[^0-9]*[0-9]){7,15}[^0-9]*$)\\+?[0-9 ()-]+(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "title": "Phone"
+                          },
+                          "whatsapp": {
+                            "anyOf": [
+                              {
+                                "maxLength": 40,
+                                "minLength": 1,
+                                "pattern": "^(?=(?:[^0-9]*[0-9]){7,15}[^0-9]*$)\\+?[0-9 ()-]+(?![\\s\\S])",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "title": "Whatsapp"
+                          },
+                          "email": {
+                            "anyOf": [
+                              {
+                                "maxLength": 254,
+                                "minLength": 3,
+                                "pattern": "^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\\.[A-Za-z]{2,63}$",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "title": "Email"
+                          },
+                          "address": {
+                            "anyOf": [
+                              {
+                                "maxLength": 400,
+                                "minLength": 1,
+                                "pattern": "^(?!\\s*$)(?![\\s\\S]*[<>\\x00-\\x1f\\x7f])(?![\\s\\S]*(?:[A-Za-z][A-Za-z0-9+.-]*://|[Jj][Aa][Vv][Aa][Ss][Cc][Rr][Ii][Pp][Tt]:|[Dd][Aa][Tt][Aa]:|[Ff][Ii][Ll][Ee]:|[Mm][Aa][Ii][Ll][Tt][Oo]:|[Tt][Ee][Ll]:|[Ww][Ww][Ww]\\.|(?:[A-Za-z0-9-]+\\.)+[A-Za-z]{2,63}\\b))[\\s\\S]*$",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "title": "Address"
+                          }
+                        },
+                        "title": "TrustContact",
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "experience_years": {
+                    "anyOf": [
+                      {
+                        "maximum": 150,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Experience Years"
+                  },
+                  "certifications": {
+                    "anyOf": [
+                      {
+                        "items": {
+                          "maxLength": 160,
+                          "minLength": 1,
+                          "pattern": "^(?!\\s*$)(?![\\s\\S]*[<>\\x00-\\x1f\\x7f])(?![\\s\\S]*(?:[A-Za-z][A-Za-z0-9+.-]*://|[Jj][Aa][Vv][Aa][Ss][Cc][Rr][Ii][Pp][Tt]:|[Dd][Aa][Tt][Aa]:|[Ff][Ii][Ll][Ee]:|[Mm][Aa][Ii][Ll][Tt][Oo]:|[Tt][Ee][Ll]:|[Ww][Ww][Ww]\\.|(?:[A-Za-z0-9-]+\\.)+[A-Za-z]{2,63}\\b))[\\s\\S]*$",
+                          "type": "string"
+                        },
+                        "maxItems": 10,
+                        "type": "array"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Certifications"
+                  },
+                  "guarantee": {
+                    "anyOf": [
+                      {
+                        "maxLength": 400,
+                        "minLength": 1,
+                        "pattern": "^(?!\\s*$)(?![\\s\\S]*[<>\\x00-\\x1f\\x7f])(?![\\s\\S]*(?:[A-Za-z][A-Za-z0-9+.-]*://|[Jj][Aa][Vv][Aa][Ss][Cc][Rr][Ii][Pp][Tt]:|[Dd][Aa][Tt][Aa]:|[Ff][Ii][Ll][Ee]:|[Mm][Aa][Ii][Ll][Tt][Oo]:|[Tt][Ee][Ll]:|[Ww][Ww][Ww]\\.|(?:[A-Za-z0-9-]+\\.)+[A-Za-z]{2,63}\\b))[\\s\\S]*$",
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "title": "Guarantee"
+                  },
+                  "promotion": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "text": {
+                            "maxLength": 400,
+                            "minLength": 1,
+                            "pattern": "^(?!\\s*$)(?![\\s\\S]*[<>\\x00-\\x1f\\x7f])(?![\\s\\S]*(?:[A-Za-z][A-Za-z0-9+.-]*://|[Jj][Aa][Vv][Aa][Ss][Cc][Rr][Ii][Pp][Tt]:|[Dd][Aa][Tt][Aa]:|[Ff][Ii][Ll][Ee]:|[Mm][Aa][Ii][Ll][Tt][Oo]:|[Tt][Ee][Ll]:|[Ww][Ww][Ww]\\.|(?:[A-Za-z0-9-]+\\.)+[A-Za-z]{2,63}\\b))[\\s\\S]*$",
+                            "title": "Text",
+                            "type": "string"
+                          },
+                          "valid_until": {
+                            "anyOf": [
+                              {
+                                "format": "date",
+                                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "default": null,
+                            "title": "Valid Until"
+                          }
+                        },
+                        "required": [
+                          "text"
+                        ],
+                        "title": "TrustPromotion",
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  }
+                },
+                "title": "TrustFactsContent",
+                "type": "object"
+              },
+              "layout_variant": {
+                "const": "default"
+              }
+            }
+          }
         }
       ],
       "properties": {
@@ -67,7 +252,8 @@
             "product_grid",
             "footer",
             "cart_embed",
-            "checkout_embed"
+            "checkout_embed",
+            "trust_facts"
           ],
           "title": "Type",
           "type": "string"
