@@ -119,6 +119,43 @@ public rendering/commerce; the verification shell has minimal local CSS only.
 
 ## Evidence and limits
 
+### Optional internal bold_commerce presentation
+
+`GET /api/admin/internal/graph-preview?site_id=...&pattern=bold_commerce`
+selects a presentation lens, without persisting pattern identity or changing the
+graph. Only this selection additionally requires super_admin; the legacy preview
+still allows support with sites:read and retains its exact HTML/CSP.
+
+`fixture=hardware_qa` optionally binds packaged photos to qa-hero with the exact
+headline FORGE SUPPLY / QA and qa-products containing exactly Martillo de una,
+Llave ajustable, Sargento. Names and block IDs, not array positions, bind photos.
+Mismatch, unknown selectors, or fixture without pattern return 422. Without the
+fixture the theme is text-only, not an automatic product photography system.
+
+Bold alone adds img-src data: and font-src data: to the existing hashed-style
+CSP. All resource bytes come from backend/app/site_graph_preview_assets/bold_commerce;
+graph-provided resources/styles are never used. Font, photo and icon licensing,
+hashes, crops and provenance are packaged there. No public allowlist changes.
+
+Cart/checkout are disabled static visual references, not initialized modules.
+Graph order, manual trust values (including zero and expired declared dates),
+and escaping remain intact. No new claims, commerce data, migrations, provider
+calls, public rendering or customer data ingestion. Read audit/no-store/noindex
+and the default-off feature flag remain unchanged.
+
+The reviewed hero uses a natural dark photo region, not a dark overlay. Mobile
+hero minimum is 520px (instead of the approximate 460px design target) to retain
+readability over the photograph while leaving the next section visible at 844px.
+Real photographs are fitted into 4:5 derivative canvases before CSS cover; whole
+tools are retained. The hammer derivative remains CC BY-SA 3.0, attributed in the
+fixture and provenance. Body copy uses the system font; headings use packaged
+Barlow Condensed Bold (SIL OFL). No third-party resources are requested at runtime.
+
+Evidence: C:/Users/alber/Projects/kreaton-evidence/ai-graph-bold-commerce/.
+The local harness substitutes only Supabase's identity lookup with a synthetic
+admin. It exercises the existing resolver, middleware, operations endpoint,
+SQLite persistence and audited preview; it does not prove production login.
+
 Evidence: `C:/Users/alber/Projects/kreaton-evidence/ai-graph/`.
 Python: 423 passed, 40 subtests passed, 31 warnings, exit 0 (32 new graph tests).
 Node: 231 passed, 0 failed, exit 0. Initial sandbox-only esbuild read failure is

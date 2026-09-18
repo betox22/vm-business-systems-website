@@ -1,5 +1,20 @@
 # Bitácora de agentes (Claude / Codex)
 
+## 2026-09-18 - Codex - Internal bold_commerce renderer, not released
+
+Isolated feature/ai-graph-bold-commerce from origin/main 9569e9b. Explicit
+presentation selector and closed hardware_qa photo fixture; legacy HTML unchanged.
+Hero/grid/footer/manual trust styling, packaged licensed photos/font/Lucide icons,
+disabled commerce mockups. Approved CSP data-image/font exception and additional
+super_admin check apply only to bold preview. No global auth, schemas, generation,
+claims, service, commerce, public renderer, migrations or publication changes.
+
+Python complete: 1134 passed + 40 subtests, 31 warnings, exit 0 (29 new cases).
+Node complete: 231 passed / 0 failed, exit 0. Initial esbuild sandbox denial retained.
+Evidence: kreaton-evidence/ai-graph-bold-commerce/report.md, including synthetic
+browser QA, real user-set 200% Chrome zoom, asset licensing and HTML byte budget.
+No OpenAI, production data access, commit, push, merge, deploy or Render flag change.
+
 ## 2026-09-18 - Codex - Manual trust facts, isolated and not released
 
 Branch feature/ai-graph-trust-facts from origin/main 359aa19. Added strict manual
