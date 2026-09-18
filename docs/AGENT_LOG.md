@@ -16,6 +16,24 @@ Formato de entrada:
 
 ---
 
+## 2026-09-17 — Codex — AI graph skeleton aislado
+
+**Hecho:** worktree kreaton-ai-graph desde origin/main b34f58a. Contratos Pydantic
+y JSON Schema v1, dos tablas nuevas opt-in, tres patrones abstractos suministrados,
+batch transaccional con version optimista y auditoria existente. Preview admin
+protegida, tres bloques renderizados y referencias inertes de modulos fijos.
+
+**Verificacion:** Python 423 passed + 40 subtests; Node 231 passed / 0 failed.
+32 tests nuevos, incluida carrera real entre dos writers (200/409) y rollback
+por fallo de auditoria. Chromium muestra hero/grid/footer desde SQLite local;
+persistencia confirmada despues de reiniciar. Auth externa sintetica, no produccion.
+
+**Pendiente / abierto:** LLM, editor visual e ingestion de clientes quedan fuera.
+PostgreSQL real no ejecutado; flag KREATON_AI_GRAPH_ENABLED apagado por defecto.
+Sin commit/push/deploy; main y otros worktrees conservados. Stripe/carrito/checkout
+intactos. Contrato y limites: docs/AI-GRAPH-CONTRACT.md. Evidencia en
+C:/Users/alber/Projects/kreaton-evidence/ai-graph/.
+
 ## 2026-09-17 — Codex — Express, ciclo de pago, registro de planes y vencimiento manual
 
 **Hecho:** cuentas Connect nuevas usan Express. Webhook de tienda reconcilia los
