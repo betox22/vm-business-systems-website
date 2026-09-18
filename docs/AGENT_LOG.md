@@ -1,5 +1,21 @@
 # Bitácora de agentes (Claude / Codex)
 
+## 2026-09-18 - Codex - Manual trust facts, isolated and not released
+
+Branch feature/ai-graph-trust-facts from origin/main 359aa19. Added strict manual
+trust_facts content and local validators, generated conditional JSON schemas,
+independent GeneratedBlock/GeneratedAddBlock excluding manual data, and escaped
+internal preview. No schema migration, public integration or OpenAI call.
+Operations use the unchanged shared transactional service; updates replace content.
+Past promotion dates remain visible, empty content renders nothing, nulls normalize
+only within trust content. Manual data is not evidence authorizing generated prose.
+
+Evidence and 13-group matrix: kreaton-evidence/ai-graph-trust-facts/report.md.
+Python: 1105 passed + 40 subtests, 31 warnings, exit 0 (135 new cases).
+Node: 231 passed / 0 failed, exit 0; initial esbuild sandbox failure retained.
+Browser verification uses synthetic admin identity and local SQLite, not production.
+No commit, push, merge or deployment; feature flag stays off by default.
+
 ## 2026-09-18 - Codex - Final Sprint 4 policy and authorized release
 
 Business prose now forbids every CLAIM_RULES_V1 category even with matching facts.

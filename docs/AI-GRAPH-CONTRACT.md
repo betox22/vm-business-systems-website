@@ -60,6 +60,37 @@ Fixed embeds accept only `{"module":"shared-commerce-cart"}` or
 `{"module":"storefront-checkout"}` respectively. They cannot contain generated
 HTML or alternate module references and never execute during preview.
 
+## Manual trust facts
+
+`trust_facts` is an additive experimental v1 block, written only through generic
+operations. Its strict content allows optional contact (phone, whatsapp, email,
+address), experience_years (integer 0-150), certifications (at most ten strings),
+guarantee, and promotion (required text, optional ISO calendar date valid_until).
+Local validators reject markup, controls and resource references; email has its
+own basic syntax check and phones allow 7-15 ASCII digits with formatting. These
+checks do not verify ownership, deliverability or the truth of a business claim.
+Text limits are 400 characters, certificates 160, phones 40, and email 254.
+
+Omitted/null fields are removed from trust content only. Empty content is valid
+and renders nothing; zero experience is retained and shown. Content updates replace
+the whole object, including removal of omitted fields. Only default layout is
+accepted in this preview. Existing graph types and persistence are unchanged.
+
+GeneratedBlock/GeneratedAddBlock deliberately exclude this type: neither the
+provider schema nor accepted provider output can contain it. Manual trust data
+is never sent to the provider. No claims scanner or provided_facts comparison
+applies to this manual block; generated business prose retains its total claim ban.
+The same operations validation and transactional service handle manual writes.
+
+The internal preview escapes values and creates no contact links or remote loads.
+valid_until is stored/displayed only: past promotions remain visible. Future public
+expiry requires a separate timezone/inclusive-date decision; no expiry job exists.
+No public renderer, customer UI, database table or migration is added here.
+
+Old graphs remain compatible. An older binary cannot read trust_facts: before
+rollback, export QA graphs and remove these blocks via operations, or keep the
+feature disabled. Do not assume transparent backward reading of the new enum.
+
 ## Abstract design references
 
 Exactly editorial_minimal, bold_commerce and luxury_quiet are bootstrapped. Their
