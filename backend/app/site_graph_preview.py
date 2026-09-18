@@ -17,7 +17,9 @@ def render_graph(graph: SiteGraph) -> str:
             items = content.get("items", [])
             cards = "".join(f'<article><h3>{text(i.get("name"))}</h3><p>{text(i.get("description"))}</p></article>'
                             for i in (items if isinstance(items, list) else []) if isinstance(i, dict))
-            sections.append(f'<section {attrs}><h2>{text(content.get("heading"))}</h2><div class="grid">{cards}</div></section>')
+            section_text = text(content.get("section_text"))
+            intro = f"<p>{section_text}</p>" if section_text else ""
+            sections.append(f'<section {attrs}><h2>{text(content.get("heading"))}</h2>{intro}<div class="grid">{cards}</div></section>')
         elif block.type == "footer":
             sections.append(f'<footer {attrs}>{text(content.get("text"))}</footer>')
         else:

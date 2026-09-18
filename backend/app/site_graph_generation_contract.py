@@ -13,6 +13,13 @@ from .site_graph_contract import (
     StrictModel,
     apply_operations,
 )
+from .site_graph_claims import CLAIM_RULES_VERSION, ClaimFinding, scan_claims, unsupported_claims
+
+
+class SemanticGenerationError(ValueError):
+    def __init__(self, findings: list[ClaimFinding] | None = None, message="semantic mismatch"):
+        self.findings = findings or []
+        super().__init__(message)
 
 
 class GenerationRequest(StrictModel):
@@ -24,35 +31,54 @@ class GenerationRequest(StrictModel):
 
 class BusinessProduct(StrictModel):
     name: str = Field(min_length=1, max_length=400)
-    description: str = Field(min_length=1, max_length=400)
+    description: str | None = Field(default=None, min_length=1, max_length=400)
 
     @field_validator("name", "description")
     @classmethod
     def validate_visible_text(cls, value: str) -> str:
-        _business_plain(value)
+        if value is not None:
+            _business_plain(value)
         return value
 
 
 class BusinessGenerationRequest(StrictModel):
     input_mode: Literal["business"]
     business_name: str = Field(min_length=1, max_length=400)
-    tagline: str = Field(min_length=1, max_length=400)
+    business_category: str = Field(min_length=1, max_length=400)
     industry_tag: Literal["product", "commerce", "luxury"]
     products: list[BusinessProduct] = Field(min_length=1, max_length=12)
+    provided_facts: list[str] = Field(default_factory=list, max_length=20)
     language: Literal["en", "es"] = "en"
     expected_version: Literal[0] = 0
 
-    @field_validator("business_name", "tagline")
+    @field_validator("business_name", "business_category")
     @classmethod
     def validate_visible_text(cls, value: str) -> str:
         _business_plain(value)
         return value
+
+    @field_validator("provided_facts")
+    @classmethod
+    def validate_facts(cls, values):
+        seen = set()
+        for value in values:
+            _provided_fact_plain(value)
+            key = value.strip().casefold()
+            if key in seen:
+                raise ValueError("Duplicate provided fact")
+            seen.add(key)
+        return values
 
     @model_validator(mode="after")
     def reject_ambiguous_product_names(self):
         identities = [product.name.strip().casefold() for product in self.products]
         if len(identities) != len(set(identities)):
             raise ValueError("Product names must be unambiguous")
+        if unsupported_claims(
+            [(f"products[{index}].name", product.name) for index, product in enumerate(self.products)],
+            self.provided_facts,
+        ):
+            raise ValueError("Product name contains an unsupported claim")
         return self
 
 
@@ -100,11 +126,13 @@ RULES = [
     "Use exactly one hero, one product_grid and one footer, in that order. Optionally append at most one of each fixed embed.",
     "Every block has layout_variant=default and a unique block_id; order_index starts at zero and is contiguous.",
     "Hero content has only headline and subheadline, both nonempty plain strings of at most 400 characters.",
-    "Product grid content has only heading and items. Each item has only name and description, nonempty plain strings of at most 400 characters.",
-    "Use every product name and description from scenario.products exactly once and unchanged. No other products.",
-    "For a business scenario, copy business_name verbatim to hero.headline and footer.text, copy tagline verbatim to hero.subheadline, and use only Products or Productos as the product heading according to language.",
-    "For a synthetic scenario, preserve the existing compatible hero, heading and footer behavior.",
-    "No HTML, URLs, invented prices, ratings, stock, promotions, claims or contacts. Use only the supplied facts.",
+    "Business product grid content has only heading, section_text and items. All visible text must be nonempty, plain and at most 400 characters. Each item has only name and description.",
+    "For business input, write all copy creatively but use every supplied product name exactly once and never invent products.",
+    "In business creative prose, experience, percentages, prices, promotions, guarantees, free shipping, awards, certifications, rankings, emails, phones and addresses are forbidden even when provided_facts supports them. This applies to headline, subheadline, heading, section_text, footer and product descriptions.",
+    "provided_facts only supports risky words in exact mandatory product names. Never repeat those claims outside the product name field.",
+    "For a synthetic scenario, product grid has only heading and items; copy every product name and description exactly. Footer has only text. Write other copy in scenario.language.",
+    "For business, footer has only text. Write copy in scenario.language. Neither business_name/category/descriptions nor facts authorize claims in creative prose.",
+    "No HTML, URLs, ratings, stock or extra data fields.",
     "Fixed embeds are references only: cart_embed content={module:shared-commerce-cart}; checkout_embed content={module:storefront-checkout}.",
 ]
 
@@ -129,15 +157,19 @@ def generation_scenario(request: GenerationInput) -> dict:
     if isinstance(request, BusinessGenerationRequest):
         return {
             "business_name": request.business_name,
-            "tagline": request.tagline,
+            "business_category": request.business_category,
             "products": [product.model_dump() for product in request.products],
+            "provided_facts": request.provided_facts,
             "language": request.language,
         }
     return synthetic_scenario(request)
 
 
-def generation_contract() -> dict:
-    return {"schema": ProposedGraph.model_json_schema(), "rules": list(RULES)}
+def generation_contract(retry_feedback=None) -> dict:
+    contract = {"schema": ProposedGraph.model_json_schema(), "rules": list(RULES), "claim_rules_version": CLAIM_RULES_VERSION}
+    if retry_feedback:
+        contract["retry_feedback"] = retry_feedback[:10]
+    return contract
 
 
 def _plain(value):
@@ -153,6 +185,15 @@ def _plain(value):
 def _business_plain(value: str) -> None:
     _plain(value)
     if _RESOURCE_REFERENCE.search(value):
+        raise ValueError("Resource references are not permitted")
+    if any(f.rule_id in ("phone_claim", "address_claim") for f in scan_claims(value)):
+        raise ValueError("Contact details belong only in provided_facts")
+
+
+def _provided_fact_plain(value: str) -> None:
+    _plain(value)
+    without_email = re.sub(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", "CONTACT", value, flags=re.I)
+    if _RESOURCE_REFERENCE.search(without_email):
         raise ValueError("Resource references are not permitted")
 
 
@@ -179,12 +220,38 @@ def _validate_product_fidelity(items: list, request: GenerationInput) -> None:
         for value in item.values():
             _plain(value)
         actual.append((item["name"], item["description"]))
-    expected = [
-        (product["name"], product["description"])
-        for product in _expected_products(request)
-    ]
-    if len(actual) != len(expected) or Counter(actual) != Counter(expected):
+    expected = [(product["name"], product["description"]) for product in _expected_products(request)]
+    if isinstance(request, BusinessGenerationRequest):
+        if Counter(name for name, _ in actual) != Counter(name for name, _ in expected):
+            raise SemanticGenerationError(message="Product identity differs from request")
+    elif Counter(actual) != Counter(expected):
         raise ValueError("Product identity or description differs from request")
+
+
+def _visible_values(graph: SiteGraph) -> list[tuple[str, str]]:
+    values = []
+    for block_index, block in enumerate(graph.blocks):
+        if block.type.endswith("_embed"):
+            continue
+        for key, value in block.content.items():
+            if isinstance(value, str):
+                values.append((f"$.operations[{block_index}].block.content.{key}", value))
+            elif key == "items" and isinstance(value, list):
+                for item_index, item in enumerate(value):
+                    if isinstance(item, dict):
+                        values.extend((f"$.operations[{block_index}].block.content.items[{item_index}].{item_key}", item_value)
+                                      for item_key, item_value in item.items() if isinstance(item_value, str))
+    return values
+
+
+def business_claim_findings(graph: SiteGraph, provided_facts: list[str]):
+    findings = []
+    for path, value in _visible_values(graph):
+        if re.search(r"\.items\[\d+\]\.name$", path):
+            findings.extend(unsupported_claims([(path, value)], provided_facts))
+        else:
+            findings.extend(scan_claims(value, path))
+    return findings
 
 
 def validate_generated_batch(
@@ -212,29 +279,24 @@ def validate_generated_batch(
                 raise ValueError("Invalid hero content")
             for value in content.values():
                 _plain(value)
-            if isinstance(request, BusinessGenerationRequest) and content != {
-                "headline": request.business_name,
-                "subheadline": request.tagline,
-            }:
-                raise ValueError("Business hero copy must be verbatim")
         elif block.type == "footer":
             if set(content) != {"text"}:
                 raise ValueError("Invalid footer content")
             _plain(content["text"])
-            if (
-                isinstance(request, BusinessGenerationRequest)
-                and content["text"] != request.business_name
-            ):
-                raise ValueError("Business footer copy must be verbatim")
         elif block.type == "product_grid":
-            if set(content) != {"heading", "items"} or not isinstance(
+            expected_keys = {"heading", "section_text", "items"} if isinstance(request, BusinessGenerationRequest) else {"heading", "items"}
+            if set(content) != expected_keys or not isinstance(
                 content["items"], list
             ):
                 raise ValueError("Invalid product grid")
             _plain(content["heading"])
             if isinstance(request, BusinessGenerationRequest):
-                expected_heading = "Productos" if request.language == "es" else "Products"
-                if content["heading"] != expected_heading:
-                    raise ValueError("Business product heading is not approved copy")
+                _plain(content["section_text"])
             _validate_product_fidelity(content["items"], request)
+    if isinstance(request, BusinessGenerationRequest):
+        for _, value in _visible_values(graph):
+            _provided_fact_plain(value)
+        findings = business_claim_findings(graph, request.provided_facts)
+        if findings:
+            raise SemanticGenerationError(findings, "Forbidden prose claim or unsupported product identity")
     return batch
