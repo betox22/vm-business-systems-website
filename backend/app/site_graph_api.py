@@ -1,18 +1,19 @@
 """Experimental admin-only graph operations, absent unless explicitly enabled."""
-import time
 import base64
 import hashlib
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from typing import Any
+
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy import update
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from .admin_auth import ADMIN_SESSION_COOKIE_NAME, require_admin_permission
 from .admin_audit import record_admin_audit_event
 from .db import get_session
-from .site_graph_contract import Identifier, OperationsRequest, SiteGraph, apply_operations
+from .site_graph_contract import Identifier, OperationsRequest, SiteGraph
+from . import site_graph_service
+from .site_graph_generation import generate_graph
 from .site_graph_models import SiteGraphRow
 from .site_graph_preview import render_graph
 
@@ -28,39 +29,16 @@ def create_graph_router(resolve_admin):
                    actor=Depends(identity), session: Session = Depends(get_session)):
         if actor.get("role") != "super_admin":
             raise HTTPException(403, "Only super_admin may edit experimental graphs")
-        row = session.get(SiteGraphRow, site_id)
-        version = row.version if row else 0
-        if version != batch.expected_version:
-            raise HTTPException(409, "Graph version conflict")
-        graph = SiteGraph(site_id=site_id, version=version, blocks=row.blocks if row else [])
-        try:
-            result = apply_operations(graph, batch)
-        except ValueError as exc:
-            raise HTTPException(422, str(exc)) from exc
-        blocks = [block.model_dump() for block in result.blocks]
-        try:
-            if row is None:
-                session.add(SiteGraphRow(site_id=site_id, version=result.version, blocks=blocks))
-                session.flush()
-            else:
-                changed = session.execute(update(SiteGraphRow).where(
-                    SiteGraphRow.site_id == site_id, SiteGraphRow.version == batch.expected_version
-                ).values(version=result.version, blocks=blocks, updated_at=int(time.time())))
-                if changed.rowcount != 1:
-                    session.rollback()
-                    raise HTTPException(409, "Graph version conflict")
-            # Existing audit helper commits both this mutation and its event atomically.
-            record_admin_audit_event(session, actor=actor, action="admin.graph.operations",
-                target_type="site_graph", target_id=site_id, outcome="success",
-                request_id=getattr(request.state, "request_id", ""),
-                metadata={"version": result.version, "count": len(batch.operations)})
-        except IntegrityError as exc:
-            session.rollback()
-            raise HTTPException(409, "Graph creation conflict") from exc
-        except Exception:
-            session.rollback()
-            raise
-        return result
+        return site_graph_service.persist_graph_batch(session, site_id=site_id, batch=batch,
+            actor=actor, request_id=getattr(request.state, "request_id", ""))
+
+    @router.post("/api/v1/sites/{site_id}/graph/generate", response_model=SiteGraph)
+    def generate(site_id: Identifier, request: Request, payload: Any = Body(...),
+                 actor=Depends(identity), session: Session = Depends(get_session)):
+        if actor.get("role") != "super_admin":
+            raise HTTPException(403, "Only super_admin may generate experimental graphs")
+        return generate_graph(session, site_id=site_id, payload=payload, actor=actor,
+                              request_id=getattr(request.state, "request_id", ""))
 
     @router.get("/api/admin/internal/graph-preview", response_class=HTMLResponse)
     def preview(site_id: Identifier, request: Request, actor=Depends(identity), session: Session = Depends(get_session)):

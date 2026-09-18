@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app import main, site_graph_api
+from app import main, site_graph_api, site_graph_service
 from app.db import Base, get_session
 from app.db_models import AdminAuditEvent
 from app.site_graph_api import create_graph_router
@@ -131,7 +131,7 @@ def test_invalid_batch_atomic(api):
 
 def test_audit_failure_rolls_back(api):
     client, factory = api
-    with patch.object(site_graph_api, "record_admin_audit_event", side_effect=RuntimeError("audit failed")):
+    with patch.object(site_graph_service, "record_admin_audit_event", side_effect=RuntimeError("audit failed")):
         assert post(client).status_code == 500
     with factory() as session:
         assert session.get(SiteGraphRow, "sample") is None
@@ -205,7 +205,7 @@ def test_storage_initialization_additive_and_repeatable():
 def test_failed_audit_rolls_back_existing_version(api):
     client, factory = api
     assert post(client).status_code == 200
-    with patch.object(site_graph_api, "record_admin_audit_event", side_effect=RuntimeError("audit failed")):
+    with patch.object(site_graph_service, "record_admin_audit_event", side_effect=RuntimeError("audit failed")):
         result = post(client, [{"op": "update_block_content", "block_id": "hero", "content": {"headline": "Must rollback"}}], 1)
         assert result.status_code == 500
     with factory() as session:
@@ -233,14 +233,14 @@ def test_concurrent_writers_only_one_wins(tmp_path):
             yield session
     app.dependency_overrides[get_session] = sessions
     barrier = Barrier(2)
-    original = site_graph_api.apply_operations
+    original = site_graph_service.apply_operations
     def simultaneous(graph, batch):
         barrier.wait(timeout=10)
         return original(graph, batch)
     def write(value):
         with TestClient(app) as client:
             return post(client, [{"op": "update_block_content", "block_id": "hero", "content": {"headline": value}}], 1).status_code
-    with patch.object(site_graph_api, "apply_operations", side_effect=simultaneous), ThreadPoolExecutor(2) as pool:
+    with patch.object(site_graph_service, "apply_operations", side_effect=simultaneous), ThreadPoolExecutor(2) as pool:
         assert sorted(pool.map(write, ["First", "Second"])) == [200, 409]
     with factory() as session:
         assert session.get(SiteGraphRow, "sample").version == 2
