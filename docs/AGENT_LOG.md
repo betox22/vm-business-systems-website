@@ -1,5 +1,27 @@
 # Bitácora de agentes (Claude / Codex)
 
+## 2026-09-18 - Codex - Internal luxury_quiet renderer, approved for release
+
+Isolated feature/ai-graph-luxury-quiet from origin/main 10fb54b. Dedicated pure
+renderer and closed objects_qa fixture, shared VISUAL_RESOURCE_PATTERNS policy
+for bold/luxury role and CSP gates. Legacy and bold output unchanged. Licensed
+horizontal hero, two product photos, original Cormorant Garamond Medium OTF;
+manifest/provenance packaged. Inert cart/checkout, no commerce JS or requests.
+
+39 new automated cases plus existing suites. Browser evidence uses local SQLite
+and a synthetic Supabase identity through the real resolver/operations/preview.
+Native Chrome 200% set by user; CSS zoom remains 1. Text stress at 320 CSS pixels.
+Evidence and exact final suite logs: kreaton-evidence/ai-graph-luxury-quiet/.
+Python complete: 1173 passed + 40 subtests, 31 warnings, exit 0.
+Node complete: 231 passed / 0 failed, exit 0; sandbox-only initial failure saved.
+User approved tracking zero definitively and accepted stress320-final.json
+(40px H1, 12 products, no horizontal overflow). Positive tracking was not tested.
+Approved release: separate functional/docs commits and fast-forward only from
+origin/main 10fb54b. No deployment or Render flag activation authorized.
+No LLM or production DB access during implementation and QA.
+Bold asset test now tolerates Git CRLF checkout for licensed text assets only;
+canonical SHA256 remains required, binary hashes and asset contents unchanged.
+
 ## 2026-09-18 - Codex - Internal bold_commerce renderer, not released
 
 Isolated feature/ai-graph-bold-commerce from origin/main 9569e9b. Explicit

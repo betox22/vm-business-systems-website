@@ -132,7 +132,7 @@ Llave ajustable, Sargento. Names and block IDs, not array positions, bind photos
 Mismatch, unknown selectors, or fixture without pattern return 422. Without the
 fixture the theme is text-only, not an automatic product photography system.
 
-Bold alone adds img-src data: and font-src data: to the existing hashed-style
+The closed VISUAL_RESOURCE_PATTERNS set adds img-src data: and font-src data: to the existing hashed-style
 CSP. All resource bytes come from backend/app/site_graph_preview_assets/bold_commerce;
 graph-provided resources/styles are never used. Font, photo and icon licensing,
 hashes, crops and provenance are packaged there. No public allowlist changes.
@@ -155,6 +155,31 @@ Evidence: C:/Users/alber/Projects/kreaton-evidence/ai-graph-bold-commerce/.
 The local harness substitutes only Supabase's identity lookup with a synthetic
 admin. It exercises the existing resolver, middleware, operations endpoint,
 SQLite persistence and audited preview; it does not prove production login.
+
+### Luxury quiet internal preview
+
+`pattern=luxury_quiet` selects the dedicated presentation lens. The closed
+VisualPattern type derives VISUAL_RESOURCE_PATTERNS: bold_commerce and
+luxury_quiet only. One is_visual check controls the extra super_admin requirement
+and data-image/font CSP; legacy support access remains unchanged.
+
+Optional `fixture=objects_qa` requires objects-hero (UMBRAL / QA) and
+objects-products with exactly Jarron blanco and Duo de recipientes con tapa.
+Crossed fixtures return 422. Without fixture, rendering is intentionally textual.
+Photo identity uses names, not positions. No graph/version/date changes occur.
+
+Cormorant Garamond Medium OFL and three licensed Unsplash photographs are
+packaged under backend/app/site_graph_preview_assets/luxury_quiet with manifest
+and provenance. Hero/grid/footer/trust are styled; cart/checkout remain inert
+disabled mocks. No claims, provider, commerce, public renderer or DB changes.
+Declared promotion dates are displayed, not automatically expired.
+
+H1 tracking is definitively zero by final user approval; a positive-tracking
+experiment was not performed. The user accepted stress320-final.json as release
+evidence. Mobile H1 is 40px at <=360px and 44px otherwise;
+hero min(620px,82svh) preserves the photographed object. HTML fixture: 732417
+UTF-8 bytes, including font/photos, below the 1500000-byte budget.
+Evidence: C:/Users/alber/Projects/kreaton-evidence/ai-graph-luxury-quiet/.
 
 Evidence: `C:/Users/alber/Projects/kreaton-evidence/ai-graph/`.
 Python: 423 passed, 40 subtests passed, 31 warnings, exit 0 (32 new graph tests).
