@@ -405,7 +405,11 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+    if not (os.getenv("KREATON_AI_GRAPH_ENABLED") == "1"
+            and request.url.path == "/api/admin/internal/graph-preview"
+            and response.status_code == 200
+            and "Content-Security-Policy" in response.headers):
+        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
     response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
     return response
 
@@ -685,6 +689,11 @@ def _authenticated_admin_identity(
     if not identity:
         raise HTTPException(status_code=403, detail="This account does not have KREATON admin access.")
     return identity
+
+
+if os.getenv("KREATON_AI_GRAPH_ENABLED") == "1":
+    from .site_graph_api import create_graph_router
+    app.include_router(create_graph_router(_authenticated_admin_identity))
 
 
 @app.post("/api/admin/auth/session")

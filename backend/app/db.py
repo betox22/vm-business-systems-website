@@ -48,6 +48,9 @@ def init_db() -> None:
     _ensure_additive_columns()
     from .platform_plans import bootstrap_plans
     bootstrap_plans(engine)
+    if os.getenv("KREATON_AI_GRAPH_ENABLED") == "1":
+        from .site_graph_storage import init_graph_storage
+        init_graph_storage(engine)
 
 
 def _ensure_additive_columns() -> None:

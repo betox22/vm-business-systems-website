@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "StyleDescriptor": {
+      "additionalProperties": false,
+      "properties": {
+        "palette_roles": {
+          "enum": [
+            "2 neutros + 1 acento tierra sin gradientes",
+            "color saturado protagonista",
+            "tonos tierra/neutros profundos"
+          ],
+          "title": "Palette Roles",
+          "type": "string"
+        },
+        "type_pairing": {
+          "enum": [
+            "sans geometrica",
+            "display expresiva en titulares",
+            "serif editorial con tracking amplio"
+          ],
+          "title": "Type Pairing",
+          "type": "string"
+        },
+        "layout_rhythm": {
+          "enum": [
+            "mucho espacio blanco",
+            "CTAs grandes y repetidos",
+            "ritmo lento"
+          ],
+          "title": "Layout Rhythm",
+          "type": "string"
+        },
+        "imagery_style": {
+          "enum": [
+            "producto aislado y centrado",
+            "hero de accion real",
+            "imagenes full-bleed"
+          ],
+          "title": "Imagery Style",
+          "type": "string"
+        },
+        "density": {
+          "enum": [
+            "sensacion calma/premium",
+            "sensacion de energia",
+            "muy poco texto, sensacion de exclusividad"
+          ],
+          "title": "Density",
+          "type": "string"
+        }
+      },
+      "required": [
+        "palette_roles",
+        "type_pairing",
+        "layout_rhythm",
+        "imagery_style",
+        "density"
+      ],
+      "title": "StyleDescriptor",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "pattern_id": {
+      "enum": [
+        "editorial_minimal",
+        "bold_commerce",
+        "luxury_quiet"
+      ],
+      "title": "Pattern Id",
+      "type": "string"
+    },
+    "name": {
+      "enum": [
+        "editorial_minimal",
+        "bold_commerce",
+        "luxury_quiet"
+      ],
+      "title": "Name",
+      "type": "string"
+    },
+    "industry_tags": {
+      "items": {
+        "enum": [
+          "product",
+          "commerce",
+          "luxury"
+        ],
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Industry Tags",
+      "type": "array"
+    },
+    "style_descriptor": {
+      "$ref": "#/$defs/StyleDescriptor"
+    }
+  },
+  "required": [
+    "pattern_id",
+    "name",
+    "industry_tags",
+    "style_descriptor"
+  ],
+  "title": "DesignPattern",
+  "type": "object"
+}

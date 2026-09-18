@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Block": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "cart_embed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "content": {
+                "additionalProperties": false,
+                "properties": {
+                  "module": {
+                    "const": "shared-commerce-cart"
+                  }
+                },
+                "required": [
+                  "module"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "checkout_embed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "content": {
+                "additionalProperties": false,
+                "properties": {
+                  "module": {
+                    "const": "storefront-checkout"
+                  }
+                },
+                "required": [
+                  "module"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "block_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,95}$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "hero",
+            "product_grid",
+            "footer",
+            "cart_embed",
+            "checkout_embed"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "content": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Content",
+          "type": "object"
+        },
+        "layout_variant": {
+          "default": "default",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,95}$",
+          "title": "Layout Variant",
+          "type": "string"
+        },
+        "order_index": {
+          "maximum": 199,
+          "minimum": 0,
+          "title": "Order Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "block_id",
+        "type",
+        "content",
+        "order_index"
+      ],
+      "title": "Block",
+      "type": "object"
+    },
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "site_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,95}$",
+      "title": "Site Id",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 0,
+      "title": "Version",
+      "type": "integer"
+    },
+    "blocks": {
+      "items": {
+        "$ref": "#/$defs/Block"
+      },
+      "maxItems": 200,
+      "title": "Blocks",
+      "type": "array"
+    }
+  },
+  "required": [
+    "site_id",
+    "version",
+    "blocks"
+  ],
+  "title": "SiteGraph",
+  "type": "object"
+}

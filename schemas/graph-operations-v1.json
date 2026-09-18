@@ -1,0 +1,285 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "AddBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "add_block",
+          "title": "Op",
+          "type": "string"
+        },
+        "block": {
+          "$ref": "#/$defs/Block"
+        }
+      },
+      "required": [
+        "op",
+        "block"
+      ],
+      "title": "AddBlock",
+      "type": "object"
+    },
+    "Block": {
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "cart_embed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "content": {
+                "additionalProperties": false,
+                "properties": {
+                  "module": {
+                    "const": "shared-commerce-cart"
+                  }
+                },
+                "required": [
+                  "module"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "checkout_embed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "content": {
+                "additionalProperties": false,
+                "properties": {
+                  "module": {
+                    "const": "storefront-checkout"
+                  }
+                },
+                "required": [
+                  "module"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        }
+      ],
+      "properties": {
+        "block_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,95}$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "hero",
+            "product_grid",
+            "footer",
+            "cart_embed",
+            "checkout_embed"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "content": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Content",
+          "type": "object"
+        },
+        "layout_variant": {
+          "default": "default",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,95}$",
+          "title": "Layout Variant",
+          "type": "string"
+        },
+        "order_index": {
+          "maximum": 199,
+          "minimum": 0,
+          "title": "Order Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "block_id",
+        "type",
+        "content",
+        "order_index"
+      ],
+      "title": "Block",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "MoveBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "move_block",
+          "title": "Op",
+          "type": "string"
+        },
+        "block_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,95}$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "order_index": {
+          "maximum": 199,
+          "minimum": 0,
+          "title": "Order Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "op",
+        "block_id",
+        "order_index"
+      ],
+      "title": "MoveBlock",
+      "type": "object"
+    },
+    "RemoveBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "remove_block",
+          "title": "Op",
+          "type": "string"
+        },
+        "block_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,95}$",
+          "title": "Block Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "block_id"
+      ],
+      "title": "RemoveBlock",
+      "type": "object"
+    },
+    "UpdateContent": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "update_block_content",
+          "title": "Op",
+          "type": "string"
+        },
+        "block_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,95}$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "content": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Content",
+          "type": "object"
+        }
+      },
+      "required": [
+        "op",
+        "block_id",
+        "content"
+      ],
+      "title": "UpdateContent",
+      "type": "object"
+    },
+    "UpdateVariant": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "update_block_variant",
+          "title": "Op",
+          "type": "string"
+        },
+        "block_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,95}$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "layout_variant": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,95}$",
+          "title": "Layout Variant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "block_id",
+        "layout_variant"
+      ],
+      "title": "UpdateVariant",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "expected_version": {
+      "minimum": 0,
+      "title": "Expected Version",
+      "type": "integer"
+    },
+    "operations": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "add_block": "#/$defs/AddBlock",
+            "move_block": "#/$defs/MoveBlock",
+            "remove_block": "#/$defs/RemoveBlock",
+            "update_block_content": "#/$defs/UpdateContent",
+            "update_block_variant": "#/$defs/UpdateVariant"
+          },
+          "propertyName": "op"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/AddBlock"
+          },
+          {
+            "$ref": "#/$defs/RemoveBlock"
+          },
+          {
+            "$ref": "#/$defs/MoveBlock"
+          },
+          {
+            "$ref": "#/$defs/UpdateContent"
+          },
+          {
+            "$ref": "#/$defs/UpdateVariant"
+          }
+        ]
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Operations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "expected_version",
+    "operations"
+  ],
+  "title": "OperationsRequest",
+  "type": "object"
+}
