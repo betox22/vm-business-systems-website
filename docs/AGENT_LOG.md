@@ -1,5 +1,31 @@
 # Bitácora de agentes (Claude / Codex)
 
+## 2026-09-19 - Codex - Graph pivot v1, four steps approved for release
+
+Approved on feature/ai-graph-pivot-v1 from origin/main 2766055. The graph is an
+internal decision layer targeting the existing Mega Retail home renderer, not
+a replacement public renderer. Whole-document Chromium claims validation covers
+builder/public at 1440/390/320 and interaction states; signed v1 provenance gates
+preserving normalization. One transaction owns GeneratedSite, receipt and audit;
+Product/catalog remain read-only and stale Product/renderer snapshots block reads.
+Four legacy read/write guards remain in main.py; no client route enables v1.
+
+Internal HTTP pilot reuses existing OpenAI generation without committing a graph
+proposal. Manual contact never enters the provider envelope. Real OpenAI + HTTP +
+Chromium + synthetic SQLite persistence verified; Supabase identity was synthetic
+in the local harness, not a production login. Review is static with restrictive
+CSP; blocked images and the inherited neutral Catalog heading remain documented.
+
+Python: 1281 passed + 40 subtests, 31 warnings, exit 0. Node: 246 passed / 0 failed,
+exit 0. Legacy public HTML: 21/21 byte-identical; preserving normalization also
+byte-identical for archived ElectroHub payload. Evidence:
+C:/Users/alber/Projects/kreaton-evidence/ai-graph-pivot-v1/step1 through step4.
+
+Release authorized: functional/docs commits separately, branch push and only a
+fast-forward from origin/main 2766055. KREATON_AI_GRAPH_ENABLED must stay unset/off
+in Render. Task #51 remains a hard production gate: actual PostgreSQL concurrency
+has NOT been verified; do not activate for customers based on SQLite tests.
+
 ## 2026-09-18 - Codex - Internal luxury_quiet renderer, approved for release
 
 Isolated feature/ai-graph-luxury-quiet from origin/main 10fb54b. Dedicated pure
