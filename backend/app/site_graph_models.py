@@ -26,3 +26,15 @@ class DesignReferencePattern(GraphBase):
     name: Mapped[str]
     industry_tags: Mapped[list] = mapped_column(JSON().with_variant(ARRAY(String()), "postgresql"))
     style_descriptor: Mapped[dict] = mapped_column(JSON().with_variant(JSONB(), "postgresql"))
+
+
+class GraphPresentationReceipt(GraphBase):
+    __tablename__ = "graph_presentation_receipts"
+    site_id: Mapped[str] = mapped_column(String(96), primary_key=True)
+    contract: Mapped[str]
+    document_sha256: Mapped[str] = mapped_column(String(64))
+    snapshot_sha256: Mapped[str] = mapped_column(String(64))
+    renderer_revision: Mapped[str] = mapped_column(String(64))
+    renderer_digest: Mapped[str] = mapped_column(String(64))
+    signature: Mapped[str] = mapped_column(String(64))
+    validated_at: Mapped[int]

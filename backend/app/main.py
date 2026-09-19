@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from .admin_audit import list_admin_audit_events, record_admin_audit_event
+from .site_graph_persistence import block_legacy_graph_access
 from .platform_plans import PlanCreate, PlanEdit, PlanPriceEdit, create_plan, update_plan, plan_dict
 from .db_models import PlatformPlan
 from .manual_trial_expiry import expire_manual_trials
@@ -1401,6 +1402,7 @@ def persist_generated_site(
         ).scalar_one_or_none()
         if not existing_site:
             raise HTTPException(status_code=404, detail="Generated site not found for this account.")
+        block_legacy_graph_access(existing_site, session)
 
     store = _get_or_create_store(
         session,
@@ -1510,6 +1512,7 @@ async def client_project_detail(
     ).scalar_one_or_none()
     if not site:
         raise HTTPException(status_code=404, detail="Project not found.")
+    block_legacy_graph_access(site, session)
     try:
         schema = json.loads(site.generated_config or "{}")
     except json.JSONDecodeError:
@@ -1552,6 +1555,8 @@ async def update_client_site(
         raise HTTPException(status_code=404, detail="Project not found.")
     if payload.businessId and payload.businessId != site.store_id:
         raise HTTPException(status_code=409, detail="Project business id does not match this site.")
+
+    block_legacy_graph_access(site, session)
 
     schema = validate_generated_site_schema(payload.website_schema)
     summary = _schema_summary(schema)
@@ -1721,6 +1726,7 @@ def _public_site_payload(site: GeneratedSite, session: Session | None = None) ->
     the point of a public site viewer), but not learn who owns it.
     """
 
+    block_legacy_graph_access(site, session)
     try:
         schema = json.loads(site.generated_config or "{}")
     except json.JSONDecodeError:

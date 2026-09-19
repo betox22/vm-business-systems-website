@@ -115,7 +115,7 @@ def sanitize_admin_audit_metadata(value: Any, *, _depth: int = 0) -> Any:
     return f"[{type(value).__name__}]"
 
 
-def record_admin_audit_event(
+def stage_admin_audit_event(
     session: Session,
     *,
     actor: Mapping[str, Any],
@@ -140,8 +140,13 @@ def record_admin_audit_event(
     )
     if not event.actor_user_id or not event.actor_role or not event.action:
         raise ValueError("Admin audit events require an actor, role, and action.")
+    session.add(event)
+    return event
+
+
+def record_admin_audit_event(session: Session, **kwargs) -> AdminAuditEvent:
+    event = stage_admin_audit_event(session, **kwargs)
     try:
-        session.add(event)
         session.commit()
         session.refresh(event)
     except Exception:

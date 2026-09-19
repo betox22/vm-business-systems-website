@@ -71,7 +71,7 @@ def _feedback(exc):
              "instruction": "Use every supplied product name exactly once."}]
 
 
-def _generate_batch(session, request, envelope, *, site_id, actor, request_id):
+def _generate_batch(session, request, envelope, *, site_id, actor, request_id, retry_audit=None):
     raw = site_graph_llm.generate_with_openai(envelope)
     try:
         return validate_generated_batch(raw, request, site_id), "admin.graph.generated"
@@ -79,7 +79,7 @@ def _generate_batch(session, request, envelope, *, site_id, actor, request_id):
         if not isinstance(request, BusinessGenerationRequest):
             raise GenerationFailure("invalid_generated_batch", 422) from first
         feedback = _feedback(first)
-        record_admin_audit_event(
+        (retry_audit or record_admin_audit_event)(
             session, actor=actor, action="admin.graph.generation_retry",
             target_type="site_graph", target_id=site_id, outcome="rejected",
             request_id=request_id,

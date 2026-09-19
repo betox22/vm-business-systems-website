@@ -58,7 +58,7 @@ export async function reconcileCheckoutReturn({ site, cart, apiBase, locationRef
   return cleared;
 }
 
-export function openStorefrontCheckout({ site, items, apiBase, cart, documentRef = document, locationRef = window.location }) {
+export function openStorefrontCheckout({ site, items, apiBase, cart, documentRef = document, locationRef = window.location, neutralPresentation = false }) {
   documentRef.querySelector(".storefront-checkout")?.remove();
   const es = (site.schema?.business?.selectedLanguage || site.schema?.selectedLanguage) === "es";
   const copy = es ? {
@@ -71,6 +71,7 @@ export function openStorefrontCheckout({ site, items, apiBase, cart, documentRef
     submit: "Continue to secure payment", waiting: "Preparing checkout...", close: "Close",
   };
   const field = (name, autocomplete, max, full = false) => `<label class="${full ? "checkout-full" : ""}">${copy[name]}<input name="${name}" autocomplete="${autocomplete}" maxlength="${max}" required ${name === "email" ? 'type="email"' : 'type="text"'} ${name === "country" ? 'pattern="[A-Za-z]{2}" value="US"' : ""}></label>`;
+  if (neutralPresentation) copy.submit = es ? "Continuar al pago" : "Continue to payment";
   const overlay = documentRef.createElement("div");
   overlay.className = "storefront-checkout";
   overlay.innerHTML = `<section role="dialog" aria-modal="true" aria-labelledby="storefrontCheckoutTitle"><header><h2 id="storefrontCheckoutTitle">${copy.title}</h2><button type="button" data-checkout-close aria-label="${copy.close}">&times;</button></header><form>
@@ -123,7 +124,7 @@ export function openStorefrontCheckout({ site, items, apiBase, cart, documentRef
         })); } catch { /* Storage restrictions must not prevent payment. */ }
       }
       locationRef.assign(result.checkoutUrl);
-    } catch (error) { status.textContent = error.message; }
+    } catch (error) { status.textContent = neutralPresentation ? "Checkout could not be completed. Please try again." : error.message; }
     finally { pending = false; submit.disabled = false; }
   });
   form.querySelector("input")?.focus();

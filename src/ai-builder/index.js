@@ -41,6 +41,7 @@ import { buildColorProvenance, colorPreferenceUpdate } from './color-provenance.
 import { applyAuthoritativeThemeToBrand } from './theme-policy.js';
 import { applySurgicalSchemaEdit, detectSurgicalEditIntent } from './surgical-edit-policy.js';
 import { generationAuthAction } from './auth-session-policy.js';
+import { preservedGraphDocument } from './graph-normalization-policy.js';
 import {
   hasOnlineSalesSignal,
   isStrongNewBusinessBrief,
@@ -6815,6 +6816,8 @@ function catalogSourceFromSchema(schema = {}) {
 
 export function prepareWebsiteConfig(schema, payload = {}, templateSelection = null) {
   if (!schema) return schema;
+  const preserved = preservedGraphDocument(schema);
+  if (preserved) return preserved;
   const brand = normalizeBrand(payload.brand || builderState.guidedState.brand || schema.brand || {
     logoUrl: payload.assets?.find((asset) => asset.asset_type === "logo")?.url || schema.global_components?.logo_url || "",
     preferredColors: payload.preferred_colors,
@@ -6984,7 +6987,9 @@ function createDesignStrategy(payload = {}, templateSelection = null, schema = {
   };
 }
 
-function applyDesignIntelligence(schema, payload = {}, templateSelection = null, options = {}) {
+export function applyDesignIntelligence(schema, payload = {}, templateSelection = null, options = {}) {
+  const preserved = preservedGraphDocument(schema);
+  if (preserved) return preserved;
   const businessContext = analyzeBusinessContext(payload, schema);
   const designDirection = chooseDesignDirection(businessContext, templateSelection, schema);
   const layoutStrategy = createLayoutStrategy(businessContext, designDirection, schema);
@@ -7013,7 +7018,9 @@ function applyDesignIntelligence(schema, payload = {}, templateSelection = null,
   return nextSchema;
 }
 
-function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelection = null) {
+export function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelection = null) {
+  const preserved = preservedGraphDocument(schema);
+  if (preserved) return preserved;
   const templateId = `${templateSelection?.templateId || payload.templateId || schema.selected_template?.id || schema.layout_mode?.template_id || ""}`;
   const catalogType = `${templateSelection?.catalogType || payload.catalogType || schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || ""}`;
   const brief = [
@@ -7253,7 +7260,9 @@ function navigationWithCustomPages(baseNavigation = [], customPages = [], source
   return nextNavigation;
 }
 
-function lockSchemaToExecutableTemplate(schema, payload = {}, templateSelection = null, context = {}) {
+export function lockSchemaToExecutableTemplate(schema, payload = {}, templateSelection = null, context = {}) {
+  const preserved = preservedGraphDocument(schema);
+  if (preserved) return preserved;
   const template = templateSelection?.template || payload.selectedTemplate || schema.selected_template || {};
   const templateId = context.templateId || templateSelection?.templateId || payload.templateId || schema.selected_template?.id || schema.layout_mode?.template_id || template.id || "";
   const catalogType = context.catalogType || templateSelection?.catalogType || payload.catalogType || schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || template.catalogModel?.catalogType || "";

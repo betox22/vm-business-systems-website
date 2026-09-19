@@ -196,7 +196,7 @@ def test_storage_initialization_additive_and_repeatable():
         conn.execute(text("INSERT INTO unrelated VALUES (7)"))
     init_graph_storage(engine)
     init_graph_storage(engine)
-    assert set(inspect(engine).get_table_names()) == {"unrelated", "site_graphs", "design_reference_patterns"}
+    assert set(inspect(engine).get_table_names()) == {"unrelated", "site_graphs", "design_reference_patterns", "graph_presentation_receipts"}
     with engine.connect() as conn:
         assert conn.execute(text("SELECT id FROM unrelated")).scalar() == 7
         assert conn.execute(text("SELECT count(*) FROM design_reference_patterns")).scalar() == 3

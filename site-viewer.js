@@ -2,10 +2,10 @@ import { createSharedCommerceCart, resolveCatalogAction } from "./shared-commerc
 import { openStorefrontCheckout, reconcileCheckoutReturn } from "./storefront-checkout.js?v=2";
 import { createSharedSiteMotion, motionDataAttributes } from "./shared-site-motion.js?v=1";
 import { limitPremiumHeadline, premiumSectionImage, PREMIUM_IMAGE_ROLES } from "./src/ai-builder/premium-product-policy.js?v=1";
-import { resolveMegaRetailDepartmentTiles } from "./src/ai-builder/mega-retail-policy.js?v=2";
+import { withGraphPresentation, graphPresentationEnabled, graphPresentationLabels, graphProductAttributes, resolveMegaRetailDepartmentTiles } from "./src/ai-builder/mega-retail-policy.js?v=2";
 
 const API_BASE_URL = resolveApiBaseUrl();
-const publicSite = document.querySelector("#publicSite");
+let publicSite = document.querySelector("#publicSite");
 const viewerParams = new URLSearchParams(window.location.search);
 const isProjectCardPreview = viewerParams.get("embed") === "project-card";
 let currentPublicSite = null;
@@ -13,8 +13,9 @@ let currentPublicSchema = null;
 let currentPublicPageKey = "home";
 let sharedCart = null;
 let sharedMotion = null;
+let internalPresentationContext = null;
 
-loadPublicSite();
+if (publicSite) loadPublicSite();
 
 async function loadPublicSite() {
   const siteId = viewerParams.get("site_id");
@@ -74,7 +75,7 @@ function notifyProjectCardPreview(status) {
 function renderCurrentPublicPage() {
   if (!currentPublicSchema) return;
   sharedMotion?.destroy();
-  publicSite.innerHTML = renderWebsite(currentPublicSchema, currentPublicPageKey);
+  publicSite.innerHTML = renderWebsite(currentPublicSchema, currentPublicPageKey, internalPresentationContext || {});
   bindPublicSiteActions();
   sharedMotion = isProjectCardPreview ? null : createSharedSiteMotion({
     root: publicSite,
@@ -106,7 +107,31 @@ function resolveApiBaseUrl() {
   return "http://127.0.0.1:8010";
 }
 
-function renderWebsite(schema, pageKey = "home") {
+export function renderWebsite(schema, pageKey = "home", context = {}) {
+  return withGraphPresentation(schema, context, () => renderWebsiteDocument(schema, pageKey));
+}
+
+export function mountInternalGraphPresentation(site, root, context, renderer = renderWebsite) {
+  if (!withGraphPresentation(site.schema, context, () => graphPresentationEnabled(site.schema))) {
+    throw new Error('Internal presentation context required');
+  }
+  sharedCart?.close();
+  sharedMotion?.destroy();
+  publicSite = root;
+  currentPublicSite = site;
+  currentPublicSchema = site.schema;
+  currentPublicPageKey = 'home';
+  internalPresentationContext = context;
+  const checkout = (items) => openStorefrontCheckout({ site, items, cart: sharedCart,
+    apiBase: API_BASE_URL, neutralPresentation: true });
+  sharedCart = createSharedCommerceCart({ businessId: site.business_id, siteId: site.site_id,
+    getLabels: () => commerceLabels(site.schema), onCheckout: ({ items }) => checkout(items) });
+  root.innerHTML = renderer(site.schema, 'home', context);
+  bindPublicSiteActions();
+  return { cart: sharedCart, checkout, openLead: openLeadModal, openAccount: openAccountModal };
+}
+
+function renderWebsiteDocument(schema, pageKey = "home") {
   const page = schema.pages?.find((item) => item.page_key === pageKey) || schema.pages?.[0];
   const theme = schema.theme || {};
   const logo = schema.brand?.logoUrl || schema.global_components?.logo_url;
@@ -305,7 +330,7 @@ function renderMegaRetailPublicBento(schema, heroSection, categories, items, cli
 
 function renderMegaRetailPublicDeals(schema, sections, items, labels) {
   const source = sections.find((section) => ["DealRow", "ProductGrid"].includes(section.type)) || {};
-  return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailPublicIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => { const action = catalogAction(schema, item); return `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailPublicDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${action.attributes}>${escapeHtml(action.label)}</button></div></article>`; }).join("")}</div></section>`;
+  return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2>${escapeHtml(labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailPublicIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => { const action = catalogAction(schema, item); return `<article class="mega-retail-product"${graphProductAttributes(schema, item)} ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailPublicDiscountBadge(item)}</div><small>${escapeHtml(item.category || labels.department)}</small><h3>${escapeHtml(item.name || "")}</h3><p>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong>${graphPresentationEnabled(schema) ? `<span class="graph-product-stock">${escapeHtml(String(item.inventory_quantity))}</span>` : ""}<button type="button" ${action.attributes}>${escapeHtml(action.label)}</button></div></article>`; }).join("")}</div></section>`;
 }
 
 function megaRetailPublicDiscountBadge(item = {}) {
@@ -352,7 +377,7 @@ function megaRetailPublicLabels(schema = {}) {
     en: { departments: "Departments", search: "Search products and departments", account: "Sign in", favorites: "Favorites", cart: "Cart", featured: "Featured", department: "Department", heroText: "Everything you need, in one place.", discover: "Discover the collection", explore: "Explore", limited: "Limited-time picks", deals: "Today's deals", viewAll: "View all", price: "Price on request", tagline: "Everything you need in one place.", help: "Help", company: "Company", newsletter: "Get the best deals", newsletterText: "New arrivals and special offers in your inbox.", subscribe: "Subscribe", helpLinks: ["Shipping", "Returns", "Contact", "Frequently asked questions"], fallbackCategories: ["Technology", "Home", "Fashion", "Beauty", "Outdoor"], trust: [["Fast shipping", "Reliable delivery options"], ["Easy returns", "Simple exchanges and returns"], ["A broad catalog", "Everything in one place"], ["Secure payment", "Protected checkout"]] },
     es: { departments: "Departamentos", search: "Buscar productos y departamentos", account: "Ingresar", favorites: "Favoritos", cart: "Carrito", featured: "Destacado", department: "Departamento", heroText: "Todo lo que buscas, en un solo lugar.", discover: "Descubre la colección", explore: "Explorar", limited: "Selección por tiempo limitado", deals: "Ofertas de hoy", viewAll: "Ver todo", price: "Precio a consultar", tagline: "Todo lo que buscas en un solo lugar.", help: "Ayuda", company: "Empresa", newsletter: "Recibe las mejores ofertas", newsletterText: "Novedades y promociones directo en tu correo.", subscribe: "Suscribirse", helpLinks: ["Envíos", "Devoluciones", "Contacto", "Preguntas frecuentes"], fallbackCategories: ["Tecnología", "Hogar", "Moda", "Belleza", "Aire libre"], trust: [["Envío rápido", "Opciones de entrega confiables"], ["Devoluciones fáciles", "Cambios y devoluciones simples"], ["Catálogo amplio", "Todo en un solo lugar"], ["Pago seguro", "Compra protegida"]] },
   };
-  return all[language] || all.en;
+  return graphPresentationLabels(schema, all[language] || all.en);
 }
 
 function megaRetailPublicIcon(name) {
@@ -2319,7 +2344,7 @@ function openLeadModal(context = {}) {
       </div>
       <p>Send a quick request${escapeHtml(itemText)}. The business will receive it in their admin panel.</p>
       <label>Name<input name="customerName" autocomplete="name" placeholder="Your name"></label>
-      <label>Email<input name="email" type="email" autocomplete="email" placeholder="you@example.com"></label>
+      <label>Email<input name="email" type="email" autocomplete="email" placeholder="${internalPresentationContext ? "Email address" : "you@example.com"}"></label>
       <label>Phone<input name="phone" autocomplete="tel" placeholder="Phone or WhatsApp"></label>
       <label>Message<textarea name="message" rows="4" required>${context.catalogItemName ? `I am interested in ${context.catalogItemName}.` : ""}</textarea></label>
       <input name="catalogItemId" type="hidden" value="${escapeAttribute(context.catalogItemId || "")}">
