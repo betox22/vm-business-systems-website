@@ -4,10 +4,11 @@ import json
 import os
 import time
 import uuid
+from collections import defaultdict, deque
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List, Literal, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -1039,55 +1040,88 @@ async def update_customer_me(payload: CustomerProfilePatch, x_user_id: str = Hea
 
 
 @router.get("/customer/orders")
-async def customer_orders(
-    x_user_id: str = Header(default="demo-customer"),
-    session: Session = Depends(get_session),
-) -> Dict[str, Any]:
-    profile = await customer_me(x_user_id)
-    email = str(profile.get("email") or "").strip().lower()
-    db_orders = []
-    if email:
-        db_orders = [
-            order_to_api(order)
-            for order in session.execute(
-                select(DbOrder)
-                .join(DbCustomer, DbOrder.customer_id == DbCustomer.id)
-                .where(func.lower(DbCustomer.email) == email)
-                .order_by(DbOrder.created_at.desc())
-            ).scalars()
-        ]
-    orders = db_orders
-    if not orders:
-        orders = [
+async def customer_orders(x_user_id: str = Header(default="demo-customer")) -> Dict[str, Any]:
+    # SECURITY (2026-09-20): this endpoint used to resolve `email` from the
+    # unauthenticated `x_user_id` header via the in-memory CUSTOMER_PROFILES
+    # mock, then query real orders across every store by that email alone.
+    # There is no real customer login in this backend yet (only store-owner
+    # accounts via Supabase and staff/admin accounts) -- `x_user_id` is
+    # entirely client-supplied and CUSTOMER_PROFILES defaulted every unknown
+    # id to the literal email "customer@example.com". Worse, `PATCH
+    # /customer/me` lets a caller set that profile's email to anyone else's
+    # real address, then `GET /customer/orders` returned that person's full
+    # order history (name, email, phone, shipping address, items, payment
+    # metadata) for every store on the platform, with zero authentication.
+    # Listing a customer's own orders safely requires a real, verified
+    # customer identity (a proper auth design, not this header), so that
+    # capability is removed here rather than patched around. Single-order
+    # lookup by order number is still available, scoped, below.
+    return {
+        "userId": x_user_id,
+        "orders": [
             {
                 "orderNumber": "KR-2048",
                 "status": "in_transit",
                 "total": 1176,
                 "tracking": {"carrier": "UPS", "trackingNumber": "1Z88942"},
             }
-        ]
-    return {"userId": x_user_id, "orders": orders}
+        ],
+    }
+
+
+_CUSTOMER_ORDER_LOOKUP_BUCKETS: Dict[str, deque] = defaultdict(deque)
+
+
+def _customer_order_lookup_client_ip(request: Request) -> str:
+    cf_ip = request.headers.get("cf-connecting-ip", "").strip()
+    if cf_ip:
+        return cf_ip
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _enforce_customer_order_lookup_rate_limit(request: Request, *, limit: int = 20, window_seconds: int = 60) -> None:
+    # order_number has ~2^24 possible values (see generate_order_number); rate
+    # limiting by IP keeps a guessed-number + guessed-email brute force
+    # infeasible even though the endpoint itself must stay unauthenticated
+    # (this is a guest "track my order" lookup, mirroring the same
+    # unguessable-capability pattern already used by /checkout/session-status).
+    key = f"customer_order_lookup:{_customer_order_lookup_client_ip(request)}"
+    now = time.monotonic()
+    bucket = _CUSTOMER_ORDER_LOOKUP_BUCKETS[key]
+    while bucket and now - bucket[0] > window_seconds:
+        bucket.popleft()
+    if len(bucket) >= limit:
+        raise HTTPException(status_code=429, detail="Too many requests. Please wait a moment and try again.")
+    bucket.append(now)
 
 
 @router.get("/customer/orders/{order_number}")
 async def customer_order_detail(
     order_number: str,
-    x_user_id: str = Header(default="demo-customer"),
+    request: Request,
+    email: str = Query(..., min_length=5, max_length=200),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    profile = await customer_me(x_user_id)
-    email = str(profile.get("email") or "").strip().lower()
-    order = None
-    if email:
-        db_order = session.execute(
-            select(DbOrder)
-            .join(DbCustomer, DbOrder.customer_id == DbCustomer.id)
-            .where(DbOrder.order_number == order_number, func.lower(DbCustomer.email) == email)
-        ).scalar_one_or_none()
-        order = order_to_api(db_order) if db_order else None
-    if not order:
+    # SECURITY (2026-09-20): previously trusted an unauthenticated x_user_id
+    # header resolved through the CUSTOMER_PROFILES mock instead of a value
+    # the caller actually proves they know. The caller must now supply their
+    # own email directly; combined with the order number (a random ~2^24
+    # token, unique across the whole platform per the orders table's own
+    # unique constraint) this is the same guest-lookup capability pattern
+    # already used by /checkout/session-status, not a new auth mechanism.
+    _enforce_customer_order_lookup_rate_limit(request)
+    normalized_email = email.strip().lower()
+    db_order = session.execute(
+        select(DbOrder)
+        .join(DbCustomer, DbOrder.customer_id == DbCustomer.id)
+        .where(DbOrder.order_number == order_number, func.lower(DbCustomer.email) == normalized_email)
+    ).scalar_one_or_none()
+    if not db_order:
         raise HTTPException(status_code=404, detail="Order not found.")
-    return order
+    return order_to_api(db_order)
 
 
 @router.get("/customer/addresses")

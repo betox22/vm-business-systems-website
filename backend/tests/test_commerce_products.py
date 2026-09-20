@@ -6,6 +6,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
+from starlette.requests import Request
 
 from app import client_auth, commerce
 from app.db import Base
@@ -222,15 +223,19 @@ class StoreOwnerProductTests(unittest.TestCase):
         self.assertEqual(json.loads(stored_order.payment_json)["providerStatus"], "not_configured")
         self.assertEqual(checkout["order"]["status"], "pending_payment")
 
-        commerce.CUSTOMER_PROFILES["buyer-user"] = {
-            "userId": "buyer-user",
-            "email": "buyer@example.com",
-            "name": "Bea Rivera",
-            "phone": "",
-            "roles": ["customer"],
-        }
-        customer_orders = asyncio.run(commerce.customer_orders("buyer-user", session=self.session))
-        self.assertEqual(customer_orders["orders"][0]["id"], order_id)
+        # /customer/orders no longer resolves identity from an unauthenticated
+        # header (see test_customer_orders_security.py for why); the safe,
+        # capability-based way to confirm the checkout created the right
+        # order/customer linkage is the scoped order-number+email lookup.
+        order_detail = asyncio.run(
+            commerce.customer_order_detail(
+                checkout["order"]["orderNumber"],
+                Request({"type": "http", "headers": [], "client": ("test", 1), "method": "GET", "path": "/"}),
+                email="buyer@example.com",
+                session=self.session,
+            )
+        )
+        self.assertEqual(order_detail["id"], order_id)
 
         with self._owner_auth():
             owner_orders = asyncio.run(
