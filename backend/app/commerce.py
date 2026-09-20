@@ -241,6 +241,20 @@ IDEMPOTENCY_KEYS: Dict[str, str] = {}
 # price. Entries are short-lived (a checkout session); no cleanup job
 # exists yet, matching the other in-memory dicts in this module.
 SHIPPING_QUOTES: Dict[str, Dict[str, Any]] = {}
+# task #55: KREATON runs one central EasyPost account for every store (task
+# #54) rather than a per-store carrier account -- so a real carrier rate
+# shown to the customer gets a margin added on top of the raw EasyPost cost,
+# same as Shopify/most marketplaces never show the wholesale rate as-is.
+# The margin (and the raw cost itself) is recovered from the store's payout
+# via the existing Stripe Connect application fee in stripe_checkout_session,
+# so KREATON's wallet is reimbursed with a profit per shipment instead of
+# fronting the cost indefinitely. Flat-rate shipping (task #53) is configured
+# directly by the store owner and is never marked up here.
+SHIPPING_RATE_MARKUP_BPS = max(0, int(os.getenv("SHIPPING_RATE_MARKUP_BPS", "1000") or 0))
+
+
+def _apply_shipping_markup(raw_cents: int) -> int:
+    return round(raw_cents * (10000 + SHIPPING_RATE_MARKUP_BPS) / 10000)
 PAYMENT_METHODS: Dict[str, Dict[str, Any]] = {
     BUSINESS_ID: {
         "businessId": BUSINESS_ID,
@@ -535,6 +549,10 @@ def order_to_api(order: DbOrder) -> Dict[str, Any]:
         "items": items,
         "subtotal": money_float(subtotal),
         "shippingAmount": money_float(shipping_amount),
+        # task #55: which fee-recovery path applies. "real" means shippingAmount
+        # already includes KREATON's markup over the raw EasyPost cost, and
+        # must be recovered via the Stripe Connect application fee.
+        "shippingMode": shipping_meta.get("mode") or "flat",
         "shippingCarrier": shipping_meta.get("carrier") or "",
         "shippingLabelUrl": order.shipping_label_url,
         "needsShippingAttention": bool(order.needs_shipping_attention),
@@ -617,6 +635,11 @@ def resolve_checkout_shipping(
         option = next((o for o in quote["options"] if o["rateId"] == shipping_option_id), None)
         if option:
             if quote["mode"] == "real":
+                # option["rateCents"] is already marked up (task #55) -- what
+                # the customer is charged and what stays on the order forever.
+                # carrierCostCents is the raw EasyPost quote, kept only for
+                # the Stripe application-fee recovery math below; it is never
+                # shown to the customer.
                 return option["rateCents"], {
                     "mode": "real",
                     "shipmentId": quote["shipmentId"],
@@ -624,6 +647,7 @@ def resolve_checkout_shipping(
                     "carrier": option["carrier"],
                     "service": option["service"],
                     "rateCents": option["rateCents"],
+                    "carrierCostCents": option["carrierCostCents"],
                     "purchaseStatus": "pending",
                 }
             return option["rateCents"], {"mode": "flat", "rateCents": option["rateCents"]}
@@ -660,7 +684,11 @@ def attempt_automatic_shipping_purchase(session: Session, order: DbOrder) -> Non
     meta["purchaseStatus"] = "purchased"
     meta["carrier"] = result["carrier"]
     meta["service"] = result["service"]
-    meta["rateCents"] = result["rateCents"]
+    # task #55: record the actual final EasyPost cost separately.
+    # meta["rateCents"] is what the customer was charged (marked up) and
+    # must never change after checkout -- only carrierCostCents (KREATON's
+    # own bookkeeping of its real, final cost) gets updated here.
+    meta["carrierCostCents"] = result["rateCents"]
     order.shipping_json = json.dumps(meta)
     order.needs_shipping_attention = False
 
@@ -822,7 +850,17 @@ def stripe_checkout_session(
     if charge_cents != price_to_cents(order["total"]):
         raise HTTPException(status_code=409, detail="Checkout amount does not match the order total.")
     fee_bps = max(0, min(int(os.getenv("STRIPE_CONNECT_APPLICATION_FEE_BPS", "0") or 0), 10000))
-    fee_amount = int(order["total"] * 100 * fee_bps / 10000) if connected_account_id and fee_bps else None
+    platform_commission_cents = int(order["total"] * 100 * fee_bps / 10000) if fee_bps else 0
+    # task #55: on top of the usual percentage-of-sale platform commission,
+    # recover the *entire* marked-up shipping charge (raw EasyPost cost +
+    # KREATON's margin) from the store's payout whenever this order used a
+    # real carrier rate. KREATON's single central EasyPost wallet (task #54)
+    # pays the raw cost when the label is purchased; this application fee is
+    # what reimburses that wallet -- with a profit -- on every shipment,
+    # instead of KREATON fronting shipping cost indefinitely for every store.
+    shipping_recovery_cents = shipping_cents if order.get("shippingMode") == "real" else 0
+    total_fee_cents = platform_commission_cents + shipping_recovery_cents
+    fee_amount = total_fee_cents if connected_account_id and total_fee_cents else None
     payload = create_stripe_session(
         mode="payment",
         line_items=line_items,
@@ -1036,13 +1074,32 @@ async def checkout_shipping_rates(
                 width_in=origin["width_in"],
                 height_in=origin["height_in"],
             )
+            # task #55: mark up the raw EasyPost cost before it's ever shown
+            # to the customer or cached -- carrierCostCents (the raw,
+            # un-marked-up cost) is kept server-side only, for the Stripe
+            # application-fee recovery math, never returned in the response.
+            cached_options = [
+                {
+                    "rateId": rate["rateId"],
+                    "carrier": rate["carrier"],
+                    "service": rate["service"],
+                    "rateCents": _apply_shipping_markup(rate["rateCents"]),
+                    "carrierCostCents": rate["rateCents"],
+                    "deliveryDays": rate["deliveryDays"],
+                }
+                for rate in result["rates"]
+            ]
             SHIPPING_QUOTES[payload.cartId] = {
                 "businessId": payload.businessId,
                 "mode": "real",
                 "shipmentId": result["shipmentId"],
-                "options": result["rates"],
+                "options": cached_options,
             }
-            return {"mode": "real", "options": result["rates"]}
+            public_options = [
+                {key: value for key, value in option.items() if key != "carrierCostCents"}
+                for option in cached_options
+            ]
+            return {"mode": "real", "options": public_options}
         except HTTPException:
             pass  # EasyPost unreachable/rejected -- fall through to the flat rate below.
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import unittest
+from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 from fastapi import HTTPException
@@ -169,6 +170,13 @@ class ShippingRatesEndpointTests(ShippingTestsBase):
         # weight_oz(16) * quantity(2) = 32oz passed through.
         self.assertEqual(mocked.call_args.kwargs["weight_oz"], 32.0)
         self.assertEqual(commerce.SHIPPING_QUOTES["cart1"]["shipmentId"], "shp_123")
+        # task #55: the customer-facing rate is marked up 10% over EasyPost's
+        # raw cost, and never sees the raw cost field at all.
+        self.assertEqual([o["rateCents"] for o in result["options"]], [902, 715])
+        self.assertNotIn("carrierCostCents", result["options"][0])
+        cached = commerce.SHIPPING_QUOTES["cart1"]["options"]
+        self.assertEqual([o["carrierCostCents"] for o in cached], [820, 650])
+        self.assertEqual([o["rateCents"] for o in cached], [902, 715])
 
     def test_free_shipping_threshold_zeroes_out_flat_rate(self):
         self._add_product(weight_oz=16, price_cents=10000)
@@ -209,13 +217,17 @@ class ResolveCheckoutShippingTests(ShippingTestsBase):
             "businessId": "store_owner",
             "mode": "real",
             "shipmentId": "shp_1",
-            "options": [{"rateId": "rate_1", "carrier": "USPS", "service": "Priority", "rateCents": 820, "deliveryDays": 2}],
+            "options": [{
+                "rateId": "rate_1", "carrier": "USPS", "service": "Priority",
+                "rateCents": 902, "carrierCostCents": 820, "deliveryDays": 2,
+            }],
         }
         cents, meta = commerce.resolve_checkout_shipping(self.session, "store_owner", "cart1", "rate_1")
-        self.assertEqual(cents, 820)
+        self.assertEqual(cents, 902)  # what the customer is charged (already marked up)
         self.assertEqual(meta, {
             "mode": "real", "shipmentId": "shp_1", "rateId": "rate_1",
-            "carrier": "USPS", "service": "Priority", "rateCents": 820, "purchaseStatus": "pending",
+            "carrier": "USPS", "service": "Priority", "rateCents": 902,
+            "carrierCostCents": 820, "purchaseStatus": "pending",
         })
 
     def test_wrong_business_id_ignored(self):
@@ -235,7 +247,10 @@ class CheckoutTotalIncludesShippingTests(ShippingTestsBase):
             "businessId": "store_owner",
             "mode": "real",
             "shipmentId": "shp_9",
-            "options": [{"rateId": "rate_9", "carrier": "UPS", "service": "Ground", "rateCents": 650, "deliveryDays": 5}],
+            "options": [{
+                "rateId": "rate_9", "carrier": "UPS", "service": "Ground",
+                "rateCents": 650, "carrierCostCents": 591, "deliveryDays": 5,
+            }],
         }
         asyncio.run(
             commerce.add_cart_item(
@@ -257,11 +272,13 @@ class CheckoutTotalIncludesShippingTests(ShippingTestsBase):
                 commerce.create_checkout_session(payload, idempotency_key="idem-1", session=self.session)
             )
         order = self.session.get(DbOrder, checkout["order"]["id"])
-        self.assertEqual(order.total_cents, 1000 + 650)  # 1 unit @ $10 + real $6.50 shipping
+        self.assertEqual(order.total_cents, 1000 + 650)  # 1 unit @ $10 + marked-up $6.50 shipping
         self.assertEqual(checkout["order"]["shippingAmount"], 6.5)
+        self.assertEqual(checkout["order"]["shippingMode"], "real")
         meta = commerce.json_field(order.shipping_json, {})
         self.assertEqual(meta["purchaseStatus"], "pending")
         self.assertEqual(meta["shipmentId"], "shp_9")
+        self.assertEqual(meta["carrierCostCents"], 591)
 
 
 class AutomaticPurchaseTests(ShippingTestsBase):
@@ -282,7 +299,9 @@ class AutomaticPurchaseTests(ShippingTestsBase):
 
     def test_success_populates_tracking_and_label(self):
         order = self._seed_paid_real_order()
-        fake_result = {"carrier": "UPS", "service": "Ground", "rateCents": 650,
+        # Deliberately different from the 650 the customer was quoted/charged,
+        # to prove the purchase result never rewrites what the customer paid.
+        fake_result = {"carrier": "UPS", "service": "Ground", "rateCents": 675,
                        "trackingCode": "1Z999", "labelUrl": "https://easypost.example/label.pdf"}
         with patch.object(commerce, "buy_shipment", return_value=fake_result) as mocked:
             commerce.attempt_automatic_shipping_purchase(self.session, order)
@@ -291,6 +310,12 @@ class AutomaticPurchaseTests(ShippingTestsBase):
         self.assertEqual(order.tracking_code, "1Z999")
         self.assertEqual(order.shipping_label_url, "https://easypost.example/label.pdf")
         self.assertFalse(order.needs_shipping_attention)
+        # task #55: the customer-charged amount (rateCents) must never change
+        # after purchase -- only carrierCostCents (KREATON's own bookkeeping
+        # of the real, final EasyPost cost) reflects the actual purchase.
+        meta = commerce.json_field(order.shipping_json, {})
+        self.assertEqual(meta["rateCents"], 650)
+        self.assertEqual(meta["carrierCostCents"], 675)
 
     def test_failure_flags_order_without_raising(self):
         order = self._seed_paid_real_order()
@@ -521,6 +546,82 @@ class ShippingGatewayTests(unittest.TestCase):
                 with self.assertRaises(HTTPException) as error:
                     shipping_gateway.buy_shipment(shipment_id="shp_1", rate_id="rate_1")
         self.assertEqual(error.exception.status_code, 502)
+
+
+class ShippingMarkupTests(unittest.TestCase):
+    def test_default_markup_env_var_is_10_percent(self):
+        # SHIPPING_RATE_MARKUP_BPS is read once at import time (like the
+        # existing STRIPE_CONNECT_APPLICATION_FEE_BPS pattern); this asserts
+        # the documented default agreed with Beto, not a live-patchable env.
+        self.assertEqual(commerce.SHIPPING_RATE_MARKUP_BPS, 1000)
+
+    def test_apply_shipping_markup_math(self):
+        with patch.object(commerce, "SHIPPING_RATE_MARKUP_BPS", 1000):
+            self.assertEqual(commerce._apply_shipping_markup(1000), 1100)
+            self.assertEqual(commerce._apply_shipping_markup(820), 902)
+            self.assertEqual(commerce._apply_shipping_markup(650), 715)
+            self.assertEqual(commerce._apply_shipping_markup(0), 0)
+        with patch.object(commerce, "SHIPPING_RATE_MARKUP_BPS", 0):
+            self.assertEqual(commerce._apply_shipping_markup(1000), 1000)
+
+
+class StripeApplicationFeeShippingRecoveryTests(unittest.TestCase):
+    """task #55: the Stripe Connect application fee recovers the full
+    marked-up shipping charge (raw EasyPost cost + margin) on top of the
+    usual percentage platform commission, whenever an order used a real
+    carrier rate -- so KREATON's single central EasyPost wallet is
+    reimbursed with a profit per shipment instead of absorbing the cost."""
+
+    def _base_order(self, *, shipping_mode: str, shipping_amount: float):
+        return {
+            "id": "ord_1", "orderNumber": "KR-1",
+            "items": [{"name": "Widget", "unitPrice": 10, "quantity": 1}],
+            "taxAmount": 0, "shippingAmount": shipping_amount, "shippingMode": shipping_mode,
+            "total": Decimal("10") + Decimal(str(shipping_amount)),
+        }
+
+    def test_real_shipping_recovers_full_marked_up_amount_plus_commission(self):
+        order = self._base_order(shipping_mode="real", shipping_amount=6.50)
+        with patch.dict("os.environ", {"STRIPE_SECRET_KEY": "sk_test_x", "STRIPE_CONNECT_APPLICATION_FEE_BPS": "500"}), \
+             patch.object(commerce, "create_stripe_session", return_value={}) as stripe:
+            commerce.stripe_checkout_session(
+                order, "https://example.invalid/success", "https://example.invalid/cancel",
+                connected_account_id="acct_123",
+            )
+        # 5% of $16.50 total = 82 (rounded) + the full $6.50 marked-up shipping = 650
+        expected_commission = int(Decimal("16.50") * 100 * 500 / 10000)
+        self.assertEqual(stripe.call_args.kwargs["application_fee_amount"], expected_commission + 650)
+
+    def test_flat_shipping_recovers_commission_only_not_shipping(self):
+        order = self._base_order(shipping_mode="flat", shipping_amount=5.00)
+        with patch.dict("os.environ", {"STRIPE_SECRET_KEY": "sk_test_x", "STRIPE_CONNECT_APPLICATION_FEE_BPS": "500"}), \
+             patch.object(commerce, "create_stripe_session", return_value={}) as stripe:
+            commerce.stripe_checkout_session(
+                order, "https://example.invalid/success", "https://example.invalid/cancel",
+                connected_account_id="acct_123",
+            )
+        expected_commission = int(Decimal("15.00") * 100 * 500 / 10000)
+        self.assertEqual(stripe.call_args.kwargs["application_fee_amount"], expected_commission)
+
+    def test_real_shipping_recovered_even_with_zero_percent_commission(self):
+        order = self._base_order(shipping_mode="real", shipping_amount=6.50)
+        with patch.dict("os.environ", {"STRIPE_SECRET_KEY": "sk_test_x", "STRIPE_CONNECT_APPLICATION_FEE_BPS": "0"}), \
+             patch.object(commerce, "create_stripe_session", return_value={}) as stripe:
+            commerce.stripe_checkout_session(
+                order, "https://example.invalid/success", "https://example.invalid/cancel",
+                connected_account_id="acct_123",
+            )
+        self.assertEqual(stripe.call_args.kwargs["application_fee_amount"], 650)
+
+    def test_no_connected_account_means_no_fee_at_all(self):
+        order = self._base_order(shipping_mode="real", shipping_amount=6.50)
+        with patch.dict("os.environ", {"STRIPE_SECRET_KEY": "sk_test_x", "STRIPE_CONNECT_APPLICATION_FEE_BPS": "500"}), \
+             patch.object(commerce, "create_stripe_session", return_value={}) as stripe:
+            commerce.stripe_checkout_session(
+                order, "https://example.invalid/success", "https://example.invalid/cancel",
+                connected_account_id=None,
+            )
+        self.assertIsNone(stripe.call_args.kwargs["application_fee_amount"])
 
 
 class TeamSettingsShippingHelperTests(ShippingTestsBase):
