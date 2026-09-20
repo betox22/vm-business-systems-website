@@ -52,7 +52,7 @@ def test_phase3_sqlite_upgrade_is_additive_with_defaults_and_foreign_key():
     event.listen(engine, "before_cursor_execute", lambda conn, cursor, statement, parameters, context, many: statements.append(statement))
     with patch.object(db, "engine", engine):
         db._ensure_additive_columns()
-        assert sum("ALTER TABLE products ADD COLUMN" in s for s in statements) == 4
+        assert sum("ALTER TABLE products ADD COLUMN" in s for s in statements) == 5
         assert not any(s.startswith(("CREATE TABLE", "DROP TABLE", "INSERT INTO")) for s in statements)
         with engine.connect() as connection:
             assert connection.exec_driver_sql("SELECT source,site_id,price_is_approximate,price_cents FROM products").one() == ("owner_edited", None, 0, 2500)
@@ -75,7 +75,10 @@ def test_phase4_sqlite_adds_only_nullable_catalog_index_without_rebuild():
     with patch.object(db, "engine", engine):
         db._ensure_additive_columns()
         ddl = [s for s in statements if s.startswith(("ALTER TABLE", "CREATE TABLE", "DROP TABLE", "INSERT INTO"))]
-        assert ddl == ["ALTER TABLE products ADD COLUMN catalog_index INTEGER"]
+        assert ddl == [
+            "ALTER TABLE products ADD COLUMN catalog_index INTEGER",
+            "ALTER TABLE products ADD COLUMN weight_oz INTEGER",
+        ]
         with engine.connect() as connection:
             assert connection.exec_driver_sql("SELECT price_cents,catalog_index FROM products").one() == (2500, None)
         statements.clear()
@@ -98,7 +101,10 @@ def test_phase4_postgres_adds_only_catalog_index():
     connection.exec_driver_sql.side_effect = execute
     with patch.object(db, "engine", engine), patch.object(db, "inspect", return_value=inspector):
         db._ensure_additive_columns()
-        assert [c.args[0] for c in connection.exec_driver_sql.call_args_list if "ALTER TABLE" in c.args[0]] == ["ALTER TABLE products ADD COLUMN catalog_index INTEGER"]
+        assert [c.args[0] for c in connection.exec_driver_sql.call_args_list if "ALTER TABLE" in c.args[0]] == [
+            "ALTER TABLE products ADD COLUMN catalog_index INTEGER",
+            "ALTER TABLE products ADD COLUMN weight_oz INTEGER",
+        ]
         connection.exec_driver_sql.reset_mock()
         db._ensure_additive_columns()
         assert not any("ALTER TABLE" in c.args[0] for c in connection.exec_driver_sql.call_args_list)
@@ -137,7 +143,7 @@ def test_postgres_migration_uses_drop_not_null_once():
         first_sql = [call.args[0] for call in connection.exec_driver_sql.call_args_list]
         assert "ALTER TABLE products ALTER COLUMN price_cents DROP NOT NULL" in first_sql
         assert "SET LOCAL lock_timeout = '5s'" in first_sql
-        assert sum("ADD COLUMN" in sql for sql in first_sql) == 8
+        assert sum("ADD COLUMN" in sql for sql in first_sql) == 9
         connection.exec_driver_sql.reset_mock()
         db._ensure_additive_columns()
         assert not any("ALTER TABLE" in call.args[0] for call in connection.exec_driver_sql.call_args_list)

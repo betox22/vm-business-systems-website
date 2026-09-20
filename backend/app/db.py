@@ -74,6 +74,18 @@ def _ensure_additive_columns() -> None:
             "site_id": "site_id VARCHAR REFERENCES generated_sites(id) ON DELETE SET NULL",
             "price_is_approximate": "price_is_approximate BOOLEAN NOT NULL DEFAULT FALSE",
             "catalog_index": "catalog_index INTEGER",
+            # task #54 (real shipping): weight is required to get a real
+            # carrier rate quote. Nullable -- a product with no weight yet
+            # simply falls back to the store's flat shipping rate instead of
+            # blocking checkout.
+            "weight_oz": "weight_oz INTEGER",
+        },
+        "orders": {
+            # task #54: populated only when a label is actually purchased
+            # (automatically after payment, or via the owner's manual retry).
+            "shipping_label_url": "shipping_label_url VARCHAR",
+            "shipping_json": "shipping_json TEXT DEFAULT '{}'",
+            "needs_shipping_attention": "needs_shipping_attention BOOLEAN NOT NULL DEFAULT FALSE",
         },
         "platform_subscriptions": {
             "plan_id": "plan_id VARCHAR NOT NULL DEFAULT ''",
@@ -89,6 +101,7 @@ def _ensure_additive_columns() -> None:
             "stores": {**migrations["stores"], "owner_user_id": "owner_user_id TEXT"},
             "generated_sites": {"owner_user_id": "owner_user_id TEXT"},
             "orders": {
+                **migrations["orders"],
                 "items_json": "items_json TEXT DEFAULT '[]'",
                 "shipping_address_json": "shipping_address_json TEXT DEFAULT '{}'",
                 "customer_snapshot_json": "customer_snapshot_json TEXT DEFAULT '{}'",

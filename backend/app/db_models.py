@@ -72,6 +72,7 @@ class Product(Base):
     catalog_index: Mapped[Optional[int]] = mapped_column(default=None)
     price_cents: Mapped[Optional[int]]
     inventory: Mapped[int] = mapped_column(default=0)
+    weight_oz: Mapped[Optional[int]] = mapped_column(default=None)
     status: Mapped[str] = mapped_column(default="Published")
     created_at: Mapped[int] = mapped_column(default=_now)
 
@@ -108,6 +109,9 @@ class Order(Base):
     inventory_restocked: Mapped[bool] = mapped_column(default=False)
     shipping_carrier: Mapped[Optional[str]] = mapped_column(nullable=True)
     tracking_code: Mapped[Optional[str]] = mapped_column(nullable=True)
+    shipping_label_url: Mapped[Optional[str]] = mapped_column(nullable=True)
+    shipping_json: Mapped[str] = mapped_column(default="{}")
+    needs_shipping_attention: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[int] = mapped_column(default=_now)
 
 

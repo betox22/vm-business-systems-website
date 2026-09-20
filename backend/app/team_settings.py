@@ -13,6 +13,7 @@ from .db import get_session
 from .db_models import Setting as DbSetting
 from .db_models import Store
 from .db_models import TeamMember as DbTeamMember
+from .shipping_gateway import shipping_rates_configured
 
 router = APIRouter(prefix="/api/v1", tags=["team-settings"])
 
@@ -147,10 +148,18 @@ async def delete_team_member(
 # below, never raw keys, so the storage layout can change later without
 # breaking callers.
 #
-# Shipping here is deliberately the simple case only: one flat rate, plus an
-# optional dollar threshold above which shipping is free. Real carrier rate
-# shopping and label purchase/printing (EasyPost/Shippo, per-product
-# weight/dimensions, buying real postage) is out of scope -- see task #54.
+# Shipping has two layers now (task #54): the simple flat rate from #53 is
+# still the fallback whenever real rate shopping cannot run (no EasyPost key
+# configured, or the origin address below isn't fully filled in), and the
+# `origin`/`defaultParcel` fields here feed the real per-order EasyPost rate
+# quote in commerce.py's /checkout/shipping-rates. `origin` is a real,
+# structured "ship from" address (separate from `business.address`, which is
+# just the public-facing text shown to customers and isn't necessarily a
+# valid mailing address). `defaultParcel` is one store-wide box size used for
+# every order -- real per-product dimensions/bin-packing is a further
+# refinement, not required for a first real integration; per-product weight
+# (Product.weight_oz) is summed for real though, since that materially
+# changes the quoted price.
 # ---------------------------------------------------------------------------
 
 _SETTING_KEYS: Dict[str, str] = {
@@ -162,6 +171,14 @@ _SETTING_KEYS: Dict[str, str] = {
     "business.address": "",
     "shipping.flat_rate_cents": "0",
     "shipping.free_threshold_cents": "",
+    "shipping.origin_street1": "",
+    "shipping.origin_city": "",
+    "shipping.origin_state": "",
+    "shipping.origin_zip": "",
+    "shipping.origin_country": "US",
+    "shipping.default_parcel_length_in": "9",
+    "shipping.default_parcel_width_in": "6",
+    "shipping.default_parcel_height_in": "4",
     "notifications.new_order_email": "true",
     "notifications.low_stock_email": "true",
     "notifications.notify_email": "",
@@ -181,6 +198,57 @@ def _bool_from_setting(value: str, default: bool) -> bool:
     return value.strip().lower() == "true"
 
 
+def real_shipping_rates_available(raw: Dict[str, str]) -> bool:
+    """Whether real EasyPost rate shopping can run for this store right now.
+
+    Requires both an EasyPost key configured on the server AND a fully
+    filled-in origin address -- either one missing means checkout must fall
+    back to the store's flat rate instead of erroring out.
+    """
+
+    if not shipping_rates_configured():
+        return False
+    required = (
+        "shipping.origin_street1",
+        "shipping.origin_city",
+        "shipping.origin_state",
+        "shipping.origin_zip",
+    )
+    return all(raw.get(key, "").strip() for key in required)
+
+
+def get_shipping_origin_and_parcel(session: Session, business_id: str) -> Optional[Dict[str, Any]]:
+    """Convenience for commerce.py: the EasyPost-shaped origin address + the
+    store's default parcel dimensions, or None if real rate shopping isn't
+    usable yet (see `real_shipping_rates_available`)."""
+
+    raw = _load_settings_map(session, business_id)
+    if not real_shipping_rates_available(raw):
+        return None
+    return {
+        "from_address": {
+            "street1": raw["shipping.origin_street1"],
+            "city": raw["shipping.origin_city"],
+            "state": raw["shipping.origin_state"],
+            "zip": raw["shipping.origin_zip"],
+            "country": raw.get("shipping.origin_country") or "US",
+        },
+        "length_in": float(raw.get("shipping.default_parcel_length_in") or "9"),
+        "width_in": float(raw.get("shipping.default_parcel_width_in") or "6"),
+        "height_in": float(raw.get("shipping.default_parcel_height_in") or "4"),
+    }
+
+
+def get_flat_shipping_rate_cents(session: Session, business_id: str) -> tuple[int, Optional[int]]:
+    """The #53 fallback: (flat_rate_cents, free_threshold_cents_or_None)."""
+
+    raw = _load_settings_map(session, business_id)
+    flat_rate = int(raw.get("shipping.flat_rate_cents") or "0")
+    threshold_raw = raw.get("shipping.free_threshold_cents", "").strip()
+    threshold = int(threshold_raw) if threshold_raw else None
+    return flat_rate, threshold
+
+
 class BusinessSettings(BaseModel):
     publicName: str
     currency: str
@@ -190,9 +258,26 @@ class BusinessSettings(BaseModel):
     address: str
 
 
+class ShippingOrigin(BaseModel):
+    street1: str
+    city: str
+    state: str
+    zip: str
+    country: str
+
+
+class DefaultParcel(BaseModel):
+    lengthIn: float
+    widthIn: float
+    heightIn: float
+
+
 class ShippingSettings(BaseModel):
     flatRate: float
     freeShippingThreshold: Optional[float] = None
+    origin: ShippingOrigin
+    defaultParcel: DefaultParcel
+    realRatesConfigured: bool
 
 
 class NotificationSettings(BaseModel):
@@ -217,10 +302,26 @@ class BusinessSettingsPatch(BaseModel):
     address: Optional[str] = Field(default=None, max_length=500)
 
 
+class ShippingOriginPatch(BaseModel):
+    street1: Optional[str] = Field(default=None, max_length=240)
+    city: Optional[str] = Field(default=None, max_length=120)
+    state: Optional[str] = Field(default=None, max_length=120)
+    zip: Optional[str] = Field(default=None, max_length=40)
+    country: Optional[str] = Field(default=None, min_length=2, max_length=2)
+
+
+class DefaultParcelPatch(BaseModel):
+    lengthIn: Optional[float] = Field(default=None, gt=0)
+    widthIn: Optional[float] = Field(default=None, gt=0)
+    heightIn: Optional[float] = Field(default=None, gt=0)
+
+
 class ShippingSettingsPatch(BaseModel):
     flatRate: Optional[float] = Field(default=None, ge=0)
     freeShippingThreshold: Optional[float] = Field(default=None, ge=0)
     clearFreeShippingThreshold: bool = False
+    origin: Optional[ShippingOriginPatch] = None
+    defaultParcel: Optional[DefaultParcelPatch] = None
 
 
 class NotificationSettingsPatch(BaseModel):
@@ -255,6 +356,19 @@ def _settings_to_api(store: Store, raw: Dict[str, str]) -> StoreSettingsOut:
         shipping=ShippingSettings(
             flatRate=cents_to_price(int(get("shipping.flat_rate_cents") or "0")),
             freeShippingThreshold=free_threshold,
+            origin=ShippingOrigin(
+                street1=get("shipping.origin_street1"),
+                city=get("shipping.origin_city"),
+                state=get("shipping.origin_state"),
+                zip=get("shipping.origin_zip"),
+                country=get("shipping.origin_country") or "US",
+            ),
+            defaultParcel=DefaultParcel(
+                lengthIn=float(get("shipping.default_parcel_length_in") or "9"),
+                widthIn=float(get("shipping.default_parcel_width_in") or "6"),
+                heightIn=float(get("shipping.default_parcel_height_in") or "4"),
+            ),
+            realRatesConfigured=real_shipping_rates_available(raw),
         ),
         notifications=NotificationSettings(
             newOrderEmail=_bool_from_setting(get("notifications.new_order_email"), True),
@@ -319,6 +433,26 @@ async def update_store_settings(
             _upsert_setting(
                 session, business_id, "shipping.free_threshold_cents", str(price_to_cents(s.freeShippingThreshold))
             )
+        if s.origin is not None:
+            o = s.origin
+            if o.street1 is not None:
+                _upsert_setting(session, business_id, "shipping.origin_street1", o.street1.strip())
+            if o.city is not None:
+                _upsert_setting(session, business_id, "shipping.origin_city", o.city.strip())
+            if o.state is not None:
+                _upsert_setting(session, business_id, "shipping.origin_state", o.state.strip())
+            if o.zip is not None:
+                _upsert_setting(session, business_id, "shipping.origin_zip", o.zip.strip())
+            if o.country is not None:
+                _upsert_setting(session, business_id, "shipping.origin_country", o.country.strip().upper())
+        if s.defaultParcel is not None:
+            p = s.defaultParcel
+            if p.lengthIn is not None:
+                _upsert_setting(session, business_id, "shipping.default_parcel_length_in", str(p.lengthIn))
+            if p.widthIn is not None:
+                _upsert_setting(session, business_id, "shipping.default_parcel_width_in", str(p.widthIn))
+            if p.heightIn is not None:
+                _upsert_setting(session, business_id, "shipping.default_parcel_height_in", str(p.heightIn))
 
     if payload.notifications is not None:
         n = payload.notifications

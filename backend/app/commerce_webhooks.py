@@ -6,6 +6,7 @@ import time
 from fastapi import HTTPException
 from sqlalchemy import select, update
 
+from .commerce import attempt_automatic_shipping_purchase
 from .db_models import Order, Product
 from .stripe_gateway import retrieve_store_checkout
 
@@ -79,6 +80,12 @@ def process_payment_event(session, event):
                     Product.store_id == order.store_id).values(inventory=Product.inventory + quantity))
         order.inventory_restocked = True
     order.status = state
+    if state == "paid":
+        # task #54: buy the real shipping label automatically now that the
+        # order is genuinely confirmed paid. Never raises -- a failure here
+        # flags the order (needs_shipping_attention) for the owner's manual
+        # retry instead of breaking payment confirmation.
+        attempt_automatic_shipping_purchase(session, order)
     payment.update(providerStatus=provider, webhookReconciledAt=int(time.time()), lastWebhookEvent=event.get("id"))
     order.payment_json = json.dumps(payment)
     session.commit()
