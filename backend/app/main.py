@@ -45,6 +45,7 @@ from .db import get_session, init_db
 from .db_models import GeneratedSite, Store, PlatformSubscription
 from .domains import router as domains_router
 from .operations import router as operations_router
+from .team_settings import router as team_settings_router
 from .models import (
     AssetUploadRequest,
     AssetUploadResponse,
@@ -419,6 +420,7 @@ app.include_router(commerce_router)
 app.include_router(billing_router)
 app.include_router(domains_router)
 app.include_router(operations_router)
+app.include_router(team_settings_router)
 
 
 @app.on_event("startup")
