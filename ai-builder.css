@@ -4295,11 +4295,29 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
    talking to LYRA in the same screen - no separate step to open or close.
    Two classes beat the single-class rules above on specificity, so this
    wins regardless of source order. */
+/* .guided-layout has no explicit grid-template-rows of its own - its
+   implicit/auto row tracks are sized for its original two-or-three item
+   set (live-stage, chat-card, summary-panel). Verified live on
+   production that simply adding a 4th item there, with no explicit row
+   template, made the browser's implicit row-sizing pass give it 0px no
+   matter what height/align-self/grid-row it was given, even though the
+   item's own content clearly had real height - only declaring an
+   explicit grid-template-rows on .guided-layout itself made the first
+   row size to content correctly. ensureClientProjectsPanel() (see
+   src/ai-builder/auth.js) adds this class to .guided-layout precisely
+   when it docks the panel in, so every other state of this grid (review
+   mode, building mode, etc.) is completely untouched. */
+.guided-layout.guided-layout--docked-panel {
+  grid-template-rows: auto 1fr;
+}
+
 .client-projects-panel.is-docked {
   position: static;
   inset: auto;
   z-index: auto;
+  grid-row: 1;
   grid-column: 1 / -1;
+  align-self: start;
   display: block;
   place-items: initial;
   padding: 0;

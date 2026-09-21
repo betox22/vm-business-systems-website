@@ -674,6 +674,13 @@ export function ensureClientProjectsPanel() {
   builderState.clientProjectsPanel.classList.add("is-docked");
   const guidedLayoutHost = document.querySelector(".guided-layout");
   if (guidedLayoutHost) {
+    // See ".guided-layout.guided-layout--docked-panel" in ai-builder.css:
+    // without an explicit grid-template-rows, this grid's implicit row
+    // sizing collapsed the docked panel to 0px height in a live check on
+    // production, even though its own content measured correctly. This
+    // class gives the panel's row an explicit "auto" track so it sizes to
+    // content, and only while the panel is actually mounted here.
+    guidedLayoutHost.classList.add("guided-layout--docked-panel");
     guidedLayoutHost.insertBefore(builderState.clientProjectsPanel, guidedLayoutHost.firstChild);
   } else {
     document.body.appendChild(builderState.clientProjectsPanel);
