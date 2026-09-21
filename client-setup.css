@@ -6412,3 +6412,111 @@ body.public-client-setup.lyra-conversation-mode .live-construction-canvas.is-tem
     overflow-y: auto !important;
   }
 }
+
+/* The pre-generation conversation is one workspace; the generated-site
+   canvas remains available in result and review modes. */
+body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .guided-panel.active {
+  background: #f5f7fa;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .guided-shell {
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden !important;
+  background: #f5f7fa;
+  backdrop-filter: none;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .guided-progress,
+body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .guided-live-stage,
+body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .summary-panel {
+  display: none !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .guided-header {
+  min-height: 68px;
+  background: #ffffff !important;
+  border-bottom: 1px solid #dce3e9 !important;
+  backdrop-filter: none;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .assistant-identity strong,
+body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .assistant-identity span {
+  color: #18212e !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .assistant-identity::before {
+  display: none;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .assistant-avatar.large {
+  width: 42px;
+  height: 42px;
+  filter: none;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .guided-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  width: min(100%, 900px) !important;
+  height: 100%;
+  min-height: 0 !important;
+  margin: 0 auto;
+  padding: 0 !important;
+  overflow: hidden;
+  background: #ffffff;
+  border-inline: 1px solid #e3e9ee;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .guided-chat-card {
+  display: flex;
+  flex-direction: column;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .guided-chat {
+  flex: 1 1 auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow-y: auto;
+}
+
+@media (max-width: 720px) {
+  body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .guided-layout {
+    width: 100% !important;
+    border: 0;
+  }
+
+  body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .guided-header {
+    min-height: 0;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+  }
+
+  body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .guided-header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .compact-action {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  body.public-client-setup.lyra-conversation-mode:not(.generated-preview-open):not(.client-auth-required):not(.review-details-open):not(.final-review-mode) .compact-language select {
+    min-width: 92px;
+  }
+}

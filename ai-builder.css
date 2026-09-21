@@ -3111,13 +3111,6 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   display: none;
 }
 
-/* "Mis paginas" no longer blurs/disables the chat behind it - it docks
-   inline above it instead (see ".client-projects-panel.is-docked" further
-   down and ensureClientProjectsPanel() in src/ai-builder/auth.js). Kept the
-   .client-projects-open class itself (still added/removed in auth.js) in
-   case a future state needs to react to it, but it has no visual effect
-   here anymore. */
-
 .client-projects-card {
   position: relative;
   width: min(1180px, 100%);
@@ -4282,71 +4275,6 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   border-radius: 0;
   padding: clamp(22px, 3vw, 42px) clamp(20px, 5vw, 72px);
   box-shadow: none;
-}
-
-/* Beto (2026-09-21): "si ya va a ser un chat asi simplemente debe estar
-   integrado en la pagina que el cliente pueda ver otras cosas sus paginas
-   creadas o crear otra opciones... si no va a ser una pagina mas en el
-   proceso y es agotador". "Mis paginas" used to be the full-viewport fixed
-   overlay above (task #17, "pantalla completa") that blurred and disabled
-   the chat behind it. It now docks inline as a normal block at the top of
-   .guided-layout (see ensureClientProjectsPanel() in
-   src/ai-builder/auth.js) so the client sees their pages and can keep
-   talking to LYRA in the same screen - no separate step to open or close.
-   Two classes beat the single-class rules above on specificity, so this
-   wins regardless of source order. */
-/* .guided-layout has no explicit grid-template-rows of its own - its
-   implicit/auto row tracks are sized for its original two-or-three item
-   set (live-stage, chat-card, summary-panel). Verified live on
-   production that simply adding a 4th item there, with no explicit row
-   template, made the browser's implicit row-sizing pass give it 0px no
-   matter what height/align-self/grid-row it was given, even though the
-   item's own content clearly had real height - only declaring an
-   explicit grid-template-rows on .guided-layout itself made the first
-   row size to content correctly. ensureClientProjectsPanel() (see
-   src/ai-builder/auth.js) adds this class to .guided-layout precisely
-   when it docks the panel in, so every other state of this grid (review
-   mode, building mode, etc.) is completely untouched. */
-.guided-layout.guided-layout--docked-panel {
-  grid-template-rows: auto 1fr;
-}
-
-.client-projects-panel.is-docked {
-  position: static;
-  inset: auto;
-  z-index: auto;
-  grid-row: 1;
-  grid-column: 1 / -1;
-  align-self: start;
-  display: block;
-  place-items: initial;
-  padding: 0;
-  margin-bottom: 18px;
-  background: none;
-  backdrop-filter: none;
-}
-
-.client-projects-panel.is-docked[hidden] {
-  display: none;
-  margin-bottom: 0;
-}
-
-.client-projects-panel.is-docked .client-projects-card {
-  width: 100%;
-  height: auto;
-  max-height: none;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: #f8fbfa;
-  padding: clamp(16px, 2.4vw, 28px);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
-}
-
-@media (max-width: 720px) {
-  .client-projects-panel.is-docked .client-projects-card {
-    padding: 16px;
-    border-radius: 14px;
-  }
 }
 
 .client-project-preview iframe,
