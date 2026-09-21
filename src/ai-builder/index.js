@@ -5147,7 +5147,7 @@ function completeGuidedBriefFromMessage(message, pendingUpdates = {}) {
   }
 
   if (!merged.websiteIntent && isRichIntakeMessage(text)) {
-    updates.websiteIntent = extractWebsiteIntent(text) || text.slice(0, 180);
+    updates.websiteIntent = extractWebsiteIntent(text);
   }
 
   if (!merged.businessDescription && isRichIntakeMessage(text)) {
@@ -5366,7 +5366,16 @@ function extractWebsiteIntent(text) {
   if (/\b(cita|citas|reserva|reservas|booking|appointment)\b/i.test(text)) return "Booking website";
   if (/tienda|store|shop|ecommerce|venta online|vender online/i.test(text)) return "Online store";
   if (/servicio|services|cotizacion|cotización|quote/i.test(text)) return "Service business website";
-  return text.slice(0, 180);
+  // No confident category match - return nothing instead of the raw,
+  // unprocessed client message. Every call site treats a falsy return as
+  // "leave websiteIntent unset" (mergeGuidedUpdates never overwrites an
+  // existing value with a falsy one), so this lets LYRA's real backend
+  // intake - which sees the full message plus conversation history, not
+  // just this local regex list - fill the field in correctly instead.
+  // Previously this fell back to `text.slice(0, 180)`, which is how a raw
+  // client message like "no se, ayudame" ended up stored as the site's
+  // "website type". Reported by Beto 2026-09-21 ("pone cualquier cosa").
+  return "";
 }
 
 function extractBusinessName(text) {
