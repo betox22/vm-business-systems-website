@@ -6118,36 +6118,39 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
   }
 }
 
-/* 2026-09-21: Beto, after two days on this screen: "nada de lo que esta
-   ahorita me gusta". The 3-column layout above (progress + live preview +
-   chat) stays -- he already rejected the single-column alternative on
-   2026-08-12 (see note above) and nothing here removes it. What's added
-   below is a direct polish pass on THIS exact live, default, always-on
-   state (no ?ui= flag, no separate file): a bigger and visibly "breathing"
-   Nixie in the header instead of a static small icon, one shared brand-
-   tinted backdrop behind the live-preview + chat pair so they read as one
-   workspace instead of two flat white boxes floating on grey, a glowing
-   progress fill, a live-preview card that reads as "being built" instead
-   of a cold static wireframe, and matching hover/focus micro-interactions
-   on the composer and send button. Pure CSS, same DOM/ids/handlers. */
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-shell {
-  background: radial-gradient(circle at 15% 0%, rgba(124, 58, 237, 0.07), transparent 45%),
-    radial-gradient(circle at 85% 100%, rgba(34, 211, 238, 0.07), transparent 45%),
-    #f8fafc;
+  background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 30%, #6d28d9 55%, #0e7490 85%, #0d9488 100%);
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-header {
+  background: rgba(15, 12, 41, 0.55) !important;
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .assistant-identity strong,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .assistant-identity span {
+  color: #f5f3ff !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-progress span {
+  color: #e9d5ff !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-progress div {
+  background: rgba(255, 255, 255, 0.18) !important;
 }
 
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-layout {
-  padding: 18px;
-  border-radius: 28px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.2));
-  box-shadow: inset 0 0 0 1px rgba(124, 58, 237, 0.08);
+  padding: 22px;
 }
 
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .assistant-avatar.large {
-  width: 44px;
-  height: 44px;
+  width: 72px;
+  height: 72px;
   position: relative;
   z-index: 1;
+  filter: drop-shadow(0 0 18px rgba(232, 121, 249, 0.65));
 }
 
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .assistant-identity {
@@ -6158,46 +6161,48 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
   content: "";
   position: absolute;
   top: 50%;
-  left: 22px;
-  width: 56px;
-  height: 56px;
+  left: 36px;
+  width: 96px;
+  height: 96px;
   transform: translate(-50%, -50%);
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.35), rgba(34, 211, 238, 0.28) 55%, transparent 72%);
+  background: radial-gradient(circle, rgba(232, 121, 249, 0.55), rgba(34, 211, 238, 0.4) 55%, transparent 72%);
   animation: lyraBreathe 3.4s ease-in-out infinite;
   pointer-events: none;
 }
 
 @keyframes lyraBreathe {
-  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.88); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
 }
 
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-progress i {
+  background: linear-gradient(90deg, #e879f9, #22d3ee) !important;
   animation: lyraProgressGlow 2.2s ease-in-out infinite;
 }
 
 @keyframes lyraProgressGlow {
-  0%, 100% { box-shadow: 0 0 10px rgba(124, 58, 237, 0.3); }
-  50% { box-shadow: 0 0 18px rgba(34, 211, 238, 0.45); }
+  0%, 100% { box-shadow: 0 0 10px rgba(232, 121, 249, 0.5); }
+  50% { box-shadow: 0 0 22px rgba(34, 211, 238, 0.7); }
 }
 
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .live-site-preview-card {
   position: relative;
-  border-radius: 20px !important;
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.1) !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 30px 80px rgba(9, 6, 40, 0.55) !important;
 }
 
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .live-site-preview-card::before {
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
-  height: 3px;
-  background: linear-gradient(90deg, #7c3aed, #22d3ee, #7c3aed);
+  height: 6px;
+  background: linear-gradient(90deg, #e879f9, #22d3ee, #e879f9);
   background-size: 200% 100%;
   animation: lyraBuildingShimmer 2.6s linear infinite;
   z-index: 2;
-  border-radius: 20px 20px 0 0;
+  border-radius: 24px 24px 0 0;
 }
 
 @keyframes lyraBuildingShimmer {
@@ -6206,21 +6211,46 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
 }
 
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-chat-card {
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.1) !important;
-  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 30px 80px rgba(9, 6, 40, 0.55) !important;
+  border-radius: 24px !important;
+  background: rgba(15, 12, 41, 0.4) !important;
+  backdrop-filter: blur(20px);
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message.assistant span,
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message.system span {
+  background: rgba(255, 255, 255, 0.94) !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-status-card {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-status-card strong {
+  color: #f5f3ff !important;
+}
+
+body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .quick-chip-row button {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #f5f3ff !important;
 }
 
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-input-label input {
+  background: rgba(255, 255, 255, 0.95) !important;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-actions .send-toggle {
+  background: linear-gradient(135deg, #e879f9, #22d3ee) !important;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-actions .send-toggle:hover {
   transform: translateY(-1px) scale(1.04);
-  box-shadow: 0 10px 22px rgba(124, 58, 237, 0.38) !important;
+  box-shadow: 0 10px 22px rgba(232, 121, 249, 0.5) !important;
 }
 
 body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-actions .send-toggle:active {
