@@ -7177,7 +7177,7 @@ body.public-client-setup .studio-auth-card {
 body.public-client-setup .studio-auth-card [data-studio-auth-content] {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
-  align-items: stretch;
+  align-items: center;
   gap: 28px;
 }
 
@@ -7284,33 +7284,23 @@ body.public-client-setup .studio-auth-intro p {
 
 body.public-client-setup .studio-auth-entry {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  min-height: 560px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
   overflow: hidden;
-  border: 1px solid #1c4d4d;
-  border-radius: 18px;
-  background: #153a3b;
-  padding: 42px;
-  color: #ffffff;
-  box-shadow: 0 24px 58px rgba(16, 65, 63, 0.15);
-}
-
-body.public-client-setup .studio-auth-entry::before {
-  content: "";
-  position: absolute;
-  inset: 15px;
-  border: 1px solid rgba(135, 220, 202, 0.22);
-  border-radius: 10px;
-  pointer-events: none;
+  border: 1px solid #cfe2dc;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 32px;
+  color: #102a2e;
+  box-shadow: 0 18px 48px rgba(16, 65, 63, 0.09);
 }
 
 body.public-client-setup .studio-auth-entry::after {
   content: "";
   position: absolute;
   top: 0;
-  left: 42px;
+  left: 32px;
   width: 90px;
   height: 3px;
   background: #47d3c1;
@@ -7319,25 +7309,41 @@ body.public-client-setup .studio-auth-entry::after {
 body.public-client-setup .studio-auth-entry-label {
   position: relative;
   z-index: 1;
-  margin-bottom: 24px;
-  color: #8fe2d3;
+  margin-bottom: 8px;
+  color: #087f76;
   font-size: 11px;
   font-weight: 900;
 }
 
+body.public-client-setup .studio-auth-entry h3 {
+  margin: 0;
+  color: #102a2e;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+body.public-client-setup .studio-auth-entry p {
+  margin: 0 0 8px;
+  color: #536d6b;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+}
+
 body.public-client-setup .studio-auth-card .studio-auth-entry .icon-button {
-  top: 32px;
-  right: 32px;
+  top: 20px;
+  right: 20px;
   z-index: 2;
-  border-color: rgba(151, 230, 215, 0.34);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: #cfe2dc;
+  background: #f5fbf9;
+  color: #102a2e;
 }
 
 body.public-client-setup .studio-auth-entry .studio-legal-consent {
   position: relative;
   z-index: 1;
-  margin: 0 0 20px;
-  color: #d9eeea;
+  margin: 8px 0 4px;
+  color: #536d6b;
   font-size: 13px;
 }
 
@@ -7346,7 +7352,7 @@ body.public-client-setup .studio-auth-entry .studio-legal-consent input {
 }
 
 body.public-client-setup .studio-auth-entry .studio-legal-consent a {
-  color: #c5f4e9;
+  color: #087f76;
 }
 
 body.public-client-setup .studio-auth-entry .studio-auth-actions {
@@ -7357,13 +7363,13 @@ body.public-client-setup .studio-auth-entry .studio-auth-actions {
 body.public-client-setup .studio-auth-entry .studio-auth-provider {
   min-height: 58px;
   gap: 10px;
-  border: 1px solid #ffffff;
+  border: 1px solid #bfd9d3;
   border-radius: 10px;
-  background: #ffffff;
+  background: #f8fcfa;
   color: #153a3b;
   font-weight: 850;
-  box-shadow: 0 8px 24px rgba(0, 15, 15, 0.12);
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  box-shadow: none;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 body.public-client-setup .studio-auth-entry .studio-auth-provider svg {
@@ -7373,19 +7379,52 @@ body.public-client-setup .studio-auth-entry .studio-auth-provider svg {
 
 body.public-client-setup .studio-auth-entry .studio-auth-provider:not(:disabled):hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 30px rgba(0, 15, 15, 0.2);
+  border-color: #087f76;
+  box-shadow: 0 12px 24px rgba(8, 127, 118, 0.12);
 }
 
 body.public-client-setup .studio-auth-entry .studio-auth-provider:focus-visible,
 body.public-client-setup .studio-auth-entry .studio-legal-consent input:focus-visible {
-  outline: 2px solid #9cebdd;
+  outline: 2px solid #087f76;
   outline-offset: 4px;
 }
 
-body.public-client-setup .studio-auth-entry .studio-auth-provider:disabled {
-  background: #d6e7e3;
-  color: #325957;
+body.public-client-setup .studio-auth-entry #studioGoogleAuthButton:disabled {
+  background: #eaf4f0;
+  color: #536d6b;
   opacity: 1;
+}
+
+body.public-client-setup .studio-auth-entry #studioAppleAuthButton {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  justify-items: start;
+  gap: 3px 10px;
+  min-height: 68px;
+  border-color: #e2ebe7;
+  background: #f6f9f8;
+  padding: 10px 14px;
+  color: #71827e;
+  font-size: 14px;
+  text-align: left;
+  opacity: 1;
+}
+
+body.public-client-setup .studio-auth-entry #studioAppleAuthButton svg {
+  grid-row: 1 / 3;
+  align-self: center;
+  width: 18px;
+  height: 22px;
+}
+
+body.public-client-setup .studio-auth-entry #studioAppleAuthButton .studio-auth-coming-soon {
+  position: static;
+  grid-column: 2;
+  padding: 0;
+  background: none;
+  color: #617874;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 body.public-client-setup .studio-auth-loading {
@@ -7469,12 +7508,11 @@ body.public-client-setup .studio-auth-loading p {
   }
 
   body.public-client-setup .studio-auth-entry {
-    min-height: 240px;
-    padding: 34px 28px 28px;
+    padding: 28px;
   }
 
   body.public-client-setup .studio-auth-entry-label {
-    margin-bottom: 24px;
+    margin-bottom: 4px;
   }
 }
 
