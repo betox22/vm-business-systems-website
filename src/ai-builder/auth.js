@@ -24,7 +24,6 @@ import {
 } from './client-auth-validation-policy.js';
 import { resolveWebsiteIntentBackfill } from './guided-intent-policy.js';
 import {
-  clientProjectEntryDecision,
   savedProjectName,
 } from './client-project-resume-policy.js';
 import { isCurrentClientProjectSessionEpoch } from './client-project-start-policy.js';
@@ -39,7 +38,6 @@ import {
 import {
   clientProjectDeletePayload,
   removeClientProject,
-  unfinishedClientProject,
 } from './client-project-delete-policy.js';
 import {
   clientSetupAuthRedirect,
@@ -63,6 +61,7 @@ import {
   guidedHeaderActions,
   guidedChatCard,
   guidedChat,
+  guidedReply,
   guidedStatusText,
   guidedGenerateButton,
   currentInfoPreview,
@@ -269,7 +268,7 @@ function showStudioAuthLoading() {
   });
   if (message) message.textContent = langText({
     en: "We are securely validating your access.",
-    es: "Estamos validando tu acceso seguro.",
+    es: "LYRA está validando tu acceso de forma segura.",
     fr: "Nous validons votre accès sécurisé.",
     pt: "Estamos validando seu acesso seguro.",
   });
@@ -636,6 +635,39 @@ export function ensureClientProjectsPanel() {
       closeClientProjectsPanel();
       return;
     }
+    if (event.target?.closest?.("[data-client-dashboard-account]")) {
+      switchClientAccount();
+      if (!storedClientAccessToken()) closeClientProjectsPanel();
+      return;
+    }
+    if (event.target?.closest?.("[data-client-dashboard-retry]")) {
+      openClientProjectsPanel();
+      return;
+    }
+    if (event.target?.closest?.("[data-client-dashboard-start]")) {
+      const input = builderState.clientProjectsPanel.querySelector("[data-client-dashboard-brief]");
+      const message = input?.value.trim();
+      if (!message) {
+        input?.focus();
+        return;
+      }
+      document.dispatchEvent(new CustomEvent("lyra:dashboard-start", { detail: { message } }));
+      return;
+    }
+    if (event.target?.closest?.("[data-client-dashboard-resume]")) {
+      closeClientProjectsPanel();
+      guidedReply?.focus();
+      return;
+    }
+    const ideaButton = event.target?.closest?.("[data-client-dashboard-idea]");
+    if (ideaButton) {
+      const input = builderState.clientProjectsPanel.querySelector("[data-client-dashboard-brief]");
+      if (input) {
+        input.value = ideaButton.dataset.clientDashboardIdea;
+        input.focus();
+      }
+      return;
+    }
     const continueButton = event.target?.closest?.("[data-client-project-id]");
     if (continueButton) {
       if (pendingClientProjectSession) hydrateClientIntakeSession(pendingClientProjectSession, { silent: true });
@@ -661,30 +693,14 @@ export function ensureClientProjectsPanel() {
       startNewClientProject({ skipConfirm: true });
     }
   });
-  // Beto: "si ya va a ser un chat asi simplemente debe estar integrado en la
-  // pagina que el cliente pueda ver otras cosas sus paginas creadas o crear
-  // otra opciones... si no va a ser una pagina mas en el proceso y es
-  // agotador". This used to be a fixed, full-viewport modal appended to
-  // <body> that blurred and disabled the chat behind it (see the removed
-  // ".client-projects-open .guided-shell" blur rule and ".is-docked" CSS
-  // below). It now mounts inline as the first block inside .guided-layout,
-  // above the live preview and chat, so the client can see their existing
-  // pages and keep chatting with LYRA in the same screen instead of being
-  // routed through a separate step.
-  builderState.clientProjectsPanel.classList.add("is-docked");
-  const guidedLayoutHost = document.querySelector(".guided-layout");
-  if (guidedLayoutHost) {
-    // See ".guided-layout.guided-layout--docked-panel" in ai-builder.css:
-    // without an explicit grid-template-rows, this grid's implicit row
-    // sizing collapsed the docked panel to 0px height in a live check on
-    // production, even though its own content measured correctly. This
-    // class gives the panel's row an explicit "auto" track so it sizes to
-    // content, and only while the panel is actually mounted here.
-    guidedLayoutHost.classList.add("guided-layout--docked-panel");
-    guidedLayoutHost.insertBefore(builderState.clientProjectsPanel, guidedLayoutHost.firstChild);
-  } else {
-    document.body.appendChild(builderState.clientProjectsPanel);
-  }
+  builderState.clientProjectsPanel.classList.add("is-dashboard");
+  document.body.appendChild(builderState.clientProjectsPanel);
+  builderState.clientProjectsPanel.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && event.target?.matches?.("[data-client-dashboard-brief]")) {
+      event.preventDefault();
+      builderState.clientProjectsPanel.querySelector("[data-client-dashboard-start]")?.click();
+    }
+  });
   return builderState.clientProjectsPanel;
 }
 
@@ -721,13 +737,9 @@ function handleClientProjectPreviewMessage(event) {
 export function renderClientProjectsLoading() {
   const panel = ensureClientProjectsPanel();
   panel.innerHTML = `
-    <div class="client-projects-card">
-      <div class="client-projects-brand"><img src="/assets/nixie_idle.png" alt=""><strong>KREATON</strong><span>LYRA</span></div>
-      <div class="client-projects-head">
-        <span>${escapeHtml(t("myPages"))}</span>
-        <h2>${escapeHtml(langText({ en: "Loading your pages", es: "Cargando tus páginas", fr: "Chargement de vos pages", pt: "Carregando suas páginas" }))}</h2>
-        <p>${escapeHtml(langText({ en: "LYRA is bringing your workspace up to date.", es: "LYRA está poniendo tu espacio al día.", fr: "LYRA met votre espace à jour.", pt: "LYRA está atualizando seu espaço." }))}</p>
-      </div>
+    <div class="client-projects-card" aria-busy="true">
+      <div class="client-projects-topbar"><div class="client-projects-brand"><img src="/assets/nixie_idle.png" alt="LYRA"><strong>LYRA</strong></div></div>
+      <div class="client-projects-head"><h2>${escapeHtml(langText({ en: "Loading your pages", es: "Cargando tus páginas", fr: "Chargement de vos pages", pt: "Carregando suas páginas" }))}</h2></div>
       <div class="client-projects-skeleton"></div>
     </div>
   `;
@@ -820,7 +832,6 @@ function clientProjectResumeBannerMarkup(project) {
 export function renderClientProjectsPanel(projects = [], options = {}) {
   const panel = ensureClientProjectsPanel();
   const savedProjects = Array.isArray(projects) ? projects.filter((project) => project?.id) : [];
-  const resumeProject = unfinishedClientProject(savedProjects, options.resumeProject);
   const newPageLabel = t("startNewProject");
   const emptyState = `
     <div class="client-projects-empty">
@@ -832,46 +843,49 @@ export function renderClientProjectsPanel(projects = [], options = {}) {
     <button class="client-new-project-card" type="button" data-client-new-project>
       <span class="client-new-project-icon" aria-hidden="true">+</span>
       <strong>${escapeHtml(newPageLabel)}</strong>
-      <span class="client-new-project-prompts" aria-hidden="true">
-        <span>${escapeHtml(langText({ en: "What will you launch next?", es: "¿Cuál es tu próxima idea?", fr: "Quelle sera votre prochaine idée ?", pt: "Qual é a sua próxima ideia?" }))}</span>
-        <span>${escapeHtml(langText({ en: "A store, service, or new brand?", es: "¿Una tienda, un servicio o una marca?", fr: "Une boutique, un service ou une marque ?", pt: "Uma loja, serviço ou nova marca?" }))}</span>
-        <span>${escapeHtml(langText({ en: "Build the first version with LYRA", es: "Construye la primera versión con LYRA", fr: "Créez la première version avec LYRA", pt: "Crie a primeira versão com a LYRA" }))}</span>
-      </span>
-      <small class="client-new-project-accessible-copy">${escapeHtml(langText({
-        en: "Start with a fresh conversation",
-        es: "Empieza con una conversación nueva",
-        fr: "Commencez une nouvelle conversation",
-        pt: "Comece uma nova conversa",
-      }))}</small>
     </button>
   `;
-  const libraryProjects = resumeProject?.id
-    ? savedProjects.filter((project) => project.id !== resumeProject.id)
-    : savedProjects;
-  const rows = libraryProjects.map(clientProjectCardMarkup).join("");
-  const accountEmail = builderState.clientIntakeSession?.clientEmail || localStorage.getItem("lumaPendingClientEmail") || "";
+  const rows = savedProjects.map(clientProjectCardMarkup).join("");
+  const hasActiveConversation = Boolean(
+    builderState.guidedHistory?.length
+    || guidedChat?.querySelector(".chat-message.user")
+    || builderState.guidedState.businessName
+    || builderState.guidedState.businessDescription
+  );
+  const resumeConversationCard = hasActiveConversation
+    ? `<button class="client-dashboard-resume" type="button" data-client-dashboard-resume><span aria-hidden="true">↗</span><strong>${escapeHtml(langText({ en: "Continue conversation", es: "Continuar conversación", fr: "Continuer la conversation", pt: "Continuar conversa" }))}</strong></button>`
+    : "";
+  const accountEmail = builderState.authenticatedClientEmail || "";
+  const displayName = String(options.displayName || builderState.clientDisplayName || "").trim().split(/\s+/)[0];
+  if (displayName) builderState.clientDisplayName = displayName;
+  const greeting = displayName
+    ? langText({ en: `Hello, ${displayName}`, es: `Hola, ${displayName}`, fr: `Bonjour, ${displayName}`, pt: `Olá, ${displayName}` })
+    : langText({ en: "Hello", es: "Hola", fr: "Bonjour", pt: "Olá" });
   panel.innerHTML = `
     <div class="client-projects-card">
-      <button class="client-projects-close" type="button" data-client-projects-close aria-label="Close">×</button>
       <div class="client-projects-topbar">
-        <div class="client-projects-brand"><img src="/assets/nixie_idle.png" alt=""><strong>KREATON</strong><span>LYRA</span></div>
-        ${accountEmail ? `<span class="client-projects-account">${escapeHtml(compactEmailLabel(accountEmail))}</span>` : ""}
+        <div class="client-projects-brand"><img src="/assets/nixie_idle.png" alt="LYRA"><strong>${escapeHtml(greeting)}</strong></div>
+        ${accountEmail ? `<button class="client-projects-account" type="button" data-client-dashboard-account title="${escapeAttribute(compactEmailLabel(accountEmail))}" aria-label="${escapeAttribute(langText({ en: "Switch account", es: "Cambiar cuenta", fr: "Changer de compte", pt: "Trocar conta" }))}">${escapeHtml(displayName?.slice(0, 1).toUpperCase() || accountEmail.slice(0, 1).toUpperCase())}</button>` : ""}
       </div>
-      <div class="client-projects-head">
-        <div class="client-projects-heading-copy">
-          <span>${escapeHtml(langText({ en: "Your workspace", es: "Tu espacio", fr: "Votre espace", pt: "Seu espaço" }))}</span>
-          <h2>${escapeHtml(langText({ en: "Your pages", es: "Tus páginas", fr: "Vos pages", pt: "Suas páginas" }))}</h2>
-        </div>
-        <p>${escapeHtml(langText({
-          en: "Continue building, open a published site, or start something new.",
-          es: "Sigue construyendo, abre un sitio publicado o empieza algo nuevo.",
-          fr: "Chaque page reste séparée dans votre compte.",
-          pt: "Cada página fica separada dentro da sua conta.",
-        }))}</p>
+      <div class="client-dashboard-composer">
+        <label class="sr-only" for="clientDashboardBrief">${escapeHtml(langText({ en: "Describe your business idea", es: "Cuéntame tu idea de negocio", fr: "Décrivez votre idée", pt: "Conte sua ideia de negócio" }))}</label>
+        <input id="clientDashboardBrief" data-client-dashboard-brief type="text" maxlength="1600" autocomplete="off" placeholder=" ">
+        <span class="client-dashboard-rotating-ideas" aria-hidden="true">
+          <span>${escapeHtml(langText({ en: "Tell me about your business idea...", es: "Cuéntame la idea de tu negocio...", fr: "Parlez-moi de votre projet...", pt: "Conte a ideia do seu negócio..." }))}</span>
+          <span>${escapeHtml(langText({ en: "A cafe in your neighborhood...", es: "Una cafetería en tu barrio...", fr: "Un café dans votre quartier...", pt: "Um café no seu bairro..." }))}</span>
+          <span>${escapeHtml(langText({ en: "An online store for your products...", es: "Una tienda online para tus productos...", fr: "Une boutique en ligne pour vos produits...", pt: "Uma loja online para seus produtos..." }))}</span>
+          <span>${escapeHtml(langText({ en: "A site for your services...", es: "Una página para tus servicios...", fr: "Un site pour vos services...", pt: "Uma página para seus serviços..." }))}</span>
+        </span>
+        <button type="button" data-client-dashboard-start aria-label="${escapeAttribute(langText({ en: "Send to LYRA", es: "Enviar a LYRA", fr: "Envoyer à LYRA", pt: "Enviar para LYRA" }))}">↗</button>
       </div>
-      ${clientProjectResumeBannerMarkup(resumeProject)}
-      <div class="client-projects-section-head"><strong>${escapeHtml(langText({ en: "All pages", es: "Todas las páginas", fr: "Toutes les pages", pt: "Todas as páginas" }))}</strong><span>${escapeHtml(langText({ en: `${savedProjects.length} projects`, es: `${savedProjects.length} proyectos`, fr: `${savedProjects.length} projets`, pt: `${savedProjects.length} projetos` }))}</span></div>
-      <div class="client-projects-list">${newProjectCard}${rows || emptyState}</div>
+      <div class="client-dashboard-suggestions" aria-label="${escapeAttribute(langText({ en: "Examples", es: "Ejemplos", fr: "Exemples", pt: "Exemplos" }))}">
+        <button type="button" data-client-dashboard-idea="${escapeAttribute(langText({ en: "I want a website for my restaurant", es: "Quiero una página para mi restaurante", fr: "Je veux un site pour mon restaurant", pt: "Quero um site para meu restaurante" }))}">${escapeHtml(langText({ en: "Restaurant", es: "Restaurante", fr: "Restaurant", pt: "Restaurante" }))}</button>
+        <button type="button" data-client-dashboard-idea="${escapeAttribute(langText({ en: "I want to sell products online", es: "Quiero vender productos en línea", fr: "Je veux vendre des produits en ligne", pt: "Quero vender produtos online" }))}">${escapeHtml(langText({ en: "Online store", es: "Tienda online", fr: "Boutique en ligne", pt: "Loja online" }))}</button>
+        <button type="button" data-client-dashboard-idea="${escapeAttribute(langText({ en: "I want a website for my services", es: "Quiero una página para mis servicios", fr: "Je veux un site pour mes services", pt: "Quero um site para meus serviços" }))}">${escapeHtml(langText({ en: "Services", es: "Servicios", fr: "Services", pt: "Serviços" }))}</button>
+      </div>
+      ${options.resumeProject ? clientProjectResumeBannerMarkup(options.resumeProject) : ""}
+      <div class="client-projects-section-head"><h2>${escapeHtml(langText({ en: "Your pages", es: "Tus páginas", fr: "Vos pages", pt: "Suas páginas" }))}</h2></div>
+      ${options.loadError ? `<div class="client-projects-error" role="alert">${escapeHtml(langText({ en: "Your pages could not be loaded.", es: "No se pudieron cargar tus páginas.", fr: "Impossible de charger vos pages.", pt: "Não foi possível carregar suas páginas." }))}<button type="button" data-client-dashboard-retry>${escapeHtml(langText({ en: "Retry", es: "Reintentar", fr: "Réessayer", pt: "Tentar novamente" }))}</button></div>` : `<div class="client-projects-list">${resumeConversationCard}${rows}${newProjectCard}</div>${rows || hasActiveConversation ? "" : emptyState}`}
     </div>
     <div class="client-project-delete-layer" data-client-project-delete-layer hidden>
       <div class="client-project-delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="clientProjectDeleteTitle" aria-describedby="clientProjectDeleteDescription">
@@ -980,40 +994,25 @@ export async function openClientProjectsPanel() {
     console.warn("Could not load client projects", error);
     if (!storedClientAccessToken()) return;
     if (storageStatus) storageStatus.textContent = t("loadProjectsError");
-    renderClientProjectsPanel([]);
+    renderClientProjectsPanel([], { loadError: true });
   }
 }
 
 export async function handleClientProjectsAfterAuth(user, session) {
   if (!isPublicClientSetup || !storedClientAccessToken()) return;
+  if (session?.restored && !builderState.currentSchema) {
+    hydrateClientIntakeSession(session, { silent: true });
+  }
   try {
     builderState.clientProjects = await fetchClientProjects();
   } catch (error) {
     console.warn("Could not load client projects", error);
+    renderClientProjectsPanel([], { loadError: true });
     return;
   }
-  const decision = clientProjectEntryDecision({
-    projects: builderState.clientProjects,
-    hasCurrentSchema: Boolean(builderState.currentSchema),
-  });
-  if (decision.action === "choose_project") {
-    pendingClientProjectSession = session;
-    renderClientProjectsPanel(builderState.clientProjects);
-    guidedStatusText.textContent = langText({
-      en: "Choose which page you want to continue, or start a new one.",
-      es: "Elige qué página quieres continuar, o crea una nueva.",
-      fr: "Choisissez la page à continuer, ou créez-en une nouvelle.",
-      pt: "Escolha qual página deseja continuar, ou crie uma nova.",
-    });
-    return;
-  }
-  if (decision.action === "confirm_resume") {
-    renderClientProjectResumePrompt(decision.project, session);
-    return;
-  }
-  if (decision.action === "hydrate_session") {
-    hydrateClientIntakeSession(session);
-  }
+  pendingClientProjectSession = session;
+  const displayName = user?.userMetadata?.full_name || user?.userMetadata?.name || "";
+  renderClientProjectsPanel(builderState.clientProjects, { displayName });
 }
 
 export async function loadClientProject(projectId, options = {}) {
@@ -1304,7 +1303,7 @@ export function syncClientIntakeSession({ immediate = false, reason = "autosave"
 export function startNewClientProject(options = {}) {
   if (!isPublicClientSetup) return;
   const hasExistingWork = Boolean(builderState.currentSchema || builderState.guidedState.businessName || builderState.guidedState.businessDescription || builderState.guidedState.websiteIntent);
-  if (hasExistingWork && !options.skipConfirm && !window.confirm(t("startNewProjectConfirm"))) return;
+  if (hasExistingWork && !options.skipConfirm && !window.confirm(t("startNewProjectConfirm"))) return false;
   const existingEmail = builderState.clientIntakeSession?.clientEmail || readClientIntakeSession()?.clientEmail || "";
   closeClientProjectsPanel();
   localStorage.removeItem("lumaPendingAuthAction");
@@ -1330,25 +1329,30 @@ export function startNewClientProject(options = {}) {
   renderGuidedSummary();
   refreshQuickChips();
   renderLiveSitePreview();
-  resetAssistantConversation();
+  resetAssistantConversation({ silentStart: Boolean(options.silentGreeting) });
   guidedStatusText.textContent = langText({
     en: "New page started.",
     es: "Nueva página iniciada.",
     fr: "Nouvelle page commencée.",
     pt: "Nova página iniciada.",
   });
+  let sessionReady = Promise.resolve(null);
   if (existingEmail) {
-    createOrResumeClientIntakeSession({
+    sessionReady = createOrResumeClientIntakeSession({
       email: existingEmail,
       name: "",
       reason: "new-project",
       forceNew: true,
-    }).catch((error) => console.warn("Could not create new client intake session", error));
+    }).catch((error) => {
+      console.warn("Could not create new client intake session", error);
+      return null;
+    });
   } else {
     initClientIntakeSessionGate();
   }
   guidedReply?.focus();
   window.scrollTo({ top: 0, behavior: "smooth" });
+  return sessionReady;
 }
 
 export function ensureStudioAuthRedirectCaptured() {
@@ -1581,6 +1585,9 @@ export function openStudioAuthGate(action = "continue") {
     if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
     revealStudioAuthProviderButtons();
     if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
+    if (action === "start" && !studioAuthEmail) {
+      requestAnimationFrame(() => studioAuthGate.querySelector("#studioLegalConsent")?.focus());
+    }
   }
   setAssistantState("success");
 }

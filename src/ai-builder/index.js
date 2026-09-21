@@ -41,6 +41,7 @@ import { buildColorProvenance, colorPreferenceUpdate } from './color-provenance.
 import { applyAuthoritativeThemeToBrand } from './theme-policy.js';
 import { applySurgicalSchemaEdit, detectSurgicalEditIntent } from './surgical-edit-policy.js';
 import { generationAuthAction } from './auth-session-policy.js';
+import { removeReadyCard } from './ready-card-policy.js';
 import { preservedGraphDocument } from './graph-normalization-policy.js';
 import {
   hasOnlineSalesSignal,
@@ -705,6 +706,7 @@ adjustWithLumaButton?.addEventListener("click", adjustGeneratedDraftWithLuma);
 studioAdjustButton?.addEventListener("click", adjustGeneratedDraftWithLuma);
 startNewProjectButton?.addEventListener("click", startNewClientProject);
 startNewGeneratedProjectButton?.addEventListener("click", startNewClientProject);
+document.querySelector("#clientDashboardBackButton")?.addEventListener("click", openClientProjectsPanel);
 document.querySelectorAll("[data-studio-add-section]").forEach((button) => {
   button.addEventListener("click", () => addStudioSection(button.dataset.studioAddSection));
 });
@@ -780,6 +782,23 @@ guidedReply.addEventListener("keydown", (event) => {
   }
 });
 guidedReply.addEventListener("input", updateAssetPromptVisibility);
+document.addEventListener("lyra:dashboard-start", async (event) => {
+  const message = String(event.detail?.message || "").trim();
+  if (!isPublicClientSetup || !message || !storedClientAccessToken()) return;
+  const session = await startNewClientProject({ silentGreeting: true });
+  if (session === false) return;
+  guidedReply.value = message;
+  if (!session) {
+    appendChatMessage("assistant", langText({
+      en: "I could not save this new page yet. Your message is still here; try sending it again.",
+      es: "No pude guardar esta página nueva todavía. Tu mensaje sigue aquí; intenta enviarlo de nuevo.",
+      fr: "Je n'ai pas pu enregistrer cette nouvelle page. Votre message est toujours ici ; réessayez.",
+      pt: "Ainda não consegui salvar esta nova página. Sua mensagem continua aqui; tente enviar novamente.",
+    }), "alert");
+    return;
+  }
+  await handleGuidedSendAction();
+});
 builderAvatarManager?.bindTyping(guidedReply);
 document.querySelectorAll("[data-ai-decide]").forEach((button) => {
   button.addEventListener("click", () => letAiDecide(button.dataset.aiDecide));
@@ -2128,11 +2147,12 @@ function inferIndustryFromPrompt(prompt) {
   return "";
 }
 
-export function resetAssistantConversation() {
+export function resetAssistantConversation({ silentStart = false } = {}) {
   guidedChat.innerHTML = "";
   builderState.guidedHistory = [];
   setAssistantState("happy");
   renderGuidedCoachCard();
+  if (silentStart) return;
   let askedPrompt = false;
   if (builderState.restoredGuidedDraftInfo) {
     renderRestoredDraftNotice({ force: true });
@@ -2364,6 +2384,7 @@ function ensureGuidedBuildStatusCard() {
 
 function setGuidedBuildPhase(phase, detail = "") {
   if (!isPublicClientSetup) return;
+  removeReadyCard(guidedChat);
   const card = ensureGuidedBuildStatusCard();
   if (!card) return;
   document.body.classList.add("lyra-build-mode");
@@ -4413,7 +4434,12 @@ function promptAccountBeforeGenerate() {
   openStudioAuthGate("generate");
   const email = builderState.guidedState.contactInfo?.email || builderState.guidedState.contactInfo?.contact || "";
   if (studioAuthEmail && email) studioAuthEmail.value = email;
-  appendChatMessage("assistant", langText({
+  appendChatMessage("assistant", langText(isPublicClientSetup ? {
+    en: "Sign in with Google to save and generate your draft.",
+    es: "Accede con Google para guardar y generar tu borrador.",
+    fr: "Connectez-vous avec Google pour sauvegarder et générer votre brouillon.",
+    pt: "Entre com o Google para salvar e gerar seu rascunho.",
+  } : {
     en: "Before I generate it, connect an account so your draft is saved and you can come back later. You can use Google, Apple, or email.",
     es: "Antes de generarla, conecta una cuenta para guardar tu borrador y poder volver luego. Puedes usar Google, Apple o email.",
     fr: "Avant de générer, connectez un compte pour sauvegarder le brouillon et revenir plus tard. Vous pouvez utiliser Google, Apple ou email.",
