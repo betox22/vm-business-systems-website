@@ -920,6 +920,14 @@ class StrategyAgent(BaseAgent):
         elif broad_marketplace:
             add("mega-retail-store", 150, "broad single-owner retail catalog")
 
+        if re.search(
+            r"\b(impresion 3d|impresión 3d|impresora 3d|3d print|3d printing|3d printer|"
+            r"filamento|filament|\bpla\b|\bpetg\b|\bresin print\b|\bstl\b|prototipo|prototype|"
+            r"modelado 3d|3d modeling|figura impresa|maqueta impresa)\b",
+            text,
+        ):
+            add("premium-product-store", 140, "3D-printed product and custom fabrication line")
+
         if re.search(r"\b(online_sales|sell online|vender online|tienda online|online store|ecommerce)\b", text):
             add("mega-retail-store", 78, "online selling intent")
         if re.search(r"\b(show catalog|mostrar catalogo|catalog_or_quotes|catalogo|catálogo)\b", text):

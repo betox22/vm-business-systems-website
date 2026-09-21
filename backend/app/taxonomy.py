@@ -19,6 +19,7 @@ TAXONOMY: Dict[str, List[str]] = {
     "comida": ["cafe", "reposteria", "snacks", "bebidas", "restaurant", "menu"],
     "mascotas": ["accesorios-mascota", "alimento-mascota", "juguetes-mascota"],
     "industrial": ["electrico", "plomeria", "herramientas", "tornilleria", "seguridad-industrial"],
+    "impresion-3d": ["figuras-3d", "prototipos-3d", "piezas-impresas", "filamento"],
 }
 
 
@@ -44,6 +45,7 @@ CATEGORY_KEYWORDS: Dict[str, str] = {
     "plomeria": r"\b(?:plumbing|plumber|pvc|pipe|pipes|faucet|valve|drain)\b",
     "herramientas": r"\b(?:power tools|hand tools|tool|tools|drill|saw|grinder|wrench|hammer)\b",
     "tornilleria": r"\b(?:fastener|fasteners|bolt|bolts|screw|screws|anchor|anchors|nut|nuts|washer|washers)\b",
+    "impresion-3d": r"\b(?:3d print|3d printing|3d printer|impresion 3d|impresión 3d|impresora 3d|filament|filamento|\bpla\b|\bpetg\b|resin print|\bstl\b|prototype|prototipo|3d model|modelado 3d|figura impresa|maqueta impresa)\b",
 }
 
 
@@ -177,6 +179,12 @@ NICHE_ALIASES = {
     "landscaping": "home_services",
     "lujo": "luxury_goods",
     "luxury": "luxury_goods",
+    "impresion 3d": "technology",
+    "impresión 3d": "technology",
+    "3d printing": "technology",
+    "3d print": "technology",
+    "3d printer": "technology",
+    "impresora 3d": "technology",
 }
 
 
@@ -217,6 +225,12 @@ def infer_seed_profile(text: str, is_broad_marketplace: bool = False, is_jewelry
         return "fashion"
     if re.search(r"\b(decor|hogar|home|furniture|muebles|interior|lampara|casa)\b", value):
         return "home"
+    if re.search(
+        r"\b(3d print|3d printing|3d printer|impresion 3d|impresión 3d|impresora 3d|"
+        r"filamento|filament|\bpla\b|\bpetg\b|resin print|\bstl\b|prototipo|prototype|modelado 3d)\b",
+        value,
+    ):
+        return "tech"
     if re.search(r"\b(tech|tecnologia|gadget|electron|gaming|usb|phone|laptop|anime|juguete|toy|curioso|raro|inusual|cyberpunk)\b", value):
         return "tech"
     return "default"
