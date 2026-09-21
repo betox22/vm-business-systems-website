@@ -519,6 +519,68 @@ def generate_ai_seed_catalog(context: str, language: str, count: int = 6) -> Opt
         return None
 
 
+class AINicheClassification(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    niche: str = Field(min_length=2, max_length=80)
+
+
+def classify_business_niche(context: str, language: str) -> Optional[str]:
+    """LLM fallback for industry/niche classification outside the closed
+    NICHE_TAXONOMY_LIST / NICHE_ALIASES table in taxonomy.py's
+    normalize_niche(). Anything not in that fixed alias list collapses to
+    "general", which used to make the intake gate ask the same industry
+    question forever for any niche the table has never seen (task #58).
+
+    Same discipline as generate_ai_seed_catalog(): synchronous client kept
+    deliberately non-async for the same reason documented there (called
+    from call sites that are not all easy to thread async through), and
+    returns None (never raises) on missing API key, missing dependency, or
+    any call/parse failure -- the caller must fall back to its own
+    no-infinite-loop safeguard, not fail the request.
+    """
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key or not OpenAI or not context.strip():
+        return None
+    try:
+        client = OpenAI(api_key=api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+        model = os.getenv("OPENAI_NICHE_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
+        response = create_sync_chat_completion_with_retry(
+            client,
+            model=model,
+            response_format=strict_response_format("kreaton_niche_classification", AINicheClassification),
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You classify what kind of business a short description "
+                        "describes, for a website builder. Given a business "
+                        "description in any language and any niche -- it can be "
+                        "anything, however unusual -- return a short 2-4 word "
+                        "niche label in the SAME language as the description "
+                        "(e.g. \"fishing gear\", \"accesorios de pesca\"). Never "
+                        "return a generic label like \"business\" or \"general\" "
+                        "-- always name the actual, specific niche. Return "
+                        "strict JSON: {\"niche\": str}"
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": f"Business description: {context.strip()[:800]}\nLanguage: {language}",
+                },
+            ],
+        )
+        parsed = AINicheClassification.model_validate_json(response.choices[0].message.content or "{}")
+        niche = parsed.niche.strip()
+        if not niche or niche.lower() in {"general", "business", "other", "misc", "miscellaneous"}:
+            return None
+        logger.info("AI niche classification resolved niche=%r context=%r", niche, context[:120])
+        return niche
+    except Exception as exc:
+        logger.warning("AI niche classification failed; caller must use its own fallback: %s", exc)
+        return None
+
+
 def semantic_seed_catalog(state: ProjectState, user_input: str, count: int = 6) -> List[Dict[str, Any]]:
     language = state.selectedLanguage if state.selectedLanguage in {"en", "es"} else "en"
     context = " ".join([

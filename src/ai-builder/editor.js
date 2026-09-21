@@ -505,6 +505,50 @@ export function renderSelectedDomainState() {
   });
 }
 
+function currentOwnerEmailForDomainLookup() {
+  return (
+    builderState.clientIntakeSession?.clientEmail ||
+    builderState.guidedState.contactInfo?.email ||
+    builderState.guidedState.contactInfo?.contact ||
+    (typeof localStorage !== "undefined" ? localStorage.getItem("lumaPendingClientEmail") : "") ||
+    ""
+  );
+}
+
+// The backend's real domain search lives at /api/v1/domains/search (see
+// backend/app/domains.py) and returns { query, options: [...], selectedDomain }
+// with each option shaped like { domain, status: "available"|"included"|
+// "premium"|"taken", ... }. This adapter translates that into the
+// { results: [{domain, status}], exact_availability } shape the UI here
+// already knows how to render, so renderDomainResults/domainStatusLabel
+// below don't need to change.
+function adaptDomainSearchResponse(apiResponse) {
+  const options = Array.isArray(apiResponse?.options) ? apiResponse.options : [];
+  const statusMap = {
+    included: "available_included",
+    available: "available_requires_review",
+    premium: "available_requires_review",
+    taken: "not_available",
+  };
+  return {
+    results: options.map((option) => ({
+      ...option,
+      status: statusMap[option.status] || (option.available ? "available_requires_review" : "not_available"),
+    })),
+    exact_availability: Boolean(options[0]?.available),
+  };
+}
+
+async function fetchDomainSearch(query) {
+  const params = new URLSearchParams({
+    domain: query,
+    ownerEmail: currentOwnerEmailForDomainLookup(),
+  });
+  const response = await fetch(`${API_BASE_URL}/api/v1/domains/search?${params.toString()}`);
+  if (!response.ok) throw new Error(await readErrorMessage(response));
+  return adaptDomainSearchResponse(await response.json());
+}
+
 export async function checkDesiredDomainOptions() {
   syncGuidedStateFromSummary();
   const query = builderState.guidedState.desiredDomain || builderState.guidedState.businessName || "";
@@ -517,9 +561,7 @@ export async function checkDesiredDomainOptions() {
   domainCheckStatus.textContent = t("checkingDomain");
   domainResults.innerHTML = "";
   try {
-    const response = await fetch(`${API_BASE_URL}/public/domain-search?q=${encodeURIComponent(query)}`);
-    if (!response.ok) throw new Error(await readErrorMessage(response));
-    renderDomainResults(await response.json());
+    renderDomainResults(await fetchDomainSearch(query));
   } catch (error) {
     domainCheckStatus.textContent = `${langText({
       en: "Could not check domain",
@@ -598,8 +640,7 @@ export async function createDomainOrderIfNeeded(payload, result) {
   const requestedDomain = payload.desiredDomain || payload.desired_domain || "";
   if (!requestedDomain.trim() || !result.business_id) return;
   try {
-    const search = await fetch(`${API_BASE_URL}/public/domain-search?q=${encodeURIComponent(requestedDomain)}`);
-    const searchResult = search.ok ? await search.json() : { results: [] };
+    const searchResult = await fetchDomainSearch(requestedDomain).catch(() => ({ results: [] }));
     const selectedResult = (searchResult.results || []).find((item) => item.domain === requestedDomain.trim().toLowerCase())
       || (searchResult.results || [])[0]
       || {};

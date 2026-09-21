@@ -34,7 +34,7 @@ from .admin_directory import (
     build_admin_client_directory,
     fetch_supabase_admin_users,
 )
-from .agents import TEMPLATE_CATALOG, semantic_seed_catalog, split_items, state_is_commerce_seed_target
+from .agents import TEMPLATE_CATALOG, classify_business_niche, semantic_seed_catalog, split_items, state_is_commerce_seed_target
 from .ai_site_planner import enforce_client_declared_catalog_facts
 from .client_auth import authenticated_client_user, fetch_supabase_user, supabase_auth_configured, password_client_session
 from .commerce import router as commerce_router
@@ -42,7 +42,8 @@ from .catalog_sync import apply_commerce_overlay, sync_site_catalog_to_commerce
 from .public_commerce import public_commerce_capabilities
 from .billing import router as billing_router
 from .db import get_session, init_db
-from .db_models import GeneratedSite, Store, PlatformSubscription
+from .db_models import ClientIntakeSessionRecord, GeneratedSite, Store, PlatformSubscription
+from .domains import build_domain_candidates, check_domain_availability
 from .domains import router as domains_router
 from .operations import router as operations_router
 from .team_settings import router as team_settings_router
@@ -963,6 +964,56 @@ async def admin_clients_directory(
     }
 
 
+@app.get("/api/admin/domain-search")
+async def admin_domain_search(
+    request: Request,
+    q: str = Query(default="", max_length=253),
+    authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    # admin.js (searchDomainsFromForm) has called this exact path/shape since
+    # the admin panel's domain widget was built, but the route never existed
+    # server-side -- confirmed via Render access logs as a standing 404.
+    # Backed by the same check_domain_availability()/build_domain_candidates()
+    # logic that /api/v1/domains/search already uses (see domains.py), just
+    # re-shaped into the {query, provider, exact_availability, results:
+    # [{domain, status}]} contract admin.js already expects, so no frontend
+    # change is needed here.
+    _enforce_rate_limit(request, "admin_domain_search", limit=60)
+    identity = _authenticated_admin_identity(authorization, kreaton_admin_session)
+    require_admin_permission(identity, "sites:read")
+    query = q.strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="A domain or business name query is required.")
+    candidates = build_domain_candidates(query)
+    options = [
+        check_domain_availability(session, candidate, identity.get("email") or "", None)
+        for candidate in candidates
+    ]
+    results = [
+        {
+            "domain": option.domain,
+            "status": (
+                "not_available"
+                if not option.available
+                else "available_included" if option.source == "kreaton" else "available_requires_review"
+            ),
+            "price": option.price,
+            "reason": option.reason,
+            "registrar": option.registrar,
+            "available_hint": option.available,
+        }
+        for option in options
+    ]
+    return {
+        "query": query,
+        "provider": "kreaton",
+        "exact_availability": bool(options[0].available) if options else False,
+        "results": results,
+    }
+
+
 @app.get("/api/admin/audit")
 async def admin_audit_directory(
     request: Request,
@@ -1479,6 +1530,86 @@ def _intake_session_key(email: str, project_id: str = "", request_id: str = "") 
     return f"{email}:{identity}"
 
 
+def _intake_session_record_kwargs(session: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "email": str(session.get("clientEmail") or session.get("client_email") or "").strip().lower(),
+        "project_id": str(session.get("projectId") or session.get("generatedSiteId") or ""),
+        "request_id": str(session.get("requestId") or session.get("request_id") or ""),
+        "request_number": str(session.get("requestNumber") or session.get("request_number") or ""),
+        "client_name": str(session.get("clientName") or ""),
+        "selected_language": str(session.get("selectedLanguage") or "en"),
+        "draft_json": json.dumps(session.get("draft") or {}),
+        "restored": bool(session.get("restored")),
+        "storage_status": str(session.get("storageStatus") or session.get("storage_status") or "stored"),
+    }
+
+
+def _intake_session_from_record(record: ClientIntakeSessionRecord) -> Dict[str, Any]:
+    try:
+        draft = json.loads(record.draft_json or "{}")
+    except (TypeError, ValueError):
+        draft = {}
+    return {
+        "requestId": record.request_id,
+        "request_id": record.request_id,
+        "projectId": record.project_id,
+        "generatedSiteId": record.project_id,
+        "requestNumber": record.request_number,
+        "request_number": record.request_number,
+        "clientEmail": record.email,
+        "client_email": record.email,
+        "clientName": record.client_name,
+        "selectedLanguage": record.selected_language,
+        "draft": draft if isinstance(draft, dict) else {},
+        "restored": bool(record.restored),
+        "storageStatus": record.storage_status,
+        "storage_status": record.storage_status,
+    }
+
+
+def _persist_intake_session(db_session: Session, session_key: str, session: Dict[str, Any]) -> None:
+    """Best-effort durable backup of client_intake_sessions (task #62).
+
+    This must never break the intake flow: a DB hiccup here should degrade
+    back to the pre-existing in-memory-only behavior, not fail a request
+    that previously never touched the database at all. See
+    ClientIntakeSessionRecord's docstring for why this exists.
+    """
+    try:
+        kwargs = _intake_session_record_kwargs(session)
+        record = db_session.get(ClientIntakeSessionRecord, session_key)
+        if record is None:
+            db_session.add(ClientIntakeSessionRecord(id=session_key, **kwargs))
+        else:
+            for field, value in kwargs.items():
+                setattr(record, field, value)
+        db_session.commit()
+    except Exception as exc:
+        logger.warning("Failed to persist intake session key=%s: %s", session_key, exc)
+        db_session.rollback()
+
+
+def _load_intake_session_from_db(db_session: Session, session_key: str) -> Optional[Dict[str, Any]]:
+    """Cache-miss fallback for client_intake_sessions (task #62).
+
+    A Render restart wipes the in-memory client_intake_sessions dict, which
+    used to mean the client's in-progress intake started over from a blank
+    slate on their next request (confirmed live via Render logs). This
+    restores it from the durable table instead, so a restart is invisible
+    to the client.
+    """
+    try:
+        record = db_session.get(ClientIntakeSessionRecord, session_key)
+    except Exception as exc:
+        logger.warning("Failed to load intake session key=%s: %s", session_key, exc)
+        return None
+    if not record:
+        return None
+    session = _intake_session_from_record(record)
+    client_intake_sessions[session_key] = session
+    return session
+
+
 @app.get("/api/client/projects")
 async def client_projects(
     authorization: str = Header(default=""),
@@ -1859,6 +1990,7 @@ async def luma_chat(
             {},
             final_state.fieldMeta,
         )
+        generation_missing_fields = unblock_niche_intake_loop(final_state, generation_missing_fields)
         ready = not generation_missing_fields
         plan = site_plan_from_state(final_state)
         assistant_message = assistant_message_for_ready_state(intake_decision, final_state) if ready else assistant_message_for_intake_turn(intake_decision, final_state)
@@ -2017,11 +2149,60 @@ def mark_field_meta(state: Any, field: str, source: str, confidence: float) -> N
     state.fieldMeta = meta
 
 
+def _niche_context_text(state: Any) -> str:
+    return " ".join(
+        part
+        for part in (
+            state.businessName or "",
+            state.businessDescription or "",
+            " ".join(state.servicesProducts or []),
+        )
+        if part
+    )
+
+
+def unblock_niche_intake_loop(state: Any, missing_fields: List[str]) -> List[str]:
+    """Break the industry/niche intake loop (task #58).
+
+    normalize_niche() in taxonomy.py only recognizes a closed alias table;
+    any business description that doesn't match it collapses to "general",
+    which missing_fields_from_state() then flags as unresolved forever if
+    there is no confident field-meta entry saying otherwise. In practice
+    this meant Lyra could ask the same industry question in an infinite
+    loop for any niche the fixed table has never seen (confirmed live with
+    a real tester -- "Quick gift" -- via Render access logs, see
+    docs/AGENT_LOG.md).
+
+    This is a no-op unless "niche" is literally the only thing blocking:
+    it first tries the same safe LLM-fallback pattern already proven in
+    generate_ai_seed_catalog() (classify_business_niche, same sync client,
+    same "return None and let the caller degrade gracefully on any
+    failure" discipline). If that also fails (no OPENAI_API_KEY, or the
+    call errors), and a real business description already exists, it
+    accepts the niche as resolved anyway rather than blocking forever --
+    matching the product requirement that Lyra must always move forward
+    with whatever the client already gave it instead of getting stuck.
+    """
+    if "niche" not in missing_fields:
+        return missing_fields
+    context_text = _niche_context_text(state)
+    ai_niche = classify_business_niche(context_text, state.selectedLanguage) if context_text.strip() else None
+    if ai_niche:
+        state.industry = ai_niche
+        mark_field_meta(state, "niche", "ai_inferred", 0.85)
+    elif str(state.businessDescription or "").strip():
+        mark_field_meta(state, "niche", "description_fallback", 0.75)
+    else:
+        return missing_fields
+    return intake_engine.missing_fields_from_state(state, {}, state.fieldMeta)
+
+
 @app.post("/api/client/intake-session")
 async def client_intake_session(
     payload: Dict[str, Any],
     authorization: str = Header(default=""),
     luma_client_session: str = Cookie(default=""),
+    db_session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
     auth_user = authenticated_client_user(authorization, luma_client_session)
     email = str(auth_user.get("email") or "").strip().lower()
@@ -2037,13 +2218,27 @@ async def client_intake_session(
     ).strip()
     incoming_request_id = str(payload.get("requestId") or "").strip()
     session_key = _intake_session_key(email, project_id, incoming_request_id)
-    existing = client_intake_sessions.get(session_key)
-    if not existing and not force_new:
-        existing = client_intake_sessions.get(_intake_session_key(email, project_id, ""))
-        if not existing and incoming_request_id:
-            existing = client_intake_sessions.get(_intake_session_key(email, "", incoming_request_id))
+    lookup_keys = [session_key]
+    if not force_new:
+        lookup_keys.append(_intake_session_key(email, project_id, ""))
+        if incoming_request_id:
+            lookup_keys.append(_intake_session_key(email, "", incoming_request_id))
+        lookup_keys.append(email)  # legacy key format, kept for backward compat
+
+    existing = None
+    if not force_new:
+        for lookup_key in lookup_keys:
+            existing = client_intake_sessions.get(lookup_key)
+            if existing:
+                break
         if not existing:
-            existing = client_intake_sessions.get(email)
+            # In-memory cache miss -- most likely a fresh process after a
+            # Render restart (task #62). Fall back to the durable table
+            # before concluding there truly is no prior session.
+            for lookup_key in lookup_keys:
+                existing = _load_intake_session_from_db(db_session, lookup_key)
+                if existing:
+                    break
     draft = sanitize_client_draft(payload.get("draft"))
     name = str(payload.get("name") or draft.get("businessName") or "").strip()
     selected_language = payload.get("selectedLanguage") or draft.get("selectedLanguage") or "en"
@@ -2069,6 +2264,7 @@ async def client_intake_session(
         }
         session["request_number"] = session["requestNumber"]
         client_intake_sessions[session_key] = session
+        _persist_intake_session(db_session, session_key, session)
         return session
 
     existing["draft"] = sanitize_client_draft({**sanitize_client_draft(existing.get("draft")), **draft})
@@ -2079,7 +2275,9 @@ async def client_intake_session(
     existing["restored"] = True
     existing["storageStatus"] = "stored"
     existing["storage_status"] = "stored"
-    client_intake_sessions[_intake_session_key(email, existing.get("projectId") or "", existing.get("requestId") or "")] = existing
+    final_key = _intake_session_key(email, existing.get("projectId") or "", existing.get("requestId") or "")
+    client_intake_sessions[final_key] = existing
+    _persist_intake_session(db_session, final_key, existing)
     return existing
 
 
@@ -2225,6 +2423,7 @@ async def website_builder(
             )
             state.selectedTemplateId = replacement_template_id
     missing_fields = intake_engine.missing_fields_from_state(state, {}, field_meta)
+    missing_fields = unblock_niche_intake_loop(state, missing_fields)
     if missing_fields:
         return WebsiteGenerationResponse(
             website_schema={},

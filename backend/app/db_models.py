@@ -328,3 +328,36 @@ class DomainReservation(Base):
     checked_at: Mapped[int] = mapped_column(default=_now)
     created_at: Mapped[int] = mapped_column(default=_now)
     updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
+
+
+class ClientIntakeSessionRecord(Base):
+    """Durable backing store for main.py's client_intake_sessions cache.
+
+    Task #62: that cache used to be an in-memory dict only, so any Render
+    restart (a deploy, or the platform recycling the instance) silently
+    wiped every in-progress guided intake conversation -- confirmed live
+    via Render logs (a tester's session died with a 401 on
+    /api/client/auth/me right after a deploy restart, then started a brand
+    new, empty intake session on re-login). This table lets main.py restore
+    a session from here on a cache miss instead of just starting over.
+
+    `id` is the same `session_key` string main.py already computes via
+    `_intake_session_key()` (`f"{email}:{identity}"`), so this is a pure
+    persistence layer under the existing key scheme -- no change to how
+    sessions are looked up.
+    """
+
+    __tablename__ = "client_intake_sessions"
+
+    id: Mapped[str] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(index=True)
+    project_id: Mapped[str] = mapped_column(default="")
+    request_id: Mapped[str] = mapped_column(default="")
+    request_number: Mapped[str] = mapped_column(default="")
+    client_name: Mapped[str] = mapped_column(default="")
+    selected_language: Mapped[str] = mapped_column(default="en")
+    draft_json: Mapped[str] = mapped_column(Text, default="{}")
+    restored: Mapped[bool] = mapped_column(default=False, server_default=false(), nullable=False)
+    storage_status: Mapped[str] = mapped_column(default="stored")
+    created_at: Mapped[int] = mapped_column(default=_now)
+    updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
