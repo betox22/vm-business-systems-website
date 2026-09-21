@@ -209,9 +209,23 @@ select {
   display: grid;
   grid-template-columns: 200px minmax(0, 1fr);
   width: 100%;
+  /* 100vh on mobile is the browser-chrome-inclusive viewport, not the real
+     visible height - it does not shrink for the address bar or an open
+     keyboard, so this fixed-height/overflow:hidden box used to get pushed
+     up off screen with no way to scroll back down to the chat input
+     ("no hay espacio para escribir", reported by Beto 2026-09-21 testing on
+     phone). 100dvh tracks the real visible viewport on browsers that
+     support it (all current mobile browsers); the 100vh line above is kept
+     as the fallback for the rare browser that does not. overflow-y:auto is
+     a safety net, not the primary fix - it only kicks in if dvh math is
+     ever still off by a few px, and is a no-op on desktop since content
+     already fits. */
   height: 100vh;
+  height: 100dvh;
   max-height: 100vh;
-  overflow: hidden;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
   border: 0;
   border-radius: 0;
   background: linear-gradient(135deg, #f7fbff 0%, #ffffff 46%, #f5fff9 100%);
@@ -13342,7 +13356,9 @@ body[data-assistant-state="success"] .assistant-identity .assistant-avatar,
   .guided-shell {
     width: 100%;
     height: 100vh;
+    height: 100dvh;
     max-height: 100vh;
+    max-height: 100dvh;
     border-radius: 0;
   }
 

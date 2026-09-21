@@ -329,7 +329,15 @@ export async function sendGuidedReply() {
   const stepUpdates = inferGuidedUpdates(attributionStep, message);
   const localContextUpdates = { ...broadLocalUpdates, ...stepUpdates };
   if (builderState.guidedStep === "websiteIntent" && !localContextUpdates.websiteIntent) {
-    localContextUpdates.websiteIntent = extractWebsiteIntent(message) || message.slice(0, 180);
+    // Only fill this in when the local heuristic actually recognizes a
+    // category. Leaving it unset (rather than falling back to the raw
+    // client message) lets the backend's real intake response - merged a
+    // few lines below via mergeGuidedUpdates(updatedFields) - supply the
+    // real value instead of the field showing whatever the client typed.
+    const detectedIntent = extractWebsiteIntent(message);
+    if (detectedIntent) {
+      localContextUpdates.websiteIntent = detectedIntent;
+    }
   }
   if (!localContextUpdates.businessDescription && !builderState.guidedState.businessDescription && isRichIntakeMessage(message)) {
     localContextUpdates.businessDescription = message;

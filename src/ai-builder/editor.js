@@ -626,14 +626,34 @@ export function compactCollectedPreview() {
     salesFlow: builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
     offers: arrayValue(builderState.guidedState.servicesProducts).slice(0, 2),
   });
-  return builderState.guidedState.businessName || builderState.guidedState.industry
-    ? `${summary}${humanTemplate ? ` ${langText({ en: `LYRA selected ${humanTemplate} as the visual base.`, es: `LYRA eligió ${humanTemplate} como base visual.`, fr: `LYRA a choisi ${humanTemplate} comme base visuelle.`, pt: `A LYRA escolheu ${humanTemplate} como base visual.` })}` : ""}`
-    : langText({
-        en: "LYRA is collecting the essentials.",
-        es: "LYRA está reuniendo lo esencial.",
-        fr: "LYRA collecte l'essentiel.",
-        pt: "A LYRA está reunindo o essencial.",
-      });
+  if (!builderState.guidedState.businessName && !builderState.guidedState.industry) {
+    return langText({
+      en: "LYRA is collecting the essentials.",
+      es: "LYRA está reuniendo lo esencial.",
+      fr: "LYRA collecte l'essentiel.",
+      pt: "A LYRA está reunindo o essencial.",
+    });
+  }
+  // This card and the real chat bubble (appendChatMessage, driven by the
+  // backend's own assistantMessage/nextQuestion) are two independent
+  // narrators rendered on every turn. Before this gate, this card declared
+  // "LYRA already picked template X" as soon as businessName/industry were
+  // known, even on a turn where the backend's own readyToGenerate was false
+  // and the chat bubble was actively asking for another required field -
+  // producing the exact contradiction Beto reported 2026-09-21 ("dice que
+  // ya tiene todo y al mismo tiempo te tira preguntas"). Only claim the
+  // visual base is decided once the backend has actually signaled it has
+  // no more outstanding required fields for this brief.
+  const hasOpenBackendQuestion = builderState.hasBackendIntakeSignal && !builderState.backendReadyToGenerate;
+  if (hasOpenBackendQuestion) {
+    return `${summary} ${langText({
+      en: "LYRA still needs a couple of details before choosing the final template.",
+      es: "A LYRA aún le faltan un par de detalles antes de elegir la plantilla final.",
+      fr: "Il manque encore quelques détails à LYRA avant de choisir le modèle final.",
+      pt: "A LYRA ainda precisa de alguns detalhes antes de escolher o modelo final.",
+    })}`;
+  }
+  return `${summary}${humanTemplate ? ` ${langText({ en: `LYRA selected ${humanTemplate} as the visual base.`, es: `LYRA eligió ${humanTemplate} como base visual.`, fr: `LYRA a choisi ${humanTemplate} comme base visuelle.`, pt: `A LYRA escolheu ${humanTemplate} como base visual.` })}` : ""}`;
 }
 
 export async function createDomainOrderIfNeeded(payload, result) {
