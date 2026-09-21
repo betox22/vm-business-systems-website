@@ -1,0 +1,33 @@
+{
+  "corporate-company-pro": {
+    "business": {"name": "TEST Corporate Shadow", "selectedLanguage": "en"},
+    "selected_template": {"id": "corporate-company-pro", "name": "Corporate Company"},
+    "active_template": {"id": "corporate-company-pro"},
+    "theme": {}, "brand": {}, "contact": {"email": "test@example.invalid"},
+    "navigation": [{"page_key": "home", "label": "Home"}],
+    "global_components": {"footer_text": "Test-only corporate site"},
+    "pages": [{"page_key": "home", "title": "Home", "sections": [
+      {"id": "hero", "type": "CorporateHero", "order": 1, "editable": {"headline": "Consulting for local teams", "subtitle": "A synthetic pilot, not a client site.", "primary_button": "Contact us"}},
+      {"id": "about", "type": "About", "order": 2, "editable": {"title": "Our team", "text": "Local process specialists."}},
+      {"id": "contact", "type": "Contact", "order": 3, "editable": {"title": "Talk to us"}}
+    ]}],
+    "catalog_items": []
+  },
+  "mega-retail-store": {
+    "business": {"name": "TEST Retail Shadow", "selectedLanguage": "en"},
+    "selected_template": {"id": "mega-retail-store", "name": "Mega Retail Store"},
+    "active_template": {"id": "mega-retail-store"},
+    "theme": {}, "brand": {}, "contact": {},
+    "navigation": [{"page_key": "home", "label": "Home"}],
+    "global_components": {"footer_text": "Test-only retail site"},
+    "pages": [{"page_key": "home", "title": "Home", "sections": [
+      {"id": "hero", "type": "Hero", "order": 1, "editable": {"headline": "Tools for a precise job", "subtitle": "A synthetic pilot, not a client site.", "primary_button": "Browse tools"}},
+      {"id": "products", "type": "ProductGrid", "order": 2, "editable": {"title": "Tools", "text": "Product data from the test database"}},
+      {"id": "contact", "type": "Contact", "order": 3, "editable": {"title": "Contact"}}
+    ]}],
+    "catalog_items": [
+      {"name": "Test cordless drill", "sku": "TEST-DRILL", "category": "Tools", "description": "Synthetic drill fixture", "image_url": "/assets/nixie_idle.png", "price_type": "fixed", "price_amount": 25, "price_label": "USD 25.00", "inventory_quantity": 4},
+      {"name": "Test workshop consultation", "sku": "TEST-QUOTE", "category": "Services", "description": "Synthetic quote fixture", "image_url": "/assets/nixie_idle.png", "price_type": "quote_only", "price_amount": null, "price_label": "Price to confirm", "inventory_quantity": 0}
+    ]
+  }
+}
