@@ -98,17 +98,6 @@ export default {
     // Only let Cloudflare cache actual static-asset reads. This origin isn't
     // built to handle non-GET/HEAD traffic at all, so there's no reason to
     // ask the cache layer to do anything with those requests.
-    // 2026-09-21: cacheTtl was 300s (5 minutes) with cacheEverything -- this
-    // Worker-level cache is separate from the Cloudflare zone's own cache,
-    // is NOT cleared by the dashboard's "Purge Everything" button, and
-    // survives incognito, DNS flush and a different network, since it lives
-    // entirely at Cloudflare's edge, keyed by request URL, per datacenter.
-    // Confirmed live: two real code deploys in a row were invisible from
-    // every device Beto tested for several minutes each, while a direct
-    // curl to the same URL (no browser involved) already showed the fresh
-    // content -- the only difference was this cache. Dropped to 20s so a
-    // deploy is never blocked for more than that, while still absorbing
-    // real traffic bursts.
     const originResponse = await fetch(
       originRequest,
       isCacheableMethod ? { cf: { cacheTtl: 20, cacheEverything: true } } : undefined,
