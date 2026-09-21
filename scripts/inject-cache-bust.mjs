@@ -1,5 +1,4 @@
-// Rewrites the `ai-builder.js?v=NNN` and `ai-builder.css?v=NNN` cache-busting
-// query strings in every staged HTML file to a value derived from the current
+// Rewrites the versioned builder and client setup assets in staged HTML to a value derived from the current
 // commit, so every deploy gets URLs Cloudflare/GitHub Pages/the browser have
 // never seen before.
 //
@@ -37,7 +36,7 @@ function resolveCacheBustValue() {
 }
 
 const cacheBust = resolveCacheBustValue();
-const assets = ["ai-builder.js", "ai-builder.css"];
+const assets = ["ai-builder.js", "ai-builder.css", "client-setup.css"];
 
 for (const relativePath of TARGET_FILES) {
   const filePath = `${OUT_DIR}/${relativePath}`;
