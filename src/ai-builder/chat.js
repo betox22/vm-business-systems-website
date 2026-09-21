@@ -1,6 +1,7 @@
 import { ASSISTANT_AVATAR_FALLBACK, ASSISTANT_AVATARS, LUMA_AGENT_URL } from './config.js';
 import { escapeHtml, escapeAttribute } from './utils.js';
 import { builderState } from './state.js';
+import { removeReadyCard, shouldShowReadyCard } from './ready-card-policy.js';
 import {
   createOrResumeClientIntakeSession,
   guidedSessionDraftForApi,
@@ -595,7 +596,11 @@ export function normalizeGuidedStepForCurrentState(step) {
 }
 
 export function renderSitePlanInChatIfNeeded() {
-  if (builderState.guidedStep !== "review" || !guidedChat) return;
+  if (!guidedChat) return;
+  if (!shouldShowReadyCard(builderState)) {
+    removeReadyCard(guidedChat);
+    return;
+  }
   guidedChat.querySelectorAll(".site-plan-card, .luma-ready-card").forEach((card) => card.remove());
   guidedChat.appendChild(renderLumaReadyCard());
   guidedChat.scrollTop = guidedChat.scrollHeight;

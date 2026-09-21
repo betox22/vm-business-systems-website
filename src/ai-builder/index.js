@@ -41,6 +41,7 @@ import { buildColorProvenance, colorPreferenceUpdate } from './color-provenance.
 import { applyAuthoritativeThemeToBrand } from './theme-policy.js';
 import { applySurgicalSchemaEdit, detectSurgicalEditIntent } from './surgical-edit-policy.js';
 import { generationAuthAction } from './auth-session-policy.js';
+import { removeReadyCard } from './ready-card-policy.js';
 import { preservedGraphDocument } from './graph-normalization-policy.js';
 import {
   hasOnlineSalesSignal,
@@ -2383,6 +2384,7 @@ function ensureGuidedBuildStatusCard() {
 
 function setGuidedBuildPhase(phase, detail = "") {
   if (!isPublicClientSetup) return;
+  removeReadyCard(guidedChat);
   const card = ensureGuidedBuildStatusCard();
   if (!card) return;
   document.body.classList.add("lyra-build-mode");
