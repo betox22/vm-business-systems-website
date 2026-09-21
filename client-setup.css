@@ -6242,3 +6242,26 @@ body.public-client-setup.lyra-conversation-mode .live-construction-canvas.is-tem
   pointer-events: none;
   background: #ffffff;
 }
+
+/* Fix (2026-09-21): the ai-builder.css .guided-shell 100vh/overflow:hidden
+   fix (task #66) did NOT reach this page. This file was never unified with
+   ai-builder.css (see docs/AGENT_LOG.md, "client-setup.css: pendiente de
+   unificacion") and carries its own dozen-plus .guided-shell/.guided-chat-
+   card rules, most still declaring overflow:hidden and several still on
+   plain 100vh. Live-reproduced on a real mobile viewport (375x812): with
+   the panel forced open, #guidedReply sat at y=830 - 18px BELOW the
+   visible 812px viewport - and every ancestor up to .guided-shell had
+   overflow:hidden, so there was no way to scroll down to it. This is a
+   scoped safety net rather than a rewrite of every duplicated rule above:
+   it forces the two ancestors that were clipping the composer to allow
+   vertical scroll on phone-sized screens, without changing any size,
+   color, or spacing. Confirmed in a live headless-browser reproduction
+   before and after this rule. A full pass to unify/de-duplicate this
+   file's guided-shell rules with ai-builder.css is tracked separately
+   (Beto asked for a full visual+generation review, 2026-09-21). */
+@media (max-width: 900px) {
+  .public-client-setup .guided-shell,
+  .public-client-setup .guided-chat-card {
+    overflow-y: auto !important;
+  }
+}
