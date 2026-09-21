@@ -14978,3 +14978,33 @@ body.public-client-setup.lyra-build-mode .guided-build-card:not(.is-error):not(.
   background-size: 220% 100%;
   color: #67e8f9;
 }
+
+.public-client-setup .guided-layout.guided-layout--docked-panel {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.public-client-setup .guided-layout--docked-panel .guided-live-stage,
+.public-client-setup .guided-layout--docked-panel .guided-chat-card {
+  display: none !important;
+}
+
+.public-client-setup .client-projects-panel.is-docked {
+  position: relative !important;
+  inset: auto !important;
+  z-index: auto !important;
+  display: block !important;
+  padding: 0 !important;
+  height: 100%;
+  width: 100%;
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+
+.public-client-setup .client-projects-panel.is-docked .client-projects-card {
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
