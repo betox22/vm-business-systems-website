@@ -47,6 +47,7 @@ const PUBLIC_TOP_LEVEL_FILES = [
   "client-portal-preview.html",
   "client-portal.html",
   "client-setup.css",
+  "client-setup-v2.css",
   "client-start.js",
   "client.css",
   "contact.html",
