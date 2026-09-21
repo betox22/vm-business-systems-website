@@ -6113,39 +6113,39 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message {
+  body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .chat-message {
     animation: none;
   }
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-shell {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .guided-shell {
   background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 30%, #6d28d9 55%, #0e7490 85%, #0d9488 100%);
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-header {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .guided-header {
   background: rgba(15, 12, 41, 0.55) !important;
   backdrop-filter: blur(18px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .assistant-identity strong,
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .assistant-identity span {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .assistant-identity strong,
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .assistant-identity span {
   color: #f5f3ff !important;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-progress span {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .guided-progress span {
   color: #e9d5ff !important;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-progress div {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .guided-progress div {
   background: rgba(255, 255, 255, 0.18) !important;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-layout {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .guided-layout {
   padding: 22px;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .assistant-avatar.large {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .assistant-avatar.large {
   width: 72px;
   height: 72px;
   position: relative;
@@ -6153,11 +6153,11 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
   filter: drop-shadow(0 0 18px rgba(232, 121, 249, 0.65));
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .assistant-identity {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .assistant-identity {
   position: relative;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .assistant-identity::before {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .assistant-identity::before {
   content: "";
   position: absolute;
   top: 50%;
@@ -6176,7 +6176,7 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
   50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-progress i {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .guided-progress i {
   background: linear-gradient(90deg, #e879f9, #22d3ee) !important;
   animation: lyraProgressGlow 2.2s ease-in-out infinite;
 }
@@ -6186,14 +6186,14 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
   50% { box-shadow: 0 0 22px rgba(34, 211, 238, 0.7); }
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .live-site-preview-card {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .live-site-preview-card {
   position: relative;
   border-radius: 24px !important;
   border: 1px solid rgba(255, 255, 255, 0.35) !important;
   box-shadow: 0 30px 80px rgba(9, 6, 40, 0.55) !important;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .live-site-preview-card::before {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .live-site-preview-card::before {
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
@@ -6210,7 +6210,7 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
   100% { background-position: 200% 0; }
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-chat-card {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .guided-chat-card {
   border: 1px solid rgba(255, 255, 255, 0.35) !important;
   box-shadow: 0 30px 80px rgba(9, 6, 40, 0.55) !important;
   border-radius: 24px !important;
@@ -6218,49 +6218,49 @@ body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.f
   backdrop-filter: blur(20px);
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message.assistant span,
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-message.system span {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .chat-message.assistant span,
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .chat-message.system span {
   background: rgba(255, 255, 255, 0.94) !important;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-status-card {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .chat-status-card {
   background: rgba(255, 255, 255, 0.1) !important;
   border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-status-card strong {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .chat-status-card strong {
   color: #f5f3ff !important;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .quick-chip-row button {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .quick-chip-row button {
   background: rgba(255, 255, 255, 0.12) !important;
   border-color: rgba(255, 255, 255, 0.3) !important;
   color: #f5f3ff !important;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .chat-input-label input {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .chat-input-label input {
   background: rgba(255, 255, 255, 0.95) !important;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-actions .send-toggle {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .guided-actions .send-toggle {
   background: linear-gradient(135deg, #e879f9, #22d3ee) !important;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-actions .send-toggle:hover {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .guided-actions .send-toggle:hover {
   transform: translateY(-1px) scale(1.04);
   box-shadow: 0 10px 22px rgba(232, 121, 249, 0.5) !important;
 }
 
-body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-actions .send-toggle:active {
+body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .guided-actions .send-toggle:active {
   transform: translateY(0) scale(0.96);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .assistant-identity::before,
-  body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .guided-progress i,
-  body.public-client-setup.lyra-conversation-mode:not(.review-details-open):not(.final-review-mode) .live-site-preview-card::before {
+  body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .assistant-identity::before,
+  body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .guided-progress i,
+  body.public-client-setup:is(.lyra-conversation-mode, .lyra-result-mode):not(.review-details-open):not(.final-review-mode) .live-site-preview-card::before {
     animation: none;
   }
 }
