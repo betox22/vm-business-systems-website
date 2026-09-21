@@ -1407,6 +1407,17 @@
     return workspaceUnlocked ? "continue" : "unlock_and_continue";
   }
 
+  // src/ai-builder/graph-normalization-policy.js
+  var verifiedDocuments = /* @__PURE__ */ new WeakMap();
+  function preservedGraphDocument(schema) {
+    const snapshot = verifiedDocuments.get(schema);
+    if (snapshot === void 0) return null;
+    if (JSON.stringify(schema) !== snapshot) throw new Error("Verified graph document changed");
+    const preserved = structuredClone(schema);
+    verifiedDocuments.set(preserved, snapshot);
+    return preserved;
+  }
+
   // src/ai-builder/intake-state-policy.js
   function isStrongNewBusinessBrief({
     message = "",
@@ -1746,6 +1757,40 @@
 
   // src/ai-builder/mega-retail-policy.js
   var NEUTRAL_PRODUCT_PLACEHOLDER = "/images/product-placeholder.svg";
+  var internalContexts = /* @__PURE__ */ new WeakSet();
+  var renderingSchemas = /* @__PURE__ */ new WeakSet();
+  function withGraphPresentation(schema, context, render) {
+    if (!internalContexts.has(context?.graphPresentation)) return render();
+    const nested = renderingSchemas.has(schema);
+    renderingSchemas.add(schema);
+    try {
+      return render();
+    } finally {
+      if (!nested) renderingSchemas.delete(schema);
+    }
+  }
+  function graphPresentationEnabled(schema) {
+    return renderingSchemas.has(schema);
+  }
+  function graphPresentationLabels(schema, legacy) {
+    if (!graphPresentationEnabled(schema)) return legacy;
+    const es = schema.business?.selectedLanguage === "es";
+    return {
+      ...legacy,
+      limited: es ? "Coleccion" : "Collection",
+      deals: es ? "Catalogo" : "Catalog",
+      newsletter: es ? "Novedades" : "Updates",
+      newsletterText: es ? "Noticias del catalogo." : "Catalog updates.",
+      helpLinks: [es ? "Contacto" : "Contact"],
+      trust: []
+    };
+  }
+  function graphProductAttributes(schema, item) {
+    if (!graphPresentationEnabled(schema)) return "";
+    const id = String(item.id || "");
+    if (!/^[a-zA-Z0-9_-]{1,96}$/.test(id)) throw new Error("Invalid catalog identity");
+    return ` data-graph-product="${id}"`;
+  }
   function isMegaRetailTemplate(templateId) {
     return String(templateId || "") === "mega-retail-store";
   }
@@ -2850,6 +2895,9 @@
     );
   }
   function renderWebsite(schema, pageKey, context = {}) {
+    return withGraphPresentation(schema, context, () => renderWebsiteDocument(schema, pageKey, context));
+  }
+  function renderWebsiteDocument(schema, pageKey, context = {}) {
     const page = schema.pages.find((item) => item.page_key === pageKey) || schema.pages[0];
     const theme = schema.theme || {};
     ensureGoogleFontsLoaded(theme);
@@ -6135,8 +6183,8 @@
     return `<div class="rendered-site layout-${escapeAttribute(slugify2(layoutId))} template-${escapeAttribute(slugify2(templateId))}" style="${themeVars(theme, schema.brand)};--mega-tile-tint:${escapeAttribute(brandTint)}">
     ${renderStudioFloatingCatalog(schema, context)}
     <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditPageTitlePath(schema, item), "nav_label")}>${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div></div>
-    ${renderMegaRetailHeader(schema, page, logo, categories, labels, false)}
-    ${page?.page_key === "home" || page === pages[0] ? `${renderMegaRetailBento(schema, hero, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailDeals(schema, sections, items, labels, false)}${renderMegaRetailTrust(sections, labels)}` : ""}
+    ${renderMegaRetailHeader(schema, page, logo, categories, labels, graphPresentationEnabled(schema))}
+    ${page?.page_key === "home" || page === pages[0] ? `${renderMegaRetailBento(schema, hero, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailDeals(schema, sections, items, labels, graphPresentationEnabled(schema))}${renderMegaRetailTrust(sections, labels)}` : ""}
     ${remainingSections.map((section) => renderSection(section, schema)).join("")}
     ${renderMegaRetailFooter(schema, pages, logo, labels, features)}
     ${features.whatsapp && whatsappUrl ? `<a class="mega-retail-whatsapp" href="${escapeAttribute(whatsappUrl)}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">${megaRetailIcon("whatsapp")}</a>` : ""}
@@ -6170,7 +6218,7 @@
     const source = sections.find((section) => ["DealRow", "ProductGrid"].includes(section.type)) || {};
     return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2 ${inlineEditAttrs(schema, source, "title")}>${escapeHtml(source.editable?.title || labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => {
       const action = catalogAction(schema, item);
-      return `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small ${inlineCatalogEditAttrs(schema, item, "category", "product_name")}>${escapeHtml(item.category || labels.department)}</small><h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name || "")}</h3><p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${interactive ? action.attributes : ""}>${escapeHtml(action.label)}</button></div></article>`;
+      return `<article class="mega-retail-product"${graphProductAttributes(schema, item)} ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small ${inlineCatalogEditAttrs(schema, item, "category", "product_name")}>${escapeHtml(item.category || labels.department)}</small><h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name || "")}</h3><p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong>${graphPresentationEnabled(schema) ? `<span class="graph-product-stock">${escapeHtml(String(item.inventory_quantity))}</span>` : ""}<button type="button" ${interactive ? action.attributes : ""}>${escapeHtml(action.label)}</button></div></article>`;
     }).join("")}</div></section>`;
   }
   function megaRetailDiscountBadge(item = {}) {
@@ -6200,7 +6248,7 @@
       en: { departments: "Departments", search: "Search products and departments", account: "Sign in", favorites: "Favorites", cart: "Cart", featured: "Featured", department: "Department", heroText: "Everything you need, in one place.", discover: "Discover the collection", explore: "Explore", limited: "Limited-time picks", deals: "Today's deals", viewAll: "View all", price: "Price on request", tagline: "Everything you need in one place.", help: "Help", company: "Company", newsletter: "Get the best deals", newsletterText: "New arrivals and special offers in your inbox.", subscribe: "Subscribe", helpLinks: ["Shipping", "Returns", "Contact", "Frequently asked questions"], fallbackCategories: ["Technology", "Home", "Fashion", "Beauty", "Outdoor"], trust: [["Fast shipping", "Reliable delivery options"], ["Easy returns", "Simple exchanges and returns"], ["A broad catalog", "Everything in one place"], ["Secure payment", "Protected checkout"]] },
       es: { departments: "Departamentos", search: "Buscar productos y departamentos", account: "Ingresar", favorites: "Favoritos", cart: "Carrito", featured: "Destacado", department: "Departamento", heroText: "Todo lo que buscas, en un solo lugar.", discover: "Descubre la colecci\xF3n", explore: "Explorar", limited: "Selecci\xF3n por tiempo limitado", deals: "Ofertas de hoy", viewAll: "Ver todo", price: "Precio a consultar", tagline: "Todo lo que buscas en un solo lugar.", help: "Ayuda", company: "Empresa", newsletter: "Recibe las mejores ofertas", newsletterText: "Novedades y promociones directo en tu correo.", subscribe: "Suscribirse", helpLinks: ["Env\xEDos", "Devoluciones", "Contacto", "Preguntas frecuentes"], fallbackCategories: ["Tecnolog\xEDa", "Hogar", "Moda", "Belleza", "Aire libre"], trust: [["Env\xEDo r\xE1pido", "Opciones de entrega confiables"], ["Devoluciones f\xE1ciles", "Cambios y devoluciones simples"], ["Cat\xE1logo amplio", "Todo en un solo lugar"], ["Pago seguro", "Compra protegida"]] }
     };
-    return all[language] || all.en;
+    return graphPresentationLabels(schema, all[language] || all.en);
   }
   function megaRetailIcon(name) {
     const paths = { search: '<circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>', heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"></path>', bag: '<path d="M6 8h12l1 13H5L6 8Z"></path><path d="M9 9V6a3 3 0 0 1 6 0v3"></path>', arrow: '<path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path>', truck: '<path d="M3 6h11v10H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="2"></circle><circle cx="18" cy="18" r="2"></circle>', return: '<path d="m9 14-4-4 4-4"></path><path d="M5 10h9a5 5 0 0 1 5 5v1"></path>', grid: '<rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect>', lock: '<rect x="5" y="10" width="14" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path>', whatsapp: '<path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4A8 8 0 1 1 20 11.5Z"></path><path d="M9 8.5c.8 2.2 2.3 3.8 4.7 4.7"></path>', instagram: '<rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1"></circle>', facebook: '<path d="M14 8h3V4h-3a5 5 0 0 0-5 5v3H6v4h3v6h4v-6h3l1-4h-4V9a1 1 0 0 1 1-1Z"></path>', tiktok: '<path d="M15 4v10a4 4 0 1 1-4-4"></path><path d="M15 4c1 3 3 4 5 4"></path>', twitter: '<path d="M4 4l16 16M20 4 4 20"></path>' };
@@ -9304,6 +9352,34 @@ ${cleanQuestion}`;
       pt: "Voc\xEA pode verificar a disponibilidade antes de gerar."
     });
   }
+  function currentOwnerEmailForDomainLookup() {
+    return builderState.clientIntakeSession?.clientEmail || builderState.guidedState.contactInfo?.email || builderState.guidedState.contactInfo?.contact || (typeof localStorage !== "undefined" ? localStorage.getItem("lumaPendingClientEmail") : "") || "";
+  }
+  function adaptDomainSearchResponse(apiResponse) {
+    const options = Array.isArray(apiResponse?.options) ? apiResponse.options : [];
+    const statusMap = {
+      included: "available_included",
+      available: "available_requires_review",
+      premium: "available_requires_review",
+      taken: "not_available"
+    };
+    return {
+      results: options.map((option) => ({
+        ...option,
+        status: statusMap[option.status] || (option.available ? "available_requires_review" : "not_available")
+      })),
+      exact_availability: Boolean(options[0]?.available)
+    };
+  }
+  async function fetchDomainSearch(query) {
+    const params = new URLSearchParams({
+      domain: query,
+      ownerEmail: currentOwnerEmailForDomainLookup()
+    });
+    const response = await fetch(`${API_BASE_URL}/api/v1/domains/search?${params.toString()}`);
+    if (!response.ok) throw new Error(await readErrorMessage(response));
+    return adaptDomainSearchResponse(await response.json());
+  }
   async function checkDesiredDomainOptions() {
     syncGuidedStateFromSummary();
     const query = builderState.guidedState.desiredDomain || builderState.guidedState.businessName || "";
@@ -9316,9 +9392,7 @@ ${cleanQuestion}`;
     domainCheckStatus.textContent = t("checkingDomain");
     domainResults.innerHTML = "";
     try {
-      const response = await fetch(`${API_BASE_URL}/public/domain-search?q=${encodeURIComponent(query)}`);
-      if (!response.ok) throw new Error(await readErrorMessage(response));
-      renderDomainResults(await response.json());
+      renderDomainResults(await fetchDomainSearch(query));
     } catch (error) {
       domainCheckStatus.textContent = `${langText({
         en: "Could not check domain",
@@ -9389,8 +9463,7 @@ ${cleanQuestion}`;
     const requestedDomain = payload.desiredDomain || payload.desired_domain || "";
     if (!requestedDomain.trim() || !result.business_id) return;
     try {
-      const search = await fetch(`${API_BASE_URL}/public/domain-search?q=${encodeURIComponent(requestedDomain)}`);
-      const searchResult = search.ok ? await search.json() : { results: [] };
+      const searchResult = await fetchDomainSearch(requestedDomain).catch(() => ({ results: [] }));
       const selectedResult = (searchResult.results || []).find((item) => item.domain === requestedDomain.trim().toLowerCase()) || (searchResult.results || [])[0] || {};
       const orderPayload = {
         businessId: result.business_id,
@@ -14939,6 +15012,8 @@ ${guidedQuestion(nextMissing)}`
   }
   function prepareWebsiteConfig(schema, payload = {}, templateSelection = null) {
     if (!schema) return schema;
+    const preserved = preservedGraphDocument(schema);
+    if (preserved) return preserved;
     const brand = normalizeBrand(payload.brand || builderState.guidedState.brand || schema.brand || {
       logoUrl: payload.assets?.find((asset) => asset.asset_type === "logo")?.url || schema.global_components?.logo_url || "",
       preferredColors: payload.preferred_colors
@@ -15099,6 +15174,8 @@ ${guidedQuestion(nextMissing)}`
     };
   }
   function applyDesignIntelligence(schema, payload = {}, templateSelection = null, options = {}) {
+    const preserved = preservedGraphDocument(schema);
+    if (preserved) return preserved;
     const businessContext = analyzeBusinessContext(payload, schema);
     const designDirection = chooseDesignDirection(businessContext, templateSelection, schema);
     const layoutStrategy = createLayoutStrategy(businessContext, designDirection, schema);
@@ -15127,6 +15204,8 @@ ${guidedQuestion(nextMissing)}`
     return nextSchema;
   }
   function enforceSelectedTemplateArchitecture(schema, payload = {}, templateSelection = null) {
+    const preserved = preservedGraphDocument(schema);
+    if (preserved) return preserved;
     const templateId = `${templateSelection?.templateId || payload.templateId || schema.selected_template?.id || schema.layout_mode?.template_id || ""}`;
     const catalogType = `${templateSelection?.catalogType || payload.catalogType || schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || ""}`;
     const brief = [
@@ -15357,6 +15436,8 @@ ${guidedQuestion(nextMissing)}`
     return nextNavigation;
   }
   function lockSchemaToExecutableTemplate(schema, payload = {}, templateSelection = null, context = {}) {
+    const preserved = preservedGraphDocument(schema);
+    if (preserved) return preserved;
     const template = templateSelection?.template || payload.selectedTemplate || schema.selected_template || {};
     const templateId = context.templateId || templateSelection?.templateId || payload.templateId || schema.selected_template?.id || schema.layout_mode?.template_id || template.id || "";
     const catalogType = context.catalogType || templateSelection?.catalogType || payload.catalogType || schema.catalog_model?.catalogType || schema.layout_mode?.catalog_type || template.catalogModel?.catalogType || "";

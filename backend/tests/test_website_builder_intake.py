@@ -18,13 +18,17 @@ def _memory_session():
     return sessionmaker(bind=engine)()
 
 
-def _http_request() -> Request:
+def _http_request(client_ip: str = "127.0.0.1") -> Request:
+    # _enforce_rate_limit buckets by (scope, ip) in a module-global dict with
+    # no reset between tests, capped at 6 calls / 300s for this scope. Give
+    # tests that need their own call budget a distinct fake IP so they don't
+    # silently eat into (or get eaten into by) the shared default bucket.
     return Request({
         "type": "http",
         "method": "POST",
         "path": "/ai/website-builder",
         "headers": [],
-        "client": ("127.0.0.1", 49152),
+        "client": (client_ip, 49152),
         "scheme": "http",
         "server": ("testserver", 80),
     })
@@ -99,6 +103,97 @@ class WebsiteBuilderIntakeTests(unittest.TestCase):
             response.website_schema["brand"]["colorProvenance"]["anchorColor"],
             "#5B7F55",
         )
+
+    def _ready_field_meta(self, **overrides) -> dict:
+        meta = {
+            "business_name": {"source": "explicit", "confidence": 0.95},
+            "business_description": {"source": "explicit", "confidence": 0.95},
+            "niche": {"source": "inferred", "confidence": 0.86},
+            "industry": {"source": "inferred", "confidence": 0.86},
+            "salesFlow": {"source": "ai_recommended", "confidence": 0.9},
+            "sales_flow": {"source": "ai_recommended", "confidence": 0.9},
+            "brand_style": {"source": "explicit", "confidence": 0.95},
+            "preferredTone": {"source": "explicit", "confidence": 0.95},
+            "logo": {"source": "explicit", "confidence": 0.95},
+        }
+        meta.update(overrides)
+        return meta
+
+    def test_unrecognized_niche_does_not_block_generation_when_ai_is_unavailable(self) -> None:
+        # Task #58: "fishing gear and boat accessories" matches none of
+        # taxonomy.py's closed alias list, so normalize_niche() collapses it
+        # to "general". Before the fix, missing_fields_from_state() would
+        # flag "niche" as still missing forever with no way out. This
+        # confirms that even with the AI fallback unavailable (no API key /
+        # call fails), a real business description is enough to unblock
+        # generation instead of looping the same question forever.
+        meta = self._ready_field_meta()
+        del meta["niche"]  # no confident niche resolution recorded yet
+        request = WebsiteGenerationRequest(
+            business_name="Reel Deal Marine",
+            business_description="Fishing gear and boat accessories for weekend anglers.",
+            industry="fishing gear and boat accessories",
+            servicesProducts=["Rod holders", "Marine electronics"],
+            preferred_tone="rugged and practical",
+            logoPreference="explicit_skip",
+            salesFlow="online_sales",
+            selectedLanguage="en",
+            fieldMeta=meta,
+        )
+
+        async def keep_validated_state(_prompt, state, **_kwargs):
+            return state
+
+        with (
+            patch.object(main, "classify_business_niche", return_value=None),
+            patch.object(main.orchestrator, "run", side_effect=keep_validated_state),
+        ):
+            response = asyncio.run(main.website_builder(
+                request,
+                _http_request("10.0.0.1"),
+                authorization="",
+                luma_client_session="",
+                session=self.session,
+            ))
+
+        self.assertFalse(response.needs_more_info)
+        self.assertNotIn("niche", response.missing_fields)
+
+    def test_ai_niche_classification_resolves_unrecognized_niche(self) -> None:
+        meta = self._ready_field_meta()
+        del meta["niche"]
+        request = WebsiteGenerationRequest(
+            business_name="Reel Deal Marine",
+            business_description="Fishing gear and boat accessories for weekend anglers.",
+            industry="",
+            servicesProducts=["Rod holders", "Marine electronics"],
+            preferred_tone="rugged and practical",
+            logoPreference="explicit_skip",
+            salesFlow="online_sales",
+            selectedLanguage="en",
+            fieldMeta=meta,
+        )
+
+        captured_state = {}
+
+        async def keep_validated_state(_prompt, state, **_kwargs):
+            captured_state["state"] = state
+            return state
+
+        with (
+            patch.object(main, "classify_business_niche", return_value="fishing and boating accessories"),
+            patch.object(main.orchestrator, "run", side_effect=keep_validated_state),
+        ):
+            response = asyncio.run(main.website_builder(
+                request,
+                _http_request("10.0.0.2"),
+                authorization="",
+                luma_client_session="",
+                session=self.session,
+            ))
+
+        self.assertFalse(response.needs_more_info)
+        self.assertEqual(captured_state["state"].industry, "fishing and boating accessories")
 
     def test_real_missing_fields_are_named_in_generation_response(self) -> None:
         request = WebsiteGenerationRequest(

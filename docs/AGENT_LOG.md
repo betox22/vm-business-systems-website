@@ -1,5 +1,130 @@
 # Bitácora de agentes (Claude / Codex)
 
+## 2026-09-19 - Codex - Graph pivot v1, four steps approved for release
+
+Approved on feature/ai-graph-pivot-v1 from origin/main 2766055. The graph is an
+internal decision layer targeting the existing Mega Retail home renderer, not
+a replacement public renderer. Whole-document Chromium claims validation covers
+builder/public at 1440/390/320 and interaction states; signed v1 provenance gates
+preserving normalization. One transaction owns GeneratedSite, receipt and audit;
+Product/catalog remain read-only and stale Product/renderer snapshots block reads.
+Four legacy read/write guards remain in main.py; no client route enables v1.
+
+Internal HTTP pilot reuses existing OpenAI generation without committing a graph
+proposal. Manual contact never enters the provider envelope. Real OpenAI + HTTP +
+Chromium + synthetic SQLite persistence verified; Supabase identity was synthetic
+in the local harness, not a production login. Review is static with restrictive
+CSP; blocked images and the inherited neutral Catalog heading remain documented.
+
+Python: 1281 passed + 40 subtests, 31 warnings, exit 0. Node: 246 passed / 0 failed,
+exit 0. Legacy public HTML: 21/21 byte-identical; preserving normalization also
+byte-identical for archived ElectroHub payload. Evidence:
+C:/Users/alber/Projects/kreaton-evidence/ai-graph-pivot-v1/step1 through step4.
+
+Release authorized: functional/docs commits separately, branch push and only a
+fast-forward from origin/main 2766055. KREATON_AI_GRAPH_ENABLED must stay unset/off
+in Render. Task #51 remains a hard production gate: actual PostgreSQL concurrency
+has NOT been verified; do not activate for customers based on SQLite tests.
+
+## 2026-09-18 - Codex - Internal luxury_quiet renderer, approved for release
+
+Isolated feature/ai-graph-luxury-quiet from origin/main 10fb54b. Dedicated pure
+renderer and closed objects_qa fixture, shared VISUAL_RESOURCE_PATTERNS policy
+for bold/luxury role and CSP gates. Legacy and bold output unchanged. Licensed
+horizontal hero, two product photos, original Cormorant Garamond Medium OTF;
+manifest/provenance packaged. Inert cart/checkout, no commerce JS or requests.
+
+39 new automated cases plus existing suites. Browser evidence uses local SQLite
+and a synthetic Supabase identity through the real resolver/operations/preview.
+Native Chrome 200% set by user; CSS zoom remains 1. Text stress at 320 CSS pixels.
+Evidence and exact final suite logs: kreaton-evidence/ai-graph-luxury-quiet/.
+Python complete: 1173 passed + 40 subtests, 31 warnings, exit 0.
+Node complete: 231 passed / 0 failed, exit 0; sandbox-only initial failure saved.
+User approved tracking zero definitively and accepted stress320-final.json
+(40px H1, 12 products, no horizontal overflow). Positive tracking was not tested.
+Approved release: separate functional/docs commits and fast-forward only from
+origin/main 10fb54b. No deployment or Render flag activation authorized.
+No LLM or production DB access during implementation and QA.
+Bold asset test now tolerates Git CRLF checkout for licensed text assets only;
+canonical SHA256 remains required, binary hashes and asset contents unchanged.
+
+## 2026-09-18 - Codex - Internal bold_commerce renderer, not released
+
+Isolated feature/ai-graph-bold-commerce from origin/main 9569e9b. Explicit
+presentation selector and closed hardware_qa photo fixture; legacy HTML unchanged.
+Hero/grid/footer/manual trust styling, packaged licensed photos/font/Lucide icons,
+disabled commerce mockups. Approved CSP data-image/font exception and additional
+super_admin check apply only to bold preview. No global auth, schemas, generation,
+claims, service, commerce, public renderer, migrations or publication changes.
+
+Python complete: 1134 passed + 40 subtests, 31 warnings, exit 0 (29 new cases).
+Node complete: 231 passed / 0 failed, exit 0. Initial esbuild sandbox denial retained.
+Evidence: kreaton-evidence/ai-graph-bold-commerce/report.md, including synthetic
+browser QA, real user-set 200% Chrome zoom, asset licensing and HTML byte budget.
+No OpenAI, production data access, commit, push, merge, deploy or Render flag change.
+
+## 2026-09-18 - Codex - Manual trust facts, isolated and not released
+
+Branch feature/ai-graph-trust-facts from origin/main 359aa19. Added strict manual
+trust_facts content and local validators, generated conditional JSON schemas,
+independent GeneratedBlock/GeneratedAddBlock excluding manual data, and escaped
+internal preview. No schema migration, public integration or OpenAI call.
+Operations use the unchanged shared transactional service; updates replace content.
+Past promotion dates remain visible, empty content renders nothing, nulls normalize
+only within trust content. Manual data is not evidence authorizing generated prose.
+
+Evidence and 13-group matrix: kreaton-evidence/ai-graph-trust-facts/report.md.
+Python: 1105 passed + 40 subtests, 31 warnings, exit 0 (135 new cases).
+Node: 231 passed / 0 failed, exit 0; initial esbuild sandbox failure retained.
+Browser verification uses synthetic admin identity and local SQLite, not production.
+No commit, push, merge or deployment; feature flag stays off by default.
+
+## 2026-09-18 - Codex - Final Sprint 4 policy and authorized release
+
+Business prose now forbids every CLAIM_RULES_V1 category even with matching facts.
+Only exact product names retain specific identity support. No matching for prose;
+same semantic retry/neutral fallback and atomic shared persistence. No structured
+trust/promotions block, no schema/auth/transport/customer integration changes.
+
+Python 970 passed + 40 subtests, 31 warnings; Node 231 passed / 0 failed. New
+288-case prose matrix plus risky identity/fallback regression. Real OpenAI case
+sprint4-conditional-328e7061: one attempt, persisted version 1, zero findings under
+final policy. No real retry in that new run; old retry evidence is historical.
+
+User authorized merge after this policy and green suites. Release is fast-forward
+to origin/main, preserving history; dirty local main worktree is not touched.
+Feature flag stays unconfigured/off by default; no Render setting changes.
+Evidence: C:/Users/alber/Projects/kreaton-evidence/ai-graph-sprint4/prose-ban-report.md.
+
+## 2026-09-18 - Codex - Sprint 4 ES/EN commercial claim normalization
+
+Confirmed a correctable bug: normalized values matched, but lexical clause scope
+still differed across languages. Added bounded shared commercial normalization,
+preserving currency, month, territory, negation and strict/inclusive thresholds.
+22 regression cases added; Python 681 passed + 40 subtests, Node 231 passed.
+Original real OpenAI outputs replayed without new provider calls or DB writes;
+percentage/price/shipping and promotion now match. Experience scope remains a
+separate conservative limitation. No same-language contract constraint, no merge.
+Evidence: ai-graph-sprint4/normalization-report.md and before/after signatures.
+
+## 2026-09-18 - Codex - Sprint 4 creative copy and claim safeguards
+
+Worktree kreaton-ai-graph-sprint4, branch feature/ai-graph-sprint4-creative-claims,
+base cadebe2. Completed the existing partial implementation (baseline preserved).
+Creative business copy, exact product identity, CLAIM_RULES_V1 specific support,
+maximum two semantic attempts, validated server-owned neutral fallback. No raw
+business fallback. Shared persistence/auth/flag/transport/schema unchanged.
+
+Python: 659 passed + 40 subtests, 31 warnings. Node: 231 passed, 0 failed.
+All 31 design groups mapped. Real OpenAI conditional case retried and used neutral
+fallback; conservative matching rejected translated facts. This is not a proven
+real second-attempt model correction. See AI-GRAPH-GENERATION.md for limitations.
+
+Evidence in C:/Users/alber/Projects/kreaton-evidence/ai-graph-sprint4/: full diff,
+suite logs, provider envelopes/responses/IDs, separate-process DB read and Chrome
+captures. Local SQLite/synthetic admin, no production data or config changes.
+No commit/push/merge/deploy. Awaiting review.
+
 Cada sesión de trabajo agrega una entrada arriba (más reciente primero). No borres
 entradas viejas — si algo queda obsoleto, táchalo o anota que ya no aplica.
 
@@ -15,6 +140,124 @@ Formato de entrada:
 ```
 
 ---
+
+## 2026-09-17 — Codex — Sprint 3 graph: entrada business con fidelidad exacta
+
+**Hecho:** worktree y rama aislados
+`feature/ai-graph-sprint3-business-input` desde `origin/main` en `99963a1`.
+La misma ruta de generación acepta ahora una segunda forma estricta
+`input_mode=business` con nombre, tagline y 1-12 productos. El sobre proyecta
+solo esos datos actuales, idioma, patrones abstractos y contrato. El copy business
+queda cerrado a nombre/tagline suministrados, heading neutro y pares exactos de
+nombre+descripción; cualquier desviación rechaza el batch completo. Se reforzó la
+entrada contra referencias URL/email/file obvias sin fetch ni DNS. Proveedor,
+reintentos, servicio de persistencia, modelos, migraciones, flag y roles no cambian.
+
+**Verificación:** graph 136 passed; Python completa 527 passed + 40 subtests;
+Node contractual 231 passed / 0 failed. La matriz cubre límites, tipos, extras,
+formas híbridas, pares exactos, copy no autorizado, SQL/request spies, fuga,
+atomicidad, concurrencia, auth e inyección. La copia literal autorizada se guarda
+exacta y el preview la escapa. OpenAI real respondió 200 con `gpt-6-astra` para
+datos QA ficticios, incluido texto injection-like autorizado; graph v1 reabierto
+en otro proceso con todas las comparaciones exactas. Preview del mismo graph: 200,
+captura Playwright, cero errores de consola. Evidencia en
+`C:/Users/alber/Projects/kreaton-evidence/ai-graph-sprint3/`.
+
+**Pendiente / abierto:** revisión de Beto. No se hizo merge, push, deploy ni cambio
+de Render. El flag sigue apagado. Copywriting libre y diseño visual rico quedan
+fuera de Sprint 3.
+
+**Archivos tocados:** `backend/app/site_graph_generation_contract.py`,
+`backend/app/site_graph_generation.py`, `backend/app/site_graph_llm.py`,
+`backend/tests/test_site_graph_generation.py`,
+`backend/tests/test_site_graph_business_generation.py`,
+`docs/AI-GRAPH-GENERATION.md`, `docs/AGENT_LOG.md`.
+
+**Notas para el siguiente agente:** `node --test` sin scope descubre
+`template-test/template-test.js`, que es un script de navegador y falla sin DOM.
+La suite Node contractual es `tests/*.test.mjs`. No ampliar estas restricciones de
+generación a la ruta general de operations sin una decisión separada.
+
+---
+
+## 2026-09-17 — Codex — Sprint 2 graph: OpenAI y guardado compartido
+
+**Hecho:** rama aislada kreaton-ai-graph-sprint2 desde 5713f8f. Extraccion de
+persist_graph_batch; ruta operations existente y ruta generate nueva llaman al
+mismo servicio. Por correccion aprobada, reutiliza OpenAI y el helper sincronico
+de agents.py (timeout 20s, reintentos existentes), sin segundo proveedor. Escenarios sinteticos
+cerrados, sobre scenario/patterns/contract, sin herramientas ni contexto de sitios.
+Validacion completa antes de escribir y auditoria de rechazo con codigos saneados.
+
+**Verificacion:** Python 476 passed + 40 subtests, Node 231 passed / 0 failed.
+85 pruebas graph: 32 previas + 53 nuevas, espias del request/SQL/servicio compartido,
+rollback, identidad, fallos del proveedor y concurrencia. Espia del SDK real contra
+MockTransport y prueba de llamada al mismo helper de agents.py sin invocar catalogo.
+
+**Prueba real completada:** OpenAI 200, completion chatcmpl-EPI9m5iubsg4UegXlpT5Pe2a2GBtJ,
+request req_9c4c1de66c724ab1b4f8cb5351883383. Graph synthetic-openai-smoke v1
+persistido en SQLite aislado y reabierto desde otro proceso. Nombres/descripciones
+de ambos productos iguales al escenario studio_goods. Captura Chrome de preview
+real guardada. El harness usa identidad QA sintetica con sites:read, no login real.
+Publicacion fast-forward autorizada tras esta evidencia; flag sigue apagado por
+defecto, sin cambios de configuracion en Render ni superficies de comercio.
+Contrato: docs/AI-GRAPH-GENERATION.md. Evidencia:
+C:/Users/alber/Projects/kreaton-evidence/ai-graph-sprint2/.
+
+## 2026-09-17 — Codex — AI graph skeleton aislado
+
+**Hecho:** worktree kreaton-ai-graph desde origin/main b34f58a. Contratos Pydantic
+y JSON Schema v1, dos tablas nuevas opt-in, tres patrones abstractos suministrados,
+batch transaccional con version optimista y auditoria existente. Preview admin
+protegida, tres bloques renderizados y referencias inertes de modulos fijos.
+
+**Verificacion:** Python 423 passed + 40 subtests; Node 231 passed / 0 failed.
+32 tests nuevos, incluida carrera real entre dos writers (200/409) y rollback
+por fallo de auditoria. Chromium muestra hero/grid/footer desde SQLite local;
+persistencia confirmada despues de reiniciar. Auth externa sintetica, no produccion.
+
+**Pendiente / abierto:** LLM, editor visual e ingestion de clientes quedan fuera.
+PostgreSQL real no ejecutado; flag KREATON_AI_GRAPH_ENABLED apagado por defecto.
+Sin commit/push/deploy; main y otros worktrees conservados. Stripe/carrito/checkout
+intactos. Contrato y limites: docs/AI-GRAPH-CONTRACT.md. Evidencia en
+C:/Users/alber/Projects/kreaton-evidence/ai-graph/.
+
+## 2026-09-17 — Codex — Express, ciclo de pago, registro de planes y vencimiento manual
+
+**Hecho:** cuentas Connect nuevas usan Express. Webhook de tienda reconcilia los
+cuatro eventos Checkout contra Stripe vigente, valida cuenta/sesion/importe/moneda/
+ambiente y repone inventario una sola vez en fallo/expiracion. El retorno consulta
+el estado persistido antes de limpiar solo el carrito correspondiente, sin borrar
+items agregados despues del pago. Impuestos y application fee sin cambios.
+
+KB-3 agrega platform_plans, importacion idempotente del level_a configurado al
+arrancar, prioridad DB sobre env y pantalla Planes KREATON en el admin existente.
+Super-admin escribe, support solo consulta. Crear/asignar un precio usa un Stripe
+Price NUEVO, con idempotencia y version optimista; nunca modifica suscripciones.
+La administracion de precios rechaza claves live en esta entrega. Cada cambio y
+la importacion inicial quedan auditados. Tabla nueva revoca acceso anon/authenticated
+en Postgres; no modifica tablas ni permisos existentes.
+
+KB-4 agrega POST /api/admin/subscriptions/expire-manual-trials (super-admin,
+lotes de hasta 500). Solo KREATON manual sin subscription ID de Stripe, vencido
+y pending_manual_confirmation/trialing pasa a past_due. Transicion y auditoria
+son atomicas por fila. Repetir no duplica efectos; no toca Listo ni trials Stripe.
+
+**Verificacion:** Python 387 passed, 40 subtests passed; Node 230 passed, 0 failed.
+Publicacion y dependencias ES verificadas. Chromium 1440/390: crear plan, editar,
+recargar con persistencia SQLite y reemplazar referencia de precio. Auth/Stripe
+son fixtures en esta QA local, NO una prueba nueva de Stripe en produccion.
+
+**Pendiente / abierto:** desplegar esta rama e importar level_a real en el arranque;
+programar invocacion periodica del endpoint KB-4; enforcement de acceso al sitio
+publicado es separado del estado past_due. No se implemento verificacion bancaria,
+impresion, etiquetas de envio ni activacion de fees. No se escribio en produccion.
+Un Price creado en Stripe seguido de fallo DB puede quedar sin referencia; el retry
+de la misma version/cantidad reutiliza su idempotency key, sin tocar suscripciones.
+
+**Evidencia:** C:\Users\alber\Projects\kreaton-evidence\plans-trial-safety\report.md.
+Rama aislada feature/kreaton-plans-trial-safety desde 24ffbbf; trabajo pendiente
+del editor shadow y Connect de otros worktrees conservado sin modificaciones.
 
 ## 2026-09-14 — Codex — Portal a editor por proyecto y categoria comercial
 

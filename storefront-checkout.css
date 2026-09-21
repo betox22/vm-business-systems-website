@@ -1,0 +1,17 @@
+.storefront-checkout { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 20px; background: #10182899; backdrop-filter: blur(6px); font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+.storefront-checkout * { box-sizing: border-box; }
+.storefront-checkout section { width: min(560px, 100%); max-height: calc(100dvh - 40px); overflow-y: auto; background: #fff; color: #172a2a; border-radius: 16px; padding: 24px; box-shadow: 0 24px 70px #0003; }
+.storefront-checkout header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 12px; }
+.storefront-checkout h2 { margin: 0; font-size: 24px; letter-spacing: 0; }
+.storefront-checkout form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.storefront-checkout label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+.storefront-checkout input { width: 100%; min-width: 0; padding: 11px 12px; border: 1px solid #bdcccb; border-radius: 6px; font: inherit; color: inherit; background: #fff; }
+.storefront-checkout :focus-visible { outline: 2px solid #0e7c66; outline-offset: 3px; }
+.storefront-checkout .checkout-full { grid-column: 1 / -1; }
+.storefront-checkout button { cursor: pointer; font: inherit; }
+.storefront-checkout [type=submit] { border: 0; border-radius: 6px; background: #0e7c66; color: #fff; padding: 14px; font-weight: 700; transition: background .18s ease; }
+.storefront-checkout [type=submit]:hover { background: #09604e; }
+.storefront-checkout [type=submit]:disabled { opacity: .6; cursor: wait; }
+.storefront-checkout [data-checkout-close] { background: transparent; border: 0; width: 36px; height: 36px; font-size: 28px; }
+.storefront-checkout [data-checkout-status] { margin: 0; color: #a32e36; line-height: 1.5; font-size: 14px; overflow-wrap: anywhere; }
+@media (max-width: 480px) { .storefront-checkout { padding: 12px; } .storefront-checkout section { padding: 20px 16px; max-height: calc(100dvh - 24px); } .storefront-checkout form { gap: 12px; } .storefront-checkout input { font-size: 16px; } }

@@ -4,7 +4,7 @@ import time
 import uuid
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Index, Text, UniqueConstraint, event, false
+from sqlalchemy import BigInteger, ForeignKey, Index, Text, UniqueConstraint, event, false
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -48,6 +48,8 @@ class Store(Base):
     name: Mapped[str]
     business_type: Mapped[str]
     public_url: Mapped[str]
+    # Manual merchant rate, not jurisdiction-aware tax calculation.
+    tax_rate_bps: Mapped[int] = mapped_column(default=0, server_default="0", nullable=False)
     status: Mapped[str] = mapped_column(default="published")
     created_at: Mapped[int] = mapped_column(default=_now)
     updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
@@ -70,6 +72,7 @@ class Product(Base):
     catalog_index: Mapped[Optional[int]] = mapped_column(default=None)
     price_cents: Mapped[Optional[int]]
     inventory: Mapped[int] = mapped_column(default=0)
+    weight_oz: Mapped[Optional[int]] = mapped_column(default=None)
     status: Mapped[str] = mapped_column(default="Published")
     created_at: Mapped[int] = mapped_column(default=_now)
 
@@ -106,6 +109,9 @@ class Order(Base):
     inventory_restocked: Mapped[bool] = mapped_column(default=False)
     shipping_carrier: Mapped[Optional[str]] = mapped_column(nullable=True)
     tracking_code: Mapped[Optional[str]] = mapped_column(nullable=True)
+    shipping_label_url: Mapped[Optional[str]] = mapped_column(nullable=True)
+    shipping_json: Mapped[str] = mapped_column(default="{}")
+    needs_shipping_attention: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[int] = mapped_column(default=_now)
 
 
@@ -161,6 +167,20 @@ class StripeConnectAccount(Base):
     updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
 
 
+class PlatformPlan(Base):
+    __tablename__ = "platform_plans"
+
+    product: Mapped[str] = mapped_column(primary_key=True)
+    plan_id: Mapped[str] = mapped_column(primary_key=True)
+    display_name: Mapped[str]
+    stripe_price_id: Mapped[str]
+    trial_days: Mapped[int] = mapped_column(default=0)
+    active: Mapped[bool] = mapped_column(default=True)
+    version: Mapped[int] = mapped_column(default=1)
+    created_at: Mapped[int] = mapped_column(default=_now)
+    updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
+
+
 class PlatformSubscription(Base):
     __tablename__ = "platform_subscriptions"
     __table_args__ = (UniqueConstraint("product", "business_ref", name="platform_subscription_product_business_key"),)
@@ -174,6 +194,9 @@ class PlatformSubscription(Base):
     stripe_customer_id: Mapped[Optional[str]] = mapped_column(nullable=True)
     stripe_subscription_id: Mapped[Optional[str]] = mapped_column(nullable=True, unique=True)
     stripe_price_id: Mapped[Optional[str]] = mapped_column(nullable=True)
+    plan_id: Mapped[str] = mapped_column(default="", server_default="", nullable=False)
+    trial_end: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    manual_payment_reference: Mapped[Optional[str]] = mapped_column(nullable=True)
     status: Mapped[str] = mapped_column(default="not_started")
     current_period_end: Mapped[Optional[int]] = mapped_column(nullable=True)
     legal_consent_version: Mapped[Optional[str]] = mapped_column(nullable=True)
@@ -303,5 +326,38 @@ class DomainReservation(Base):
     currency: Mapped[str] = mapped_column(default="USD")
     renewal_at: Mapped[Optional[str]] = mapped_column(nullable=True)
     checked_at: Mapped[int] = mapped_column(default=_now)
+    created_at: Mapped[int] = mapped_column(default=_now)
+    updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
+
+
+class ClientIntakeSessionRecord(Base):
+    """Durable backing store for main.py's client_intake_sessions cache.
+
+    Task #62: that cache used to be an in-memory dict only, so any Render
+    restart (a deploy, or the platform recycling the instance) silently
+    wiped every in-progress guided intake conversation -- confirmed live
+    via Render logs (a tester's session died with a 401 on
+    /api/client/auth/me right after a deploy restart, then started a brand
+    new, empty intake session on re-login). This table lets main.py restore
+    a session from here on a cache miss instead of just starting over.
+
+    `id` is the same `session_key` string main.py already computes via
+    `_intake_session_key()` (`f"{email}:{identity}"`), so this is a pure
+    persistence layer under the existing key scheme -- no change to how
+    sessions are looked up.
+    """
+
+    __tablename__ = "client_intake_sessions"
+
+    id: Mapped[str] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(index=True)
+    project_id: Mapped[str] = mapped_column(default="")
+    request_id: Mapped[str] = mapped_column(default="")
+    request_number: Mapped[str] = mapped_column(default="")
+    client_name: Mapped[str] = mapped_column(default="")
+    selected_language: Mapped[str] = mapped_column(default="en")
+    draft_json: Mapped[str] = mapped_column(Text, default="{}")
+    restored: Mapped[bool] = mapped_column(default=False, server_default=false(), nullable=False)
+    storage_status: Mapped[str] = mapped_column(default="stored")
     created_at: Mapped[int] = mapped_column(default=_now)
     updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)

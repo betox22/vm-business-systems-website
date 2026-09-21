@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from .admin_audit import list_admin_audit_events, record_admin_audit_event
 from .client_auth import fetch_supabase_user, supabase_auth_configured
 from .db import get_session
-from .db_models import AdminAuditEvent, GeneratedSite, Order, Product, Store
+from .db_models import AdminAuditEvent, GeneratedSite, PlatformSubscription, Product, Store
 from .operations_auth import (
     OPERATIONS_SESSION_COOKIE_NAME,
     clear_operations_session_cookie,
@@ -134,15 +134,10 @@ def operations_overview(
 ) -> Dict[str, Any]:
     identity = _identity(authorization, vm_operations_session)
     require_operations_permission(identity, "overview:read")
-    paid = {"paid", "partially_fulfilled", "fulfilled"}
-    orders = session.scalars(select(Order)).all()
     payload = {
         "businesses": int(session.scalar(select(func.count()).select_from(Store)) or 0),
         "sites": int(session.scalar(select(func.count()).select_from(GeneratedSite)) or 0),
         "publishedSites": int(session.scalar(select(func.count()).select_from(GeneratedSite).where(GeneratedSite.status == "published")) or 0),
-        "orders": len(orders),
-        "revenueCents": sum(order.total_cents for order in orders if order.status in paid),
-        "pendingPayments": sum(1 for order in orders if order.status == "pending_payment"),
         "products": int(session.scalar(select(func.count()).select_from(Product)) or 0),
         "productsStatus": [
             {"id": "kreaton", "name": "KREATON", "status": "connected", "url": "/admin/"},
@@ -177,11 +172,7 @@ def operations_businesses(request: Request, authorization: str = Header(default=
 def operations_orders(request: Request, authorization: str = Header(default=""), vm_operations_session: str = Cookie(default="", alias=OPERATIONS_SESSION_COOKIE_NAME), session: Session = Depends(get_session)) -> Dict[str, Any]:
     identity = _identity(authorization, vm_operations_session)
     require_operations_permission(identity, "orders:read")
-    stores = {row.id: row.name for row in session.scalars(select(Store)).all()}
-    rows = session.scalars(select(Order).order_by(Order.created_at.desc()).limit(500)).all()
-    items = [{"id": row.id, "number": row.order_number, "business": stores.get(row.store_id, row.store_id), "items": row.item_count, "totalCents": row.total_cents, "status": row.status, "createdAt": row.created_at} for row in rows]
-    _audit_query(session, request, identity, "operations.orders.queried", len(items))
-    return {"items": items}
+    raise HTTPException(403, "Store orders are private to the business owner.")
 
 
 @router.get("/sites")
@@ -210,10 +201,14 @@ def operations_payments(request: Request, authorization: str = Header(default=""
     identity = _identity(authorization, vm_operations_session)
     require_operations_permission(identity, "payments:read")
     stores = {row.id: row.name for row in session.scalars(select(Store)).all()}
-    rows = session.scalars(select(Order).order_by(Order.created_at.desc()).limit(500)).all()
-    items = [{"orderId": row.id, "number": row.order_number, "business": stores.get(row.store_id, row.store_id), "amountCents": row.total_cents, "status": row.status, "provider": (_json(row.payment_json, {}) or {}).get("provider", "not_recorded"), "createdAt": row.created_at} for row in rows]
-    _audit_query(session, request, identity, "operations.payments.queried", len(items))
-    return {"items": items, "currency": "USD"}
+    rows = session.scalars(select(PlatformSubscription).where(
+        PlatformSubscription.product == "kreaton").order_by(PlatformSubscription.created_at.desc()).limit(500)).all()
+    items = [{"id": row.id, "business": stores.get(row.business_ref, row.business_ref),
+        "planId": row.plan_id, "status": row.status, "paymentMethod": row.payment_method,
+        "stripePriceId": row.stripe_price_id, "trialEnd": row.trial_end,
+        "currentPeriodEnd": row.current_period_end} for row in rows]
+    _audit_query(session, request, identity, "operations.subscriptions.queried", len(items))
+    return {"items": items, "source": "platform_subscriptions"}
 
 
 @router.get("/config")

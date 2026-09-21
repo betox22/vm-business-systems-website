@@ -5,8 +5,15 @@ import test from "node:test";
 const html = readFileSync(new URL("../operations/index.html", import.meta.url), "utf8");
 const js = readFileSync(new URL("../operations/operations.js", import.meta.url), "utf8");
 
+test("corporate admin never renders merchant sales or order details", () => {
+  assert.doesNotMatch(html, /data-view="orders"/);
+  assert.doesNotMatch(js, /Ventas registradas|revenueCents|pendingPayments|o\.orders|totalCents|orderId/);
+  assert.match(js, /Suscripciones KREATON/);
+  assert.match(js, /planId/);
+});
+
 test("VM Operations exposes the complete real operations navigation", () => {
-  for (const view of ["overview", "requests", "businesses", "clients", "orders", "sites", "products", "payments", "templates", "audit", "config"]) {
+  for (const view of ["overview", "requests", "businesses", "clients", "sites", "products", "payments", "templates", "audit", "config"]) {
     assert.match(html, new RegExp(`data-view="${view}"`));
   }
 });
@@ -46,7 +53,7 @@ test("Google session can continue with a bearer token when the cross-site cookie
   assert.match(js, /internalAuthHeaders\(sessionStorage/);
   assert.match(js, /captureInternalAuthRedirect\(location,sessionStorage\)/);
   assert.match(js, /clearInternalAccessToken\(sessionStorage\)/);
-  assert.match(html, /operations\.js\?v=4/);
+  assert.match(html, /operations\.js\?v=6/);
 });
 
 test("/admin uses the same general operations shell instead of the four-view legacy panel", async () => {
@@ -55,7 +62,7 @@ test("/admin uses the same general operations shell instead of the four-view leg
   assert.match(adminHtml, /VM Operations/);
   assert.match(adminHtml, /data-view="payments"/);
   assert.match(adminHtml, /data-view="templates"/);
-  assert.match(adminHtml, /operations\/operations\.js\?v=4/);
+  assert.match(adminHtml, /operations\/operations\.js\?v=6/);
   assert.match(adminHtml, /operations\/operations\.css\?v=3/);
   assert.match(adminHtml, /Administrar Listo/);
   assert.match(adminHtml, /class="google-mark"/);

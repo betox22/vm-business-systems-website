@@ -1,0 +1,84 @@
+{
+  "hero": {
+    "file": "hero.webp",
+    "sha256": "023a8243a88e3b60c52e52ba81813b3a9ed3dfe1c3fbc20f7e24d6bc12b88774",
+    "bytes": 55726,
+    "dimensions": [
+      1800,
+      1202
+    ],
+    "original_sha256": "6036c1c67c6f12008b79c9290d0fcd4b57bb042217535aab1f4e5ee927066c9b",
+    "original_dimensions": [
+      5848,
+      3904
+    ],
+    "source": "https://unsplash.com/photos/Yk_7RscELJE",
+    "author": "Weronika Karczewska",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "original_url": "https://images.unsplash.com/photo-1646322758610-cf84eb050f31?fm=jpg&q=95",
+    "delivery_url": "https://images.unsplash.com/photo-1646322758610-cf84eb050f31?fm=webp&q=82&w=1800",
+    "role": "hero editorial",
+    "crop": "50% 56% desktop; 75% 50% mobile",
+    "reviewed": "2026-09-18",
+    "transformations": "Unsplash delivery resize/WebP; CSS crop only"
+  },
+  "vase": {
+    "file": "vase.webp",
+    "sha256": "219e0f2b2c6463d0b93d82e08ee000bdf71c71e17581d0cd50cede9ecc4b8892",
+    "bytes": 45258,
+    "dimensions": [
+      900,
+      1350
+    ],
+    "original_sha256": "06da5afcf5030b7f6a05b9a4b3e2524f0a010a180d1056be3428341dde8bc659",
+    "original_dimensions": [
+      4000,
+      6000
+    ],
+    "source": "https://unsplash.com/photos/a0rE64YJDA4",
+    "author": "Linh Le",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "original_url": "https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?fm=jpg&q=95",
+    "delivery_url": "https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?fm=webp&q=82&w=900",
+    "role": "Jarron blanco",
+    "crop": "50% 75%; 4:5",
+    "reviewed": "2026-09-18",
+    "transformations": "Unsplash delivery resize/WebP; CSS crop only"
+  },
+  "jars": {
+    "file": "jars.webp",
+    "sha256": "d4101b5f928f4442045f4e26e11fdc7d88bfabbf8d7c827cfa84ddf7be9e6cc5",
+    "bytes": 85830,
+    "dimensions": [
+      900,
+      1350
+    ],
+    "original_sha256": "44ad7a3025db7e702418d23f826ed77d80a74fed5c9fe5c2e58bfcbbbb5f8336",
+    "original_dimensions": [
+      6180,
+      9270
+    ],
+    "source": "https://unsplash.com/photos/7jGvCol0Cz4",
+    "author": "Anya Chernykh",
+    "license": "Unsplash License",
+    "license_url": "https://unsplash.com/license",
+    "original_url": "https://images.unsplash.com/photo-1755401324208-7ead4696b351?fm=jpg&q=95",
+    "delivery_url": "https://images.unsplash.com/photo-1755401324208-7ead4696b351?fm=webp&q=82&w=900",
+    "role": "Duo de recipientes con tapa",
+    "crop": "50% 100%; 4:5",
+    "reviewed": "2026-09-18",
+    "transformations": "Unsplash delivery resize/WebP; CSS crop only"
+  },
+  "font": {
+    "file": "CormorantGaramond-Medium.otf",
+    "sha256": "6e5cdd0dc494976ed3e79dcd80179de1183634014ee55d03b7b2dfbb6e021c8b",
+    "bytes": 356568,
+    "source": "https://github.com/CatharsisFonts/Cormorant/tree/9719e26aa8e26d7a30e736667427b9e05b5db059",
+    "author": "Christian Thalmann / Cormorant Project Authors",
+    "license": "SIL OFL 1.1",
+    "license_file": "OFL.txt",
+    "transformations": "None"
+  }
+}

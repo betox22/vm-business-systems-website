@@ -46,6 +46,11 @@ def init_db() -> None:
     Base.metadata.create_all(bind=engine)
     ensure_admin_audit_append_only(engine)
     _ensure_additive_columns()
+    from .platform_plans import bootstrap_plans
+    bootstrap_plans(engine)
+    if os.getenv("KREATON_AI_GRAPH_ENABLED") == "1":
+        from .site_graph_storage import init_graph_storage
+        init_graph_storage(engine)
 
 
 def _ensure_additive_columns() -> None:
@@ -59,6 +64,7 @@ def _ensure_additive_columns() -> None:
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
     migrations = {
+        "stores": {"tax_rate_bps": "tax_rate_bps INTEGER NOT NULL DEFAULT 0"},
         "products": {
             "description": "description TEXT",
             "image_url": "image_url VARCHAR",
@@ -68,8 +74,23 @@ def _ensure_additive_columns() -> None:
             "site_id": "site_id VARCHAR REFERENCES generated_sites(id) ON DELETE SET NULL",
             "price_is_approximate": "price_is_approximate BOOLEAN NOT NULL DEFAULT FALSE",
             "catalog_index": "catalog_index INTEGER",
+            # task #54 (real shipping): weight is required to get a real
+            # carrier rate quote. Nullable -- a product with no weight yet
+            # simply falls back to the store's flat shipping rate instead of
+            # blocking checkout.
+            "weight_oz": "weight_oz INTEGER",
+        },
+        "orders": {
+            # task #54: populated only when a label is actually purchased
+            # (automatically after payment, or via the owner's manual retry).
+            "shipping_label_url": "shipping_label_url VARCHAR",
+            "shipping_json": "shipping_json TEXT DEFAULT '{}'",
+            "needs_shipping_attention": "needs_shipping_attention BOOLEAN NOT NULL DEFAULT FALSE",
         },
         "platform_subscriptions": {
+            "plan_id": "plan_id VARCHAR NOT NULL DEFAULT ''",
+            "trial_end": "trial_end BIGINT",
+            "manual_payment_reference": "manual_payment_reference VARCHAR",
             "legal_consent_version": "legal_consent_version VARCHAR",
             "legal_consent_language": "legal_consent_language VARCHAR",
             "legal_accepted_at": "legal_accepted_at BIGINT",
@@ -77,9 +98,10 @@ def _ensure_additive_columns() -> None:
     }
     if engine.dialect.name == "sqlite":
         migrations.update({
-            "stores": {"owner_user_id": "owner_user_id TEXT"},
+            "stores": {**migrations["stores"], "owner_user_id": "owner_user_id TEXT"},
             "generated_sites": {"owner_user_id": "owner_user_id TEXT"},
             "orders": {
+                **migrations["orders"],
                 "items_json": "items_json TEXT DEFAULT '[]'",
                 "shipping_address_json": "shipping_address_json TEXT DEFAULT '{}'",
                 "customer_snapshot_json": "customer_snapshot_json TEXT DEFAULT '{}'",

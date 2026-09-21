@@ -1,7 +1,7 @@
 import { DEFAULT_BRAND } from './templates.js';
 import { escapeHtml, escapeAttribute } from './utils.js';
 import { listingLocationForIndex, marketplaceCategories } from './index.js';
-import { isMegaRetailTemplate, megaRetailFeatureFlags, megaRetailWhatsAppUrl, resolveMegaRetailDepartmentTiles } from './mega-retail-policy.js';
+import { withGraphPresentation, graphPresentationEnabled, graphPresentationLabels, graphProductAttributes, isMegaRetailTemplate, megaRetailFeatureFlags, megaRetailWhatsAppUrl, resolveMegaRetailDepartmentTiles } from './mega-retail-policy.js';
 import { isB2BSaasTemplate } from './b2b-saas-policy.js';
 import { renderB2BSaasWebsite } from './b2b-saas-renderer.js';
 import { bathBodyStockImageUrl } from './catalog-preview-policy.js';
@@ -120,6 +120,10 @@ function mixColorsForTheme(a, b, amount = 0.5) {
 }
 
 export function renderWebsite(schema, pageKey, context = {}) {
+  return withGraphPresentation(schema, context, () => renderWebsiteDocument(schema, pageKey, context));
+}
+
+function renderWebsiteDocument(schema, pageKey, context = {}) {
   const page = schema.pages.find((item) => item.page_key === pageKey) || schema.pages[0];
   const theme = schema.theme || {};
   ensureGoogleFontsLoaded(theme);
@@ -2604,8 +2608,8 @@ function renderMegaRetailWebsite(schema, page, context, { logo, layoutId, templa
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)};--mega-tile-tint:${escapeAttribute(brandTint)}">
     ${renderStudioFloatingCatalog(schema, context)}
     <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditPageTitlePath(schema, item), "nav_label")}>${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div></div>
-    ${renderMegaRetailHeader(schema, page, logo, categories, labels, false)}
-    ${page?.page_key === "home" || page === pages[0] ? `${renderMegaRetailBento(schema, hero, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailDeals(schema, sections, items, labels, false)}${renderMegaRetailTrust(sections, labels)}` : ""}
+    ${renderMegaRetailHeader(schema, page, logo, categories, labels, graphPresentationEnabled(schema))}
+    ${page?.page_key === "home" || page === pages[0] ? `${renderMegaRetailBento(schema, hero, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailDeals(schema, sections, items, labels, graphPresentationEnabled(schema))}${renderMegaRetailTrust(sections, labels)}` : ""}
     ${remainingSections.map((section) => renderSection(section, schema)).join("")}
     ${renderMegaRetailFooter(schema, pages, logo, labels, features)}
     ${features.whatsapp && whatsappUrl ? `<a class="mega-retail-whatsapp" href="${escapeAttribute(whatsappUrl)}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">${megaRetailIcon("whatsapp")}</a>` : ""}
@@ -2644,7 +2648,7 @@ function renderMegaRetailBento(schema, heroSection, categories, items, clientPho
 
 function renderMegaRetailDeals(schema, sections, items, labels, interactive) {
   const source = sections.find((section) => ["DealRow", "ProductGrid"].includes(section.type)) || {};
-  return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2 ${inlineEditAttrs(schema, source, "title")}>${escapeHtml(source.editable?.title || labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => { const action = catalogAction(schema, item); return `<article class="mega-retail-product" ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small ${inlineCatalogEditAttrs(schema, item, "category", "product_name")}>${escapeHtml(item.category || labels.department)}</small><h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name || "")}</h3><p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong><button type="button" ${interactive ? action.attributes : ""}>${escapeHtml(action.label)}</button></div></article>`; }).join("")}</div></section>`;
+  return `<section class="mega-retail-deals" ${motionDataAttributes(source.motion)}><div class="mega-retail-section-heading" data-motion-content><div><span>${escapeHtml(labels.limited)}</span><h2 ${inlineEditAttrs(schema, source, "title")}>${escapeHtml(source.editable?.title || labels.deals)}</h2></div><button type="button" data-catalog-category="">${escapeHtml(labels.viewAll)} ${megaRetailIcon("arrow")}</button></div><div class="mega-retail-deals-row">${items.slice(0, 10).map((item) => { const action = catalogAction(schema, item); return `<article class="mega-retail-product"${graphProductAttributes(schema, item)} ${catalogSearchAttributes(item)} data-motion-item><div class="mega-retail-product-image">${renderCatalogImage(item)}${megaRetailDiscountBadge(item)}</div><small ${inlineCatalogEditAttrs(schema, item, "category", "product_name")}>${escapeHtml(item.category || labels.department)}</small><h3 ${inlineCatalogEditAttrs(schema, item, "name", "product_name")}>${escapeHtml(item.name || "")}</h3><p ${inlineCatalogEditAttrs(schema, item, "description", "product_description")}>${escapeHtml(item.description || "")}</p><div><strong>${escapeHtml(item.price_label || labels.price)}</strong>${graphPresentationEnabled(schema) ? `<span class="graph-product-stock">${escapeHtml(String(item.inventory_quantity))}</span>` : ""}<button type="button" ${interactive ? action.attributes : ""}>${escapeHtml(action.label)}</button></div></article>`; }).join("")}</div></section>`;
 }
 
 function megaRetailDiscountBadge(item = {}) {
@@ -2678,7 +2682,7 @@ function megaRetailLabels(schema = {}) {
     en: { departments: "Departments", search: "Search products and departments", account: "Sign in", favorites: "Favorites", cart: "Cart", featured: "Featured", department: "Department", heroText: "Everything you need, in one place.", discover: "Discover the collection", explore: "Explore", limited: "Limited-time picks", deals: "Today's deals", viewAll: "View all", price: "Price on request", tagline: "Everything you need in one place.", help: "Help", company: "Company", newsletter: "Get the best deals", newsletterText: "New arrivals and special offers in your inbox.", subscribe: "Subscribe", helpLinks: ["Shipping", "Returns", "Contact", "Frequently asked questions"], fallbackCategories: ["Technology", "Home", "Fashion", "Beauty", "Outdoor"], trust: [["Fast shipping", "Reliable delivery options"], ["Easy returns", "Simple exchanges and returns"], ["A broad catalog", "Everything in one place"], ["Secure payment", "Protected checkout"]] },
     es: { departments: "Departamentos", search: "Buscar productos y departamentos", account: "Ingresar", favorites: "Favoritos", cart: "Carrito", featured: "Destacado", department: "Departamento", heroText: "Todo lo que buscas, en un solo lugar.", discover: "Descubre la colección", explore: "Explorar", limited: "Selección por tiempo limitado", deals: "Ofertas de hoy", viewAll: "Ver todo", price: "Precio a consultar", tagline: "Todo lo que buscas en un solo lugar.", help: "Ayuda", company: "Empresa", newsletter: "Recibe las mejores ofertas", newsletterText: "Novedades y promociones directo en tu correo.", subscribe: "Suscribirse", helpLinks: ["Envíos", "Devoluciones", "Contacto", "Preguntas frecuentes"], fallbackCategories: ["Tecnología", "Hogar", "Moda", "Belleza", "Aire libre"], trust: [["Envío rápido", "Opciones de entrega confiables"], ["Devoluciones fáciles", "Cambios y devoluciones simples"], ["Catálogo amplio", "Todo en un solo lugar"], ["Pago seguro", "Compra protegida"]] },
   };
-  return all[language] || all.en;
+  return graphPresentationLabels(schema, all[language] || all.en);
 }
 
 function megaRetailIcon(name) {

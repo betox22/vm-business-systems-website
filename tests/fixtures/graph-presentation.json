@@ -1,0 +1,13 @@
+{
+  "business": {"name": "Projection QA", "description": "Tools for daily projects.", "selectedLanguage": "en"},
+  "active_template": {"id": "mega-retail-store"},
+  "theme": {},
+  "brand": {},
+  "global_components": {"footer_text": "Projection QA catalog"},
+  "navigation": [{"page_key": "home", "label": "Home"}],
+  "pages": [{"page_key": "home", "title": "Home", "slug": "/", "order": 1, "sections": [
+    {"id": "hero", "type": "MarketplaceHero", "order": 1, "editable": {"headline": "Tools for daily projects", "subtitle": "Explore the catalog", "primary_button": "Explore"}},
+    {"id": "catalog", "type": "ProductGrid", "order": 2, "editable": {"title": "Catalog", "text": "Browse the collection"}}
+  ]}],
+  "catalog_items": [{"id": "qa-item", "name": "Hand tool", "category": "Tools", "description": "Steel handle.", "price_type": "quote_only", "price_label": "Price on request", "image_url": "/images/product-placeholder.svg"}]
+}

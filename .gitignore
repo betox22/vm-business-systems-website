@@ -9,6 +9,7 @@ __pycache__/
 node-static-*.log
 static*.log
 backend/*.db
+backend/*.db-journal
 
 # Local dev-server logs (http-*, premium-api-*, etc.) and ad-hoc debug scripts
 # from browser-automation sessions. These should never be committed -- see the

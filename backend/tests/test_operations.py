@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 
 from app import main, operations
 from app.db import Base, get_session
-from app.db_models import GeneratedSite, Order, Product, Store
+from app.db_models import GeneratedSite, Order, PlatformSubscription, Product, Store
 from app.operations_auth import operations_identity_from_user
 
 
@@ -42,6 +42,8 @@ def _seed(factory):
         session.add(store)
         session.flush()
         session.add_all([
+            PlatformSubscription(id="sub-k", product="kreaton", business_ref=store.id, plan_id="level_a", status="trialing"),
+            PlatformSubscription(id="sub-other", product="listo_pos", business_ref=store.id, status="active"),
             Product(id="prod-ops", store_id=store.id, name="Bath Bomb", category="Bath", price_cents=1200, inventory=8, status="Published"),
             Order(id="ord-ops", store_id=store.id, order_number="K-100", item_count=1, total_cents=1200, status="paid", payment_json='{"provider":"stripe"}'),
             GeneratedSite(id="site-ops", store_id=store.id, owner_email="client@example.com", business_name="Bath All Day", business_type="retail", template_id="premium-product-store", template_name="Premium Product", template_mode="store", domain_slug="bath", public_url="bath.usekreaton.com", status="published"),
@@ -90,13 +92,24 @@ def test_operations_overview_and_payments_use_real_database_rows(operations_data
 
     assert overview.status_code == 200
     assert overview.json()["businesses"] == 1
-    assert overview.json()["revenueCents"] == 1200
+    assert not {"revenueCents", "orders", "pendingPayments"} & overview.json().keys()
     assert payments.status_code == 200
-    assert payments.json()["items"] == [{
-        "orderId": "ord-ops", "number": "K-100", "business": "Bath All Day",
-        "amountCents": 1200, "status": "paid", "provider": "stripe",
-        "createdAt": payments.json()["items"][0]["createdAt"],
-    }]
+    assert payments.json()["source"] == "platform_subscriptions"
+    assert payments.json()["items"] == [{"id": "sub-k", "business": "Bath All Day",
+        "planId": "level_a", "status": "trialing", "paymentMethod": "stripe",
+        "stripePriceId": None, "trialEnd": None, "currentPeriodEnd": None}]
+    assert "ord-ops" not in payments.text and "K-100" not in payments.text
+
+
+@pytest.mark.parametrize("role", ["vm_super_admin", "vm_operations", "vm_finance", "vm_support"])
+def test_corporate_roles_cannot_read_store_orders(operations_database, role):
+    _seed(operations_database)
+    with patch.object(operations, "supabase_auth_configured", return_value=True), \
+         patch.object(operations, "fetch_supabase_user", return_value=_user(role)), \
+         TestClient(main.app) as client:
+        response = client.get("/api/operations/orders", headers={"Authorization": "Bearer token"})
+    assert response.status_code == 403
+    assert "ord-ops" not in response.text
 
 
 def test_vm_support_is_denied_finance_view(operations_database):

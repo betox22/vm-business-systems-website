@@ -17,6 +17,38 @@ def _client() -> stripe.StripeClient:
     return stripe.StripeClient(key, stripe_version=STRIPE_API_VERSION)
 
 
+def _test_plan_client():
+    if not os.getenv("STRIPE_SECRET_KEY", "").strip().startswith(("sk_test_", "rk_test_")):
+        raise HTTPException(503, "Plan pricing administration currently requires Stripe test mode.")
+    return _client()
+
+
+def read_plan_price(price_id: str) -> Dict[str, Any]:
+    try:
+        price = _test_plan_client().v1.prices.retrieve(price_id).to_dict_recursive()
+    except stripe.StripeError as exc:
+        raise HTTPException(502, "Could not validate the Stripe Price.") from exc
+    recurring = price.get("recurring") or {}
+    if (price.get("livemode") is not False or not price.get("active") or
+            price.get("type") != "recurring" or recurring.get("usage_type") != "licensed" or
+            price.get("billing_scheme") != "per_unit" or price.get("currency") != "usd" or
+            not isinstance(price.get("unit_amount"), int) or price["unit_amount"] <= 0):
+        raise HTTPException(422, "Expected an active test USD recurring per-unit licensed Price.")
+    return price
+
+
+def create_plan_price(previous_price_id: str, amount_cents: int, idempotency_key: str) -> str:
+    previous = read_plan_price(previous_price_id)
+    params = {"product": previous["product"], "currency": previous["currency"],
+              "unit_amount": amount_cents, "tax_behavior": previous.get("tax_behavior", "unspecified"),
+              "recurring": {key: previous["recurring"][key] for key in ("interval", "interval_count", "usage_type")}}
+    try:
+        price = _test_plan_client().v1.prices.create(params, options={"idempotency_key": f"kreaton-plan-{idempotency_key}"})
+    except stripe.StripeError as exc:
+        raise HTTPException(502, "Could not create the replacement Stripe Price.") from exc
+    return price.id
+
+
 def checkout_session(
     *,
     mode: str,
@@ -28,6 +60,7 @@ def checkout_session(
     stripe_account: Optional[str] = None,
     application_fee_amount: Optional[int] = None,
     subscription_metadata: Optional[Dict[str, str]] = None,
+    trial_period_days: Optional[int] = None,
 ) -> Dict[str, Any]:
     params: Dict[str, Any] = {
         "mode": mode,
@@ -42,6 +75,10 @@ def checkout_session(
         params["payment_intent_data"] = {"application_fee_amount": application_fee_amount}
     if subscription_metadata:
         params["subscription_data"] = {"metadata": subscription_metadata}
+    if trial_period_days is not None:
+        if mode != "subscription" or isinstance(trial_period_days, bool) or not isinstance(trial_period_days, int) or not 1 <= trial_period_days <= 730:
+            raise HTTPException(status_code=422, detail="Trial requires subscription mode and 1..730 days.")
+        params.setdefault("subscription_data", {})["trial_period_days"] = trial_period_days
     try:
         session = _client().v1.checkout.sessions.create(params, options={"stripe_account": stripe_account} if stripe_account else None)
     except stripe.StripeError as exc:
@@ -57,7 +94,7 @@ def construct_event(raw_body: bytes, signature: str, secret: str) -> Dict[str, A
 
 
 def create_connected_account(*, email: str, display_name: str, country: str) -> str:
-    """Create a new Accounts v2 merchant with Stripe-hosted full dashboard.
+    """Create a new Accounts v2 merchant with Stripe-hosted Express dashboard.
 
     Stripe collects requirements and the connected merchant owns fees/losses;
     KREATON never receives or holds the merchant's sale proceeds.
@@ -66,7 +103,7 @@ def create_connected_account(*, email: str, display_name: str, country: str) -> 
         "contact_email": email,
         "display_name": display_name,
         "identity": {"country": country.lower()},
-        "dashboard": "full",
+        "dashboard": "express",
         "defaults": {"responsibilities": {"fees_collector": "stripe", "losses_collector": "stripe"}},
         "configuration": {"merchant": {"capabilities": {"card_payments": {"requested": True}}}},
     }
@@ -104,3 +141,13 @@ def create_billing_portal(*, customer_id: str, return_url: str) -> str:
     except stripe.StripeError as exc:
         raise HTTPException(status_code=502, detail=f"Stripe billing portal failed: {exc.user_message or str(exc)}") from exc
     return portal.url
+
+
+def retrieve_store_checkout(session_id: str, account_id: Optional[str]) -> Dict[str, Any]:
+    try:
+        return dict(_client().v1.checkout.sessions.retrieve(
+            session_id, {"expand": ["payment_intent"]},
+            options={"stripe_account": account_id} if account_id else None,
+        ))
+    except stripe.StripeError as exc:
+        raise HTTPException(503, "Stripe payment reconciliation temporarily unavailable.") from exc

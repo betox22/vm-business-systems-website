@@ -16,8 +16,13 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from .admin_audit import list_admin_audit_events, record_admin_audit_event
+from .site_graph_persistence import block_legacy_graph_access
+from .platform_plans import PlanCreate, PlanEdit, PlanPriceEdit, create_plan, update_plan, plan_dict
+from .db_models import PlatformPlan
+from .manual_trial_expiry import expire_manual_trials
 from .admin_auth import (
     admin_identity_from_user,
     clear_admin_session_cookie,
@@ -29,16 +34,19 @@ from .admin_directory import (
     build_admin_client_directory,
     fetch_supabase_admin_users,
 )
-from .agents import TEMPLATE_CATALOG, semantic_seed_catalog, split_items, state_is_commerce_seed_target
+from .agents import TEMPLATE_CATALOG, classify_business_niche, semantic_seed_catalog, split_items, state_is_commerce_seed_target
 from .ai_site_planner import enforce_client_declared_catalog_facts
 from .client_auth import authenticated_client_user, fetch_supabase_user, supabase_auth_configured, password_client_session
 from .commerce import router as commerce_router
 from .catalog_sync import apply_commerce_overlay, sync_site_catalog_to_commerce
+from .public_commerce import public_commerce_capabilities
 from .billing import router as billing_router
 from .db import get_session, init_db
-from .db_models import GeneratedSite, Store
+from .db_models import ClientIntakeSessionRecord, GeneratedSite, Store, PlatformSubscription
+from .domains import build_domain_candidates, check_domain_availability
 from .domains import router as domains_router
 from .operations import router as operations_router
+from .team_settings import router as team_settings_router
 from .models import (
     AssetUploadRequest,
     AssetUploadResponse,
@@ -400,7 +408,11 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+    if not (os.getenv("KREATON_AI_GRAPH_ENABLED") == "1"
+            and request.url.path == "/api/admin/internal/graph-preview"
+            and response.status_code == 200
+            and "Content-Security-Policy" in response.headers):
+        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
     response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
     return response
 
@@ -409,6 +421,7 @@ app.include_router(commerce_router)
 app.include_router(billing_router)
 app.include_router(domains_router)
 app.include_router(operations_router)
+app.include_router(team_settings_router)
 
 
 @app.on_event("startup")
@@ -682,6 +695,11 @@ def _authenticated_admin_identity(
     return identity
 
 
+if os.getenv("KREATON_AI_GRAPH_ENABLED") == "1":
+    from .site_graph_api import create_graph_router
+    app.include_router(create_graph_router(_authenticated_admin_identity))
+
+
 @app.post("/api/admin/auth/session")
 async def admin_auth_session(
     payload: AdminAuthSessionRequest,
@@ -739,6 +757,134 @@ async def admin_auth_logout(
         )
     clear_admin_session_cookie(response)
     return {"status": "logged_out"}
+
+
+@app.post("/api/admin/subscriptions/{subscription_id}/confirm-manual")
+async def confirm_manual_subscription(
+    subscription_id: str,
+    request: Request,
+    authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    _enforce_rate_limit(request, "admin_manual_subscription_confirm", limit=30)
+    identity = _authenticated_admin_identity(authorization, kreaton_admin_session)
+    audit_args = dict(actor=identity, action="admin.subscription.manual_confirmed",
+                      target_type="platform_subscription", target_id=subscription_id,
+                      request_id=request.state.request_id)
+    try:
+        require_admin_permission(identity, "subscriptions:write")
+    except HTTPException:
+        record_admin_audit_event(session, **audit_args, outcome="denied",
+                                 metadata={"reason": "permission_denied"})
+        raise
+    record = session.scalar(select(PlatformSubscription).where(
+        PlatformSubscription.id == subscription_id,
+        PlatformSubscription.product == "kreaton",
+    ).with_for_update())
+    if not record:
+        record_admin_audit_event(session, **audit_args, outcome="failure", metadata={"reason": "not_found"})
+        raise HTTPException(status_code=404, detail="KREATON subscription not found.")
+    if record.payment_method != "manual" or record.status != "pending_manual_confirmation":
+        record_admin_audit_event(session, **audit_args, outcome="failure", metadata={"reason": "not_pending_manual"})
+        raise HTTPException(status_code=409, detail="Subscription is not awaiting manual confirmation.")
+    record.status = "active"
+    # Existing audit helper commits both the transition and event, or rolls both back.
+    audit = record_admin_audit_event(session, **audit_args, outcome="success",
+        metadata={"fromStatus": "pending_manual_confirmation", "toStatus": "active",
+                  "planId": record.plan_id, "referencePresent": bool(record.manual_payment_reference)})
+    return {"subscriptionId": record.id, "status": record.status,
+            "confirmedBy": audit.actor_user_id, "confirmedAt": audit.created_at,
+            "auditEventId": audit.id}
+
+
+def _plan_admin(request, session, authorization, cookie, *, write):
+    _enforce_rate_limit(request, "admin_plans", limit=60)
+    identity = _authenticated_admin_identity(authorization, cookie)
+    try:
+        require_admin_permission(identity, "subscriptions:write" if write else "subscriptions:read")
+    except HTTPException:
+        record_admin_audit_event(session, actor=identity, action="admin.plan.access",
+            target_type="platform_plan", target_id="kreaton", outcome="denied",
+            request_id=request.state.request_id)
+        raise
+    return identity
+
+
+def _plan_write(session, identity, request, plan_id, operation):
+    try:
+        return {"plan": operation()}
+    except (HTTPException, IntegrityError) as exc:
+        session.rollback()
+        status = exc.status_code if isinstance(exc, HTTPException) else 409
+        record_admin_audit_event(session, actor=identity, action="admin.plan.change_failed",
+            target_type="platform_plan", target_id=plan_id, outcome="failure",
+            request_id=request.state.request_id, metadata={"statusCode": status})
+        if isinstance(exc, IntegrityError):
+            raise HTTPException(409, "Plan already exists or changed concurrently.") from exc
+        raise
+
+
+@app.get("/api/admin/plans")
+async def admin_plans(request: Request, authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""), session: Session = Depends(get_session)):
+    identity = _plan_admin(request, session, authorization, kreaton_admin_session, write=False)
+    plans = session.scalars(select(PlatformPlan).where(PlatformPlan.product == "kreaton")
+        .order_by(PlatformPlan.created_at, PlatformPlan.plan_id)).all()
+    result = [plan_dict(plan) for plan in plans]
+    record_admin_audit_event(session, actor=identity, action="admin.plan.listed",
+        target_type="platform_plan", target_id="kreaton", outcome="success", request_id=request.state.request_id)
+    return {"plans": result, "canWrite": identity["role"] == "super_admin"}
+
+
+@app.post("/api/admin/plans")
+async def admin_create_plan(payload: PlanCreate, request: Request, authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""), session: Session = Depends(get_session)):
+    identity = _plan_admin(request, session, authorization, kreaton_admin_session, write=True)
+    return _plan_write(session, identity, request, payload.planId,
+        lambda: create_plan(session, payload, identity, request.state.request_id))
+
+
+@app.patch("/api/admin/plans/{plan_id}")
+async def admin_edit_plan(plan_id: str, payload: PlanEdit, request: Request,
+    authorization: str = Header(default=""), kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session)):
+    identity = _plan_admin(request, session, authorization, kreaton_admin_session, write=True)
+    return _plan_write(session, identity, request, plan_id,
+        lambda: update_plan(session, plan_id, payload, identity, request.state.request_id))
+
+
+@app.post("/api/admin/plans/{plan_id}/price")
+async def admin_replace_plan_price(plan_id: str, payload: PlanPriceEdit, request: Request,
+    authorization: str = Header(default=""), kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session)):
+    identity = _plan_admin(request, session, authorization, kreaton_admin_session, write=True)
+    return _plan_write(session, identity, request, plan_id,
+        lambda: update_plan(session, plan_id, payload, identity, request.state.request_id))
+
+
+@app.get("/api/admin/plans/{plan_id}/price")
+async def admin_plan_price(plan_id: str, request: Request, authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""), session: Session = Depends(get_session)):
+    identity = _plan_admin(request, session, authorization, kreaton_admin_session, write=False)
+    plan = session.get(PlatformPlan, ("kreaton", plan_id))
+    if not plan:
+        raise HTTPException(404, "Plan not found.")
+    from .stripe_gateway import read_plan_price
+    price = read_plan_price(plan.stripe_price_id)
+    record_admin_audit_event(session, actor=identity, action="admin.plan.price_viewed",
+        target_type="platform_plan", target_id=plan_id, outcome="success", request_id=request.state.request_id)
+    return {"priceId": price["id"], "amountCents": price["unit_amount"],
+            "currency": price["currency"], "interval": price["recurring"]["interval"],
+            "intervalCount": price["recurring"]["interval_count"], "livemode": False}
+
+
+@app.post("/api/admin/subscriptions/expire-manual-trials")
+async def admin_expire_manual_trials(request: Request, limit: int = Query(default=100, ge=1, le=500),
+    authorization: str = Header(default=""), kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session)):
+    identity = _plan_admin(request, session, authorization, kreaton_admin_session, write=True)
+    return expire_manual_trials(session, identity, request.state.request_id, limit=limit)
 
 
 @app.get("/api/admin/clients")
@@ -815,6 +961,56 @@ async def admin_clients_directory(
             "status": status,
             "templateId": template_id,
         },
+    }
+
+
+@app.get("/api/admin/domain-search")
+async def admin_domain_search(
+    request: Request,
+    q: str = Query(default="", max_length=253),
+    authorization: str = Header(default=""),
+    kreaton_admin_session: str = Cookie(default=""),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    # admin.js (searchDomainsFromForm) has called this exact path/shape since
+    # the admin panel's domain widget was built, but the route never existed
+    # server-side -- confirmed via Render access logs as a standing 404.
+    # Backed by the same check_domain_availability()/build_domain_candidates()
+    # logic that /api/v1/domains/search already uses (see domains.py), just
+    # re-shaped into the {query, provider, exact_availability, results:
+    # [{domain, status}]} contract admin.js already expects, so no frontend
+    # change is needed here.
+    _enforce_rate_limit(request, "admin_domain_search", limit=60)
+    identity = _authenticated_admin_identity(authorization, kreaton_admin_session)
+    require_admin_permission(identity, "sites:read")
+    query = q.strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="A domain or business name query is required.")
+    candidates = build_domain_candidates(query)
+    options = [
+        check_domain_availability(session, candidate, identity.get("email") or "", None)
+        for candidate in candidates
+    ]
+    results = [
+        {
+            "domain": option.domain,
+            "status": (
+                "not_available"
+                if not option.available
+                else "available_included" if option.source == "kreaton" else "available_requires_review"
+            ),
+            "price": option.price,
+            "reason": option.reason,
+            "registrar": option.registrar,
+            "available_hint": option.available,
+        }
+        for option in options
+    ]
+    return {
+        "query": query,
+        "provider": "kreaton",
+        "exact_availability": bool(options[0].available) if options else False,
+        "results": results,
     }
 
 
@@ -1259,6 +1455,7 @@ def persist_generated_site(
         ).scalar_one_or_none()
         if not existing_site:
             raise HTTPException(status_code=404, detail="Generated site not found for this account.")
+        block_legacy_graph_access(existing_site, session)
 
     store = _get_or_create_store(
         session,
@@ -1333,6 +1530,86 @@ def _intake_session_key(email: str, project_id: str = "", request_id: str = "") 
     return f"{email}:{identity}"
 
 
+def _intake_session_record_kwargs(session: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "email": str(session.get("clientEmail") or session.get("client_email") or "").strip().lower(),
+        "project_id": str(session.get("projectId") or session.get("generatedSiteId") or ""),
+        "request_id": str(session.get("requestId") or session.get("request_id") or ""),
+        "request_number": str(session.get("requestNumber") or session.get("request_number") or ""),
+        "client_name": str(session.get("clientName") or ""),
+        "selected_language": str(session.get("selectedLanguage") or "en"),
+        "draft_json": json.dumps(session.get("draft") or {}),
+        "restored": bool(session.get("restored")),
+        "storage_status": str(session.get("storageStatus") or session.get("storage_status") or "stored"),
+    }
+
+
+def _intake_session_from_record(record: ClientIntakeSessionRecord) -> Dict[str, Any]:
+    try:
+        draft = json.loads(record.draft_json or "{}")
+    except (TypeError, ValueError):
+        draft = {}
+    return {
+        "requestId": record.request_id,
+        "request_id": record.request_id,
+        "projectId": record.project_id,
+        "generatedSiteId": record.project_id,
+        "requestNumber": record.request_number,
+        "request_number": record.request_number,
+        "clientEmail": record.email,
+        "client_email": record.email,
+        "clientName": record.client_name,
+        "selectedLanguage": record.selected_language,
+        "draft": draft if isinstance(draft, dict) else {},
+        "restored": bool(record.restored),
+        "storageStatus": record.storage_status,
+        "storage_status": record.storage_status,
+    }
+
+
+def _persist_intake_session(db_session: Session, session_key: str, session: Dict[str, Any]) -> None:
+    """Best-effort durable backup of client_intake_sessions (task #62).
+
+    This must never break the intake flow: a DB hiccup here should degrade
+    back to the pre-existing in-memory-only behavior, not fail a request
+    that previously never touched the database at all. See
+    ClientIntakeSessionRecord's docstring for why this exists.
+    """
+    try:
+        kwargs = _intake_session_record_kwargs(session)
+        record = db_session.get(ClientIntakeSessionRecord, session_key)
+        if record is None:
+            db_session.add(ClientIntakeSessionRecord(id=session_key, **kwargs))
+        else:
+            for field, value in kwargs.items():
+                setattr(record, field, value)
+        db_session.commit()
+    except Exception as exc:
+        logger.warning("Failed to persist intake session key=%s: %s", session_key, exc)
+        db_session.rollback()
+
+
+def _load_intake_session_from_db(db_session: Session, session_key: str) -> Optional[Dict[str, Any]]:
+    """Cache-miss fallback for client_intake_sessions (task #62).
+
+    A Render restart wipes the in-memory client_intake_sessions dict, which
+    used to mean the client's in-progress intake started over from a blank
+    slate on their next request (confirmed live via Render logs). This
+    restores it from the durable table instead, so a restart is invisible
+    to the client.
+    """
+    try:
+        record = db_session.get(ClientIntakeSessionRecord, session_key)
+    except Exception as exc:
+        logger.warning("Failed to load intake session key=%s: %s", session_key, exc)
+        return None
+    if not record:
+        return None
+    session = _intake_session_from_record(record)
+    client_intake_sessions[session_key] = session
+    return session
+
+
 @app.get("/api/client/projects")
 async def client_projects(
     authorization: str = Header(default=""),
@@ -1368,6 +1645,7 @@ async def client_project_detail(
     ).scalar_one_or_none()
     if not site:
         raise HTTPException(status_code=404, detail="Project not found.")
+    block_legacy_graph_access(site, session)
     try:
         schema = json.loads(site.generated_config or "{}")
     except json.JSONDecodeError:
@@ -1410,6 +1688,8 @@ async def update_client_site(
         raise HTTPException(status_code=404, detail="Project not found.")
     if payload.businessId and payload.businessId != site.store_id:
         raise HTTPException(status_code=409, detail="Project business id does not match this site.")
+
+    block_legacy_graph_access(site, session)
 
     schema = validate_generated_site_schema(payload.website_schema)
     summary = _schema_summary(schema)
@@ -1579,6 +1859,7 @@ def _public_site_payload(site: GeneratedSite, session: Session | None = None) ->
     the point of a public site viewer), but not learn who owns it.
     """
 
+    block_legacy_graph_access(site, session)
     try:
         schema = json.loads(site.generated_config or "{}")
     except json.JSONDecodeError:
@@ -1595,6 +1876,7 @@ def _public_site_payload(site: GeneratedSite, session: Session | None = None) ->
         "public_url": site.public_url,
         "schema": schema,
         "catalog_items": catalog_items,
+        "commerce": public_commerce_capabilities(site.template_id, site.store_id),
     }
 
 
@@ -1708,6 +1990,7 @@ async def luma_chat(
             {},
             final_state.fieldMeta,
         )
+        generation_missing_fields = unblock_niche_intake_loop(final_state, generation_missing_fields)
         ready = not generation_missing_fields
         plan = site_plan_from_state(final_state)
         assistant_message = assistant_message_for_ready_state(intake_decision, final_state) if ready else assistant_message_for_intake_turn(intake_decision, final_state)
@@ -1866,11 +2149,60 @@ def mark_field_meta(state: Any, field: str, source: str, confidence: float) -> N
     state.fieldMeta = meta
 
 
+def _niche_context_text(state: Any) -> str:
+    return " ".join(
+        part
+        for part in (
+            state.businessName or "",
+            state.businessDescription or "",
+            " ".join(state.servicesProducts or []),
+        )
+        if part
+    )
+
+
+def unblock_niche_intake_loop(state: Any, missing_fields: List[str]) -> List[str]:
+    """Break the industry/niche intake loop (task #58).
+
+    normalize_niche() in taxonomy.py only recognizes a closed alias table;
+    any business description that doesn't match it collapses to "general",
+    which missing_fields_from_state() then flags as unresolved forever if
+    there is no confident field-meta entry saying otherwise. In practice
+    this meant Lyra could ask the same industry question in an infinite
+    loop for any niche the fixed table has never seen (confirmed live with
+    a real tester -- "Quick gift" -- via Render access logs, see
+    docs/AGENT_LOG.md).
+
+    This is a no-op unless "niche" is literally the only thing blocking:
+    it first tries the same safe LLM-fallback pattern already proven in
+    generate_ai_seed_catalog() (classify_business_niche, same sync client,
+    same "return None and let the caller degrade gracefully on any
+    failure" discipline). If that also fails (no OPENAI_API_KEY, or the
+    call errors), and a real business description already exists, it
+    accepts the niche as resolved anyway rather than blocking forever --
+    matching the product requirement that Lyra must always move forward
+    with whatever the client already gave it instead of getting stuck.
+    """
+    if "niche" not in missing_fields:
+        return missing_fields
+    context_text = _niche_context_text(state)
+    ai_niche = classify_business_niche(context_text, state.selectedLanguage) if context_text.strip() else None
+    if ai_niche:
+        state.industry = ai_niche
+        mark_field_meta(state, "niche", "ai_inferred", 0.85)
+    elif str(state.businessDescription or "").strip():
+        mark_field_meta(state, "niche", "description_fallback", 0.75)
+    else:
+        return missing_fields
+    return intake_engine.missing_fields_from_state(state, {}, state.fieldMeta)
+
+
 @app.post("/api/client/intake-session")
 async def client_intake_session(
     payload: Dict[str, Any],
     authorization: str = Header(default=""),
     luma_client_session: str = Cookie(default=""),
+    db_session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
     auth_user = authenticated_client_user(authorization, luma_client_session)
     email = str(auth_user.get("email") or "").strip().lower()
@@ -1886,13 +2218,27 @@ async def client_intake_session(
     ).strip()
     incoming_request_id = str(payload.get("requestId") or "").strip()
     session_key = _intake_session_key(email, project_id, incoming_request_id)
-    existing = client_intake_sessions.get(session_key)
-    if not existing and not force_new:
-        existing = client_intake_sessions.get(_intake_session_key(email, project_id, ""))
-        if not existing and incoming_request_id:
-            existing = client_intake_sessions.get(_intake_session_key(email, "", incoming_request_id))
+    lookup_keys = [session_key]
+    if not force_new:
+        lookup_keys.append(_intake_session_key(email, project_id, ""))
+        if incoming_request_id:
+            lookup_keys.append(_intake_session_key(email, "", incoming_request_id))
+        lookup_keys.append(email)  # legacy key format, kept for backward compat
+
+    existing = None
+    if not force_new:
+        for lookup_key in lookup_keys:
+            existing = client_intake_sessions.get(lookup_key)
+            if existing:
+                break
         if not existing:
-            existing = client_intake_sessions.get(email)
+            # In-memory cache miss -- most likely a fresh process after a
+            # Render restart (task #62). Fall back to the durable table
+            # before concluding there truly is no prior session.
+            for lookup_key in lookup_keys:
+                existing = _load_intake_session_from_db(db_session, lookup_key)
+                if existing:
+                    break
     draft = sanitize_client_draft(payload.get("draft"))
     name = str(payload.get("name") or draft.get("businessName") or "").strip()
     selected_language = payload.get("selectedLanguage") or draft.get("selectedLanguage") or "en"
@@ -1918,6 +2264,7 @@ async def client_intake_session(
         }
         session["request_number"] = session["requestNumber"]
         client_intake_sessions[session_key] = session
+        _persist_intake_session(db_session, session_key, session)
         return session
 
     existing["draft"] = sanitize_client_draft({**sanitize_client_draft(existing.get("draft")), **draft})
@@ -1928,7 +2275,9 @@ async def client_intake_session(
     existing["restored"] = True
     existing["storageStatus"] = "stored"
     existing["storage_status"] = "stored"
-    client_intake_sessions[_intake_session_key(email, existing.get("projectId") or "", existing.get("requestId") or "")] = existing
+    final_key = _intake_session_key(email, existing.get("projectId") or "", existing.get("requestId") or "")
+    client_intake_sessions[final_key] = existing
+    _persist_intake_session(db_session, final_key, existing)
     return existing
 
 
@@ -2074,6 +2423,7 @@ async def website_builder(
             )
             state.selectedTemplateId = replacement_template_id
     missing_fields = intake_engine.missing_fields_from_state(state, {}, field_meta)
+    missing_fields = unblock_niche_intake_loop(state, missing_fields)
     if missing_fields:
         return WebsiteGenerationResponse(
             website_schema={},

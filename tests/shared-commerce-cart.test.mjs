@@ -92,7 +92,7 @@ test("all public and editor commerce catalog renderers delegate CTA policy", () 
 });
 
 test("the shared module is published and loaded before the public renderer", () => {
-  assert.match(siteHtml, /type="module" src="site-viewer\.js\?v=36"/);
-  assert.match(viewer, /from "\.\/shared-commerce-cart\.js\?v=2"/);
+  assert.match(siteHtml, /type="module" src="site-viewer\.js\?v=38"/);
+  assert.match(viewer, /from "\.\/shared-commerce-cart\.js\?v=3"/);
   assert.match(stageScript, /"shared-commerce-cart\.js"/);
 });

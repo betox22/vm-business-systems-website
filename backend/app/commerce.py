@@ -4,10 +4,11 @@ import json
 import os
 import time
 import uuid
+from collections import defaultdict, deque
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List, Literal, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -21,6 +22,7 @@ from .db_models import Store
 from .db_models import StripeConnectAccount
 from .stripe_gateway import checkout_session as create_stripe_session
 from .stripe_gateway import construct_event, create_account_link, create_connected_account
+from .shipping_gateway import buy_shipment, get_shipping_rates
 
 router = APIRouter(prefix="/api/v1", tags=["commerce"])
 
@@ -149,11 +151,24 @@ class ShippingAddress(BaseModel):
     country: str = Field(default="US", max_length=2)
 
 
+class ShippingRatesRequest(BaseModel):
+    cartId: str = "demo-cart"
+    businessId: str = "demo-premium"
+    shippingAddress: ShippingAddress
+
+
 class CheckoutSessionRequest(BaseModel):
     cartId: str = "demo-cart"
     businessId: str = "demo-premium"
     customer: CustomerInfo
     shippingAddress: ShippingAddress
+    # task #54: id of one of the options /checkout/shipping-rates just
+    # quoted for this same cartId (real EasyPost rate id, or "flat"). The
+    # price is never taken from the client -- only looked up server-side
+    # from SHIPPING_QUOTES using this id. None/unknown falls back to the
+    # store's flat rate, so existing callers that never call the new
+    # rate-shopping endpoint keep working unchanged.
+    shippingOptionId: Optional[str] = None
     successUrl: str = "https://example.com/order/success"
     cancelUrl: str = "https://example.com/cart"
 
@@ -220,6 +235,26 @@ CATEGORIES: Dict[str, Category] = {
 
 CARTS: Dict[str, List[Dict[str, Any]]] = {}
 IDEMPOTENCY_KEYS: Dict[str, str] = {}
+# task #54: cache of the real (or flat-fallback) shipping options quoted
+# for a cart, keyed by cartId. create_checkout_session looks up the
+# customer-selected option here rather than trusting a client-supplied
+# price. Entries are short-lived (a checkout session); no cleanup job
+# exists yet, matching the other in-memory dicts in this module.
+SHIPPING_QUOTES: Dict[str, Dict[str, Any]] = {}
+# task #55: KREATON runs one central EasyPost account for every store (task
+# #54) rather than a per-store carrier account -- so a real carrier rate
+# shown to the customer gets a margin added on top of the raw EasyPost cost,
+# same as Shopify/most marketplaces never show the wholesale rate as-is.
+# The margin (and the raw cost itself) is recovered from the store's payout
+# via the existing Stripe Connect application fee in stripe_checkout_session,
+# so KREATON's wallet is reimbursed with a profit per shipment instead of
+# fronting the cost indefinitely. Flat-rate shipping (task #53) is configured
+# directly by the store owner and is never marked up here.
+SHIPPING_RATE_MARKUP_BPS = max(0, int(os.getenv("SHIPPING_RATE_MARKUP_BPS", "1000") or 0))
+
+
+def _apply_shipping_markup(raw_cents: int) -> int:
+    return round(raw_cents * (10000 + SHIPPING_RATE_MARKUP_BPS) / 10000)
 PAYMENT_METHODS: Dict[str, Dict[str, Any]] = {
     BUSINESS_ID: {
         "businessId": BUSINESS_ID,
@@ -346,13 +381,14 @@ def require_purchasable_price(quote_only: bool, price: Any, product_id: str = ""
         raise HTTPException(status_code=409, detail="Product has no valid purchase price.")
 
 
-def cart_response(cart_id: str, session: Session, business_id: Optional[str] = None) -> Dict[str, Any]:
+def cart_response(cart_id: str, session: Session, business_id: Optional[str] = None, *, shipping_cents: int = 0) -> Dict[str, Any]:
     # Cleanup (2026-07-20): this used to have an in-memory PRODUCTS fallback
     # for when `session` wasn't passed. Every call site has passed a real
     # session since Fase 2, so `session` is now required and the cart always
     # validates against real DB products -- no more silent stale-data path.
     lines = []
     subtotal = money(0)
+    tax_total = Decimal("0")
     for line in cart_lines(cart_id):
         if business_id and line.get("businessId") != business_id:
             continue
@@ -368,6 +404,11 @@ def cart_response(cart_id: str, session: Session, business_id: Optional[str] = N
         qty = int(line["quantity"])
         line_total = money(product.price) * qty
         subtotal += line_total
+        store = session.get(Store, store_id)
+        rate_bps = store.tax_rate_bps if store and store.tax_rate_bps is not None else 0
+        if not 0 <= rate_bps <= 10000:
+            raise HTTPException(status_code=409, detail="Invalid store tax configuration.")
+        tax_total += line_total * Decimal(rate_bps) / Decimal(10000)
         lines.append(
             {
                 "cartItemId": line["cartItemId"],
@@ -380,8 +421,8 @@ def cart_response(cart_id: str, session: Session, business_id: Optional[str] = N
                 "stockAvailable": stock_available,
             }
         )
-    shipping = money(0) if subtotal else money(0)
-    tax = money(subtotal * Decimal("0.07"))
+    shipping = money(cents_to_price(shipping_cents)) if subtotal else money(0)
+    tax = money(tax_total)
     total = money(subtotal + shipping + tax)
     return {
         "cartId": cart_id,
@@ -494,9 +535,11 @@ def order_to_api(order: DbOrder) -> Dict[str, Any]:
     customer = json_field(order.customer_snapshot_json, {})
     shipping_address = json_field(order.shipping_address_json, {})
     payment = json_field(order.payment_json, {})
+    shipping_meta = json_field(order.shipping_json, {})
     subtotal = money(sum(money(item.get("lineTotal", 0)) for item in items))
     total = money(cents_to_price(order.total_cents))
-    tax = money(max(Decimal("0"), total - subtotal))
+    shipping_amount = money(cents_to_price(int(shipping_meta.get("rateCents") or 0)))
+    tax = money(max(Decimal("0"), total - subtotal - shipping_amount))
     return {
         "id": order.id,
         "orderNumber": order.order_number,
@@ -505,7 +548,14 @@ def order_to_api(order: DbOrder) -> Dict[str, Any]:
         "shippingAddress": shipping_address,
         "items": items,
         "subtotal": money_float(subtotal),
-        "shippingAmount": 0,
+        "shippingAmount": money_float(shipping_amount),
+        # task #55: which fee-recovery path applies. "real" means shippingAmount
+        # already includes KREATON's markup over the raw EasyPost cost, and
+        # must be recovered via the Stripe Connect application fee.
+        "shippingMode": shipping_meta.get("mode") or "flat",
+        "shippingCarrier": shipping_meta.get("carrier") or "",
+        "shippingLabelUrl": order.shipping_label_url,
+        "needsShippingAttention": bool(order.needs_shipping_attention),
         "taxAmount": money_float(tax),
         "total": money_float(total),
         "status": order.status,
@@ -556,6 +606,93 @@ def generate_order_number(session: Session) -> str:
     raise HTTPException(status_code=500, detail="Could not allocate order number.")
 
 
+def _shipping_address_to_easypost(address: ShippingAddress) -> Dict[str, str]:
+    return {
+        "street1": address.line1,
+        "city": address.city,
+        "state": address.region,
+        "zip": address.postalCode,
+        "country": address.country or "US",
+    }
+
+
+def resolve_checkout_shipping(
+    session: Session, business_id: str, cart_id: str, shipping_option_id: Optional[str]
+) -> tuple[int, Dict[str, Any]]:
+    """Resolve the customer's chosen shipping option into (cost_cents, metadata_to_persist).
+
+    task #54: never trusts a client-supplied price -- looks the option up
+    in the quote this cart already received from /checkout/shipping-rates.
+    Falls back to the store's flat rate (possibly $0, possibly free over a
+    configured threshold) when no option was selected or the quote is
+    missing/expired, so callers that never call the rate-shopping endpoint
+    (existing tests, the manual-order flow) keep working unchanged.
+    """
+    from .team_settings import get_flat_shipping_rate_cents
+
+    quote = SHIPPING_QUOTES.get(cart_id)
+    if quote and quote.get("businessId") == business_id and shipping_option_id:
+        option = next((o for o in quote["options"] if o["rateId"] == shipping_option_id), None)
+        if option:
+            if quote["mode"] == "real":
+                # option["rateCents"] is already marked up (task #55) -- what
+                # the customer is charged and what stays on the order forever.
+                # carrierCostCents is the raw EasyPost quote, kept only for
+                # the Stripe application-fee recovery math below; it is never
+                # shown to the customer.
+                return option["rateCents"], {
+                    "mode": "real",
+                    "shipmentId": quote["shipmentId"],
+                    "rateId": option["rateId"],
+                    "carrier": option["carrier"],
+                    "service": option["service"],
+                    "rateCents": option["rateCents"],
+                    "carrierCostCents": option["carrierCostCents"],
+                    "purchaseStatus": "pending",
+                }
+            return option["rateCents"], {"mode": "flat", "rateCents": option["rateCents"]}
+
+    flat_rate_cents, free_threshold_cents = get_flat_shipping_rate_cents(session, business_id)
+    subtotal_cents = price_to_cents(cart_response(cart_id, session, business_id)["subtotal"])
+    if free_threshold_cents is not None and subtotal_cents >= free_threshold_cents:
+        flat_rate_cents = 0
+    return flat_rate_cents, {"mode": "flat", "rateCents": flat_rate_cents}
+
+
+def attempt_automatic_shipping_purchase(session: Session, order: DbOrder) -> None:
+    """Buy the real shipping label automatically right after payment confirms.
+
+    Called from commerce_webhooks.process_payment_event once an order's
+    status transitions to "paid", and from the owner's manual retry route.
+    Never raises: a failure here must not break payment confirmation (the
+    customer already paid) -- it flags the order for manual retry instead.
+    Idempotent: does nothing once a label has already been purchased.
+    """
+    meta = json_field(order.shipping_json, {})
+    if meta.get("mode") != "real" or meta.get("purchaseStatus") == "purchased":
+        return
+    try:
+        result = buy_shipment(shipment_id=meta["shipmentId"], rate_id=meta["rateId"])
+    except HTTPException:
+        order.needs_shipping_attention = True
+        meta["purchaseStatus"] = "failed"
+        order.shipping_json = json.dumps(meta)
+        return
+    order.shipping_carrier = result["carrier"]
+    order.tracking_code = result["trackingCode"]
+    order.shipping_label_url = result["labelUrl"]
+    meta["purchaseStatus"] = "purchased"
+    meta["carrier"] = result["carrier"]
+    meta["service"] = result["service"]
+    # task #55: record the actual final EasyPost cost separately.
+    # meta["rateCents"] is what the customer was charged (marked up) and
+    # must never change after checkout -- only carrierCostCents (KREATON's
+    # own bookkeeping of its real, final cost) gets updated here.
+    meta["carrierCostCents"] = result["rateCents"]
+    order.shipping_json = json.dumps(meta)
+    order.needs_shipping_attention = False
+
+
 def create_order_from_cart(
     session: Session,
     cart_id: str,
@@ -564,9 +701,12 @@ def create_order_from_cart(
     shipping_address: ShippingAddress,
     status: OrderStatus,
     payment: Dict[str, Any],
+    *,
+    shipping_cents: int = 0,
+    shipping_meta: Optional[Dict[str, Any]] = None,
 ) -> DbOrder:
     assert_business(session, business_id)
-    quote = cart_response(cart_id, session, business_id)
+    quote = cart_response(cart_id, session, business_id, shipping_cents=shipping_cents)
     if not quote["checkoutEligible"]:
         raise HTTPException(status_code=400, detail="Cart is empty.")
 
@@ -607,6 +747,7 @@ def create_order_from_cart(
         shipping_address_json=json.dumps(shipping_address.model_dump()),
         customer_snapshot_json=json.dumps(customer.model_dump()),
         payment_json=json.dumps(payment),
+        shipping_json=json.dumps(shipping_meta or {}),
     )
     session.add(order)
     session.commit()
@@ -675,8 +816,51 @@ def stripe_checkout_session(
         }
         for item in order["items"]
     ]
+    # Use the order's already-rounded tax, not a second tax-rate calculation.
+    tax_cents = price_to_cents(order.get("taxAmount", 0))
+    if tax_cents < 0:
+        raise HTTPException(status_code=409, detail="Order tax cannot be negative.")
+    if tax_cents:
+        line_items.append({
+            "price_data": {
+                "currency": "usd",
+                "product_data": {"name": "Tax"},
+                "unit_amount": tax_cents,
+            },
+            "quantity": 1,
+        })
+    # task #54: charge for the shipping option the customer selected (real
+    # carrier rate, or the store's flat rate) as its own line item, so the
+    # amount Stripe actually collects matches order.total_cents exactly --
+    # the self-check right below would otherwise reject every order that
+    # has any shipping cost at all.
+    shipping_cents = price_to_cents(order.get("shippingAmount", 0))
+    if shipping_cents < 0:
+        raise HTTPException(status_code=409, detail="Order shipping cannot be negative.")
+    if shipping_cents:
+        line_items.append({
+            "price_data": {
+                "currency": "usd",
+                "product_data": {"name": "Shipping"},
+                "unit_amount": shipping_cents,
+            },
+            "quantity": 1,
+        })
+    charge_cents = sum(line["price_data"]["unit_amount"] * line["quantity"] for line in line_items)
+    if charge_cents != price_to_cents(order["total"]):
+        raise HTTPException(status_code=409, detail="Checkout amount does not match the order total.")
     fee_bps = max(0, min(int(os.getenv("STRIPE_CONNECT_APPLICATION_FEE_BPS", "0") or 0), 10000))
-    fee_amount = int(order["total"] * 100 * fee_bps / 10000) if connected_account_id and fee_bps else None
+    platform_commission_cents = int(order["total"] * 100 * fee_bps / 10000) if fee_bps else 0
+    # task #55: on top of the usual percentage-of-sale platform commission,
+    # recover the *entire* marked-up shipping charge (raw EasyPost cost +
+    # KREATON's margin) from the store's payout whenever this order used a
+    # real carrier rate. KREATON's single central EasyPost wallet (task #54)
+    # pays the raw cost when the label is purchased; this application fee is
+    # what reimburses that wallet -- with a profit -- on every shipment,
+    # instead of KREATON fronting shipping cost indefinitely for every store.
+    shipping_recovery_cents = shipping_cents if order.get("shippingMode") == "real" else 0
+    total_fee_cents = platform_commission_cents + shipping_recovery_cents
+    fee_amount = total_fee_cents if connected_account_id and total_fee_cents else None
     payload = create_stripe_session(
         mode="payment",
         line_items=line_items,
@@ -838,6 +1022,95 @@ async def checkout_quote(payload: CheckoutQuoteRequest, session: Session = Depen
     return cart_response(payload.cartId, session)
 
 
+@router.post("/checkout/shipping-rates")
+async def checkout_shipping_rates(
+    payload: ShippingRatesRequest, session: Session = Depends(get_session)
+) -> Dict[str, Any]:
+    """Quote real shipping options for a cart+address (task #54).
+
+    Falls back to the store's flat rate whenever real quoting isn't
+    possible yet (no EasyPost key, no origin address configured, or any
+    cart item is missing its weight) -- checkout never breaks over this.
+    The result is cached against cartId so create_checkout_session can
+    later look up the customer's chosen option without trusting a price
+    the client sends back.
+    """
+    from .team_settings import get_flat_shipping_rate_cents, get_shipping_origin_and_parcel
+
+    quote = cart_response(payload.cartId, session, payload.businessId)
+    if not quote["checkoutEligible"]:
+        raise HTTPException(status_code=400, detail="Cart is empty.")
+
+    flat_rate_cents, free_threshold_cents = get_flat_shipping_rate_cents(session, payload.businessId)
+    subtotal_cents = price_to_cents(quote["subtotal"])
+    if free_threshold_cents is not None and subtotal_cents >= free_threshold_cents:
+        flat_rate_cents = 0
+    flat_option = {
+        "rateId": "flat",
+        "carrier": "",
+        "service": "Envio gratis" if flat_rate_cents == 0 else "Tarifa estandar",
+        "rateCents": flat_rate_cents,
+        "deliveryDays": None,
+    }
+
+    origin = get_shipping_origin_and_parcel(session, payload.businessId)
+    total_weight_oz = 0.0
+    weight_known = bool(origin)
+    if origin:
+        for item in quote["items"]:
+            product = session.get(DbProduct, item["productId"])
+            if not product or product.weight_oz is None:
+                weight_known = False
+                break
+            total_weight_oz += float(product.weight_oz) * int(item["quantity"])
+
+    if origin and weight_known:
+        try:
+            result = get_shipping_rates(
+                from_address=origin["from_address"],
+                to_address=_shipping_address_to_easypost(payload.shippingAddress),
+                weight_oz=total_weight_oz,
+                length_in=origin["length_in"],
+                width_in=origin["width_in"],
+                height_in=origin["height_in"],
+            )
+            # task #55: mark up the raw EasyPost cost before it's ever shown
+            # to the customer or cached -- carrierCostCents (the raw,
+            # un-marked-up cost) is kept server-side only, for the Stripe
+            # application-fee recovery math, never returned in the response.
+            cached_options = [
+                {
+                    "rateId": rate["rateId"],
+                    "carrier": rate["carrier"],
+                    "service": rate["service"],
+                    "rateCents": _apply_shipping_markup(rate["rateCents"]),
+                    "carrierCostCents": rate["rateCents"],
+                    "deliveryDays": rate["deliveryDays"],
+                }
+                for rate in result["rates"]
+            ]
+            SHIPPING_QUOTES[payload.cartId] = {
+                "businessId": payload.businessId,
+                "mode": "real",
+                "shipmentId": result["shipmentId"],
+                "options": cached_options,
+            }
+            public_options = [
+                {key: value for key, value in option.items() if key != "carrierCostCents"}
+                for option in cached_options
+            ]
+            return {"mode": "real", "options": public_options}
+        except HTTPException:
+            pass  # EasyPost unreachable/rejected -- fall through to the flat rate below.
+
+    SHIPPING_QUOTES[payload.cartId] = {
+        "businessId": payload.businessId,
+        "mode": "flat",
+        "options": [flat_option],
+    }
+    return {"mode": "flat", "options": [flat_option]}
+
+
 @router.post("/checkout/create-session")
 async def create_checkout_session(
     payload: CheckoutSessionRequest,
@@ -857,6 +1130,10 @@ async def create_checkout_session(
     if os.getenv("STRIPE_SECRET_KEY") and (not connect or not connect.charges_enabled):
         raise HTTPException(status_code=409, detail="This store must finish Stripe onboarding before card checkout.")
 
+    shipping_cents, shipping_meta = resolve_checkout_shipping(
+        session, payload.businessId, payload.cartId, payload.shippingOptionId
+    )
+
     order = create_order_from_cart(
         session,
         payload.cartId,
@@ -865,6 +1142,8 @@ async def create_checkout_session(
         payload.shippingAddress,
         "payment_processing",
         {"provider": "stripe", "providerStatus": "creating_session"},
+        shipping_cents=shipping_cents,
+        shipping_meta=shipping_meta,
     )
     api_order = order_to_api(order)
     payment = stripe_checkout_session(
@@ -912,19 +1191,22 @@ async def stripe_webhook(
     if not webhook_secret:
         raise HTTPException(status_code=503, detail="STRIPE_STORE_WEBHOOK_SECRET is not configured.")
     event = construct_event(raw, stripe_signature or "", webhook_secret)
-    event_type = event.get("type")
-    stripe_session = event.get("data", {}).get("object", {})
-    order_id = stripe_session.get("metadata", {}).get("order_id")
-    if order_id and event_type == "checkout.session.completed":
-        order = session.get(DbOrder, order_id)
-        if order:
-            payment = json_field(order.payment_json, {})
-            payment["providerStatus"] = "paid"
-            order.status = "paid"
-            order.payment_json = json.dumps(payment)
-            session.commit()
-            audit("stripe_webhook", "order_paid", order.store_id, {"orderId": order_id})
-    return {"received": True}
+    from .commerce_webhooks import process_payment_event
+    return process_payment_event(session, event)
+
+
+@router.get("/checkout/session-status")
+def checkout_return_status(businessId: str, sessionId: str, response: Response, session: Session = Depends(get_session)):
+    # Session ID is an unguessable receipt capability; expose no customer/order data.
+    response.headers["Cache-Control"] = "no-store"
+    if not sessionId.startswith("cs_") or len(sessionId) > 255:
+        raise HTTPException(404, "Checkout not found.")
+    orders = session.scalars(select(DbOrder).where(DbOrder.store_id == businessId))
+    for order in orders:
+        payment = json_field(order.payment_json, {})
+        if payment.get("provider") == "stripe" and payment.get("sessionId") == sessionId:
+            return {"paid": order.status in {"paid", "partially_fulfilled", "fulfilled"}}
+    raise HTTPException(404, "Checkout not found.")
 
 
 @router.post("/payments/stripe/connect-webhook")
@@ -1014,55 +1296,88 @@ async def update_customer_me(payload: CustomerProfilePatch, x_user_id: str = Hea
 
 
 @router.get("/customer/orders")
-async def customer_orders(
-    x_user_id: str = Header(default="demo-customer"),
-    session: Session = Depends(get_session),
-) -> Dict[str, Any]:
-    profile = await customer_me(x_user_id)
-    email = str(profile.get("email") or "").strip().lower()
-    db_orders = []
-    if email:
-        db_orders = [
-            order_to_api(order)
-            for order in session.execute(
-                select(DbOrder)
-                .join(DbCustomer, DbOrder.customer_id == DbCustomer.id)
-                .where(func.lower(DbCustomer.email) == email)
-                .order_by(DbOrder.created_at.desc())
-            ).scalars()
-        ]
-    orders = db_orders
-    if not orders:
-        orders = [
+async def customer_orders(x_user_id: str = Header(default="demo-customer")) -> Dict[str, Any]:
+    # SECURITY (2026-09-20): this endpoint used to resolve `email` from the
+    # unauthenticated `x_user_id` header via the in-memory CUSTOMER_PROFILES
+    # mock, then query real orders across every store by that email alone.
+    # There is no real customer login in this backend yet (only store-owner
+    # accounts via Supabase and staff/admin accounts) -- `x_user_id` is
+    # entirely client-supplied and CUSTOMER_PROFILES defaulted every unknown
+    # id to the literal email "customer@example.com". Worse, `PATCH
+    # /customer/me` lets a caller set that profile's email to anyone else's
+    # real address, then `GET /customer/orders` returned that person's full
+    # order history (name, email, phone, shipping address, items, payment
+    # metadata) for every store on the platform, with zero authentication.
+    # Listing a customer's own orders safely requires a real, verified
+    # customer identity (a proper auth design, not this header), so that
+    # capability is removed here rather than patched around. Single-order
+    # lookup by order number is still available, scoped, below.
+    return {
+        "userId": x_user_id,
+        "orders": [
             {
                 "orderNumber": "KR-2048",
                 "status": "in_transit",
                 "total": 1176,
                 "tracking": {"carrier": "UPS", "trackingNumber": "1Z88942"},
             }
-        ]
-    return {"userId": x_user_id, "orders": orders}
+        ],
+    }
+
+
+_CUSTOMER_ORDER_LOOKUP_BUCKETS: Dict[str, deque] = defaultdict(deque)
+
+
+def _customer_order_lookup_client_ip(request: Request) -> str:
+    cf_ip = request.headers.get("cf-connecting-ip", "").strip()
+    if cf_ip:
+        return cf_ip
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _enforce_customer_order_lookup_rate_limit(request: Request, *, limit: int = 20, window_seconds: int = 60) -> None:
+    # order_number has ~2^24 possible values (see generate_order_number); rate
+    # limiting by IP keeps a guessed-number + guessed-email brute force
+    # infeasible even though the endpoint itself must stay unauthenticated
+    # (this is a guest "track my order" lookup, mirroring the same
+    # unguessable-capability pattern already used by /checkout/session-status).
+    key = f"customer_order_lookup:{_customer_order_lookup_client_ip(request)}"
+    now = time.monotonic()
+    bucket = _CUSTOMER_ORDER_LOOKUP_BUCKETS[key]
+    while bucket and now - bucket[0] > window_seconds:
+        bucket.popleft()
+    if len(bucket) >= limit:
+        raise HTTPException(status_code=429, detail="Too many requests. Please wait a moment and try again.")
+    bucket.append(now)
 
 
 @router.get("/customer/orders/{order_number}")
 async def customer_order_detail(
     order_number: str,
-    x_user_id: str = Header(default="demo-customer"),
+    request: Request,
+    email: str = Query(..., min_length=5, max_length=200),
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
-    profile = await customer_me(x_user_id)
-    email = str(profile.get("email") or "").strip().lower()
-    order = None
-    if email:
-        db_order = session.execute(
-            select(DbOrder)
-            .join(DbCustomer, DbOrder.customer_id == DbCustomer.id)
-            .where(DbOrder.order_number == order_number, func.lower(DbCustomer.email) == email)
-        ).scalar_one_or_none()
-        order = order_to_api(db_order) if db_order else None
-    if not order:
+    # SECURITY (2026-09-20): previously trusted an unauthenticated x_user_id
+    # header resolved through the CUSTOMER_PROFILES mock instead of a value
+    # the caller actually proves they know. The caller must now supply their
+    # own email directly; combined with the order number (a random ~2^24
+    # token, unique across the whole platform per the orders table's own
+    # unique constraint) this is the same guest-lookup capability pattern
+    # already used by /checkout/session-status, not a new auth mechanism.
+    _enforce_customer_order_lookup_rate_limit(request)
+    normalized_email = email.strip().lower()
+    db_order = session.execute(
+        select(DbOrder)
+        .join(DbCustomer, DbOrder.customer_id == DbCustomer.id)
+        .where(DbOrder.order_number == order_number, func.lower(DbCustomer.email) == normalized_email)
+    ).scalar_one_or_none()
+    if not db_order:
         raise HTTPException(status_code=404, detail="Order not found.")
-    return order
+    return order_to_api(db_order)
 
 
 @router.get("/customer/addresses")
@@ -1338,6 +1653,37 @@ async def owner_update_shipping(
     session.refresh(order)
     actor = str(user.get("id") or user.get("email") or "store-owner")
     audit(actor, "shipping_updated", business_id, {"orderId": order_id, "tracking": updates})
+    return order_to_api(order)
+
+
+@router.post("/store-owner/{business_id}/orders/{order_id}/purchase-shipping-label")
+async def owner_purchase_shipping_label(
+    business_id: str,
+    order_id: str,
+    user: Dict[str, Any] = Depends(require_client_user),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    """Manual retry for task #54's automatic post-payment label purchase.
+
+    Needed when the automatic attempt (in commerce_webhooks.process_payment_event)
+    failed and flagged the order via needs_shipping_attention -- the owner
+    fixes whatever was wrong (e.g. EasyPost account funding) and retries here.
+    """
+    _, user = require_store_owner(session, business_id, user)
+    order = session.get(DbOrder, order_id)
+    if not order or order.store_id != business_id:
+        raise HTTPException(status_code=404, detail="Order not found.")
+    if order.status not in {"paid", "partially_fulfilled"}:
+        raise HTTPException(status_code=409, detail="Order is not paid yet.")
+    meta = json_field(order.shipping_json, {})
+    if meta.get("mode") != "real":
+        raise HTTPException(status_code=409, detail="This order was not quoted with a real carrier rate.")
+    attempt_automatic_shipping_purchase(session, order)
+    session.commit()
+    session.refresh(order)
+    actor = str(user.get("id") or user.get("email") or "store-owner")
+    audit(actor, "shipping_label_purchase_retried", business_id,
+          {"orderId": order_id, "needsAttention": order.needs_shipping_attention})
     return order_to_api(order)
 
 
