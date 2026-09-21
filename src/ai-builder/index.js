@@ -4434,7 +4434,12 @@ function promptAccountBeforeGenerate() {
   openStudioAuthGate("generate");
   const email = builderState.guidedState.contactInfo?.email || builderState.guidedState.contactInfo?.contact || "";
   if (studioAuthEmail && email) studioAuthEmail.value = email;
-  appendChatMessage("assistant", langText({
+  appendChatMessage("assistant", langText(isPublicClientSetup ? {
+    en: "Sign in with Google to save and generate your draft.",
+    es: "Accede con Google para guardar y generar tu borrador.",
+    fr: "Connectez-vous avec Google pour sauvegarder et générer votre brouillon.",
+    pt: "Entre com o Google para salvar e gerar seu rascunho.",
+  } : {
     en: "Before I generate it, connect an account so your draft is saved and you can come back later. You can use Google, Apple, or email.",
     es: "Antes de generarla, conecta una cuenta para guardar tu borrador y poder volver luego. Puedes usar Google, Apple o email.",
     fr: "Avant de générer, connectez un compte pour sauvegarder le brouillon et revenir plus tard. Vous pouvez utiliser Google, Apple ou email.",

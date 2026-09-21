@@ -1585,6 +1585,9 @@ export function openStudioAuthGate(action = "continue") {
     if (studioEmailAuthButton) studioEmailAuthButton.hidden = true;
     revealStudioAuthProviderButtons();
     if (studioAuthDemoButton) studioAuthDemoButton.hidden = true;
+    if (action === "start" && !studioAuthEmail) {
+      requestAnimationFrame(() => studioAuthGate.querySelector("#studioLegalConsent")?.focus());
+    }
   }
   setAssistantState("success");
 }
