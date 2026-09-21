@@ -661,7 +661,23 @@ export function ensureClientProjectsPanel() {
       startNewClientProject({ skipConfirm: true });
     }
   });
-  document.body.appendChild(builderState.clientProjectsPanel);
+  // Beto: "si ya va a ser un chat asi simplemente debe estar integrado en la
+  // pagina que el cliente pueda ver otras cosas sus paginas creadas o crear
+  // otra opciones... si no va a ser una pagina mas en el proceso y es
+  // agotador". This used to be a fixed, full-viewport modal appended to
+  // <body> that blurred and disabled the chat behind it (see the removed
+  // ".client-projects-open .guided-shell" blur rule and ".is-docked" CSS
+  // below). It now mounts inline as the first block inside .guided-layout,
+  // above the live preview and chat, so the client can see their existing
+  // pages and keep chatting with LYRA in the same screen instead of being
+  // routed through a separate step.
+  builderState.clientProjectsPanel.classList.add("is-docked");
+  const guidedLayoutHost = document.querySelector(".guided-layout");
+  if (guidedLayoutHost) {
+    guidedLayoutHost.insertBefore(builderState.clientProjectsPanel, guidedLayoutHost.firstChild);
+  } else {
+    document.body.appendChild(builderState.clientProjectsPanel);
+  }
   return builderState.clientProjectsPanel;
 }
 
