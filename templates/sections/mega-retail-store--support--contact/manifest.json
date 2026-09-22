@@ -1,0 +1,16 @@
+{
+  "id": "mega-retail-store--support--contact",
+  "section_type": "contact",
+  "source_template": "Mega Retail Store",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "mega-retail-store--support--contact/section.html",
+  "css_partial": "mega-retail-store--support--contact/section.css"
+}

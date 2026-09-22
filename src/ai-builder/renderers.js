@@ -9,6 +9,7 @@ import { motionDataAttributes } from './shared-site-motion.js';
 import { resolveCatalogAction } from '@kreaton/shared-commerce-cart';
 import { limitPremiumHeadline, premiumSectionImage, PREMIUM_IMAGE_ROLES } from './premium-product-policy.js';
 import { resolveColorValue } from './color-value-policy.js';
+import { renderComposedSection } from '../../composed-sections.js';
 import {
   inlineEditCatalogPath,
   inlineEditConfig,
@@ -239,6 +240,7 @@ function renderStudioFloatingCatalog(schema, context = {}) {
 }
 
 function renderSection(section, schema) {
+  if (section.type === "composed") return renderComposedSection(section);
   if (supportsExpandedInlineEditing(schema) && /FAQ$/i.test(section.type || "")) {
     return renderFunnelFAQ(section, schema);
   }

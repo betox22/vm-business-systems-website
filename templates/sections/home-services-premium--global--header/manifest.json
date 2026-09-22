@@ -1,0 +1,13 @@
+{
+  "id": "home-services-premium--global--header",
+  "section_type": "header",
+  "source_template": "Local Services Premium",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "home-services-premium--global--header/section.html",
+  "css_partial": "home-services-premium--global--header/section.css"
+}

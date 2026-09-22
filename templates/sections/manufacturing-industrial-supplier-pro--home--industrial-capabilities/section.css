@@ -1,0 +1,48 @@
+* { box-sizing: border-box; }
+
+h1, h2, p { margin-top: 0px; }
+
+.rendered-site { position: relative; width: min(100%, 1260px); --brand-primary: #0e7c66; --brand-secondary: #e3f3ee; --brand-accent: #14b8a6; --brand-background: #f8faf9; --brand-surface: #ffffff; --brand-text: #111827; --brand-muted: #667085; --brand-border: #d9e2df; --brand-button: var(--brand-primary); --brand-button-text: #ffffff; --brand-radius: 8px; --brand-shadow: 0 18px 48px rgba(16, 24, 40, 0.1); --site-bg: var(--brand-background); --site-surface: var(--brand-surface); --site-primary: var(--brand-primary); --site-secondary: var(--brand-secondary); --site-accent: var(--brand-accent); --site-text: var(--brand-text); --site-muted: var(--brand-muted); --site-border: var(--brand-border); background: var(--site-bg); color: var(--site-text); font-family: var(--site-body), Inter, sans-serif; min-height: 100%; box-shadow: rgba(31, 41, 55, 0.2) 0px 32px 95px; overflow: visible; }
+
+.rendered-site, .rendered-site * { box-sizing: border-box; }
+
+.rendered-site h1, .rendered-site h2, .rendered-site h3, .rendered-site p, .rendered-site strong, .rendered-site span { max-width: 100%; overflow-wrap: break-word; }
+
+[data-studio-section] { position: relative; outline: transparent solid 0px; transition: outline-color 160ms, box-shadow 160ms; }
+
+[data-studio-section]::before { content: attr(data-studio-section-type); position: absolute; top: 10px; left: 10px; z-index: 12; display: none; border-radius: 6px; background: rgb(37, 99, 235); color: rgb(255, 255, 255); padding: 5px 8px; font-size: 11px; font-weight: 950; }
+
+[data-studio-section]:hover, [data-studio-section].is-selected { outline: rgb(37, 99, 235) solid 3px; outline-offset: -3px; box-shadow: rgba(37, 99, 235, 0.25) 0px 0px 0px 1px inset; cursor: pointer; }
+
+[data-studio-section]:hover::before, [data-studio-section].is-selected::before { display: inline-flex; }
+
+.spacing-balanced { padding-block: 74px; }
+
+.rendered-kicker { display: inline-flex; margin-bottom: 14px; color: var(--site-primary); font-size: 12px; font-weight: 950; letter-spacing: 0px; text-transform: uppercase; }
+
+.template-manufacturing-industrial-supplier-pro, .layout-manufacturing-industrial-supplier-pro { background: rgb(244, 241, 232); color: rgb(17, 24, 39); }
+
+.industrial-hero-copy p, .industrial-capabilities-section p, .industrial-certifications-section p, .industrial-supply-section p, .industrial-quote-section p, .industrial-card-body p { color: rgb(75, 85, 99); line-height: 1.65; }
+
+.industrial-hero .rendered-kicker, .industrial-catalog-section .rendered-kicker, .industrial-capabilities-section .rendered-kicker, .industrial-certifications-section .rendered-kicker, .industrial-supply-section .rendered-kicker, .industrial-quote-section .rendered-kicker { color: rgb(138, 93, 0); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.industrial-catalog-section, .industrial-capabilities-section, .industrial-certifications-section, .industrial-supply-section, .industrial-quote-section { padding: clamp(54px, 8vw, 104px) clamp(22px, 6vw, 86px); }
+
+.industrial-capabilities-section, .industrial-certifications-section { display: grid; grid-template-columns: minmax(0px, 0.88fr) minmax(0px, 1.12fr); gap: clamp(26px, 5vw, 64px); align-items: start; background: rgb(255, 255, 255); }
+
+.industrial-capability-board, .industrial-doc-stack { display: grid; grid-template-columns: repeat(2, minmax(0px, 1fr)); gap: 0px; border: 1px solid rgba(17, 24, 39, 0.12); border-radius: 14px; overflow: hidden; background: rgb(255, 255, 255); }
+
+.industrial-capability-board div, .industrial-doc-stack article { display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: center; min-height: 92px; border-right: 1px solid rgba(17, 24, 39, 0.1); border-bottom: 1px solid rgba(17, 24, 39, 0.1); padding: 18px; }
+
+.industrial-capability-board b, .industrial-doc-stack b { display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: 8px; background: rgb(17, 24, 39); color: rgb(245, 179, 1); font-size: 0.8rem; }
+
+.industrial-capability-board strong, .industrial-doc-stack span { color: rgb(17, 24, 39); font-weight: 950; }
+
+.industrial-capability-board span, .industrial-doc-stack small { color: rgb(107, 114, 128); font-weight: 900; }
+
+@media (max-width: 760px) {
+.catalog-marketplace, .marketplace-subscribe, .listing-card, .catalog-lookbook, .marketplace-deal-hero, .marketplace-trust-strip, .marketplace-trust-strip > div:last-child, .home-service-hero, .home-service-areas, .home-service-trust, .home-service-quote, .booking-hero, .booking-availability-section, .booking-team-section, .booking-contact-section, .restaurant-hero, .restaurant-specials-section, .restaurant-info-section, .digital-hero, .digital-modules-section, .digital-proof-section, .professional-hero, .professional-process-section, .professional-proof-section, .professional-team-section, .professional-consultation-section, .enterprise-hero, .enterprise-use-cases-section, .enterprise-integrations-section, .enterprise-proof-section, .enterprise-demo-section, .industrial-hero, .industrial-dashboard-body, .industrial-capabilities-section, .industrial-certifications-section, .industrial-quote-card, .listing-pro-hero, .listing-filter-section, .listing-area-section, .listing-trust-section, .funnel-hero, .funnel-offer-section, .funnel-proof-section, .funnel-faq-section { grid-template-columns: 1fr; }
+.industrial-spec-table div, .industrial-catalog-header, .industrial-catalog-stats, .industrial-table-head, .catalog-industrial-supplier article, .catalog-industrial-supplier, .industrial-card-body dl, .industrial-capability-board, .industrial-doc-stack, .industrial-rfq-fields { grid-template-columns: 1fr; }
+.industrial-capability-board div, .industrial-doc-stack article { grid-template-columns: 46px 1fr; }
+.industrial-catalog-section, .industrial-capabilities-section, .industrial-certifications-section, .industrial-supply-section, .industrial-quote-section { padding: 44px 16px; }
+}

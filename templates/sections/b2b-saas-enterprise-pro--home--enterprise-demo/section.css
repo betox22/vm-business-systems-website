@@ -1,0 +1,42 @@
+* { box-sizing: border-box; }
+
+button, input, textarea { font: inherit; }
+
+button { cursor: pointer; }
+
+h1, h2, p { margin-top: 0px; }
+
+.rendered-site { position: relative; width: min(100%, 1260px); --brand-primary: #0e7c66; --brand-secondary: #e3f3ee; --brand-accent: #14b8a6; --brand-background: #f8faf9; --brand-surface: #ffffff; --brand-text: #111827; --brand-muted: #667085; --brand-border: #d9e2df; --brand-button: var(--brand-primary); --brand-button-text: #ffffff; --brand-radius: 8px; --brand-shadow: 0 18px 48px rgba(16, 24, 40, 0.1); --site-bg: var(--brand-background); --site-surface: var(--brand-surface); --site-primary: var(--brand-primary); --site-secondary: var(--brand-secondary); --site-accent: var(--brand-accent); --site-text: var(--brand-text); --site-muted: var(--brand-muted); --site-border: var(--brand-border); background: var(--site-bg); color: var(--site-text); font-family: var(--site-body), Inter, sans-serif; min-height: 100%; box-shadow: rgba(31, 41, 55, 0.2) 0px 32px 95px; overflow: visible; }
+
+.rendered-site, .rendered-site * { box-sizing: border-box; }
+
+.rendered-site h1, .rendered-site h2, .rendered-site h3, .rendered-site p, .rendered-site strong, .rendered-site span { max-width: 100%; overflow-wrap: break-word; }
+
+[data-studio-section] { position: relative; outline: transparent solid 0px; transition: outline-color 160ms, box-shadow 160ms; }
+
+[data-studio-section]::before { content: attr(data-studio-section-type); position: absolute; top: 10px; left: 10px; z-index: 12; display: none; border-radius: 6px; background: rgb(37, 99, 235); color: rgb(255, 255, 255); padding: 5px 8px; font-size: 11px; font-weight: 950; }
+
+[data-studio-section]:hover, [data-studio-section].is-selected { outline: rgb(37, 99, 235) solid 3px; outline-offset: -3px; box-shadow: rgba(37, 99, 235, 0.25) 0px 0px 0px 1px inset; cursor: pointer; }
+
+[data-studio-section]:hover::before, [data-studio-section].is-selected::before { display: inline-flex; }
+
+.rendered-button { display: inline-flex; margin-top: 14px; border-radius: var(--brand-radius); background: var(--brand-button); color: var(--brand-button-text); text-decoration: none; padding: 13px 16px; font-weight: 900; }
+
+.rendered-kicker { display: inline-flex; margin-bottom: 14px; color: var(--site-primary); font-size: 12px; font-weight: 950; letter-spacing: 0px; text-transform: uppercase; }
+
+.template-b2b-saas-enterprise-pro, .layout-b2b-saas-enterprise-pro { background: rgb(245, 247, 251); color: rgb(15, 23, 42); }
+
+.enterprise-hero-copy p, .enterprise-use-cases-section p, .enterprise-integrations-section p, .enterprise-proof-section p, .enterprise-pricing-section p, .enterprise-demo-section p, .b2b-card-body p, .b2b-card-body li { color: rgb(71, 85, 105); line-height: 1.7; }
+
+.enterprise-hero-copy .rendered-kicker, .enterprise-solutions-section .rendered-kicker, .enterprise-use-cases-section .rendered-kicker, .enterprise-integrations-section .rendered-kicker, .enterprise-proof-section .rendered-kicker, .enterprise-pricing-section .rendered-kicker, .enterprise-demo-section .rendered-kicker { color: rgb(37, 99, 235); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.enterprise-demo-section { display: grid; grid-template-columns: minmax(0px, 1fr) auto; gap: 24px; align-items: center; margin: clamp(44px, 6vw, 76px) clamp(22px, 6vw, 86px); padding: clamp(30px, 5vw, 64px); border-radius: 28px; background: radial-gradient(circle at 85% 15%, rgba(56, 189, 248, 0.26), transparent 34%), linear-gradient(135deg, rgb(15, 23, 42), rgb(29, 78, 216)); color: rgb(239, 246, 255); }
+
+.enterprise-demo-section h2, .enterprise-demo-section p { color: rgb(239, 246, 255); }
+
+@media (max-width: 760px) {
+.catalog-marketplace, .marketplace-subscribe, .listing-card, .catalog-lookbook, .marketplace-deal-hero, .marketplace-trust-strip, .marketplace-trust-strip > div:last-child, .home-service-hero, .home-service-areas, .home-service-trust, .home-service-quote, .booking-hero, .booking-availability-section, .booking-team-section, .booking-contact-section, .restaurant-hero, .restaurant-specials-section, .restaurant-info-section, .digital-hero, .digital-modules-section, .digital-proof-section, .professional-hero, .professional-process-section, .professional-proof-section, .professional-team-section, .professional-consultation-section, .enterprise-hero, .enterprise-use-cases-section, .enterprise-integrations-section, .enterprise-proof-section, .enterprise-demo-section, .industrial-hero, .industrial-dashboard-body, .industrial-capabilities-section, .industrial-certifications-section, .industrial-quote-card, .listing-pro-hero, .listing-filter-section, .listing-area-section, .listing-trust-section, .funnel-hero, .funnel-offer-section, .funnel-proof-section, .funnel-faq-section { grid-template-columns: 1fr; }
+.enterprise-demo-section { margin: 28px 16px 56px; padding: 28px 18px; }
+}
+
+.template-b2b-saas-enterprise-pro { min-height: 100%; overflow-x: hidden; background: rgb(255, 255, 255); color: var(--site-text); }

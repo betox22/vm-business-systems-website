@@ -1,0 +1,77 @@
+* { box-sizing: border-box; }
+
+h1, h2, p { margin-top: 0px; }
+
+h1 { margin-bottom: 4px; font-size: 22px; }
+
+.rendered-site { position: relative; width: min(100%, 1260px); --brand-primary: #0e7c66; --brand-secondary: #e3f3ee; --brand-accent: #14b8a6; --brand-background: #f8faf9; --brand-surface: #ffffff; --brand-text: #111827; --brand-muted: #667085; --brand-border: #d9e2df; --brand-button: var(--brand-primary); --brand-button-text: #ffffff; --brand-radius: 8px; --brand-shadow: 0 18px 48px rgba(16, 24, 40, 0.1); --site-bg: var(--brand-background); --site-surface: var(--brand-surface); --site-primary: var(--brand-primary); --site-secondary: var(--brand-secondary); --site-accent: var(--brand-accent); --site-text: var(--brand-text); --site-muted: var(--brand-muted); --site-border: var(--brand-border); background: var(--site-bg); color: var(--site-text); font-family: var(--site-body), Inter, sans-serif; min-height: 100%; box-shadow: rgba(31, 41, 55, 0.2) 0px 32px 95px; overflow: visible; }
+
+.rendered-site, .rendered-site * { box-sizing: border-box; }
+
+.rendered-site h1, .rendered-site h2, .rendered-site h3, .rendered-site p, .rendered-site strong, .rendered-site span { max-width: 100%; overflow-wrap: break-word; }
+
+.rendered-site img { max-width: 100%; }
+
+[data-studio-section] { position: relative; outline: transparent solid 0px; transition: outline-color 160ms, box-shadow 160ms; }
+
+[data-studio-section]::before { content: attr(data-studio-section-type); position: absolute; top: 10px; left: 10px; z-index: 12; display: none; border-radius: 6px; background: rgb(37, 99, 235); color: rgb(255, 255, 255); padding: 5px 8px; font-size: 11px; font-weight: 950; }
+
+[data-studio-section]:hover, [data-studio-section].is-selected { outline: rgb(37, 99, 235) solid 3px; outline-offset: -3px; box-shadow: rgba(37, 99, 235, 0.25) 0px 0px 0px 1px inset; cursor: pointer; }
+
+[data-studio-section]:hover::before, [data-studio-section].is-selected::before { display: inline-flex; }
+
+.spacing-spacious { padding-block: 108px; }
+
+.rendered-button { display: inline-flex; margin-top: 14px; border-radius: var(--brand-radius); background: var(--brand-button); color: var(--brand-button-text); text-decoration: none; padding: 13px 16px; font-weight: 900; }
+
+.rendered-button.secondary { background: transparent; color: var(--site-text); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--site-text) 18%, transparent); }
+
+.rendered-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.rendered-kicker { display: inline-flex; margin-bottom: 14px; color: var(--site-primary); font-size: 12px; font-weight: 950; letter-spacing: 0px; text-transform: uppercase; }
+
+.template-manufacturing-industrial-supplier-pro, .layout-manufacturing-industrial-supplier-pro { background: rgb(244, 241, 232); color: rgb(17, 24, 39); }
+
+.industrial-hero { position: relative; display: grid; grid-template-columns: minmax(0px, 0.92fr) minmax(390px, 1.08fr); gap: clamp(30px, 5vw, 76px); align-items: center; min-height: 780px; padding: clamp(58px, 8vw, 112px) clamp(22px, 6vw, 86px); background: linear-gradient(90deg, rgba(17, 24, 39, 0.05) 1px, transparent 1px) 0% 0% / 34px 34px, linear-gradient(rgba(17, 24, 39, 0.05) 1px, transparent 1px) 0% 0% / 34px 34px, radial-gradient(circle at 82% 18%, rgba(245, 179, 1, 0.22), transparent 34%) 0% 0% / auto, linear-gradient(135deg, rgb(244, 241, 232) 0%, rgb(231, 225, 212) 100%) 0% 0% / auto; overflow: hidden; }
+
+.industrial-hero-copy h1 { margin: 14px 0px 20px; max-width: 850px; color: rgb(17, 24, 39); font-size: clamp(48px, 6.8vw, 92px); line-height: 0.94; text-transform: uppercase; }
+
+.industrial-hero-copy p, .industrial-capabilities-section p, .industrial-certifications-section p, .industrial-supply-section p, .industrial-quote-section p, .industrial-card-body p { color: rgb(75, 85, 99); line-height: 1.65; }
+
+.industrial-hero .rendered-kicker, .industrial-catalog-section .rendered-kicker, .industrial-capabilities-section .rendered-kicker, .industrial-certifications-section .rendered-kicker, .industrial-supply-section .rendered-kicker, .industrial-quote-section .rendered-kicker { color: rgb(138, 93, 0); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.industrial-proof-strip { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+
+.industrial-proof-strip span, .industrial-catalog-stats span, .industrial-rfq-fields span { border: 1px solid rgba(17, 24, 39, 0.12); border-radius: 8px; padding: 11px 12px; background: rgba(255, 255, 255, 0.7); color: rgb(17, 24, 39); font-weight: 900; }
+
+.industrial-rfq-dashboard, .catalog-industrial-supplier, .industrial-quote-card { border: 1px solid rgba(17, 24, 39, 0.14); background: rgba(255, 255, 255, 0.92); box-shadow: rgba(17, 24, 39, 0.14) 0px 28px 80px; }
+
+.industrial-rfq-dashboard { border-radius: 18px; padding: 14px; }
+
+.industrial-dashboard-top { display: flex; align-items: center; gap: 8px; padding: 4px 4px 14px; }
+
+.industrial-dashboard-top span { width: 10px; height: 10px; border-radius: 999px; background: rgb(245, 179, 1); }
+
+.industrial-dashboard-top b { margin-left: auto; color: rgb(138, 93, 0); text-transform: uppercase; letter-spacing: 0.06em; }
+
+.industrial-dashboard-body { display: grid; grid-template-columns: minmax(0px, 0.95fr) minmax(0px, 1.05fr); gap: 14px; }
+
+.industrial-product-visual, .industrial-visual-placeholder { min-height: 420px; border-radius: 12px; overflow: hidden; background: radial-gradient(circle at 76% 22%, rgba(245, 179, 1, 0.28), transparent 32%), linear-gradient(145deg, rgb(17, 24, 39), rgb(55, 65, 81)); color: rgb(248, 250, 252); }
+
+.industrial-product-visual img, .industrial-card-visual img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.industrial-spec-table { display: grid; gap: 10px; }
+
+.industrial-spec-table div { display: grid; grid-template-columns: 82px 1fr auto; gap: 10px; align-items: center; min-height: 78px; border: 1px solid rgba(17, 24, 39, 0.12); border-radius: 10px; padding: 12px; background: rgb(17, 24, 39); color: rgb(248, 250, 252); }
+
+.industrial-spec-table b { color: rgb(245, 179, 1); }
+
+.industrial-spec-table small { color: rgb(209, 213, 219); font-weight: 800; }
+
+@media (max-width: 760px) {
+.catalog-marketplace, .marketplace-subscribe, .listing-card, .catalog-lookbook, .marketplace-deal-hero, .marketplace-trust-strip, .marketplace-trust-strip > div:last-child, .home-service-hero, .home-service-areas, .home-service-trust, .home-service-quote, .booking-hero, .booking-availability-section, .booking-team-section, .booking-contact-section, .restaurant-hero, .restaurant-specials-section, .restaurant-info-section, .digital-hero, .digital-modules-section, .digital-proof-section, .professional-hero, .professional-process-section, .professional-proof-section, .professional-team-section, .professional-consultation-section, .enterprise-hero, .enterprise-use-cases-section, .enterprise-integrations-section, .enterprise-proof-section, .enterprise-demo-section, .industrial-hero, .industrial-dashboard-body, .industrial-capabilities-section, .industrial-certifications-section, .industrial-quote-card, .listing-pro-hero, .listing-filter-section, .listing-area-section, .listing-trust-section, .funnel-hero, .funnel-offer-section, .funnel-proof-section, .funnel-faq-section { grid-template-columns: 1fr; }
+.industrial-hero { min-height: auto; padding: 44px 16px 28px; }
+.industrial-hero h1 { font-size: clamp(40px, 13vw, 64px); }
+.industrial-product-visual, .industrial-visual-placeholder { min-height: 300px; }
+.industrial-spec-table div, .industrial-catalog-header, .industrial-catalog-stats, .industrial-table-head, .catalog-industrial-supplier article, .catalog-industrial-supplier, .industrial-card-body dl, .industrial-capability-board, .industrial-doc-stack, .industrial-rfq-fields { grid-template-columns: 1fr; }
+}

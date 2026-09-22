@@ -1,0 +1,16 @@
+{
+  "id": "b2b-saas-enterprise-pro--about--use-cases",
+  "section_type": "feature",
+  "source_template": "B2B SaaS / Enterprise",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "b2b-saas-enterprise-pro--about--use-cases/section.html",
+  "css_partial": "b2b-saas-enterprise-pro--about--use-cases/section.css"
+}

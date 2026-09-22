@@ -1,0 +1,15 @@
+{
+  "id": "digital-products-store--global--footer",
+  "section_type": "footer",
+  "source_template": "Digital Products",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "footer_text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "digital-products-store--global--footer/section.html",
+  "css_partial": "digital-products-store--global--footer/section.css"
+}

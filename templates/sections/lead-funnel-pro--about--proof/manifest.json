@@ -1,0 +1,16 @@
+{
+  "id": "lead-funnel-pro--about--proof",
+  "section_type": "about",
+  "source_template": "Lead Funnel",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "lead-funnel-pro--about--proof/section.html",
+  "css_partial": "lead-funnel-pro--about--proof/section.css"
+}

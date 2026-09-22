@@ -1,0 +1,38 @@
+* { box-sizing: border-box; }
+
+h1, h2, p { margin-top: 0px; }
+
+.rendered-site { position: relative; width: min(100%, 1260px); --brand-primary: #0e7c66; --brand-secondary: #e3f3ee; --brand-accent: #14b8a6; --brand-background: #f8faf9; --brand-surface: #ffffff; --brand-text: #111827; --brand-muted: #667085; --brand-border: #d9e2df; --brand-button: var(--brand-primary); --brand-button-text: #ffffff; --brand-radius: 8px; --brand-shadow: 0 18px 48px rgba(16, 24, 40, 0.1); --site-bg: var(--brand-background); --site-surface: var(--brand-surface); --site-primary: var(--brand-primary); --site-secondary: var(--brand-secondary); --site-accent: var(--brand-accent); --site-text: var(--brand-text); --site-muted: var(--brand-muted); --site-border: var(--brand-border); background: var(--site-bg); color: var(--site-text); font-family: var(--site-body), Inter, sans-serif; min-height: 100%; box-shadow: rgba(31, 41, 55, 0.2) 0px 32px 95px; overflow: visible; }
+
+.rendered-site, .rendered-site * { box-sizing: border-box; }
+
+.rendered-site h1, .rendered-site h2, .rendered-site h3, .rendered-site p, .rendered-site strong, .rendered-site span { max-width: 100%; overflow-wrap: break-word; }
+
+[data-studio-section] { position: relative; outline: transparent solid 0px; transition: outline-color 160ms, box-shadow 160ms; }
+
+[data-studio-section]::before { content: attr(data-studio-section-type); position: absolute; top: 10px; left: 10px; z-index: 12; display: none; border-radius: 6px; background: rgb(37, 99, 235); color: rgb(255, 255, 255); padding: 5px 8px; font-size: 11px; font-weight: 950; }
+
+[data-studio-section]:hover, [data-studio-section].is-selected { outline: rgb(37, 99, 235) solid 3px; outline-offset: -3px; box-shadow: rgba(37, 99, 235, 0.25) 0px 0px 0px 1px inset; cursor: pointer; }
+
+[data-studio-section]:hover::before, [data-studio-section].is-selected::before { display: inline-flex; }
+
+.spacing-spacious { padding-block: 108px; }
+
+.rendered-button { display: inline-flex; margin-top: 14px; border-radius: var(--brand-radius); background: var(--brand-button); color: var(--brand-button-text); text-decoration: none; padding: 13px 16px; font-weight: 900; }
+
+.rendered-kicker { display: inline-flex; margin-bottom: 14px; color: var(--site-primary); font-size: 12px; font-weight: 950; letter-spacing: 0px; text-transform: uppercase; }
+
+.template-legal-professional-services-pro, .layout-legal-professional-services-pro { background: rgb(247, 243, 236); color: rgb(17, 24, 39); }
+
+.professional-hero-copy p, .professional-process-section p, .professional-proof-section p, .professional-team-section p, .professional-consultation-section p, .professional-card-body p, .professional-card-body li, .professional-faq-list p { color: rgb(95, 102, 115); line-height: 1.7; }
+
+.professional-hero-copy .rendered-kicker, .professional-services-section .rendered-kicker, .professional-process-section .rendered-kicker, .professional-proof-section .rendered-kicker, .professional-team-section .rendered-kicker, .professional-faq-section .rendered-kicker, .professional-consultation-section .rendered-kicker { color: rgb(154, 106, 47); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.professional-consultation-section { --inline-edit-radius: 24px; --inline-edit-background: color-mix(in srgb, #ffffff 10%, transparent); display: grid; grid-template-columns: minmax(0px, 1fr) auto; gap: 24px; align-items: center; margin: clamp(44px, 6vw, 76px) clamp(22px, 6vw, 86px); padding: clamp(30px, 5vw, 64px); border-radius: 24px; background: radial-gradient(circle at 85% 15%, rgba(184, 132, 60, 0.22), transparent 34%), linear-gradient(135deg, rgb(17, 24, 39), rgb(59, 47, 36)); color: rgb(255, 247, 237); }
+
+.professional-consultation-section h2, .professional-consultation-section p { color: rgb(255, 247, 237); }
+
+@media (max-width: 760px) {
+.catalog-marketplace, .marketplace-subscribe, .listing-card, .catalog-lookbook, .marketplace-deal-hero, .marketplace-trust-strip, .marketplace-trust-strip > div:last-child, .home-service-hero, .home-service-areas, .home-service-trust, .home-service-quote, .booking-hero, .booking-availability-section, .booking-team-section, .booking-contact-section, .restaurant-hero, .restaurant-specials-section, .restaurant-info-section, .digital-hero, .digital-modules-section, .digital-proof-section, .professional-hero, .professional-process-section, .professional-proof-section, .professional-team-section, .professional-consultation-section, .enterprise-hero, .enterprise-use-cases-section, .enterprise-integrations-section, .enterprise-proof-section, .enterprise-demo-section, .industrial-hero, .industrial-dashboard-body, .industrial-capabilities-section, .industrial-certifications-section, .industrial-quote-card, .listing-pro-hero, .listing-filter-section, .listing-area-section, .listing-trust-section, .funnel-hero, .funnel-offer-section, .funnel-proof-section, .funnel-faq-section { grid-template-columns: 1fr; }
+.professional-consultation-section { margin: 28px 16px 56px; padding: 28px 18px; }
+}

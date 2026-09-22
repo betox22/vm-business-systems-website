@@ -1,0 +1,26 @@
+{
+  "id": "manufacturing-industrial-supplier-pro--home--industrial-hero",
+  "section_type": "hero",
+  "source_template": "Industrial Supplier",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "headline",
+    "subtitle",
+    "primary_button",
+    "secondary_button",
+    "badge"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "hero_candidate",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "manufacturing-industrial-supplier-pro--home--industrial-hero/section.html",
+  "css_partial": "manufacturing-industrial-supplier-pro--home--industrial-hero/section.css"
+}

@@ -1,0 +1,53 @@
+* { box-sizing: border-box; }
+
+h1, h2, p { margin-top: 0px; }
+
+.rendered-site { position: relative; width: min(100%, 1260px); --brand-primary: #0e7c66; --brand-secondary: #e3f3ee; --brand-accent: #14b8a6; --brand-background: #f8faf9; --brand-surface: #ffffff; --brand-text: #111827; --brand-muted: #667085; --brand-border: #d9e2df; --brand-button: var(--brand-primary); --brand-button-text: #ffffff; --brand-radius: 8px; --brand-shadow: 0 18px 48px rgba(16, 24, 40, 0.1); --site-bg: var(--brand-background); --site-surface: var(--brand-surface); --site-primary: var(--brand-primary); --site-secondary: var(--brand-secondary); --site-accent: var(--brand-accent); --site-text: var(--brand-text); --site-muted: var(--brand-muted); --site-border: var(--brand-border); background: var(--site-bg); color: var(--site-text); font-family: var(--site-body), Inter, sans-serif; min-height: 100%; box-shadow: rgba(31, 41, 55, 0.2) 0px 32px 95px; overflow: visible; }
+
+.rendered-site, .rendered-site * { box-sizing: border-box; }
+
+.rendered-site h1, .rendered-site h2, .rendered-site h3, .rendered-site p, .rendered-site strong, .rendered-site span { max-width: 100%; overflow-wrap: break-word; }
+
+[data-studio-section] { position: relative; outline: transparent solid 0px; transition: outline-color 160ms, box-shadow 160ms; }
+
+[data-studio-section]::before { content: attr(data-studio-section-type); position: absolute; top: 10px; left: 10px; z-index: 12; display: none; border-radius: 6px; background: rgb(37, 99, 235); color: rgb(255, 255, 255); padding: 5px 8px; font-size: 11px; font-weight: 950; }
+
+[data-studio-section]:hover, [data-studio-section].is-selected { outline: rgb(37, 99, 235) solid 3px; outline-offset: -3px; box-shadow: rgba(37, 99, 235, 0.25) 0px 0px 0px 1px inset; cursor: pointer; }
+
+[data-studio-section]:hover::before, [data-studio-section].is-selected::before { display: inline-flex; }
+
+.template-home-services-premium, .layout-home-services-premium { background: radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--site-accent) 20%, transparent), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, var(--site-primary) 7%, var(--site-bg)) 0%, var(--site-bg) 42%, color-mix(in srgb, var(--site-accent) 7%, var(--site-bg)) 100%); }
+
+.home-service-categories, .home-service-gallery { padding: clamp(52px, 7vw, 98px) clamp(18px, 6vw, 92px); }
+
+.catalog-home-services { display: grid; grid-template-columns: repeat(3, minmax(0px, 1fr)); gap: 14px; }
+
+.catalog-home-services article { min-height: 310px; display: grid; align-content: space-between; gap: 16px; padding: 24px; border: 1px solid color-mix(in srgb, var(--site-text) 10%, transparent); border-radius: var(--brand-radius); background: var(--site-surface); box-shadow: 0 18px 54px color-mix(in srgb, var(--site-text) 7%, transparent); }
+
+.catalog-home-services small, .home-service-work-grid small { color: var(--site-accent); font-size: 11px; font-weight: 950; letter-spacing: 0.12em; text-transform: uppercase; }
+
+.catalog-home-services h3 { margin: 0px; font-family: var(--site-heading), Inter, sans-serif; font-size: var(--type-h3-size, clamp(24px, 2.5vw, 38px)); line-height: var(--type-h3-line-height, 1); letter-spacing: var(--type-h3-tracking, 0em); font-weight: var(--type-h3-weight, 600); }
+
+.catalog-home-services p { margin: 0px; color: var(--site-muted); line-height: 1.5; }
+
+.catalog-home-services article > div { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.catalog-home-services article > div span { padding: 7px 9px; border-radius: 999px; background: color-mix(in srgb, var(--site-accent) 14%, var(--site-surface)); color: var(--site-primary); font-size: 12px; font-weight: 850; }
+
+.spacing-balanced { padding-block: 74px; }
+
+.rendered-button { display: inline-flex; margin-top: 14px; border-radius: var(--brand-radius); background: var(--brand-button); color: var(--brand-button-text); text-decoration: none; padding: 13px 16px; font-weight: 900; }
+
+.rendered-kicker { display: inline-flex; margin-bottom: 14px; color: var(--site-primary); font-size: 12px; font-weight: 950; letter-spacing: 0px; text-transform: uppercase; }
+
+.section-heading { max-width: 760px; margin-bottom: 28px; }
+
+.section-heading h2, .contact-panel h2 { margin: 0px 0px 10px; font-size: clamp(30px, 4vw, 54px); line-height: 1.04; }
+
+.section-heading p { max-width: 640px; }
+
+@media (max-width: 760px) {
+.home-service-proof, .catalog-home-services, .home-service-area-map, .home-service-work-grid { grid-template-columns: 1fr; }
+.home-service-categories, .home-service-areas, .home-service-gallery, .home-service-trust { padding: 44px 16px; }
+}

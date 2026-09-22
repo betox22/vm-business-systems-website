@@ -1,0 +1,15 @@
+{
+  "id": "home-services-premium--global--footer",
+  "section_type": "footer",
+  "source_template": "Local Services Premium",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "footer_text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "home-services-premium--global--footer/section.html",
+  "css_partial": "home-services-premium--global--footer/section.css"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "digital-products-store--about--digital-proof-page",
+  "section_type": "about",
+  "source_template": "Digital Products",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "digital-products-store--about--digital-proof-page/section.html",
+  "css_partial": "digital-products-store--about--digital-proof-page/section.css"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "restaurant-food-business--about--restaurant-info-page",
+  "section_type": "feature",
+  "source_template": "Restaurant Menu",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "restaurant-food-business--about--restaurant-info-page/section.html",
+  "css_partial": "restaurant-food-business--about--restaurant-info-page/section.css"
+}

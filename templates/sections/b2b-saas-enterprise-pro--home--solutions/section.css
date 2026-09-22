@@ -1,0 +1,60 @@
+* { box-sizing: border-box; }
+
+h1, h2, p { margin-top: 0px; }
+
+.rendered-site { position: relative; width: min(100%, 1260px); --brand-primary: #0e7c66; --brand-secondary: #e3f3ee; --brand-accent: #14b8a6; --brand-background: #f8faf9; --brand-surface: #ffffff; --brand-text: #111827; --brand-muted: #667085; --brand-border: #d9e2df; --brand-button: var(--brand-primary); --brand-button-text: #ffffff; --brand-radius: 8px; --brand-shadow: 0 18px 48px rgba(16, 24, 40, 0.1); --site-bg: var(--brand-background); --site-surface: var(--brand-surface); --site-primary: var(--brand-primary); --site-secondary: var(--brand-secondary); --site-accent: var(--brand-accent); --site-text: var(--brand-text); --site-muted: var(--brand-muted); --site-border: var(--brand-border); background: var(--site-bg); color: var(--site-text); font-family: var(--site-body), Inter, sans-serif; min-height: 100%; box-shadow: rgba(31, 41, 55, 0.2) 0px 32px 95px; overflow: visible; }
+
+.rendered-site, .rendered-site * { box-sizing: border-box; }
+
+.rendered-site h1, .rendered-site h2, .rendered-site h3, .rendered-site p, .rendered-site strong, .rendered-site span { max-width: 100%; overflow-wrap: break-word; }
+
+.premium-feature-grid article::after, .template-b2b-saas-enterprise-pro .b2b-saas-features article::after { position: absolute; right: 24px; bottom: 20px; content: "↗"; color: color-mix(in srgb, var(--site-primary) 46%, var(--site-text)); font-size: 21px; line-height: 1; transition: color 200ms, transform 200ms; }
+
+@media (hover: hover) {
+.premium-feature-grid article:hover, .template-b2b-saas-enterprise-pro .b2b-saas-features article:hover { transform: translateY(-6px); border-color: color-mix(in srgb, var(--site-primary) 36%, var(--site-surface)); box-shadow: 0 30px 64px -30px color-mix(in srgb, var(--site-primary) 34%, transparent); }
+.premium-feature-grid article:hover::after, .template-b2b-saas-enterprise-pro .b2b-saas-features article:hover::after { color: var(--site-primary); transform: translate(3px, -3px); }
+}
+
+.template-b2b-saas-enterprise-pro, .layout-b2b-saas-enterprise-pro { background: rgb(245, 247, 251); color: rgb(15, 23, 42); }
+
+.template-b2b-saas-enterprise-pro { min-height: 100%; overflow-x: hidden; background: rgb(255, 255, 255); color: var(--site-text); }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-eyebrow, .template-b2b-saas-enterprise-pro .b2b-saas-section-heading > span { display: inline-flex; align-items: center; width: fit-content; margin-bottom: 20px; border-radius: 999px; padding: 8px 15px; background: color-mix(in srgb, var(--site-primary) 10%, #fff); color: var(--site-primary); font-size: 12px; font-weight: 700; }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-dashboard svg, .template-b2b-saas-enterprise-pro .b2b-saas-features svg { flex: 0 0 auto; width: 18px; height: 18px; }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features, .template-b2b-saas-enterprise-pro .b2b-saas-pricing { padding: 72px max(24px, 50% - 540px); }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-section-heading { max-width: 660px; margin: 0px auto 38px; text-align: center; }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-section-heading > span { margin-inline: auto; margin-bottom: 14px; }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-section-heading h2 { margin: 0px; color: var(--site-text); font-size: clamp(34px, 4vw, 50px); line-height: 1.08; letter-spacing: 0px; }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features > div:last-child { display: grid; grid-template-columns: repeat(3, minmax(0px, 1fr)); gap: 22px; }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features article { --inline-edit-radius: 28px; position: relative; min-width: 0px; min-height: 246px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--site-primary) 12%, #fff); border-radius: var(--inline-edit-radius); padding: 30px; background: linear-gradient(160deg, #fff 18%, color-mix(in srgb, var(--site-primary) 5%, #fff) 100%); box-shadow: rgba(15, 23, 42, 0.52) 0px 18px 46px -30px; transition: transform 200ms, border-color 200ms, box-shadow 200ms; }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features article:nth-child(2) { background: linear-gradient(160deg, #fff 18%, color-mix(in srgb, var(--site-secondary) 7%, #fff) 100%); }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features article:nth-child(3) { background: linear-gradient(160deg, #fff 18%, color-mix(in srgb, var(--site-accent) 7%, #fff) 100%); }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features article > span { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 26px; border-radius: 15px; background: color-mix(in srgb, var(--site-primary) 11%, #fff); color: var(--site-primary); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--site-primary) 16%, transparent); }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features article:nth-child(2) > span { background: color-mix(in srgb, var(--site-secondary) 12%, #fff); color: color-mix(in srgb, var(--site-secondary) 72%, var(--site-text)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--site-secondary) 18%, transparent); }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features article:nth-child(3) > span { background: color-mix(in srgb, var(--site-accent) 12%, #fff); color: color-mix(in srgb, var(--site-accent) 76%, var(--site-text)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--site-accent) 18%, transparent); }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features h3, .template-b2b-saas-enterprise-pro .b2b-saas-plans h3 { margin: 0px 0px 10px; color: var(--site-text); font-size: 20px; line-height: 1.22; }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features p, .template-b2b-saas-enterprise-pro .b2b-saas-plans p { margin: 0px; color: color-mix(in srgb, var(--site-text) 62%, transparent); font-size: 14px; line-height: 1.62; }
+
+.template-b2b-saas-enterprise-pro .b2b-saas-features article h3, .template-b2b-saas-enterprise-pro .b2b-saas-features article p { padding-right: 22px; }
+
+@media (max-width: 680px) {
+.template-b2b-saas-enterprise-pro .b2b-saas-features, .template-b2b-saas-enterprise-pro .b2b-saas-pricing { padding: 58px 18px; }
+.template-b2b-saas-enterprise-pro .b2b-saas-section-heading { margin-bottom: 28px; }
+.template-b2b-saas-enterprise-pro .b2b-saas-section-heading h2 { font-size: 34px; }
+.template-b2b-saas-enterprise-pro .b2b-saas-features > div:last-child, .template-b2b-saas-enterprise-pro .b2b-saas-plans { display: flex; overflow-x: auto; gap: 14px; padding: 4px 18px 20px 0px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.template-b2b-saas-enterprise-pro .b2b-saas-features article, .template-b2b-saas-enterprise-pro .b2b-saas-plans article { flex: 0 0 min(82vw, 310px); scroll-snap-align: start; }
+}

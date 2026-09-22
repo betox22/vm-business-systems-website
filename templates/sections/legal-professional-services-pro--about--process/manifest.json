@@ -1,0 +1,16 @@
+{
+  "id": "legal-professional-services-pro--about--process",
+  "section_type": "process",
+  "source_template": "Legal / Professional",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "legal-professional-services-pro--about--process/section.html",
+  "css_partial": "legal-professional-services-pro--about--process/section.css"
+}

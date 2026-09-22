@@ -1,0 +1,23 @@
+{
+  "id": "fashion-drop-pro--home--fashion-drop-story",
+  "section_type": "about",
+  "source_template": "Fashion Drop",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "texture_atmosphere",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "fashion-drop-pro--home--fashion-drop-story/section.html",
+  "css_partial": "fashion-drop-pro--home--fashion-drop-story/section.css"
+}

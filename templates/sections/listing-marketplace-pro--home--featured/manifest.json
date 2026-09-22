@@ -1,0 +1,23 @@
+{
+  "id": "listing-marketplace-pro--home--featured",
+  "section_type": "catalog",
+  "source_template": "Listing Marketplace",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "product_card",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "listing-marketplace-pro--home--featured/section.html",
+  "css_partial": "listing-marketplace-pro--home--featured/section.css"
+}

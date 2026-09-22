@@ -1,0 +1,13 @@
+{
+  "id": "luxury-high-ticket-pro--global--header",
+  "section_type": "header",
+  "source_template": "Luxury High Ticket",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "luxury-high-ticket-pro--global--header/section.html",
+  "css_partial": "luxury-high-ticket-pro--global--header/section.css"
+}

@@ -1,0 +1,23 @@
+{
+  "id": "premium-product-store--home--premium-cta",
+  "section_type": "feature",
+  "source_template": "Premium Product",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "texture_atmosphere",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "premium-product-store--home--premium-cta/section.html",
+  "css_partial": "premium-product-store--home--premium-cta/section.css"
+}

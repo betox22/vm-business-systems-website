@@ -1,0 +1,15 @@
+{
+  "id": "local-services-pro-plus--global--footer",
+  "section_type": "footer",
+  "source_template": "Local Services",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "footer_text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "local-services-pro-plus--global--footer/section.html",
+  "css_partial": "local-services-pro-plus--global--footer/section.css"
+}

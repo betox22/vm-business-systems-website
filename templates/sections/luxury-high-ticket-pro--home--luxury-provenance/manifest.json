@@ -1,0 +1,16 @@
+{
+  "id": "luxury-high-ticket-pro--home--luxury-provenance",
+  "section_type": "about",
+  "source_template": "Luxury High Ticket",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "luxury-high-ticket-pro--home--luxury-provenance/section.html",
+  "css_partial": "luxury-high-ticket-pro--home--luxury-provenance/section.css"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "legal-professional-services-pro--home--professional-consultation",
+  "section_type": "contact",
+  "source_template": "Legal / Professional",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text",
+    "primary_button"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "legal-professional-services-pro--home--professional-consultation/section.html",
+  "css_partial": "legal-professional-services-pro--home--professional-consultation/section.css"
+}

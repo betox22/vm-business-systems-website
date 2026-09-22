@@ -30,7 +30,7 @@
 // docs, phase-1..4 backend implementation notes, security-controls.json,
 // QA screenshots, unused manifests) stays out.
 
-import { cp, mkdir, readdir, rm } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
@@ -49,6 +49,7 @@ const PUBLIC_TOP_LEVEL_FILES = [
   "client-setup.css",
   "client-start.js",
   "client.css",
+  "composed-sections.js",
   "contact.html",
   "descargos-de-responsabilidad.html",
   "disclaimers.html",
@@ -164,6 +165,25 @@ async function main() {
     await mkdir(path.dirname(dest), { recursive: true });
     await cp(relPath, dest);
     copied.push(relPath);
+  }
+
+  if (existsSync("templates/sections")) {
+    for (const entry of await readdir("templates/sections", { withFileTypes: true })) {
+      if (!entry.isDirectory() || !/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(entry.name)) continue;
+      const sectionId = entry.name;
+      const manifestPath = `templates/sections/${sectionId}/manifest.json`;
+      const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+      if (manifest.id !== sectionId || manifest.section_type === "quote_upload"
+        || manifest.html_partial !== `${sectionId}/section.html`
+        || manifest.css_partial !== `${sectionId}/section.css`) continue;
+      for (const name of ["manifest.json", "section.html", "section.css"]) {
+        const source = `templates/sections/${sectionId}/${name}`;
+        const destination = `${OUT_DIR}/${source}`;
+        await mkdir(path.dirname(destination), { recursive: true });
+        await cp(source, destination);
+        copied.push(source);
+      }
+    }
   }
 
   for (const [source, destination] of VENDOR_ASSETS) {

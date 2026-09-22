@@ -1,0 +1,24 @@
+{
+  "id": "digital-products-store--home--digital-hero",
+  "section_type": "hero",
+  "source_template": "Digital Products",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "headline",
+    "subtitle",
+    "secondary_button"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "hero_candidate",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "digital-products-store--home--digital-hero/section.html",
+  "css_partial": "digital-products-store--home--digital-hero/section.css"
+}

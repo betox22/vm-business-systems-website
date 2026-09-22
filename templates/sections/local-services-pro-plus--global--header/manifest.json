@@ -1,0 +1,13 @@
+{
+  "id": "local-services-pro-plus--global--header",
+  "section_type": "header",
+  "source_template": "Local Services",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "local-services-pro-plus--global--header/section.html",
+  "css_partial": "local-services-pro-plus--global--header/section.css"
+}

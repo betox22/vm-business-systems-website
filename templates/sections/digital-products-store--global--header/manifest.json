@@ -1,0 +1,13 @@
+{
+  "id": "digital-products-store--global--header",
+  "section_type": "header",
+  "source_template": "Digital Products",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "digital-products-store--global--header/section.html",
+  "css_partial": "digital-products-store--global--header/section.css"
+}

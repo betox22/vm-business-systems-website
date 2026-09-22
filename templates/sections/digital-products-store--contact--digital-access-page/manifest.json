@@ -1,0 +1,16 @@
+{
+  "id": "digital-products-store--contact--digital-access-page",
+  "section_type": "contact",
+  "source_template": "Digital Products",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "digital-products-store--contact--digital-access-page/section.html",
+  "css_partial": "digital-products-store--contact--digital-access-page/section.css"
+}

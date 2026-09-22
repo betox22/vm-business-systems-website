@@ -1,0 +1,15 @@
+{
+  "id": "education-course-academy-pro--global--footer",
+  "section_type": "footer",
+  "source_template": "Course Academy",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "footer_text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "education-course-academy-pro--global--footer/section.html",
+  "css_partial": "education-course-academy-pro--global--footer/section.css"
+}

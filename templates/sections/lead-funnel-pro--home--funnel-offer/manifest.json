@@ -1,0 +1,17 @@
+{
+  "id": "lead-funnel-pro--home--funnel-offer",
+  "section_type": "feature",
+  "source_template": "Lead Funnel",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text",
+    "guarantee"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "lead-funnel-pro--home--funnel-offer/section.html",
+  "css_partial": "lead-funnel-pro--home--funnel-offer/section.css"
+}

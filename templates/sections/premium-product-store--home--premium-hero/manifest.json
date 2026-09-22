@@ -1,0 +1,25 @@
+{
+  "id": "premium-product-store--home--premium-hero",
+  "section_type": "hero",
+  "source_template": "Premium Product",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "headline",
+    "subtitle",
+    "primary_button",
+    "secondary_button"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "hero_candidate",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "premium-product-store--home--premium-hero/section.html",
+  "css_partial": "premium-product-store--home--premium-hero/section.css"
+}

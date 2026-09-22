@@ -1,0 +1,13 @@
+{
+  "id": "mega-retail-store--global--header",
+  "section_type": "header",
+  "source_template": "Mega Retail Store",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "mega-retail-store--global--header/section.html",
+  "css_partial": "mega-retail-store--global--header/section.css"
+}

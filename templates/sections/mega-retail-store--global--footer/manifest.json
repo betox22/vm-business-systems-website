@@ -1,0 +1,15 @@
+{
+  "id": "mega-retail-store--global--footer",
+  "section_type": "footer",
+  "source_template": "Mega Retail Store",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "footer_text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "mega-retail-store--global--footer/section.html",
+  "css_partial": "mega-retail-store--global--footer/section.css"
+}

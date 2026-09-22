@@ -25,6 +25,15 @@ test('published viewers and all staged JavaScript resolve dependencies inside th
     await readFile(path.join(published, 'src/ai-builder/mega-retail-policy.js'), 'utf8'),
     await readFile(path.join(root, 'src/ai-builder/mega-retail-policy.js'), 'utf8'),
   );
+  assert.equal(
+    await readFile(path.join(published, 'composed-sections.js'), 'utf8'),
+    await readFile(path.join(root, 'composed-sections.js'), 'utf8'),
+  );
+  for (const name of ['manifest.json', 'section.html', 'section.css']) {
+    const relative = path.join('templates', 'sections', 'corporate-company-pro--home--corporate-hero', name);
+    assert.equal(await readFile(path.join(published, relative), 'utf8'), await readFile(path.join(root, relative), 'utf8'));
+  }
+  await assert.rejects(readFile(path.join(published, 'templates/sections/quote-upload--custom-order/manifest.json')), { code: 'ENOENT' });
   const entries = await javascriptFiles(published);
   const result = await build({
     entryPoints: entries, bundle: true, write: false, metafile: true,

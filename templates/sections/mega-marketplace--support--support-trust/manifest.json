@@ -1,0 +1,16 @@
+{
+  "id": "mega-marketplace--support--support-trust",
+  "section_type": "about",
+  "source_template": "Mega Marketplace",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "mega-marketplace--support--support-trust/section.html",
+  "css_partial": "mega-marketplace--support--support-trust/section.css"
+}

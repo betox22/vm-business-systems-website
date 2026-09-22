@@ -1,0 +1,13 @@
+{
+  "id": "restaurant-food-business--global--header",
+  "section_type": "header",
+  "source_template": "Restaurant Menu",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "restaurant-food-business--global--header/section.html",
+  "css_partial": "restaurant-food-business--global--header/section.css"
+}

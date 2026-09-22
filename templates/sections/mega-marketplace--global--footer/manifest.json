@@ -1,0 +1,15 @@
+{
+  "id": "mega-marketplace--global--footer",
+  "section_type": "footer",
+  "source_template": "Mega Marketplace",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "footer_text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "mega-marketplace--global--footer/section.html",
+  "css_partial": "mega-marketplace--global--footer/section.css"
+}

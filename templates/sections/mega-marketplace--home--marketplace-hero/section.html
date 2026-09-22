@@ -1,0 +1,41 @@
+<div class="rendered-site template-mega-marketplace"><section class="marketplace-hero marketplace-hero-split-showcase heading-medium spacing-compact container-wide density-comfortable gap-comfortable variant-split-showcase" data-studio-section="marketplace_hero" data-studio-section-type="MarketplaceHero" data-studio-section-variant="split_showcase">
+    <div class="marketplace-search-panel">
+      <div class="marketplace-logo-row">
+        <strong>{{business.name}}</strong>
+        <span>{{deal_badge}}</span>
+      </div>
+      <form class="marketplace-search-box" data-catalog-search-form="">
+        <input type="search" name="catalog-search" aria-label="Search" placeholder="{{search_placeholder}}">
+        <button type="submit">Search</button>
+      </form>
+      <div class="marketplace-chip-row"><button type="button" data-catalog-category="{{product.category}}">{{product.category}}</button></div>
+    </div>
+    <div class="marketplace-deal-hero marketplace-commerce-home">
+      <div class="marketplace-hero-copy">
+        <small>{{deal_badge}}</small>
+        <h1>{{headline}}</h1>
+        <p>{{subtitle}}</p>
+        <div class="marketplace-mini-stat-row">
+          <span>Secure checkout</span>
+          <span>Fast ship</span>
+          <span>Support</span>
+        </div>
+        <div class="rendered-actions">
+          <a class="rendered-button" href="#" data-page-link="catalog">{{primary_button}}</a>
+          <a class="rendered-button secondary" href="#" data-page-link="catalog">{{secondary_button}}</a>
+        </div>
+      </div>
+      <aside class="marketplace-hero-products-panel">
+        <div class="marketplace-hero-products-head">
+          <b>{{deal_title}}</b>
+          <span>Sort by: Featured</span>
+        </div>
+        <div class="marketplace-hero-products"><article class="marketplace-hero-product-card" data-catalog-item="" data-catalog-search="section_product_name sample category section_product_description" data-catalog-item-category="sample category">
+        <div class="image-shell"><img src="{{image_1}}" alt="{{product.name}}" loading="lazy" decoding="async" onerror="this.closest('.image-shell').classList.add('image-failed')"><div class="card-placeholder">SE</div></div>
+        <small>Deal</small>
+        <strong>{{product.name}}</strong>
+        <span>{{product.price_label}}</span>
+      </article></div>
+      </aside>
+    </div>
+  </section></div>

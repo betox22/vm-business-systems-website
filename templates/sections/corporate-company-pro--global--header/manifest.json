@@ -1,0 +1,13 @@
+{
+  "id": "corporate-company-pro--global--header",
+  "section_type": "header",
+  "source_template": "Corporate Company",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "corporate-company-pro--global--header/section.html",
+  "css_partial": "corporate-company-pro--global--header/section.css"
+}

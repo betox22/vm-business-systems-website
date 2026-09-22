@@ -1,0 +1,25 @@
+{
+  "id": "corporate-company-pro--home--corporate-hero",
+  "section_type": "hero",
+  "source_template": "Corporate Company",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "headline",
+    "subtitle",
+    "primary_button",
+    "secondary_button"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "hero_candidate",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "corporate-company-pro--home--corporate-hero/section.html",
+  "css_partial": "corporate-company-pro--home--corporate-hero/section.css"
+}

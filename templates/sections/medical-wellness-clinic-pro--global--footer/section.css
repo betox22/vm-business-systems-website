@@ -1,0 +1,25 @@
+* { box-sizing: border-box; }
+
+.rendered-site { position: relative; width: min(100%, 1260px); --brand-primary: #0e7c66; --brand-secondary: #e3f3ee; --brand-accent: #14b8a6; --brand-background: #f8faf9; --brand-surface: #ffffff; --brand-text: #111827; --brand-muted: #667085; --brand-border: #d9e2df; --brand-button: var(--brand-primary); --brand-button-text: #ffffff; --brand-radius: 8px; --brand-shadow: 0 18px 48px rgba(16, 24, 40, 0.1); --site-bg: var(--brand-background); --site-surface: var(--brand-surface); --site-primary: var(--brand-primary); --site-secondary: var(--brand-secondary); --site-accent: var(--brand-accent); --site-text: var(--brand-text); --site-muted: var(--brand-muted); --site-border: var(--brand-border); background: var(--site-bg); color: var(--site-text); font-family: var(--site-body), Inter, sans-serif; min-height: 100%; box-shadow: rgba(31, 41, 55, 0.2) 0px 32px 95px; overflow: visible; }
+
+.rendered-site, .rendered-site * { box-sizing: border-box; }
+
+.rendered-site h1, .rendered-site h2, .rendered-site h3, .rendered-site p, .rendered-site strong, .rendered-site span { max-width: 100%; overflow-wrap: break-word; }
+
+.rendered-nav, .rendered-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px clamp(18px, 5vw, 72px); background: var(--site-surface); border-bottom: 1px solid color-mix(in srgb, var(--site-text) 12%, transparent); }
+
+.logo-lockup { display: flex; align-items: center; gap: 10px; }
+
+.logo-lockup > span { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 8px; background: var(--site-primary); color: var(--site-surface); font-family: var(--site-heading), Inter, sans-serif; font-weight: 950; }
+
+.logo-lockup strong, .logo-lockup small { display: block; }
+
+.logo-lockup small { color: var(--site-muted); font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: 0px; }
+
+.rendered-footer { border-top: 1px solid color-mix(in srgb, var(--site-text) 12%, transparent); border-bottom: 0px; }
+
+.template-medical-wellness-clinic-pro, .layout-medical-wellness-clinic-pro { background: rgb(246, 251, 251); color: rgb(8, 47, 73); }
+
+@media (max-width: 760px) {
+.toolbar, .toolbar-actions, .rendered-nav, .rendered-footer { align-items: stretch; flex-direction: column; }
+}

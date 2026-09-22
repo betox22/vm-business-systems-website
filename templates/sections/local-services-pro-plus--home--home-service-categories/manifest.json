@@ -1,0 +1,16 @@
+{
+  "id": "local-services-pro-plus--home--home-service-categories",
+  "section_type": "catalog",
+  "source_template": "Local Services",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "local-services-pro-plus--home--home-service-categories/section.html",
+  "css_partial": "local-services-pro-plus--home--home-service-categories/section.css"
+}

@@ -8,7 +8,7 @@ import logging
 import time
 from copy import deepcopy
 from collections import defaultdict, deque
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from fastapi import Cookie, Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,6 +39,7 @@ from .ai_site_planner import enforce_client_declared_catalog_facts
 from .client_auth import authenticated_client_user, fetch_supabase_user, supabase_auth_configured, password_client_session
 from .commerce import router as commerce_router
 from .catalog_sync import apply_commerce_overlay, sync_site_catalog_to_commerce
+from .section_composition import prepare_composed_schema, resolve_deferred_textures
 from .public_commerce import public_commerce_capabilities
 from .billing import router as billing_router
 from .db import get_session, init_db
@@ -1431,6 +1432,7 @@ def persist_generated_site(
     user: Dict[str, Any],
     request: WebsiteGenerationRequest,
     schema: Dict[str, Any],
+    finalize_schema: Callable[[GeneratedSite], Dict[str, Any]] | None = None,
 ) -> GeneratedSite:
     owner_user_id = str(user.get("id") or "").strip()
     owner_email = str(user.get("email") or "").strip().lower()
@@ -1504,6 +1506,9 @@ def persist_generated_site(
     site.generated_config = _schema_json(schema)
     try:
         session.flush()
+        if finalize_schema is not None:
+            site.generated_config = _schema_json(finalize_schema(site))
+            session.flush()
         sync_site_catalog_to_commerce(session, site)
         session.commit()
     except Exception:
@@ -2481,7 +2486,37 @@ async def website_builder(
             site_id=logo_site_id,
         )
     schema = build_schema_from_state(final_state, catalog_items=catalog_items, catalog_source=catalog_source)
-    db_site = persist_generated_site(session, user=auth_user, request=request, schema=schema) if auth_user else None
+    db_site = None
+    if os.getenv("KREATON_SECTION_COMPOSITION_ENABLED") == "1" and not existing_site_ids:
+        try:
+            composed_schema, pending_textures = prepare_composed_schema(
+                schema,
+                " ".join(filter(None, [prompt_context, final_state.businessName or ""])),
+            )
+            if pending_textures and not auth_user:
+                raise ValueError("Deferred textures require a saved site")
+            if auth_user:
+                resolved_schema = composed_schema
+
+                def finalize_composed_site(site: GeneratedSite) -> Dict[str, Any]:
+                    nonlocal resolved_schema
+                    resolved_schema = resolve_deferred_textures(
+                        composed_schema, pending_textures,
+                        business_id=site.store_id, site_id=site.id,
+                    )
+                    return resolved_schema
+
+                db_site = persist_generated_site(
+                    session, user=auth_user, request=request, schema=composed_schema,
+                    finalize_schema=finalize_composed_site if pending_textures else None,
+                )
+                schema = resolved_schema
+            else:
+                schema = composed_schema
+        except Exception as error:
+            logger.warning("LYRA section composition fallback reason=%s", type(error).__name__)
+    if auth_user and db_site is None:
+        db_site = persist_generated_site(session, user=auth_user, request=request, schema=schema)
     if not auth_user and (request.generatedSiteId or request.generated_site_id or request.projectId or request.project_id):
         raise HTTPException(status_code=401, detail="Login is required to update a saved project.")
     return WebsiteGenerationResponse(

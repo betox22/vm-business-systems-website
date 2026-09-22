@@ -1,0 +1,23 @@
+{
+  "id": "b2b-saas-enterprise-pro--catalog--enterprise-catalog",
+  "section_type": "catalog",
+  "source_template": "B2B SaaS / Enterprise",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "product_card",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "b2b-saas-enterprise-pro--catalog--enterprise-catalog/section.html",
+  "css_partial": "b2b-saas-enterprise-pro--catalog--enterprise-catalog/section.css"
+}

@@ -7,6 +7,8 @@ const REUSABLE_PLANNER_TYPES = new Set([
 ]);
 
 export function keepEssentialSections(sections, maxSections) {
+  const composed = sections.filter((section) => section.type === "composed");
+  if (composed.length) return [...keepEssentialSections(sections.filter((section) => section.type !== "composed"), maxSections), ...composed];
   const priority = { Hero: 0, ProductGrid: 1, ServiceList: 2, FeatureBand: 3, Testimonials: 4, About: 5, Gallery: 6, Contact: 7, Footer: 8 };
   const limit = Math.max(3, maxSections);
   const sorted = [...sections].sort((a, b) => (priority[a.type] ?? 9) - (priority[b.type] ?? 9));

@@ -711,7 +711,9 @@ export function ensurePurposefulSections(schema, strategy, options = {}) {
       let sections = arrayValue(page.sections)
         .filter((section) => hasSectionPurpose(section, hasCatalog, page.page_key === "home"))
         .filter((section) => {
-          const key = `${section.type}:${normalizeGenericText(section.editable?.title || section.editable?.headline || "")}`;
+          const key = section.type === "composed"
+            ? `${section.type}:${section.id || section.section_id}`
+            : `${section.type}:${normalizeGenericText(section.editable?.title || section.editable?.headline || "")}`;
           if (seen.has(key)) return false;
           seen.add(key);
           return true;
@@ -738,6 +740,7 @@ export function ensurePurposefulSections(schema, strategy, options = {}) {
 
 export function hasSectionPurpose(section, hasCatalog, isHomePage) {
   if (!section) return false;
+  if (section.type === "composed") return Boolean(section.section_id);
   if (section.type === "Hero" || section.type === "Contact" || section.type === "Footer") return true;
   if ((section.type === "ProductGrid" || section.type === "ServiceList") && hasCatalog) return true;
   if (section.type === "Gallery") return arrayValue(section.editable?.images).length > 0;

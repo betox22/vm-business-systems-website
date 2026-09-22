@@ -1,0 +1,16 @@
+{
+  "id": "home-services-premium--home--home-service-quote",
+  "section_type": "catalog",
+  "source_template": "Local Services Premium",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "home-services-premium--home--home-service-quote/section.html",
+  "css_partial": "home-services-premium--home--home-service-quote/section.css"
+}

@@ -1,0 +1,19 @@
+{
+  "id": "b2b-saas-enterprise-pro--home--enterprise-hero",
+  "section_type": "hero",
+  "source_template": "B2B SaaS / Enterprise",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "headline",
+    "subtitle",
+    "primary_button",
+    "secondary_button",
+    "badge"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "b2b-saas-enterprise-pro--home--enterprise-hero/section.html",
+  "css_partial": "b2b-saas-enterprise-pro--home--enterprise-hero/section.css"
+}

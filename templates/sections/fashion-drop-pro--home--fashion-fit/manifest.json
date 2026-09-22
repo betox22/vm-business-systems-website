@@ -1,0 +1,16 @@
+{
+  "id": "fashion-drop-pro--home--fashion-fit",
+  "section_type": "feature",
+  "source_template": "Fashion Drop",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "fashion-drop-pro--home--fashion-fit/section.html",
+  "css_partial": "fashion-drop-pro--home--fashion-fit/section.css"
+}

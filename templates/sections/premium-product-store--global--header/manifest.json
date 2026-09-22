@@ -1,0 +1,13 @@
+{
+  "id": "premium-product-store--global--header",
+  "section_type": "header",
+  "source_template": "Premium Product",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "premium-product-store--global--header/section.html",
+  "css_partial": "premium-product-store--global--header/section.css"
+}

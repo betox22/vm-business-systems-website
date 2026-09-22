@@ -1,0 +1,76 @@
+* { box-sizing: border-box; }
+
+h1, h2, p { margin-top: 0px; }
+
+.rendered-site { position: relative; width: min(100%, 1260px); --brand-primary: #0e7c66; --brand-secondary: #e3f3ee; --brand-accent: #14b8a6; --brand-background: #f8faf9; --brand-surface: #ffffff; --brand-text: #111827; --brand-muted: #667085; --brand-border: #d9e2df; --brand-button: var(--brand-primary); --brand-button-text: #ffffff; --brand-radius: 8px; --brand-shadow: 0 18px 48px rgba(16, 24, 40, 0.1); --site-bg: var(--brand-background); --site-surface: var(--brand-surface); --site-primary: var(--brand-primary); --site-secondary: var(--brand-secondary); --site-accent: var(--brand-accent); --site-text: var(--brand-text); --site-muted: var(--brand-muted); --site-border: var(--brand-border); background: var(--site-bg); color: var(--site-text); font-family: var(--site-body), Inter, sans-serif; min-height: 100%; box-shadow: rgba(31, 41, 55, 0.2) 0px 32px 95px; overflow: visible; }
+
+.rendered-site, .rendered-site * { box-sizing: border-box; }
+
+.rendered-site h1, .rendered-site h2, .rendered-site h3, .rendered-site p, .rendered-site strong, .rendered-site span { max-width: 100%; overflow-wrap: break-word; }
+
+[data-studio-section] { position: relative; outline: transparent solid 0px; transition: outline-color 160ms, box-shadow 160ms; }
+
+[data-studio-section]::before { content: attr(data-studio-section-type); position: absolute; top: 10px; left: 10px; z-index: 12; display: none; border-radius: 6px; background: rgb(37, 99, 235); color: rgb(255, 255, 255); padding: 5px 8px; font-size: 11px; font-weight: 950; }
+
+[data-studio-section]:hover, [data-studio-section].is-selected { outline: rgb(37, 99, 235) solid 3px; outline-offset: -3px; box-shadow: rgba(37, 99, 235, 0.25) 0px 0px 0px 1px inset; cursor: pointer; }
+
+[data-studio-section]:hover::before, [data-studio-section].is-selected::before { display: inline-flex; }
+
+.spacing-compact { padding-block: 38px; }
+
+.rendered-button { display: inline-flex; margin-top: 14px; border-radius: var(--brand-radius); background: var(--brand-button); color: var(--brand-button-text); text-decoration: none; padding: 13px 16px; font-weight: 900; }
+
+.rendered-kicker { display: inline-flex; margin-bottom: 14px; color: var(--site-primary); font-size: 12px; font-weight: 950; letter-spacing: 0px; text-transform: uppercase; }
+
+.template-manufacturing-industrial-supplier-pro, .layout-manufacturing-industrial-supplier-pro { background: rgb(244, 241, 232); color: rgb(17, 24, 39); }
+
+.industrial-hero .rendered-kicker, .industrial-catalog-section .rendered-kicker, .industrial-capabilities-section .rendered-kicker, .industrial-certifications-section .rendered-kicker, .industrial-supply-section .rendered-kicker, .industrial-quote-section .rendered-kicker { color: rgb(138, 93, 0); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.industrial-proof-strip span, .industrial-catalog-stats span, .industrial-rfq-fields span { border: 1px solid rgba(17, 24, 39, 0.12); border-radius: 8px; padding: 11px 12px; background: rgba(255, 255, 255, 0.7); color: rgb(17, 24, 39); font-weight: 900; }
+
+.industrial-rfq-dashboard, .catalog-industrial-supplier, .industrial-quote-card { border: 1px solid rgba(17, 24, 39, 0.14); background: rgba(255, 255, 255, 0.92); box-shadow: rgba(17, 24, 39, 0.14) 0px 28px 80px; }
+
+.industrial-catalog-section, .industrial-capabilities-section, .industrial-certifications-section, .industrial-supply-section, .industrial-quote-section { padding: clamp(54px, 8vw, 104px) clamp(22px, 6vw, 86px); }
+
+.industrial-catalog-header { display: grid; grid-template-columns: minmax(0px, 1fr) auto; gap: 24px; align-items: end; margin-bottom: 22px; }
+
+.industrial-catalog-header h2 { max-width: 860px; margin: 8px 0px 10px; color: rgb(17, 24, 39); font-size: clamp(34px, 5vw, 70px); line-height: 0.96; text-transform: uppercase; }
+
+.industrial-catalog-header p { max-width: 760px; }
+
+.industrial-catalog-stats { display: grid; grid-template-columns: repeat(3, minmax(110px, 1fr)); gap: 8px; }
+
+.catalog-industrial-supplier { overflow: hidden; border-radius: 14px; background: rgb(255, 255, 255); }
+
+.industrial-table-head, .catalog-industrial-supplier article { display: grid; grid-template-columns: 112px minmax(260px, 1fr) 88px 128px 128px 150px; gap: 0px; align-items: stretch; }
+
+.industrial-table-head { background: rgb(17, 24, 39); color: rgb(245, 179, 1); font-size: 0.72rem; font-weight: 950; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.industrial-table-head span, .catalog-industrial-supplier article > * { display: grid; align-content: center; border-right: 1px solid rgba(17, 24, 39, 0.1); padding: 14px; }
+
+.industrial-table-head span { border-color: rgba(245, 179, 1, 0.2); }
+
+.catalog-industrial-supplier article { border-top: 1px solid rgba(17, 24, 39, 0.1); background: rgb(255, 255, 255); }
+
+.catalog-industrial-supplier article.featured { background: linear-gradient(90deg, rgba(245, 179, 1, 0.14), transparent 34%), rgb(255, 255, 255); }
+
+.catalog-industrial-supplier article > b { color: rgb(138, 93, 0); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.86rem; }
+
+.catalog-industrial-supplier article strong { color: rgb(17, 24, 39); font-size: 1rem; }
+
+.catalog-industrial-supplier article small { margin-top: 5px; color: rgb(107, 114, 128); font-size: 0.76rem; font-weight: 900; }
+
+.catalog-industrial-supplier article p { margin: 8px 0px 0px; color: rgb(75, 85, 99); font-size: 0.86rem; line-height: 1.45; }
+
+.catalog-industrial-supplier article > span { color: rgb(17, 24, 39); font-weight: 950; }
+
+.catalog-industrial-supplier .rendered-button { place-self: center; width: calc(100% - 18px); padding: 10px 12px; }
+
+@media (max-width: 760px) {
+.industrial-spec-table div, .industrial-catalog-header, .industrial-catalog-stats, .industrial-table-head, .catalog-industrial-supplier article, .catalog-industrial-supplier, .industrial-card-body dl, .industrial-capability-board, .industrial-doc-stack, .industrial-rfq-fields { grid-template-columns: 1fr; }
+.industrial-table-head { display: none; }
+.catalog-industrial-supplier article { border-top: 8px solid rgb(17, 24, 39); }
+.catalog-industrial-supplier article > * { border-right: 0px; border-bottom: 1px solid rgba(17, 24, 39, 0.1); }
+.catalog-industrial-supplier article.featured { grid-column: auto; }
+.industrial-catalog-section, .industrial-capabilities-section, .industrial-certifications-section, .industrial-supply-section, .industrial-quote-section { padding: 44px 16px; }
+}

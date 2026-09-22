@@ -1,0 +1,23 @@
+{
+  "id": "education-course-academy-pro--programs--program-catalog",
+  "section_type": "catalog",
+  "source_template": "Course Academy",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "product_card",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "education-course-academy-pro--programs--program-catalog/section.html",
+  "css_partial": "education-course-academy-pro--programs--program-catalog/section.css"
+}

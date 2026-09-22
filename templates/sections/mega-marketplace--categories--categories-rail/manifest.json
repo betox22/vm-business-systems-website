@@ -1,0 +1,16 @@
+{
+  "id": "mega-marketplace--categories--categories-rail",
+  "section_type": "feature",
+  "source_template": "Mega Marketplace",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "mega-marketplace--categories--categories-rail/section.html",
+  "css_partial": "mega-marketplace--categories--categories-rail/section.css"
+}

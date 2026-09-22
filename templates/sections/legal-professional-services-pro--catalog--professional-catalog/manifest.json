@@ -1,0 +1,23 @@
+{
+  "id": "legal-professional-services-pro--catalog--professional-catalog",
+  "section_type": "catalog",
+  "source_template": "Legal / Professional",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "product_card",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "legal-professional-services-pro--catalog--professional-catalog/section.html",
+  "css_partial": "legal-professional-services-pro--catalog--professional-catalog/section.css"
+}

@@ -1,0 +1,23 @@
+{
+  "id": "legal-professional-services-pro--home--professional-team",
+  "section_type": "about",
+  "source_template": "Legal / Professional",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "portrait",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "legal-professional-services-pro--home--professional-team/section.html",
+  "css_partial": "legal-professional-services-pro--home--professional-team/section.css"
+}

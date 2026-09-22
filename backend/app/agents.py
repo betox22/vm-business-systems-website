@@ -188,6 +188,24 @@ def normalize_text(value: str | None) -> str:
     return re.sub(r"\s+", " ", (value or "").strip().lower())
 
 
+BUSINESS_ARCHETYPE_PATTERNS = {
+    "custom_order_upload": re.compile(
+        r"\b(impresion 3d|impresión 3d|impresora 3d|3d print|3d printing|3d printer|"
+        r"filamento|filament|\bpla\b|\bpetg\b|\bresin print\b|\bstl\b|prototipo|prototype|"
+        r"modelado 3d|3d modeling|figura impresa|maqueta impresa)\b"
+    ),
+}
+
+
+def detect_business_archetypes(text: str) -> set[str]:
+    normalized = normalize_text(text)
+    return {
+        archetype
+        for archetype, pattern in BUSINESS_ARCHETYPE_PATTERNS.items()
+        if pattern.search(normalized)
+    }
+
+
 def split_items(value: str | List[str] | None) -> List[str]:
     def is_real_item(item: str) -> bool:
         return bool(item) and not re.fullmatch(r"(?:and|y)", item, flags=re.IGNORECASE)
@@ -865,12 +883,30 @@ class StrategyAgent(BaseAgent):
             template_id = ai_template_id
             reason = "AI planner primary offering category"
         else:
-            template_id, reason = self._select_template_id(
-                text,
-                len(state.servicesProducts),
-                state.selectedTemplateId,
-                template_catalog,
-            )
+            try:
+                from .template_selector import select_template
+
+                template_id, reason = await asyncio.to_thread(
+                    select_template,
+                    {
+                        "businessName": state.businessName or "",
+                        "businessDescription": state.businessDescription or user_input,
+                        "industry": state.industry or "",
+                        "servicesProducts": state.servicesProducts,
+                        "preferredTone": state.preferredTone or "",
+                        "preferredColors": state.preferredColors or "",
+                        "productCount": len(state.catalogItems) if state.catalogItems else len(state.servicesProducts),
+                    },
+                    template_catalog,
+                )
+            except Exception as error:
+                logger.warning("Template selector unavailable; using legacy selection: %s", type(error).__name__)
+                template_id, reason = self._select_template_id(
+                    text,
+                    len(state.servicesProducts),
+                    state.selectedTemplateId,
+                    template_catalog,
+                )
         template = TEMPLATE_CATALOG[template_id]
         website_type = template["websiteType"]
         template_name = template["name"]
@@ -920,12 +956,7 @@ class StrategyAgent(BaseAgent):
         elif broad_marketplace:
             add("mega-retail-store", 150, "broad single-owner retail catalog")
 
-        if re.search(
-            r"\b(impresion 3d|impresión 3d|impresora 3d|3d print|3d printing|3d printer|"
-            r"filamento|filament|\bpla\b|\bpetg\b|\bresin print\b|\bstl\b|prototipo|prototype|"
-            r"modelado 3d|3d modeling|figura impresa|maqueta impresa)\b",
-            text,
-        ):
+        if "custom_order_upload" in detect_business_archetypes(text):
             add("premium-product-store", 140, "3D-printed product and custom fabrication line")
 
         if re.search(r"\b(online_sales|sell online|vender online|tienda online|online store|ecommerce)\b", text):

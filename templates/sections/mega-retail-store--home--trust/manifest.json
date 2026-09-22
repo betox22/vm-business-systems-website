@@ -1,0 +1,13 @@
+{
+  "id": "mega-retail-store--home--trust",
+  "section_type": "about",
+  "source_template": "Mega Retail Store",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "mega-retail-store--home--trust/section.html",
+  "css_partial": "mega-retail-store--home--trust/section.css"
+}

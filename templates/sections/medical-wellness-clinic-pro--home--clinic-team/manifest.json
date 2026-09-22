@@ -1,0 +1,23 @@
+{
+  "id": "medical-wellness-clinic-pro--home--clinic-team",
+  "section_type": "about",
+  "source_template": "Clinic / Wellness",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "portrait",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "medical-wellness-clinic-pro--home--clinic-team/section.html",
+  "css_partial": "medical-wellness-clinic-pro--home--clinic-team/section.css"
+}

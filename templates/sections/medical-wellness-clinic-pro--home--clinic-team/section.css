@@ -1,0 +1,51 @@
+* { box-sizing: border-box; }
+
+h1, h2, p { margin-top: 0px; }
+
+.rendered-site { position: relative; width: min(100%, 1260px); --brand-primary: #0e7c66; --brand-secondary: #e3f3ee; --brand-accent: #14b8a6; --brand-background: #f8faf9; --brand-surface: #ffffff; --brand-text: #111827; --brand-muted: #667085; --brand-border: #d9e2df; --brand-button: var(--brand-primary); --brand-button-text: #ffffff; --brand-radius: 8px; --brand-shadow: 0 18px 48px rgba(16, 24, 40, 0.1); --site-bg: var(--brand-background); --site-surface: var(--brand-surface); --site-primary: var(--brand-primary); --site-secondary: var(--brand-secondary); --site-accent: var(--brand-accent); --site-text: var(--brand-text); --site-muted: var(--brand-muted); --site-border: var(--brand-border); background: var(--site-bg); color: var(--site-text); font-family: var(--site-body), Inter, sans-serif; min-height: 100%; box-shadow: rgba(31, 41, 55, 0.2) 0px 32px 95px; overflow: visible; }
+
+.rendered-site, .rendered-site * { box-sizing: border-box; }
+
+.rendered-site h1, .rendered-site h2, .rendered-site h3, .rendered-site p, .rendered-site strong, .rendered-site span { max-width: 100%; overflow-wrap: break-word; }
+
+.rendered-site img { max-width: 100%; }
+
+[data-studio-section] { position: relative; outline: transparent solid 0px; transition: outline-color 160ms, box-shadow 160ms; }
+
+[data-studio-section]::before { content: attr(data-studio-section-type); position: absolute; top: 10px; left: 10px; z-index: 12; display: none; border-radius: 6px; background: rgb(37, 99, 235); color: rgb(255, 255, 255); padding: 5px 8px; font-size: 11px; font-weight: 950; }
+
+[data-studio-section]:hover, [data-studio-section].is-selected { outline: rgb(37, 99, 235) solid 3px; outline-offset: -3px; box-shadow: rgba(37, 99, 235, 0.25) 0px 0px 0px 1px inset; cursor: pointer; }
+
+[data-studio-section]:hover::before, [data-studio-section].is-selected::before { display: inline-flex; }
+
+.spacing-spacious { padding-block: 108px; }
+
+.rendered-kicker { display: inline-flex; margin-bottom: 14px; color: var(--site-primary); font-size: 12px; font-weight: 950; letter-spacing: 0px; text-transform: uppercase; }
+
+.template-medical-wellness-clinic-pro, .layout-medical-wellness-clinic-pro { background: rgb(246, 251, 251); color: rgb(8, 47, 73); }
+
+.clinic-pro-copy .rendered-kicker, .clinic-services-section .rendered-kicker, .clinic-path-section .rendered-kicker, .clinic-trust-section .rendered-kicker, .clinic-results-section .rendered-kicker, .clinic-team-section .rendered-kicker, .clinic-booking-section .rendered-kicker { color: rgb(15, 159, 154); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.clinic-proof-strip, .clinic-mini-proof { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+
+.clinic-proof-strip span, .clinic-mini-proof span, .clinic-trust-grid span { border: 1px solid rgba(15, 159, 154, 0.18); border-radius: 999px; padding: 9px 13px; background: rgba(255, 255, 255, 0.82); color: rgb(15, 118, 110); font-weight: 800; }
+
+.clinic-appointment-media, .clinic-visual-placeholder, .clinic-team-media { min-height: 390px; border-radius: 24px; overflow: hidden; background: radial-gradient(circle at 70% 18%, rgba(125, 211, 252, 0.42), transparent 32%), linear-gradient(145deg, rgb(15, 159, 154), rgb(8, 47, 73)); color: rgb(236, 254, 255); }
+
+.clinic-appointment-media img, .clinic-team-media img, .clinic-card-visual img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.clinic-services-section, .clinic-path-section, .clinic-trust-section, .clinic-results-section, .clinic-team-section { padding: clamp(54px, 8vw, 104px) clamp(22px, 6vw, 86px); background: rgb(255, 255, 255); }
+
+.clinic-path-section, .clinic-team-section { background: rgb(239, 251, 249); }
+
+.clinic-path-section, .clinic-results-section, .clinic-team-section, .clinic-trust-section { display: grid; grid-template-columns: minmax(0px, 0.86fr) minmax(0px, 1.14fr); gap: clamp(26px, 5vw, 64px); align-items: center; }
+
+.clinic-path-list p, .clinic-results-board span, .clinic-results-section p, .clinic-team-section p, .clinic-trust-section p, .clinic-booking-section p { color: rgb(75, 102, 115); line-height: 1.68; }
+
+.clinic-team-section { grid-template-columns: minmax(320px, 0.92fr) minmax(0px, 1.08fr); }
+
+@media (max-width: 760px) {
+.clinic-pro-hero, .clinic-path-section, .clinic-trust-section, .clinic-results-section, .clinic-team-section, .clinic-booking-section { grid-template-columns: 1fr; }
+.clinic-pro-stage, .clinic-appointment-media, .clinic-visual-placeholder, .clinic-team-media { min-height: 320px; }
+.clinic-services-section, .clinic-path-section, .clinic-trust-section, .clinic-results-section, .clinic-team-section { padding: 44px 16px; }
+}

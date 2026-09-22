@@ -1,0 +1,17 @@
+{
+  "id": "b2b-saas-enterprise-pro--contact--demo",
+  "section_type": "contact",
+  "source_template": "B2B SaaS / Enterprise",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text",
+    "primary_button"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "b2b-saas-enterprise-pro--contact--demo/section.html",
+  "css_partial": "b2b-saas-enterprise-pro--contact--demo/section.css"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "medical-wellness-clinic-pro--home--clinic-trust",
+  "section_type": "about",
+  "source_template": "Clinic / Wellness",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "medical-wellness-clinic-pro--home--clinic-trust/section.html",
+  "css_partial": "medical-wellness-clinic-pro--home--clinic-trust/section.css"
+}

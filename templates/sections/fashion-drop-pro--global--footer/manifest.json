@@ -1,0 +1,15 @@
+{
+  "id": "fashion-drop-pro--global--footer",
+  "section_type": "footer",
+  "source_template": "Fashion Drop",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "footer_text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "fashion-drop-pro--global--footer/section.html",
+  "css_partial": "fashion-drop-pro--global--footer/section.css"
+}

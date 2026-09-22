@@ -1,0 +1,21 @@
+.template-custom-order { color: #17242b; background: #f3f7f6; font-family: Inter, system-ui, sans-serif; }
+.template-custom-order * { box-sizing: border-box; }
+.template-custom-order .custom-order { max-width: 1200px; margin: 0 auto; padding: 72px 32px; }
+.template-custom-order .custom-order-intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.85fr); align-items: center; gap: 48px; margin-bottom: 36px; }
+.template-custom-order h2 { max-width: 680px; margin: 0 0 18px; font-size: clamp(32px, 4vw, 58px); line-height: 1.08; letter-spacing: 0; }
+.template-custom-order p { max-width: 58ch; margin: 0; color: #52646b; font-size: 17px; line-height: 1.6; }
+.template-custom-order .custom-order-media { display: grid; grid-template-columns: minmax(0, 1fr) 28%; align-items: end; gap: 12px; min-width: 0; }
+.template-custom-order .custom-order-media img { display: block; width: 100%; object-fit: cover; border-radius: 6px; }
+.template-custom-order .custom-order-process { aspect-ratio: 4 / 3; }
+.template-custom-order .custom-order-texture { aspect-ratio: 3 / 4; }
+.template-custom-order .custom-order-form { padding: 28px; border: 1px solid #d2ddda; border-radius: 6px; background: #fff; }
+.template-custom-order .custom-order-form label { display: grid; gap: 8px; min-width: 0; color: #26383e; font-size: 14px; font-weight: 600; }
+.template-custom-order .custom-order-upload { padding: 22px; border: 1px dashed #91aaa5; border-radius: 6px; background: #f6faf8; }
+.template-custom-order .custom-order-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin: 24px 0; }
+.template-custom-order .custom-order-form input:not([type="file"]), .template-custom-order .custom-order-form textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #bdcbc8; border-radius: 5px; color: #17242b; background: #fff; font: inherit; }
+.template-custom-order .custom-order-form input[type="file"] { width: 100%; max-width: 100%; color: #52646b; font: inherit; }
+.template-custom-order .custom-order-notes { grid-column: 1 / -1; }
+.template-custom-order .custom-order-form textarea { resize: vertical; }
+.template-custom-order .custom-order-form button { min-height: 46px; padding: 11px 20px; border: 0; border-radius: 5px; color: #fff; background: #126e65; font: inherit; font-weight: 700; }
+.template-custom-order .custom-order-form button:disabled { opacity: 0.62; cursor: not-allowed; }
+@media (max-width: 720px) { .template-custom-order .custom-order { padding: 40px 16px; } .template-custom-order .custom-order-intro { grid-template-columns: minmax(0, 1fr); gap: 24px; } .template-custom-order .custom-order-fields { grid-template-columns: minmax(0, 1fr); } .template-custom-order .custom-order-form { padding: 18px; } }

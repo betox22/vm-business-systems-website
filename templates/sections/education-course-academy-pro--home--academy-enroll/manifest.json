@@ -1,0 +1,17 @@
+{
+  "id": "education-course-academy-pro--home--academy-enroll",
+  "section_type": "contact",
+  "source_template": "Course Academy",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text",
+    "primary_button"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "education-course-academy-pro--home--academy-enroll/section.html",
+  "css_partial": "education-course-academy-pro--home--academy-enroll/section.css"
+}

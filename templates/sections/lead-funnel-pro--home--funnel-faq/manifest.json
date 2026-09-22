@@ -1,0 +1,15 @@
+{
+  "id": "lead-funnel-pro--home--funnel-faq",
+  "section_type": "faq",
+  "source_template": "Lead Funnel",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "lead-funnel-pro--home--funnel-faq/section.html",
+  "css_partial": "lead-funnel-pro--home--funnel-faq/section.css"
+}

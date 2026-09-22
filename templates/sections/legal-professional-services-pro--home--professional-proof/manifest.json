@@ -1,0 +1,16 @@
+{
+  "id": "legal-professional-services-pro--home--professional-proof",
+  "section_type": "about",
+  "source_template": "Legal / Professional",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "legal-professional-services-pro--home--professional-proof/section.html",
+  "css_partial": "legal-professional-services-pro--home--professional-proof/section.css"
+}

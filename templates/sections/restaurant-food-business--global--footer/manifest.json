@@ -1,0 +1,15 @@
+{
+  "id": "restaurant-food-business--global--footer",
+  "section_type": "footer",
+  "source_template": "Restaurant Menu",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "footer_text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "restaurant-food-business--global--footer/section.html",
+  "css_partial": "restaurant-food-business--global--footer/section.css"
+}

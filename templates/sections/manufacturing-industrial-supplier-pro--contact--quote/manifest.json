@@ -1,0 +1,17 @@
+{
+  "id": "manufacturing-industrial-supplier-pro--contact--quote",
+  "section_type": "quote_upload",
+  "source_template": "Industrial Supplier",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text",
+    "primary_button"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "manufacturing-industrial-supplier-pro--contact--quote/section.html",
+  "css_partial": "manufacturing-industrial-supplier-pro--contact--quote/section.css"
+}

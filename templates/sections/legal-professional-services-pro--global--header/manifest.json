@@ -1,0 +1,13 @@
+{
+  "id": "legal-professional-services-pro--global--header",
+  "section_type": "header",
+  "source_template": "Legal / Professional",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "legal-professional-services-pro--global--header/section.html",
+  "css_partial": "legal-professional-services-pro--global--header/section.css"
+}

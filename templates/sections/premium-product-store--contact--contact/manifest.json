@@ -1,0 +1,16 @@
+{
+  "id": "premium-product-store--contact--contact",
+  "section_type": "contact",
+  "source_template": "Premium Product",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "premium-product-store--contact--contact/section.html",
+  "css_partial": "premium-product-store--contact--contact/section.css"
+}

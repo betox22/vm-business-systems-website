@@ -1,0 +1,16 @@
+{
+  "id": "manufacturing-industrial-supplier-pro--home--industrial-capabilities",
+  "section_type": "feature",
+  "source_template": "Industrial Supplier",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "manufacturing-industrial-supplier-pro--home--industrial-capabilities/section.html",
+  "css_partial": "manufacturing-industrial-supplier-pro--home--industrial-capabilities/section.css"
+}

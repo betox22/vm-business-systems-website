@@ -1,0 +1,13 @@
+{
+  "id": "listing-marketplace-pro--global--header",
+  "section_type": "header",
+  "source_template": "Listing Marketplace",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "listing-marketplace-pro--global--header/section.html",
+  "css_partial": "listing-marketplace-pro--global--header/section.css"
+}

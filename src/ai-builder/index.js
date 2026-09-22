@@ -101,6 +101,7 @@ import {
   remainingBuildPhaseVisibilityMs,
 } from './build-phase-policy.js';
 import { createSharedSiteMotion } from './shared-site-motion.js';
+import { hasUnloadedComposedSections, preloadComposedSections } from '../../composed-sections.js';
 import {
   renderWebsite as renderWebsiteMarkup,
   marketplaceItems,
@@ -7381,8 +7382,9 @@ function normalizeTemplatePresetId(templateId = "", catalogType = "") {
 
 function mergeLockedTemplatePage(lockedPage, existingPage = null) {
   if (!existingPage) return lockedPage;
-  const optionalBackendTypes = new Set(["QuoteRequestForm", "CapabilitiesEquipment", "PortfolioGallery", "VideoShowcase", "CourseOffering"]);
+  const optionalBackendTypes = new Set(["QuoteRequestForm", "CapabilitiesEquipment", "PortfolioGallery", "VideoShowcase", "CourseOffering", "composed"]);
   const normalizedExistingSections = arrayValue(existingPage.sections).map((section, index) => {
+    if (section.type === "composed") return section;
     const type = section.type || section.component || "";
     const nestedEditable = section.editable || {};
     const copy = nestedEditable.copy || {};
@@ -7416,13 +7418,13 @@ function mergeLockedTemplatePage(lockedPage, existingPage = null) {
   });
   const optionalSections = normalizedExistingSections.filter((section) => (
     optionalBackendTypes.has(section.type)
-    && !mergedLockedSections.some((locked) => locked.id === section.id || locked.type === section.type)
+    && !mergedLockedSections.some((locked) => locked.id === section.id || (section.type !== "composed" && locked.type === section.type))
   ));
   return {
     ...lockedPage,
     title: existingPage.title || lockedPage.title,
     slug: existingPage.slug || lockedPage.slug,
-    sections: [...mergedLockedSections, ...optionalSections].map((section, index) => ({ ...section, order: index + 1 })),
+    sections: [...mergedLockedSections, ...optionalSections].map((section, index) => section.type === "composed" ? section : ({ ...section, order: index + 1 })),
   };
 }
 
@@ -7808,7 +7810,9 @@ function improveWebsiteConfig(schema) {
   improved.pages = arrayValue(improved.pages).map((page) => ({
     ...page,
     sections: arrayValue(page.sections)
-      .filter((section, index, list) => index === list.findIndex((item) => `${item.type}:${item.editable?.title || item.editable?.headline || ""}` === `${section.type}:${section.editable?.title || section.editable?.headline || ""}`))
+      .filter((section, index, list) => index === list.findIndex((item) => section.type === "composed"
+        ? item.type === "composed" && item.id === section.id
+        : `${item.type}:${item.editable?.title || item.editable?.headline || ""}` === `${section.type}:${section.editable?.title || section.editable?.headline || ""}`))
       .map((section, index) => ({
         ...section,
         editable: improveSectionCopy(section, improved, strategy),
@@ -12932,7 +12936,13 @@ export function renderPreview() {
   if (!builderState.currentSchema) return;
   clearInlineEditState();
   applyGeneratedFavicon(builderState.currentSchema);
-  previewFrame.innerHTML = renderWebsite(schemaForPreview(), builderState.selectedPageKey);
+  const schema = schemaForPreview();
+  if (hasUnloadedComposedSections(schema)) {
+    void preloadComposedSections(schema).then(() => {
+      if (builderState.currentSchema) renderPreview();
+    });
+  }
+  previewFrame.innerHTML = renderWebsite(schema, builderState.selectedPageKey);
   restoreInlineEditSelection();
   renderStudioProgress();
   previewFrame.querySelectorAll("[data-page-link]").forEach((link) => {
@@ -12995,8 +13005,10 @@ function renderSchemaPreviewInto(schema, containerElement, payload = {}, templat
     || "home";
   const hadClientPreviewMode = document.body.classList.contains("client-preview-mode");
   const previousSchema = builderState.currentSchema;
+  let currentPageKey = defaultPageKey;
 
   const renderPage = (pageKey = defaultPageKey) => {
+    currentPageKey = pageKey;
     builderState.currentSchema = preparedSchema;
     document.body.classList.add("client-preview-mode");
     try {
@@ -13016,6 +13028,9 @@ function renderSchemaPreviewInto(schema, containerElement, payload = {}, templat
   };
 
   renderPage(defaultPageKey);
+  if (hasUnloadedComposedSections(preparedSchema)) {
+    void preloadComposedSections(preparedSchema).then(() => renderPage(currentPageKey));
+  }
   return preparedSchema;
 }
 

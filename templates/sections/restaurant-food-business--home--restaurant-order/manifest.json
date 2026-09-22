@@ -1,0 +1,16 @@
+{
+  "id": "restaurant-food-business--home--restaurant-order",
+  "section_type": "contact",
+  "source_template": "Restaurant Menu",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "restaurant-food-business--home--restaurant-order/section.html",
+  "css_partial": "restaurant-food-business--home--restaurant-order/section.css"
+}

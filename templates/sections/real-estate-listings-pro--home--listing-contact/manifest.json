@@ -1,0 +1,16 @@
+{
+  "id": "real-estate-listings-pro--home--listing-contact",
+  "section_type": "catalog",
+  "source_template": "Real Estate / Listings",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "real-estate-listings-pro--home--listing-contact/section.html",
+  "css_partial": "real-estate-listings-pro--home--listing-contact/section.css"
+}

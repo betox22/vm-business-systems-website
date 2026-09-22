@@ -1,0 +1,25 @@
+{
+  "id": "luxury-high-ticket-pro--home--luxury-hero",
+  "section_type": "hero",
+  "source_template": "Luxury High Ticket",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "headline",
+    "subtitle",
+    "primary_button",
+    "secondary_button"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "hero_candidate",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "luxury-high-ticket-pro--home--luxury-hero/section.html",
+  "css_partial": "luxury-high-ticket-pro--home--luxury-hero/section.css"
+}

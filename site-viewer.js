@@ -3,6 +3,9 @@ import { openStorefrontCheckout, reconcileCheckoutReturn } from "./storefront-ch
 import { createSharedSiteMotion, motionDataAttributes } from "./shared-site-motion.js?v=1";
 import { limitPremiumHeadline, premiumSectionImage, PREMIUM_IMAGE_ROLES } from "./src/ai-builder/premium-product-policy.js?v=1";
 import { withGraphPresentation, graphPresentationEnabled, graphPresentationLabels, graphProductAttributes, resolveMegaRetailDepartmentTiles } from "./src/ai-builder/mega-retail-policy.js?v=2";
+import { preloadComposedSections, renderComposedSection } from "./composed-sections.js";
+
+export { preloadComposedSections };
 
 const API_BASE_URL = resolveApiBaseUrl();
 let publicSite = document.querySelector("#publicSite");
@@ -32,6 +35,7 @@ async function loadPublicSite() {
     const site = await response.json();
     currentPublicSite = site;
     currentPublicSchema = { ...site.schema, catalog_items: site.catalog_items || [] };
+    await preloadComposedSections(currentPublicSchema);
     sharedCart = createSharedCommerceCart({
       businessId: site.business_id,
       siteId: site.site_id,
@@ -430,6 +434,7 @@ function catalogAction(schema, item = {}, fallbackLabel = "Request info", commer
 }
 
 function renderSection(section, schema) {
+  if (section.type === "composed") return renderComposedSection(section);
   if (section.type === "Hero") return renderHero(section, schema);
   if (section.type === "PremiumHero") return renderPremiumHero(section, schema);
   if (section.type === "ProductStory") return renderProductStory(section, schema);

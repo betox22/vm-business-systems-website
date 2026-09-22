@@ -1,0 +1,23 @@
+{
+  "id": "digital-products-store--home--digital-bundle",
+  "section_type": "feature",
+  "source_template": "Digital Products",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [
+    {
+      "slot_id": "image_1",
+      "image_role": "texture_atmosphere",
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "animation_profile": "none",
+  "html_partial": "digital-products-store--home--digital-bundle/section.html",
+  "css_partial": "digital-products-store--home--digital-bundle/section.css"
+}

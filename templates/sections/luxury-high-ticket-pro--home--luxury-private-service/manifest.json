@@ -1,0 +1,17 @@
+{
+  "id": "luxury-high-ticket-pro--home--luxury-private-service",
+  "section_type": "catalog",
+  "source_template": "Luxury High Ticket",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text",
+    "primary_button"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "luxury-high-ticket-pro--home--luxury-private-service/section.html",
+  "css_partial": "luxury-high-ticket-pro--home--luxury-private-service/section.css"
+}

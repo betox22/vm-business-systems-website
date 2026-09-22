@@ -1,0 +1,16 @@
+{
+  "id": "booking-appointment-pro--home--booking-contact",
+  "section_type": "contact",
+  "source_template": "Booking",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "booking-appointment-pro--home--booking-contact/section.html",
+  "css_partial": "booking-appointment-pro--home--booking-contact/section.css"
+}

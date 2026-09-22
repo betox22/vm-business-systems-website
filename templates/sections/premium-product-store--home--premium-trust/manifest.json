@@ -1,0 +1,16 @@
+{
+  "id": "premium-product-store--home--premium-trust",
+  "section_type": "about",
+  "source_template": "Premium Product",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "title",
+    "text"
+  ],
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "premium-product-store--home--premium-trust/section.html",
+  "css_partial": "premium-product-store--home--premium-trust/section.css"
+}
