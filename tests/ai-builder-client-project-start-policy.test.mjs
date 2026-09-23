@@ -19,6 +19,8 @@ test("saved draft -> start new -> unrelated business leaves no prior-project res
     currentBusinessId: "business-bath",
     currentGenerationId: "generation-bath",
     currentCatalogItems: [{ name: "Jabones" }, { name: "Velas" }],
+    preparedPlanToken: "old-prepared-token",
+    preparedPlanTemplateId: "mega-retail-store",
     guidedState: {
       businessName: "Bath All Day",
       servicesProducts: ["Jabones", "Velas", "Bombas de bano"],
@@ -47,6 +49,8 @@ test("saved draft -> start new -> unrelated business leaves no prior-project res
   assert.equal(state.currentGenerationId, null);
   assert.deepEqual(state.currentCatalogItems, []);
   assert.equal(state.clientIntakeSession, null);
+  assert.equal(state.preparedPlanToken, "");
+  assert.equal(state.preparedPlanTemplateId, "");
   assert.equal(state.clientIntakeLastSyncedSnapshot, "");
   assert.equal(JSON.stringify(state).includes("Bath All Day"), false);
   assert.equal(JSON.stringify(state).includes("Jabones"), false);

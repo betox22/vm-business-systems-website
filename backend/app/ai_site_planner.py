@@ -1693,7 +1693,14 @@ def ensure_plan_seed_catalog_with_source(
             generic += 1
 
     client_names = _client_offering_names(state)
-    seed = semantic_seed_catalog(state, seed_context, count=6) if is_commerce else []
+    reusable_seed = state.catalogItems if state.catalogItems and all(
+        isinstance(item, dict) and all(item.get(field) is not None for field in (
+            "id", "sku", "name", "description", "category", "price_amount",
+            "rating", "badge", "imageSearchQuery",
+        ))
+        for item in state.catalogItems
+    ) else []
+    seed = (reusable_seed or semantic_seed_catalog(state, seed_context, count=6)) if is_commerce else []
     if client_names:
         reconciled, used_seed_fallback = _reconcile_client_catalog(
             catalog_items,

@@ -179,6 +179,11 @@ class LyraOrchestrator:
         await self._run_and_merge(manager, self.validator, user_input)
         return await manager.snapshot()
 
+    async def review_prepared(self, user_input: str, state: ProjectState) -> ProjectState:
+        manager = StateManager(state)
+        await self._review_and_correct_once(manager, user_input)
+        return await manager.snapshot()
+
     async def _safe_run(self, agent: BaseAgent, state: ProjectState, user_input: str) -> AgentResult:
         try:
             result = await agent.run(state, user_input)

@@ -18,6 +18,9 @@ const CLIENT_PROJECT_RUNTIME_DEFAULTS = Object.freeze({
   hasBackendIntakeSignal: false,
   backendReadyToGenerate: false,
   backendMissingFields: [],
+  backendNextStep: "",
+  preparedPlanToken: "",
+  preparedPlanTemplateId: "",
   clientIntakeLastSyncedSnapshot: "",
 });
 

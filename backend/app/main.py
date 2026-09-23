@@ -43,6 +43,7 @@ from .section_composition import ensure_shared_commerce_shell, prepare_composed_
 from .public_commerce import public_commerce_capabilities
 from .billing import router as billing_router
 from .db import get_session, init_db
+from .generation_plan_cache import load_prepared_generation, store_prepared_generation
 from .db_models import ClientIntakeSessionRecord, GeneratedSite, Store, PlatformSubscription
 from .domains import build_domain_candidates, check_domain_availability
 from .domains import router as domains_router
@@ -70,7 +71,6 @@ from .logo_generation import generate_and_store_ai_logo
 from .orchestrator import (
     LyraOrchestrator,
     assistant_message_for_state,
-    next_question_for_state,
     normalize_state_payload,
     site_plan_from_state,
 )
@@ -1976,6 +1976,7 @@ async def luma_chat(
         message=request.message,
     )
     state = intake_engine.apply_decision(state, intake_decision)
+    source_state = state.model_copy(deep=True)
     if (
         state.logoBrief
         and str(request.message or "").strip() == str(state.logoBrief).strip()
@@ -1988,6 +1989,7 @@ async def luma_chat(
             "pt": "Anotei o logo com as iniciais que você pediu e seguirei essa direção ao gerá-lo.",
         }.get(state.selectedLanguage, "I noted the logo initials you requested and will use that direction when generating it.")
 
+    prepared_plan_token = ""
     if intake_decision.canGenerate:
         final_state = await orchestrator.run(request.message, state, skip_intake_strategy=True)
         generation_missing_fields = intake_engine.missing_fields_from_state(
@@ -1997,6 +1999,12 @@ async def luma_chat(
         )
         generation_missing_fields = unblock_niche_intake_loop(final_state, generation_missing_fields)
         ready = not generation_missing_fields
+        if ready and isinstance(session, Session):
+            try:
+                prepared_plan_token = store_prepared_generation(session, source_state, final_state)
+            except Exception as error:
+                session.rollback()
+                logger.warning("LYRA prepared generation unavailable reason=%s", type(error).__name__)
         plan = site_plan_from_state(final_state)
         assistant_message = assistant_message_for_ready_state(intake_decision, final_state) if ready else assistant_message_for_intake_turn(intake_decision, final_state)
         next_question = "" if ready else intake_engine.fallback_question_for_missing(
@@ -2009,7 +2017,10 @@ async def luma_chat(
         generation_missing_fields = intake_decision.missingCriticalFields
         plan = {}
         assistant_message = assistant_message_for_intake_turn(intake_decision, final_state)
-        next_question = intake_decision.nextQuestion or next_question_for_state(final_state)
+        next_question = intake_engine.fallback_question_for_missing(
+            generation_missing_fields,
+            final_state.selectedLanguage,
+        )
 
     return LumaChatResponse(
         assistantMessage=assistant_message,
@@ -2025,6 +2036,7 @@ async def luma_chat(
             "preferredTone": final_state.preferredTone,
             "preferredColors": final_state.preferredColors,
             "salesFlow": final_state.salesFlow,
+            "salesMode": final_state.salesMode,
             "websiteIntent": final_state.websiteIntent,
             "websiteType": final_state.websiteType,
             "selectedTemplateId": final_state.selectedTemplateId,
@@ -2042,6 +2054,7 @@ async def luma_chat(
             "sitePlan": plan,
         },
         nextQuestion=next_question,
+        next_step=next_guided_step(generation_missing_fields, ready),
         readyToGenerate=ready,
         missingImportantFields=generation_missing_fields,
         confidence=final_state.confidence,
@@ -2049,7 +2062,25 @@ async def luma_chat(
         selected_template_id=final_state.selectedTemplateId,
         sitePlan=plan,
         used_dev_fallback=not intake_decision.usedAI,
+        preparedPlanToken=prepared_plan_token,
     )
+
+
+def next_guided_step(missing_fields: list[str], ready: bool) -> str:
+    if ready:
+        return "review"
+    if "sales_flow" in missing_fields and "niche" in missing_fields:
+        return "salesMode"
+    steps = {
+        "niche": "industry",
+        "sales_flow": "salesMode",
+        "business_name": "businessName",
+        "business_description": "businessDescription",
+        "services_products": "servicesProducts",
+        "brand_style": "preferredColors",
+        "logo": "hasLogoPhotos",
+    }
+    return steps.get(missing_fields[0], "backendClarification") if missing_fields else "backendClarification"
 
 
 def intake_message_for_decision(decision: LyraIntakeDecision, state: Any) -> str:
@@ -2452,12 +2483,22 @@ async def website_builder(
         )
         if part
     )
-    final_state = await orchestrator.run(
-        prompt_context,
-        state,
-        skip_intake_strategy=True,
-        run_review=True,
-    )
+    prepared_state = None
+    if request.preparedPlanToken and not existing_site_ids:
+        try:
+            prepared_state = load_prepared_generation(session, request.preparedPlanToken, state)
+        except Exception as error:
+            session.rollback()
+            logger.warning("LYRA prepared generation load failed reason=%s", type(error).__name__)
+    if prepared_state is not None:
+        final_state = await orchestrator.review_prepared(prompt_context, prepared_state)
+    else:
+        final_state = await orchestrator.run(
+            prompt_context,
+            state,
+            skip_intake_strategy=True,
+            run_review=True,
+        )
     catalog_items, catalog_source = resolve_catalog_items_and_source(final_state)
     if catalog_source == "seed_fallback":
         logger.warning(

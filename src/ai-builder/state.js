@@ -76,6 +76,9 @@ export const builderState = {
   hasBackendIntakeSignal: false,
   backendReadyToGenerate: false,
   backendMissingFields: [],
+  backendNextStep: '',
+  preparedPlanToken: '',
+  preparedPlanTemplateId: '',
   guidedStep: 'websiteIntent',
   // Backend-reported field (mapped) that the last assistant question was
   // actually about - see mapBackendSlotToGuidedField in index.js. Preferred

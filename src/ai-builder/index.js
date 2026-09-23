@@ -372,7 +372,6 @@ export {
   briefRequestsCyberpunk,
   buildInstantTemplateSchema,
   buildSitePlan,
-  chooseNextQuestionText,
   collectPayload,
   completeGuidedBriefFromMessage,
   contactInfoCompactLabel,
@@ -5098,34 +5097,6 @@ function setThinking(active) {
 
 
 
-function chooseNextQuestionText(serverQuestion, step) {
-  if (step === "review") return guidedQuestion("review");
-  const fallback = guidedQuestion(step);
-  const candidate = String(serverQuestion || "").trim();
-  if (!candidate) return fallback;
-  if (questionTargetsAnsweredField(candidate)) return fallback;
-  if (isDuplicateQuestion(candidate, fallback)) return fallback;
-  return candidate;
-}
-
-function questionTargetsAnsweredField(question) {
-  const text = questionSignature(question);
-  const checks = [
-    ["businessName", /\b(name|nombre|nom|nome|llama|called|business)\b/],
-    ["businessDescription", /\b(sells|does|vende|hace|description|descripcion|descricao|propose)\b/],
-    ["servicesProducts", /\b(products|services|productos|servicios|categories|categorias)\b/],
-    ["preferredColors", /\b(colors|colores|couleurs|cores|palette|paleta)\b/],
-    ["preferredTone", /\b(style|tone|estilo|tono|visual|premium|modern)\b/],
-    ["salesMode", /\b(online|sales|sell|venta|vender|quote|cotizacion|devis)\b/],
-    ["hasLogoPhotos", /\b(logo|photo|photos|foto|fotos|image|imagen)\b/],
-    ["contactInfo", /\b(contact|email|phone|whatsapp|telefono|correo)\b/],
-  ];
-  return checks.some(([step, pattern]) => pattern.test(text) && isGuidedStepAnswered(step));
-}
-
-
-
-
 
 function isDuplicateQuestion(a, b) {
   const left = questionSignature(a);
@@ -5219,18 +5190,6 @@ function shouldAdvanceToDesignerPlan(message) {
   return hasEnoughContextForFirstDraft();
 }
 
-// The public client-setup flow is driven by the backend's own LLM intake
-// engine, which decides what to ask next using its own field priority order
-// (see backend/app/lyra_intake_engine.py: business_name, business_description,
-// niche, sales_flow, brand_style, logo, plus target_audience/location/
-// contact_info). builderState.guidedStep is a SEPARATE, purely local sequence
-// used for the progress UI (see GUIDED_STEPS/normalizeNextGuidedStep) - it
-// does not track which question the backend actually just asked, and the two
-// can disagree. Rather than rewire the progress tracker itself, chat.js
-// reads result.missingImportantFields[0] from each backend response, maps it
-// through this table, and stores it as builderState.lastAskedGuidedField -
-// the more trustworthy signal for "which field is this reply answering",
-// used in place of builderState.guidedStep when available.
 const BACKEND_SLOT_TO_GUIDED_FIELD = {
   business_name: "businessName",
   business_description: "businessDescription",
@@ -5678,7 +5637,7 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
   try {
   for (let attempt = 1; attempt <= GENERATION_ATTEMPTS; attempt += 1) {
     try {
-      const response = await fetch(API_URL, {
+    const response = await fetch(API_URL, {
         method: "POST",
         headers: clientAuthHeaders({ "content-type": "application/json" }),
         credentials: "include",
@@ -5813,6 +5772,19 @@ async function selectTemplateForPayload(payload) {
         ...explicitForcedTemplate,
         template,
         catalogType: explicitForcedTemplate.catalogType || template.catalogModel?.catalogType || "",
+      };
+    }
+  }
+
+  if (isPublicClientSetup && payload.preparedPlanToken && builderState.preparedPlanTemplateId && window.TemplateRouter.getTemplateById) {
+    const template = await window.TemplateRouter.getTemplateById(builderState.preparedPlanTemplateId);
+    if (template) {
+      return {
+        templateId: builderState.preparedPlanTemplateId,
+        template,
+        intent: "backend_prepared_plan",
+        catalogType: template.catalogModel?.catalogType || "",
+        reason: "Selected by LYRA from the completed intake",
       };
     }
   }
@@ -12277,6 +12249,7 @@ async function collectPayload() {
   const payload = {
     generatedSiteId: builderState.currentSiteId || builderState.clientIntakeSession?.generatedSiteId || builderState.clientIntakeSession?.projectId || builderState.guidedState.generatedSiteId || "",
     projectId: builderState.currentSiteId || builderState.clientIntakeSession?.projectId || builderState.clientIntakeSession?.generatedSiteId || builderState.guidedState.projectId || "",
+    preparedPlanToken: isPublicClientSetup ? builderState.preparedPlanToken : "",
     business_name: generationBusinessName,
     business_description: generationBusinessDescription,
     industry: generationIndustry,

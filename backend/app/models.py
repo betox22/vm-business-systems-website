@@ -148,6 +148,7 @@ class LumaChatResponse(BaseModel):
     emotion: AssistantEmotion = "speaking"
     updatedFields: Dict[str, Any] = Field(default_factory=dict)
     nextQuestion: str = ""
+    next_step: str
     readyToGenerate: bool = False
     missingImportantFields: List[str] = Field(default_factory=list)
     confidence: float = 0.0
@@ -155,6 +156,7 @@ class LumaChatResponse(BaseModel):
     selected_template_id: Optional[str] = None
     sitePlan: Dict[str, Any] = Field(default_factory=dict)
     used_dev_fallback: bool = False
+    preparedPlanToken: str = ""
 
 
 class WebsiteGenerationRequest(BaseModel):
@@ -199,6 +201,7 @@ class WebsiteGenerationRequest(BaseModel):
     sales_flow: Optional[str] = None
     salesFlow: Optional[str] = None
     salesMode: Optional[str] = None
+    preparedPlanToken: Optional[str] = None
     fieldMeta: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     designStrategy: Dict[str, Any] = Field(default_factory=dict)
 

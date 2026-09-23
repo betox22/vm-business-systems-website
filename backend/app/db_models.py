@@ -361,3 +361,13 @@ class ClientIntakeSessionRecord(Base):
     storage_status: Mapped[str] = mapped_column(default="stored")
     created_at: Mapped[int] = mapped_column(default=_now)
     updated_at: Mapped[int] = mapped_column(default=_now, onupdate=_now)
+
+
+class PreparedGenerationRecord(Base):
+    __tablename__ = "prepared_generations"
+
+    id: Mapped[str] = mapped_column(primary_key=True)
+    input_hash: Mapped[str]
+    state_json: Mapped[str] = mapped_column(Text)
+    expires_at: Mapped[int] = mapped_column(index=True)
+    created_at: Mapped[int] = mapped_column(default=_now)
