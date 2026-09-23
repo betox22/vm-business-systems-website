@@ -29,6 +29,10 @@ test('published viewers and all staged JavaScript resolve dependencies inside th
     await readFile(path.join(published, 'composed-sections.js'), 'utf8'),
     await readFile(path.join(root, 'composed-sections.js'), 'utf8'),
   );
+  for (const relative of ['composed-catalog.js', 'templates/sections/shared-catalog.css']) {
+    assert.equal(await readFile(path.join(published, relative), 'utf8'),
+      await readFile(path.join(root, relative), 'utf8'));
+  }
   for (const name of ['manifest.json', 'section.html', 'section.css']) {
     const relative = path.join('templates', 'sections', 'corporate-company-pro--home--corporate-hero', name);
     assert.equal(await readFile(path.join(published, relative), 'utf8'), await readFile(path.join(root, relative), 'utf8'));

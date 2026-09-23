@@ -52,6 +52,9 @@ test('published viewer renders real composed HTML, bindings and scoped CSS', asy
     await page.route('https://composed.test/**', async (route) => {
       const pathname = new URL(route.request().url()).pathname;
       if (pathname === '/') return route.fulfill({ contentType: 'text/html', body: '<h1 id="outside">Outside</h1>' });
+      if (pathname === '/templates/sections/shared-catalog.css') {
+        return route.fulfill({ contentType: 'text/css', body: await readFile(path.join(root, 'templates/sections/shared-catalog.css'), 'utf8') });
+      }
       const match = /^\/templates\/sections\/([a-z0-9-]+)\/(manifest\.json|section\.html|section\.css)$/.exec(pathname);
       if (!match) return route.abort();
       const body = await readFile(path.join(root, 'templates/sections', match[1], match[2]), 'utf8');
@@ -86,18 +89,14 @@ test('published viewer renders real composed HTML, bindings and scoped CSS', asy
     assert.doesNotMatch(unsafe, /<script>alert/);
     const catalog = { pages: [{ page_key: 'home', sections: [composedSection({
       section_id: 'corporate-company-pro--catalog--services-grid',
-      copy_bindings: { 'business.tone': 'Focused', title: 'Services', text: 'Our work',
-        'product.name': 'Prototype', 'product.description': 'A design service',
-        'product.price_label': '$25', 'product.category': 'Design' },
+      copy_bindings: { title: 'Services', subtitle: 'Our work', empty_message: 'No services',
+        quote_label: 'Request a quote', view_label: 'Ask about this' },
     })] }] };
     const catalogResult = await page.evaluate(async (value) => {
       await ComposedViewer.preloadComposedSections(value);
-      document.body.insertAdjacentHTML('beforeend', ComposedViewer.renderWebsite(value));
-      const section = document.querySelector('div[data-composed-section="corporate-company-pro--catalog--services-grid"]');
-      return { title: section.querySelector('h2').textContent, onerror: section.querySelector('img').hasAttribute('onerror') };
+      return ComposedViewer.renderWebsite(value).includes('data-composed-section="corporate-company-pro--catalog--services-grid"');
     }, catalog);
-    assert.equal(catalogResult.title, 'Services');
-    assert.equal(catalogResult.onerror, false);
+    assert.equal(catalogResult, false);
     const quote = { pages: [{ page_key: 'home', sections: [composedSection({ section_id: 'quote-upload--custom-order' })] }] };
     assert.equal(await page.evaluate(async (value) => {
       await ComposedViewer.preloadComposedSections(value);

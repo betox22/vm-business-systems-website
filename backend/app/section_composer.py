@@ -34,6 +34,14 @@ SHELL_CONTROL_SLOTS = {
                           "help_links": ["label", "page_key"]},
     },
 }
+CATALOG_ITEM_FIELDS = ["id", "businessId", "name", "categoryId", "description", "price",
+                       "quoteOnly", "currency", "stock", "imageUrl", "status", "active", "published"]
+CATALOG_COLLECTION = {"source": "storefront_products", "item_fields": CATALOG_ITEM_FIELDS}
+CATALOG_SECTION_IDS = {
+    "mega-retail-store--home--catalog",
+    "digital-products-store--catalog--digital-catalog",
+    "corporate-company-pro--catalog--services-grid",
+}
 
 
 class CopyValue(BaseModel):
@@ -108,8 +116,11 @@ def _load_eligible_sections(
                 or not isinstance(image_slots, list) or not isinstance(collections, dict)
                 or not isinstance(control_slots, dict)
                 or control_slots != SHELL_CONTROL_SLOTS.get(section_id, {})
+                or (section_id in CATALOG_SECTION_IDS and collections != {"catalog_items": CATALOG_COLLECTION})
                 or any(contract != {"min": 1, "max": 50, "item_fields": ["label", "page_key"]}
-                       for contract in collections.values())):
+                       and not (field == "catalog_items" and section_id in CATALOG_SECTION_IDS
+                                and contract == CATALOG_COLLECTION)
+                       for field, contract in collections.items())):
             raise ValueError(f"Invalid section contract: {path}")
         slots = [slot["slot_id"] for slot in image_slots]
         if len(set(slots)) != len(slots) or any(slot["image_role"] not in IMAGE_ROLES for slot in image_slots):

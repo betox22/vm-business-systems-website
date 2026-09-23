@@ -38,3 +38,15 @@ def test_shared_shell_is_eligible_without_archetype():
     sections = _load_eligible_sections(set(), require_complete_bindings=True)
     assert sections["shared--header"]["source_template"] == "shared"
     assert sections["shared--footer"]["source_template"] == "shared"
+
+
+@pytest.mark.parametrize(("archetype", "section_id"), [
+    ("retail", "mega-retail-store--home--catalog"),
+    ("digital", "digital-products-store--catalog--digital-catalog"),
+    ("corporate", "corporate-company-pro--catalog--services-grid"),
+])
+def test_certified_catalog_requires_archetype_and_live_products(archetype, section_id):
+    section = _load_eligible_sections({archetype}, require_complete_bindings=True)[section_id]
+    assert section["collection_bindings"]["catalog_items"]["source"] == "storefront_products"
+    assert section["image_slots"] == []
+    assert section_id not in _load_eligible_sections(set(), require_complete_bindings=True)

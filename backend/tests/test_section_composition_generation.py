@@ -68,7 +68,7 @@ def generate(generation):
 
 def composed_proposal(_brief, archetypes, **kwargs):
     assert "custom_order_upload" in archetypes
-    assert {"quote_upload", "header", "footer"}.issubset(kwargs["excluded_section_types"])
+    assert {"quote_upload", "header", "footer", "catalog"}.issubset(kwargs["excluded_section_types"])
     assert kwargs["require_complete_bindings"] is True
     return {"sections": [
         {

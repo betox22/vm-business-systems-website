@@ -146,7 +146,12 @@ const cases = [
 test('certified heroes and shared shell render with real bindings and shared color tokens', async (context) => {
   const tokens = JSON.parse(await readFile(path.join(sectionsDir, 'shared-color-tokens.json'), 'utf8'));
   const certifiedIds = JSON.parse(await readFile(path.join(sectionsDir, 'certified-section-ids.json'), 'utf8'));
-  assert.deepEqual(new Set(certifiedIds), new Set(cases.map((fixture) => fixture.id)));
+  assert.deepEqual(new Set(certifiedIds), new Set([
+    ...cases.map((fixture) => fixture.id),
+    'mega-retail-store--home--catalog',
+    'digital-products-store--catalog--digital-catalog',
+    'corporate-company-pro--catalog--services-grid',
+  ]));
   assert.equal(tokens.version, 1);
   const allowedColors = new Set(Object.values(tokens.tokens));
   const bundle = await build({ absWorkingDir: root, entryPoints: ['composed-sections.js'],

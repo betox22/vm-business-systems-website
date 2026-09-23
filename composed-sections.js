@@ -1,3 +1,5 @@
+import { CATALOG_ITEM_FIELDS, isCatalogSection, renderCatalogItems } from "./composed-catalog.js";
+
 const composedSectionCache = new Map();
 const pendingSectionLoads = new Map();
 
@@ -34,6 +36,20 @@ async function loadComposedSection(sectionId) {
       ]);
       if (!htmlResponse.ok || !cssResponse.ok) throw new Error("Section partial unavailable");
       const [html, css] = await Promise.all([htmlResponse.text(), cssResponse.text()]);
+      if (isCatalogSection(sectionId)) {
+        const collection = manifest.collection_bindings?.catalog_items;
+        if (collection?.source !== "storefront_products"
+          || JSON.stringify(collection.item_fields) !== JSON.stringify(CATALOG_ITEM_FIELDS)
+          || manifest.image_slots?.length !== 0) throw new Error("Invalid catalog contract");
+        if (!document.querySelector("style[data-composed-catalog]")) {
+          const sharedResponse = await fetch("/templates/sections/shared-catalog.css");
+          if (!sharedResponse.ok) throw new Error("Shared catalog CSS unavailable");
+          const sharedStyle = document.createElement("style");
+          sharedStyle.dataset.composedCatalog = "";
+          sharedStyle.textContent = await sharedResponse.text();
+          document.head.appendChild(sharedStyle);
+        }
+      }
       composedSectionCache.set(sectionId, { manifest, html });
       const style = document.createElement("style");
       style.dataset.composedSection = sectionId;
@@ -135,6 +151,11 @@ export function renderComposedSection(section, runtime = {}) {
   const collections = cached.manifest.collection_bindings || {};
   const renderedCollections = {};
   for (const [field, contract] of Object.entries(collections)) {
+    if (field === "catalog_items" && isCatalogSection(sectionId)) {
+      renderedCollections[field] = renderCatalogItems(sectionId, runtime.catalogProducts, copy, runtime);
+      if (renderedCollections[field] === null) return "";
+      continue;
+    }
     const items = section.list_bindings?.[field];
     if (!Array.isArray(items) || items.length < contract.min || items.length > contract.max
       || contract.item_fields?.join(",") !== "label,page_key"

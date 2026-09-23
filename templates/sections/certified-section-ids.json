@@ -21,5 +21,8 @@
   "premium-product-store--home--premium-hero",
   "real-estate-listings-pro--home--listing-hero",
   "shared--header",
-  "shared--footer"
+  "shared--footer",
+  "mega-retail-store--home--catalog",
+  "digital-products-store--catalog--digital-catalog",
+  "corporate-company-pro--catalog--services-grid"
 ]

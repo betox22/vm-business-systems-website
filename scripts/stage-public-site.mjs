@@ -50,6 +50,7 @@ const PUBLIC_TOP_LEVEL_FILES = [
   "client-start.js",
   "client.css",
   "composed-sections.js",
+  "composed-catalog.js",
   "contact.html",
   "descargos-de-responsabilidad.html",
   "disclaimers.html",
@@ -96,6 +97,7 @@ const PUBLIC_TOP_LEVEL_DIRECTORIES = [
 const TEMPLATES_ALLOWLIST = [
   "templates/all-templates.json",
   "templates/commerce-capabilities.json",
+  "templates/sections/shared-catalog.css",
   "templates/marketplace/mega-marketplace/template.manifest.json",
   "templates/marketplace/mega-marketplace/phase-5/visual-prototype/preview.html",
   "templates/marketplace/mega-marketplace/phase-5/visual-prototype/styles.css",

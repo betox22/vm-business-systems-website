@@ -1,0 +1,18 @@
+[data-composed-section] .composed-catalog { padding: 3rem clamp(1rem, 4vw, 3rem); color: var(--site-text); background: var(--site-bg); }
+[data-composed-section] .composed-catalog__heading { max-width: 44rem; margin-bottom: 1.5rem; }
+[data-composed-section] .composed-catalog__heading h2 { margin: 0 0 .5rem; font: 700 clamp(1.6rem, 3vw, 2.4rem)/1.15 var(--site-heading, sans-serif); }
+[data-composed-section] .composed-catalog__heading p { margin: 0; color: var(--site-muted); line-height: 1.55; }
+[data-composed-section] .composed-catalog__items { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
+[data-composed-section] .composed-catalog__card { min-width: 0; overflow: hidden; border: 1px solid var(--site-border); border-radius: 6px; background: var(--site-surface); }
+[data-composed-section] .composed-catalog__image { display: grid; place-items: center; aspect-ratio: 4 / 3; background: var(--site-secondary); overflow: hidden; }
+[data-composed-section] .composed-catalog__image img { width: 100%; height: 100%; object-fit: cover; }
+[data-composed-section] .composed-catalog__initial { color: var(--site-primary); font: 700 3rem var(--site-heading, sans-serif); }
+[data-composed-section] .composed-catalog__details { display: grid; gap: .5rem; padding: 1rem; }
+[data-composed-section] .composed-catalog__details small { color: var(--site-primary); }
+[data-composed-section] .composed-catalog__details h3 { margin: 0; font: 700 1.15rem/1.3 var(--site-heading, sans-serif); overflow-wrap: anywhere; }
+[data-composed-section] .composed-catalog__details p { margin: 0; color: var(--site-muted); line-height: 1.45; }
+[data-composed-section] .composed-catalog__bottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .5rem; }
+[data-composed-section] .composed-catalog__bottom strong { overflow-wrap: anywhere; }
+[data-composed-section] .composed-catalog__bottom button { min-height: 2.75rem; border: 1px solid var(--site-primary); border-radius: 4px; padding: .5rem .8rem; color: var(--site-surface); background: var(--site-primary); font: 600 .9rem var(--site-body, sans-serif); cursor: pointer; }
+[data-composed-section] .composed-catalog__bottom button:disabled { color: var(--site-muted); border-color: var(--site-border); background: var(--site-bg); cursor: not-allowed; }
+[data-composed-section] .composed-catalog__empty { grid-column: 1 / -1; margin: 0; color: var(--site-muted); }

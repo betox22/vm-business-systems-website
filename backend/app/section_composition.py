@@ -227,7 +227,7 @@ def prepare_composed_schema(
     layout = section_composer.compose_layout(
         brief,
         detect_business_archetypes(business_text),
-        excluded_section_types=covered_section_types(result, home) | {"header", "footer"},
+        excluded_section_types=covered_section_types(result, home) | {"header", "footer", "catalog"},
         require_complete_bindings=True,
     )
     sections = []

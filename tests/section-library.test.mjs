@@ -42,6 +42,9 @@ const certifiedSections = new Map([
   ["real-estate-listings-pro--home--listing-hero", "section"],
   ["shared--header", "header"],
   ["shared--footer", "footer"],
+  ["mega-retail-store--home--catalog", "section"],
+  ["digital-products-store--catalog--digital-catalog", "section"],
+  ["corporate-company-pro--catalog--services-grid", "section"],
 ]);
 const certifiedIds = JSON.parse(readFileSync(join(library, "certified-section-ids.json"), "utf8"));
 
@@ -54,10 +57,15 @@ test("section library covers the current template catalog with complete standalo
     const manifest = JSON.parse(readFileSync(join(library, directory, "manifest.json"), "utf8"));
     assert.deepEqual(Object.keys(manifest).filter((key) => !['collection_bindings', 'control_slots'].includes(key)), keys, directory);
     if (manifest.collection_bindings) {
-      assert.ok(directory === 'shared--header' || directory === 'shared--footer');
-      assert.deepEqual(manifest.collection_bindings, {
-        navigation: { min: 1, max: 50, item_fields: ['label', 'page_key'] },
-      });
+      if (directory === 'shared--header' || directory === 'shared--footer') {
+        assert.deepEqual(manifest.collection_bindings, {
+          navigation: { min: 1, max: 50, item_fields: ['label', 'page_key'] },
+        });
+      } else {
+        assert.ok(['mega-retail-store--home--catalog', 'digital-products-store--catalog--digital-catalog',
+          'corporate-company-pro--catalog--services-grid'].includes(directory));
+        assert.equal(manifest.collection_bindings.catalog_items.source, 'storefront_products');
+      }
     }
     if (manifest.control_slots) {
       assert.ok(directory === 'shared--header' || directory === 'shared--footer');
@@ -74,7 +82,7 @@ test("section library covers the current template catalog with complete standalo
     assert.equal(manifest.html_partial, `${directory}/section.html`);
     assert.equal(manifest.css_partial, `${directory}/section.css`);
     const html = readFileSync(join(library, manifest.html_partial), "utf8");
-    if (manifest.collection_bindings) assert.ok(html.includes('{{navigation}}'));
+    if (manifest.collection_bindings) assert.ok(html.includes(directory.startsWith('shared--') ? '{{navigation}}' : '{{catalog_items}}'));
     const css = readFileSync(join(library, manifest.css_partial), "utf8");
     if (certifiedSections.has(directory)) {
       assert.ok(html.startsWith(`<${certifiedSections.get(directory)} class="`), directory);
@@ -85,7 +93,8 @@ test("section library covers the current template catalog with complete standalo
     assert.ok(!html.includes("SECTION_COPY_") && !html.includes("SECTION_BUSINESS_"), directory);
     for (const field of manifest.required_copy_fields) {
       assert.equal(typeof field, "string");
-      assert.ok(html.includes(`{{${field}}}`), `${directory}: ${field}`);
+      assert.ok(html.includes(`{{${field}}}`) || (manifest.collection_bindings?.catalog_items &&
+        ['empty_message', 'quote_label', 'sold_out_label', 'add_label', 'view_label'].includes(field)), `${directory}: ${field}`);
     }
     for (const slot of manifest.image_slots) {
       assert.deepEqual(Object.keys(slot), ["slot_id", "image_role", "min", "max"]);

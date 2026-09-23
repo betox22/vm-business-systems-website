@@ -147,5 +147,6 @@ def test_real_section_library_contains_catalog_and_hero_sections():
     assert "mega-retail-store--home--hero" not in manifests
     retail = section_composer._load_eligible_sections({"retail"})
     assert "mega-retail-store--home--hero" in retail
-    assert "mega-retail-store--home--catalog" in manifests
+    assert "mega-retail-store--home--catalog" not in manifests
+    assert "mega-retail-store--home--catalog" in retail
     assert retail["mega-retail-store--home--hero"]["required_copy_fields"]
