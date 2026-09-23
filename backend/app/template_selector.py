@@ -55,7 +55,7 @@ def select_template(business_brief: dict, template_catalog: dict) -> tuple[str, 
             },
         },
     }
-    client = agents.OpenAI(api_key=api_key, timeout=agents.OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=agents.observed_http_client(asynchronous=False))
+    client = agents.OpenAI(api_key=api_key, timeout=agents.OPENAI_CLASSIFICATION_TIMEOUT_SECONDS, http_client=agents.observed_http_client(asynchronous=False))
     response = agents.create_sync_chat_completion_with_retry(
         client,
         stage="template_selection",

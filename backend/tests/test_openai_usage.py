@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from app.agents import create_chat_completion_with_retry, create_sync_chat_completion_with_retry
 from app.openai_usage import (
@@ -124,3 +125,46 @@ def test_sdk_http_retries_are_counted_without_changing_retry_policy(monkeypatch)
         client.close()
     event = json.loads(events.records[0].split(" ", 1)[1])
     assert event["attempts"] == 3
+
+
+def test_astra_omits_unsupported_temperature_without_changing_other_models():
+    calls = []
+
+    class Completions:
+        async def create(self, **kwargs):
+            calls.append(kwargs)
+            return SimpleNamespace(usage=None)
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
+    asyncio.run(create_chat_completion_with_retry(client, model="gpt-6-astra", temperature=0.25))
+    asyncio.run(create_chat_completion_with_retry(client, model="gpt-4o", temperature=0.25))
+    assert "temperature" not in calls[0]
+    assert calls[1]["temperature"] == 0.25
+
+
+def test_sync_astra_omits_unsupported_temperature_without_changing_other_models():
+    calls = []
+
+    class Completions:
+        def create(self, **kwargs):
+            calls.append(kwargs)
+            return SimpleNamespace(usage=None)
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
+    create_sync_chat_completion_with_retry(client, model="gpt-6-astra", temperature=0.15)
+    create_sync_chat_completion_with_retry(client, model="gpt-4o", temperature=0.15)
+    assert "temperature" not in calls[0]
+    assert calls[1]["temperature"] == 0.15
+
+
+def test_planner_and_reviewer_use_long_timeout(monkeypatch):
+    from app import agents, ai_site_planner
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    with patch.object(agents, "AsyncOpenAI") as agent_client, patch.object(ai_site_planner, "AsyncOpenAI") as planner_client:
+        agents.CopywriterAgent()
+        assert agent_client.call_args.kwargs["timeout"] == agents.OPENAI_REQUEST_TIMEOUT_SECONDS
+        agents.ReviewerAgent()
+        assert agent_client.call_args.kwargs["timeout"] == agents.OPENAI_LONG_REQUEST_TIMEOUT_SECONDS
+        ai_site_planner.OpenAISitePlanAgent()
+        assert planner_client.call_args.kwargs["timeout"] == agents.OPENAI_LONG_REQUEST_TIMEOUT_SECONDS

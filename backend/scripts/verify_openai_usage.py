@@ -12,6 +12,7 @@ from sqlalchemy.pool import StaticPool
 
 from app import main
 from app.db import Base
+from app.openai_usage import new_generation_id
 
 
 class UsageCapture(logging.Handler):
@@ -43,57 +44,40 @@ def run() -> int:
     usage_logger = logging.getLogger("kreaton.openai_usage")
     usage_logger.addHandler(capture)
     client = TestClient(main.app)
-    current = {
-        "businessName": "Northstar Tea Lab",
-        "businessDescription": "A small test shop selling three loose-leaf teas online to local customers.",
-        "industry": "specialty tea",
-        "servicesProducts": ["Jasmine green tea", "Assam black tea", "Mint herbal tea"],
-        "salesFlow": "online_sales",
-        "salesMode": "online_sales",
-        "preferredTone": "calm and modern",
-        "preferredColors": "forest green and white",
-        "logoPreference": "explicit_skip",
-        "selectedLanguage": "en",
-        "fieldMeta": {
-            key: {"source": "explicit", "confidence": 0.95}
-            for key in (
-                "business_name", "business_description", "niche", "industry", "salesFlow",
-                "sales_flow", "salesMode", "brand_style", "preferredTone", "logo",
-            )
-        },
-    }
+    current = {"selectedLanguage": "en"}
+    generation_id = new_generation_id()
+    messages = [
+        "My business is Northstar Tea Lab, a small specialty tea shop for local customers. "
+        "We sell Jasmine green tea, Assam black tea, and Mint herbal tea through online checkout. "
+        "I want a calm modern site in forest green and white. Please use text only and skip a logo.",
+        "To confirm: customers buy these three teas online. The style is calm and modern, "
+        "the colors are forest green and white, and I do not want a generated logo.",
+        "The business name is Northstar Tea Lab. We sell Jasmine green tea, Assam black tea, "
+        "and Mint herbal tea online. Please generate the website without a logo.",
+    ]
     try:
-        chat = client.post("/api/luma/chat", json={
-            "current": current,
-            "message": "I confirm the shop details and want to generate without a logo.",
-        }, timeout=240)
-        print(f"chat_status={chat.status_code}")
-        if chat.status_code != 200:
-            return 3
-        data = chat.json()
-        generation_id = data.get("generationId", "")
+        data = {}
+        for index, message in enumerate(messages, start=1):
+            chat = client.post("/api/luma/chat", json={"current": current, "message": message},
+                               headers={"X-Generation-ID": generation_id})
+            print(f"chat_turn={index} status={chat.status_code}")
+            if chat.status_code != 200:
+                return 3
+            data = chat.json()
+            current = {**current, **data["updatedFields"]}
+            print(f"next_step={data.get('next_step')} missing={data.get('missingImportantFields')}")
+            if data.get("readyToGenerate"):
+                break
         print(f"generation_id={generation_id}")
+        print(f"chat_generation_id={data.get('generationId')}")
         print(f"ready_to_generate={data.get('readyToGenerate')}")
         if not data.get("readyToGenerate"):
-            print(f"next_step={data.get('next_step')}")
             return 4
         details = data["updatedFields"]
-        payload = {
-            "preparedPlanToken": data.get("preparedPlanToken", ""),
-            "businessName": details.get("businessName"),
-            "businessDescription": details.get("businessDescription"),
-            "industry": details.get("industry"),
-            "servicesProducts": details.get("servicesProducts"),
-            "salesFlow": details.get("salesFlow"),
-            "salesMode": details.get("salesMode"),
-            "preferredTone": details.get("preferredTone"),
-            "preferredColors": details.get("preferredColors"),
-            "logoPreference": details.get("logoPreference"),
-            "selectedLanguage": "en",
-            "fieldMeta": details.get("fieldMeta"),
-        }
+        payload = {**details, "preparedPlanToken": data.get("preparedPlanToken", ""), "selectedLanguage": "en"}
+        print(f"prepared_plan_available={bool(data.get('preparedPlanToken'))}")
         site = client.post("/ai/website-builder", json=payload,
-                           headers={"X-Generation-ID": generation_id}, timeout=300)
+                           headers={"X-Generation-ID": generation_id})
         print(f"site_status={site.status_code}")
         if site.status_code == 200:
             result = site.json()

@@ -119,7 +119,7 @@ class RealAIAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual(legal_art.reasoningSummary, grooming_art.reasoningSummary)
         self.assertTrue(all(call["response_format"]["type"] == "json_schema" for call in completions.calls))
         self.assertTrue(all(call["model"] == "gpt-6-astra" for call in completions.calls))
-        self.assertTrue(all(factory.kwargs["timeout"] == 20.0 for factory in client_factory.call_args_list))
+        self.assertTrue(all(factory.kwargs["timeout"] == agents.OPENAI_REQUEST_TIMEOUT_SECONDS for factory in client_factory.call_args_list))
 
     async def test_intake_uses_high_confidence_structured_extraction(self):
         completions = _BusinessAwareCompletions()

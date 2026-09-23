@@ -95,6 +95,7 @@ def test_boutique_coffee_variants_select_focused_template(boutique_coffee, opena
     result = asyncio.run(StrategyAgent().run(boutique_coffee, boutique_coffee.businessDescription))
 
     assert result.updates["selectedTemplateId"] == "premium-product-store"
+    assert calls[0]["client"]["timeout"] == template_selector.agents.OPENAI_CLASSIFICATION_TIMEOUT_SECONDS
     request = calls[-1]["request"]
     assert request["model"] == "selector-test-model"
     assert request["response_format"]["type"] == "json_schema"

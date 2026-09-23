@@ -222,13 +222,17 @@ def split_items(value: str | List[str] | None) -> List[str]:
     ]
 
 
-OPENAI_REQUEST_TIMEOUT_SECONDS = 20.0
+OPENAI_CLASSIFICATION_TIMEOUT_SECONDS = 30.0
+OPENAI_REQUEST_TIMEOUT_SECONDS = 60.0
+OPENAI_LONG_REQUEST_TIMEOUT_SECONDS = 180.0
 OPENAI_MAX_ATTEMPTS = 2
 OPENAI_RETRY_BACKOFF_SECONDS = 0.5
 
 
 async def create_chat_completion_with_retry(client: Any, *, stage: str = "chat", **kwargs: Any) -> Any:
     """Retry one transient OpenAI chat failure before callers degrade gracefully."""
+    if kwargs.get("model") == "gpt-6-astra":
+        kwargs.pop("temperature", None)
     last_error: Optional[Exception] = None
     started = time.perf_counter()
     with count_http_attempts():
@@ -248,6 +252,8 @@ async def create_chat_completion_with_retry(client: Any, *, stage: str = "chat",
 
 def create_sync_chat_completion_with_retry(client: Any, *, stage: str = "chat", **kwargs: Any) -> Any:
     """Synchronous counterpart used by the unmatched-niche catalog fallback."""
+    if kwargs.get("model") == "gpt-6-astra":
+        kwargs.pop("temperature", None)
     last_error: Optional[Exception] = None
     started = time.perf_counter()
     with count_http_attempts():
@@ -573,7 +579,7 @@ def classify_business_niche(context: str, language: str) -> Optional[str]:
     if not api_key or not OpenAI or not context.strip():
         return None
     try:
-        client = OpenAI(api_key=api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=observed_http_client(asynchronous=False))
+        client = OpenAI(api_key=api_key, timeout=OPENAI_CLASSIFICATION_TIMEOUT_SECONDS, http_client=observed_http_client(asynchronous=False))
         model = os.getenv("OPENAI_NICHE_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
         response = create_sync_chat_completion_with_retry(
             client,
@@ -1438,7 +1444,7 @@ class ReviewerAgent(BaseAgent):
         self.model = os.getenv("OPENAI_REVIEWER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.client = (
-            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=observed_http_client(asynchronous=True))
+            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_LONG_REQUEST_TIMEOUT_SECONDS, http_client=observed_http_client(asynchronous=True))
             if AsyncOpenAI and self.api_key
             else None
         )

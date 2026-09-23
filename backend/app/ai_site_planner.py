@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, field_validator, model_validator
 
 from .agents import (
-    OPENAI_REQUEST_TIMEOUT_SECONDS,
+    OPENAI_LONG_REQUEST_TIMEOUT_SECONDS,
     TEMPLATE_CATALOG,
     create_chat_completion_with_retry,
     normalize_template_id,
@@ -1769,7 +1769,7 @@ class OpenAISitePlanAgent:
         self.model = os.getenv("OPENAI_SITE_PLANNER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.client = (
-            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=observed_http_client(asynchronous=True))
+            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_LONG_REQUEST_TIMEOUT_SECONDS, http_client=observed_http_client(asynchronous=True))
             if AsyncOpenAI and self.api_key
             else None
         )
