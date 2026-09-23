@@ -38,6 +38,8 @@ def fixture(tmp_path, monkeypatch):
         schema, authority = accepted_candidate(session)
     schema["pages"][0]["sections"][0]["editable"]["headline"] = "Tools for the everyday workshop"
     schema["global_components"]["footer_text"] = "Explore our collection"
+    next(section for section in schema["pages"][0]["sections"]
+         if section.get("section_id") == "shared--footer")["copy_bindings"]["footer_text"] = "Explore our collection"
     receipt = issue_graph_provenance(schema, authority=authority)
     yield engine, schema, receipt
     engine.dispose()
@@ -167,6 +169,8 @@ def test_database_failure_after_site_update_rolls_everything_back(fixture, fast_
 def test_real_claim_rejection_only_writes_sanitized_separate_audit(fixture):
     engine, schema, _ = fixture
     schema["global_components"]["footer_text"] = "Free shipping for everyone"
+    next(section for section in schema["pages"][0]["sections"]
+         if section.get("section_id") == "shared--footer")["copy_bindings"]["footer_text"] = "Free shipping for everyone"
     with Session(engine) as session:
         authority = read_presentation_authority(session, SITE, actor=ACTOR, contact=schema["contact"])
     receipt = issue_graph_provenance(schema, authority=authority)

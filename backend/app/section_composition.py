@@ -188,6 +188,26 @@ def _shared_shell(schema: dict[str, Any], business: dict[str, Any], sales_mode: 
     return header, footer
 
 
+def ensure_shared_commerce_shell(schema: dict[str, Any], sales_mode: str | None = None) -> dict[str, Any]:
+    template_id = (schema.get("active_template") or schema.get("selected_template") or {}).get("id")
+    if template_id not in {"mega-retail-store", "b2b-saas-enterprise-pro"}:
+        return schema
+    home = next((page for page in schema.get("pages", []) if page.get("page_key") == "home"), None)
+    if home is None or not isinstance(home.get("sections"), list):
+        return schema
+    existing = {section.get("section_id") for section in home["sections"] if section.get("type") == "composed"}
+    if {"shared--header", "shared--footer"}.issubset(existing):
+        return schema
+    result = deepcopy(schema)
+    home = next(page for page in result["pages"] if page.get("page_key") == "home")
+    header, footer = _shared_shell(result, result.get("business") or {}, sales_mode)
+    if "shared--header" not in existing:
+        home["sections"].append(header)
+    if "shared--footer" not in existing:
+        home["sections"].append(footer)
+    return result
+
+
 def prepare_composed_schema(
     schema: dict[str, Any], business_text: str, *, sales_mode: str | None = None,
 ) -> tuple[dict[str, Any], list[dict]]:
@@ -230,7 +250,12 @@ def prepare_composed_schema(
         })
         pending.extend({"section_id": section_id, **request} for request in deferred)
     header, footer = _shared_shell(result, business, sales_mode)
-    home["sections"].extend([header, *sections, footer])
+    existing = {item.get("section_id") for item in home["sections"] if item.get("type") == "composed"}
+    if "shared--header" not in existing:
+        home["sections"].append(header)
+    home["sections"].extend(sections)
+    if "shared--footer" not in existing:
+        home["sections"].append(footer)
     return result, pending
 
 

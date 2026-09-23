@@ -3,20 +3,23 @@
   "section_type": "hero",
   "source_template": "Industrial Supplier",
   "eligibility": {
-    "requires_archetype": null
+    "requires_archetype": "industrial"
   },
   "required_copy_fields": [
+    "eyebrow",
     "headline",
     "subtitle",
     "primary_button",
+    "primary_page_key",
     "secondary_button",
-    "badge"
+    "secondary_page_key",
+    "image_alt"
   ],
   "image_slots": [
     {
       "slot_id": "image_1",
       "image_role": "hero_candidate",
-      "min": 0,
+      "min": 1,
       "max": 1
     }
   ],

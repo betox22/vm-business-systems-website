@@ -39,7 +39,7 @@ from .ai_site_planner import enforce_client_declared_catalog_facts
 from .client_auth import authenticated_client_user, fetch_supabase_user, supabase_auth_configured, password_client_session
 from .commerce import router as commerce_router
 from .catalog_sync import apply_commerce_overlay, sync_site_catalog_to_commerce
-from .section_composition import prepare_composed_schema, resolve_deferred_textures
+from .section_composition import ensure_shared_commerce_shell, prepare_composed_schema, resolve_deferred_textures
 from .public_commerce import public_commerce_capabilities
 from .billing import router as billing_router
 from .db import get_session, init_db
@@ -2486,7 +2486,10 @@ async def website_builder(
             business_id=final_state.businessName or "generated-business",
             site_id=logo_site_id,
         )
-    schema = build_schema_from_state(final_state, catalog_items=catalog_items, catalog_source=catalog_source)
+    schema = ensure_shared_commerce_shell(
+        build_schema_from_state(final_state, catalog_items=catalog_items, catalog_source=catalog_source),
+        final_state.salesMode or final_state.salesFlow,
+    )
     db_site = None
     if os.getenv("KREATON_SECTION_COMPOSITION_ENABLED") == "1" and not existing_site_ids:
         try:

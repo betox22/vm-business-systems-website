@@ -15,6 +15,18 @@ from app.section_composer import _load_eligible_sections
         ("services", "home-services-premium--home--home-service-hero"),
         ("lead_generation", "lead-funnel-pro--home--funnel-hero"),
         ("marketplace", "listing-marketplace-pro--home--hero"),
+        ("b2b", "b2b-saas-enterprise-pro--home--enterprise-hero"),
+        ("b2b", "b2b-saas-enterprise-pro--home--hero"),
+        ("digital", "digital-products-store--home--digital-hero"),
+        ("education", "education-course-academy-pro--home--academy-hero"),
+        ("fashion", "fashion-drop-pro--home--fashion-hero"),
+        ("professional_services", "legal-professional-services-pro--home--professional-hero"),
+        ("industrial", "manufacturing-industrial-supplier-pro--home--industrial-hero"),
+        ("medical", "medical-wellness-clinic-pro--home--clinic-hero"),
+        ("marketplace", "mega-marketplace--deals--deals-hero"),
+        ("marketplace", "mega-marketplace--home--marketplace-hero"),
+        ("premium_product", "premium-product-store--home--premium-hero"),
+        ("real_estate", "real-estate-listings-pro--home--listing-hero"),
     ],
 )
 def test_certified_hero_requires_its_archetype(archetype, section_id):

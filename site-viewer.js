@@ -181,27 +181,11 @@ function renderB2BSaasPublicWebsite(schema, page, { logo, layoutId, templateId, 
     || {};
   const themeBrand = { ...(schema.brand || {}), colors: { ...(schema.brand?.colors || {}), ...(theme.colors || {}) }, fontPairing: theme.fonts || schema.brand?.fontPairing };
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, themeBrand)}">
-    ${renderComposedShell(schema, "shared--header", { cartCount: sharedCart?.count() || 0 }) || renderB2BSaasPublicHeader(schema, page, pages, logo, labels, plans)}
+    ${renderComposedShell(schema, "shared--header", { cartCount: sharedCart?.count() || 0 }) || ""}
     ${isHome ? `${renderB2BSaasPublicHero(schema, hero, pages, items, labels, plans)}${renderB2BSaasPublicLogoRow(labels)}${renderB2BSaasPublicFeatures(schema, sections, items, labels)}${renderB2BSaasPublicPricing(pricingSection, plans, labels)}` : ""}
     ${remaining.map((section) => renderSection(section, schema)).join("")}
-    ${renderComposedShell(schema, "shared--footer") || `<footer class="b2b-saas-footer"><div>${renderB2BSaasPublicBrand(schema, logo)}</div><span>${escapeHtml(schema.global_components?.footer_text || `© ${new Date().getFullYear()} ${schema.business?.name || ""}`)}</span></footer>`}
+    ${renderComposedShell(schema, "shared--footer") || ""}
   </div>`;
-}
-
-function renderB2BSaasPublicHeader(schema, page, pages, logo, labels, plans) {
-  const navigation = b2bSaasPublicNavigationPages(pages);
-  const loginPage = b2bSaasPublicFindPage(pages, /(?:^|\b)(?:login|sign[ -]?in|account|cuenta|ingresar)(?:\b|$)/i);
-  const contactPage = b2bSaasPublicFindPage(pages, /contact|demo|consulta/i);
-  const pricingPage = navigation.find((item) => item.key === "pricing")?.page;
-  const startPage = (plans.length ? pricingPage : null) || contactPage || navigation[0]?.page || pages[0];
-  return `<header class="b2b-saas-header"><a class="b2b-saas-brand" href="#${escapeAttribute(pages[0]?.page_key || "home")}" data-page-link="${escapeAttribute(pages[0]?.page_key || "home")}">${renderB2BSaasPublicBrand(schema, logo)}</a><nav aria-label="${escapeAttribute(labels.navigation)}">${navigation.map(({ key, page: target }) => `<a class="${target.page_key === page?.page_key ? "active" : ""}" href="#${escapeAttribute(target.page_key)}" data-page-link="${escapeAttribute(target.page_key)}">${escapeHtml(labels.nav[key])}</a>`).join("")}</nav><div class="b2b-saas-header-actions">${loginPage ? `<a class="b2b-saas-login" href="#${escapeAttribute(loginPage.page_key)}" data-page-link="${escapeAttribute(loginPage.page_key)}">${escapeHtml(labels.login)}</a>` : ""}<button class="b2b-saas-start" type="button" data-page-link="${escapeAttribute(startPage?.page_key || "")}">${escapeHtml(labels.start)}</button></div></header>`;
-}
-
-function renderB2BSaasPublicBrand(schema, logo) {
-  const name = schema.business?.name || "Business";
-  if (logo) return `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(name)}"><strong>${escapeHtml(name)}</strong>`;
-  const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join("").toUpperCase();
-  return `<span class="b2b-saas-monogram" aria-hidden="true">${escapeHtml(initials || "B")}</span><strong>${escapeHtml(name)}</strong>`;
 }
 
 function renderB2BSaasPublicHero(schema, section, pages, items, labels, plans) {
@@ -310,17 +294,12 @@ function renderMegaRetailPublicWebsite(schema, page, { logo, layoutId, templateI
   const isHome = page?.page_key === "home" || page === pages[0];
 
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)};--mega-tile-tint:${escapeAttribute(brandTint)}">
-    ${renderComposedShell(schema, "shared--header", { cartCount: sharedCart?.count() || 0 }) || renderMegaRetailPublicHeader(schema, logo, categories, labels)}
+    ${renderComposedShell(schema, "shared--header", { cartCount: sharedCart?.count() || 0 }) || ""}
     ${isHome ? `${renderMegaRetailPublicBento(schema, hero, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailPublicDeals(schema, sections, items, labels)}${renderMegaRetailPublicTrust(sections, labels)}` : ""}
     ${remainingSections.map((section) => renderSection(section, schema)).join("")}
-    ${renderComposedShell(schema, "shared--footer") || renderMegaRetailPublicFooter(schema, pages, logo, labels, features)}
+    ${renderComposedShell(schema, "shared--footer") || ""}
     ${features.whatsapp && whatsappUrl ? `<a class="mega-retail-whatsapp" href="${escapeAttribute(whatsappUrl)}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">${megaRetailPublicIcon("whatsapp")}</a>` : ""}
   </div>`;
-}
-
-function renderMegaRetailPublicHeader(schema, logo, categories, labels) {
-  const departmentButtons = categories.slice(0, 5).map((category) => `<button type="button" data-catalog-category="${escapeAttribute(String(category).toLowerCase())}">${escapeHtml(category)}</button>`).join("");
-  return `<header class="mega-retail-header"><div class="mega-retail-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business?.name || "")}">` : renderLogoMark(schema)}</div><nav class="mega-retail-departments" aria-label="${escapeAttribute(labels.departments)}">${departmentButtons}</nav><form class="mega-retail-search" data-catalog-search-form><input type="search" name="catalog-search" aria-label="${escapeAttribute(labels.search)}" placeholder="${escapeAttribute(labels.search)}"><button type="submit" aria-label="${escapeAttribute(labels.search)}">${megaRetailPublicIcon("search")}</button></form><div class="mega-retail-actions"><button type="button" data-account-open>${escapeHtml(labels.account)}</button><button class="mega-retail-icon-button" type="button" aria-label="${escapeAttribute(labels.favorites)}">${megaRetailPublicIcon("heart")}</button><button class="mega-retail-icon-button" type="button" data-cart-open aria-label="${escapeAttribute(labels.cart)}">${megaRetailPublicIcon("bag")}<span data-cart-count>${sharedCart?.count() || 0}</span></button></div><details class="mega-retail-mobile-departments"><summary>${megaRetailPublicIcon("grid")}<span>${escapeHtml(labels.departments)}</span><span class="mega-retail-menu-chevron" aria-hidden="true"></span></summary><div>${departmentButtons}</div></details></header>`;
 }
 
 function renderMegaRetailPublicBento(schema, heroSection, categories, items, clientPhotos, hasBrandVisual, labels) {
@@ -348,25 +327,9 @@ function renderMegaRetailPublicTrust(sections, labels) {
   return `<section class="mega-retail-trust" ${motionDataAttributes(source.motion)}>${labels.trust.map((item, index) => `<article data-motion-item>${megaRetailPublicIcon(["truck", "return", "grid", "lock"][index])}<div><strong>${escapeHtml(item[0])}</strong><span>${escapeHtml(item[1])}</span></div></article>`).join("")}</section>`;
 }
 
-function renderMegaRetailPublicFooter(schema, pages, logo, labels, features) {
-  const socials = megaRetailPublicSocialLinks(schema.contact || {});
-  const contactPage = pages.find((item) => /contact/i.test(item.page_key || item.title))?.page_key || pages[0]?.page_key || "home";
-  const newsletter = features.newsletter ? `<div><strong>${escapeHtml(labels.newsletter)}</strong><p>${escapeHtml(labels.newsletterText)}</p><div class="mega-retail-newsletter"><input type="email" aria-label="Email" placeholder="email@example.com"><button type="button" data-open-lead aria-label="${escapeAttribute(labels.subscribe)}">${megaRetailPublicIcon("arrow")}</button></div></div>` : "";
-  return `<footer class="mega-retail-footer"><div class="mega-retail-footer-grid ${features.newsletter ? "" : "is-three-column"}"><div><div class="mega-retail-footer-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="">` : renderLogoMark(schema)}</div><p>${escapeHtml(schema.business?.description || labels.tagline)}</p>${features.socials && socials ? `<div class="mega-retail-socials">${socials}</div>` : ""}</div><div><strong>${escapeHtml(labels.help)}</strong>${labels.helpLinks.map((label) => `<a href="#${escapeAttribute(contactPage)}" data-page-link="${escapeAttribute(contactPage)}">${escapeHtml(label)}</a>`).join("")}</div><div><strong>${escapeHtml(labels.company)}</strong>${pages.slice(0, 4).map((item) => `<a href="#${escapeAttribute(item.page_key)}" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div>${newsletter}</div><div class="mega-retail-footer-bottom"><span>${escapeHtml(schema.global_components?.footer_text || `© ${new Date().getFullYear()} ${schema.business?.name || ""}`)}</span><div class="mega-retail-payments"><span>VISA</span><span>MC</span><span>AMEX</span><span>Pay</span></div></div></footer>`;
-}
-
 function megaRetailPublicFeatureFlags(schema = {}) {
   const features = schema.global_components?.mega_retail_features || {};
   return { whatsapp: features.whatsapp !== false, newsletter: features.newsletter !== false, socials: features.socials !== false };
-}
-
-function megaRetailPublicSocialLinks(contact = {}) {
-  return [["instagram", "Instagram"], ["facebook", "Facebook"], ["tiktok", "TikTok"], ["twitter", "Twitter"]].map(([key, label]) => {
-    const raw = String(contact[key] || "").trim();
-    if (!raw) return "";
-    const url = /^https?:\/\//i.test(raw) ? raw : `https://${key === "twitter" ? "x.com" : `${key}.com`}/${raw.replace(/^@/, "")}`;
-    return `<a href="${escapeAttribute(url)}" target="_blank" rel="noopener noreferrer" aria-label="${label}">${megaRetailPublicIcon(key)}</a>`;
-  }).join("");
 }
 
 function megaRetailPublicWhatsAppUrl(contact = {}) {

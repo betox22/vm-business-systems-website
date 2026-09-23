@@ -20,10 +20,12 @@ export async function projectDocument(schema, { sourceTransform, trusted, onSurf
     absWorkingDir: root, bundle: true, write: false, metafile: true, format: 'iife',
     stdin: { contents: `import {renderWebsite as builder} from './src/ai-builder/renderers.js';
 import {renderWebsite as publicRenderer, mountInternalGraphPresentation} from './site-viewer.js';
+import {preloadComposedSections} from './composed-sections.js';
 import {createInternalGraphPresentationContext} from './src/ai-builder/mega-retail-policy.js';
 globalThis.graphPresentationRenderers = {builder, public: publicRenderer};
 globalThis.mountGraphPresentation = mountInternalGraphPresentation;
-globalThis.makeGraphPresentationContext = createInternalGraphPresentationContext;`, resolveDir: root },
+globalThis.makeGraphPresentationContext = createInternalGraphPresentationContext;
+globalThis.preloadGraphPresentationSections = preloadComposedSections;`, resolveDir: root },
     alias: { '@kreaton/shared-commerce-cart': path.join(root, 'shared-commerce-cart.js') },
     plugins: [{ name: 'source-mutation-tests', setup(b) {
       // Test-only dependency injection; the stdin/server entry never accepts this option.
@@ -51,6 +53,8 @@ globalThis.makeGraphPresentationContext = createInternalGraphPresentationContext
       if (url === 'https://presentation.invalid/') {
         return route.fulfill({ contentType: 'text/html', body: '<!doctype html><html><head></head><body></body></html>' });
       }
+      const asset = /^https:\/\/presentation\.invalid\/templates\/sections\/([a-z0-9-]+)\/(manifest\.json|section\.html|section\.css)$/.exec(url);
+      if (asset) return route.fulfill({ path: path.join(root, 'templates', 'sections', asset[1], asset[2]) });
       blocked.push({ type: route.request().resourceType() });
       return route.abort();
     });
@@ -60,6 +64,10 @@ globalThis.makeGraphPresentationContext = createInternalGraphPresentationContext
     const errors = [];
     page.on('pageerror', () => errors.push('renderer_runtime_error'));
     await page.goto('https://presentation.invalid/');
+    await page.evaluate(script);
+    await page.evaluate(async (documentSchema) => {
+      await globalThis.preloadGraphPresentationSections(documentSchema);
+    }, schema);
     // DevTools executes the trusted bundle; CSP denies scripts in candidate HTML.
     await page.evaluate(() => {
       const meta = document.createElement('meta');
@@ -67,7 +75,6 @@ globalThis.makeGraphPresentationContext = createInternalGraphPresentationContext
       meta.content = "default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src 'none'; font-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'";
       document.head.append(meta);
     });
-    await page.evaluate(script);
     await page.evaluate((cssText) => {
       const style = document.createElement('style'); style.textContent = cssText; document.head.append(style);
     }, css);

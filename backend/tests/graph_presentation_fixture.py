@@ -3,6 +3,7 @@ import json
 
 from app.db_models import GeneratedSite, Product, Store
 from app.site_graph_document_validation import ROOT, read_presentation_authority
+from app.section_composition import ensure_shared_commerce_shell
 
 
 def accepted_candidate(session):
@@ -29,4 +30,4 @@ def accepted_candidate(session):
                                                     "address": "12 Main Street"})
     schema["catalog_items"] = json.loads(authority.catalog_json)
     schema["contact"] = json.loads(authority.contact_json)
-    return schema, authority
+    return ensure_shared_commerce_shell(schema), authority

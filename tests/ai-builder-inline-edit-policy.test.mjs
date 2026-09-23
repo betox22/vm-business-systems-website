@@ -145,7 +145,7 @@ test("mega retail dedicated renderer delegates its real hero and catalog paths t
   assert.match(source, /inlineEditAttrs\(schema, heroSection, "subtitle"\)/);
   assert.match(source, /inlineCatalogEditAttrs\(schema, item, "name", "product_name"\)/);
   assert.match(source, /inlineCatalogEditAttrs\(schema, item, "description", "product_description"\)/);
-  assert.match(source, /inlineEditAttrsForPath\(schema, "global_components\.footer_text", "footer_text"\)/);
+  assert.match(source, /renderComposedShell\(schema, "shared--footer"\)/);
 });
 
 test("reusable section collections resolve only to persistent course and quote paths", () => {
@@ -339,21 +339,23 @@ test("B2B full-content renderer exposes real paths but leaves decorative dashboa
   assert.match(html, /data-inline-edit-path="catalog_items\.0\.description"/);
   assert.match(html, /data-inline-edit-path="pages\.0\.sections\.2\.editable\.primary_button"/);
   assert.match(html, /data-inline-edit-path="pages\.1\.title"/);
-  assert.match(html, /data-inline-edit-path="global_components\.footer_text"/);
+  assert.doesNotMatch(html, /class="b2b-saas-footer"/);
   assert.doesNotMatch(html, /data-inline-edit-path="dashboard\./);
   assert.doesNotMatch(html, /data-inline-edit-path="labels\./);
 });
 
-test("Mega Retail dedicated renderer exposes persistent hero, catalog, navigation, and footer paths", () => {
+test("Mega Retail dedicated renderer exposes persistent body paths and the shared shell", () => {
   const renderer = readFileSync(new URL("../src/ai-builder/renderers.js", import.meta.url), "utf8");
-  const block = renderer.match(/function renderMegaRetailWebsite[\s\S]*?function megaRetailSocialLinks/)?.[0] || "";
+  const block = renderer.match(/function renderMegaRetailWebsite[\s\S]*?function megaRetailLabels/)?.[0] || "";
 
   assert.match(block, /inlineEditAttrs\(schema, heroSection, "headline"\)/);
   assert.match(block, /inlineEditAttrs\(schema, heroSection, "subtitle"\)/);
   assert.match(block, /inlineCatalogEditAttrs\(schema, item, "name", "product_name"\)/);
   assert.match(block, /inlineCatalogEditAttrs\(schema, item, "description", "product_description"\)/);
   assert.match(block, /inlineEditPageTitlePath\(schema, item\)/);
-  assert.match(block, /"global_components\.footer_text", "footer_text"/);
+  assert.match(block, /renderComposedShell\(schema, "shared--header"\)/);
+  assert.match(block, /renderComposedShell\(schema, "shared--footer"\)/);
+  assert.doesNotMatch(block, /function renderMegaRetailHeader|function renderMegaRetailFooter/);
 });
 
 test("inline editing reserves outline space without reflow and preserves the native CTA background", () => {

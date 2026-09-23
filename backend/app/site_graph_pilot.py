@@ -17,6 +17,7 @@ from .site_graph_generation import _generate_batch, build_generation_envelope
 from .site_graph_generation_contract import BusinessGenerationRequest
 from .site_graph_llm import GenerationFailure
 from .site_graph_normalization import issue_graph_provenance
+from .section_composition import ensure_shared_commerce_shell
 from .site_graph_persistence import (
     _reject_audit, _require_internal, persist_v1_document, read_validated_v1_document,
 )
@@ -37,7 +38,7 @@ def convert_proposal(batch, request, authority):
         _reject("unsupported_pilot_blocks")
     hero, grid, footer = [block.content for block in blocks]
     es = request.generation.language == "es"
-    return {
+    return ensure_shared_commerce_shell({
         "business": {"name": request.generation.business_name, "description": "",
                      "selectedLanguage": request.generation.language},
         "active_template": {"id": "mega-retail-store"},
@@ -57,7 +58,7 @@ def convert_proposal(batch, request, authority):
                    ]}],
         "catalog_items": json.loads(authority.catalog_json),
         "contact": json.loads(authority.contact_json),
-    }
+    })
 
 
 def run_pilot(engine, *, site_id, request: PilotRequest, actor, request_id=""):

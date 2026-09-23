@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import hashlib
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -109,9 +110,20 @@ def _verify_candidate(schema, authority):
     pages = schema.get("pages", [])
     if len(pages) != 1 or pages[0].get("page_key") != "home":
         raise DocumentRejected([DocumentIssue("authority", "$", "home_required")])
-    types = [s.get("type") for s in pages[0].get("sections", [])]
-    if sorted(types) != ["Contact", "MarketplaceHero", "ProductGrid"]:
+    sections = pages[0].get("sections", [])
+    body = [section for section in sections if section.get("type") != "composed"]
+    shell = [section for section in sections if section.get("type") == "composed"]
+    if sorted(section.get("type") for section in body) != ["Contact", "MarketplaceHero", "ProductGrid"]:
         raise DocumentRejected([DocumentIssue("authority", "$", "unsupported_sections")])
+    if len(shell) != 2 or {section.get("section_id") for section in shell} != {"shared--header", "shared--footer"}:
+        raise DocumentRejected([DocumentIssue("authority", "$", "unsupported_shell")])
+    from .section_composition import ensure_shared_commerce_shell
+    without_shell = deepcopy(schema)
+    without_shell["pages"][0]["sections"] = body
+    expected = ensure_shared_commerce_shell(without_shell)
+    expected_shell = [section for section in expected["pages"][0]["sections"] if section.get("type") == "composed"]
+    if shell != expected_shell:
+        raise DocumentRejected([DocumentIssue("authority", "$", "shell_binding_mismatch")])
     if schema.get("business", {}).get("selectedLanguage") not in ("en", "es"):
         raise DocumentRejected([DocumentIssue("authority", "$", "unsupported_language")])
     if schema.get("global_components", {}).get("mega_retail_features", {}).get("newsletter") is not False:

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { collectPresentation } from '../scripts/graph-presentation-dom.mjs';
 import { projectDocument } from '../scripts/graph-presentation.mjs';
 import { createInternalGraphPresentationContext, withGraphPresentation, graphPresentationEnabled } from '../src/ai-builder/mega-retail-policy.js';
+import { withSharedShell } from './fixtures/graph-presentation-shell.mjs';
 
 test('a JSON provenance marker cannot enable the internal presentation context', () => {
   const schema = { graphPresentation: { version: 'graph-presentation-v1' } };
@@ -19,7 +20,7 @@ test('a JSON provenance marker cannot enable the internal presentation context',
 });
 
 test('actual builder and public Mega Retail renderers enumerate their final defaults', async () => {
-  const schema = JSON.parse(await readFile(new URL('./fixtures/graph-presentation.json', import.meta.url)));
+  const schema = withSharedShell(JSON.parse(await readFile(new URL('./fixtures/graph-presentation.json', import.meta.url))));
   const before = JSON.stringify(schema);
   const result = await projectDocument(schema);
   assert.equal(JSON.stringify(schema), before);
@@ -61,7 +62,7 @@ test('unsupported page scope fails before rendering', async () => {
 });
 
 test('claims introduced only in real modal and empty-cart states reject the whole document', async () => {
-  const schema = JSON.parse(await readFile(new URL('./fixtures/graph-presentation.json', import.meta.url)));
+  const schema = withSharedShell(JSON.parse(await readFile(new URL('./fixtures/graph-presentation.json', import.meta.url))));
   schema.theme = { colors: {}, fonts: {} };
   schema.global_components.mega_retail_features = { newsletter: false };
   Object.assign(schema.catalog_items[0], { price_type: 'fixed', price_label: 'USD 25.00', price: 25,
@@ -94,23 +95,28 @@ else: raise SystemExit('accepted poisoned modal')`], {
 });
 
 test('real Mega Retail render paths expose adversarial labels, defaults, aria and empty branches', async (t) => {
-  const base = JSON.parse(await readFile(new URL('./fixtures/graph-presentation.json', import.meta.url)));
+  const base = withSharedShell(JSON.parse(await readFile(new URL('./fixtures/graph-presentation.json', import.meta.url))));
   const mutations = [
     { name: 'shipping label', from: '"Fast shipping"', to: '"Free shipping worldwide"', text: 'Free shipping worldwide' },
     { name: 'returns default', from: '"Easy returns"', to: '"Lifetime warranty on returns"', text: 'Lifetime warranty on returns' },
-    { name: 'payment aria', from: 'aria-label="${escapeAttribute(labels.cart)}"', to: 'aria-label="Guaranteed secure payment"', text: 'Guaranteed secure payment', kind: 'attribute' },
+    { name: 'payment aria', text: 'Guaranteed secure payment', kind: 'attribute', shell: true },
     { name: 'empty grid', from: '${items.slice(0, 10).map', to: '${items.length ? "" : "<p>20% discount while empty</p>"}${items.slice(0, 10).map', text: '20% discount while empty', empty: true },
   ];
   for (const mutation of mutations) await t.test(mutation.name, async () => {
     const schema = structuredClone(base);
     if (mutation.empty) schema.catalog_items = [];
+    if (mutation.shell) {
+      schema.pages[0].sections.find((section) => section.section_id === 'shared--header')
+        .control_bindings.cart.label = mutation.text;
+    }
     let patched = 0;
     const result = await projectDocument(schema, { sourceTransform(source) {
+      if (mutation.shell) return source;
       assert.ok(source.includes(mutation.from));
       patched++;
       return source.replaceAll(mutation.from, mutation.to);
     } });
-    assert.equal(patched, 2);
+    assert.equal(patched, mutation.shell ? 0 : 2);
     for (const surface of result.surfaces) {
       assert.ok(surface.entries.some((entry) => entry.text.includes(mutation.text) && (!mutation.kind || entry.kind === mutation.kind)),
         `${mutation.name} missing from ${surface.renderer}:${surface.viewport.width}`);

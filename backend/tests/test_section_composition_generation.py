@@ -111,6 +111,23 @@ def test_flag_off_keeps_legacy_schema_and_does_not_call_composer(generation, mon
     assert json.loads(site.generated_config) == expected
 
 
+@pytest.mark.parametrize("template_id", ["mega-retail-store", "b2b-saas-enterprise-pro"])
+def test_commerce_templates_get_shared_shell_with_composer_disabled(generation, monkeypatch, template_id):
+    monkeypatch.delenv("KREATON_SECTION_COMPOSITION_ENABLED", raising=False)
+    monkeypatch.setattr(main, "prepare_composed_schema", lambda *_args: pytest.fail("composer called"))
+    generation[3].selectedTemplateId = template_id
+    generation[3].selectedTemplateName = template_id
+
+    response = generate(generation)
+    sections = response.website_schema["pages"][0]["sections"]
+    shell = [section for section in sections if section.get("section_id") in {"shared--header", "shared--footer"}]
+
+    assert {section["section_id"] for section in shell} == {"shared--header", "shared--footer"}
+    assert shell[0]["list_bindings"]["navigation"]
+    assert response.website_schema == main.ensure_shared_commerce_shell(response.website_schema)
+    assert json.loads(generation[0].scalars(select(GeneratedSite)).one().generated_config) == response.website_schema
+
+
 def test_enabled_path_resolves_stock_before_persist_and_texture_after_ids(generation, monkeypatch):
     monkeypatch.setenv("KREATON_SECTION_COMPOSITION_ENABLED", "1")
     generation[1].selected_template_id = "premium-product-store"

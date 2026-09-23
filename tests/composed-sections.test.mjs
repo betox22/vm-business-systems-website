@@ -314,7 +314,7 @@ test('published Mega Retail keeps search, cart and account interactions with the
         list_bindings: { navigation }, image_bindings: { brand_logo: '/images/electrohub.png' }, control_bindings: {} },
     );
     const results = [];
-    for (const schema of [baseline, composed]) {
+    for (const schema of [composed]) {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
       const errors = [];
       page.on('pageerror', (error) => errors.push(error.message));
@@ -367,7 +367,7 @@ test('published Mega Retail keeps search, cart and account interactions with the
           .control_bindings.account = { label: 'Account', action: 'page', page_key: 'javascript:alert(1)' };
         const rejected = await page.evaluate((value) => ComposedViewer.renderWebsite(value, 'home'), invalid);
         assert.doesNotMatch(rejected, /composed-site-header/);
-        assert.match(rejected, /mega-retail-header/);
+        assert.doesNotMatch(rejected, /mega-retail-header|composed-site-header/);
         const changed = structuredClone(schema);
         changed.catalog_items[0].category = 'Power tools';
         const liveHeader = await page.evaluate((value) => {
@@ -382,10 +382,7 @@ test('published Mega Retail keeps search, cart and account interactions with the
         legacy: await page.locator('.mega-retail-header').count(), errors });
       await page.close();
     }
-    assert.deepEqual(results, [
-      { composed: 0, legacy: 1, errors: [] },
-      { composed: 1, legacy: 0, errors: [] },
-    ]);
+    assert.deepEqual(results, [{ composed: 1, legacy: 0, errors: [] }]);
   } finally { await browser.close(); }
 });
 

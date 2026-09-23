@@ -28,32 +28,12 @@ export function renderB2BSaasWebsite(schema, page, context, options, helpers) {
 
   return `<div class="${escapeAttribute(className)}" style="${themeVars(theme, b2bSaasThemeBrand(theme, schema.brand))}">
     ${renderStudioFloatingCatalog(schema, context)}
-    <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => pageLink(item, item.page_key === page?.page_key)).join("")}</div></div>
-    ${renderComposedShell(schema, "shared--header") || renderHeader(schema, page, pages, logo, labels, plans, inlineEditAttrsForPath)}
+    <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => pageLink(schema, item, item.page_key === page?.page_key, inlineEditAttrsForPath)).join("")}</div></div>
+    ${renderComposedShell(schema, "shared--header") || ""}
     ${isHome ? `${renderHero(schema, hero, pages, items, labels, plans, { inlineEditAttrs, sectionAttrs })}${renderLogoRow(labels)}${renderFeatures(schema, sections, items, labels, inlineEditAttrsForPath)}${renderPricing(schema, sections, plans, labels, inlineEditAttrsForPath)}${renderCallToAction(schema, sections, labels, inlineEditAttrsForPath, sectionAttrs)}` : ""}
     ${remaining.map((section) => renderSection(section, schema)).join("")}
-    ${renderComposedShell(schema, "shared--footer") || `<footer class="b2b-saas-footer"><div>${renderBrand(schema, logo)}</div><span ${inlineEditAttrsForPath(schema, "global_components.footer_text", "footer_text")}>${escapeHtml(schema.global_components?.footer_text || `© ${new Date().getFullYear()} ${schema.business?.name || ""}`)}</span></footer>`}
+    ${renderComposedShell(schema, "shared--footer") || ""}
   </div>`;
-}
-
-function renderHeader(schema, page, pages, logo, labels, plans, inlineEditAttrsForPath) {
-  const navigation = b2bSaasNavigationPages(pages);
-  const loginPage = findPage(pages, /(?:^|\b)(?:login|sign[ -]?in|account|cuenta|ingresar)(?:\b|$)/i);
-  const contactPage = findPage(pages, /contact|demo|consulta/i);
-  const pricingPage = navigation.find((item) => item.key === "pricing")?.page;
-  const startPage = (plans.length ? pricingPage : null) || contactPage || navigation[0]?.page || pages[0];
-  return `<header class="b2b-saas-header">
-    <a class="b2b-saas-brand" href="#" data-page-link="${escapeAttribute(pages[0]?.page_key || "home")}">${renderBrand(schema, logo)}</a>
-    <nav aria-label="${escapeAttribute(labels.navigation)}">${navigation.map(({ key, page: target }) => `<a class="${target.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(target.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditPageTitlePath(schema, target), "nav_label")}>${escapeHtml(target.title || labels.nav[key])}</a>`).join("")}</nav>
-    <div class="b2b-saas-header-actions">${loginPage ? `<a class="b2b-saas-login" href="#" data-page-link="${escapeAttribute(loginPage.page_key)}">${escapeHtml(labels.login)}</a>` : ""}<button class="b2b-saas-start" type="button" data-page-link="${escapeAttribute(startPage?.page_key || "")}">${escapeHtml(labels.start)}</button></div>
-  </header>`;
-}
-
-function renderBrand(schema, logo) {
-  const name = schema.business?.name || "Business";
-  if (logo) return `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(name)}"><strong>${escapeHtml(name)}</strong>`;
-  const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join("").toUpperCase();
-  return `<span class="b2b-saas-monogram" aria-hidden="true">${escapeHtml(initials || "B")}</span><strong>${escapeHtml(name)}</strong>`;
 }
 
 function renderHero(schema, section, pages, items, labels, plans, helpers) {
@@ -123,8 +103,8 @@ function renderCallToAction(schema, sections, labels, inlineEditAttrsForPath, se
   return `<section class="enterprise-demo-section b2b-saas-final-cta" ${sectionAttrs(section)} ${motionDataAttributes(section.motion)}><div data-motion-content><span class="rendered-kicker">${escapeHtml(labels.demo)}</span><h2 ${inlineEditAttrsForPath(schema, inlineEditPath(schema, section, "title"), "title")}>${escapeHtml(editable.title || "")}</h2><p ${inlineEditAttrsForPath(schema, inlineEditPath(schema, section, "text"), "text")}>${escapeHtml(editable.text || "")}</p></div><button class="rendered-button" type="button" data-motion-cta ${inlineEditAttrsForPath(schema, inlineEditPath(schema, section, "primary_button"), "primary_button")}>${escapeHtml(editable.primary_button || labels.demo)}</button></section>`;
 }
 
-function pageLink(page, active) {
-  return `<a class="${active ? "active" : ""}" href="#" data-page-link="${escapeAttribute(page.page_key)}">${escapeHtml(page.title || page.page_key)}</a>`;
+function pageLink(schema, page, active, inlineEditAttrsForPath) {
+  return `<a class="${active ? "active" : ""}" href="#" data-page-link="${escapeAttribute(page.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditPageTitlePath(schema, page), "nav_label")}>${escapeHtml(page.title || page.page_key)}</a>`;
 }
 
 function findPage(pages, pattern) {

@@ -7,9 +7,10 @@ import { fileURLToPath } from 'node:url';
 import { normalizeDocument } from '../scripts/graph-normalization.mjs';
 import { projectDocument } from '../scripts/graph-presentation.mjs';
 import { GRAPH_NORMALIZATION_CONTRACT, registerServerVerifiedGraphDocument, preservedGraphDocument } from '../src/ai-builder/graph-normalization-policy.js';
+import { withSharedShell } from './fixtures/graph-presentation-shell.mjs';
 
 async function fixture() {
-  const schema = JSON.parse(await readFile(new URL('./fixtures/graph-presentation.json', import.meta.url), 'utf8'));
+  const schema = withSharedShell(JSON.parse(await readFile(new URL('./fixtures/graph-presentation.json', import.meta.url), 'utf8')));
   schema.theme = { colors: {}, fonts: {} };
   schema.global_components.mega_retail_features = { newsletter: false };
   schema.pages[0].sections.push({ id: 'contact', type: 'Contact', order: 3, editable: { title: 'Contact', text: 'Talk with the team' } });
@@ -57,14 +58,13 @@ test('post-normalization renderer labels, aria and modal claims still reject the
   const schema = await fixture();
   Object.assign(schema.catalog_items[0], { price_type: 'fixed', price_label: 'USD 25.00', price: 25,
     inventory_quantity: 7, business_id: 'qa-store', product_id: 'qa-product' });
+  schema.pages[0].sections.find((section) => section.section_id === 'shared--header')
+    .control_bindings.cart.label = 'Guaranteed secure payment';
   const normalized = await normalizeDocument(schema, { verifiedContract: GRAPH_NORMALIZATION_CONTRACT });
   assert.deepEqual(normalized.document, schema);
   const result = await projectDocument(normalized.document, {
     trusted: { siteId: 'qa-site', businessId: 'qa-store' },
     sourceTransform(source, filename) {
-      const aria = 'aria-label="${escapeAttribute(labels.cart)}"';
-      assert.ok(source.includes(aria));
-      source = source.replaceAll(aria, 'aria-label="Guaranteed secure payment"');
       if (!filename.endsWith('site-viewer.js')) return source;
       for (const [from, to] of [
         ['status.textContent = "Sent. Thank you."', 'status.textContent = "Free shipping for everyone"'],

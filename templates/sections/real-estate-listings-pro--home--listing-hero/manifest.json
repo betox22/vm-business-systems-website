@@ -3,19 +3,24 @@
   "section_type": "hero",
   "source_template": "Real Estate / Listings",
   "eligibility": {
-    "requires_archetype": null
+    "requires_archetype": "real_estate"
   },
   "required_copy_fields": [
+    "eyebrow",
     "headline",
     "subtitle",
     "primary_button",
-    "search_placeholder"
+    "primary_page_key",
+    "secondary_button",
+    "secondary_page_key",
+    "image_alt",
+    "search_label"
   ],
   "image_slots": [
     {
       "slot_id": "image_1",
       "image_role": "hero_candidate",
-      "min": 0,
+      "min": 1,
       "max": 1
     }
   ],
