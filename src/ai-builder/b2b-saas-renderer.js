@@ -2,6 +2,7 @@ import { escapeAttribute, escapeHtml } from "./utils.js";
 import { b2bSaasNavigationPages, b2bSaasSubscriptionPlans } from "./b2b-saas-policy.js";
 import { inlineEditCatalogPath, inlineEditPageTitlePath, inlineEditPath } from "./inline-edit-policy.js";
 import { motionDataAttributes } from "./shared-site-motion.js";
+import { renderComposedShell } from "../../composed-sections.js";
 
 export function renderB2BSaasWebsite(schema, page, context, options, helpers) {
   const { logo, layoutId, templateId, theme } = options;
@@ -28,10 +29,10 @@ export function renderB2BSaasWebsite(schema, page, context, options, helpers) {
   return `<div class="${escapeAttribute(className)}" style="${themeVars(theme, b2bSaasThemeBrand(theme, schema.brand))}">
     ${renderStudioFloatingCatalog(schema, context)}
     <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => pageLink(item, item.page_key === page?.page_key)).join("")}</div></div>
-    ${renderHeader(schema, page, pages, logo, labels, plans, inlineEditAttrsForPath)}
+    ${renderComposedShell(schema, "shared--header") || renderHeader(schema, page, pages, logo, labels, plans, inlineEditAttrsForPath)}
     ${isHome ? `${renderHero(schema, hero, pages, items, labels, plans, { inlineEditAttrs, sectionAttrs })}${renderLogoRow(labels)}${renderFeatures(schema, sections, items, labels, inlineEditAttrsForPath)}${renderPricing(schema, sections, plans, labels, inlineEditAttrsForPath)}${renderCallToAction(schema, sections, labels, inlineEditAttrsForPath, sectionAttrs)}` : ""}
     ${remaining.map((section) => renderSection(section, schema)).join("")}
-    <footer class="b2b-saas-footer"><div>${renderBrand(schema, logo)}</div><span ${inlineEditAttrsForPath(schema, "global_components.footer_text", "footer_text")}>${escapeHtml(schema.global_components?.footer_text || `© ${new Date().getFullYear()} ${schema.business?.name || ""}`)}</span></footer>
+    ${renderComposedShell(schema, "shared--footer") || `<footer class="b2b-saas-footer"><div>${renderBrand(schema, logo)}</div><span ${inlineEditAttrsForPath(schema, "global_components.footer_text", "footer_text")}>${escapeHtml(schema.global_components?.footer_text || `© ${new Date().getFullYear()} ${schema.business?.name || ""}`)}</span></footer>`}
   </div>`;
 }
 

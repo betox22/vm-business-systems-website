@@ -46,6 +46,7 @@ import { preservedGraphDocument } from './graph-normalization-policy.js';
 import {
   hasOnlineSalesSignal,
   isStrongNewBusinessBrief,
+  resolveSalesModeForTemplateSelection,
   resolveBackendMissingSteps,
   shouldStartCleanBusinessProject,
 } from './intake-state-policy.js';
@@ -5017,7 +5018,11 @@ export function guidedStateForApi() {
     selectedLanguage: builderState.selectedLanguage,
     hasLogo: Boolean(builderState.guidedState.hasLogo || builderState.guidedState.logoUrl),
     hasPhotos: Boolean(builderState.guidedState.hasPhotos || arrayValue(builderState.guidedState.photoUrls).length || arrayValue(builderState.guidedState.videoUrls).length),
-    salesMode: builderState.guidedState.salesFlow || builderState.guidedState.salesMode,
+    salesMode: resolveSalesModeForTemplateSelection(
+      builderState.guidedState.salesMode,
+      builderState.guidedState.salesFlow,
+      Object.values(I18N).map((translations) => translations.letAiDecide),
+    ),
     hasLogoPhotos: builderState.guidedState.hasLogoPhotos,
     sectionsPreference: builderState.guidedState.sectionsPreference,
     aiStudioPlan,
@@ -12185,7 +12190,7 @@ async function collectPayload() {
   }
   if (followupSalesFlowValue) {
     builderState.guidedState.salesFlow = followupSalesFlowValue;
-    builderState.guidedState.salesMode = followupSalesFlowValue;
+    if (intakeFollowupField === "sales_flow") builderState.guidedState.salesMode = intakeFollowupAnswer;
     fieldMeta.salesFlow = { source: "explicit_user_choice", confidence: 1 };
     fieldMeta.sales_flow = { source: "explicit_user_choice", confidence: 1 };
   }
@@ -12291,6 +12296,11 @@ async function collectPayload() {
     fieldMeta: validatedGuidedPayload?.fieldMeta || fieldMeta,
     intakeFollowupAnswer,
     salesFlow: resolvedSalesFlow,
+    salesMode: resolveSalesModeForTemplateSelection(
+      builderState.guidedState.salesMode,
+      resolvedSalesFlow,
+      Object.values(I18N).map((translations) => translations.letAiDecide),
+    ),
     desiredDomain: data.get("desired_domain")?.toString().trim() || builderState.guidedState.desiredDomain || "",
     selectedLanguage: builderState.selectedLanguage,
     request_id: builderState.currentRequestId,
@@ -12569,6 +12579,13 @@ export function renderEditor() {
     input.addEventListener("input", () => {
       const value = input.type === "checkbox" ? input.checked : normalizeEditedValue(input.dataset.path, input.value);
       setPath(builderState.currentSchema, input.dataset.path, value);
+      if (input.dataset.path === "business.name") {
+        builderState.currentSchema.pages.forEach((page) => page.sections.forEach((section) => {
+          if (section.type === "composed" && ["shared--header", "shared--footer"].includes(section.section_id)) {
+            section.copy_bindings["business.name"] = value;
+          }
+        }));
+      }
       if (input.dataset.path.startsWith("brand.") || input.dataset.path === "global_components.logo_url") {
         builderState.currentSchema.brand = normalizeBrand({
           ...(builderState.currentSchema.brand || {}),

@@ -1,76 +1,11 @@
-* { box-sizing: border-box; }
-
-h1, h2, p { margin-top: 0px; }
-
-h1 { margin-bottom: 4px; font-size: 22px; }
-
-.rendered-site { position: relative; width: min(100%, 1260px); --brand-primary: #0e7c66; --brand-secondary: #e3f3ee; --brand-accent: #14b8a6; --brand-background: #f8faf9; --brand-surface: #ffffff; --brand-text: #111827; --brand-muted: #667085; --brand-border: #d9e2df; --brand-button: var(--brand-primary); --brand-button-text: #ffffff; --brand-radius: 8px; --brand-shadow: 0 18px 48px rgba(16, 24, 40, 0.1); --site-bg: var(--brand-background); --site-surface: var(--brand-surface); --site-primary: var(--brand-primary); --site-secondary: var(--brand-secondary); --site-accent: var(--brand-accent); --site-text: var(--brand-text); --site-muted: var(--brand-muted); --site-border: var(--brand-border); background: var(--site-bg); color: var(--site-text); font-family: var(--site-body), Inter, sans-serif; min-height: 100%; box-shadow: rgba(31, 41, 55, 0.2) 0px 32px 95px; overflow: visible; }
-
-.rendered-site, .rendered-site * { box-sizing: border-box; }
-
-.rendered-site h1, .rendered-site h2, .rendered-site h3, .rendered-site p, .rendered-site strong, .rendered-site span { max-width: 100%; overflow-wrap: break-word; }
-
-.rendered-site img { max-width: 100%; }
-
-[data-studio-section] { position: relative; outline: transparent solid 0px; transition: outline-color 160ms, box-shadow 160ms; }
-
-[data-studio-section]::before { content: attr(data-studio-section-type); position: absolute; top: 10px; left: 10px; z-index: 12; display: none; border-radius: 6px; background: rgb(37, 99, 235); color: rgb(255, 255, 255); padding: 5px 8px; font-size: 11px; font-weight: 950; }
-
-[data-studio-section]:hover, [data-studio-section].is-selected { outline: rgb(37, 99, 235) solid 3px; outline-offset: -3px; box-shadow: rgba(37, 99, 235, 0.25) 0px 0px 0px 1px inset; cursor: pointer; }
-
-[data-studio-section]:hover::before, [data-studio-section].is-selected::before { display: inline-flex; }
-
-.rendered-button { display: inline-flex; margin-top: 14px; border-radius: var(--brand-radius); background: var(--brand-button); color: var(--brand-button-text); text-decoration: none; padding: 13px 16px; font-weight: 900; }
-
-.rendered-button.secondary { background: transparent; color: var(--site-text); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--site-text) 18%, transparent); }
-
-.rendered-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-
-.rendered-kicker { display: inline-flex; margin-bottom: 14px; color: var(--site-primary); font-size: 12px; font-weight: 950; letter-spacing: 0px; text-transform: uppercase; }
-
-.template-luxury-high-ticket-pro, .layout-luxury-high-ticket-pro { background: radial-gradient(circle at 80% 8%, rgba(214, 168, 79, 0.22), transparent 30%), linear-gradient(145deg, rgb(13, 10, 7) 0%, rgb(23, 17, 12) 52%, rgb(8, 6, 4) 100%); color: rgb(247, 239, 226); }
-
-.luxury-pro-hero { display: grid; grid-template-columns: minmax(0px, 0.92fr) minmax(320px, 1.08fr); gap: clamp(28px, 5vw, 72px); align-items: start; min-height: auto; padding: clamp(58px, 7vw, 96px) clamp(22px, 6vw, 86px); background: radial-gradient(circle at 72% 42%, rgba(214, 168, 79, 0.16), transparent 38%), linear-gradient(135deg, rgb(13, 10, 7) 0%, rgb(28, 19, 11) 62%, rgb(9, 7, 5) 100%); color: rgb(248, 241, 230); overflow: visible; }
-
-.luxury-pro-copy { max-width: 720px; min-width: 0px; position: relative; z-index: 2; }
-
-.luxury-pro-copy .rendered-kicker, .luxury-signature-copy .rendered-kicker, .luxury-provenance-section .rendered-kicker, .luxury-private-section .rendered-kicker, .luxury-contact-card .rendered-kicker { color: rgb(214, 168, 79); letter-spacing: 0.08em; text-transform: uppercase; }
-
-.luxury-pro-copy h1 { margin: 14px 0px 22px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(44px, 5.6vw, 84px); line-height: 0.98; max-width: 760px; color: rgb(255, 248, 236); text-wrap: balance; }
-
-.luxury-pro-copy p { max-width: 620px; color: rgb(216, 204, 183); font-size: 1.12rem; line-height: 1.75; }
-
-.luxury-pro-hero .rendered-button, .luxury-private-section .rendered-button, .luxury-contact-card .rendered-button { background: linear-gradient(135deg, rgb(245, 208, 130), rgb(184, 135, 47)); color: rgb(19, 13, 7); border-color: rgba(245, 208, 130, 0.52); }
-
-.luxury-pro-hero .rendered-button.secondary, .catalog-luxury-high-ticket .rendered-button.secondary { background: rgba(255, 255, 255, 0.06); color: rgb(248, 241, 230); border-color: rgba(214, 168, 79, 0.34); }
-
-.luxury-proof-strip, .luxury-mini-proof { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
-
-.luxury-proof-strip span, .luxury-mini-proof span { border: 1px solid rgba(214, 168, 79, 0.28); border-radius: 999px; color: rgb(234, 217, 184); padding: 9px 13px; background: rgba(255, 255, 255, 0.05); }
-
-.luxury-pro-stage { position: relative; min-height: clamp(380px, 46vw, 540px); display: grid; place-items: center; min-width: 0px; }
-
-.luxury-hero-visual, .luxury-signature-media, .luxury-visual-placeholder { width: min(100%, 620px); min-height: clamp(360px, 44vw, 520px); border: 1px solid rgba(214, 168, 79, 0.28); border-radius: 6px; background: radial-gradient(circle at 50% 22%, rgba(247, 239, 226, 0.18), transparent 28%), linear-gradient(145deg, rgb(33, 23, 15), rgb(8, 6, 4)); box-shadow: rgba(0, 0, 0, 0.52) 0px 34px 92px; overflow: hidden; }
-
-.luxury-hero-visual img, .luxury-signature-media img, .catalog-luxury-high-ticket img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-.luxury-floating-card { --inline-edit-radius: 6px; --inline-edit-background: rgba(255, 255, 255, 0.08); position: absolute; right: 4%; bottom: 8%; width: min(280px, 74%); padding: 20px; border: 1px solid rgba(214, 168, 79, 0.36); border-radius: 6px; background: rgba(13, 10, 7, 0.84); color: rgb(248, 241, 230); box-shadow: rgba(0, 0, 0, 0.4) 0px 22px 60px; backdrop-filter: blur(18px); }
-
-.luxury-floating-card small, .catalog-luxury-high-ticket small { display: block; margin-bottom: 8px; color: rgb(214, 168, 79); text-transform: uppercase; letter-spacing: 0.06em; }
-
-.luxury-floating-card strong, .luxury-floating-card span { display: block; }
-
-@media (max-width: 1040px) {
-.luxury-pro-hero { grid-template-columns: 1fr; gap: 34px; }
-.luxury-pro-copy { max-width: 820px; }
-.luxury-pro-copy h1 { font-size: clamp(42px, 8vw, 76px); }
-.luxury-pro-stage { justify-items: stretch; min-height: auto; }
-.luxury-hero-visual, .luxury-signature-media, .luxury-visual-placeholder { width: 100%; min-height: clamp(320px, 48vw, 460px); }
-}
-
-@media (max-width: 760px) {
-.luxury-pro-hero, .luxury-signature-section, .luxury-provenance-section, .luxury-private-section { grid-template-columns: 1fr; min-height: auto; padding: 44px 16px; }
-.luxury-pro-copy h1 { font-size: clamp(42px, 13vw, 68px); }
-.luxury-pro-stage, .luxury-hero-visual, .luxury-signature-media, .luxury-visual-placeholder { min-height: 320px; }
-.luxury-floating-card { position: relative; right: auto; bottom: auto; width: 100%; margin-top: -38px; }
-}
+.composed-luxury-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); min-height: 38rem; background: var(--site-bg); color: var(--site-text); font-family: var(--site-body); }
+.composed-luxury-hero__copy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2rem; padding: clamp(2rem, 6vw, 6rem); }
+.composed-luxury-hero h1 { margin: 0; max-width: 16ch; font-family: var(--site-heading); font-size: 4.5rem; font-weight: 500; line-height: 1.1; overflow-wrap: anywhere; }
+.composed-luxury-hero p { margin: 0; max-width: 36rem; line-height: 1.8; color: var(--site-muted); }
+.composed-luxury-hero__actions { display: flex; flex-wrap: wrap; gap: 1.25rem; }
+.composed-luxury-hero__actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 3rem; padding: .75rem 1.25rem; text-decoration: none; font-weight: 600; }
+.composed-luxury-hero__primary { background: var(--site-primary); color: var(--site-button-text); }
+.composed-luxury-hero__secondary { color: var(--site-text); border-bottom: 1px solid var(--site-border); }
+.composed-luxury-hero__media { min-width: 0; margin: 0; overflow: hidden; }
+.composed-luxury-hero__media img { display: block; width: 100%; height: 100%; min-height: 34rem; object-fit: cover; }
+@media (max-width: 700px) { .composed-luxury-hero { grid-template-columns: 1fr; } .composed-luxury-hero__media img { min-height: 20rem; max-height: 27rem; } .composed-luxury-hero h1 { font-size: 2.5rem; } }

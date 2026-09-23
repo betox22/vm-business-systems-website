@@ -29,6 +29,7 @@ import {
 import { hasStudioAccountSession, openStudioAuthGate } from './auth.js';
 import { assistantVisibleCopy } from './chat.js';
 import { keepEssentialSections } from './section-policy.js';
+import { renderComposedShellEditor } from './composed-shell-editor.js';
 import { naturalBusinessSummary } from './client-summary-policy.js';
 export { keepEssentialSections } from './section-policy.js';
 import {
@@ -1160,6 +1161,8 @@ export function renderWebsite(schema, pageKey, context = {}) {
 }
 
 export function sectionEditor(section, index) {
+  const shellEditor = renderComposedShellEditor(section, index, pageIndex());
+  if (shellEditor) return shellEditor;
   const editable = section.editable || {};
   const basePath = `pages.${pageIndex()}.sections.${index}`;
   const settings = section.settings || {};

@@ -9,7 +9,7 @@ import { motionDataAttributes } from './shared-site-motion.js';
 import { resolveCatalogAction } from '@kreaton/shared-commerce-cart';
 import { limitPremiumHeadline, premiumSectionImage, PREMIUM_IMAGE_ROLES } from './premium-product-policy.js';
 import { resolveColorValue } from './color-value-policy.js';
-import { renderComposedSection } from '../../composed-sections.js';
+import { isComposedShellSection, renderComposedSection, renderComposedShell } from '../../composed-sections.js';
 import {
   inlineEditCatalogPath,
   inlineEditConfig,
@@ -152,7 +152,8 @@ function renderWebsiteDocument(schema, pageKey, context = {}) {
     });
   }
   const isPremiumProductStore = templateId === "premium-product-store";
-  const commerceActions = isCommerceSite(schema) ? renderCommerceNavActions(schema, { showSearch: isPremiumProductStore }) : "";
+  const commerceSite = isCommerceSite(schema);
+  const commerceActions = commerceSite ? renderCommerceNavActions(schema, { showSearch: isPremiumProductStore }) : "";
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)}">
     ${renderStudioFloatingCatalog(schema, context)}
     <div class="rendered-page-switcher">
@@ -162,21 +163,21 @@ function renderWebsiteDocument(schema, pageKey, context = {}) {
         .map((item) => `<a class="${item.page_key === page.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.title || item.page_key)}</a>`)
         .join("")}</div>
     </div>
-    <header class="rendered-nav ${isPremiumProductStore ? "premium-commerce-header" : ""} ${schema.layout_mode?.navigation?.sticky_header ? "sticky" : ""}">
+    ${(!commerceSite && renderComposedShell(schema, "shared--header")) || `<header class="rendered-nav ${isPremiumProductStore ? "premium-commerce-header" : ""} ${schema.layout_mode?.navigation?.sticky_header ? "sticky" : ""}">
       <div class="rendered-nav-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business.name)}">` : renderLogoMark(schema)}</div>
       <nav>${schema.navigation
         .map((item) => `<a class="${item.page_key === page.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditNavigationPath(schema, item), "nav_label")}>${escapeHtml(item.label)}</a>`)
         .join("")}</nav>
       ${commerceActions}
-    </header>
+    </header>`}
     ${page.sections
       .sort((a, b) => a.order - b.order)
       .map((section) => renderSection(section, schema))
       .join("")}
-    <footer class="rendered-footer">
+    ${(!commerceSite && renderComposedShell(schema, "shared--footer")) || `<footer class="rendered-footer">
       <div>${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business.name)}">` : renderLogoMark(schema)}</div>
       <span ${inlineEditAttrsForPath(schema, "global_components.footer_text", "footer_text")}>${escapeHtml(schema.global_components.footer_text || "")}</span>
-    </footer>
+    </footer>`}
   </div>`;
 }
 
@@ -240,7 +241,7 @@ function renderStudioFloatingCatalog(schema, context = {}) {
 }
 
 function renderSection(section, schema) {
-  if (section.type === "composed") return renderComposedSection(section);
+  if (section.type === "composed") return isComposedShellSection(section) ? "" : renderComposedSection(section);
   if (supportsExpandedInlineEditing(schema) && /FAQ$/i.test(section.type || "")) {
     return renderFunnelFAQ(section, schema);
   }
@@ -2610,10 +2611,10 @@ function renderMegaRetailWebsite(schema, page, context, { logo, layoutId, templa
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)};--mega-tile-tint:${escapeAttribute(brandTint)}">
     ${renderStudioFloatingCatalog(schema, context)}
     <div class="rendered-page-switcher"><span>${escapeHtml(schema.business?.name || "Website")}</span><div>${pages.map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#" data-page-link="${escapeAttribute(item.page_key)}" ${inlineEditAttrsForPath(schema, inlineEditPageTitlePath(schema, item), "nav_label")}>${escapeHtml(item.title || item.page_key)}</a>`).join("")}</div></div>
-    ${renderMegaRetailHeader(schema, page, logo, categories, labels, graphPresentationEnabled(schema))}
+    ${renderComposedShell(schema, "shared--header") || renderMegaRetailHeader(schema, page, logo, categories, labels, graphPresentationEnabled(schema))}
     ${page?.page_key === "home" || page === pages[0] ? `${renderMegaRetailBento(schema, hero, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailDeals(schema, sections, items, labels, graphPresentationEnabled(schema))}${renderMegaRetailTrust(sections, labels)}` : ""}
     ${remainingSections.map((section) => renderSection(section, schema)).join("")}
-    ${renderMegaRetailFooter(schema, pages, logo, labels, features)}
+    ${renderComposedShell(schema, "shared--footer") || renderMegaRetailFooter(schema, pages, logo, labels, features)}
     ${features.whatsapp && whatsappUrl ? `<a class="mega-retail-whatsapp" href="${escapeAttribute(whatsappUrl)}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">${megaRetailIcon("whatsapp")}</a>` : ""}
   </div>`;
 }

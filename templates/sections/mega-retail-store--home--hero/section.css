@@ -1,75 +1,13 @@
-* { box-sizing: border-box; }
-
-button, input, textarea { font: inherit; }
-
-button { cursor: pointer; }
-
-h1, h2, p { margin-top: 0px; }
-
-h1 { margin-bottom: 4px; font-size: 22px; }
-
-.rendered-site { position: relative; width: min(100%, 1260px); --brand-primary: #0e7c66; --brand-secondary: #e3f3ee; --brand-accent: #14b8a6; --brand-background: #f8faf9; --brand-surface: #ffffff; --brand-text: #111827; --brand-muted: #667085; --brand-border: #d9e2df; --brand-button: var(--brand-primary); --brand-button-text: #ffffff; --brand-radius: 8px; --brand-shadow: 0 18px 48px rgba(16, 24, 40, 0.1); --site-bg: var(--brand-background); --site-surface: var(--brand-surface); --site-primary: var(--brand-primary); --site-secondary: var(--brand-secondary); --site-accent: var(--brand-accent); --site-text: var(--brand-text); --site-muted: var(--brand-muted); --site-border: var(--brand-border); background: var(--site-bg); color: var(--site-text); font-family: var(--site-body), Inter, sans-serif; min-height: 100%; box-shadow: rgba(31, 41, 55, 0.2) 0px 32px 95px; overflow: visible; }
-
-.rendered-site, .rendered-site * { box-sizing: border-box; }
-
-.rendered-site h1, .rendered-site h2, .rendered-site h3, .rendered-site p, .rendered-site strong, .rendered-site span { max-width: 100%; overflow-wrap: break-word; }
-
-.rendered-site img { max-width: 100%; }
-
-.template-mega-retail-store { position: relative; width: 100%; min-width: 0px; max-width: 1480px; margin: 0px auto; padding: 28px 32px 0px; overflow: clip; color: var(--site-text); background: color-mix(in srgb, var(--site-bg) 94%, #f6f4ef); font-family: var(--site-body), Inter, ui-sans-serif, system-ui, sans-serif; }
-
-.template-mega-retail-store, .template-mega-retail-store * { box-sizing: border-box; }
-
-.template-mega-retail-store .mega-retail-departments button, .template-mega-retail-store .mega-retail-actions button, .template-mega-retail-store .mega-retail-section-heading button, .template-mega-retail-store .mega-retail-tile button { border: 0px; cursor: pointer; font: inherit; }
-
-.template-mega-retail-store .mega-retail-bento { display: grid; grid-template-columns: repeat(6, minmax(0px, 1fr)); grid-template-rows: repeat(2, 190px); gap: 14px; margin-bottom: 16px; }
-
-.template-mega-retail-store .mega-retail-tile { position: relative; min-width: 0px; overflow: hidden; border-radius: 22px; background: rgb(23, 23, 23); box-shadow: rgba(20, 20, 20, 0.38) 0px 16px 34px -22px; }
-
-.template-mega-retail-store .mega-retail-tile.is-primary { grid-area: span 2 / span 3; }
-
-.template-mega-retail-store .mega-retail-tile.is-medium { grid-column: span 3; }
-
-.template-mega-retail-store .mega-retail-tile.is-small { grid-column: span 1; }
-
-.template-mega-retail-store .mega-retail-tile > img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.45s; }
-
-.template-mega-retail-store .mega-retail-tile:hover > img { transform: scale(1.035); }
-
-.template-mega-retail-store .mega-retail-tile::after { content: ""; position: absolute; inset: 0px; background: linear-gradient(rgba(0, 0, 0, 0.02) 20%, rgba(0, 0, 0, 0.78) 100%); }
-
-.template-mega-retail-store .mega-retail-tile > div { position: absolute; z-index: 2; right: 0px; bottom: 0px; left: 0px; padding: 22px; color: rgb(255, 255, 255); }
-
-.template-mega-retail-store .mega-retail-tile > div > span { display: block; margin-bottom: 7px; color: rgba(255, 255, 255, 0.78); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
-
-.template-mega-retail-store .mega-retail-tile h1 { max-width: 580px; margin: 0px; font-family: var(--site-heading), Inter, sans-serif; font-size: 50px; line-height: 0.98; letter-spacing: 0px; }
-
-.template-mega-retail-store .mega-retail-tile h2 { margin: 0px; font-family: var(--site-heading), Inter, sans-serif; font-size: 24px; line-height: 1.05; letter-spacing: 0px; }
-
-.template-mega-retail-store .mega-retail-tile.is-small h2 { font-size: 17px; }
-
-.template-mega-retail-store .mega-retail-tile p { max-width: 520px; margin: 10px 0px 0px; color: rgba(255, 255, 255, 0.82); font-size: 14px; line-height: 1.5; }
-
-.template-mega-retail-store .mega-retail-tile button { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; padding: 9px 12px; border-radius: 999px; color: rgb(23, 23, 23); background: rgb(255, 255, 255); font-size: 12px; font-weight: 800; }
-
-.template-mega-retail-store .mega-retail-tile button svg { width: 15px; height: 15px; }
-
-.template-mega-retail-store .mega-retail-tile.is-small p, .template-mega-retail-store .mega-retail-tile.is-small button { display: none; }
-
-@media (max-width: 1100px) {
-.template-mega-retail-store .mega-retail-bento { grid-template-rows: repeat(2, 170px); }
-.template-mega-retail-store .mega-retail-tile h1 { font-size: 42px; }
-}
-
-@media (max-width: 760px) {
-.template-mega-retail-store { padding: 14px 14px 0px; }
-.template-mega-retail-store .mega-retail-bento { grid-template-columns: minmax(0px, 1fr); grid-template-rows: 330px 190px repeat(3, 150px); }
-.template-mega-retail-store .mega-retail-tile.is-primary, .template-mega-retail-store .mega-retail-tile.is-medium, .template-mega-retail-store .mega-retail-tile.is-small { grid-area: auto / 1; }
-.template-mega-retail-store .mega-retail-tile h1 { font-size: 36px; }
-.template-mega-retail-store .mega-retail-tile h2 { font-size: 20px; }
-}
-
-@media (max-width: 480px) {
-.template-mega-retail-store .mega-retail-bento { grid-template-rows: 310px 175px repeat(3, 145px); }
-.template-mega-retail-store .mega-retail-tile > div { padding: 18px; }
-}
+.composed-retail-hero { display: grid; gap: 1rem; color: var(--site-text); font-family: var(--site-body); }
+.composed-retail-hero__intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); min-height: 28rem; overflow: hidden; background: var(--site-surface); border: 1px solid var(--site-border); }
+.composed-retail-hero__copy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1.25rem; padding: clamp(1.5rem, 5vw, 4rem); }
+.composed-retail-hero h1 { margin: 0; font-family: var(--site-heading); font-size: 4rem; line-height: 1.05; overflow-wrap: anywhere; }
+.composed-retail-hero p { margin: 0; max-width: 42rem; color: var(--site-muted); line-height: 1.6; }
+.composed-retail-hero__action { display: inline-flex; align-items: center; justify-content: center; min-height: 3rem; padding: .75rem 1.25rem; color: var(--site-button-text); background: var(--site-primary); text-decoration: none; font-weight: 700; }
+.composed-retail-hero__main-image { width: 100%; height: 100%; min-height: 24rem; object-fit: cover; }
+.composed-retail-hero__categories { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.composed-retail-hero figure { position: relative; min-width: 0; min-height: 12rem; margin: 0; overflow: hidden; background: var(--site-surface); }
+.composed-retail-hero figure img { display: block; width: 100%; height: 100%; max-height: 18rem; object-fit: cover; }
+.composed-retail-hero figcaption { position: absolute; inset: auto 0 0; padding: 1rem; color: var(--site-text); background: var(--site-surface); font-weight: 700; }
+@media (max-width: 700px) { .composed-retail-hero__intro { grid-template-columns: 1fr; } .composed-retail-hero__main-image { min-height: 16rem; max-height: 24rem; } .composed-retail-hero h1 { font-size: 2.4rem; } }
+@media (max-width: 420px) { .composed-retail-hero__categories { grid-template-columns: 1fr; } }

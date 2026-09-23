@@ -130,8 +130,11 @@ def test_enabled_path_resolves_stock_before_persist_and_texture_after_ids(genera
     site = session.scalars(select(GeneratedSite)).one()
     store = session.scalars(select(Store)).one()
     sections = [item for item in response.website_schema["pages"][0]["sections"] if item["type"] == "composed"]
+    body_sections = [item for item in sections if item["section_id"] not in {"shared--header", "shared--footer"}]
 
-    assert sections[0] == {
+    assert [sections[0]["section_id"], sections[-1]["section_id"]] == ["shared--header", "shared--footer"]
+    assert sections[0]["list_bindings"]["navigation"]
+    assert body_sections[0] == {
         "id": "composed-1-home-services-premium--home--home-service-hero",
         "type": "composed", "order": 1,
         "section_id": "home-services-premium--home--home-service-hero",
@@ -139,9 +142,9 @@ def test_enabled_path_resolves_stock_before_persist_and_texture_after_ids(genera
                           "primary_button": "Explore", "secondary_button": "Contact"},
         "image_bindings": {"image_1": "https://images.example.test/image_1.png"},
     }
-    assert sections[1]["section_id"] == "premium-product-store--home--premium-cta"
-    assert sections[1]["copy_bindings"] == {"title": "Materials with character", "text": "Explore our workshop"}
-    assert sections[1]["image_bindings"] == {"image_1": "https://images.example.test/image_1.png"}
+    assert body_sections[1]["section_id"] == "premium-product-store--home--premium-cta"
+    assert body_sections[1]["copy_bindings"] == {"title": "Materials with character", "text": "Explore our workshop"}
+    assert body_sections[1]["image_bindings"] == {"image_1": "https://images.example.test/image_1.png"}
     assert calls[0][0][0]["image_role"] == "hero_candidate"
     assert "business_id" not in calls[0][1] and "site_id" not in calls[0][1]
     assert calls[1][0][0]["image_role"] == "texture_atmosphere"
@@ -215,7 +218,10 @@ def test_fixed_home_roles_are_excluded_before_composition(generation, monkeypatc
         require_complete_bindings=True,
     )
     assert not {"hero", "catalog"} & {manifest["section_type"] for manifest in eligible.values()}
-    assert [section["type"] for section in sections] == ["Hero", "ProductGrid", "composed"]
+    assert [section["type"] for section in sections] == ["Hero", "ProductGrid", "composed", "composed", "composed"]
+    assert [section["section_id"] for section in sections if section["type"] == "composed"] == [
+        "shared--header", "corporate-company-pro--home--corporate-process", "shared--footer",
+    ]
 
 
 @pytest.mark.parametrize("template_id,roles", [
@@ -227,7 +233,8 @@ def test_renderer_owned_roles_count_without_explicit_sections(template_id, roles
     covered = section_composition.covered_section_types(schema, {"sections": []})
 
     assert roles.issubset(covered)
-    assert {"header", "footer", "quote_upload"}.issubset(covered)
+    assert "quote_upload" in covered
+    assert not {"header", "footer"} & covered
 
 
 def test_ambiguous_fixed_sections_are_not_silently_equated():
@@ -261,8 +268,17 @@ def test_provider_receives_only_renderable_sections_without_quote_upload(monkeyp
         proposal = {"sections": [{
             "section_id": "home-services-premium--home--home-service-hero",
             "copy": [
-                {"field": field, "value": field.title()}
-                for field in ("headline", "subtitle", "primary_button", "secondary_button")
+                {"field": field, "value": value}
+                for field, value in (
+                    ("service_category", "3D printing"),
+                    ("headline", "Custom production"),
+                    ("subtitle", "Explore available services"),
+                    ("primary_button", "Services"),
+                    ("primary_page_key", "services"),
+                    ("secondary_button", "Contact"),
+                    ("secondary_page_key", "contact"),
+                    ("image_alt", "Workshop equipment"),
+                )
             ],
             "image_requests": [
                 {"slot_id": "image_1", "image_role": "hero_candidate", "category": "workshop"},
@@ -274,7 +290,7 @@ def test_provider_receives_only_renderable_sections_without_quote_upload(monkeyp
 
     monkeypatch.setattr(section_composer.agents, "create_sync_chat_completion_with_retry", completion)
     result = section_composer.compose_layout(
-        {"business": {"name": "Maker Studio"}}, {"custom_order_upload"},
+        {"business": {"name": "Maker Studio"}}, {"custom_order_upload", "services"},
         excluded_section_types={"quote_upload"}, require_complete_bindings=True,
     )
     offered = json.loads(seen["messages"][1]["content"])["eligible_sections"]
@@ -284,3 +300,146 @@ def test_provider_receives_only_renderable_sections_without_quote_upload(monkeyp
     assert "quote-upload--custom-order" not in allowed_ids
     assert "corporate-company-pro--home--corporate-hero" not in allowed_ids
     assert "quote-upload--custom-order" not in seen["response_format"]["json_schema"]["schema"]["properties"]["sections"]["items"]["properties"]["section_id"]["enum"]
+
+
+@pytest.mark.parametrize("page_count", [1, 2, 5])
+def test_composed_shell_uses_every_real_page_and_keeps_body(generation, monkeypatch, page_count):
+    monkeypatch.setenv("KREATON_SECTION_COMPOSITION_ENABLED", "1")
+    monkeypatch.setattr(section_composition.section_composer, "compose_layout", lambda *_args, **_kwargs: {
+        "sections": [{"section_id": "corporate-company-pro--home--corporate-process",
+                      "copy": {"title": "Our process", "text": "Design and deliver"},
+                      "image_requests": []}],
+    })
+    state = generation[3]
+    state.generatedCopy["pages"] = [
+        {"page_key": "home" if index == 0 else f"page_{index}",
+         "title": "Home" if index == 0 else f"Page {index}",
+         "slug": "/" if index == 0 else f"/page-{index}", "order": index + 1, "sections": []}
+        for index in range(page_count)
+    ]
+    state.generatedCopy["navigation"] = [
+        {"page_key": page["page_key"], "label": f"Navigation {index}"}
+        for index, page in enumerate(state.generatedCopy["pages"])
+    ]
+    response = generate(generation)
+    sections = response.website_schema["pages"][0]["sections"]
+    header = next(section for section in sections if section.get("section_id") == "shared--header")
+    footer = next(section for section in sections if section.get("section_id") == "shared--footer")
+    labels = {item["page_key"]: item["label"] for item in response.website_schema.get("navigation") or []}
+    expected = [{"label": labels.get(page["page_key"], page["title"]), "page_key": page["page_key"]}
+                for page in response.website_schema["pages"]]
+
+    assert header["list_bindings"]["navigation"] == expected
+    assert footer["list_bindings"]["navigation"] == expected
+    assert any(section.get("section_id") == "corporate-company-pro--home--corporate-process" for section in sections)
+    assert json.loads(generation[0].scalars(select(GeneratedSite)).one().generated_config) == response.website_schema
+
+
+def test_composed_shell_respects_edited_navigation_labels():
+    schema = {
+        "pages": [
+            {"page_key": "home", "title": "Home", "order": 1},
+            {"page_key": "contact", "title": "Contact", "order": 2},
+        ],
+        "navigation": [{"page_key": "contact", "label": "Hablar con nosotros"}],
+        "global_components": {"footer_text": "Estudio Norte"},
+    }
+    header, footer = section_composition._shared_shell(schema, {"name": "Estudio Norte", "selectedLanguage": "es"})
+
+    assert header["list_bindings"]["navigation"] == [
+        {"label": "Home", "page_key": "home"},
+        {"label": "Hablar con nosotros", "page_key": "contact"},
+    ]
+    assert footer["list_bindings"] == header["list_bindings"]
+    assert header["copy_bindings"]["navigation_label"] == "Navegación del sitio"
+    assert footer["copy_bindings"]["footer_text"] == "Estudio Norte"
+
+
+def test_composed_mega_retail_shell_binds_commerce_controls_from_real_catalog():
+    schema = {
+        "active_template": {"id": "mega-retail-store"},
+        "pages": [{"page_key": "home", "title": "Home", "order": 1}],
+        "catalog_items": [{"name": "Drill", "category": "Tools"}, {"name": "Saw", "category": "Tools"}],
+        "brand": {"logoUrl": "/assets/electrohub.png"},
+        "global_components": {"footer_text": "ElectroHub"},
+    }
+    header, footer = section_composition._shared_shell(
+        schema, {"name": "ElectroHub", "salesMode": "online_sales", "selectedLanguage": "en"}
+    )
+    assert header["control_bindings"] == {
+        "departments": {"label": "Departments", "items": [{"label": "Tools", "category": "Tools"}]},
+        "search": {"label": "Search products and departments"},
+        "cart": {"label": "Cart"},
+        "account": {"label": "Sign in", "action": "modal"},
+    }
+    assert footer["control_bindings"]["newsletter"]["button_label"] == "Subscribe"
+    assert header["image_bindings"] == {"brand_logo": "/assets/electrohub.png"}
+    assert footer["image_bindings"] == {"brand_logo": "/assets/electrohub.png"}
+    quote_header, _ = section_composition._shared_shell(
+        schema, {"name": "ElectroHub"}, sales_mode="catalog_or_quotes"
+    )
+    assert "cart" not in quote_header["control_bindings"]
+    assert "search" not in quote_header["control_bindings"]
+    assert "account" not in quote_header["control_bindings"]
+
+
+def test_composed_b2b_shell_preserves_account_and_start_navigation_without_cart():
+    schema = {
+        "active_template": {"id": "b2b-saas-enterprise-pro"},
+        "pages": [
+            {"page_key": "home", "title": "Home", "order": 1},
+            {"page_key": "pricing", "title": "Pricing", "order": 2},
+            {"page_key": "login", "title": "Sign in", "order": 3},
+        ],
+        "catalog_items": [
+            {"name": f"Plan {index}", "price": index * 10, "recurring": True}
+            for index in range(1, 4)
+        ],
+    }
+    header, _ = section_composition._shared_shell(schema, {"name": "Northstar"})
+    assert header["control_bindings"] == {
+        "account": {"label": "Sign in", "action": "page", "page_key": "login"},
+        "primary_action": {"label": "Start free", "page_key": "pricing"},
+    }
+    schema["catalog_items"] = []
+    header, _ = section_composition._shared_shell(schema, {"name": "Northstar"})
+    assert header["control_bindings"]["primary_action"]["page_key"] == "home"
+
+
+def test_real_mega_retail_composition_places_shared_shell_around_body(monkeypatch):
+    schema = {
+        "active_template": {"id": "mega-retail-store"},
+        "business": {"name": "ElectroHub QA", "selectedLanguage": "en"},
+        "pages": [{"page_key": "home", "title": "Home", "order": 1, "sections": [
+            {"id": "fixed-hero", "type": "MarketplaceHero", "order": 1},
+            {"id": "fixed-catalog", "type": "ProductGrid", "order": 2},
+        ]}],
+        "catalog_items": [{"name": "Cordless drill", "category": "Tools"}],
+    }
+    offered = {}
+
+    def compose(_brief, _archetypes, **kwargs):
+        offered.update(kwargs)
+        return {"sections": [{
+            "section_id": "corporate-company-pro--home--corporate-process",
+            "copy": {"title": "Our process", "text": "Design and deliver"},
+            "image_requests": [],
+        }]}
+
+    monkeypatch.setattr(section_composition.section_composer, "compose_layout", compose)
+    result, pending = section_composition.prepare_composed_schema(
+        schema, "online tools store", sales_mode="online_sales"
+    )
+    sections = result["pages"][0]["sections"]
+    assert [item["section_id"] for item in sections if item["type"] == "composed"] == [
+        "shared--header", "corporate-company-pro--home--corporate-process", "shared--footer",
+    ]
+    assert "hero" in offered["excluded_section_types"]
+    assert "catalog" in offered["excluded_section_types"]
+    assert sections[-3]["control_bindings"]["cart"] == {"label": "Cart"}
+    assert sections[-1]["control_bindings"]["newsletter"]["button_label"] == "Subscribe"
+    assert pending == []
+    assert schema["pages"][0]["sections"] == [
+        {"id": "fixed-hero", "type": "MarketplaceHero", "order": 1},
+        {"id": "fixed-catalog", "type": "ProductGrid", "order": 2},
+    ]

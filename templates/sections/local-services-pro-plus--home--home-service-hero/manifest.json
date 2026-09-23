@@ -3,19 +3,22 @@
   "section_type": "hero",
   "source_template": "Local Services",
   "eligibility": {
-    "requires_archetype": null
+    "requires_archetype": "services"
   },
   "required_copy_fields": [
     "headline",
     "subtitle",
     "primary_button",
-    "secondary_button"
+    "secondary_button",
+    "primary_page_key",
+    "secondary_page_key",
+    "image_alt"
   ],
   "image_slots": [
     {
       "slot_id": "image_1",
       "image_role": "hero_candidate",
-      "min": 0,
+      "min": 1,
       "max": 1
     }
   ],

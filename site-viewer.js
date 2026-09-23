@@ -3,7 +3,7 @@ import { openStorefrontCheckout, reconcileCheckoutReturn } from "./storefront-ch
 import { createSharedSiteMotion, motionDataAttributes } from "./shared-site-motion.js?v=1";
 import { limitPremiumHeadline, premiumSectionImage, PREMIUM_IMAGE_ROLES } from "./src/ai-builder/premium-product-policy.js?v=1";
 import { withGraphPresentation, graphPresentationEnabled, graphPresentationLabels, graphProductAttributes, resolveMegaRetailDepartmentTiles } from "./src/ai-builder/mega-retail-policy.js?v=2";
-import { preloadComposedSections, renderComposedSection } from "./composed-sections.js";
+import { isComposedShellSection, preloadComposedSections, renderComposedSection, renderComposedShell } from "./composed-sections.js";
 
 export { preloadComposedSections };
 
@@ -148,20 +148,21 @@ function renderWebsiteDocument(schema, pageKey = "home") {
     return renderB2BSaasPublicWebsite(schema, page, { logo, layoutId, templateId, theme });
   }
   const isPremiumProductStore = templateId === "premium-product-store";
-  const commerceActions = isCommerceSite(schema) ? renderCommerceNavActions(schema, { showSearch: isPremiumProductStore }) : "";
+  const commerceSite = isCommerceSite(schema);
+  const commerceActions = commerceSite ? renderCommerceNavActions(schema, { showSearch: isPremiumProductStore }) : "";
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)}">
-    <header class="rendered-nav ${isPremiumProductStore ? "premium-commerce-header" : ""} sticky">
+    ${(!commerceSite && renderComposedShell(schema, "shared--header")) || `<header class="rendered-nav ${isPremiumProductStore ? "premium-commerce-header" : ""} sticky">
       <div class="rendered-nav-brand">${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business?.name)}">` : renderLogoMark(schema)}</div>
       <nav>${(schema.navigation || [])
         .map((item) => `<a class="${item.page_key === page?.page_key ? "active" : ""}" href="#${escapeAttribute(item.page_key)}" data-page-link="${escapeAttribute(item.page_key)}">${escapeHtml(item.label)}</a>`)
         .join("")}</nav>
       ${commerceActions}
-    </header>
+    </header>`}
     ${(page?.sections || []).sort((a, b) => a.order - b.order).map((section) => renderSection(section, schema)).join("")}
-    <footer class="rendered-footer">
+    ${(!commerceSite && renderComposedShell(schema, "shared--footer")) || `<footer class="rendered-footer">
       <div>${logo ? `<img src="${escapeAttribute(logo)}" alt="${escapeAttribute(schema.business?.name || "")}">` : renderLogoMark(schema)}</div>
       <span>${escapeHtml(schema.global_components?.footer_text || "")}</span>
-    </footer>
+    </footer>`}
   </div>`;
 }
 
@@ -180,10 +181,10 @@ function renderB2BSaasPublicWebsite(schema, page, { logo, layoutId, templateId, 
     || {};
   const themeBrand = { ...(schema.brand || {}), colors: { ...(schema.brand?.colors || {}), ...(theme.colors || {}) }, fontPairing: theme.fonts || schema.brand?.fontPairing };
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, themeBrand)}">
-    ${renderB2BSaasPublicHeader(schema, page, pages, logo, labels, plans)}
+    ${renderComposedShell(schema, "shared--header", { cartCount: sharedCart?.count() || 0 }) || renderB2BSaasPublicHeader(schema, page, pages, logo, labels, plans)}
     ${isHome ? `${renderB2BSaasPublicHero(schema, hero, pages, items, labels, plans)}${renderB2BSaasPublicLogoRow(labels)}${renderB2BSaasPublicFeatures(schema, sections, items, labels)}${renderB2BSaasPublicPricing(pricingSection, plans, labels)}` : ""}
     ${remaining.map((section) => renderSection(section, schema)).join("")}
-    <footer class="b2b-saas-footer"><div>${renderB2BSaasPublicBrand(schema, logo)}</div><span>${escapeHtml(schema.global_components?.footer_text || `© ${new Date().getFullYear()} ${schema.business?.name || ""}`)}</span></footer>
+    ${renderComposedShell(schema, "shared--footer") || `<footer class="b2b-saas-footer"><div>${renderB2BSaasPublicBrand(schema, logo)}</div><span>${escapeHtml(schema.global_components?.footer_text || `© ${new Date().getFullYear()} ${schema.business?.name || ""}`)}</span></footer>`}
   </div>`;
 }
 
@@ -309,10 +310,10 @@ function renderMegaRetailPublicWebsite(schema, page, { logo, layoutId, templateI
   const isHome = page?.page_key === "home" || page === pages[0];
 
   return `<div class="rendered-site layout-${escapeAttribute(slugify(layoutId))} template-${escapeAttribute(slugify(templateId))}" style="${themeVars(theme, schema.brand)};--mega-tile-tint:${escapeAttribute(brandTint)}">
-    ${renderMegaRetailPublicHeader(schema, logo, categories, labels)}
+    ${renderComposedShell(schema, "shared--header", { cartCount: sharedCart?.count() || 0 }) || renderMegaRetailPublicHeader(schema, logo, categories, labels)}
     ${isHome ? `${renderMegaRetailPublicBento(schema, hero, categories, items, clientPhotos, hasBrandVisual, labels)}${renderMegaRetailPublicDeals(schema, sections, items, labels)}${renderMegaRetailPublicTrust(sections, labels)}` : ""}
     ${remainingSections.map((section) => renderSection(section, schema)).join("")}
-    ${renderMegaRetailPublicFooter(schema, pages, logo, labels, features)}
+    ${renderComposedShell(schema, "shared--footer") || renderMegaRetailPublicFooter(schema, pages, logo, labels, features)}
     ${features.whatsapp && whatsappUrl ? `<a class="mega-retail-whatsapp" href="${escapeAttribute(whatsappUrl)}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">${megaRetailPublicIcon("whatsapp")}</a>` : ""}
   </div>`;
 }
@@ -434,7 +435,7 @@ function catalogAction(schema, item = {}, fallbackLabel = "Request info", commer
 }
 
 function renderSection(section, schema) {
-  if (section.type === "composed") return renderComposedSection(section);
+  if (section.type === "composed") return isComposedShellSection(section) ? "" : renderComposedSection(section);
   if (section.type === "Hero") return renderHero(section, schema);
   if (section.type === "PremiumHero") return renderPremiumHero(section, schema);
   if (section.type === "ProductStory") return renderProductStory(section, schema);

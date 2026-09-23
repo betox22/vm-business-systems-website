@@ -1,0 +1,21 @@
+.composed-site-header { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; padding: 1rem clamp(1.25rem, 4vw, 3rem); background: var(--site-surface); color: var(--site-text); border-bottom: 1px solid var(--site-border); font-family: var(--site-body); }
+.composed-site-header__brand { color: var(--site-text); font-family: var(--site-heading); font-size: 1.3rem; font-weight: 700; text-decoration: none; overflow-wrap: anywhere; }
+.composed-site-header__brand img { width: 2.5rem; height: 2.5rem; object-fit: contain; vertical-align: middle; margin-right: .6rem; }
+.composed-site-header__nav { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.5rem; }
+.composed-site-header__nav a { color: var(--site-text); text-decoration: none; font-weight: 600; }
+.composed-site-header__nav a:hover, .composed-site-header__nav a:focus-visible { color: var(--site-primary); }
+.composed-site-header__controls { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; min-width: 0; }
+.composed-site-header__departments { display: flex; flex-wrap: wrap; gap: .25rem; }
+.composed-site-header__controls button, .composed-site-header__account { min-height: 2.75rem; padding: .55rem .8rem; border: 1px solid var(--site-border); border-radius: 4px; background: var(--site-surface); color: var(--site-text); font: inherit; cursor: pointer; text-decoration: none; }
+.composed-site-header__controls button:hover, .composed-site-header__controls button:focus-visible, .composed-site-header__account:hover, .composed-site-header__account:focus-visible { border-color: var(--site-primary); color: var(--site-primary); }
+.composed-site-header__search { display: flex; align-items: stretch; min-width: min(15rem, 100%); border: 1px solid var(--site-border); border-radius: 4px; }
+.composed-site-header__search label { flex: 1; min-width: 0; }
+.composed-site-header__search input { width: 100%; height: 100%; min-height: 2.75rem; padding: .5rem .75rem; border: 0; background: var(--site-surface); color: var(--site-text); font: inherit; }
+.composed-site-header__search button { border: 0; }
+.composed-site-header__search svg, .composed-site-header__cart svg { width: 1.2rem; height: 1.2rem; flex: none; }
+.composed-site-header__cart { display: inline-flex; align-items: center; gap: .4rem; }
+.composed-site-header__cart [data-cart-count] { min-width: 1.4rem; padding: .1rem .3rem; border-radius: 50%; background: var(--site-primary); color: var(--site-surface); text-align: center; font-size: .75rem; }
+.composed-site-header__primary { background: var(--site-primary) !important; color: var(--site-surface) !important; border-color: var(--site-primary) !important; }
+.composed-site-header__mobile-departments { display: none; }
+@media (max-width: 800px) { .composed-site-header { align-items: flex-start; flex-direction: column; } .composed-site-header__nav, .composed-site-header__controls { width: 100%; } .composed-site-header__departments { display: none; } .composed-site-header__mobile-departments { display: block; } .composed-site-header__mobile-departments div { display: flex; flex-wrap: wrap; gap: .4rem; padding: .5rem 0; } }
+@media (max-width: 480px) { .composed-site-header__search { flex: 1 1 100%; } .composed-site-header__controls { gap: .5rem; } }

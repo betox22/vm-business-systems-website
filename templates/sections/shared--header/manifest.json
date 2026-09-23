@@ -1,0 +1,30 @@
+{
+  "id": "shared--header",
+  "section_type": "header",
+  "source_template": "shared",
+  "eligibility": {
+    "requires_archetype": null
+  },
+  "required_copy_fields": [
+    "business.name",
+    "home_page_key",
+    "navigation_label"
+  ],
+  "collection_bindings": {
+    "navigation": { "min": 1, "max": 50, "item_fields": ["label", "page_key"] }
+  },
+  "control_slots": {
+    "brand_mark": { "image_binding": "brand_logo" },
+    "header_controls": {
+      "search": ["label"],
+      "cart": ["label"],
+      "account": ["label", "action", "page_key?"],
+      "departments": ["label", "items:label,category"],
+      "primary_action": ["label", "page_key"]
+    }
+  },
+  "image_slots": [],
+  "animation_profile": "none",
+  "html_partial": "shared--header/section.html",
+  "css_partial": "shared--header/section.css"
+}

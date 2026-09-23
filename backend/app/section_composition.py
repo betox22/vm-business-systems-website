@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import re
 from typing import Any
 
 from .agents import detect_business_archetypes
@@ -8,7 +9,7 @@ from . import image_request_resolver, section_composer
 
 
 def covered_section_types(schema: dict[str, Any], home: dict[str, Any]) -> set[str]:
-    covered = {"quote_upload", "header", "footer"}
+    covered = {"quote_upload"}
     for section in home["sections"]:
         section_type = section.get("type") or ""
         if section_type == "Hero" or section_type.endswith("Hero"):
@@ -58,7 +59,138 @@ def _bindings(requests: list[dict], results: list[dict]) -> dict[str, str]:
     return bindings
 
 
-def prepare_composed_schema(schema: dict[str, Any], business_text: str) -> tuple[dict[str, Any], list[dict]]:
+def _positive_price(item: dict[str, Any]) -> bool:
+    try:
+        return float(item.get("price_amount") if item.get("price_amount") is not None else item.get("price")) > 0
+    except (TypeError, ValueError):
+        return False
+
+
+def _shared_shell(schema: dict[str, Any], business: dict[str, Any], sales_mode: str | None = None) -> tuple[dict, dict]:
+    pages = sorted(schema["pages"], key=lambda page: page.get("order", 0))
+    labels = {
+        item["page_key"]: item["label"] for item in schema.get("navigation") or []
+        if isinstance(item, dict) and isinstance(item.get("page_key"), str)
+        and isinstance(item.get("label"), str) and item["label"].strip()
+    }
+    navigation = [
+        {"label": labels.get(page["page_key"]) or str(page.get("title") or page["page_key"]),
+         "page_key": page["page_key"]}
+        for page in pages if isinstance(page.get("page_key"), str) and page["page_key"]
+    ]
+    if not navigation:
+        raise ValueError("Composed shell requires at least one page")
+    if len(navigation) > 50:
+        raise ValueError("Composed shell supports at most 50 pages")
+    if (len({item["page_key"] for item in navigation}) != len(navigation)
+            or any(not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", item["page_key"], re.IGNORECASE)
+                   for item in navigation)):
+        raise ValueError("Composed shell requires distinct safe page keys")
+    home_key = next((page["page_key"] for page in pages if page["page_key"] == "home"), navigation[0]["page_key"])
+    name = str(business.get("name") or "")
+    common = {"business.name": name, "home_page_key": home_key}
+    language = business.get("selectedLanguage") or "en"
+    navigation_label, footer_navigation_label = {
+        "es": ("Navegación del sitio", "Enlaces del sitio"),
+        "fr": ("Navigation du site", "Liens du site"),
+        "pt": ("Navegação do site", "Links do site"),
+    }.get(language, ("Site navigation", "Site links"))
+    header = {
+        "id": "composed-shared-header", "type": "composed", "order": -1,
+        "section_id": "shared--header",
+        "copy_bindings": {**common, "navigation_label": navigation_label},
+        "list_bindings": {"navigation": navigation}, "image_bindings": {},
+    }
+    footer = {
+        "id": "composed-shared-footer", "type": "composed", "order": 1_000_000,
+        "section_id": "shared--footer",
+        "copy_bindings": {**common, "footer_navigation_label": footer_navigation_label,
+                          "footer_text": str((schema.get("global_components") or {}).get("footer_text") or "")},
+        "list_bindings": {"navigation": navigation}, "image_bindings": {},
+    }
+    logo = (schema.get("brand") or {}).get("logoUrl") or (schema.get("global_components") or {}).get("logo_url")
+    if isinstance(logo, str) and re.match(
+        r"^(?:https?://|/(?!/)|data:image/(?:png|jpeg|webp);base64,[a-z0-9+/]+=*$)", logo, re.I,
+    ):
+        header["image_bindings"]["brand_logo"] = logo
+        footer["image_bindings"]["brand_logo"] = logo
+    template_id = (schema.get("active_template") or schema.get("selected_template") or {}).get("id")
+    if template_id == "mega-retail-store":
+        mode = str(sales_mode if sales_mode is not None else business.get("salesMode") or business.get("salesFlow") or "").lower()
+        online = not mode or bool(re.search(r"online|ecommerce|e-commerce|carrito|checkout|tienda|sell", mode))
+        labels = {
+            "es": ("Buscar productos y departamentos", "Carrito", "Ingresar", "Departamentos",
+                   "Recibe las mejores ofertas", "Novedades y promociones directo en tu correo.", "Suscribirse"),
+        }.get(language, ("Search products and departments", "Cart", "Sign in", "Departments",
+                          "Get the best deals", "New arrivals and special offers in your inbox.", "Subscribe"))
+        categories = list(dict.fromkeys(
+            str(item.get("category") or "").strip() for item in schema.get("catalog_items") or []
+            if isinstance(item, dict) and str(item.get("category") or "").strip()
+        ))[:5]
+        controls = {}
+        if categories:
+            controls["departments"] = {"label": labels[3], "items": [
+                {"label": category, "category": category} for category in categories
+            ]}
+        if online:
+            controls.update({"search": {"label": labels[0]}, "cart": {"label": labels[1]},
+                             "account": {"label": labels[2], "action": "modal"}})
+        header["control_bindings"] = controls
+        contact = schema.get("contact") or {}
+        socials = []
+        for key, domain in (("instagram", "instagram.com"), ("facebook", "facebook.com"),
+                            ("tiktok", "tiktok.com"), ("twitter", "x.com")):
+            raw = str(contact.get(key) or "").strip()
+            if raw:
+                url = ("https://" + raw[7:]) if raw.startswith("http://") else (
+                    raw if raw.startswith("https://") else f"https://{domain}/{raw.lstrip('@')}")
+                if re.fullmatch(r"https://[^\s<>\"']+", url):
+                    socials.append({"label": key.title(), "url": url})
+        features = (schema.get("global_components") or {}).get("mega_retail_features") or {}
+        contact_page = next((item["page_key"] for item in navigation if "contact" in item["page_key"].lower()), home_key)
+        help_labels = (["Envíos", "Devoluciones", "Contacto", "Preguntas frecuentes"] if language == "es"
+                       else ["Shipping", "Returns", "Contact", "Frequently asked questions"])
+        extras = {"help_links": [{"label": label, "page_key": contact_page} for label in help_labels]}
+        if features.get("socials") is not False and socials:
+            extras["social_links"] = socials
+        if features.get("newsletter") is not False:
+            extras["newsletter"] = {"title": labels[4], "text": labels[5], "button_label": labels[6]}
+        footer["control_bindings"] = extras
+    elif template_id == "b2b-saas-enterprise-pro":
+        controls = {}
+        action_labels = {
+            "es": ("Iniciar sesión", "Empezar gratis"),
+            "fr": ("Se connecter", "Commencer"),
+            "pt": ("Entrar", "Começar grátis"),
+        }.get(language, ("Sign in", "Start free"))
+        login_page = next((item for item in navigation if re.search(
+            r"login|sign[ -]?in|account|cuenta|ingresar", item["page_key"] + " " + item["label"], re.I)), None)
+        contact_page = next((item for item in navigation if re.search(
+            r"contact|demo|consulta", item["page_key"] + " " + item["label"], re.I)), None)
+        pricing_page = next((item for item in navigation if re.search(
+            r"pricing|price|precio|plan", item["page_key"] + " " + item["label"], re.I)), None)
+        if login_page:
+            controls["account"] = {"label": action_labels[0],
+                                   "action": "page", "page_key": login_page["page_key"]}
+        recurring = re.compile(r"^(?:recurring|subscription|monthly|annual|yearly|month|year|mensual|anual|mes|ano)$", re.I)
+        recurring_label = re.compile(r"(?:/\s*(?:mo|month|mes|yr|year|ano)|\b(?:per month|per year|monthly|annual|yearly|mensual|anual|cada mes|cada ano)\b)", re.I)
+        plans = [item for item in schema.get("catalog_items") or [] if isinstance(item, dict)
+                 and item.get("is_active") is not False and item.get("display_in_catalog") is not False
+                 and (item.get("recurring") is True or item.get("subscription") is True
+                      or any(recurring.fullmatch(str(item.get(key) or "")) for key in
+                             ("price_type", "billing_interval", "billing_period", "interval", "cadence"))
+                      or recurring_label.search(str(item.get("price_label") or "")))
+                 and _positive_price(item)]
+        start_page = (pricing_page if len(plans) >= 3 else None) or contact_page or navigation[0]
+        controls["primary_action"] = {"label": action_labels[1],
+                                      "page_key": start_page["page_key"]}
+        header["control_bindings"] = controls
+    return header, footer
+
+
+def prepare_composed_schema(
+    schema: dict[str, Any], business_text: str, *, sales_mode: str | None = None,
+) -> tuple[dict[str, Any], list[dict]]:
     result = deepcopy(schema)
     business = result.get("business") or {}
     products = result.get("catalog_items") or []
@@ -75,7 +207,7 @@ def prepare_composed_schema(schema: dict[str, Any], business_text: str) -> tuple
     layout = section_composer.compose_layout(
         brief,
         detect_business_archetypes(business_text),
-        excluded_section_types=covered_section_types(result, home),
+        excluded_section_types=covered_section_types(result, home) | {"header", "footer"},
         require_complete_bindings=True,
     )
     sections = []
@@ -97,7 +229,8 @@ def prepare_composed_schema(schema: dict[str, Any], business_text: str) -> tuple
             "image_bindings": bindings,
         })
         pending.extend({"section_id": section_id, **request} for request in deferred)
-    home["sections"].extend(sections)
+    header, footer = _shared_shell(result, business, sales_mode)
+    home["sections"].extend([header, *sections, footer])
     return result, pending
 
 

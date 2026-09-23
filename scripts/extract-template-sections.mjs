@@ -5,6 +5,7 @@ import { resolve, join } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const outputRoot = join(root, "templates", "sections");
+const certifiedSectionIds = new Set(JSON.parse(await readFile(join(outputRoot, "certified-section-ids.json"), "utf8")));
 const source = await readFile(join(root, "backend", "app", "agents.py"), "utf8");
 const catalogSource = source.split("TEMPLATE_CATALOG:")[1].split("\n\ndef template_catalog_for_state")[0];
 const catalogEntries = [...catalogSource.matchAll(/^    "([a-z][a-z0-9-]+)": \{\s*"name": "([^"]+)"/gm)];
@@ -225,6 +226,7 @@ try {
   if (result.failures.length) throw new Error(result.failures.join("\n"));
   await mkdir(outputRoot, { recursive: true });
   for (const entry of result.entries) {
+    if (certifiedSectionIds.has(entry.id)) continue;
     const { html, css: sectionCss, ...manifest } = entry;
     const directory = join(outputRoot, entry.id);
     await mkdir(directory, { recursive: true });

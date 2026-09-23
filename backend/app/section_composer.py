@@ -19,6 +19,21 @@ IMAGE_ROLES = (
     "process_shot",
     "portrait",
 )
+SHELL_CONTROL_SLOTS = {
+    "shared--header": {
+        "brand_mark": {"image_binding": "brand_logo"},
+        "header_controls": {"search": ["label"], "cart": ["label"],
+                            "account": ["label", "action", "page_key?"],
+                            "departments": ["label", "items:label,category"],
+                            "primary_action": ["label", "page_key"]},
+    },
+    "shared--footer": {
+        "brand_mark": {"image_binding": "brand_logo"},
+        "footer_extras": {"newsletter": ["title", "text", "button_label"],
+                          "social_links": ["label", "url"],
+                          "help_links": ["label", "page_key"]},
+    },
+}
 
 
 class CopyValue(BaseModel):
@@ -86,9 +101,15 @@ def _load_eligible_sections(
             continue
         copy_fields = manifest["required_copy_fields"]
         image_slots = manifest["image_slots"]
+        collections = manifest.get("collection_bindings", {})
+        control_slots = manifest.get("control_slots", {})
         if (not isinstance(copy_fields, list) or not all(isinstance(field, str) and field for field in copy_fields)
                 or len(set(copy_fields)) != len(copy_fields)
-                or not isinstance(image_slots, list)):
+                or not isinstance(image_slots, list) or not isinstance(collections, dict)
+                or not isinstance(control_slots, dict)
+                or control_slots != SHELL_CONTROL_SLOTS.get(section_id, {})
+                or any(contract != {"min": 1, "max": 50, "item_fields": ["label", "page_key"]}
+                       for contract in collections.values())):
             raise ValueError(f"Invalid section contract: {path}")
         slots = [slot["slot_id"] for slot in image_slots]
         if len(set(slots)) != len(slots) or any(slot["image_role"] not in IMAGE_ROLES for slot in image_slots):
@@ -96,7 +117,7 @@ def _load_eligible_sections(
         if require_complete_bindings:
             html = (SECTION_LIBRARY_DIR / manifest["html_partial"]).read_text(encoding="utf-8")
             placeholders = set(re.findall(r"\{\{([^{}]+)\}\}", html))
-            if not placeholders.issubset(set(copy_fields) | set(slots)):
+            if not placeholders.issubset(set(copy_fields) | set(slots) | set(collections) | set(control_slots)):
                 continue
         manifests[section_id] = manifest
     if not manifests:

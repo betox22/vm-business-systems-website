@@ -144,6 +144,8 @@ def test_compose_layout_uses_default_model(composer_library, openai_reply, monke
 def test_real_section_library_contains_catalog_and_hero_sections():
     manifests = section_composer._load_eligible_sections(set())
 
-    assert "mega-retail-store--home--hero" in manifests
+    assert "mega-retail-store--home--hero" not in manifests
+    retail = section_composer._load_eligible_sections({"retail"})
+    assert "mega-retail-store--home--hero" in retail
     assert "mega-retail-store--home--catalog" in manifests
-    assert manifests["mega-retail-store--home--hero"]["required_copy_fields"]
+    assert retail["mega-retail-store--home--hero"]["required_copy_fields"]

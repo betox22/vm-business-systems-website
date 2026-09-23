@@ -1,14 +1,12 @@
-<div class="rendered-site template-home-services-premium"><section class="home-service-hero heading-medium spacing-balanced container-standard density-comfortable gap-comfortable variant-default" data-studio-section="home_service_hero" data-studio-section-type="HomeServiceHero" data-studio-section-variant="default">
-    <div class="home-service-hero-copy">
-      <span class="rendered-kicker">Local experts</span>
-      <h1>{{headline}}</h1>
-      <p>{{subtitle}}</p>
-      <div class="home-service-actions">
-        <a class="rendered-button" href="#">{{primary_button}}</a>
-        <a class="rendered-button secondary" href="#">{{secondary_button}}</a>
-      </div>
-      <div class="home-service-phone"><strong>Call now</strong><span>Fast local response</span></div>
+<section class="composed-home-service-hero">
+  <div class="composed-home-service-hero__visual"><img src="{{image_1}}" alt="{{image_alt}}"></div>
+  <div class="composed-home-service-hero__copy">
+    <span class="composed-home-service-hero__eyebrow">{{service_category}}</span>
+    <h1>{{headline}}</h1>
+    <p>{{subtitle}}</p>
+    <div class="composed-home-service-hero__actions">
+      <a class="composed-home-service-hero__primary" href="#{{primary_page_key}}" data-page-link="{{primary_page_key}}">{{primary_button}}</a>
+      <a class="composed-home-service-hero__secondary" href="#{{secondary_page_key}}" data-page-link="{{secondary_page_key}}">{{secondary_button}}</a>
     </div>
-    <div class="home-service-hero-visual"><img src="{{image_1}}" alt=""></div>
-    <div class="home-service-proof"><span>Licensed and insured</span><span>Clear estimates</span><span>On-time arrivals</span></div>
-  </section></div>
+  </div>
+</section>

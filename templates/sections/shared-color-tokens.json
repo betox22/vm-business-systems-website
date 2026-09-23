@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "tokens": {
+    "background": "--site-bg",
+    "surface": "--site-surface",
+    "text": "--site-text",
+    "muted": "--site-muted",
+    "primary": "--site-primary",
+    "accent": "--site-accent",
+    "border": "--site-border",
+    "button_text": "--site-button-text"
+  }
+}
