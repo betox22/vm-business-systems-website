@@ -98,6 +98,7 @@ class ProjectState(BaseModel):
     secondaryOfferingCategories: List[str] = Field(default_factory=list)
     catalogType: Optional[str] = None
     salesFlow: Optional[str] = None
+    salesMode: Optional[str] = None
 
     colors: Dict[str, str] = Field(default_factory=dict)
     typography: Dict[str, str] = Field(default_factory=dict)
@@ -197,6 +198,7 @@ class WebsiteGenerationRequest(BaseModel):
     project_id: Optional[str] = None
     sales_flow: Optional[str] = None
     salesFlow: Optional[str] = None
+    salesMode: Optional[str] = None
     fieldMeta: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     designStrategy: Dict[str, Any] = Field(default_factory=dict)
 

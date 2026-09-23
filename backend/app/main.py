@@ -2411,6 +2411,7 @@ async def website_builder(
         "selectedLanguage": request.selectedLanguage,
         "selectedTemplateId": request.selected_template_id or request.designStrategy.get("selectedTemplateId"),
         "salesFlow": sales_flow,
+        "salesMode": request.salesMode or request.designStrategy.get("salesMode") or sales_flow,
         "fieldMeta": field_meta,
     })
     state.runtimeAvailableTemplateIds = template_ids_for_generation(
@@ -2492,6 +2493,7 @@ async def website_builder(
             composed_schema, pending_textures = prepare_composed_schema(
                 schema,
                 " ".join(filter(None, [prompt_context, final_state.businessName or ""])),
+                sales_mode=final_state.salesMode or final_state.salesFlow,
             )
             if pending_textures and not auth_user:
                 raise ValueError("Deferred textures require a saved site")

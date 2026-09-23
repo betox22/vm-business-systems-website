@@ -329,6 +329,7 @@ export async function sendGuidedReply() {
   const broadLocalUpdates = inferGuidedUpdatesFromAnyMessage(message, attributionStep);
   const stepUpdates = inferGuidedUpdates(attributionStep, message);
   const localContextUpdates = { ...broadLocalUpdates, ...stepUpdates };
+  if (attributionStep === "salesMode") localContextUpdates.salesMode = message;
   if (builderState.guidedStep === "websiteIntent" && !localContextUpdates.websiteIntent) {
     // Only fill this in when the local heuristic actually recognizes a
     // category. Leaving it unset (rather than falling back to the raw

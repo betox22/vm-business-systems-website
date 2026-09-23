@@ -895,6 +895,7 @@ class StrategyAgent(BaseAgent):
                         "servicesProducts": state.servicesProducts,
                         "preferredTone": state.preferredTone or "",
                         "preferredColors": state.preferredColors or "",
+                        "salesMode": state.salesMode or state.salesFlow or "",
                         "productCount": len(state.catalogItems) if state.catalogItems else len(state.servicesProducts),
                     },
                     template_catalog,

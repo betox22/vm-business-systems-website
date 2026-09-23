@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   hasOnlineSalesSignal,
   isStrongNewBusinessBrief,
+  resolveSalesModeForTemplateSelection,
   resolveBackendMissingSteps,
   shouldStartCleanBusinessProject,
 } from "../src/ai-builder/intake-state-policy.js";
@@ -17,6 +18,14 @@ test("recognizes the Mi Mundo 3D free-paragraph brief as a new project", () => {
     offerings: ["Impresoras 3D", "Accesorios", "Materiales", "Cursos online"],
     salesMode: "online_sales",
   }), true);
+});
+
+test("keeps a mixed sales answer ahead of the normalized flow and ignores undecided placeholders", () => {
+  const raw = "Quiero vender online, cotizar al mayor y ofrecer rebranding";
+  const undecided = ["Let AI decide", "Que IA decida"];
+  assert.equal(resolveSalesModeForTemplateSelection(raw, "online_sales", undecided), raw);
+  assert.equal(resolveSalesModeForTemplateSelection("Que IA decida", "online_sales", undecided), "online_sales");
+  assert.equal(resolveSalesModeForTemplateSelection("", "quote_request", undecided), "quote_request");
 });
 
 test("does not reset a restored project for a normal detailed follow-up", () => {

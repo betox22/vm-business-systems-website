@@ -90,6 +90,7 @@ def normalize_state_payload(payload: Dict[str, Any] | None) -> ProjectState:
         "selectedTemplateName": payload.get("selectedTemplateName"),
         "catalogType": payload.get("catalogType"),
         "salesFlow": payload.get("salesFlow"),
+        "salesMode": payload.get("salesMode"),
         "colors": payload.get("colors") or {},
         "typography": payload.get("typography") or {},
         "generatedCopy": payload.get("generatedCopy") or {},

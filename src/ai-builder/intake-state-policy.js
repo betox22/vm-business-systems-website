@@ -31,6 +31,12 @@ export function hasOnlineSalesSignal(value = "") {
   return /\b(?:online|ecommerce|e-commerce|en\s+l[ií]nea)\b|env[ií]o|delivery|pago\s+(?:en\s+l[ií]nea|online)|comprar/i.test(String(value || ""));
 }
 
+export function resolveSalesModeForTemplateSelection(salesMode, salesFlow, undecidedLabels = []) {
+  const explicitMode = String(salesMode || "").trim();
+  if (explicitMode && !undecidedLabels.includes(explicitMode)) return explicitMode;
+  return String(salesFlow || "").trim();
+}
+
 function normalizedBusinessIdentity(value = "") {
   return String(value || "")
     .normalize("NFD")

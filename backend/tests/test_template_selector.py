@@ -37,6 +37,18 @@ def broad_retail():
 
 
 @pytest.fixture
+def hybrid_wholesale():
+    return ProjectState(
+        businessName="Casa Te",
+        businessDescription="Marca de te con venta directa y programas de mayoreo y marca privada.",
+        industry="tea",
+        servicesProducts=["Te verde", "Te negro", "Te oolong"],
+        salesFlow="online_sales",
+        salesMode="Quiero vender online, recibir solicitudes de cotizacion al mayor y ofrecer rebranding para otras marcas.",
+    )
+
+
+@pytest.fixture
 def ambiguous_business():
     return ProjectState(
         businessName="Norte Concept",
@@ -98,6 +110,7 @@ def test_boutique_coffee_variants_select_focused_template(boutique_coffee, opena
         "servicesProducts": boutique_coffee.servicesProducts,
         "preferredTone": "premium and personal",
         "preferredColors": "espresso and ivory",
+        "salesMode": "",
         "productCount": 12,
     }
     assert "variants of ONE product family" in request["messages"][0]["content"]
@@ -111,6 +124,27 @@ def test_distinct_categories_select_mega_retail(broad_retail, openai_reply):
 
     assert result.updates["selectedTemplateId"] == "mega-retail-store"
     assert "Three distinct retail categories" in result.reasoningSummary
+
+
+def test_hybrid_sales_mode_keeps_wholesale_and_private_label_in_selector(hybrid_wholesale, openai_reply):
+    calls = openai_reply("corporate-company-pro", "Wholesale quote and private-label inquiry are the dominant first-version journey")
+    hybrid_wholesale.runtimeAvailableTemplateIds = ["mega-retail-store", "corporate-company-pro"]
+
+    result = asyncio.run(StrategyAgent().run(hybrid_wholesale, hybrid_wholesale.businessDescription))
+
+    assert result.updates["selectedTemplateId"] == "corporate-company-pro"
+    request = calls[-1]["request"]
+    brief = json.loads(request["messages"][1]["content"])["business_brief"]
+    assert brief["salesMode"] == hybrid_wholesale.salesMode
+    assert brief["productCount"] == 3
+    prompt = request["messages"][0]["content"]
+    assert "salesMode as the primary signal" in prompt
+    assert "dominant model for the first site version" in prompt
+    assert "wholesale" in prompt
+    assert "private-label" in prompt
+    assert request["response_format"]["json_schema"]["schema"]["properties"]["template_id"]["enum"] == [
+        "mega-retail-store", "corporate-company-pro"
+    ]
 
 
 def test_api_failure_uses_unchanged_legacy_selector(ambiguous_business, monkeypatch):

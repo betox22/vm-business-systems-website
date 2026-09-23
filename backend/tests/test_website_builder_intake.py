@@ -59,6 +59,7 @@ class WebsiteBuilderIntakeTests(unittest.TestCase):
             },
             logoPreference="explicit_skip",
             salesFlow="online_sales",
+            salesMode="Quiero vender online, cotizar al mayor y ofrecer rebranding para otras marcas.",
             selectedLanguage="en",
             fieldMeta={
                 "business_name": {"source": "explicit", "confidence": 0.95},
@@ -96,6 +97,8 @@ class WebsiteBuilderIntakeTests(unittest.TestCase):
         self.assertTrue(response.website_schema)
         self.assertEqual(response.website_schema["business"]["name"], "Bath All Day")
         self.assertEqual(captured_state["state"].logoPalette, ["#5B7F55", "#F4E7D3"])
+        self.assertEqual(captured_state["state"].salesFlow, "online_sales")
+        self.assertEqual(captured_state["state"].salesMode, request.salesMode)
         self.assertEqual(captured_state["state"].colorProvenance.anchorSource, "logo_extracted")
         self.assertEqual(response.website_schema["generation_metadata"]["theme_source"], "backend_generated")
         self.assertEqual(response.website_schema["brand"]["logoPalette"], ["#5B7F55", "#F4E7D3"])
