@@ -110,6 +110,7 @@ def test_ready_intake_then_generate_runs_orchestrator_once(change, expected_runs
             assert chat.status_code == 200, chat.text
             assert chat.json()["readyToGenerate"] is True
             assert chat.json()["preparedPlanToken"]
+            assert chat.json()["generationId"].startswith("gen_")
             details = chat.json()["updatedFields"]
             if change.get("expire_receipt"):
                 with session_factory() as session:
@@ -129,8 +130,12 @@ def test_ready_intake_then_generate_runs_orchestrator_once(change, expected_runs
                 "fieldMeta": details["fieldMeta"],
             }
             generation_payload.update({key: value for key, value in change.items() if key != "expire_receipt"})
-            generation = client.post("/ai/website-builder", json=generation_payload)
+            generation = client.post(
+                "/ai/website-builder", json=generation_payload,
+                headers={"X-Generation-ID": chat.json()["generationId"]},
+            )
             assert generation.status_code == 200, generation.text
+            assert generation.json()["generation_id"] == chat.json()["generationId"]
             schema = generation.json()["schema"]
             assert schema["business"]["name"] == "Bath All Day"
             assert schema["selected_template"]["id"] == "mega-retail-store"

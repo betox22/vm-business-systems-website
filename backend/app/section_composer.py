@@ -229,9 +229,10 @@ def compose_layout(
         }
         for section_id, manifest in manifests.items()
     ]
-    client = agents.OpenAI(api_key=api_key, timeout=agents.OPENAI_REQUEST_TIMEOUT_SECONDS)
+    client = agents.OpenAI(api_key=api_key, timeout=agents.OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=agents.observed_http_client(asynchronous=False))
     response = agents.create_sync_chat_completion_with_retry(
         client,
+        stage="section_composition",
         model=os.getenv("OPENAI_COMPOSER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra",
         response_format=_response_format(manifests),
         messages=[

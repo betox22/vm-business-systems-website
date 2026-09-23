@@ -21,9 +21,10 @@ def generate_with_openai(envelope: dict) -> str:
     if set(envelope) != {"scenario", "patterns", "contract"}:
         raise GenerationFailure("invalid_provider_envelope", 422)
     try:
-        with agents.OpenAI(api_key=key, timeout=agents.OPENAI_REQUEST_TIMEOUT_SECONDS) as client:
+        with agents.OpenAI(api_key=key, timeout=agents.OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=agents.observed_http_client(asynchronous=False)) as client:
             response = agents.create_sync_chat_completion_with_retry(
                 client,
+                stage="site_graph",
                 model=os.getenv("OPENAI_MODEL") or "gpt-6-astra",
                 response_format={"type": "json_object"},
                 messages=[

@@ -7,6 +7,7 @@ from typing import Any
 from openai import OpenAI
 
 from .image_assets import build_image_asset, resolve_product_category
+from .openai_usage import call_sync, observed_http_client
 from .storage import upload_asset_to_supabase, validate_upload
 
 
@@ -48,15 +49,16 @@ def _generate_texture_asset_url(category: str, business_context: dict) -> str:
         "Focus on material, light, depth, and composition. No identifiable products, "
         "people, logos, brands, text, packaging, or client-specific objects."
     )
-    client = OpenAI(api_key=api_key, timeout=90.0)
-    response = client.images.generate(
-        model=os.getenv("OPENAI_IMAGE_MODEL") or os.getenv("OPENAI_LOGO_MODEL") or "gpt-image-2",
+    client = OpenAI(api_key=api_key, timeout=90.0, http_client=observed_http_client(asynchronous=False))
+    model = os.getenv("OPENAI_IMAGE_MODEL") or os.getenv("OPENAI_LOGO_MODEL") or "gpt-image-2"
+    response = call_sync("texture_generation", model, lambda: client.images.generate(
+        model=model,
         prompt=prompt,
         size="1024x1024",
         quality="low",
         output_format="png",
         n=1,
-    )
+    ))
     data = getattr(response, "data", None) or []
     encoded = getattr(data[0], "b64_json", None) if data else None
     if not encoded:

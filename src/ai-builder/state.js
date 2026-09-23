@@ -78,6 +78,7 @@ export const builderState = {
   backendMissingFields: [],
   backendNextStep: '',
   preparedPlanToken: '',
+  costGenerationId: '',
   preparedPlanTemplateId: '',
   guidedStep: 'websiteIntent',
   // Backend-reported field (mapped) that the last assistant question was

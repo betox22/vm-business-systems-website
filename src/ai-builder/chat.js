@@ -18,7 +18,6 @@ import {
   briefRequestsCyberpunk,
   buildInstantTemplateSchema,
   buildSitePlan,
-  chooseNextQuestionText,
   collectPayload,
   completeGuidedBriefFromMessage,
   applyDetectedBriefLanguage,
@@ -34,7 +33,6 @@ import {
   isDuplicateQuestion,
   languageToSpeechLocale,
   localizedTemplateName,
-  mapBackendSlotToGuidedField,
   mergeGuidedUpdates,
   mergeTemplateSelectionIntoSchema,
   normalizeTemplateIntentText,
@@ -87,6 +85,7 @@ import {
   REQUIRED_GUIDED_STEPS,
 } from './index.js';
 import { isExplicitRedesignRequest } from './variants.js';
+import { readServerIntakeStep } from './server-intake-step.js';
 import {
   isWebsiteIntentSatisfied,
   websiteIntentQuestionKey,
@@ -282,6 +281,10 @@ export function switchBackToChat() {
 export async function sendGuidedReply() {
   const message = guidedReply.value.trim();
   if (!message) return;
+  const previousPreparedPlanToken = builderState.preparedPlanToken;
+  const previousPreparedPlanTemplateId = builderState.preparedPlanTemplateId;
+  builderState.preparedPlanToken = "";
+  builderState.preparedPlanTemplateId = "";
   appendChatMessage("user", message);
   guidedReply.value = "";
   if (shouldResetRestoredWorkspaceForMessage(message)) {
@@ -321,6 +324,8 @@ export async function sendGuidedReply() {
   // previous turn's response) over the local progress-UI step tracker, which
   // runs on its own fixed sequence and does not reflect the real conversation.
   applyDetectedBriefLanguage(message);
+  const stateBeforeReply = structuredClone(builderState.guidedState);
+  const stepBeforeReply = builderState.guidedStep;
   const attributionStep = builderState.lastAskedGuidedField || builderState.guidedStep;
   // Computed before the broad matcher (not after, as before) so it can tell
   // the matcher when this message is specifically answering "how do you want
@@ -349,7 +354,6 @@ export async function sendGuidedReply() {
   backfillWebsiteIntentFromContext(message);
   syncTemplateSelectionFromGuidedContext(message);
   const localStudioPlan = refreshAiStudioPlanFromContext(message);
-  const isPreGenerationReview = builderState.guidedStep === "review" && !builderState.currentSchema;
   if (builderState.guidedStep === "review") {
     const adjustmentLabel = langText({
       en: "Client requested adjustments",
@@ -380,11 +384,15 @@ export async function sendGuidedReply() {
   }
   guidedStatusText.textContent = t("sendingAssistant");
   setThinking(true);
+  let intakeConfirmed = false;
 
   try {
     const response = await fetch(LUMA_AGENT_URL, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...(builderState.costGenerationId ? { "X-Generation-ID": builderState.costGenerationId } : {}),
+      },
       body: JSON.stringify({
         current: guidedStateForApi(),
         message,
@@ -400,42 +408,25 @@ export async function sendGuidedReply() {
       throw new Error(await readErrorMessage(response));
     }
     const result = await response.json();
+    builderState.costGenerationId = result.generationId || builderState.costGenerationId;
     const assistantMessage = result.assistantMessage || result.message;
     const emotion = result.emotion || (result.readyToGenerate ? "success" : "speaking");
     const updatedFields = result.updatedFields || result.updates || {};
+    const { step: serverNextStep, question: nextQuestion } = readServerIntakeStep(result);
     builderState.guidedHistory.push({ role: "user", content: message });
     builderState.guidedHistory.push({ role: "assistant", content: assistantMessage });
     mergeGuidedUpdates(updatedFields);
     await applyLumaAgentDecision(result);
     const planAfterAgent = refreshAiStudioPlanFromContext(message);
-    const serverNextStep = result.next_step || result.nextStep || "";
-    // missingImportantFields[0] is the backend's own highest-priority missing
-    // slot for THIS turn - compute it before the step transition below so a
-    // failed/low-confidence turn (readyToGenerate false, e.g. the intake LLM
-    // warned or fell back) routes to that real missing field instead of
-    // falling through to whatever builderState.guidedStep already was. That
-    // fallback used to be the only option because the backend never sends a
-    // next_step/nextStep field, so serverNextStep is always "" - meaning any
-    // turn where guidedStep had already reached "review" (from an earlier
-    // turn, or a restored/stale draft) got stuck there forever: each new
-    // failed turn just re-confirmed "review" via normalizeNextGuidedStep's
-    // early-return for that step, silently showing a ready-to-generate card
-    // built from stale data even though the backend explicitly said this
-    // message could not be processed.
     const missingBackendFields = arrayValue(result.missingImportantFields);
     builderState.hasBackendIntakeSignal = true;
     builderState.backendReadyToGenerate = Boolean(result.readyToGenerate);
+    builderState.preparedPlanToken = result.readyToGenerate ? String(result.preparedPlanToken || "") : "";
+    builderState.preparedPlanTemplateId = builderState.preparedPlanToken ? String(result.selectedTemplateId || result.selected_template_id || "") : "";
     builderState.backendMissingFields = missingBackendFields;
-    const backendMissingStep = mapBackendSlotToGuidedField(missingBackendFields[0]);
-    builderState.guidedStep = result.readyToGenerate
-      ? "review"
-      : (backendMissingStep || normalizeNextGuidedStep(serverNextStep || builderState.guidedStep));
-    // Save it (mapped to the frontend field name) so the NEXT reply gets
-    // attributed correctly, regardless of what the local guidedStep sequence
-    // thinks is current.
-    builderState.lastAskedGuidedField = result.readyToGenerate ? "" : backendMissingStep;
-    const serverNextQuestion = result.nextQuestion || result.next_question;
-    const nextQuestion = result.readyToGenerate ? "" : chooseNextQuestionText(serverNextQuestion, builderState.guidedStep);
+    builderState.backendNextStep = serverNextStep;
+    builderState.guidedStep = serverNextStep;
+    builderState.lastAskedGuidedField = serverNextStep === "backendClarification" || result.readyToGenerate ? "" : serverNextStep;
     const usedDevFallback = Boolean(result.used_dev_fallback || result.usedDevFallback);
     const finalAssistantMessage = sanitizeAssistantTemplateClaim(assistantMessage, planAfterAgent);
     const publicAssistantMessage = composeAssistantReply(finalAssistantMessage, nextQuestion, usedDevFallback);
@@ -444,44 +435,27 @@ export async function sendGuidedReply() {
     guidedStatusText.textContent = usedDevFallback
       ? t("devFallbackMissingKey")
       : t("summaryUpdated");
+    intakeConfirmed = true;
   } catch (error) {
-    const updates = localContextUpdates;
-    mergeGuidedUpdates(updates);
-    syncTemplateSelectionFromGuidedContext(message);
-    refreshAiStudioPlanFromContext(message);
-    builderState.guidedStep = isPreGenerationReview
-      ? "review"
-      : nextSmartGuidedStep(builderState.guidedStep);
-    // No backend response this turn - no fresher signal to attribute the
-    // next reply with, fall back to the local sequence again next time.
-    builderState.lastAskedGuidedField = "";
-    console.warn("LYRA intake assistant request failed; continuing locally.", error);
-    appendUnderstandingCard({ updates, sourceMessage: message });
-    if (isPreGenerationReview) {
-      appendChatMessage(
-        "assistant",
-        langText({
-          en: "I could not reach LYRA, but I saved that detail in the plan. You can retry or add another change before generating.",
-          es: "No pude comunicarme con LYRA, pero guardé ese detalle en el plan. Puedes reintentar o agregar otro cambio antes de generar.",
-          fr: "Je n'ai pas pu joindre LYRA, mais j'ai enregistré ce détail dans le plan. Vous pouvez réessayer ou ajouter une autre modification avant de générer.",
-          pt: "Não consegui acessar a LYRA, mas salvei esse detalhe no plano. Você pode tentar novamente ou adicionar outra mudança antes de gerar.",
-        }),
-        "alert",
-      );
-    } else {
-      appendChatMessage(
-        "assistant",
-        composeAssistantReply(
-          t("localFallbackMessage"),
-          guidedQuestion(builderState.guidedStep),
-          true,
-        ),
-        "speaking",
-      );
-    }
+    console.warn("LYRA intake assistant request failed; keeping the last confirmed step.", error);
+    builderState.guidedState = stateBeforeReply;
+    builderState.guidedStep = stepBeforeReply;
+    builderState.preparedPlanToken = previousPreparedPlanToken;
+    builderState.preparedPlanTemplateId = previousPreparedPlanTemplateId;
+    guidedReply.value = message;
+    appendChatMessage("assistant", langText({
+      en: "I could not confirm that answer with LYRA. Your text is still here; please retry.",
+      es: "No pude confirmar esa respuesta con LYRA. Tu texto sigue aquí; inténtalo de nuevo.",
+      fr: "Je n'ai pas pu confirmer cette réponse avec LYRA. Votre texte est toujours là ; réessayez.",
+      pt: "Não consegui confirmar essa resposta com a LYRA. Seu texto continua aqui; tente novamente.",
+    }), "alert");
     guidedStatusText.textContent = t("localFallback");
   }
   setThinking(false);
+  if (!intakeConfirmed) {
+    refreshQuickChips();
+    return;
+  }
   if (builderState.guidedStep === "review") {
     builderState.guidedState.sitePlan = buildSitePlan(builderState.forcedTemplateSelection);
     builderState.guidedState.sitePlan.aiStudioPlan = builderState.guidedState.aiStudioPlan || localStudioPlan;
@@ -503,6 +477,10 @@ export function sanitizeAssistantTemplateClaim(message = "", plan = {}) {
 }
 
 export function skipGuidedQuestion() {
+  if (builderState.hasBackendIntakeSignal) {
+    guidedReply.value = t("skipMessage");
+    return sendGuidedReply();
+  }
   appendChatMessage("user", t("skipMessage"));
   guidedAskedSteps.set(builderState.guidedStep, 1);
   builderState.guidedStep = nextSmartGuidedStep(builderState.guidedStep);
@@ -584,9 +562,7 @@ export function understandingItem(key, label, value, priority) {
 export function normalizeGuidedStepForCurrentState(step) {
   if (builderState.currentSchema) return "review";
   if (builderState.hasBackendIntakeSignal) {
-    if (builderState.backendReadyToGenerate) return "review";
-    const backendMissing = missingGuidedSteps();
-    if (backendMissing.length) return backendMissing[0];
+    return builderState.backendNextStep || step;
   }
   const normalized = normalizeNextGuidedStep(step);
   if (normalized !== "review") return normalized;

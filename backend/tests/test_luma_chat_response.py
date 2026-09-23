@@ -4,6 +4,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from fastapi.testclient import TestClient
 from starlette.requests import Request
 
 from app import main
@@ -130,6 +131,7 @@ class LumaChatResponseTests(unittest.TestCase):
             response = asyncio.run(main.luma_chat(request, _request(49204)))
 
         self.assertTrue(response.readyToGenerate)
+        self.assertEqual(response.next_step, "review")
         self.assertIn("logo initials", response.assistantMessage)
         self.assertEqual(response.updatedFields["logoBrief"], request.message)
         self.assertEqual(response.updatedFields["logoPreference"], "generate_ai_logo")
@@ -208,6 +210,7 @@ class LumaChatResponseTests(unittest.TestCase):
             response = asyncio.run(main.luma_chat(request, _request(49201)))
 
         self.assertFalse(response.readyToGenerate)
+        self.assertEqual(response.next_step, "preferredColors")
         self.assertEqual(response.assistantMessage, direct_response)
         self.assertIn("brand_style", response.missingImportantFields)
 
@@ -243,8 +246,46 @@ class LumaChatResponseTests(unittest.TestCase):
             response = asyncio.run(main.luma_chat(request, _request(49203)))
 
         self.assertFalse(response.readyToGenerate)
+        self.assertEqual(response.next_step, "preferredColors")
         self.assertEqual(response.assistantMessage, direct_response)
         self.assertIn("brand_style", response.missingImportantFields)
+
+    def test_http_response_exposes_the_server_step_and_question(self):
+        payload = _tool_payload(None)
+        payload["nextQuestion"] = "Can you upload your logo?"
+        main.app.dependency_overrides[main.get_session] = lambda: object()
+        try:
+            with (
+                patch.object(main.intake_engine, "client", _FakeOpenAIClient(payload)),
+                patch.object(main, "template_ids_for_generation", return_value=[]),
+                patch.object(main, "replacement_template_for_new_project", return_value=None),
+            ):
+                response = TestClient(main.app).post("/api/luma/chat", json={
+                    "current": _current_state(),
+                    "currentStep": "logo",
+                    "message": "Continue without a logo.",
+                })
+        finally:
+            main.app.dependency_overrides.pop(main.get_session, None)
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["next_step"], "preferredColors")
+        self.assertEqual(payload["nextQuestion"], "Do you have preferred colors, tone, or style? If you prefer, say “you decide” and I will choose a visual direction that fits the business.")
+        self.assertIn("brand_style", payload["missingImportantFields"])
+        self.assertFalse(payload["readyToGenerate"])
+
+    def test_niche_and_sales_flow_use_the_question_actually_asked(self):
+        missing = ["niche", "sales_flow", "business_name"]
+        self.assertEqual(main.next_guided_step(missing, False), "salesMode")
+        self.assertIn("sell online", main.intake_engine.fallback_question_for_missing(missing, "en"))
+        self.assertEqual(main.next_guided_step(["niche"], False), "industry")
+        self.assertIn("products or services", main.intake_engine.fallback_question_for_missing(["niche"], "en"))
+        self.assertEqual(main.next_guided_step([], True), "review")
+
+    def test_server_questions_follow_the_selected_language(self):
+        self.assertIn("couleurs", main.intake_engine.fallback_question_for_missing(["brand_style"], "fr"))
+        self.assertIn("cor", main.intake_engine.fallback_question_for_missing(["brand_style"], "pt"))
 
 
 if __name__ == "__main__":

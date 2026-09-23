@@ -15,6 +15,7 @@ from .typography_theory import build_typography_scale
 from .image_assets import attach_image_asset, stable_seed_image_url
 from .models import AgentResult, ProjectState, WebsiteType
 from .openai_schema import make_openai_strict_schema
+from .openai_usage import count_http_attempts, observed_http_client, record_call
 from .taxonomy import infer_seed_profile
 
 
@@ -226,32 +227,42 @@ OPENAI_MAX_ATTEMPTS = 2
 OPENAI_RETRY_BACKOFF_SECONDS = 0.5
 
 
-async def create_chat_completion_with_retry(client: Any, **kwargs: Any) -> Any:
+async def create_chat_completion_with_retry(client: Any, *, stage: str = "chat", **kwargs: Any) -> Any:
     """Retry one transient OpenAI chat failure before callers degrade gracefully."""
     last_error: Optional[Exception] = None
-    for attempt in range(OPENAI_MAX_ATTEMPTS):
-        try:
-            return await client.chat.completions.create(**kwargs)
-        except Exception as error:
-            last_error = error
-            if attempt + 1 < OPENAI_MAX_ATTEMPTS:
-                await asyncio.sleep(OPENAI_RETRY_BACKOFF_SECONDS)
-    assert last_error is not None
-    raise last_error
+    started = time.perf_counter()
+    with count_http_attempts():
+        for attempt in range(OPENAI_MAX_ATTEMPTS):
+            try:
+                response = await client.chat.completions.create(**kwargs)
+                record_call(stage=stage, model=kwargs.get("model", ""), started=started, attempts=attempt + 1, response=response)
+                return response
+            except Exception as error:
+                last_error = error
+                if attempt + 1 < OPENAI_MAX_ATTEMPTS:
+                    await asyncio.sleep(OPENAI_RETRY_BACKOFF_SECONDS)
+        assert last_error is not None
+        record_call(stage=stage, model=kwargs.get("model", ""), started=started, attempts=OPENAI_MAX_ATTEMPTS, failed=True)
+        raise last_error
 
 
-def create_sync_chat_completion_with_retry(client: Any, **kwargs: Any) -> Any:
+def create_sync_chat_completion_with_retry(client: Any, *, stage: str = "chat", **kwargs: Any) -> Any:
     """Synchronous counterpart used by the unmatched-niche catalog fallback."""
     last_error: Optional[Exception] = None
-    for attempt in range(OPENAI_MAX_ATTEMPTS):
-        try:
-            return client.chat.completions.create(**kwargs)
-        except Exception as error:
-            last_error = error
-            if attempt + 1 < OPENAI_MAX_ATTEMPTS:
-                time.sleep(OPENAI_RETRY_BACKOFF_SECONDS)
-    assert last_error is not None
-    raise last_error
+    started = time.perf_counter()
+    with count_http_attempts():
+        for attempt in range(OPENAI_MAX_ATTEMPTS):
+            try:
+                response = client.chat.completions.create(**kwargs)
+                record_call(stage=stage, model=kwargs.get("model", ""), started=started, attempts=attempt + 1, response=response)
+                return response
+            except Exception as error:
+                last_error = error
+                if attempt + 1 < OPENAI_MAX_ATTEMPTS:
+                    time.sleep(OPENAI_RETRY_BACKOFF_SECONDS)
+        assert last_error is not None
+        record_call(stage=stage, model=kwargs.get("model", ""), started=started, attempts=OPENAI_MAX_ATTEMPTS, failed=True)
+        raise last_error
 
 
 def suggests_jewelry_or_handmade_accessories(text: str) -> bool:
@@ -475,10 +486,11 @@ def generate_ai_seed_catalog(context: str, language: str, count: int = 6) -> Opt
         )
         return None
     try:
-        client = OpenAI(api_key=api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+        client = OpenAI(api_key=api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=observed_http_client(asynchronous=False))
         model = os.getenv("OPENAI_SEED_CATALOG_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
         response = create_sync_chat_completion_with_retry(
             client,
+            stage="catalog_seed",
             model=model,
             response_format=strict_response_format("kreaton_seed_catalog", AISeedCatalog),
             messages=[
@@ -561,10 +573,11 @@ def classify_business_niche(context: str, language: str) -> Optional[str]:
     if not api_key or not OpenAI or not context.strip():
         return None
     try:
-        client = OpenAI(api_key=api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+        client = OpenAI(api_key=api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=observed_http_client(asynchronous=False))
         model = os.getenv("OPENAI_NICHE_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
         response = create_sync_chat_completion_with_retry(
             client,
+            stage="niche_classification",
             model=model,
             response_format=strict_response_format("kreaton_niche_classification", AINicheClassification),
             messages=[
@@ -734,7 +747,7 @@ class IntakeExtractionAgent(BaseAgent):
         self.model = os.getenv("OPENAI_INTAKE_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.client = (
-            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=observed_http_client(asynchronous=True))
             if AsyncOpenAI and self.api_key
             else None
         )
@@ -746,6 +759,7 @@ class IntakeExtractionAgent(BaseAgent):
         try:
             response = await create_chat_completion_with_retry(
                 self.client,
+                stage="intake_extraction",
                 model=self.model,
                 temperature=0.0,
                 response_format=strict_response_format("kreaton_intake_extraction", IntakeExtractionPayload),
@@ -1048,7 +1062,7 @@ class ArtDirectorAgent(BaseAgent):
         self.model = os.getenv("OPENAI_ART_DIRECTOR_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.client = (
-            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=observed_http_client(asynchronous=True))
             if AsyncOpenAI and self.api_key
             else None
         )
@@ -1071,6 +1085,7 @@ class ArtDirectorAgent(BaseAgent):
         try:
             response = await create_chat_completion_with_retry(
                 self.client,
+                stage="art_direction",
                 model=self.model,
                 temperature=0.25,
                 response_format=strict_response_format("kreaton_art_direction", GeneratedArtDirection),
@@ -1175,7 +1190,7 @@ class CopywriterAgent(BaseAgent):
         self.model = os.getenv("OPENAI_COPYWRITER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.client = (
-            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=observed_http_client(asynchronous=True))
             if AsyncOpenAI and self.api_key
             else None
         )
@@ -1197,6 +1212,7 @@ class CopywriterAgent(BaseAgent):
         try:
             response = await create_chat_completion_with_retry(
                 self.client,
+                stage="copywriting",
                 model=self.model,
                 temperature=0.45,
                 response_format=strict_response_format("kreaton_hero_copy", GeneratedHeroCopy),
@@ -1422,7 +1438,7 @@ class ReviewerAgent(BaseAgent):
         self.model = os.getenv("OPENAI_REVIEWER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.client = (
-            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=observed_http_client(asynchronous=True))
             if AsyncOpenAI and self.api_key
             else None
         )
@@ -1473,6 +1489,7 @@ class ReviewerAgent(BaseAgent):
             try:
                 response = await create_chat_completion_with_retry(
                     self.client,
+                    stage="review",
                     model=self.model,
                     temperature=0.0,
                     response_format=self._strict_response_format(),
@@ -1485,6 +1502,7 @@ class ReviewerAgent(BaseAgent):
                 )
                 response = await create_chat_completion_with_retry(
                     self.client,
+                    stage="review_fallback",
                     model=self.model,
                     temperature=0.0,
                     response_format={"type": "json_object"},

@@ -20,6 +20,7 @@ const CLIENT_PROJECT_RUNTIME_DEFAULTS = Object.freeze({
   backendMissingFields: [],
   backendNextStep: "",
   preparedPlanToken: "",
+  costGenerationId: "",
   preparedPlanTemplateId: "",
   clientIntakeLastSyncedSnapshot: "",
 });

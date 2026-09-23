@@ -24,6 +24,7 @@ from .color_theory import build_palette, resolve_color
 from .typography_theory import build_typography_scale
 from .image_assets import ImageAssetRole, attach_image_asset, build_image_asset
 from .models import AgentResult, ProjectState, WebsiteType
+from .openai_usage import observed_http_client
 from .openai_schema import make_openai_strict_schema
 
 
@@ -1768,7 +1769,7 @@ class OpenAISitePlanAgent:
         self.model = os.getenv("OPENAI_SITE_PLANNER_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra"
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.client = (
-            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS)
+            AsyncOpenAI(api_key=self.api_key, timeout=OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=observed_http_client(asynchronous=True))
             if AsyncOpenAI and self.api_key
             else None
         )
@@ -1910,6 +1911,7 @@ class OpenAISitePlanAgent:
             try:
                 response = await create_chat_completion_with_retry(
                     self.client,
+                    stage="site_plan",
                     model=self.model,
                     temperature=0.15,
                     response_format=self._strict_response_format(),
@@ -1922,6 +1924,7 @@ class OpenAISitePlanAgent:
                 )
                 response = await create_chat_completion_with_retry(
                     self.client,
+                    stage="site_plan_fallback",
                     model=self.model,
                     temperature=0.15,
                     response_format={"type": "json_object"},

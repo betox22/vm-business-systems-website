@@ -1,4 +1,5 @@
 import json
+import logging
 from copy import deepcopy
 from unittest.mock import patch
 
@@ -56,7 +57,10 @@ def wire(monkeypatch):
         return httpx.Response(state["status"], json=state["body"])
     def client(**kwargs):
         assert kwargs["timeout"] == agents.OPENAI_REQUEST_TIMEOUT_SECONDS
-        return original(http_client=httpx.Client(transport=httpx.MockTransport(handler)), **kwargs)
+        observed = kwargs.pop("http_client")
+        hooks = observed.event_hooks["request"]
+        observed.close()
+        return original(http_client=httpx.Client(transport=httpx.MockTransport(handler), event_hooks={"request": hooks}), **kwargs)
     monkeypatch.setenv("OPENAI_API_KEY", "synthetic-api-key")
     monkeypatch.setattr(agents, "OpenAI", client)
     monkeypatch.setenv("OPENAI_MODEL", "gpt-6-astra")
@@ -215,6 +219,30 @@ def test_provider_errors_no_fallback_and_bounded_retry(seeded, wire, status, att
         assert "PRIVATE_PROVIDER_ERROR" not in session.scalar(select(AdminAuditEvent)).metadata_json
 
 
+def test_usage_counts_sdk_retries_and_application_retries(seeded, wire):
+    class Capture(logging.Handler):
+        def __init__(self):
+            super().__init__()
+            self.events = []
+
+        def emit(self, record):
+            self.events.append(record.getMessage())
+
+    capture = Capture()
+    logger = logging.getLogger("kreaton.openai_usage")
+    logger.addHandler(capture)
+    wire[1]["status"] = 429
+    wire[1]["body"] = {"error": "PRIVATE_PROVIDER_ERROR"}
+    try:
+        assert generate(seeded[0]).status_code == 502
+    finally:
+        logger.removeHandler(capture)
+    usage = json.loads(capture.events[0].split(" ", 1)[1])
+    assert usage["attempts"] == len(wire[0]) == 6
+    assert usage["input_tokens"] is None
+    assert usage["output_tokens"] is None
+
+
 @pytest.mark.parametrize("reason", ["length", "content_filter", "tool_calls", "function_call"])
 def test_incomplete_or_refused_response_never_saved(seeded, wire, reason):
     wire[1]["body"]["choices"][0]["finish_reason"] = reason
@@ -301,7 +329,9 @@ def test_reuses_agents_transport_without_catalog_pipeline(seeded, wire):
     with patch.object(agents, "create_sync_chat_completion_with_retry", wraps=agents.create_sync_chat_completion_with_retry) as shared, patch.object(agents, "generate_ai_seed_catalog", side_effect=AssertionError("catalog must not run")):
         assert generate(seeded[0]).status_code == 200
         assert shared.call_count == 1
-        assert set(shared.call_args.kwargs) == {"model", "response_format", "messages"}
+        assert set(shared.call_args.kwargs) == {"stage", "model", "response_format", "messages"}
+        assert shared.call_args.kwargs["stage"] == "site_graph"
+        assert "stage" not in wire[0][0]["body"]
 
 
 def test_configured_openai_model_is_used(seeded, wire, monkeypatch):

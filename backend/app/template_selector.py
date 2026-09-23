@@ -55,9 +55,10 @@ def select_template(business_brief: dict, template_catalog: dict) -> tuple[str, 
             },
         },
     }
-    client = agents.OpenAI(api_key=api_key, timeout=agents.OPENAI_REQUEST_TIMEOUT_SECONDS)
+    client = agents.OpenAI(api_key=api_key, timeout=agents.OPENAI_REQUEST_TIMEOUT_SECONDS, http_client=agents.observed_http_client(asynchronous=False))
     response = agents.create_sync_chat_completion_with_retry(
         client,
+        stage="template_selection",
         model=os.getenv("OPENAI_TEMPLATE_SELECTOR_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-6-astra",
         response_format=response_format,
         messages=[

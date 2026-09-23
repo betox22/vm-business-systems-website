@@ -157,6 +157,7 @@ class LumaChatResponse(BaseModel):
     sitePlan: Dict[str, Any] = Field(default_factory=dict)
     used_dev_fallback: bool = False
     preparedPlanToken: str = ""
+    generationId: str = ""
 
 
 class WebsiteGenerationRequest(BaseModel):

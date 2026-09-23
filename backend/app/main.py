@@ -44,6 +44,7 @@ from .public_commerce import public_commerce_capabilities
 from .billing import router as billing_router
 from .db import get_session, init_db
 from .generation_plan_cache import load_prepared_generation, store_prepared_generation
+from .openai_usage import bind_generation_id, current_generation_id, reset_generation_id
 from .db_models import ClientIntakeSessionRecord, GeneratedSite, Store, PlatformSubscription
 from .domains import build_domain_candidates, check_domain_availability
 from .domains import router as domains_router
@@ -403,8 +404,11 @@ async def add_security_headers(request: Request, call_next):
     if not re.fullmatch(r"[A-Za-z0-9._:-]{1,96}", incoming_request_id):
         incoming_request_id = f"req_{uuid.uuid4().hex[:20]}"
     request.state.request_id = incoming_request_id
-
-    response = await call_next(request)
+    generation_token = bind_generation_id(request.headers.get("X-Generation-ID"))
+    try:
+        response = await call_next(request)
+    finally:
+        reset_generation_id(generation_token)
     response.headers["X-Request-ID"] = incoming_request_id
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
@@ -2063,6 +2067,7 @@ async def luma_chat(
         sitePlan=plan,
         used_dev_fallback=not intake_decision.usedAI,
         preparedPlanToken=prepared_plan_token,
+        generationId=current_generation_id(),
     )
 
 
@@ -2574,7 +2579,7 @@ async def website_builder(
         site_id=db_site.id if db_site else f"site_{uuid.uuid4().hex[:10]}",
         generatedSiteId=db_site.id if db_site else None,
         projectId=db_site.id if db_site else None,
-        generation_id=f"gen_{uuid.uuid4().hex[:10]}",
+        generation_id=current_generation_id(),
     )
 
 

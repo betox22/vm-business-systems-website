@@ -2209,6 +2209,7 @@ function saveGuidedDraft() {
       currentGuidedDraftOwnerIdentity(),
       {
         guidedState: guidedStateForApi(),
+        costGenerationId: builderState.costGenerationId,
         guidedStep: builderState.guidedStep,
         selectedLanguage: builderState.selectedLanguage,
         completionPercent: guidedCompletionPercent(),
@@ -2231,6 +2232,7 @@ function restoreGuidedDraft() {
       currentGuidedDraftOwnerIdentity(),
     );
     if (!draft) return;
+    builderState.costGenerationId = draft.costGenerationId || "";
     if (draft.selectedLanguage) setSelectedLanguage(draft.selectedLanguage);
     if (draft.guidedState) {
       builderState.guidedState = {
@@ -5639,7 +5641,10 @@ async function generateWebsite(triggerButton = document.querySelector("#generate
     try {
     const response = await fetch(API_URL, {
         method: "POST",
-        headers: clientAuthHeaders({ "content-type": "application/json" }),
+        headers: clientAuthHeaders({
+          "content-type": "application/json",
+          ...(builderState.costGenerationId ? { "X-Generation-ID": builderState.costGenerationId } : {}),
+        }),
         credentials: "include",
         body: JSON.stringify(payload),
       });
@@ -7175,7 +7180,10 @@ async function ensureGeneratedLogoReview(payload) {
       try {
         const response = await fetch(CLIENT_LOGO_GENERATION_URL, {
           method: "POST",
-          headers: clientAuthHeaders({ "content-type": "application/json" }),
+          headers: clientAuthHeaders({
+            "content-type": "application/json",
+            ...(builderState.costGenerationId ? { "X-Generation-ID": builderState.costGenerationId } : {}),
+          }),
           credentials: "include",
           body: JSON.stringify(payload),
         });

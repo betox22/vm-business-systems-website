@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from .models import ProjectState
+from .openai_usage import call_async, observed_http_client
 from .storage import upload_asset_to_supabase, validate_upload
 
 
@@ -110,9 +111,9 @@ async def generate_and_store_ai_logo(
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key or AsyncOpenAI is None:
                 raise RuntimeError("OpenAI image generation is not configured.")
-            client = AsyncOpenAI(api_key=api_key, timeout=90.0)
+            client = AsyncOpenAI(api_key=api_key, timeout=90.0, http_client=observed_http_client(asynchronous=True))
 
-        response = await client.images.generate(
+        response = await call_async("logo_generation", OPENAI_LOGO_MODEL, lambda: client.images.generate(
             model=OPENAI_LOGO_MODEL,
             prompt=build_logo_prompt(state),
             size=OPENAI_LOGO_SIZE,
@@ -120,7 +121,7 @@ async def generate_and_store_ai_logo(
             background="transparent",
             output_format="png",
             n=1,
-        )
+        ))
         image_bytes = _image_bytes_from_response(response)
         validate_upload(asset_type="logo", content_type="image/png", data=image_bytes)
         upload = uploader or upload_asset_to_supabase

@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .agents import TEMPLATE_CATALOG, normalize_template_id, split_items, template_catalog_for_state
 from .models import ProjectState, SupportedLanguage
+from .openai_usage import call_async, observed_http_client
 from .taxonomy import NICHE_TAXONOMY_LIST, normalize_niche
 
 logger = logging.getLogger("kreaton")
@@ -249,7 +250,7 @@ class LyraIntakeEngine:
     def __init__(self) -> None:
         self.model = os.getenv("OPENAI_INTAKE_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-4o"
         self.api_key = os.getenv("OPENAI_API_KEY")
-        self.client = AsyncOpenAI(api_key=self.api_key) if AsyncOpenAI and self.api_key else None
+        self.client = AsyncOpenAI(api_key=self.api_key, http_client=observed_http_client(asynchronous=True)) if AsyncOpenAI and self.api_key else None
 
     async def run(
         self,
@@ -287,7 +288,7 @@ class LyraIntakeEngine:
         }
 
         try:
-            response = await self.client.chat.completions.create(
+            response = await call_async("guided_intake", self.model, lambda: self.client.chat.completions.create(
                 model=self.model,
                 temperature=0.1,
                 messages=[
@@ -296,7 +297,7 @@ class LyraIntakeEngine:
                 ],
                 tools=[self._update_intake_tool()],
                 tool_choice={"type": "function", "function": {"name": "update_intake"}},
-            )
+            ))
             tool_calls = response.choices[0].message.tool_calls or []
             if not tool_calls:
                 return self._local_error_decision(state, selected_language, "Lyra did not call update_intake.")
@@ -1006,8 +1007,10 @@ class LyraIntakeEngine:
 
     def _fallback_question(self, missing: List[str], language: SupportedLanguage) -> str:
         if language == "es":
-            if "niche" in missing or "sales_flow" in missing:
+            if "sales_flow" in missing:
                 return "Necesito ubicar bien el tipo de proyecto. ¿Quieres vender online, recibir cotizaciones, aceptar reservas, captar clientes o solo presentar información?"
+            if "niche" in missing:
+                return "¿Qué productos o servicios ofrece tu negocio? Así puedo identificar su rubro correctamente."
             if "business_name" in missing:
                 return "No pude identificar el nombre del negocio. Como se llama?"
             if "business_description" in missing:
@@ -1019,8 +1022,42 @@ class LyraIntakeEngine:
             if "logo" in missing:
                 return "¿Tienes un logo para subir, o seguimos por ahora con el nombre de tu negocio en texto?"
             return "No pude procesar eso bien. Puedes reformularlo en una frase mas clara?"
-        if "niche" in missing or "sales_flow" in missing:
+        if language == "fr":
+            if "sales_flow" in missing:
+                return "Souhaitez-vous vendre en ligne, recevoir des demandes de devis, prendre des réservations, recueillir des contacts ou simplement présenter votre activité ?"
+            if "niche" in missing:
+                return "Quels produits ou services propose votre entreprise ? Cela m'aidera à identifier son secteur."
+            if "business_name" in missing:
+                return "Quel est le nom de votre entreprise ?"
+            if "business_description" in missing:
+                return "Que vend ou propose votre entreprise ? Décrivez ses principaux produits ou services en quelques phrases."
+            if "services_products" in missing:
+                return "Pour préparer un vrai catalogue, nommez au moins deux produits ou services précis."
+            if "brand_style" in missing:
+                return "Avez-vous des couleurs, un ton ou un style préférés ? Vous pouvez aussi me laisser choisir une direction visuelle adaptée."
+            if "logo" in missing:
+                return "Avez-vous un logo à importer, ou continuons-nous avec le nom de votre entreprise en texte ?"
+            return "Je n'ai pas bien compris. Pouvez-vous reformuler plus clairement ?"
+        if language == "pt":
+            if "sales_flow" in missing:
+                return "Você quer vender online, receber pedidos de orçamento, aceitar reservas, captar contatos ou apenas apresentar o negócio?"
+            if "niche" in missing:
+                return "Quais produtos ou serviços sua empresa oferece? Isso me ajuda a identificar o setor."
+            if "business_name" in missing:
+                return "Qual é o nome da sua empresa?"
+            if "business_description" in missing:
+                return "O que sua empresa vende ou faz? Descreva os principais produtos ou serviços em algumas frases."
+            if "services_products" in missing:
+                return "Para preparar um catálogo real, diga o nome de pelo menos dois produtos ou serviços específicos."
+            if "brand_style" in missing:
+                return "Você prefere alguma cor, tom ou estilo? Se quiser, posso escolher uma direção visual adequada ao negócio."
+            if "logo" in missing:
+                return "Você tem um logo para enviar ou seguimos com o nome da empresa em texto por enquanto?"
+            return "Não entendi bem. Pode reformular de forma mais clara?"
+        if "sales_flow" in missing:
             return "I need to classify the project correctly. Do you want to sell online, receive quotes, take bookings, capture leads, or present information?"
+        if "niche" in missing:
+            return "What products or services does your business offer? That will help me identify its industry."
         if "business_name" in missing:
             return "I could not identify the business name. What is it called?"
         if "business_description" in missing:

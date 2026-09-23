@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from .models import SupportedLanguage
+from .openai_usage import call_async, observed_http_client
 from .surgical_edit_policy import (
     detect_surgical_edit_intent,
     filter_operations_for_intent,
@@ -68,7 +69,7 @@ class LyraEditEngine:
     def __init__(self) -> None:
         self.model = os.getenv("OPENAI_EDIT_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-4o"
         self.api_key = os.getenv("OPENAI_API_KEY")
-        self.client = AsyncOpenAI(api_key=self.api_key) if AsyncOpenAI and self.api_key else None
+        self.client = AsyncOpenAI(api_key=self.api_key, http_client=observed_http_client(asynchronous=True)) if AsyncOpenAI and self.api_key else None
 
     async def run(
         self,
@@ -100,7 +101,7 @@ class LyraEditEngine:
         edit_intent = detect_surgical_edit_intent(instruction, current_schema)
         payload["editIntent"] = edit_intent.as_dict()
 
-        response = await self.client.chat.completions.create(
+        response = await call_async("site_edit", self.model, lambda: self.client.chat.completions.create(
             model=self.model,
             temperature=0.1,
             messages=[
@@ -109,7 +110,7 @@ class LyraEditEngine:
             ],
             tools=[self._patch_tool()],
             tool_choice={"type": "function", "function": {"name": "apply_schema_patch"}},
-        )
+        ))
         tool_calls = response.choices[0].message.tool_calls or []
         if not tool_calls:
             raise RuntimeError("Lyra did not return apply_schema_patch.")
