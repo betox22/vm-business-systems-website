@@ -211,7 +211,9 @@ class LumaChatResponseTests(unittest.TestCase):
 
         self.assertFalse(response.readyToGenerate)
         self.assertEqual(response.next_step, "preferredColors")
-        self.assertEqual(response.assistantMessage, direct_response)
+        self.assertTrue(response.assistantMessage.startswith(direct_response))
+        self.assertTrue(response.assistantMessage.endswith(response.nextQuestion))
+        self.assertIn("brand_style", response.missingImportantFields)
         self.assertIn("brand_style", response.missingImportantFields)
 
     def test_empty_user_question_response_keeps_fixed_fallback_message(self):
@@ -224,7 +226,8 @@ class LumaChatResponseTests(unittest.TestCase):
             response = asyncio.run(main.luma_chat(request, _request(49202)))
 
         self.assertFalse(response.readyToGenerate)
-        self.assertEqual(response.assistantMessage, "Got it. I updated what I could confirm.")
+        self.assertTrue(response.assistantMessage.startswith("Got it. I updated what I could confirm."))
+        self.assertTrue(response.assistantMessage.endswith(response.nextQuestion))
 
     def test_ai_response_survives_post_orchestrator_ready_false_path(self):
         direct_response = "Absolutely. We can publish without a logo and add one when you are ready."
@@ -247,8 +250,76 @@ class LumaChatResponseTests(unittest.TestCase):
 
         self.assertFalse(response.readyToGenerate)
         self.assertEqual(response.next_step, "preferredColors")
-        self.assertEqual(response.assistantMessage, direct_response)
-        self.assertIn("brand_style", response.missingImportantFields)
+        self.assertTrue(response.assistantMessage.startswith(direct_response))
+        self.assertTrue(response.assistantMessage.endswith(response.nextQuestion))
+
+    def test_bruma_description_resolves_niche_before_asking_again(self):
+        payload = _tool_payload("Ya tengo todo lo necesario para generar.")
+        payload["updatedFields"] = {}
+        payload["detectedIntent"]["niche"] = "general"
+        current = {
+            "businessName": "Bruma",
+            "businessDescription": "Tienda de tés e infusiones artesanales a granel.",
+            "salesFlow": "online_sales",
+            "selectedLanguage": "es",
+            "fieldMeta": {
+                "salesFlow": {"source": "explicit", "confidence": 0.95},
+                "sales_flow": {"source": "explicit", "confidence": 0.95},
+            },
+        }
+        main.app.dependency_overrides[main.get_session] = lambda: object()
+        try:
+            with (
+                patch.object(main.intake_engine, "client", _FakeOpenAIClient(payload)),
+                patch.object(main, "classify_business_niche", return_value="tés e infusiones") as classify,
+                patch.object(main, "template_ids_for_generation", return_value=[]),
+                patch.object(main, "replacement_template_for_new_project", return_value=None),
+            ):
+                response = TestClient(main.app).post("/api/luma/chat", json={
+                    "current": current,
+                    "currentStep": "industry",
+                    "message": "Eso ya estaba en la descripción anterior.",
+                })
+        finally:
+            main.app.dependency_overrides.pop(main.get_session, None)
+
+        self.assertEqual(response.status_code, 200)
+        result = response.json()
+        classify.assert_called_once()
+        self.assertEqual(result["updatedFields"]["industry"], "tés e infusiones")
+        self.assertNotIn("niche", result["missingImportantFields"])
+        self.assertNotEqual(result["next_step"], "industry")
+        self.assertNotIn("Ya tengo todo", result["assistantMessage"])
+        self.assertTrue(result["assistantMessage"].endswith(result["nextQuestion"]))
+
+    def test_model_ready_claim_cannot_contradict_server_missing_fields(self):
+        payload = _tool_payload("I have everything and am ready to generate.")
+        request = LumaChatRequest(
+            current=_current_state(),
+            message="Can we generate now?",
+        )
+
+        with patch.object(main.intake_engine, "client", _FakeOpenAIClient(payload)):
+            response = asyncio.run(main.luma_chat(request, _request(49205)))
+
+        self.assertFalse(response.readyToGenerate)
+        self.assertEqual(response.next_step, "preferredColors")
+        self.assertNotIn("ready to generate", response.assistantMessage)
+        self.assertTrue(response.assistantMessage.endswith(response.nextQuestion))
+
+    def test_spanish_model_completion_claim_is_not_displayed_while_missing_fields_remain(self):
+        payload = _tool_payload("Ya tengo toda la información para crear tu sitio.")
+        current = _current_state()
+        current["selectedLanguage"] = "es"
+        request = LumaChatRequest(current=current, message="¿Podemos generar ahora?")
+
+        with patch.object(main.intake_engine, "client", _FakeOpenAIClient(payload)):
+            response = asyncio.run(main.luma_chat(request, _request(49206)))
+
+        self.assertFalse(response.readyToGenerate)
+        self.assertNotIn("Ya tengo toda la información", response.assistantMessage)
+        self.assertEqual(response.next_step, "preferredColors")
+        self.assertTrue(response.assistantMessage.endswith(response.nextQuestion))
 
     def test_http_response_exposes_the_server_step_and_question(self):
         payload = _tool_payload(None)

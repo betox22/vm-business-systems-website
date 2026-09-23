@@ -30,7 +30,6 @@ import {
   importQuickFormToGuidedState,
   inferGuidedUpdates,
   inferGuidedUpdatesFromAnyMessage,
-  isDuplicateQuestion,
   languageToSpeechLocale,
   localizedTemplateName,
   mergeGuidedUpdates,
@@ -287,100 +286,120 @@ export async function sendGuidedReply() {
   builderState.preparedPlanTemplateId = "";
   appendChatMessage("user", message);
   guidedReply.value = "";
-  if (shouldResetRestoredWorkspaceForMessage(message)) {
-    const email = builderState.clientIntakeSession?.clientEmail
-      || builderState.clientIntakeSession?.client_email
-      || readClientIntakeSession()?.clientEmail
-      || readClientIntakeSession()?.client_email
-      || localStorage.getItem("lumaPendingClientEmail")
-      || "";
-    resetGuidedStateForNewAccount({ preserveAuth: true });
-    // resetAssistantConversation() clears the message appended just before
-    // the reset, so restore it as the first turn of the clean project.
-    appendChatMessage("user", message);
-    if (email) {
-      builderState.guidedState.contactInfo.email = email;
-      localStorage.setItem("lumaPendingClientEmail", email);
-      try {
-        await createOrResumeClientIntakeSession({
-          email,
-          name: "",
-          reason: "new-brief",
-          forceNew: true,
-          immediateDraft: guidedSessionDraftForApi(),
-        });
-      } catch (error) {
-        console.warn("Could not reset restored client intake session", error);
+  let stateBeforeReply;
+  const stepBeforeReply = builderState.guidedStep;
+  let localStudioPlan;
+  try {
+    stateBeforeReply = structuredClone(builderState.guidedState);
+    if (shouldResetRestoredWorkspaceForMessage(message)) {
+      const email = builderState.clientIntakeSession?.clientEmail
+        || builderState.clientIntakeSession?.client_email
+        || readClientIntakeSession()?.clientEmail
+        || readClientIntakeSession()?.client_email
+        || localStorage.getItem("lumaPendingClientEmail")
+        || "";
+      resetGuidedStateForNewAccount({ preserveAuth: true });
+      // resetAssistantConversation() clears the message appended just before
+      // the reset, so restore it as the first turn of the clean project.
+      appendChatMessage("user", message);
+      if (email) {
+        builderState.guidedState.contactInfo.email = email;
+        localStorage.setItem("lumaPendingClientEmail", email);
+        try {
+          await createOrResumeClientIntakeSession({
+            email,
+            name: "",
+            reason: "new-brief",
+            forceNew: true,
+            immediateDraft: guidedSessionDraftForApi(),
+          });
+        } catch (error) {
+          console.warn("Could not reset restored client intake session", error);
+        }
+      }
+      appendChatMessage("assistant", langText({
+        en: "I started a clean workspace for this new project.",
+        es: "Empecé un espacio limpio para este nuevo proyecto.",
+        fr: "J'ai lancé un nouvel espace propre pour ce projet.",
+        pt: "Comecei um espaço limpo para este novo projeto.",
+      }), "success");
+    }
+    // Prefer the field the backend actually just asked about (captured from the
+    // previous turn's response) over the local progress-UI step tracker, which
+    // runs on its own fixed sequence and does not reflect the real conversation.
+    applyDetectedBriefLanguage(message);
+    const attributionStep = builderState.lastAskedGuidedField || builderState.guidedStep;
+    // Computed before the broad matcher (not after, as before) so it can tell
+    // the matcher when this message is specifically answering "how do you want
+    // to sell" - see the attributionStep === "salesMode" guard inside
+    // inferGuidedUpdatesFromAnyMessage for why that distinction matters.
+    const broadLocalUpdates = inferGuidedUpdatesFromAnyMessage(message, attributionStep);
+    const stepUpdates = inferGuidedUpdates(attributionStep, message);
+    const localContextUpdates = { ...broadLocalUpdates, ...stepUpdates };
+    if (attributionStep === "salesMode") localContextUpdates.salesMode = message;
+    if (builderState.guidedStep === "websiteIntent" && !localContextUpdates.websiteIntent) {
+      // Only fill this in when the local heuristic actually recognizes a
+      // category. Leaving it unset (rather than falling back to the raw
+      // client message) lets the backend's real intake response - merged a
+      // few lines below via mergeGuidedUpdates(updatedFields) - supply the
+      // real value instead of the field showing whatever the client typed.
+      const detectedIntent = extractWebsiteIntent(message);
+      if (detectedIntent) {
+        localContextUpdates.websiteIntent = detectedIntent;
       }
     }
-    appendChatMessage("assistant", langText({
-      en: "I started a clean workspace for this new project.",
-      es: "Empecé un espacio limpio para este nuevo proyecto.",
-      fr: "J'ai lancé un nouvel espace propre pour ce projet.",
-      pt: "Comecei um espaço limpo para este novo projeto.",
-    }), "success");
-  }
-  // Prefer the field the backend actually just asked about (captured from the
-  // previous turn's response) over the local progress-UI step tracker, which
-  // runs on its own fixed sequence and does not reflect the real conversation.
-  applyDetectedBriefLanguage(message);
-  const stateBeforeReply = structuredClone(builderState.guidedState);
-  const stepBeforeReply = builderState.guidedStep;
-  const attributionStep = builderState.lastAskedGuidedField || builderState.guidedStep;
-  // Computed before the broad matcher (not after, as before) so it can tell
-  // the matcher when this message is specifically answering "how do you want
-  // to sell" - see the attributionStep === "salesMode" guard inside
-  // inferGuidedUpdatesFromAnyMessage for why that distinction matters.
-  const broadLocalUpdates = inferGuidedUpdatesFromAnyMessage(message, attributionStep);
-  const stepUpdates = inferGuidedUpdates(attributionStep, message);
-  const localContextUpdates = { ...broadLocalUpdates, ...stepUpdates };
-  if (attributionStep === "salesMode") localContextUpdates.salesMode = message;
-  if (builderState.guidedStep === "websiteIntent" && !localContextUpdates.websiteIntent) {
-    // Only fill this in when the local heuristic actually recognizes a
-    // category. Leaving it unset (rather than falling back to the raw
-    // client message) lets the backend's real intake response - merged a
-    // few lines below via mergeGuidedUpdates(updatedFields) - supply the
-    // real value instead of the field showing whatever the client typed.
-    const detectedIntent = extractWebsiteIntent(message);
-    if (detectedIntent) {
-      localContextUpdates.websiteIntent = detectedIntent;
+    if (!localContextUpdates.businessDescription && !builderState.guidedState.businessDescription && isRichIntakeMessage(message)) {
+      localContextUpdates.businessDescription = message;
     }
-  }
-  if (!localContextUpdates.businessDescription && !builderState.guidedState.businessDescription && isRichIntakeMessage(message)) {
-    localContextUpdates.businessDescription = message;
-  }
-  Object.assign(localContextUpdates, completeGuidedBriefFromMessage(message, localContextUpdates));
-  mergeGuidedUpdates(localContextUpdates);
-  backfillWebsiteIntentFromContext(message);
-  syncTemplateSelectionFromGuidedContext(message);
-  const localStudioPlan = refreshAiStudioPlanFromContext(message);
-  if (builderState.guidedStep === "review") {
-    const adjustmentLabel = langText({
-      en: "Client requested adjustments",
-      es: "Ajustes pedidos por el cliente",
-      fr: "Ajustements demandés par le client",
-      pt: "Ajustes solicitados pelo cliente",
-    });
-    if (builderState.currentSchema) {
-      builderState.guidedState.revisionMode = "targeted_edit";
-    }
-    builderState.guidedState.requestedAdjustments = [
-      ...arrayValue(builderState.guidedState.requestedAdjustments),
-      `${adjustmentLabel}: ${message}`,
-    ];
-    if (builderState.currentSchema) {
-      await applyDraftAdjustmentFromChat(message, localContextUpdates);
-      guidedStatusText.textContent = langText({
-        en: "Draft updated.",
-        es: "Borrador actualizado.",
-        fr: "Brouillon mis à jour.",
-        pt: "Rascunho atualizado.",
+    Object.assign(localContextUpdates, completeGuidedBriefFromMessage(message, localContextUpdates));
+    mergeGuidedUpdates(localContextUpdates);
+    backfillWebsiteIntentFromContext(message);
+    syncTemplateSelectionFromGuidedContext(message);
+    localStudioPlan = refreshAiStudioPlanFromContext(message);
+    if (builderState.guidedStep === "review") {
+      const adjustmentLabel = langText({
+        en: "Client requested adjustments",
+        es: "Ajustes pedidos por el cliente",
+        fr: "Ajustements demandés par le client",
+        pt: "Ajustes solicitados pelo cliente",
       });
-      renderGuidedSummary();
-      refreshQuickChips();
-      saveGuidedDraft();
-      return;
+      if (builderState.currentSchema) {
+        builderState.guidedState.revisionMode = "targeted_edit";
+      }
+      builderState.guidedState.requestedAdjustments = [
+        ...arrayValue(builderState.guidedState.requestedAdjustments),
+        `${adjustmentLabel}: ${message}`,
+      ];
+      if (builderState.currentSchema) {
+        await applyDraftAdjustmentFromChat(message, localContextUpdates);
+        guidedStatusText.textContent = langText({
+          en: "Draft updated.",
+          es: "Borrador actualizado.",
+          fr: "Brouillon mis à jour.",
+          pt: "Rascunho atualizado.",
+        });
+        renderGuidedSummary();
+        refreshQuickChips();
+        saveGuidedDraft();
+        return;
+      }
     }
+  } catch (error) {
+    console.error("LYRA could not prepare the intake reply.", error);
+    if (stateBeforeReply) builderState.guidedState = stateBeforeReply;
+    builderState.guidedStep = stepBeforeReply;
+    builderState.preparedPlanToken = previousPreparedPlanToken;
+    builderState.preparedPlanTemplateId = previousPreparedPlanTemplateId;
+    guidedReply.value = message;
+    appendChatMessage("assistant", langText({
+      en: "I could not process that answer. Your text is still here; please retry.",
+      es: "No pude procesar esa respuesta. Tu texto sigue aquí; inténtalo de nuevo.",
+      fr: "Je n'ai pas pu traiter cette réponse. Votre texte est toujours là ; réessayez.",
+      pt: "Não consegui processar essa resposta. Seu texto continua aqui; tente novamente.",
+    }), "alert");
+    guidedStatusText.textContent = t("localFallback");
+    refreshQuickChips();
+    return;
   }
   guidedStatusText.textContent = t("sendingAssistant");
   setThinking(true);
@@ -412,7 +431,7 @@ export async function sendGuidedReply() {
     const assistantMessage = result.assistantMessage || result.message;
     const emotion = result.emotion || (result.readyToGenerate ? "success" : "speaking");
     const updatedFields = result.updatedFields || result.updates || {};
-    const { step: serverNextStep, question: nextQuestion } = readServerIntakeStep(result);
+    const { step: serverNextStep } = readServerIntakeStep(result);
     builderState.guidedHistory.push({ role: "user", content: message });
     builderState.guidedHistory.push({ role: "assistant", content: assistantMessage });
     mergeGuidedUpdates(updatedFields);
@@ -429,9 +448,8 @@ export async function sendGuidedReply() {
     builderState.lastAskedGuidedField = serverNextStep === "backendClarification" || result.readyToGenerate ? "" : serverNextStep;
     const usedDevFallback = Boolean(result.used_dev_fallback || result.usedDevFallback);
     const finalAssistantMessage = sanitizeAssistantTemplateClaim(assistantMessage, planAfterAgent);
-    const publicAssistantMessage = composeAssistantReply(finalAssistantMessage, nextQuestion, usedDevFallback);
     appendUnderstandingCard({ updates: updatedFields, sourceMessage: message });
-    appendChatMessage("assistant", publicAssistantMessage, usedDevFallback ? "alert" : emotion);
+    appendChatMessage("assistant", finalAssistantMessage, usedDevFallback ? "alert" : emotion);
     guidedStatusText.textContent = usedDevFallback
       ? t("devFallbackMissingKey")
       : t("summaryUpdated");
@@ -703,15 +721,6 @@ export function nextSmartGuidedStep(referenceStep = builderState.guidedStep, opt
   if (optionalMissing) return optionalMissing;
 
   return allowReview ? "review" : "";
-}
-
-export function composeAssistantReply(message, nextQuestion, usedFallback = false) {
-  const cleanMessage = sanitizeAssistantMessage(message || "");
-  const cleanQuestion = sanitizeAssistantMessage(nextQuestion || "");
-  const base = usedFallback && !cleanMessage ? t("localFallbackMessage") : cleanMessage;
-  if (!cleanQuestion) return base || t("localFallbackMessage");
-  if (!base || isDuplicateQuestion(base, cleanQuestion) || base.includes(cleanQuestion)) return cleanQuestion;
-  return `${base}\n\n${cleanQuestion}`;
 }
 
 export function sanitizeAssistantMessage(message) {

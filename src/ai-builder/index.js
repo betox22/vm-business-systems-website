@@ -291,7 +291,6 @@ import {
   assistantVisibleCopy,
   avatarStateFromAssistantState,
   closeDraftAdjustmentChat,
-  composeAssistantReply,
   ensureGuidedCoachCard,
   ensureServerIntakeGate,
   guidedQuestion,
@@ -383,7 +382,6 @@ export {
   importQuickFormToGuidedState,
   inferGuidedUpdates,
   inferGuidedUpdatesFromAnyMessage,
-  isDuplicateQuestion,
   languageToSpeechLocale,
   localizedTemplateName,
   mergeTemplateSelectionIntoSchema,
@@ -463,7 +461,6 @@ export {
   assistantVisibleCopy,
   avatarStateFromAssistantState,
   closeDraftAdjustmentChat,
-  composeAssistantReply,
   ensureGuidedCoachCard,
   ensureServerIntakeGate,
   guidedQuestion,
@@ -5100,12 +5097,6 @@ function setThinking(active) {
 
 
 
-function isDuplicateQuestion(a, b) {
-  const left = questionSignature(a);
-  const right = questionSignature(b);
-  return Boolean(left && right && (left === right || left.includes(right) || right.includes(left)));
-}
-
 function questionSignature(value) {
   return String(value || "")
     .toLowerCase()
@@ -5267,6 +5258,11 @@ function inferGuidedUpdates(step, message) {
   };
   const key = keyByStep[step];
   if (!key) return {};
+  if (step === "industry") return {};
+  if (step === "websiteIntent") {
+    const intent = extractWebsiteIntent(message);
+    return intent ? { websiteIntent: intent } : {};
+  }
   return hasExistingGuidedValue(key) ? {} : { [key]: message };
 }
 

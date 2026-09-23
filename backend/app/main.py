@@ -1980,6 +1980,12 @@ async def luma_chat(
         message=request.message,
     )
     state = intake_engine.apply_decision(state, intake_decision)
+    missing_after_intake = intake_engine.missing_fields_from_state(state, {}, state.fieldMeta)
+    if "niche" in missing_after_intake and str(state.businessDescription or "").strip():
+        missing_after_intake = unblock_niche_intake_loop(state, missing_after_intake)
+    intake_decision.missingCriticalFields = missing_after_intake
+    intake_decision.canGenerate = not missing_after_intake
+    state.missingImportantFields = missing_after_intake
     source_state = state.model_copy(deep=True)
     if (
         state.logoBrief
@@ -2001,7 +2007,6 @@ async def luma_chat(
             {},
             final_state.fieldMeta,
         )
-        generation_missing_fields = unblock_niche_intake_loop(final_state, generation_missing_fields)
         ready = not generation_missing_fields
         if ready and isinstance(session, Session):
             try:
@@ -2010,7 +2015,7 @@ async def luma_chat(
                 session.rollback()
                 logger.warning("LYRA prepared generation unavailable reason=%s", type(error).__name__)
         plan = site_plan_from_state(final_state)
-        assistant_message = assistant_message_for_ready_state(intake_decision, final_state) if ready else assistant_message_for_intake_turn(intake_decision, final_state)
+        assistant_message = assistant_message_for_ready_state(intake_decision, final_state, request.message) if ready else assistant_message_for_intake_turn(intake_decision, final_state, request.message)
         next_question = "" if ready else intake_engine.fallback_question_for_missing(
             generation_missing_fields,
             final_state.selectedLanguage,
@@ -2020,11 +2025,13 @@ async def luma_chat(
         ready = False
         generation_missing_fields = intake_decision.missingCriticalFields
         plan = {}
-        assistant_message = assistant_message_for_intake_turn(intake_decision, final_state)
+        assistant_message = assistant_message_for_intake_turn(intake_decision, final_state, request.message)
         next_question = intake_engine.fallback_question_for_missing(
             generation_missing_fields,
             final_state.selectedLanguage,
         )
+    if next_question:
+        assistant_message = f"{assistant_message}\n\n{next_question}"
 
     return LumaChatResponse(
         assistantMessage=assistant_message,
@@ -2102,19 +2109,33 @@ def intake_message_for_decision(decision: LyraIntakeDecision, state: Any) -> str
     }.get(state.selectedLanguage, "Got it. I updated what I could confirm.")
 
 
-def assistant_message_for_intake_turn(decision: LyraIntakeDecision, state: Any) -> str:
-    direct_response = direct_user_question_response(decision)
-    if direct_response:
-        return direct_response
-    return intake_message_for_decision(decision, state)
+def assistant_message_for_intake_turn(decision: LyraIntakeDecision, state: Any, message: str) -> str:
+    direct_response = safe_direct_user_response(decision, message, ready=False)
+    return direct_response or intake_message_for_decision(decision, state)
 
 
-def assistant_message_for_ready_state(decision: LyraIntakeDecision, state: Any) -> str:
+def assistant_message_for_ready_state(decision: LyraIntakeDecision, state: Any, message: str) -> str:
     ready_message = assistant_message_for_state(state)
-    direct_response = direct_user_question_response(decision)
-    if not direct_response:
-        return ready_message
-    return f"{direct_response}\n\n{ready_message}"
+    direct_response = safe_direct_user_response(decision, message, ready=True)
+    return f"{direct_response}\n\n{ready_message}" if direct_response else ready_message
+
+
+def safe_direct_user_response(decision: LyraIntakeDecision, message: str, *, ready: bool) -> str:
+    response = direct_user_question_response(decision)
+    if not response or ("?" not in message and "¿" not in message and not logo_initials_requested(message)):
+        return ""
+    if "?" in response or "¿" in response:
+        return ""
+    if not ready and re.search(
+        r"\b(?:ready to (?:generate|build)|(?:have|got) (?:all|everything)|"
+        r"ya (?:tengo|tenemos) (?:todo|toda la informaci[oó]n|todos los datos)|"
+        r"todo listo|list[oa] para generar|"
+        r"pr[eê]t[e]? [aà] g[eé]n[eé]rer|pront[oa] para gerar)\b",
+        response,
+        re.IGNORECASE,
+    ):
+        return ""
+    return response
 
 
 def direct_user_question_response(decision: LyraIntakeDecision) -> str:
