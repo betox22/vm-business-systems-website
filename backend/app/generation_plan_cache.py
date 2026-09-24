@@ -33,6 +33,21 @@ INPUT_FIELDS = (
     "photoUrls",
     "videoUrls",
 )
+CLIENT_RETURNED_FIELDS = (
+    "businessName",
+    "businessDescription",
+    "industry",
+    "location",
+    "servicesProducts",
+    "brandsCarried",
+    "targetAudience",
+    "preferredTone",
+    "preferredColors",
+    "salesFlow",
+    "salesMode",
+    "logoPreference",
+    "logoBrief",
+)
 
 
 def _fingerprint(state: ProjectState) -> str:
@@ -51,12 +66,23 @@ def store_prepared_generation(session: Session, source: ProjectState, prepared: 
     state_json = prepared.model_dump_json(exclude={"runtimeAvailableTemplateIds"})
     if len(state_json.encode()) > PLAN_MAX_BYTES:
         return ""
+    client_state = source.model_copy(deep=True)
+    for field in CLIENT_RETURNED_FIELDS:
+        setattr(client_state, field, getattr(prepared, field))
+    for field in ("servicesProducts", "brandsCarried"):
+        existing = getattr(source, field)
+        incoming = getattr(prepared, field)
+        if field == "servicesProducts" and not incoming and existing:
+            setattr(client_state, field, existing)
+        else:
+            setattr(client_state, field, list(dict.fromkeys([*existing, *incoming])))
+    accepted_hashes = dict.fromkeys((_fingerprint(source), _fingerprint(client_state)))
     token = secrets.token_urlsafe(32)
     now = int(time.time())
     session.execute(delete(PreparedGenerationRecord).where(PreparedGenerationRecord.expires_at < now))
     session.add(PreparedGenerationRecord(
         id=hashlib.sha256(token.encode()).hexdigest(),
-        input_hash=_fingerprint(source),
+        input_hash=":".join(accepted_hashes),
         state_json=state_json,
         expires_at=now + PLAN_TTL_SECONDS,
     ))
@@ -74,7 +100,7 @@ def load_prepared_generation(
     record = session.get(PreparedGenerationRecord, hashlib.sha256(token.encode()).hexdigest())
     if not record or record.expires_at <= int(time.time()):
         return None
-    if record.input_hash != _fingerprint(current):
+    if _fingerprint(current) not in record.input_hash.split(":"):
         return None
     prepared = ProjectState.model_validate_json(record.state_json)
     if current.selectedTemplateId and prepared.selectedTemplateId != current.selectedTemplateId:

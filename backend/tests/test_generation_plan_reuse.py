@@ -48,6 +48,12 @@ class FakeCompletions:
         ({"selected_template_id": "restaurant-food-business"}, 2),
         ({"expire_receipt": True}, 2),
         ({"logoUrl": "https://example.test/new-logo.png"}, 2),
+        ({"server_targetAudience": "Customers who value handmade bath products"}, 1),
+        ({"server_targetAudience": "Customers who value handmade bath products", "targetAudience": "Wholesale buyers"}, 2),
+        ({"logoBrief": "A new logo direction"}, 2),
+        ({"server_logoBrief": "Use a leaf symbol"}, 1),
+        ({"server_salesMode": "online_sales and local pickup"}, 1),
+        ({"server_servicesProducts": ["Bath bomb", "Lavender soap", "Vanilla candle"]}, 1),
     ],
 )
 def test_ready_intake_then_generate_runs_orchestrator_once(change, expected_runs):
@@ -69,6 +75,14 @@ def test_ready_intake_then_generate_runs_orchestrator_once(change, expected_runs
     async def run_orchestrator(_message, state, **kwargs):
         calls.append(kwargs)
         state.selectedTemplateId = "mega-retail-store"
+        if change.get("server_targetAudience"):
+            state.targetAudience = change["server_targetAudience"]
+        if change.get("server_logoBrief"):
+            state.logoBrief = change["server_logoBrief"]
+        if change.get("server_salesMode"):
+            state.salesMode = change["server_salesMode"]
+        if change.get("server_servicesProducts"):
+            state.servicesProducts = change["server_servicesProducts"]
         return state
 
     async def review_prepared(_message, state):
@@ -112,6 +126,9 @@ def test_ready_intake_then_generate_runs_orchestrator_once(change, expected_runs
             assert chat.json()["preparedPlanToken"]
             assert chat.json()["generationId"].startswith("gen_")
             details = chat.json()["updatedFields"]
+            from app.generation_plan_cache import CLIENT_RETURNED_FIELDS
+
+            assert set(CLIENT_RETURNED_FIELDS) <= details.keys()
             if change.get("expire_receipt"):
                 with session_factory() as session:
                     record = session.query(PreparedGenerationRecord).one()
@@ -122,14 +139,17 @@ def test_ready_intake_then_generate_runs_orchestrator_once(change, expected_runs
                 "businessName": details["businessName"],
                 "businessDescription": details["businessDescription"],
                 "industry": details["industry"],
-                "servicesProducts": details["servicesProducts"],
+                "servicesProducts": list(dict.fromkeys([*current["servicesProducts"], *details["servicesProducts"]])),
                 "salesFlow": details["salesFlow"],
+                "salesMode": details["salesMode"],
+                "targetAudience": details["targetAudience"],
+                "logoBrief": details["logoBrief"],
                 "preferredTone": details["preferredTone"],
                 "logoPreference": details["logoPreference"],
                 "selectedLanguage": current["selectedLanguage"],
                 "fieldMeta": details["fieldMeta"],
             }
-            generation_payload.update({key: value for key, value in change.items() if key != "expire_receipt"})
+            generation_payload.update({key: value for key, value in change.items() if not key.startswith("server_") and key != "expire_receipt"})
             generation = client.post(
                 "/ai/website-builder", json=generation_payload,
                 headers={"X-Generation-ID": chat.json()["generationId"]},
