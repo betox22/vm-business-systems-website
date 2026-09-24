@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .color_theory import build_palette
+from .copywriter_prompts import copywriter_system_prompt
 from .typography_theory import build_typography_scale
 from .image_assets import attach_image_asset, stable_seed_image_url
 from .models import AgentResult, ProjectState, WebsiteType
@@ -1215,6 +1216,14 @@ class CopywriterAgent(BaseAgent):
             "websiteType": state.websiteType,
             "selectedLanguage": state.selectedLanguage,
         }
+        archetype_text = " ".join(filter(None, [
+            state.businessDescription,
+            state.industry,
+            " ".join(state.servicesProducts),
+        ]))
+        system_prompt = copywriter_system_prompt(
+            state.websiteType, detect_business_archetypes(archetype_text)
+        )
         try:
             response = await create_chat_completion_with_retry(
                 self.client,
@@ -1223,16 +1232,7 @@ class CopywriterAgent(BaseAgent):
                 temperature=0.45,
                 response_format=strict_response_format("kreaton_hero_copy", GeneratedHeroCopy),
                 messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a senior conversion copywriter. Write a specific hero for this exact "
-                            "business in selectedLanguage. Name a real offering or buyer outcome from the "
-                            "provided facts. Do not merely swap the business name into a generic template. "
-                            "Never invent claims, prices, awards, urgency, or proof. Make primaryCta name the "
-                            "concrete next action."
-                        ),
-                    },
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
                 ],
             )
