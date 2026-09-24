@@ -92,6 +92,33 @@ ALLOWED_SECTION_COMPONENT_TYPES = {
     "CourseOffering": "CourseOffering",
 }
 
+EXECUTABLE_HOME_HERO_IDS = {
+    "mega-retail-store": "retail_hero",
+    "mega-marketplace": "marketplace_hero",
+    "premium-product-store": "premium_hero",
+    "luxury-high-ticket-pro": "luxury_hero",
+    "education-course-academy-pro": "academy_hero",
+    "medical-wellness-clinic-pro": "clinic_hero",
+    "legal-professional-services-pro": "professional_hero",
+    "b2b-saas-enterprise-pro": "enterprise_hero",
+    "manufacturing-industrial-supplier-pro": "industrial_hero",
+    "fashion-drop-pro": "fashion_hero",
+    "corporate-company-pro": "corporate_hero",
+    "home-services-premium": "home_service_hero",
+    "local-services-pro-plus": "home_service_hero",
+    "booking-appointment-pro": "booking_hero",
+    "restaurant-food-business": "restaurant_hero",
+    "digital-products-store": "digital_hero",
+    "real-estate-listings-pro": "listing_hero",
+    "lead-funnel-pro": "funnel_hero",
+}
+
+PLANNED_HERO_COMPONENT_TYPES = frozenset({
+    "hero_split_conversion",
+    "hero_marketplace_search",
+    "hero_editorial_product",
+})
+
 
 SalesFlow = Literal[
     "online_sales",
@@ -1117,6 +1144,16 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
     hero_copy: Dict[str, str] = {}
     for page in plan.pages:
         sections = []
+        planned_home_heroes = [
+            section for section in page.sections
+            if section.componentType in PLANNED_HERO_COMPONENT_TYPES
+        ] if page.pageId == "home" else []
+        executable_hero_id = EXECUTABLE_HOME_HERO_IDS.get(plan.templateId)
+        if len(planned_home_heroes) != 1 or any(
+            section.sectionId == executable_hero_id and section is not planned_home_heroes[0]
+            for section in page.sections
+        ):
+            executable_hero_id = None
         for section in page.sections:
             base_renderer_component = ALLOWED_SECTION_COMPONENT_TYPES[section.componentType]
             renderer_component = _premium_renderer_component(
@@ -1127,6 +1164,19 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             section_copy = section.copyProps.model_dump(exclude_none=True)
             if renderer_component == "PremiumHero":
                 section_copy = _limit_premium_headline(section_copy)
+            editable_copy = dict(section_copy)
+            for source, target in (
+                ("subheadline", "subtitle"),
+                ("ctaPrimary", "primary_button"),
+                ("ctaSecondary", "secondary_button"),
+            ):
+                if source in section_copy:
+                    editable_copy[target] = section_copy[source]
+            if section.componentType not in PLANNED_HERO_COMPONENT_TYPES:
+                if "headline" in section_copy:
+                    editable_copy["title"] = section_copy["headline"]
+                if "body" in section_copy:
+                    editable_copy["text"] = section_copy["body"]
             section_media = section.media.model_dump(exclude_none=True) if section.media else {}
             section_media = _resolve_section_media(
                 section_media,
@@ -1137,9 +1187,14 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
             )
             if not hero_copy and section_copy and renderer_component in {"Hero", "MarketplaceHero", "PremiumHero"}:
                 hero_copy = section_copy
+            section_id = (
+                executable_hero_id
+                if executable_hero_id and section is planned_home_heroes[0]
+                else section.sectionId
+            )
             sections.append({
-                "id": section.sectionId,
-                "sectionId": section.sectionId,
+                "id": section_id,
+                "sectionId": section_id,
                 "type": renderer_component,
                 "component": renderer_component,
                 "componentType": section.componentType,
@@ -1148,7 +1203,7 @@ def site_plan_to_updates(plan: AISitePlan, state: Optional[ProjectState] = None)
                 "motion": section.motion.model_dump(),
                 "dataBinding": section.dataBinding,
                 "editable": {
-                    **section_copy,
+                    **editable_copy,
                     **section_media,
                     **section.dataBinding,
                     "copy": section_copy,

@@ -2,7 +2,13 @@ import unittest
 
 from pydantic import ValidationError
 
-from app.ai_site_planner import AIWebGenerationResponse, site_plan_to_updates, state_to_client_summary
+from app.agents import TEMPLATE_CATALOG
+from app.ai_site_planner import (
+    AIWebGenerationResponse,
+    EXECUTABLE_HOME_HERO_IDS,
+    site_plan_to_updates,
+    state_to_client_summary,
+)
 from app.models import ProjectState
 
 
@@ -56,6 +62,61 @@ class SitePlanSectionTests(unittest.TestCase):
 
         self.assertEqual(updates["primaryOfferingCategory"], "premium-product-store")
         self.assertEqual(updates["secondaryOfferingCategories"], ["education-course-academy-pro"])
+
+    def test_hero_copy_uses_renderer_field_names_and_preserves_original_copy(self) -> None:
+        payload = self._base_plan().model_dump(by_alias=True)
+        payload["pages"][0]["sections"][0]["sectionId"] = "home-hero"
+        payload["pages"][0]["sections"][0]["copy"] = {
+            "headline": "Impresion 3D para piezas hechas a medida",
+            "subheadline": "Fabricamos piezas y accesorios segun cada proyecto.",
+            "ctaPrimary": "Explorar piezas",
+            "ctaSecondary": "Solicitar una cotizacion",
+            "badge": "Fabricacion a medida",
+            "body": "Detalles del proceso",
+        }
+
+        section = site_plan_to_updates(AIWebGenerationResponse.model_validate(payload))["generatedCopy"]["pages"][0]["sections"][0]
+
+        self.assertEqual(section["id"], "premium_hero")
+        self.assertEqual(section["sectionId"], "premium_hero")
+        self.assertEqual(section["editable"]["headline"], "Impresion 3D para piezas hechas a medida")
+        self.assertEqual(section["editable"]["subtitle"], "Fabricamos piezas y accesorios segun cada proyecto.")
+        self.assertEqual(section["editable"]["primary_button"], "Explorar piezas")
+        self.assertEqual(section["editable"]["secondary_button"], "Solicitar una cotizacion")
+        self.assertEqual(section["editable"]["badge"], "Fabricacion a medida")
+        self.assertEqual(section["editable"]["copy"]["body"], "Detalles del proceso")
+        self.assertEqual(section["editable"]["copy"]["subheadline"], section["editable"]["subtitle"])
+
+    def test_home_hero_identity_is_explicit_per_executable_template(self) -> None:
+        for template_id, expected_id in EXECUTABLE_HOME_HERO_IDS.items():
+            with self.subTest(template_id=template_id):
+                payload = self._base_plan().model_dump(by_alias=True)
+                payload["templateId"] = template_id
+                payload["primaryOfferingCategory"] = template_id
+                payload["websiteType"] = TEMPLATE_CATALOG[template_id]["websiteType"]
+                payload["catalogStrategy"] = TEMPLATE_CATALOG[template_id]["catalogType"]
+                payload["pages"][0]["sections"][0]["sectionId"] = "model-chosen-home-hero"
+                section = site_plan_to_updates(AIWebGenerationResponse.model_validate(payload))["generatedCopy"]["pages"][0]["sections"][0]
+                self.assertEqual(section["id"], expected_id)
+
+    def test_hero_identity_does_not_rewrite_other_pages_or_ambiguous_heroes(self) -> None:
+        payload = self._base_plan().model_dump(by_alias=True)
+        payload["pages"][0]["sections"].append({
+            "sectionId": "another-hero",
+            "componentType": "hero_split_conversion",
+            "copy": {"headline": "Another proposed headline"},
+        })
+        payload["pages"].append({
+            "pageId": "about",
+            "title": "About",
+            "slug": "/about",
+            "sections": [{"sectionId": "about-hero", "componentType": "hero_split_conversion"}],
+        })
+
+        pages = site_plan_to_updates(AIWebGenerationResponse.model_validate(payload))["generatedCopy"]["pages"]
+
+        self.assertEqual([section["id"] for section in pages[0]["sections"][:2]], ["hero", "another-hero"])
+        self.assertEqual(pages[1]["sections"][0]["id"], "about-hero")
 
     def test_client_summary_includes_contact_and_uploaded_media(self) -> None:
         state = ProjectState(
@@ -190,6 +251,9 @@ class SitePlanSectionTests(unittest.TestCase):
                 self.assertEqual(section["editable"]["headline"], f"Real headline for {component_type}")
                 self.assertEqual(section["editable"]["body"], f"Real body copy for {component_type}")
                 self.assertEqual(section["editable"]["ctaPrimary"], f"Action for {component_type}")
+                self.assertEqual(section["editable"]["title"], f"Real headline for {component_type}")
+                self.assertEqual(section["editable"]["text"], f"Real body copy for {component_type}")
+                self.assertEqual(section["editable"]["primary_button"], f"Action for {component_type}")
 
     def test_video_showcase_rejects_non_video_hosts(self) -> None:
         payload = {
